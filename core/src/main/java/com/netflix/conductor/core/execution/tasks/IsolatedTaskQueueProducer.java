@@ -16,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.service.MetadataService;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +37,7 @@ public class IsolatedTaskQueueProducer {
 
     public IsolatedTaskQueueProducer(MetadataService metadataService,
         @Value("${conductor.app.isolatedSystemTaskEnabled:false}") boolean isolatedSystemTaskEnabled,
-        @Value("${conductor.app.isolatedSystemTaskQueuePollIntervalSecs:10}") int isolatedSystemTaskQueuePollIntervalSecs) {
+        @Value("${conductor.app.isolatedSystemTaskQueuePollInterval:10s}") Duration isolatedSystemTaskQueuePollIntervalSecs) {
 
         this.metadataService = metadataService;
 
@@ -44,7 +45,7 @@ public class IsolatedTaskQueueProducer {
             LOGGER.info("Listening for isolation groups");
 
             Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::addTaskQueues, 1000,
-                isolatedSystemTaskQueuePollIntervalSecs, TimeUnit.SECONDS);
+                isolatedSystemTaskQueuePollIntervalSecs.getSeconds(), TimeUnit.SECONDS);
         } else {
             LOGGER.info("Isolated System Task Worker DISABLED");
         }

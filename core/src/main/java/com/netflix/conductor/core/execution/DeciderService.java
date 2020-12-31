@@ -32,6 +32,7 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import java.time.Duration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
  * Decider evaluates the state of the workflow by inspecting the current state along with the blueprint. The result of
  * the evaluation is either to schedule further tasks, complete/fail the workflow or do nothing.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class DeciderService {
 
@@ -79,12 +81,12 @@ public class DeciderService {
     public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
         ExternalPayloadStorageUtils externalPayloadStorageUtils,
         @Qualifier("taskProcessorsMap") Map<String, TaskMapper> taskMappers,
-        @Value("${conductor.app.taskPendingTimeThresholdMins:60}") long taskPendingTimeThresholdMins) {
+        @Value("${conductor.app.taskPendingTimeThreshold:60m}") Duration taskPendingTimeThreshold) {
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
-        this.taskPendingTimeThresholdMins = taskPendingTimeThresholdMins;
+        this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
     }
 
     public DeciderOutcome decide(Workflow workflow) throws TerminateWorkflowException {

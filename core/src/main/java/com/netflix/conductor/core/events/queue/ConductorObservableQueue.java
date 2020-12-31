@@ -37,7 +37,7 @@ public class ConductorObservableQueue implements ObservableQueue {
 
     private final String queueName;
     private final QueueDAO queueDAO;
-    private final int pollTimeInMS;
+    private final long pollTimeMS;
     private final int longPollTimeout;
     private final int pollCount;
     private final Scheduler scheduler;
@@ -45,9 +45,9 @@ public class ConductorObservableQueue implements ObservableQueue {
     ConductorObservableQueue(String queueName, QueueDAO queueDAO, ConductorProperties properties, Scheduler scheduler) {
         this.queueName = queueName;
         this.queueDAO = queueDAO;
-        this.pollTimeInMS = properties.getEventQueuePollIntervalMs();
+        this.pollTimeMS = properties.getEventQueuePollInterval().toMillis();
         this.pollCount = properties.getEventQueuePollCount();
-        this.longPollTimeout = properties.getEventQueueLongPollTimeout();
+        this.longPollTimeout = (int) properties.getEventQueueLongPollTimeout().toMillis();
         this.scheduler = scheduler;
     }
 
@@ -109,7 +109,7 @@ public class ConductorObservableQueue implements ObservableQueue {
 
     private OnSubscribe<Message> getOnSubscribe() {
         return subscriber -> {
-            Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS, scheduler);
+            Observable<Long> interval = Observable.interval(pollTimeMS, TimeUnit.MILLISECONDS, scheduler);
             interval.flatMap((Long x) -> {
                 List<Message> msgs = receiveMessages();
                 return Observable.from(msgs);

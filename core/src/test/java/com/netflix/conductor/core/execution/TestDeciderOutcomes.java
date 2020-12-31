@@ -40,6 +40,7 @@ import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +56,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.util.unit.DataSize;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -80,8 +82,8 @@ public class TestDeciderOutcomes {
 
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ConductorProperties properties = mock(ConductorProperties.class);
-        when(properties.getTaskInputPayloadSizeThresholdKB()).thenReturn(10L);
-        when(properties.getMaxTaskInputPayloadSizeThresholdKB()).thenReturn(10240L);
+        when(properties.getTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
+        when(properties.getMaxTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
 
         new Decision();
         new Join();
@@ -106,7 +108,7 @@ public class TestDeciderOutcomes {
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers,
-            60);
+            Duration.ofMinutes(60));
     }
 
     @Test

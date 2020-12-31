@@ -13,7 +13,10 @@
 package com.netflix.conductor.cassandra.config;
 
 import com.datastax.driver.core.ConsistencyLevel;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.cassandra")
 public class CassandraProperties {
@@ -72,17 +75,20 @@ public class CassandraProperties {
     /**
      * The time in seconds after which the in-memory task definitions cache will be refreshed
      */
-    private int taskDefCacheRefreshTimeSecs = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
     /**
      * The time in seconds after which the in-memory event handler cache will be refreshed
      */
-    private int eventHandlerCacheRefreshTimeSecs = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration eventHandlerCacheRefreshInterval = Duration.ofSeconds(60);
 
     /**
      * The time to live in seconds for which the event execution will be persisted
      */
-    private int eventExecutionPersistenceTTLSecs = 0;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration eventExecutionPersistenceTTL = Duration.ZERO;
 
     public String getHostAddress() {
         return hostAddress;
@@ -164,27 +170,27 @@ public class CassandraProperties {
         this.writeConsistencyLevel = writeConsistencyLevel;
     }
 
-    public int getTaskDefCacheRefreshTimeSecs() {
-        return taskDefCacheRefreshTimeSecs;
+    public Duration getTaskDefCacheRefreshInterval() {
+        return taskDefCacheRefreshInterval;
     }
 
-    public void setTaskDefCacheRefreshTimeSecs(int taskDefCacheRefreshTimeSecs) {
-        this.taskDefCacheRefreshTimeSecs = taskDefCacheRefreshTimeSecs;
+    public void setTaskDefCacheRefreshInterval(Duration taskDefCacheRefreshInterval) {
+        this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
     }
 
-    public int getEventHandlerCacheRefreshTimeSecs() {
-        return eventHandlerCacheRefreshTimeSecs;
+    public Duration getEventHandlerCacheRefreshInterval() {
+        return eventHandlerCacheRefreshInterval;
     }
 
-    public void setEventHandlerCacheRefreshTimeSecs(int eventHandlerCacheRefreshTimeSecs) {
-        this.eventHandlerCacheRefreshTimeSecs = eventHandlerCacheRefreshTimeSecs;
+    public void setEventHandlerCacheRefreshInterval(Duration eventHandlerCacheRefreshInterval) {
+        this.eventHandlerCacheRefreshInterval = eventHandlerCacheRefreshInterval;
     }
 
-    public int getEventExecutionPersistenceTTLSecs() {
-        return eventExecutionPersistenceTTLSecs;
+    public Duration getEventExecutionPersistenceTTL() {
+        return eventExecutionPersistenceTTL;
     }
 
-    public void setEventExecutionPersistenceTTLSecs(int eventExecutionPersistenceTTLSecs) {
-        this.eventExecutionPersistenceTTLSecs = eventExecutionPersistenceTTLSecs;
+    public void setEventExecutionPersistenceTTL(Duration eventExecutionPersistenceTTL) {
+        this.eventExecutionPersistenceTTL = eventExecutionPersistenceTTL;
     }
 }

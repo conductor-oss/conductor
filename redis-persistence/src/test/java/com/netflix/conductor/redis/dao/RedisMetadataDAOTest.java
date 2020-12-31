@@ -23,6 +23,7 @@ import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,7 +58,7 @@ public class RedisMetadataDAOTest {
     public void init() {
         ConductorProperties conductorProperties = mock(ConductorProperties.class);
         RedisProperties properties = mock(RedisProperties.class);
-        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
         JedisCommands jedisMock = new JedisMock();
         JedisProxy jedisProxy = new JedisProxy(jedisMock);
 

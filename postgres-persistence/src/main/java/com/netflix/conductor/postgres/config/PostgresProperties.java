@@ -13,9 +13,11 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.Connection;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.postgres")
 public class PostgresProperties {
@@ -57,19 +59,22 @@ public class PostgresProperties {
     private int connectionPoolMinIdle = -1;
 
     /**
-     * The maximum lifetime (in milliseconds) of a connection in the pool
+     * The maximum lifetime (in minutes) of a connection in the pool
      */
-    private long connectionMaxLifetime = TimeUnit.MINUTES.toMillis(30);
+    @DurationUnit(ChronoUnit.MINUTES)
+    private Duration connectionMaxLifetime = Duration.ofMinutes(30);
 
     /**
-     * The maximum amount of time (in milliseconds) that a connection is allowed to sit idle in the pool
+     * The maximum amount of time (in minutes) that a connection is allowed to sit idle in the pool
      */
-    private long connectionIdleTimeout = TimeUnit.MINUTES.toMillis(30);
+    @DurationUnit(ChronoUnit.MINUTES)
+    private Duration connectionIdleTimeout = Duration.ofMinutes(10);
 
     /**
-     * The maximum amount of time (in milliseconds) that a client will wait for a connection from the pool
+     * The maximum amount of time (in seconds) that a client will wait for a connection from the pool
      */
-    private long connectionTimeout = TimeUnit.MINUTES.toMillis(30);
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration connectionTimeout = Duration.ofSeconds(30);
 
     /**
      * The transaction isolation level as specified in {@link Connection}
@@ -85,7 +90,8 @@ public class PostgresProperties {
     /**
      * The time in seconds after which the in-memory task definitions cache will be refreshed
      */
-    private int taskDefCacheRefreshTimeSecs = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -143,27 +149,27 @@ public class PostgresProperties {
         this.connectionPoolMinIdle = connectionPoolMinIdle;
     }
 
-    public long getConnectionMaxLifetime() {
+    public Duration getConnectionMaxLifetime() {
         return connectionMaxLifetime;
     }
 
-    public void setConnectionMaxLifetime(long connectionMaxLifetime) {
+    public void setConnectionMaxLifetime(Duration connectionMaxLifetime) {
         this.connectionMaxLifetime = connectionMaxLifetime;
     }
 
-    public long getConnectionIdleTimeout() {
+    public Duration getConnectionIdleTimeout() {
         return connectionIdleTimeout;
     }
 
-    public void setConnectionIdleTimeout(long connectionIdleTimeout) {
+    public void setConnectionIdleTimeout(Duration connectionIdleTimeout) {
         this.connectionIdleTimeout = connectionIdleTimeout;
     }
 
-    public long getConnectionTimeout() {
+    public Duration getConnectionTimeout() {
         return connectionTimeout;
     }
 
-    public void setConnectionTimeout(long connectionTimeout) {
+    public void setConnectionTimeout(Duration connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
     }
 
@@ -183,11 +189,11 @@ public class PostgresProperties {
         this.autoCommit = autoCommit;
     }
 
-    public int getTaskDefCacheRefreshTimeSecs() {
-        return taskDefCacheRefreshTimeSecs;
+    public Duration getTaskDefCacheRefreshInterval() {
+        return taskDefCacheRefreshInterval;
     }
 
-    public void setTaskDefCacheRefreshTimeSecs(int taskDefCacheRefreshTimeSecs) {
-        this.taskDefCacheRefreshTimeSecs = taskDefCacheRefreshTimeSecs;
+    public void setTaskDefCacheRefreshInterval(Duration taskDefCacheRefreshInterval) {
+        this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
     }
 }

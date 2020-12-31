@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.zookeeper.config;
 
+import java.time.Duration;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -25,13 +26,12 @@ public class ZookeeperProperties {
 
     /**
      * The session timeout for the curator
-     */
-    private int sessionTimeoutMs = CuratorFrameworkFactory.builder().getSessionTimeoutMs();
+     */private Duration sessionTimeout = Duration.ofMillis(CuratorFrameworkFactory.builder().getSessionTimeoutMs());
 
     /**
      * The connection timeout for the curator
      */
-    private int connectionTimeoutMs = CuratorFrameworkFactory.builder().getConnectionTimeoutMs();
+    private Duration connectionTimeout = Duration.ofMillis(CuratorFrameworkFactory.builder().getConnectionTimeoutMs());
 
     /**
      * The namespace to use within the zookeeper cluster
@@ -46,20 +46,20 @@ public class ZookeeperProperties {
         this.connectionString = connectionString;
     }
 
-    public int getSessionTimeoutMs() {
-        return sessionTimeoutMs;
+    public Duration getSessionTimeout() {
+        return sessionTimeout;
     }
 
-    public void setSessionTimeoutMs(int sessionTimeoutMs) {
-        this.sessionTimeoutMs = sessionTimeoutMs;
+    public void setSessionTimeout(Duration sessionTimeout) {
+        this.sessionTimeout = sessionTimeout;
     }
 
-    public int getConnectionTimeoutMs() {
-        return connectionTimeoutMs;
+    public Duration getConnectionTimeout() {
+        return connectionTimeout;
     }
 
-    public void setConnectionTimeoutMs(int connectionTimeoutMs) {
-        this.connectionTimeoutMs = connectionTimeoutMs;
+    public void setConnectionTimeout(Duration connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
     }
 
     public String getNamespace() {

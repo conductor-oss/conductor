@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.service.ExecutionLockService;
 import com.netflix.conductor.zookeeper.config.ZookeeperProperties;
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -42,9 +43,10 @@ public class ZookeeperLockTest {
         zkServer = new TestingServer(2181);
         properties = mock(ZookeeperProperties.class);
         when(properties.getConnectionString()).thenReturn("localhost:2181");
-        when(properties.getSessionTimeoutMs()).thenReturn(CuratorFrameworkFactory.builder().getSessionTimeoutMs());
-        when(properties.getConnectionTimeoutMs())
-            .thenReturn(CuratorFrameworkFactory.builder().getConnectionTimeoutMs());
+        when(properties.getSessionTimeout())
+            .thenReturn(Duration.ofMillis(CuratorFrameworkFactory.builder().getSessionTimeoutMs()));
+        when(properties.getConnectionTimeout())
+            .thenReturn(Duration.ofMillis(CuratorFrameworkFactory.builder().getConnectionTimeoutMs()));
         when(properties.getNamespace()).thenReturn("");
     }
 

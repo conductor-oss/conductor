@@ -16,25 +16,24 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import rx.Scheduler;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import rx.Scheduler;
 
 public class SQSEventQueueProvider implements EventQueueProvider {
 
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
     private final AmazonSQSClient client;
     private final int batchSize;
-    private final int pollTimeInMS;
+    private final long pollTimeInMS;
     private final int visibilityTimeoutInSeconds;
     private final Scheduler scheduler;
 
     public SQSEventQueueProvider(AmazonSQSClient client, SQSEventQueueProperties properties, Scheduler scheduler) {
         this.client = client;
         this.batchSize = properties.getBatchSize();
-        this.pollTimeInMS = properties.getPollTimeMs();
-        this.visibilityTimeoutInSeconds = properties.getVisibilityTimeoutSeconds();
+        this.pollTimeInMS = properties.getPollTimeDuration().toMillis();
+        this.visibilityTimeoutInSeconds = (int) properties.getVisibilityTimeout().getSeconds();
         this.scheduler = scheduler;
     }
 

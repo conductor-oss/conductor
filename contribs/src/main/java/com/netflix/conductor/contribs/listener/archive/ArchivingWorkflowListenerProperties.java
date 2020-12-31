@@ -12,8 +12,11 @@
  */
 package com.netflix.conductor.contribs.listener.archive;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.core.env.Environment;
 
 @ConfigurationProperties("conductor.workflow-status-listener.archival")
@@ -29,19 +32,20 @@ public class ArchivingWorkflowListenerProperties {
     /**
      * The time to live in seconds for workflow archiving module. Currently, only RedisExecutionDAO supports this
      */
-    private int ttlSeconds = 0;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration ttlDuration = Duration.ZERO;
 
     /**
      * The number of threads to process the delay queue in workflow archival
      */
     private int delayQueueWorkerThreadCount = 5;
 
-    public int getTtlSeconds() {
-        return ttlSeconds;
+    public Duration getTtlDuration() {
+        return ttlDuration;
     }
 
-    public void setTtlSeconds(int ttlSeconds) {
-        this.ttlSeconds = ttlSeconds;
+    public void setTtlDuration(Duration ttlDuration) {
+        this.ttlDuration = ttlDuration;
     }
 
     public int getDelayQueueWorkerThreadCount() {
@@ -57,6 +61,6 @@ public class ArchivingWorkflowListenerProperties {
      */
     public int getWorkflowArchivalDelay() {
         return environment.getProperty("conductor.workflow-status-listener.archival.delaySeconds", Integer.class,
-            environment.getProperty("async.update.delay.seconds", Integer.class, 60));
+            environment.getProperty("conductor.app.asyncUpdateDelaySeconds", Integer.class, 60));
     }
 }

@@ -12,10 +12,16 @@
  */
 package com.netflix.conductor.core.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DataSizeUnit;
+import org.springframework.boot.convert.DurationUnit;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 @ConfigurationProperties("conductor.app")
 public class ConductorProperties {
@@ -38,7 +44,8 @@ public class ConductorProperties {
     /**
      * The frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
-    private int sweepFrequencySeconds = 30;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration sweepFrequency = Duration.ofSeconds(30);
 
     /**
      * Used to enable/disable the workflow sweeper.
@@ -73,23 +80,25 @@ public class ConductorProperties {
     /**
      * The time (in milliseconds) for which the lock is leased for.
      */
-    private long lockLeaseTimeMs = 60000;
+    private Duration lockLeaseTime = Duration.ofMillis(60000);
 
     /**
      * The time (in milliseconds) for which the thread will block in an attempt to acquire the lock.
      */
-    private long lockTimeToTryMs = 500;
+    private Duration lockTimeToTry = Duration.ofMillis(500);
 
     /**
      * The time (in seconds) that is used to consider if a worker is actively polling for a task.
      */
-    private int activeWorkerLastPollSecs = 10;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration activeWorkerLastPollTimeout = Duration.ofSeconds(10);
 
     /**
      * The time (in seconds) for which a task execution will be postponed if being rate limited or concurrent execution
      * limited.
      */
-    private int taskExecutionPostponeSeconds = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
     /**
      * Used to enable/disable the indexing of task execution logs.
@@ -109,12 +118,13 @@ public class ConductorProperties {
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker for completion.
      */
-    private int systemTaskWorkerCallbackSeconds = 30;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration systemTaskWorkerCallbackDuration = Duration.ofSeconds(30);
 
     /**
-     * The interval (in seconds) at which system task queues will be polled by the system task workers.
+     * The interval (in milliseconds) at which system task queues will be polled by the system task workers.
      */
-    private int systemTaskWorkerPollInterval = 50;
+    private Duration systemTaskWorkerPollInterval = Duration.ofMillis(50);
 
     /**
      * The namespace for the system task workers to provide instance level isolation.
@@ -140,13 +150,15 @@ public class ConductorProperties {
      * The duration of workflow execution which qualifies a workflow as a short-running workflow when async indexing to
      * elasticsearch is enabled.
      */
-    private int asyncUpdateShortRunningWorkflowDuration = 30;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration asyncUpdateShortRunningWorkflowDuration = Duration.ofSeconds(30);
 
     /**
      * The delay with which short-running workflows will be updated in the elasticsearch index when async indexing is
      * enabled.
      */
-    private int asyncUpdateDelay = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration asyncUpdateDelay = Duration.ofSeconds(60);
 
     /**
      * Used to control the validation for owner email field as mandatory within workflow and task definitions.
@@ -170,7 +182,7 @@ public class ConductorProperties {
     /**
      * The time interval (in milliseconds) at which the default event queues will be polled.
      */
-    private int eventQueuePollIntervalMs = 100;
+    private Duration eventQueuePollInterval = Duration.ofMillis(100);
 
     /**
      * The number of messages to be polled from a default event queue in a single operation.
@@ -180,61 +192,70 @@ public class ConductorProperties {
     /**
      * The timeout (in milliseconds) for the poll operation on the default event queue.
      */
-    private int eventQueueLongPollTimeout = 1000;
+    private Duration eventQueueLongPollTimeout = Duration.ofMillis(1000);
 
     /**
      * The threshold of the workflow input payload size in KB beyond which the payload will be stored in {@link
      * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    private Long workflowInputPayloadSizeThresholdKB = 5120L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize workflowInputPayloadSizeThreshold = DataSize.ofKilobytes(5120L);
 
     /**
      * The maximum threshold of the workflow input payload size in KB beyond which input will be rejected and the
      * workflow will be marked as FAILED.
      */
-    private Long maxWorkflowInputPayloadSizeThresholdKB = 10240L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxWorkflowInputPayloadSizeThreshold = DataSize.ofKilobytes(10240L);
 
     /**
      * The threshold of the workflow output payload size in KB beyond which the payload will be stored in {@link
      * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    private Long workflowOutputPayloadSizeThresholdKB = 5120L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize workflowOutputPayloadSizeThreshold = DataSize.ofKilobytes(5120L);
 
     /**
      * The maximum threshold of the workflow output payload size in KB beyond which output will be rejected and the
      * workflow will be marked as FAILED.
      */
-    private Long maxWorkflowOutputPayloadSizeThresholdKB = 10240L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxWorkflowOutputPayloadSizeThreshold = DataSize.ofKilobytes(10240L);
 
     /**
      * The threshold of the task input payload size in KB beyond which the payload will be stored in {@link
      * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    private Long taskInputPayloadSizeThresholdKB = 3072L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize taskInputPayloadSizeThreshold = DataSize.ofKilobytes(3072L);
 
     /**
      * The maximum threshold of the task input payload size in KB beyond which the task input will be rejected and the
      * task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    private Long maxTaskInputPayloadSizeThresholdKB = 10240L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxTaskInputPayloadSizeThreshold = DataSize.ofKilobytes(10240L);
 
     /**
      * The threshold of the task output payload size in KB beyond which the payload will be stored in {@link
      * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    private Long taskOutputPayloadSizeThresholdKB = 3072L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize taskOutputPayloadSizeThreshold = DataSize.ofKilobytes(3072L);
 
     /**
      * The maximum threshold of the task output payload size in KB beyond which the task input will be rejected and the
      * task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    private Long maxTaskOutputPayloadSizeThresholdKB = 10240L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxTaskOutputPayloadSizeThreshold = DataSize.ofKilobytes(10240L);
 
     /**
      * The maximum threshold of the workflow variables payload size in KB beyond which the task changes will be rejected
      * and the task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    private Long maxWorkflowVariablesPayloadSizeThresholdKB = 256L;
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxWorkflowVariablesPayloadSizeThreshold = DataSize.ofKilobytes(256L);
 
     public String getStack() {
         return stack;
@@ -260,12 +281,12 @@ public class ConductorProperties {
         this.executorServiceMaxThreadCount = executorServiceMaxThreadCount;
     }
 
-    public int getSweepFrequencySeconds() {
-        return sweepFrequencySeconds;
+    public Duration getSweepFrequency() {
+        return sweepFrequency;
     }
 
-    public void setSweepFrequencySeconds(int sweepFrequencySeconds) {
-        this.sweepFrequencySeconds = sweepFrequencySeconds;
+    public void setSweepFrequency(Duration sweepFrequency) {
+        this.sweepFrequency = sweepFrequency;
     }
 
     public boolean isSweepDisabled() {
@@ -316,36 +337,36 @@ public class ConductorProperties {
         this.workflowExecutionLockEnabled = workflowExecutionLockEnabled;
     }
 
-    public long getLockLeaseTimeMs() {
-        return lockLeaseTimeMs;
+    public Duration getLockLeaseTime() {
+        return lockLeaseTime;
     }
 
-    public void setLockLeaseTimeMs(long lockLeaseTimeMs) {
-        this.lockLeaseTimeMs = lockLeaseTimeMs;
+    public void setLockLeaseTime(Duration lockLeaseTime) {
+        this.lockLeaseTime = lockLeaseTime;
     }
 
-    public long getLockTimeToTryMs() {
-        return lockTimeToTryMs;
+    public Duration getLockTimeToTry() {
+        return lockTimeToTry;
     }
 
-    public void setLockTimeToTryMs(long lockTimeToTryMs) {
-        this.lockTimeToTryMs = lockTimeToTryMs;
+    public void setLockTimeToTry(Duration lockTimeToTry) {
+        this.lockTimeToTry = lockTimeToTry;
     }
 
-    public int getActiveWorkerLastPollSecs() {
-        return activeWorkerLastPollSecs;
+    public Duration getActiveWorkerLastPollTimeout() {
+        return activeWorkerLastPollTimeout;
     }
 
-    public void setActiveWorkerLastPollSecs(int activeWorkerLastPollSecs) {
-        this.activeWorkerLastPollSecs = activeWorkerLastPollSecs;
+    public void setActiveWorkerLastPollTimeout(Duration activeWorkerLastPollTimeout) {
+        this.activeWorkerLastPollTimeout = activeWorkerLastPollTimeout;
     }
 
-    public int getTaskExecutionPostponeSeconds() {
-        return taskExecutionPostponeSeconds;
+    public Duration getTaskExecutionPostponeDuration() {
+        return taskExecutionPostponeDuration;
     }
 
-    public void setTaskExecutionPostponeSeconds(int taskExecutionPostponeSeconds) {
-        this.taskExecutionPostponeSeconds = taskExecutionPostponeSeconds;
+    public void setTaskExecutionPostponeDuration(Duration taskExecutionPostponeDuration) {
+        this.taskExecutionPostponeDuration = taskExecutionPostponeDuration;
     }
 
     public boolean isTaskExecLogIndexingEnabled() {
@@ -372,19 +393,19 @@ public class ConductorProperties {
         this.systemTaskWorkerThreadCount = systemTaskWorkerThreadCount;
     }
 
-    public int getSystemTaskWorkerCallbackSeconds() {
-        return systemTaskWorkerCallbackSeconds;
+    public Duration getSystemTaskWorkerCallbackDuration() {
+        return systemTaskWorkerCallbackDuration;
     }
 
-    public void setSystemTaskWorkerCallbackSeconds(int systemTaskWorkerCallbackSeconds) {
-        this.systemTaskWorkerCallbackSeconds = systemTaskWorkerCallbackSeconds;
+    public void setSystemTaskWorkerCallbackDuration(Duration systemTaskWorkerCallbackDuration) {
+        this.systemTaskWorkerCallbackDuration = systemTaskWorkerCallbackDuration;
     }
 
-    public int getSystemTaskWorkerPollInterval() {
+    public Duration getSystemTaskWorkerPollInterval() {
         return systemTaskWorkerPollInterval;
     }
 
-    public void setSystemTaskWorkerPollInterval(int systemTaskWorkerPollInterval) {
+    public void setSystemTaskWorkerPollInterval(Duration systemTaskWorkerPollInterval) {
         this.systemTaskWorkerPollInterval = systemTaskWorkerPollInterval;
     }
 
@@ -420,19 +441,19 @@ public class ConductorProperties {
         this.systemTaskWorkersDisabled = systemTaskWorkersDisabled;
     }
 
-    public int getAsyncUpdateShortRunningWorkflowDuration() {
+    public Duration getAsyncUpdateShortRunningWorkflowDuration() {
         return asyncUpdateShortRunningWorkflowDuration;
     }
 
-    public void setAsyncUpdateShortRunningWorkflowDuration(int asyncUpdateShortRunningWorkflowDuration) {
+    public void setAsyncUpdateShortRunningWorkflowDuration(Duration asyncUpdateShortRunningWorkflowDuration) {
         this.asyncUpdateShortRunningWorkflowDuration = asyncUpdateShortRunningWorkflowDuration;
     }
 
-    public int getAsyncUpdateDelay() {
+    public Duration getAsyncUpdateDelay() {
         return asyncUpdateDelay;
     }
 
-    public void setAsyncUpdateDelay(int asyncUpdateDelay) {
+    public void setAsyncUpdateDelay(Duration asyncUpdateDelay) {
         this.asyncUpdateDelay = asyncUpdateDelay;
     }
 
@@ -460,12 +481,12 @@ public class ConductorProperties {
         this.eventQueueSchedulerPollThreadCount = eventQueueSchedulerPollThreadCount;
     }
 
-    public int getEventQueuePollIntervalMs() {
-        return eventQueuePollIntervalMs;
+    public Duration getEventQueuePollInterval() {
+        return eventQueuePollInterval;
     }
 
-    public void setEventQueuePollIntervalMs(int eventQueuePollIntervalMs) {
-        this.eventQueuePollIntervalMs = eventQueuePollIntervalMs;
+    public void setEventQueuePollInterval(Duration eventQueuePollInterval) {
+        this.eventQueuePollInterval = eventQueuePollInterval;
     }
 
     public int getEventQueuePollCount() {
@@ -476,84 +497,84 @@ public class ConductorProperties {
         this.eventQueuePollCount = eventQueuePollCount;
     }
 
-    public int getEventQueueLongPollTimeout() {
+    public Duration getEventQueueLongPollTimeout() {
         return eventQueueLongPollTimeout;
     }
 
-    public void setEventQueueLongPollTimeout(int eventQueueLongPollTimeout) {
+    public void setEventQueueLongPollTimeout(Duration eventQueueLongPollTimeout) {
         this.eventQueueLongPollTimeout = eventQueueLongPollTimeout;
     }
 
-    public Long getWorkflowInputPayloadSizeThresholdKB() {
-        return workflowInputPayloadSizeThresholdKB;
+    public DataSize getWorkflowInputPayloadSizeThreshold() {
+        return workflowInputPayloadSizeThreshold;
     }
 
-    public void setWorkflowInputPayloadSizeThresholdKB(Long workflowInputPayloadSizeThresholdKB) {
-        this.workflowInputPayloadSizeThresholdKB = workflowInputPayloadSizeThresholdKB;
+    public void setWorkflowInputPayloadSizeThreshold(DataSize workflowInputPayloadSizeThreshold) {
+        this.workflowInputPayloadSizeThreshold = workflowInputPayloadSizeThreshold;
     }
 
-    public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
-        return maxWorkflowInputPayloadSizeThresholdKB;
+    public DataSize getMaxWorkflowInputPayloadSizeThreshold() {
+        return maxWorkflowInputPayloadSizeThreshold;
     }
 
-    public void setMaxWorkflowInputPayloadSizeThresholdKB(Long maxWorkflowInputPayloadSizeThresholdKB) {
-        this.maxWorkflowInputPayloadSizeThresholdKB = maxWorkflowInputPayloadSizeThresholdKB;
+    public void setMaxWorkflowInputPayloadSizeThreshold(DataSize maxWorkflowInputPayloadSizeThreshold) {
+        this.maxWorkflowInputPayloadSizeThreshold = maxWorkflowInputPayloadSizeThreshold;
     }
 
-    public Long getWorkflowOutputPayloadSizeThresholdKB() {
-        return workflowOutputPayloadSizeThresholdKB;
+    public DataSize getWorkflowOutputPayloadSizeThreshold() {
+        return workflowOutputPayloadSizeThreshold;
     }
 
-    public void setWorkflowOutputPayloadSizeThresholdKB(Long workflowOutputPayloadSizeThresholdKB) {
-        this.workflowOutputPayloadSizeThresholdKB = workflowOutputPayloadSizeThresholdKB;
+    public void setWorkflowOutputPayloadSizeThreshold(DataSize workflowOutputPayloadSizeThreshold) {
+        this.workflowOutputPayloadSizeThreshold = workflowOutputPayloadSizeThreshold;
     }
 
-    public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
-        return maxWorkflowOutputPayloadSizeThresholdKB;
+    public DataSize getMaxWorkflowOutputPayloadSizeThreshold() {
+        return maxWorkflowOutputPayloadSizeThreshold;
     }
 
-    public void setMaxWorkflowOutputPayloadSizeThresholdKB(Long maxWorkflowOutputPayloadSizeThresholdKB) {
-        this.maxWorkflowOutputPayloadSizeThresholdKB = maxWorkflowOutputPayloadSizeThresholdKB;
+    public void setMaxWorkflowOutputPayloadSizeThreshold(DataSize maxWorkflowOutputPayloadSizeThreshold) {
+        this.maxWorkflowOutputPayloadSizeThreshold = maxWorkflowOutputPayloadSizeThreshold;
     }
 
-    public Long getTaskInputPayloadSizeThresholdKB() {
-        return taskInputPayloadSizeThresholdKB;
+    public DataSize getTaskInputPayloadSizeThreshold() {
+        return taskInputPayloadSizeThreshold;
     }
 
-    public void setTaskInputPayloadSizeThresholdKB(Long taskInputPayloadSizeThresholdKB) {
-        this.taskInputPayloadSizeThresholdKB = taskInputPayloadSizeThresholdKB;
+    public void setTaskInputPayloadSizeThreshold(DataSize taskInputPayloadSizeThreshold) {
+        this.taskInputPayloadSizeThreshold = taskInputPayloadSizeThreshold;
     }
 
-    public Long getMaxTaskInputPayloadSizeThresholdKB() {
-        return maxTaskInputPayloadSizeThresholdKB;
+    public DataSize getMaxTaskInputPayloadSizeThreshold() {
+        return maxTaskInputPayloadSizeThreshold;
     }
 
-    public void setMaxTaskInputPayloadSizeThresholdKB(Long maxTaskInputPayloadSizeThresholdKB) {
-        this.maxTaskInputPayloadSizeThresholdKB = maxTaskInputPayloadSizeThresholdKB;
+    public void setMaxTaskInputPayloadSizeThreshold(DataSize maxTaskInputPayloadSizeThreshold) {
+        this.maxTaskInputPayloadSizeThreshold = maxTaskInputPayloadSizeThreshold;
     }
 
-    public Long getTaskOutputPayloadSizeThresholdKB() {
-        return taskOutputPayloadSizeThresholdKB;
+    public DataSize getTaskOutputPayloadSizeThreshold() {
+        return taskOutputPayloadSizeThreshold;
     }
 
-    public void setTaskOutputPayloadSizeThresholdKB(Long taskOutputPayloadSizeThresholdKB) {
-        this.taskOutputPayloadSizeThresholdKB = taskOutputPayloadSizeThresholdKB;
+    public void setTaskOutputPayloadSizeThreshold(DataSize taskOutputPayloadSizeThreshold) {
+        this.taskOutputPayloadSizeThreshold = taskOutputPayloadSizeThreshold;
     }
 
-    public Long getMaxTaskOutputPayloadSizeThresholdKB() {
-        return maxTaskOutputPayloadSizeThresholdKB;
+    public DataSize getMaxTaskOutputPayloadSizeThreshold() {
+        return maxTaskOutputPayloadSizeThreshold;
     }
 
-    public void setMaxTaskOutputPayloadSizeThresholdKB(Long maxTaskOutputPayloadSizeThresholdKB) {
-        this.maxTaskOutputPayloadSizeThresholdKB = maxTaskOutputPayloadSizeThresholdKB;
+    public void setMaxTaskOutputPayloadSizeThreshold(DataSize maxTaskOutputPayloadSizeThreshold) {
+        this.maxTaskOutputPayloadSizeThreshold = maxTaskOutputPayloadSizeThreshold;
     }
 
-    public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
-        return maxWorkflowVariablesPayloadSizeThresholdKB;
+    public DataSize getMaxWorkflowVariablesPayloadSizeThreshold() {
+        return maxWorkflowVariablesPayloadSizeThreshold;
     }
 
-    public void setMaxWorkflowVariablesPayloadSizeThresholdKB(Long maxWorkflowVariablesPayloadSizeThresholdKB) {
-        this.maxWorkflowVariablesPayloadSizeThresholdKB = maxWorkflowVariablesPayloadSizeThresholdKB;
+    public void setMaxWorkflowVariablesPayloadSizeThreshold(DataSize maxWorkflowVariablesPayloadSizeThreshold) {
+        this.maxWorkflowVariablesPayloadSizeThreshold = maxWorkflowVariablesPayloadSizeThreshold;
     }
 
     /**

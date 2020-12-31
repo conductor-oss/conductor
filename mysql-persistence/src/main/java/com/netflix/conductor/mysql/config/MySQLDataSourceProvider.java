@@ -55,18 +55,18 @@ public class MySQLDataSourceProvider {
         hikariConfig.setAutoCommit(false);
         hikariConfig.setMaximumPoolSize(properties.getConnectionPoolMaxSize());
         hikariConfig.setMinimumIdle(properties.getConnectionPoolMinIdle());
-        hikariConfig.setMaxLifetime(properties.getConnectionMaxLifetime());
-        hikariConfig.setIdleTimeout(properties.getConnectionIdleTimeout());
-        hikariConfig.setConnectionTimeout(properties.getConnectionTimeout());
+        hikariConfig.setMaxLifetime(properties.getConnectionMaxLifetime().toMillis());
+        hikariConfig.setIdleTimeout(properties.getConnectionIdleTimeout().toMillis());
+        hikariConfig.setConnectionTimeout(properties.getConnectionTimeout().toMillis());
         hikariConfig.setTransactionIsolation(properties.getTransactionIsolationLevel());
         hikariConfig.setAutoCommit(properties.isAutoCommit());
 
-        ThreadFactory tf = new ThreadFactoryBuilder()
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(true)
             .setNameFormat("hikari-mysql-%d")
             .build();
 
-        hikariConfig.setThreadFactory(tf);
+        hikariConfig.setThreadFactory(threadFactory);
         return hikariConfig;
     }
 

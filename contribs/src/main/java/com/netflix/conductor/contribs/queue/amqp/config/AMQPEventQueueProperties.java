@@ -14,6 +14,7 @@ package com.netflix.conductor.contribs.queue.amqp.config;
 
 import com.rabbitmq.client.AMQP.PROTOCOL;
 import com.rabbitmq.client.ConnectionFactory;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("conductor.event-queues.amqp")
@@ -21,7 +22,7 @@ public class AMQPEventQueueProperties {
 
     private int batchSize = 1;
 
-    private int pollTimeMs = 100;
+    private Duration pollTimeDuration = Duration.ofMillis(100);
 
     private String hosts = ConnectionFactory.DEFAULT_HOST;
 
@@ -33,7 +34,7 @@ public class AMQPEventQueueProperties {
 
     private int port = PROTOCOL.PORT;
 
-    private int connectionTimeout = ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT;
+    private Duration connectionTimeout = Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
 
     private boolean useNio = false;
 
@@ -63,12 +64,12 @@ public class AMQPEventQueueProperties {
         this.batchSize = batchSize;
     }
 
-    public int getPollTimeMs() {
-        return pollTimeMs;
+    public Duration getPollTimeDuration() {
+        return pollTimeDuration;
     }
 
-    public void setPollTimeMs(int pollTimeMs) {
-        this.pollTimeMs = pollTimeMs;
+    public void setPollTimeDuration(Duration pollTimeDuration) {
+        this.pollTimeDuration = pollTimeDuration;
     }
 
     public String getHosts() {
@@ -111,11 +112,11 @@ public class AMQPEventQueueProperties {
         this.port = port;
     }
 
-    public int getConnectionTimeout() {
+    public Duration getConnectionTimeout() {
         return connectionTimeout;
     }
 
-    public void setConnectionTimeout(int connectionTimeout) {
+    public void setConnectionTimeout(Duration connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
     }
 

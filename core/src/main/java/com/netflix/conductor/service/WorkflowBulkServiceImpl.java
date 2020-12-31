@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.BulkResponse;
 import org.slf4j.Logger;
@@ -20,8 +22,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-//@Audit
-//@Trace
+@Audit
+@Trace
 @Service
 public class WorkflowBulkServiceImpl implements WorkflowBulkService {
 

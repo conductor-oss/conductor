@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.util.unit.DataSize;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -69,14 +70,14 @@ public class ExternalPayloadStorageUtilsTest {
         location = new ExternalStorageLocation();
         location.setPath("some/test/path");
 
-        when(properties.getWorkflowInputPayloadSizeThresholdKB()).thenReturn(10L);
-        when(properties.getMaxWorkflowInputPayloadSizeThresholdKB()).thenReturn(10240L);
-        when(properties.getWorkflowOutputPayloadSizeThresholdKB()).thenReturn(10L);
-        when(properties.getMaxWorkflowOutputPayloadSizeThresholdKB()).thenReturn(10240L);
-        when(properties.getTaskInputPayloadSizeThresholdKB()).thenReturn(10L);
-        when(properties.getMaxTaskInputPayloadSizeThresholdKB()).thenReturn(10240L);
-        when(properties.getTaskOutputPayloadSizeThresholdKB()).thenReturn(10L);
-        when(properties.getMaxTaskOutputPayloadSizeThresholdKB()).thenReturn(10240L);
+        when(properties.getWorkflowInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
+        when(properties.getMaxWorkflowInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
+        when(properties.getWorkflowOutputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
+        when(properties.getMaxWorkflowOutputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
+        when(properties.getTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
+        when(properties.getMaxTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
+        when(properties.getTaskOutputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
+        when(properties.getMaxTaskOutputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
 
         externalPayloadStorageUtils = new ExternalPayloadStorageUtils(externalPayloadStorage, properties,
             objectMapper);

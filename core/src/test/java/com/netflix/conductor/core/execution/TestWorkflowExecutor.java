@@ -78,6 +78,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionLockService;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,11 +142,13 @@ public class TestWorkflowExecutor {
         new Lambda();
 
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
-            taskMappers, 60);
+            taskMappers, Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
         ConductorProperties properties = mock(ConductorProperties.class);
-        when(properties.getActiveWorkerLastPollSecs()).thenReturn(100);
+        when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
+        when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
+        when(properties.getSweepFrequency()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
             workflowStatusListener, executionDAOFacade, properties, executionLockService,

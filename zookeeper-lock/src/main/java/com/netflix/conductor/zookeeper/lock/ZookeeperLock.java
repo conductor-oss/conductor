@@ -44,8 +44,8 @@ public class ZookeeperLock implements Lock {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         client = CuratorFrameworkFactory.newClient(
             properties.getConnectionString(),
-            properties.getSessionTimeoutMs(),
-            properties.getConnectionTimeoutMs(),
+            (int) properties.getSessionTimeout().toMillis(),
+            (int) properties.getConnectionTimeout().toMillis(),
             retryPolicy
         );
         client.start();

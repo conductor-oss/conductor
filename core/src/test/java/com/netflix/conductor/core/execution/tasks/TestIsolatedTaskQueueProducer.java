@@ -12,14 +12,14 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import static org.junit.Assert.assertFalse;
+
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.service.MetadataService;
+import java.time.Duration;
+import java.util.Collections;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.util.Collections;
-
-import static org.junit.Assert.assertFalse;
 
 public class TestIsolatedTaskQueueProducer {
 
@@ -28,7 +28,8 @@ public class TestIsolatedTaskQueueProducer {
 
         SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.put("HTTP", Mockito.mock(WorkflowSystemTask.class));
         MetadataService metadataService = Mockito.mock(MetadataService.class);
-        IsolatedTaskQueueProducer isolatedTaskQueueProducer = new IsolatedTaskQueueProducer(metadataService, false, 10);
+        IsolatedTaskQueueProducer isolatedTaskQueueProducer = new IsolatedTaskQueueProducer(metadataService, false,
+            Duration.ofSeconds(10));
         TaskDef taskDef = new TaskDef();
         taskDef.setIsolationGroupId("isolated");
         Mockito.when(metadataService.getTaskDefs()).thenReturn(Collections.singletonList(taskDef));

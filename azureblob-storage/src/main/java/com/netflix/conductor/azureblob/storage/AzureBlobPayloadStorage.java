@@ -55,7 +55,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
     private final String taskOutputPath;
 
     private final BlobContainerClient blobContainerClient;
-    private final int expirationSec;
+    private final long expirationSec;
     private final SasTokenCredential sasTokenCredential;
 
     public AzureBlobPayloadStorage(AzureBlobProperties properties) {
@@ -63,7 +63,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
         workflowOutputPath = properties.getWorkflowOutputPath();
         taskInputPath = properties.getTaskInputPath();
         taskOutputPath = properties.getTaskOutputPath();
-        expirationSec = properties.getSignedUrlExpirationSeconds();
+        expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
         String connectionString = properties.getConnectionString();
         String containerName = properties.getContainerName();
         String endpoint = properties.getEndpoint();

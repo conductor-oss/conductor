@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -19,7 +20,6 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
@@ -54,7 +54,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-//@Trace
+@Trace
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class ExecutionService {
 
@@ -66,7 +67,7 @@ public class ExecutionService {
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
 
-    private final int queueTaskMessagePostponeSeconds;
+    private final long queueTaskMessagePostponeSecs;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
@@ -81,7 +82,7 @@ public class ExecutionService {
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
 
-        this.queueTaskMessagePostponeSeconds = properties.getTaskExecutionPostponeSeconds();
+        this.queueTaskMessagePostponeSecs = properties.getTaskExecutionPostponeDuration().getSeconds();
     }
 
     public Task poll(String taskType, String workerId) {
@@ -131,16 +132,16 @@ public class ExecutionService {
 
                 if (executionDAOFacade.exceedsInProgressLimit(task)) {
                     // Postpone this message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
                     LOGGER.debug("Postponed task: {} in queue: {} by {} seconds", taskId, queueName,
-                        queueTaskMessagePostponeSeconds);
+                        queueTaskMessagePostponeSecs);
                     continue;
                 }
                 TaskDef taskDef = task.getTaskDefinition().isPresent() ? task.getTaskDefinition().get() : null;
                 if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade
                     .exceedsRateLimitPerFrequency(task, taskDef)) {
                     // Postpone this message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
                     LOGGER.debug("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
                         task.getRateLimitPerFrequency());
                     continue;
@@ -160,7 +161,7 @@ public class ExecutionService {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn("DB operation failed for task: {}, postponing task in queue", taskId, e);
                 Monitors.recordTaskPollError(taskType, domain, e.getClass().getSimpleName());
-                queueDAO.postpone(queueName, taskId, 0, queueTaskMessagePostponeSeconds);
+                queueDAO.postpone(queueName, taskId, 0, queueTaskMessagePostponeSecs);
             }
         }
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);

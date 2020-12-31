@@ -14,11 +14,14 @@ package com.netflix.conductor.contribs.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
  * <p>
  * Enable in config: conductor.metrics-logger.enabled=true
  * <p>
- * additional config: conductor.metrics-logger.reportPeriodSeconds=15
+ * additional config: conductor.metrics-logger.reportInterval=15s
  */
 @ConditionalOnProperty(value = "conductor.metrics-logger.enabled", havingValue = "true")
 @Configuration
@@ -39,12 +42,12 @@ public class LoggingMetricsConfiguration {
     // This way one can cleanly separate the metrics stream from rest of the logs
     private static final Logger METRICS_LOGGER = LoggerFactory.getLogger("ConductorMetrics");
 
-    @Value("${conductor.metrics-logger.reportPeriodSeconds:30}")
-    private long reportInterval;
+    @Value("${conductor.metrics-logger.reportInterval:30s}")
+    private Duration reportInterval;
 
     @Bean
     public Slf4jReporter getSl4jReporter(MetricRegistry metricRegistry) {
-        return new Slf4jReporterProvider(metricRegistry, reportInterval).getReporter();
+        return new Slf4jReporterProvider(metricRegistry, reportInterval.getSeconds()).getReporter();
     }
 
     static class Slf4jReporterProvider {

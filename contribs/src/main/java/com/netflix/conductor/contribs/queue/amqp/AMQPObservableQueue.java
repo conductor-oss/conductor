@@ -28,11 +28,6 @@ import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +40,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
 
 /**
  * @author Ritu Parathody
@@ -276,7 +275,7 @@ public class AMQPObservableQueue implements ObservableQueue {
             this.factory = buildConnectionFactory();
             // messages polling settings
             this.batchSize = properties.getBatchSize();
-            this.pollTimeInMS = properties.getPollTimeMs();
+            this.pollTimeInMS = (int) properties.getPollTimeDuration().toMillis();
         }
 
         private Address[] buildAddressesFromHosts() {
@@ -320,7 +319,7 @@ public class AMQPObservableQueue implements ObservableQueue {
                 factory.setPort(port);
             }
             // Get connection timeout from config
-            final int connectionTimeout = properties.getConnectionTimeout();
+            final int connectionTimeout = (int) properties.getConnectionTimeout().toMillis();
             if (connectionTimeout <= 0) {
                 throw new IllegalArgumentException("Connection timeout must be greater than 0");
             } else {
