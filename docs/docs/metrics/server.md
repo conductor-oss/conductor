@@ -33,7 +33,7 @@ The following metrics are published by the server. You can use these metrics to 
 
 [1]: https://github.com/Netflix/spectator
 
-## Collecting metrics
+## Collecting metrics with Log4j
 
 One way of collecting metrics is to push them into the logging framework (log4j).
 Log4j supports various appenders that can print metrics into a console/file or even send them to remote metrics collectors over e.g. syslog channel.
@@ -41,8 +41,8 @@ Log4j supports various appenders that can print metrics into a console/file or e
 Conductor provides optional modules that connect metrics registry with the logging framework.
 To enable these modules, configure following additional modules property in config.properties:
 
-    conductor.additional.modules=com.netflix.conductor.contribs.metrics.MetricsRegistryModule,com.netflix.conductor.contribs.metrics.LoggingMetricsModule
-    com.netflix.conductor.contribs.metrics.LoggingMetricsModule.reportPeriodSeconds=15
+    conductor.metrics-logger.enabled = true
+    conductor.metrics-logger.reportPeriodSeconds = 15
     
 This will push all available metrics into log4j every 15 seconds.
 
@@ -227,3 +227,14 @@ With above configuration, fluentd will:
 - Collect only workflow_execution TIMER metrics
 - Process the raw metrics and expose 3 prometheus specific metrics
 - Expose prometheus metrics on http://fluentd:24231/metrics 
+
+## Collecting metrics with Prometheus
+Another way to collect metrics is using Prometheus client to push them to Prometheus server.
+
+Conductor provides optional modules that connect metrics registry with Prometheus.
+To enable these modules, configure following additional module property in config.properties:
+
+    conductor.metrics-prometheus.enabled = true
+    
+This will simply push these metrics via Prometheus collector.
+However, you need to configure your own Prometheus collector and expose the metrics via an endpoint.

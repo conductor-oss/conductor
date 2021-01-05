@@ -13,6 +13,8 @@ workflow.status.listener.type=stub(default)/archive/queue_publisher
 
 conductor.metrics-logger.enabled
 
+conductor.metrics-prometheus.enabled
+
 HTTP task - removed OAuth support (Create a task for OAuth2 support)
 
 Removed deprecated API - /queue/requeue from /tasks
