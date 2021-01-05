@@ -20,6 +20,7 @@ import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -56,7 +57,7 @@ import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 
-//@Trace
+@Trace
 public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO, PollDataDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
@@ -93,7 +94,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         Statements statements) {
         super(session, objectMapper, properties);
 
-        eventExecutionsTTL = properties.getEventExecutionPersistenceTTLSecs();
+        eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTTL().getSeconds();
 
         this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());

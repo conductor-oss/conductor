@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -26,8 +28,9 @@ import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
 
-//@Audit
-//@Trace
+@Audit
+@Trace
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class AdminServiceImpl implements AdminService {
 
@@ -109,7 +112,7 @@ public class AdminServiceImpl implements AdminService {
      */
     public String requeueSweep(String workflowId) {
         boolean pushed = queueDAO
-            .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, properties.getSweepFrequencySeconds());
+            .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, properties.getSweepFrequency().getSeconds());
         return pushed + "." + workflowId;
     }
 }

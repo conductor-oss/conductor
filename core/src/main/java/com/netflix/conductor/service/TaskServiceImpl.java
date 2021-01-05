@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -36,8 +38,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-//@Audit
-//@Trace
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+@Audit
+@Trace
 @Service
 public class TaskServiceImpl implements TaskService {
 

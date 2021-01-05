@@ -27,6 +27,7 @@ import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.impl.AMQImpl;
+import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
@@ -82,13 +83,13 @@ public class AMQPObservableQueueTest {
     public void setUp() {
         properties = mock(AMQPEventQueueProperties.class);
         when(properties.getBatchSize()).thenReturn(1);
-        when(properties.getPollTimeMs()).thenReturn(100);
+        when(properties.getPollTimeDuration()).thenReturn(Duration.ofMillis(100));
         when(properties.getHosts()).thenReturn(ConnectionFactory.DEFAULT_HOST);
         when(properties.getUsername()).thenReturn(ConnectionFactory.DEFAULT_USER);
         when(properties.getPassword()).thenReturn(ConnectionFactory.DEFAULT_PASS);
         when(properties.getVirtualHost()).thenReturn(ConnectionFactory.DEFAULT_VHOST);
         when(properties.getPort()).thenReturn(PROTOCOL.PORT);
-        when(properties.getConnectionTimeout()).thenReturn(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
+        when(properties.getConnectionTimeout()).thenReturn(Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT));
         when(properties.isUseNio()).thenReturn(false);
         when(properties.isDurable()).thenReturn(true);
         when(properties.isExclusive()).thenReturn(false);

@@ -16,6 +16,7 @@ import com.netflix.conductor.azureblob.config.AzureBlobProperties;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.ApplicationException;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class AzureBlobPayloadStorageTest {
         when(properties.getContainerName()).thenReturn("conductor-payloads");
         when(properties.getEndpoint()).thenReturn(null);
         when(properties.getSasToken()).thenReturn(null);
-        when(properties.getSignedUrlExpirationSeconds()).thenReturn(5);
+        when(properties.getSignedUrlExpirationDuration()).thenReturn(Duration.ofSeconds(5));
         when(properties.getWorkflowInputPath()).thenReturn("workflow/input/");
         when(properties.getWorkflowOutputPath()).thenReturn("workflow/output/");
         when(properties.getTaskInputPath()).thenReturn("task/input");

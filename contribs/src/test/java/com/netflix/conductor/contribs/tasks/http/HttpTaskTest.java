@@ -12,6 +12,12 @@
  */
 package com.netflix.conductor.contribs.tasks.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +34,16 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -36,22 +52,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("unchecked")
 public class HttpTaskTest {
@@ -97,7 +97,8 @@ public class HttpTaskTest {
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
-        DefaultRestTemplateProvider defaultRestTemplateProvider = new DefaultRestTemplateProvider(150, 100);
+        DefaultRestTemplateProvider defaultRestTemplateProvider =
+            new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
         httpTask = new HttpTask(defaultRestTemplateProvider, objectMapper);
     }
 
@@ -332,7 +333,7 @@ public class HttpTaskTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
 
         Map<String, TaskMapper> taskMappers = new HashMap<>();
-        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers, 60)
+        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers, Duration.ofMinutes(60))
             .decide(workflow);
     }
 

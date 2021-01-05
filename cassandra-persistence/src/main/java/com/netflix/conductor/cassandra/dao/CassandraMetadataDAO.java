@@ -18,6 +18,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -47,7 +48,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
 
-//@Trace
+@Trace
 public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraMetadataDAO.class);
@@ -106,7 +107,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         this.deleteTaskDefStatement = session.prepare(statements.getDeleteTaskDefStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
+        long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefsCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }

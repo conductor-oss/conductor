@@ -40,4 +40,9 @@ public class AnyRedisCondition extends AnyNestedCondition {
     static class RedisSentinelConfiguration {
 
     }
+
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_standalone")
+    static class RedisStandaloneConfiguration {
+
+    }
 }

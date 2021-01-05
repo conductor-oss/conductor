@@ -39,6 +39,7 @@ import java.util.Map;
 /**
  * Provides utility functions to upload and download payloads to {@link ExternalPayloadStorage}
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class ExternalPayloadStorageUtils {
 
@@ -90,26 +91,26 @@ public class ExternalPayloadStorageUtils {
         String workflowId = "";
         switch (payloadType) {
             case TASK_INPUT:
-                threshold = properties.getTaskInputPayloadSizeThresholdKB();
-                maxThreshold = properties.getMaxTaskInputPayloadSizeThresholdKB();
+                threshold = properties.getTaskInputPayloadSizeThreshold().toKilobytes();
+                maxThreshold = properties.getMaxTaskInputPayloadSizeThreshold().toKilobytes();
                 payload = ((Task) entity).getInputData();
                 workflowId = ((Task) entity).getWorkflowInstanceId();
                 break;
             case TASK_OUTPUT:
-                threshold = properties.getTaskOutputPayloadSizeThresholdKB();
-                maxThreshold = properties.getMaxTaskOutputPayloadSizeThresholdKB();
+                threshold = properties.getTaskOutputPayloadSizeThreshold().toKilobytes();
+                maxThreshold = properties.getMaxTaskOutputPayloadSizeThreshold().toKilobytes();
                 payload = ((Task) entity).getOutputData();
                 workflowId = ((Task) entity).getWorkflowInstanceId();
                 break;
             case WORKFLOW_INPUT:
-                threshold = properties.getWorkflowInputPayloadSizeThresholdKB();
-                maxThreshold = properties.getMaxWorkflowInputPayloadSizeThresholdKB();
+                threshold = properties.getWorkflowInputPayloadSizeThreshold().toKilobytes();
+                maxThreshold = properties.getMaxWorkflowInputPayloadSizeThreshold().toKilobytes();
                 payload = ((Workflow) entity).getInput();
                 workflowId = ((Workflow) entity).getWorkflowId();
                 break;
             case WORKFLOW_OUTPUT:
-                threshold = properties.getWorkflowOutputPayloadSizeThresholdKB();
-                maxThreshold = properties.getMaxWorkflowOutputPayloadSizeThresholdKB();
+                threshold = properties.getWorkflowOutputPayloadSizeThreshold().toKilobytes();
+                maxThreshold = properties.getMaxWorkflowOutputPayloadSizeThreshold().toKilobytes();
                 payload = ((Workflow) entity).getOutput();
                 workflowId = ((Workflow) entity).getWorkflowId();
                 break;

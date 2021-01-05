@@ -18,6 +18,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class WorkflowMonitor {
 
@@ -38,7 +40,7 @@ public class WorkflowMonitor {
     private final QueueDAO queueDAO;
     private final ExecutionDAOFacade executionDAOFacade;
     private final int metadataRefreshInterval;
-    private final int statsFrequencyInSeconds;
+    private final long statsFrequencyInSeconds;
 
     private List<TaskDef> taskDefs;
     private List<WorkflowDef> workflowDefs;
@@ -46,12 +48,12 @@ public class WorkflowMonitor {
 
     public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade,
         @Value("${conductor.workflow-monitor.metadataRefreshInterval:10}") int metadataRefreshInterval,
-        @Value("${conductor.workflow-monitor.statsFrequencySeconds:60}") int statsFrequencySeconds) {
+        @Value("${conductor.workflow-monitor.statsFrequency:60s}") Duration statsFrequency) {
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
         this.executionDAOFacade = executionDAOFacade;
         this.metadataRefreshInterval = metadataRefreshInterval;
-        this.statsFrequencyInSeconds = statsFrequencySeconds;
+        this.statsFrequencyInSeconds = statsFrequency.getSeconds();
         init();
     }
 

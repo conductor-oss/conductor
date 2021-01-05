@@ -14,10 +14,13 @@ package com.netflix.conductor.es6.config;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.elasticsearch")
 public class ElasticSearchProperties {
@@ -55,7 +58,8 @@ public class ElasticSearchProperties {
     /**
      * The time in seconds after which the async buffers will be flushed (if no activity) to prevent data loss
      */
-    private int asyncBufferFlushTimeoutSecs = 10;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration asyncBufferFlushTimeout = Duration.ofSeconds(10);
 
     /**
      * The number of shards that the index will be created with
@@ -75,7 +79,7 @@ public class ElasticSearchProperties {
     /**
      * The timeout in milliseconds used when requesting a connection from the connection manager
      */
-    private int restClientConnectionRequestTimeoutMs = -1;
+    private int restClientConnectionRequestTimeout = -1;
 
     /**
      * Used to control if index management is to be enabled or will be controlled externally
@@ -140,12 +144,12 @@ public class ElasticSearchProperties {
         this.asyncMaxPoolSize = asyncMaxPoolSize;
     }
 
-    public int getAsyncBufferFlushTimeoutSecs() {
-        return asyncBufferFlushTimeoutSecs;
+    public Duration getAsyncBufferFlushTimeout() {
+        return asyncBufferFlushTimeout;
     }
 
-    public void setAsyncBufferFlushTimeoutSecs(int asyncBufferFlushTimeoutSecs) {
-        this.asyncBufferFlushTimeoutSecs = asyncBufferFlushTimeoutSecs;
+    public void setAsyncBufferFlushTimeout(Duration asyncBufferFlushTimeout) {
+        this.asyncBufferFlushTimeout = asyncBufferFlushTimeout;
     }
 
     public int getIndexShardCount() {
@@ -172,12 +176,12 @@ public class ElasticSearchProperties {
         this.taskLogResultLimit = taskLogResultLimit;
     }
 
-    public int getRestClientConnectionRequestTimeoutMs() {
-        return restClientConnectionRequestTimeoutMs;
+    public int getRestClientConnectionRequestTimeout() {
+        return restClientConnectionRequestTimeout;
     }
 
-    public void setRestClientConnectionRequestTimeoutMs(int restClientConnectionRequestTimeoutMs) {
-        this.restClientConnectionRequestTimeoutMs = restClientConnectionRequestTimeoutMs;
+    public void setRestClientConnectionRequestTimeout(int restClientConnectionRequestTimeout) {
+        this.restClientConnectionRequestTimeout = restClientConnectionRequestTimeout;
     }
 
     public boolean isAutoIndexManagementEnabled() {

@@ -16,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
+import java.time.Duration;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -50,14 +51,14 @@ public class KafkaProducerManager {
     };
 
     @Autowired
-    public KafkaProducerManager(@Value("${conductor.tasks.kafka-publish.requestTimeoutMs: 100}") String requestTimeoutMs,
-        @Value("${conductor.tasks.kafka-publish.maxBlockMs:500}") String maxBlockMs,
+    public KafkaProducerManager(@Value("${conductor.tasks.kafka-publish.requestTimeout:100}") Duration requestTimeoutMs,
+        @Value("${conductor.tasks.kafka-publish.maxBlock:500}") Duration maxBlockMs,
         @Value("${conductor.tasks.kafka-publish.cacheSize:10}") int cacheSize,
-        @Value("${conductor.tasks.kafka-publish.cacheTimeMs:120000}") int cacheTimeMs) {
-        this.requestTimeoutConfig = requestTimeoutMs;
-        this.maxBlockMsConfig = maxBlockMs;
+        @Value("${conductor.tasks.kafka-publish.cacheTime:120000}") Duration cacheTimeMs) {
+        this.requestTimeoutConfig = String.valueOf(requestTimeoutMs.toMillis());
+        this.maxBlockMsConfig = String.valueOf(maxBlockMs.toMillis());
         this.kafkaProducerCache = CacheBuilder.newBuilder().removalListener(LISTENER)
-            .maximumSize(cacheSize).expireAfterAccess(cacheTimeMs, TimeUnit.MILLISECONDS)
+            .maximumSize(cacheSize).expireAfterAccess(cacheTimeMs.toMillis(), TimeUnit.MILLISECONDS)
             .build();
     }
 

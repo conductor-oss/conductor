@@ -12,7 +12,10 @@
  */
 package com.netflix.conductor.azureblob.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.external-payload-storage.azureblob")
 public class AzureBlobProperties {
@@ -40,7 +43,8 @@ public class AzureBlobProperties {
     /**
      * The time for which the shared access signature is valid
      */
-    private int signedUrlExpirationSeconds = 5;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration signedUrlExpirationDuration = Duration.ofSeconds(5);
 
     /**
      * The path at which the workflow inputs will be stored
@@ -94,12 +98,12 @@ public class AzureBlobProperties {
         this.sasToken = sasToken;
     }
 
-    public int getSignedUrlExpirationSeconds() {
-        return signedUrlExpirationSeconds;
+    public Duration getSignedUrlExpirationDuration() {
+        return signedUrlExpirationDuration;
     }
 
-    public void setSignedUrlExpirationSeconds(int signedUrlExpirationSeconds) {
-        this.signedUrlExpirationSeconds = signedUrlExpirationSeconds;
+    public void setSignedUrlExpirationDuration(Duration signedUrlExpirationDuration) {
+        this.signedUrlExpirationDuration = signedUrlExpirationDuration;
     }
 
     public String getWorkflowInputPath() {

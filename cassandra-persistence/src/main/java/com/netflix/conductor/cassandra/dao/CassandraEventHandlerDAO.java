@@ -17,6 +17,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 
-//@Trace
+@Trace
 public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventHandlerDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraEventHandlerDAO.class);
@@ -62,7 +63,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
         deleteEventHandlerStatement = session.prepare(statements.getDeleteEventHandlerStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        int cacheRefreshTime = properties.getEventHandlerCacheRefreshTimeSecs();
+        long cacheRefreshTime = properties.getEventHandlerCacheRefreshInterval().getSeconds();
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::refreshEventHandlersCache, 0,
             cacheRefreshTime, TimeUnit.SECONDS);
     }

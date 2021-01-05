@@ -12,31 +12,32 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
+import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 @SuppressWarnings("UnstableApiUsage")
 public class TestSystemTaskExecutor {
@@ -61,7 +62,7 @@ public class TestSystemTaskExecutor {
         createTaskMapping();
         properties = mock(ConductorProperties.class);
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
-        when(properties.getSystemTaskWorkerCallbackSeconds()).thenReturn(30);
+        when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
         when(properties.getSystemTaskMaxPollCount()).thenReturn(1);
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(1);
     }
@@ -99,40 +100,35 @@ public class TestSystemTaskExecutor {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
         scheduledExecutorService.scheduleAtFixedRate(
             () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
     }
 
     @Test
     public void testBatchPollAndExecuteSystemTask() {
-        try {
-            when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
-            when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
+        when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
+        when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
 
-            when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.nCopies(2, "taskId"));
-            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.nCopies(2, "taskId"));
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
 
-            CountDownLatch latch = new CountDownLatch(10);
-            doAnswer(invocation -> {
-                    latch.countDown();
-                    return null;
-                }
-            ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        CountDownLatch latch = new CountDownLatch(10);
+        doAnswer(invocation -> {
+                latch.countDown();
+                return null;
+            }
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
-            scheduledExecutorService.scheduleAtFixedRate(
-                () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(
+            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
-            Uninterruptibles.awaitUninterruptibly(latch);
-            verify(workflowExecutor, Mockito.times(10)).executeSystemTask(any(), anyString(), anyInt());
-        } finally {
-            //Revert the batch poll settings
-            System.setProperty("workflow.system.task.queue.pollCount", "1");
-        }
+        Uninterruptibles.awaitUninterruptibly(latch);
+        verify(workflowExecutor, Mockito.times(10)).executeSystemTask(any(), anyString(), anyLong());
     }
 
     @Test
@@ -146,13 +142,13 @@ public class TestSystemTaskExecutor {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
         scheduledExecutorService.scheduleAtFixedRate(
             () -> systemTaskExecutor.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
     }
 
     @Test
@@ -168,41 +164,36 @@ public class TestSystemTaskExecutor {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
         scheduledExecutorService.scheduleAtFixedRate(
             () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
     }
 
     @Test
     public void testBatchPollException() {
-        try {
-            when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
-            when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
-            when(queueDAO.pop(anyString(), anyInt(), anyInt()))
-                .thenThrow(RuntimeException.class)
-                .thenReturn(Collections.nCopies(2, "taskId"));
-            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
+        when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
+        when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+            .thenThrow(RuntimeException.class)
+            .thenReturn(Collections.nCopies(2, "taskId"));
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
 
-            CountDownLatch latch = new CountDownLatch(2);
-            doAnswer(invocation -> {
-                    latch.countDown();
-                    return null;
-                }
-            ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        CountDownLatch latch = new CountDownLatch(2);
+        doAnswer(invocation -> {
+                latch.countDown();
+                return null;
+            }
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
-            scheduledExecutorService.scheduleAtFixedRate(
-                () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(
+            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
-            Uninterruptibles.awaitUninterruptibly(latch);
-            verify(workflowExecutor, Mockito.times(2)).executeSystemTask(any(), anyString(), anyInt());
-        } finally {
-            //Revert the batch poll settings
-            System.setProperty("workflow.system.task.queue.pollCount", "1");
-        }
+        Uninterruptibles.awaitUninterruptibly(latch);
+        verify(workflowExecutor, Mockito.times(2)).executeSystemTask(any(), anyString(), anyLong());
     }
 
     @Test
@@ -228,7 +219,7 @@ public class TestSystemTaskExecutor {
                 }
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
 
         scheduledExecutorService
             .scheduleAtFixedRate(() -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);

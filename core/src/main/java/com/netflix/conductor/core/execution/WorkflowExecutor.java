@@ -27,6 +27,7 @@ import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -79,7 +80,8 @@ import org.springframework.stereotype.Component;
 /**
  * Workflow services provider interface
  */
-//@Trace
+@Trace
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class WorkflowExecutor {
 
@@ -94,8 +96,8 @@ public class WorkflowExecutor {
     private final ParametersUtils parametersUtils;
     private final WorkflowStatusListener workflowStatusListener;
 
-    private int activeWorkerLastPollInSecs;
-    private final int queueTaskMessagePostponeSeconds;
+    private long activeWorkerLastPollMs;
+    private final long queueTaskMessagePostponeSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private final ExecutionLockService executionLockService;
@@ -112,8 +114,8 @@ public class WorkflowExecutor {
         this.properties = properties;
         this.metadataMapperService = metadataMapperService;
         this.executionDAOFacade = executionDAOFacade;
-        this.activeWorkerLastPollInSecs = properties.getActiveWorkerLastPollSecs();
-        this.queueTaskMessagePostponeSeconds = properties.getTaskExecutionPostponeSeconds();
+        this.activeWorkerLastPollMs = properties.getActiveWorkerLastPollTimeout().toMillis();
+        this.queueTaskMessagePostponeSecs = properties.getTaskExecutionPostponeDuration().getSeconds();
         this.workflowStatusListener = workflowStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
@@ -346,7 +348,7 @@ public class WorkflowExecutor {
     }
 
     private final Predicate<PollData> validateLastPolledTime = pollData ->
-        pollData.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollInSecs * 1000L);
+        pollData.getLastPollTime() > System.currentTimeMillis() - activeWorkerLastPollMs;
 
     private final Predicate<Task> isSystemTask = task -> SystemTaskType.is(task.getTaskType());
 
@@ -593,7 +595,8 @@ public class WorkflowExecutor {
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setLastRetriedTime(System.currentTimeMillis());
         // Add to decider queue
-        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
+            properties.getSweepFrequency().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
@@ -777,7 +780,8 @@ public class WorkflowExecutor {
                     workflow.getOutput().put("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {
                     LOGGER.error("Failed to start error workflow", e);
-                    workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
+                    workflow.getOutput().put("conductor.failure_workflow",
+                        "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
                     Monitors.recordWorkflowStartError(failureWorkflow, WorkflowContext.get().getClientApp());
                 }
                 executionDAOFacade.updateWorkflow(workflow);
@@ -785,7 +789,8 @@ public class WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
 
             // Send to atlas
-            Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
+            Monitors
+                .recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
 
             if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
                 workflowStatusListener.onWorkflowTerminated(workflow);
@@ -1291,7 +1296,7 @@ public class WorkflowExecutor {
     }
 
     //Executes the async system task
-    public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int callbackTime) {
+    public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, long callbackTime) {
         try {
             Task task = executionDAOFacade.getTaskById(taskId);
             if (task == null) {
@@ -1331,7 +1336,7 @@ public class WorkflowExecutor {
                     //to do add a metric to record this
                     LOGGER.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
                     // Postpone a message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
                     return;
                 }
                 if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade
@@ -1339,7 +1344,7 @@ public class WorkflowExecutor {
                     LOGGER.warn("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
                         task.getRateLimitPerFrequency());
                     // Postpone a message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
                     return;
                 }
             }
@@ -1415,7 +1420,7 @@ public class WorkflowExecutor {
 
     /**
      * Gets the active domain from the list of domains where the task is to be queued. The domain list must be ordered.
-     * In sequence, check if any worker has polled for last `activeWorkerLastPollInSecs` seconds, if so that is the
+     * In sequence, check if any worker has polled for last `activeWorkerLastPollMs`, if so that is the
      * Active domain. When no active domains are found:
      * <li> If NO_DOMAIN token is provided, return null.
      * <li> Else, return last domain from list.
@@ -1618,8 +1623,8 @@ public class WorkflowExecutor {
                 workflow.setInput(workflowInput);
             }
 
-            queueDAO
-                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
+            queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
+                properties.getSweepFrequency().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
 
             decide(workflowId);
@@ -1661,8 +1666,8 @@ public class WorkflowExecutor {
                 workflow.setInput(workflowInput);
             }
             // Add to decider queue
-            queueDAO
-                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
+            queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
+                properties.getSweepFrequency().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
             //update tasks in datastore to update workflow-tasks relationship for archived workflows
             executionDAOFacade.updateTasks(workflow.getTasks());

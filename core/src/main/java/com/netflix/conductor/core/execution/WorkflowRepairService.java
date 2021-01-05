@@ -34,6 +34,7 @@ import java.util.function.Predicate;
  * controlled with {@link com.netflix.conductor.core.config.ConductorProperties#isWorkflowRepairServiceEnabled()}
  * property.
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class WorkflowRepairService {
 
@@ -100,7 +101,7 @@ public class WorkflowRepairService {
         if (!workflow.getStatus().isTerminal()) {
             String queueName = WorkflowExecutor.DECIDER_QUEUE;
             if (!queueDAO.containsMessage(queueName, workflow.getWorkflowId())) {
-                queueDAO.push(queueName, workflow.getWorkflowId(), properties.getSweepFrequencySeconds());
+                queueDAO.push(queueName, workflow.getWorkflowId(), properties.getSweepFrequency().getSeconds());
                 Monitors.recordQueueMessageRepushFromRepairService(queueName);
                 return true;
             }

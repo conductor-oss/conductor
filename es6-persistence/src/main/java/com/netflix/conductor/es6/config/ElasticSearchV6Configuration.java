@@ -72,9 +72,9 @@ public class ElasticSearchV6Configuration {
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
         RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.getURLs()));
-        if (properties.getRestClientConnectionRequestTimeoutMs() > 0) {
+        if (properties.getRestClientConnectionRequestTimeout() > 0) {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                    .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeoutMs()));
+                    .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeout()));
         }
         return restClientBuilder.build();
     }

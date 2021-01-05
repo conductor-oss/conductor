@@ -59,7 +59,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         ConductorProperties conductorProperties, RedisProperties properties) {
         super(jedisProxy, objectMapper, conductorProperties, properties);
         refreshTaskDefs();
-        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
+        long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
     }

@@ -12,7 +12,10 @@
  */
 package com.netflix.conductor.contribs.queue.sqs.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.event-queues.sqs")
 public class SQSEventQueueProperties {
@@ -25,12 +28,13 @@ public class SQSEventQueueProperties {
     /**
      * The polling interval (in milliseconds)
      */
-    private int pollTimeMs = 100;
+    private Duration pollTimeDuration = Duration.ofMillis(100);
 
     /**
      * The visibility timeout (in seconds) for the message on the queue
      */
-    private int visibilityTimeoutSeconds = 60;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration visibilityTimeout = Duration.ofSeconds(60);
 
     /**
      * The prefix to be used for the default listener queues
@@ -50,20 +54,20 @@ public class SQSEventQueueProperties {
         this.batchSize = batchSize;
     }
 
-    public int getPollTimeMs() {
-        return pollTimeMs;
+    public Duration getPollTimeDuration() {
+        return pollTimeDuration;
     }
 
-    public void setPollTimeMs(int pollTimeMs) {
-        this.pollTimeMs = pollTimeMs;
+    public void setPollTimeDuration(Duration pollTimeDuration) {
+        this.pollTimeDuration = pollTimeDuration;
     }
 
-    public int getVisibilityTimeoutSeconds() {
-        return visibilityTimeoutSeconds;
+    public Duration getVisibilityTimeout() {
+        return visibilityTimeout;
     }
 
-    public void setVisibilityTimeoutSeconds(int visibilityTimeoutSeconds) {
-        this.visibilityTimeoutSeconds = visibilityTimeoutSeconds;
+    public void setVisibilityTimeout(Duration visibilityTimeout) {
+        this.visibilityTimeout = visibilityTimeout;
     }
 
     public String getListenerQueuePrefix() {

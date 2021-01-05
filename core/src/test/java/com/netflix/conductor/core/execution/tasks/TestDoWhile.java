@@ -28,6 +28,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionLockService;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class TestDoWhile {
 
@@ -80,6 +82,9 @@ public class TestDoWhile {
         executionDAOFacade = mock(ExecutionDAOFacade.class);
         executionLockService = mock(ExecutionLockService.class);
         properties = mock(ConductorProperties.class);
+        when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
+        when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
+        when(properties.getSweepFrequency()).thenReturn(Duration.ofSeconds(30));
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
             workflowStatusListener, executionDAOFacade, properties, executionLockService, parametersUtils));
         WorkflowTask loopWorkflowTask1 = new WorkflowTask();

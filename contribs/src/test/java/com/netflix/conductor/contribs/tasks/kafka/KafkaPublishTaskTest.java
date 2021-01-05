@@ -22,6 +22,7 @@ import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -205,6 +206,6 @@ public class KafkaPublishTaskTest {
     }
 
     private KafkaProducerManager getKafkaProducerManager() {
-        return new KafkaProducerManager("100", "500", 120000, 10);
+        return new KafkaProducerManager(Duration.ofMillis(100), Duration.ofMillis(500), 120000, Duration.ofMillis(10));
     }
 }

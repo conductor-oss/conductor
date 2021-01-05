@@ -50,6 +50,7 @@ import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEU
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO}, {@link RateLimitingDAO} and
  * {@link IndexDAO} storage layers
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class ExecutionDAOFacade {
 
@@ -91,7 +92,8 @@ public class ExecutionDAOFacade {
         try {
             LOGGER.info("Gracefully shutdown executor service");
             scheduledThreadPoolExecutor.shutdown();
-            if (scheduledThreadPoolExecutor.awaitTermination(properties.getAsyncUpdateDelay(), TimeUnit.SECONDS)) {
+            if (scheduledThreadPoolExecutor.awaitTermination(properties.getAsyncUpdateDelay().getSeconds(),
+                TimeUnit.SECONDS)) {
                 LOGGER.debug("tasks completed, shutting down");
             } else {
                 LOGGER.warn("Forcing shutdown after waiting for {} seconds", properties.getAsyncUpdateDelay());
@@ -199,7 +201,8 @@ public class ExecutionDAOFacade {
         workflow.setCreateTime(System.currentTimeMillis());
         executionDAO.createWorkflow(workflow);
         // Add to decider queue
-        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
+            properties.getSweepFrequency().getSeconds());
         if (properties.isAsyncIndexingEnabled()) {
             indexDAO.asyncIndexWorkflow(workflow);
         } else {
@@ -222,13 +225,13 @@ public class ExecutionDAOFacade {
         executionDAO.updateWorkflow(workflow);
         if (properties.isAsyncIndexingEnabled()) {
             if (workflow.getStatus().isTerminal() && workflow.getEndTime() - workflow.getStartTime()
-                < properties.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
+                < properties.getAsyncUpdateShortRunningWorkflowDuration().toMillis()) {
                 final String workflowId = workflow.getWorkflowId();
                 DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
                 LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId,
                     properties.getAsyncUpdateDelay());
                 scheduledThreadPoolExecutor
-                    .schedule(delayWorkflowUpdate, properties.getAsyncUpdateDelay(), TimeUnit.SECONDS);
+                    .schedule(delayWorkflowUpdate, properties.getAsyncUpdateDelay().getSeconds(), TimeUnit.SECONDS);
                 Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
             } else {
                 indexDAO.asyncIndexWorkflow(workflow);

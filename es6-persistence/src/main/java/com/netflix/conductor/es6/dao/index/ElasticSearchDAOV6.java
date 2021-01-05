@@ -15,6 +15,7 @@ package com.netflix.conductor.es6.dao.index;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -29,6 +30,28 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es6.config.ElasticSearchProperties;
 import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.metrics.Monitors;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.DocWriteResponse;
@@ -63,30 +86,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-//@Trace
+@Trace
 public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchDAOV6.class);
@@ -125,7 +125,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     private final ConcurrentHashMap<String, BulkRequests> bulkRequests;
     private final int indexBatchSize;
-    private final int asyncBufferFlushTimeout;
+    private final long asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
 
     static {
@@ -146,7 +146,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         int maximumPoolSize = properties.getAsyncMaxPoolSize();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = properties.getIndexBatchSize();
-        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeoutSecs();
+        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeout().toMillis();
         this.properties = properties;
 
         if (!properties.isAutoIndexManagementEnabled() &&
@@ -791,13 +791,13 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     /**
      * Flush the buffers if bulk requests have not been indexed for the past {@link
-     * ElasticSearchProperties#getAsyncBufferFlushTimeoutSecs()} seconds. This is to prevent data loss in case the instance
+     * ElasticSearchProperties#getAsyncBufferFlushTimeout()} seconds. This is to prevent data loss in case the instance
      * is terminated, while the buffer still holds documents to be indexed.
      */
     private void flushBulkRequests() {
         bulkRequests.entrySet().stream()
-            .filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime())
-                >= asyncBufferFlushTimeout * 1000)
+            .filter(entry ->
+                (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) >= asyncBufferFlushTimeout)
             .filter(entry -> entry.getValue().getBulkRequestBuilder() != null
                 && entry.getValue().getBulkRequestBuilder().numberOfActions() > 0)
             .forEach(entry -> {

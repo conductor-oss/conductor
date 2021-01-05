@@ -34,8 +34,8 @@ public class ExecutionLockService {
     public ExecutionLockService(ConductorProperties properties, Lock lock) {
         this.properties = properties;
         this.lock = lock;
-        this.lockLeaseTime = properties.getLockLeaseTimeMs();
-        this.lockTimeToTry = properties.getLockTimeToTryMs();
+        this.lockLeaseTime = properties.getLockLeaseTime().toMillis();
+        this.lockTimeToTry = properties.getLockTimeToTry().toMillis();
     }
 
     /**

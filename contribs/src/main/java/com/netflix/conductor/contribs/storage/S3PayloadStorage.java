@@ -26,13 +26,12 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.storage.config.S3Properties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.Date;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} using AWS S3 for storing large JSON payload data. The S3 client
@@ -47,11 +46,11 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
 
     private final AmazonS3 s3Client;
     private final String bucketName;
-    private final int expirationSec;
+    private final long expirationSec;
 
     public S3PayloadStorage(S3Properties properties) {
         bucketName = properties.getBucketName();
-        expirationSec = properties.getSignedUrlExpirationSeconds();
+        expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
         String region = properties.getRegion();
         s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build();
     }

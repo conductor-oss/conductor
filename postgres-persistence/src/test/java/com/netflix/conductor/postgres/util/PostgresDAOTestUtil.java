@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Duration;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
@@ -55,7 +56,7 @@ public class PostgresDAOTestUtil {
         when(properties.getJdbcUsername()).thenReturn("postgres");
         when(properties.getJdbcPassword()).thenReturn("postgres");
         when(properties.isFlywayEnabled()).thenReturn(true);
-        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
 
         this.dataSource = getDataSource(properties);
     }

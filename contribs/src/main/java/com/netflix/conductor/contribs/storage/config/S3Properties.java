@@ -12,7 +12,10 @@
  */
 package com.netflix.conductor.contribs.storage.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.external-payload-storage.s3")
 public class S3Properties {
@@ -25,7 +28,8 @@ public class S3Properties {
     /**
      * The time (in seconds) for which the signed url will be valid
      */
-    private int signedUrlExpirationSeconds = 5;
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration signedUrlExpirationDuration = Duration.ofSeconds(5);
 
     /**
      * The AWS region of the s3 bucket
@@ -40,12 +44,12 @@ public class S3Properties {
         this.bucketName = bucketName;
     }
 
-    public int getSignedUrlExpirationSeconds() {
-        return signedUrlExpirationSeconds;
+    public Duration getSignedUrlExpirationDuration() {
+        return signedUrlExpirationDuration;
     }
 
-    public void setSignedUrlExpirationSeconds(int signedUrlExpirationSeconds) {
-        this.signedUrlExpirationSeconds = signedUrlExpirationSeconds;
+    public void setSignedUrlExpirationDuration(Duration signedUrlExpirationDuration) {
+        this.signedUrlExpirationDuration = signedUrlExpirationDuration;
     }
 
     public String getRegion() {

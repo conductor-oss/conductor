@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
@@ -42,7 +43,7 @@ public class MySQLDAOTestUtil {
             + "?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         when(properties.getJdbcUsername()).thenReturn("root");
         when(properties.getJdbcPassword()).thenReturn("root");
-        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
         createDatabase(dbName);
         this.objectMapper = objectMapper;
         this.dataSource = getDataSource(properties);

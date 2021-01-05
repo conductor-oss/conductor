@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class WorkflowSweeper {
 
@@ -103,7 +104,7 @@ public class WorkflowSweeper {
                     boolean done = workflowExecutor.decide(workflowId);
                     if (!done) {
                         queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId,
-                            properties.getSweepFrequencySeconds() * 1000);
+                            properties.getSweepFrequency().toMillis());
                     } else {
                         queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
                     }
@@ -117,7 +118,7 @@ public class WorkflowSweeper {
                 } catch (Exception e) {
                     queueDAO
                         .setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId,
-                            properties.getSweepFrequencySeconds() * 1000);
+                            properties.getSweepFrequency().toMillis());
                     Monitors.error(CLASS_NAME, "sweep");
                     LOGGER.error("Error running sweep for " + workflowId, e);
                 }

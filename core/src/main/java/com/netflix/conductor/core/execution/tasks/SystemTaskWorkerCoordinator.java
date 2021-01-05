@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class SystemTaskWorkerCoordinator {
 
@@ -45,7 +46,7 @@ public class SystemTaskWorkerCoordinator {
     private SystemTaskExecutor systemTaskExecutor;
     private final ConductorProperties properties;
 
-    private final int pollInterval;
+    private final long pollInterval;
     private final String executionNameSpace;
 
     static final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
@@ -66,7 +67,7 @@ public class SystemTaskWorkerCoordinator {
         this.properties = properties;
         this.workflowSystemTasks = workflowSystemTasks;
         this.executionNameSpace = properties.getSystemTaskWorkerExecutionNamespace();
-        this.pollInterval = properties.getSystemTaskWorkerPollInterval();
+        this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
         this.executionService = executionService;

@@ -48,7 +48,7 @@ public class SetVariable extends WorkflowSystemTask {
 
     private boolean validateVariablesSize(Workflow workflow, Task task, Map<String, Object> variables) {
         String workflowId = workflow.getWorkflowId();
-        long maxThreshold = properties.getMaxWorkflowVariablesPayloadSizeThresholdKB();
+        long maxThreshold = properties.getMaxWorkflowVariablesPayloadSizeThreshold().toKilobytes();
 
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             this.objectMapper.writeValue(byteArrayOutputStream, variables);

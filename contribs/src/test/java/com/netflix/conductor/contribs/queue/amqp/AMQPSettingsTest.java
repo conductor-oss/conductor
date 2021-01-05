@@ -16,6 +16,7 @@ import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties
 import com.netflix.conductor.contribs.queue.amqp.util.AMQPSettings;
 import com.rabbitmq.client.AMQP.PROTOCOL;
 import com.rabbitmq.client.ConnectionFactory;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,13 +34,13 @@ public class AMQPSettingsTest {
     public void setUp() {
         properties = mock(AMQPEventQueueProperties.class);
         when(properties.getBatchSize()).thenReturn(1);
-        when(properties.getPollTimeMs()).thenReturn(100);
+        when(properties.getPollTimeDuration()).thenReturn(Duration.ofMillis(100));
         when(properties.getHosts()).thenReturn(ConnectionFactory.DEFAULT_HOST);
         when(properties.getUsername()).thenReturn(ConnectionFactory.DEFAULT_USER);
         when(properties.getPassword()).thenReturn(ConnectionFactory.DEFAULT_PASS);
         when(properties.getVirtualHost()).thenReturn(ConnectionFactory.DEFAULT_VHOST);
         when(properties.getPort()).thenReturn(PROTOCOL.PORT);
-        when(properties.getConnectionTimeout()).thenReturn(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
+        when(properties.getConnectionTimeout()).thenReturn(Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT));
         when(properties.isUseNio()).thenReturn(false);
         when(properties.isDurable()).thenReturn(true);
         when(properties.isExclusive()).thenReturn(false);

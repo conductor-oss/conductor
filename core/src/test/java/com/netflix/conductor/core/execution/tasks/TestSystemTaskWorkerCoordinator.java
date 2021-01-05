@@ -16,6 +16,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,19 +38,23 @@ public class TestSystemTaskWorkerCoordinator {
     private QueueDAO queueDAO;
     private WorkflowExecutor workflowExecutor;
     private ExecutionService executionService;
+    private ConductorProperties properties;
 
     @Before
     public void setUp() {
         queueDAO = mock(QueueDAO.class);
         workflowExecutor = mock(WorkflowExecutor.class);
         executionService = mock(ExecutionService.class);
+        properties = mock(ConductorProperties.class);
+        when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(50));
+        when(properties.getSystemTaskWorkerExecutionNamespace()).thenReturn("");
     }
 
     @Test
     public void isSystemTask() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, mock(ConductorProperties.class), executionService, Collections.emptyList());
+            workflowExecutor, properties, executionService, Collections.emptyList());
         assertTrue(systemTaskWorkerCoordinator.isAsyncSystemTask(TEST_QUEUE + ISOLATION_CONSTANT));
     }
 
@@ -57,13 +62,12 @@ public class TestSystemTaskWorkerCoordinator {
     public void isSystemTaskNotPresent() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, mock(ConductorProperties.class), executionService, Collections.emptyList());
+            workflowExecutor, properties, executionService, Collections.emptyList());
         assertFalse(systemTaskWorkerCoordinator.isAsyncSystemTask(null));
     }
 
     @Test
     public void testIsFromCoordinatorExecutionNameSpace() {
-        ConductorProperties properties = spy(new ConductorProperties());
         doReturn("exeNS").when(properties).getSystemTaskWorkerExecutionNamespace();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
             workflowExecutor, properties, executionService, Collections.emptyList());

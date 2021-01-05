@@ -36,7 +36,7 @@ class SystemTaskExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskExecutor.class);
 
-    private final int callbackTime;
+    private final long callbackTime;
     private final QueueDAO queueDAO;
 
     ExecutionConfig defaultExecutionConfig;
@@ -51,7 +51,7 @@ class SystemTaskExecutor {
         ExecutionService executionService) {
         this.properties = properties;
         int threadCount = properties.getSystemTaskWorkerThreadCount();
-        this.callbackTime = properties.getSystemTaskWorkerCallbackSeconds();
+        this.callbackTime = properties.getSystemTaskWorkerCallbackDuration().getSeconds();
 
         String threadNameFormat = "system-task-worker-%d";
         this.defaultExecutionConfig = new ExecutionConfig(threadCount, threadNameFormat);

@@ -64,12 +64,12 @@ public class SQSObservableQueue implements ObservableQueue {
     private final int visibilityTimeoutInSeconds;
     private final int batchSize;
     private final AmazonSQSClient client;
-    private final int pollTimeInMS;
+    private final long pollTimeInMS;
     private final String queueURL;
     private final Scheduler scheduler;
 
     private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeoutInSeconds, int batchSize,
-        int pollTimeInMS, List<String> accountsToAuthorize, Scheduler scheduler) {
+        long pollTimeInMS, List<String> accountsToAuthorize, Scheduler scheduler) {
         this.queueName = queueName;
         this.client = client;
         this.visibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
@@ -131,7 +131,7 @@ public class SQSObservableQueue implements ObservableQueue {
         return queueURL;
     }
 
-    public int getPollTimeInMS() {
+    public long getPollTimeInMS() {
         return pollTimeInMS;
     }
 
@@ -148,7 +148,7 @@ public class SQSObservableQueue implements ObservableQueue {
         private String queueName;
         private int visibilityTimeout = 30;    //seconds
         private int batchSize = 5;
-        private int pollTimeInMS = 100;
+        private long pollTimeInMS = 100;
         private AmazonSQSClient client;
         private List<String> accountsToAuthorize = new LinkedList<>();
         private Scheduler scheduler;
@@ -177,7 +177,7 @@ public class SQSObservableQueue implements ObservableQueue {
             return this;
         }
 
-        public Builder withPollTimeInMS(int pollTimeInMS) {
+        public Builder withPollTimeInMS(long pollTimeInMS) {
             this.pollTimeInMS = pollTimeInMS;
             return this;
         }
