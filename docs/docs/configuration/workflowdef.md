@@ -31,7 +31,8 @@ Workflows are defined using a JSON based DSL.
   "failureWorkflow": "cleanup_encode_resources",
   "restartable": true,
   "workflowStatusListenerEnabled": true,
-  "schemaVersion": 2
+  "schemaVersion": 2,
+  "ownerEmail": "encode_admin@test.com"
 }
 ```
 
@@ -47,6 +48,7 @@ Workflows are defined using a JSON based DSL.
 |schemaVersion|Current Conductor Schema version. schemaVersion 1 is discontinued.|Must be 2|
 |restartable|Boolean flag to allow Workflow restarts|defaults to true|
 |workflowStatusListenerEnabled|If true, every workflow that gets terminated or completed will send a notification. See [below](#workflow-notifications)|optional (false by default)|
+|ownerEmail|A String that contains the workflow owner's email.|mandatory unless disabled|
 
 ### Tasks within Workflow
 ```tasks``` property in a workflow execution defines an array of tasks to be executed in that order.

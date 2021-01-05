@@ -24,7 +24,8 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
   "responseTimeoutSeconds": 3600,
   "concurrentExecLimit": 100,
   "rateLimitFrequencyInSeconds": 60,
-  "rateLimitPerFrequency": 50
+  "rateLimitPerFrequency": 50,
+  "ownerEmail": "encode_admin@test.com"
 }
 ```
 
@@ -44,6 +45,7 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
 |inputTemplate|See [Using inputTemplate](#using-inputtemplate) below.|optional|
 |concurrentExecLimit|Number of tasks that can be executed at any given time.|optional|
 |rateLimitFrequencyInSeconds, rateLimitPerFrequency|See [Task Rate limits](#task-rate-limits) below.|optional|
+|ownerEmail|A String that contains the task owner's email.|mandatory unless disabled|
 
 
 ### Retry Logic
