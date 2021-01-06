@@ -29,6 +29,10 @@ configure(javaProjects) {
     compileJava.inputs.files(processResources)
 }
 
+subprojects {
+    tasks.withType(Javadoc).all { enabled = false }
+}
+
 apply from: "$rootDir/dependencies.gradle"
 
 // change the ES version used by Spring Boot Dependency Management plugin
