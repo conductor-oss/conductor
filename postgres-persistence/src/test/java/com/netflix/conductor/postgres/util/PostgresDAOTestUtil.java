@@ -29,32 +29,29 @@ import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 public class PostgresDAOTestUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresDAOTestUtil.class);
     private final HikariDataSource dataSource;
     private final PostgresProperties properties = mock(PostgresProperties.class);
-    private static final String JDBC_URL_PREFIX = "jdbc:postgresql://localhost:54320/";
     private final ObjectMapper objectMapper;
     private final DataSource initializationDataSource;
 
-    public PostgresDAOTestUtil(ObjectMapper objectMapper, String dbName) {
+    public PostgresDAOTestUtil(PostgreSQLContainer postgreSQLContainer, ObjectMapper objectMapper, String dbName) {
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setServerNames(new String[]{"localhost"});
-        dataSource.setPortNumbers(new int[]{54320});
-        dataSource.setDatabaseName("postgres");
-        dataSource.setUser("postgres");
-        dataSource.setPassword("postgres");
+        dataSource.setURL(postgreSQLContainer.getJdbcUrl());
+        dataSource.setDatabaseName(dbName);
+        dataSource.setUser(postgreSQLContainer.getUsername());
+        dataSource.setPassword(postgreSQLContainer.getPassword());
         this.initializationDataSource = dataSource;
 
         this.objectMapper = objectMapper;
 
-        createDb(dataSource, dbName);
-
-        when(properties.getJdbcUrl()).thenReturn(JDBC_URL_PREFIX + dbName);
-        when(properties.getJdbcUsername()).thenReturn("postgres");
-        when(properties.getJdbcPassword()).thenReturn("postgres");
+        when(properties.getJdbcUrl()).thenReturn(postgreSQLContainer.getJdbcUrl());
+        when(properties.getJdbcUsername()).thenReturn(postgreSQLContainer.getUsername());
+        when(properties.getJdbcPassword()).thenReturn(postgreSQLContainer.getPassword());
         when(properties.isFlywayEnabled()).thenReturn(true);
         when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
 
@@ -97,10 +94,6 @@ public class PostgresDAOTestUtil {
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
-    }
-
-    public static void createDb(DataSource ds, String dbName) {
-        exec(ds, dbName, "CREATE", "");
     }
 
     public static void dropDb(DataSource ds, String dbName) {

@@ -142,7 +142,6 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
      * This is a dummy implementation and this feature is not for Postgres backed Conductor
      *
      * @param task: which needs to be evaluated whether it is rateLimited or not
-     * @return
      */
     @Override
     public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {

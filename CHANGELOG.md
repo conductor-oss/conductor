@@ -124,8 +124,8 @@ Modified properties in the `core` module:
 | workflow.event.message.indexing.enabled | conductor.app.eventMessageIndexingEnabled | true |
 | workflow.event.execution.indexing.enabled | conductor.app.eventExecutionIndexingEnabled | true |
 | workflow.decider.locking.enabled | conductor.app.workflowExecutionLockEnabled | false |
-| workflow.locking.lease.time.ms | conductor.app.lockLeaseTimeMs | 60000ms |
-| workflow.locking.time.to.try.ms | conductor.app.lockTimeToTryMs | 500ms |
+| workflow.locking.lease.time.ms | conductor.app.lockLeaseTime | 60000ms |
+| workflow.locking.time.to.try.ms | conductor.app.lockTimeToTry | 500ms |
 | tasks.active.worker.lastpoll | conductor.app.activeWorkerLastPollTimeout | 10s |
 | task.queue.message.postponeSeconds | conductor.app.taskExecutionPostponeDuration | 60s |
 | workflow.taskExecLog.indexing.enabled | conductor.app.taskExecLogIndexingEnabled | true |
@@ -169,7 +169,7 @@ Modified properties in the `es6-persistence` module:
 | --- | --- | --- |
 | workflow.elasticsearch.version | conductor.elasticsearch.version | 6 |
 | workflow.elasticsearch.url | conductor.elasticsearch.url | localhost:9300 |
-| workflow.elasticsearch.index.name | conductor.elasticsearch.indexName | conductor |
+| workflow.elasticsearch.index.name | conductor.elasticsearch.indexPrefix | conductor |
 | workflow.elasticsearch.tasklog.index.name | _removed_ |  |
 | workflow.elasticsearch.cluster.health.color | conductor.elasticsearch.clusterHealthColor | green |
 | workflow.elasticsearch.archive.search.batchSize | _removed_ |  |

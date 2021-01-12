@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.mysql.dao;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -19,6 +22,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.mysql.util.MySQLDAOTestUtil;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,11 +32,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -47,9 +48,13 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    public MySQLContainer<?> mySQLContainer;
+
     @Before
     public void setup() {
-        testUtil = new MySQLDAOTestUtil(objectMapper, name.getMethodName());
+        mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
+        mySQLContainer.start();
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
         executionDAO = new MySQLExecutionDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
         testUtil.resetAllData();
     }
