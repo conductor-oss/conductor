@@ -32,6 +32,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -46,9 +48,14 @@ public class PostgresExecutionDAOTest extends ExecutionDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    public PostgreSQLContainer<?> postgreSQLContainer;
+
     @Before
     public void setup() {
-        testPostgres = new PostgresDAOTestUtil(objectMapper, name.getMethodName().toLowerCase());
+        postgreSQLContainer =
+            new PostgreSQLContainer<>(DockerImageName.parse("postgres")).withDatabaseName(name.getMethodName().toLowerCase());
+        postgreSQLContainer.start();
+        testPostgres = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper, name.getMethodName().toLowerCase());
         executionDAO = new PostgresExecutionDAO(
             testPostgres.getObjectMapper(),
             testPostgres.getDataSource()

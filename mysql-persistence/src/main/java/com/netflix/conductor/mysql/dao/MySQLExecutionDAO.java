@@ -143,7 +143,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
      * This is a dummy implementation and this feature is not for Mysql backed Conductor
      *
      * @param task: which needs to be evaluated whether it is rateLimited or not
-     * @return
      */
     @Override
     public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {

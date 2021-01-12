@@ -22,13 +22,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Duration;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.MySQLContainer;
 
 public class MySQLDAOTestUtil {
 
@@ -37,36 +37,16 @@ public class MySQLDAOTestUtil {
     private final MySQLProperties properties;
     private final ObjectMapper objectMapper;
 
-    public MySQLDAOTestUtil(ObjectMapper objectMapper, String dbName) {
+    public MySQLDAOTestUtil(MySQLContainer mySQLContainer, ObjectMapper objectMapper, String dbName) {
         properties = mock(MySQLProperties.class);
-        when(properties.getJdbcUrl()).thenReturn("jdbc:mysql://localhost:33307/" + dbName
+        when(properties.getJdbcUrl()).thenReturn(mySQLContainer.getJdbcUrl()
             + "?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
-        when(properties.getJdbcUsername()).thenReturn("root");
-        when(properties.getJdbcPassword()).thenReturn("root");
+        when(properties.getJdbcUsername()).thenReturn(mySQLContainer.getUsername());
+        when(properties.getJdbcPassword()).thenReturn(mySQLContainer.getPassword());
         when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
-        createDatabase(dbName);
+        //createDatabase(mySQLContainer, dbName);
         this.objectMapper = objectMapper;
         this.dataSource = getDataSource(properties);
-    }
-
-    private void createDatabase(String dbName) {
-        HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setJdbcUrl("jdbc:mysql://localhost:33307/conductor");
-        dataSource.setUsername("root");
-        dataSource.setPassword("root");
-        dataSource.setAutoCommit(false);
-        dataSource.setMaximumPoolSize(2);
-
-        try (Connection connection = dataSource.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("CREATE DATABASE IF NOT EXISTS " + dbName);
-            }
-        } catch (SQLException sqlException) {
-            LOGGER.error("Unable to create default connection for docker mysql db", sqlException);
-            throw new RuntimeException(sqlException);
-        } finally {
-            dataSource.close();
-        }
     }
 
     private HikariDataSource getDataSource(MySQLProperties properties) {

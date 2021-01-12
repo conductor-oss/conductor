@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -45,6 +47,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -62,9 +66,13 @@ public class MySQLMetadataDAOTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    public MySQLContainer<?> mySQLContainer;
+
     @Before
     public void setup() {
-        testUtil = new MySQLDAOTestUtil(objectMapper, name.getMethodName());
+        mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
+        mySQLContainer.start();
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
         metadataDAO = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(),
             testUtil.getTestProperties());
     }

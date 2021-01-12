@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -61,9 +63,14 @@ public class PostgresQueueDAOTest {
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
+    public PostgreSQLContainer<?> postgreSQLContainer;
+
     @Before
     public void setup() {
-        testUtil = new PostgresDAOTestUtil(objectMapper, name.getMethodName().toLowerCase());
+        postgreSQLContainer =
+            new PostgreSQLContainer<>(DockerImageName.parse("postgres")).withDatabaseName(name.getMethodName().toLowerCase());
+        postgreSQLContainer.start();
+        testUtil = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper, name.getMethodName().toLowerCase());
         queueDAO = new PostgresQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
     }
 

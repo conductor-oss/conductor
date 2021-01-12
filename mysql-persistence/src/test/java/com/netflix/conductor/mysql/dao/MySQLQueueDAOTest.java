@@ -12,14 +12,28 @@
  */
 package com.netflix.conductor.mysql.dao;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.mysql.util.MySQLDAOTestUtil;
 import com.netflix.conductor.mysql.util.Query;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,19 +44,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -62,9 +65,13 @@ public class MySQLQueueDAOTest {
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
+    public MySQLContainer<?> mySQLContainer;
+
     @Before
     public void setup() {
-        testUtil = new MySQLDAOTestUtil(objectMapper, name.getMethodName());
+        mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
+        mySQLContainer.start();
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
         queueDAO = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
     }
 
