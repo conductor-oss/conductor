@@ -24,6 +24,9 @@ dependencies {
     implementation "io.reactivex:rxjava:${revRxJava}"
 
     implementation "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
+    implementation "com.netflix.spectator:spectator-reg-micrometer:${revSpectator}"
+	implementation "io.prometheus:simpleclient:${revPrometheus}"
+	implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
     testImplementation "org.eclipse.jetty:jetty-server:${revJettyServer}"
     testImplementation "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"

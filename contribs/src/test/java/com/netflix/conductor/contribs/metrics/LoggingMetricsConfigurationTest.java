@@ -31,7 +31,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @RunWith(SpringRunner.class)
-@TestPropertySource(properties = {"conductor.metrics.logger.enabled=true"})
+@TestPropertySource(properties = {"conductor.metrics-logger.enabled=true"})
 @Ignore
 // Test causes "OutOfMemoryError: GC overhead limit reached" error during build
 public class LoggingMetricsConfigurationTest {
@@ -42,7 +42,7 @@ public class LoggingMetricsConfigurationTest {
         doReturn(true).when(logger).isInfoEnabled(any());
 
         new ApplicationContextRunner()
-            .withPropertyValues("conductor.metrics.logger.enabled:true")
+            .withPropertyValues("conductor.metrics-logger.enabled:true")
             .withUserConfiguration(MetricsRegistryConfiguration.class)
             .run(context -> {
                 MetricRegistry metricRegistry = context.getBean(MetricRegistry.class);
