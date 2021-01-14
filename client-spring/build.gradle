@@ -6,5 +6,4 @@ dependencies {
 
     implementation "com.netflix.eureka:eureka-client:${revEurekaClient}"
     implementation 'org.springframework.boot:spring-boot-starter'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }

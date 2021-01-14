@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-@ConfigurationProperties("com.netflix.conductor.client")
+@ConfigurationProperties("conductor.client")
 public class ClientProperties {
 
     private String rootUri;

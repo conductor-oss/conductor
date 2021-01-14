@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @Configuration(proxyBeanMethods = false)
@@ -31,8 +33,8 @@ public class ConductorClientAutoConfiguration {
     @Autowired(required = false)
     private EurekaClient eurekaClient;
 
-    @Autowired
-    private List<Worker> workers;
+    @Autowired(required = false)
+    private List<Worker> workers = new ArrayList<>();
 
     @ConditionalOnMissingBean
     @Bean
