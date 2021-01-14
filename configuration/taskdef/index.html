@@ -273,7 +273,8 @@
   <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
   <span class="nt">&quot;concurrentExecLimit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
   <span class="nt">&quot;rateLimitFrequencyInSeconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span>
+  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+  <span class="nt">&quot;ownerEmail&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_admin@test.com&quot;</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -356,6 +357,11 @@
 <td>rateLimitFrequencyInSeconds, rateLimitPerFrequency</td>
 <td>See <a href="#task-rate-limits">Task Rate limits</a> below.</td>
 <td>optional</td>
+</tr>
+<tr>
+<td>ownerEmail</td>
+<td>A String that contains the task owner's email.</td>
+<td>mandatory unless disabled</td>
 </tr>
 </tbody>
 </table>

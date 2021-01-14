@@ -642,6 +642,11 @@ The task takes 3 parameters:</p>
 <td>Map[String, Any]</td>
 <td>See below</td>
 </tr>
+<tr>
+<td>inputParameters</td>
+<td>Map[String, Any]</td>
+<td><code>input</code> of the sub workflow</td>
+</tr>
 </tbody>
 </table>
 <p><strong>subWorkflowParam</strong></p>
@@ -698,6 +703,9 @@ The task takes 3 parameters:</p>
     <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
     <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
     <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;anything&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.anythingValue}&quot;</span>
+    <span class="p">},</span>
     <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
         <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
@@ -724,8 +732,7 @@ The task takes 3 parameters:</p>
             <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
             <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
         <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;anythingelse&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span>
+    <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 

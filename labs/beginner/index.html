@@ -279,11 +279,11 @@ Learn more about them <a href="https://partnerhelp.netflixstudios.com/hc/en-us/a
 <p>This workflow contains the following:</p>
 <ul>
 <li>Worker Task <code>verify_if_idents_are_added</code> to verify if Idents are already added.</li>
-<li><a href="/configuration/systask/#decision">Decision Task</a> that takes output from the previous task, and decides whether to schedule the <code>add_idents</code> task.</li>
+<li><a href="../../configuration/systask/#decision">Decision Task</a> that takes output from the previous task, and decides whether to schedule the <code>add_idents</code> task.</li>
 <li><code>add_idents</code> task which is another worker Task.</li>
 </ul>
 <h3 id="creating-task-definitions">Creating Task definitions<a class="headerlink" href="#creating-task-definitions" title="Permanent link">&para;</a></h3>
-<p>Let's create the <a href="/configuration/taskdef">task definition</a> for <code>verify_if_idents_are_added</code> in JSON. This task will be a <em>SIMPLE</em> task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.</p>
+<p>Let's create the <a href="../../configuration/taskdef">task definition</a> for <code>verify_if_idents_are_added</code> in JSON. This task will be a <em>SIMPLE</em> task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.</p>
 <p><strong>Note</strong> that at this point, we don't have to specify whether it is a System task or Worker task. We are only specifying the required configurations for the task, like number of times it should be retried, timeouts etc. We shall start by using <code>name</code> parameter for task name.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span>
@@ -314,7 +314,7 @@ i.e. if the task doesn't finish execution within this time limit after transitio
 </pre></div>
 
 
-<p>And a <a href="/tasklifecycle/#response-timeout-seconds">responseTimeout</a> of 180 seconds.</p>
+<p>And a <a href="../../tasklifecycle/#response-timeout-seconds">responseTimeout</a> of 180 seconds.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
   <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
@@ -327,7 +327,7 @@ i.e. if the task doesn't finish execution within this time limit after transitio
 </pre></div>
 
 
-<p>We can define several other fields defined <a href="/configuration/taskdef">here</a>, but this is a good place to start with.</p>
+<p>We can define several other fields defined <a href="../../configuration/taskdef">here</a>, but this is a good place to start with.</p>
 <p>Similarly, create another task definition: <code>add_idents</code>.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents&quot;</span><span class="p">,</span>
@@ -415,8 +415,8 @@ i.e. if the task doesn't finish execution within this time limit after transitio
 <p><strong>Wiring Input/Outputs</strong></p>
 <p>Notice how we were using <code>${workflow.input.contentId}</code> to pass inputs to this task. Conductor can wire inputs between workflow and tasks, and between tasks.<br />
 i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs from the workflow input using JSONPath expression <code>${workflow.input.param}</code>.</p>
-<p>Learn more about wiring inputs and outputs <a href="/configuration/workflowdef/#wiring-inputs-and-outputs">here</a>.</p>
-<p>Let's define <code>decisionCases</code> now. Checkout the Decision task structure <a href="/configuration/systask/#decision">here</a>.</p>
+<p>Learn more about wiring inputs and outputs <a href="../../configuration/workflowdef/#wiring-inputs-and-outputs">here</a>.</p>
+<p>Let's define <code>decisionCases</code> now. Checkout the Decision task structure <a href="../../configuration/systask/#decision">here</a>.</p>
 <p>A Decision task is specified by <code>type:"DECISION"</code>, <code>caseValueParam</code> and <code>decisionCases</code> which lists all the branches of Decision task. This is similar to a <code>switch..case</code> but written in Conductor JSON DSL.</p>
 <p>Adding the decision task:</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
@@ -576,7 +576,7 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 </ul>
 <h3 id="poll-for-worker-task">Poll for Worker task<a class="headerlink" href="#poll-for-worker-task" title="Permanent link">&para;</a></h3>
 <p>Now that <code>verify_if_idents_are_added</code> task is in <code>SCHEDULED</code> state, it is the worker's turn to fetch the task, execute it and update Conductor with final status of the task.</p>
-<p>Ideally, the workers implementing the <a href="/gettingstarted/client/#worker">Client</a> interface would do this process, executing the tasks on real microservices. But, let's mock this part.</p>
+<p>Ideally, the workers implementing the <a href="../../gettingstarted/client/#worker">Client</a> interface would do this process, executing the tasks on real microservices. But, let's mock this part.</p>
 <p>Send a <code>GET</code> request to <code>/poll</code> endpoint with your task type.</p>
 <p>For example:</p>
 <div class="codehilite"><pre><span></span>curl -X GET \

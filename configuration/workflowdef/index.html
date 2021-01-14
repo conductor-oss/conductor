@@ -274,7 +274,8 @@
   <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
   <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
   <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
+  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+  <span class="nt">&quot;ownerEmail&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_admin@test.com&quot;</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -337,6 +338,11 @@
 <td align="left">workflowStatusListenerEnabled</td>
 <td align="left">If true, every workflow that gets terminated or completed will send a notification. See <a href="#workflow-notifications">below</a></td>
 <td align="left">optional (false by default)</td>
+</tr>
+<tr>
+<td align="left">ownerEmail</td>
+<td align="left">A String that contains the workflow owner's email.</td>
+<td align="left">mandatory unless disabled</td>
 </tr>
 </tbody>
 </table>
