@@ -20,19 +20,19 @@ import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-
-import javax.validation.Valid;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import javax.validation.Valid;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
@@ -304,6 +304,11 @@ public class WorkflowDef extends Auditable {
     }
 
     public WorkflowTask getNextTask(String taskReferenceName) {
+        WorkflowTask workflowTask = getTaskByRefName(taskReferenceName);
+        if (workflowTask != null && TaskType.TERMINATE.name().equals(workflowTask.getType())) {
+            return null;
+        }
+
         Iterator<WorkflowTask> iterator = tasks.iterator();
         while (iterator.hasNext()) {
             WorkflowTask task = iterator.next();

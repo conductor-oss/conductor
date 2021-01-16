@@ -20,13 +20,12 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component(SubWorkflow.NAME)
 public class SubWorkflow extends WorkflowSystemTask {
@@ -138,9 +137,10 @@ public class SubWorkflow extends WorkflowSystemTask {
         }
         Workflow subWorkflow = provider.getWorkflow(workflowId, true);
         subWorkflow.setStatus(WorkflowStatus.TERMINATED);
-        provider
-            .terminateWorkflow(subWorkflow, "Parent workflow has been terminated with status " + workflow.getStatus(),
-                null);
+        String reason = StringUtils.isEmpty(workflow.getReasonForIncompletion())
+            ? "Parent workflow has been terminated with status " + workflow.getStatus()
+            : "Parent workflow has been terminated with reason: " + workflow.getReasonForIncompletion();
+        provider.terminateWorkflow(subWorkflow, reason, null);
     }
 
     @Override

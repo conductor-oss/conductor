@@ -12,6 +12,14 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -33,13 +41,6 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import java.time.Duration;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,13 +51,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 /**
  * Decider evaluates the state of the workflow by inspecting the current state along with the blueprint. The result of
@@ -77,6 +77,10 @@ public class DeciderService {
 
     private final Predicate<Task> isNonPendingTask = task -> !task.isRetried() && !task.getStatus().equals(SKIPPED)
         && !task.isExecuted();
+
+    private final Predicate<Workflow> containsSuccessfulTerminateTask = workflow -> workflow.getTasks().stream()
+        .anyMatch(task -> TERMINATE.name().equals(task.getTaskType())
+            && task.getStatus().isTerminal() && task.getStatus().isSuccessful());
 
     public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
         ExternalPayloadStorageUtils externalPayloadStorageUtils,
@@ -221,7 +225,8 @@ public class DeciderService {
                 workflow.getWorkflowId());
             outcome.tasksToBeScheduled.addAll(unScheduledTasks);
         }
-        if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow)) {
+        if (containsSuccessfulTerminateTask.test(workflow) || (outcome.tasksToBeScheduled.isEmpty()
+            && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
             outcome.isComplete = true;
         }
@@ -229,7 +234,8 @@ public class DeciderService {
         return outcome;
     }
 
-    protected List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
+    @VisibleForTesting
+    List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
 
         //Update the task reference name and iteration
         tasks.forEach(nextTask -> {
@@ -298,8 +304,9 @@ public class DeciderService {
      *
      * @param workflow the workflow instance
      * @param task     if not null, the output of this task will be copied to workflow output if no output parameters
-     *                 are specified in the workflow defintion if null, the output of the last task in the workflow will
-     *                 be copied to workflow output of no output parameters are specified in the workflow definition
+     *                 are specified in the workflow definition if null, the output of the last task in the workflow
+     *                 will be copied to workflow output of no output parameters are specified in the workflow
+     *                 definition
      */
     void updateWorkflowOutput(final Workflow workflow, Task task) {
         List<Task> allTasks = workflow.getTasks();
@@ -307,11 +314,22 @@ public class DeciderService {
             return;
         }
 
+        Optional<Task> terminateTask = allTasks.stream()
+            .filter(t -> TaskType.TERMINATE.name().equals(t.getTaskType()) && t.getStatus().isTerminal()
+                && t.getStatus().isSuccessful())
+            .findFirst();
+        if (terminateTask.isPresent()) {
+            if (!terminateTask.get().getOutputData().isEmpty()) {
+                workflow.setOutput(terminateTask.get().getOutputData());
+            }
+            return;
+        }
+
         Task last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
 
         WorkflowDef workflowDef = workflow.getWorkflowDefinition();
         Map<String, Object> output;
-        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty() && !(TaskType.TERMINATE.name().equals(last.getTaskType()))) {
+        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty()) {
             Workflow workflowInstance = populateWorkflowAndTaskData(workflow);
             output = parametersUtils.getTaskInput(workflowDef.getOutputParameters(), workflowInstance, null, null);
         } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
@@ -326,10 +344,15 @@ public class DeciderService {
         externalizeWorkflowData(workflow);
     }
 
-    private boolean checkForWorkflowCompletion(final Workflow workflow) throws TerminateWorkflowException {
+    @VisibleForTesting
+    boolean checkForWorkflowCompletion(final Workflow workflow) throws TerminateWorkflowException {
         List<Task> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {
             return false;
+        }
+
+        if (containsSuccessfulTerminateTask.test(workflow)) {
+            return true;
         }
 
         Map<String, Status> taskStatusMap = new HashMap<>();
