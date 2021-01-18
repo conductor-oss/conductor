@@ -49,6 +49,13 @@ Workflows are defined using a JSON based DSL.
 |restartable|Boolean flag to allow Workflow restarts|defaults to true|
 |workflowStatusListenerEnabled|If true, every workflow that gets terminated or completed will send a notification. See [below](#workflow-notifications)|optional (false by default)|
 |ownerEmail|A String that contains the workflow owner's email.|mandatory unless disabled|
+|timeoutSeconds|Time in seconds, after which the workflow is timed out|No timeouts if set to 0 (defaults to 0)|
+|timeoutPolicy|Workflow's timeout policy|see possible values below (defaults to ALERT_ONLY)|
+
+### Timeout Policy
+
+* TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated.
+* ALERT_ONLY : The timeout is logged but the workflow is not terminated.
 
 ### Tasks within Workflow
 ```tasks``` property in a workflow execution defines an array of tasks to be executed in that order.

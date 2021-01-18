@@ -21,7 +21,7 @@ See [Start Workflow Request](../gettingstarted/startworkflow/#start-workflow-req
 Id of the workflow (GUID)
 
 ### With Input and Task Domains
-```
+```json
 POST /workflow
 {
    //JSON payload for Start workflow request
@@ -29,7 +29,7 @@ POST /workflow
 ```
 #### Start workflow request
 JSON for start workflow request
-```
+```json
 {
   "name": "myWorkflow", // Name of the workflow
   "version": 1, // Version
