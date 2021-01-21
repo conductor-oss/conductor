@@ -348,27 +348,27 @@
 <h4 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h4>
 <p>Id of the workflow (GUID)</p>
 <h3 id="with-input-and-task-domains">With Input and Task Domains<a class="headerlink" href="#with-input-and-task-domains" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="err">POST /workflow</span>
-<span class="err">{</span>
-<span class="err">   //JSON payload for Start workflow request</span>
-<span class="err">}</span>
+<div class="codehilite"><pre><span></span><span class="err">POST</span> <span class="err">/workflow</span>
+<span class="p">{</span>
+   <span class="err">//JSON</span> <span class="err">payload</span> <span class="err">for</span> <span class="err">Start</span> <span class="err">workflow</span> <span class="err">request</span>
+<span class="p">}</span>
 </pre></div>
 
 
 <h4 id="start-workflow-request">Start workflow request<a class="headerlink" href="#start-workflow-request" title="Permanent link">&para;</a></h4>
 <p>JSON for start workflow request</p>
-<div class="codehilite"><pre><span></span>{
-  &quot;name&quot;: &quot;myWorkflow&quot;, // Name of the workflow
-  &quot;version&quot;: 1, // Version
-  &quot;correlationId&quot;: &quot;corr1&quot;, // correlation Id
-  &quot;priority&quot;: 1, // Priority
-  &quot;input&quot;: {
-    // Input map. 
-  },
-  &quot;taskToDomain&quot;: {
-    // Task to domain map
-  }
-}
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;myWorkflow&quot;</span><span class="p">,</span> <span class="err">//</span> <span class="err">Name</span> <span class="err">of</span> <span class="err">the</span> <span class="err">workflow</span>
+  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="err">//</span> <span class="err">Version</span>
+  <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;corr1&quot;</span><span class="p">,</span> <span class="err">//</span> <span class="err">correlation</span> <span class="err">Id</span>
+  <span class="nt">&quot;priority&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="err">//</span> <span class="err">Priority</span>
+  <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="err">//</span> <span class="err">Input</span> <span class="err">map.</span> 
+  <span class="p">},</span>
+  <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="err">//</span> <span class="err">Task</span> <span class="err">to</span> <span class="err">domain</span> <span class="err">map</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 
 

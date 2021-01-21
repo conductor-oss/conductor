@@ -95,6 +95,8 @@
     
         <ul>
         
+            <li><a class="toctree-l4" href="#timeout-policy">Timeout Policy</a></li>
+        
             <li><a class="toctree-l4" href="#tasks-within-workflow">Tasks within Workflow</a></li>
         
             <li><a class="toctree-l4" href="#wiring-inputs-and-outputs">Wiring Inputs and Outputs</a></li>
@@ -344,8 +346,23 @@
 <td align="left">A String that contains the workflow owner's email.</td>
 <td align="left">mandatory unless disabled</td>
 </tr>
+<tr>
+<td align="left">timeoutSeconds</td>
+<td align="left">Time in seconds, after which the workflow is timed out</td>
+<td align="left">No timeouts if set to 0 (defaults to 0)</td>
+</tr>
+<tr>
+<td align="left">timeoutPolicy</td>
+<td align="left">Workflow's timeout policy</td>
+<td align="left">see possible values below (defaults to ALERT_ONLY)</td>
+</tr>
 </tbody>
 </table>
+<h3 id="timeout-policy">Timeout Policy<a class="headerlink" href="#timeout-policy" title="Permanent link">&para;</a></h3>
+<ul>
+<li>TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated.</li>
+<li>ALERT_ONLY : The timeout is logged but the workflow is not terminated.</li>
+</ul>
 <h3 id="tasks-within-workflow">Tasks within Workflow<a class="headerlink" href="#tasks-within-workflow" title="Permanent link">&para;</a></h3>
 <p><code>tasks</code> property in a workflow execution defines an array of tasks to be executed in that order.</p>
 <table>
