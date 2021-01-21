@@ -31,7 +31,7 @@ RUN git clone https://github.com/Netflix/conductor.git \
   && ./gradlew build -x test \
 
   # Get Server Jar
-  && mv ./server/build/libs/conductor-server-*-all.jar /app/libs/ \
+  && mv ./server/build/libs/conductor-server-*-boot.jar /app/libs/ \
 
   # Get UI project
   && mv ./ui /app \
