@@ -783,7 +783,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     }
 
     private List<String> findAllTasksInProgressInOrderOfArrival(Task task, int limit) {
-        String GET_IN_PROGRESS_TASKS_WITH_LIMIT = "SELECT task_id FROM task_in_progress WHERE task_def_name = ? ORDER BY id LIMIT ?";
+        String GET_IN_PROGRESS_TASKS_WITH_LIMIT = "SELECT task_id FROM task_in_progress WHERE task_def_name = ? ORDER BY created_on LIMIT ?";
 
         return queryWithTransaction(GET_IN_PROGRESS_TASKS_WITH_LIMIT,
                 q -> q.addParameter(task.getTaskDefName()).addParameter(limit).executeScalarList(String.class));
