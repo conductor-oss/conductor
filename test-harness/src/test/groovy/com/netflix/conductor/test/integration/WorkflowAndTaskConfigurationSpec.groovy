@@ -348,7 +348,7 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
         }
 
         when: "Retrying the workflow"
-        workflowExecutor.retry(workflowInstanceId)
+        workflowExecutor.retry(workflowInstanceId,false)
 
         then: "Ensure that the workflow is RUNNING and task is retried"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

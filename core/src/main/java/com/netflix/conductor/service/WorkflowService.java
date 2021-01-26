@@ -206,7 +206,7 @@ public interface WorkflowService {
      *
      * @param workflowId WorkflowId of the workflow.
      */
-    void retryWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
+    void retryWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, boolean resumeSubworkflowTasks);
 
     /**
      * Resets callback times of all non-terminal SIMPLE tasks to 0.

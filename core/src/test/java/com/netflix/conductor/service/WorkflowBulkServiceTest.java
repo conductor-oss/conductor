@@ -14,9 +14,7 @@ import org.mockito.Mockito;
 
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static org.junit.Assert.assertEquals;
@@ -107,6 +105,15 @@ public class WorkflowBulkServiceTest {
             throw ex;
         }
     }
+
+    @Test
+    public void testRetryWorkflowSuccessful(){
+        //When
+        workflowBulkService.retry(Collections.singletonList("anyId"));
+        //Then
+        Mockito.verify(workflowExecutor).retry("anyId", false);
+    }
+
 
     @Test(expected = ConstraintViolationException.class)
     public void testTerminateNull(){

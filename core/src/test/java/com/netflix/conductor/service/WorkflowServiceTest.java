@@ -395,7 +395,7 @@ public class WorkflowServiceTest {
     @Test(expected = ConstraintViolationException.class)
     public void testRetryWorkflowNull() {
         try{
-            workflowService.retryWorkflow(null);
+            workflowService.retryWorkflow(null, false);
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
@@ -445,8 +445,8 @@ public class WorkflowServiceTest {
 
     @Test
     public void testRetryWorkflow() {
-        workflowService.retryWorkflow("w123");
-        verify(mockWorkflowExecutor, times(1)).retry(anyString());
+        workflowService.retryWorkflow("w123", false);
+        verify(mockWorkflowExecutor, times(1)).retry(anyString(), anyBoolean());
     }
 
     @Test

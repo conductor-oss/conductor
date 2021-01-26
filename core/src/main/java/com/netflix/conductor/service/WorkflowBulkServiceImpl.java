@@ -113,7 +113,7 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             try {
-                workflowExecutor.retry(workflowId);
+                workflowExecutor.retry(workflowId, false);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
                 LOGGER.error("bulk retry exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);

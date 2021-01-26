@@ -176,7 +176,7 @@ class SubWorkflowSpec extends Specification {
         }
 
         when: "the subworkflow is retried"
-        workflowExecutor.retry(subWorkflowId)
+        workflowExecutor.retry(subWorkflowId,false)
 
         then: "ensure that the subworkflow is RUNNING and task is retried"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {

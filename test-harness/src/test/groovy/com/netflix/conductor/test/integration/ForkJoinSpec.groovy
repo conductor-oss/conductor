@@ -322,7 +322,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The workflow is retried"
-        workflowExecutor.retry(workflowInstanceId)
+        workflowExecutor.retry(workflowInstanceId,false)
 
         then: "verify that all the workflow is retried and new tasks are added in place of the failed tasks"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

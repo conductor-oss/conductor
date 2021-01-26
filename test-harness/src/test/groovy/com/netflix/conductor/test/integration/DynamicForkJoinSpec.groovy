@@ -312,7 +312,7 @@ class DynamicForkJoinSpec extends Specification {
         }
 
         when: "The workflow is retried"
-        workflowExecutor.retry(workflowInstanceId)
+        workflowExecutor.retry(workflowInstanceId,false)
 
         then: "verify that the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

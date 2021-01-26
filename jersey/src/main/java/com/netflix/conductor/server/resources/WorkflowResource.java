@@ -189,8 +189,8 @@ public class WorkflowResource {
     @Path("/{workflowId}/retry")
     @ApiOperation("Retries the last failed task")
     @Consumes(MediaType.WILDCARD)
-    public void retry(@PathParam("workflowId") String workflowId) {
-        workflowService.retryWorkflow(workflowId);
+    public void retry(@PathParam("workflowId") String workflowId,@QueryParam("resumeSubworkflowTasks") @DefaultValue("false") boolean resumeSubworkflowTasks) {
+        workflowService.retryWorkflow(workflowId, resumeSubworkflowTasks);
     }
 
     @POST
