@@ -70,6 +70,8 @@ class DecisionTaskSpec extends AbstractSpecification {
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 3
+            tasks[0].taskType == 'DECISION'
+            tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'integration_task_1'
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == 'integration_task_2'

@@ -3,9 +3,9 @@
   "version": 1,
   "tasks": [
     {
-      "name": "test_third_wait_task",
-      "taskReferenceName": "basicJavaC",
-      "type": "WAIT"
+      "name": "integration_task_3",
+      "taskReferenceName": "t3",
+      "type": "SIMPLE"
     }
   ],
   "schemaVersion": 2,
