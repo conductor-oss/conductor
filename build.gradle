@@ -21,14 +21,6 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-def javaProjects = subprojects.findAll {
-    it.name != "ui"
-}
-
-configure(javaProjects) {
-    compileJava.inputs.files(processResources)
-}
-
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
 }
@@ -68,18 +60,19 @@ allprojects {
     }
 
     dependencies {
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
     }
 
+    // processes additional configuration metadata json file as described here
+    // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
+    compileJava.inputs.files(processResources)
+
     test {
         useJUnitPlatform()
     }
-}
-
-dependencies {
-    // annotation processor
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }
 
 coveralls {
