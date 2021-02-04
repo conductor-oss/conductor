@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.es6.config;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
@@ -19,14 +22,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.elasticsearch")
 public class ElasticSearchProperties {
 
     /**
-     * The url for the elasticsearch cluster. Format -- host:port
+     * The comma separated list of urls for the elasticsearch cluster. Format -- host1:port1,host2:port2
      */
     private String url = "localhost:9300";
 
@@ -200,7 +201,7 @@ public class ElasticSearchProperties {
         this.documentTypeOverride = documentTypeOverride;
     }
 
-    public List<URL> getURLs() {
+    public List<URL> toURLs() {
         String clusterAddress = getUrl();
         String[] hosts = clusterAddress.split(",");
         return Arrays.stream(hosts)

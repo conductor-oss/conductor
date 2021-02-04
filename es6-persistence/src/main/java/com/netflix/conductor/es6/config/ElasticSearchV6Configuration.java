@@ -52,7 +52,7 @@ public class ElasticSearchV6Configuration {
 
         TransportClient transportClient = new PreBuiltTransportClient(settings);
 
-        List<URL> clusterAddresses = properties.getURLs();
+        List<URL> clusterAddresses = properties.toURLs();
 
         if (clusterAddresses.isEmpty()) {
             log.warn("workflow.elasticsearch.url is not set.  Indexing will remain DISABLED.");
@@ -71,7 +71,7 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.getURLs()));
+        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                     .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeout()));
@@ -81,7 +81,7 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
-        return RestClient.builder(convertToHttpHosts(properties.getURLs()));
+        return RestClient.builder(convertToHttpHosts(properties.toURLs()));
     }
 
     @Bean
