@@ -21,10 +21,8 @@ import com.netflix.conductor.core.execution.WorkflowRepairService;
 import com.netflix.conductor.dao.QueueDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
 
@@ -41,31 +39,12 @@ public class AdminServiceImpl implements AdminService {
     private final QueueDAO queueDAO;
     private final WorkflowRepairService workflowRepairService;
 
-    private String version;
-    private String buildDate;
-
-    @Autowired
     public AdminServiceImpl(ConductorProperties properties, ExecutionService executionService, QueueDAO queueDAO,
         WorkflowRepairService workflowRepairService) {
         this.properties = properties;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
         this.workflowRepairService = workflowRepairService;
-        this.version = "UNKNOWN";
-        this.buildDate = "UNKNOWN";
-
-        // SBMTODO: remove
-//        try (
-//            InputStream propertiesIs = this.getClass().getClassLoader()
-//                .getResourceAsStream("META-INF/conductor-core.properties")
-//        ) {
-//            Properties prop = new Properties();
-//            prop.load(propertiesIs);
-//            this.version = prop.getProperty("Implementation-Version");
-//            this.buildDate = prop.getProperty("Build-Date");
-//        } catch (Exception e) {
-//            LOGGER.error("Error loading properties", e);
-//        }
     }
 
     /**
@@ -74,10 +53,7 @@ public class AdminServiceImpl implements AdminService {
      * @return all the configuration parameters.
      */
     public Map<String, Object> getAllConfig() {
-        Map<String, Object> map = properties.getAll();
-        map.put("version", version);
-        map.put("buildDate", buildDate);
-        return map;
+        return properties.getAll();
     }
 
     /**
@@ -99,8 +75,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public boolean verifyAndRepairWorkflowConsistency(
-        @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
+    public boolean verifyAndRepairWorkflowConsistency(String workflowId) {
         return workflowRepairService.verifyAndRepairWorkflow(workflowId, true);
     }
 
