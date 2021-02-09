@@ -11,6 +11,7 @@ dependencies {
     compile "com.sun.jersey:jersey-client:${revJerseyClient}"
     compile "com.netflix.spectator:spectator-api:${revSpectator}"
     compile "com.netflix.eureka:eureka-client:${revEurekaClient}"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${revJacksonCore}"
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
     compile "com.netflix.archaius:archaius-core:${revArchaius}"
     compile "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
