@@ -16,7 +16,9 @@
 
 package com.netflix.conductor.client.http;
 
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
@@ -81,6 +83,11 @@ public abstract class ClientBase {
     protected ClientBase(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler) {
         objectMapper = new JsonMapperProvider().get();
 
+        // https://github.com/FasterXML/jackson-databind/issues/2683
+        if (isNewerJacksonVersion()) {
+            objectMapper.registerModule(new JavaTimeModule());
+        }
+
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
         config.getSingletons().add(provider);
 
@@ -92,6 +99,11 @@ public abstract class ClientBase {
 
         conductorClientConfiguration = clientConfiguration;
         payloadStorage = new PayloadStorage(this);
+    }
+
+    private boolean isNewerJacksonVersion() {
+        Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
+        return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
     }
 
     public void setRootURI(String root) {
