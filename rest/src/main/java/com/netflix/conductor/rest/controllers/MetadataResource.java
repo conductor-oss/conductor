@@ -32,7 +32,7 @@ import static com.netflix.conductor.rest.config.RequestMappingConstants.METADATA
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
-@RequestMapping(value = METADATA, produces = APPLICATION_JSON_VALUE)
+@RequestMapping(value = METADATA)
 public class MetadataResource {
 
     private final MetadataService metadataService;

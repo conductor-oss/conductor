@@ -40,7 +40,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
-@RequestMapping(value = TASKS, produces = APPLICATION_JSON_VALUE)
+@RequestMapping(value = TASKS)
 public class TaskResource {
 
     private final TaskService taskService;
@@ -85,7 +85,7 @@ public class TaskResource {
                 .orElse(ResponseEntity.noContent().build());
     }
 
-    @PostMapping(produces = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
+    @PostMapping(produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Update a task")
     public String updateTask(@RequestBody TaskResult taskResult) {
         return taskService.updateTask(taskResult);
@@ -154,7 +154,7 @@ public class TaskResource {
         return taskService.getAllPollData();
     }
 
-    @PostMapping(value = "/queue/requeue/{taskType}", produces = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/queue/requeue/{taskType}", produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Requeue pending tasks")
     public String requeuePendingTask(@PathVariable("taskType") String taskType) {
         return taskService.requeuePendingTask(taskType);
@@ -163,7 +163,7 @@ public class TaskResource {
     @Operation(summary = "Search for tasks based in payload and other parameters",
             description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
                     " If order is not specified, defaults to ASC")
-    @GetMapping(value = "/search", produces = APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/search")
     public SearchResult<TaskSummary> search(
             @RequestParam(value = "start", defaultValue = "0", required = false) int start,
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,

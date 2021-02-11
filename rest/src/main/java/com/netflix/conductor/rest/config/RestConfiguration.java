@@ -13,18 +13,30 @@
 package com.netflix.conductor.rest.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.List;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.TEXT_PLAIN;
 
 @Configuration
 public class RestConfiguration implements WebMvcConfigurer {
 
+    /**
+     * <p>Disable all 3 (Accept header, url parameter, path extension) strategies of content negotiation and only allow
+     * <code>application/json</code> and <code>text/plain</code> types.</p><br>
+     *
+     * <p>Any "mapping" that is annotated with <code>produces=TEXT_PLAIN_VALUE</code> will be sent as <code>text/plain</code> all others as
+     * <code>application/json</code>.</p><br>
+     *
+     * </p>More details on Spring MVC content negotiation can be found at
+     * <a href="https://spring.io/blog/2013/05/11/content-negotiation-using-spring-mvc">https://spring.io/blog/2013/05/11/content-negotiation-using-spring-mvc</a></p><br>
+     */
     @Override
-    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        // to support "text/plain" type that some apis use
-        converters.add(new StringHttpMessageConverter());
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        configurer.favorParameter(false)
+                .favorPathExtension(false)
+                .ignoreAcceptHeader(true)
+                .defaultContentType(APPLICATION_JSON, TEXT_PLAIN);
     }
 }

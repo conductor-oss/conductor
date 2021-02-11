@@ -39,7 +39,7 @@ public class AdminResource {
     }
 
     @Operation(summary = "Get all the configuration parameters")
-    @GetMapping(value = "/config", produces = APPLICATION_JSON_VALUE, consumes = TEXT_PLAIN_VALUE)
+    @GetMapping("/config")
     public Map<String, Object> getAllConfig() {
         return adminService.getAllConfig();
     }

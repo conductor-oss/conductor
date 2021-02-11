@@ -75,7 +75,7 @@ public class WorkflowResource {
         return workflowService.getWorkflows(name, correlationId, includeClosed, includeTasks);
     }
 
-    @PostMapping(value = "/{name}/correlated", consumes = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/{name}/correlated")
     @Operation(summary = "Lists workflows for the given correlation id list")
     public Map<String, List<Workflow>> getWorkflows(@PathVariable("name") String name,
         @RequestParam(value = "includeClosed", defaultValue = "false", required = false) boolean includeClosed,
@@ -133,8 +133,7 @@ public class WorkflowResource {
         workflowService.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
 
-    @PostMapping(value = "/{workflowId}/rerun", consumes = APPLICATION_JSON_VALUE, produces = {TEXT_PLAIN_VALUE,
-        APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/{workflowId}/rerun", produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Reruns the workflow from a specific task")
     public String rerun(@PathVariable("workflowId") String workflowId,
         RerunWorkflowRequest request) {
@@ -173,7 +172,7 @@ public class WorkflowResource {
     @Operation(summary = "Search for workflows based on payload and other parameters",
         description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
             " If order is not specified, defaults to ASC.")
-    @GetMapping(value = "/search", produces = APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/search")
     public SearchResult<WorkflowSummary> search(
         @RequestParam(value = "start", defaultValue = "0", required = false) int start,
         @RequestParam(value = "size", defaultValue = "100", required = false) int size,
@@ -186,7 +185,7 @@ public class WorkflowResource {
     @Operation(summary = "Search for workflows based on task parameters",
         description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
             " If order is not specified, defaults to ASC")
-    @GetMapping(value = "/search-by-tasks", produces = APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/search-by-tasks")
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(
         @RequestParam(value = "start", defaultValue = "0", required = false) int start,
         @RequestParam(value = "size", defaultValue = "100", required = false) int size,
