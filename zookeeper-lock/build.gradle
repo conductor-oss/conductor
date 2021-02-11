@@ -1,7 +1,7 @@
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "org.apache.commons:commons-lang3"
     implementation "org.apache.curator:curator-recipes:${revCuratorRecipes}"

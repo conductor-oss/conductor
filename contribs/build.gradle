@@ -1,8 +1,8 @@
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
     implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
     implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
@@ -30,4 +30,5 @@ dependencies {
 
     testImplementation "org.eclipse.jetty:jetty-server:${revJettyServer}"
     testImplementation "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
 }

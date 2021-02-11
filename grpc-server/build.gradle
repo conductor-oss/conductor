@@ -3,7 +3,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-grpc')
 
-    implementation 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "io.grpc:grpc-netty:${revGrpc}"
     implementation "io.grpc:grpc-services:${revGrpc}"

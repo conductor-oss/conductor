@@ -1,7 +1,7 @@
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
     implementation "org.apache.commons:commons-lang3"
