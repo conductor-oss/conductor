@@ -115,7 +115,7 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateTaskDefsTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
                 session.execute(getCreateEventExecutionsTableStatement());
-                LOGGER.info("CassandraDAO initialization complete! Tables created!");
+                LOGGER.info("{} initialization complete! Tables created!",  getClass().getSimpleName());
                 initialized = true;
             }
         } catch (Exception e) {
