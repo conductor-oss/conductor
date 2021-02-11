@@ -1,0 +1,21 @@
+{
+  "properties": [
+    {
+      "name": "conductor.redis-lock.server-type",
+      "defaultValue": "SINGLE"
+    }
+  ],
+  "hints": [
+    {
+      "name": "conductor.redis-lock.server-type",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "java.lang.Enum"
+          }
+        }
+      ]
+    }
+  ]
+}

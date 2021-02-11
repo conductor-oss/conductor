@@ -18,9 +18,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class RedisLockProperties {
 
     /**
-     * The redis server configuration to be used. Valid configurations are listed in: {@link REDIS_SERVER_TYPE}
+     * The redis server configuration to be used.
      */
-    private String serverType = "single";
+    private REDIS_SERVER_TYPE serverType = REDIS_SERVER_TYPE.SINGLE;
 
     /**
      * The address of the redis server following format -- host:port
@@ -48,10 +48,10 @@ public class RedisLockProperties {
     private boolean ignoreLockingExceptions = false;
 
     public REDIS_SERVER_TYPE getServerType() {
-        return REDIS_SERVER_TYPE.valueOf(serverType.toUpperCase());
+        return serverType;
     }
 
-    public void setServerType(String serverType) {
+    public void setServerType(REDIS_SERVER_TYPE serverType) {
         this.serverType = serverType;
     }
 
