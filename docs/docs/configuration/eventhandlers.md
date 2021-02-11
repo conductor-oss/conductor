@@ -108,7 +108,7 @@ Given the following payload in the message:
     "expandInlineJSON": true
 }
 ```
-Input for starting a workflow and output when completing / failing task follows the same [expressions](/configuration/workflowdef/#wiring-inputs-and-outputs) used for wiring workflow inputs.
+Input for starting a workflow and output when completing / failing task follows the same [expressions](https://netflix.github.io/conductor/configuration/workflowdef/#wiring-inputs-and-outputs) used for wiring workflow inputs.
 
 !!!info "Expanding stringified JSON elements in payload"
 	`expandInlineJSON` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  
