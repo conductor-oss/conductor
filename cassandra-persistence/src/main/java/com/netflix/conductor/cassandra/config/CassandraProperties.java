@@ -65,12 +65,12 @@ public class CassandraProperties {
     /**
      * The consistency level to be used for read operations
      */
-    private String readConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM.name();
+    private ConsistencyLevel readConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM;
 
     /**
      * The consistency level to be used for write operations
      */
-    private String writeConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM.name();
+    private ConsistencyLevel writeConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM;
 
     /**
      * The time in seconds after which the in-memory task definitions cache will be refreshed
@@ -88,7 +88,7 @@ public class CassandraProperties {
      * The time to live in seconds for which the event execution will be persisted
      */
     @DurationUnit(ChronoUnit.SECONDS)
-    private Duration eventExecutionPersistenceTTL = Duration.ZERO;
+    private Duration eventExecutionPersistenceTtl = Duration.ZERO;
 
     public String getHostAddress() {
         return hostAddress;
@@ -155,18 +155,18 @@ public class CassandraProperties {
     }
 
     public ConsistencyLevel getReadConsistencyLevel() {
-        return ConsistencyLevel.valueOf(readConsistencyLevel);
+        return readConsistencyLevel;
     }
 
-    public void setReadConsistencyLevel(String readConsistencyLevel) {
+    public void setReadConsistencyLevel(ConsistencyLevel readConsistencyLevel) {
         this.readConsistencyLevel = readConsistencyLevel;
     }
 
     public ConsistencyLevel getWriteConsistencyLevel() {
-        return ConsistencyLevel.valueOf(writeConsistencyLevel);
+        return writeConsistencyLevel;
     }
 
-    public void setWriteConsistencyLevel(String writeConsistencyLevel) {
+    public void setWriteConsistencyLevel(ConsistencyLevel writeConsistencyLevel) {
         this.writeConsistencyLevel = writeConsistencyLevel;
     }
 
@@ -186,11 +186,11 @@ public class CassandraProperties {
         this.eventHandlerCacheRefreshInterval = eventHandlerCacheRefreshInterval;
     }
 
-    public Duration getEventExecutionPersistenceTTL() {
-        return eventExecutionPersistenceTTL;
+    public Duration getEventExecutionPersistenceTtl() {
+        return eventExecutionPersistenceTtl;
     }
 
-    public void setEventExecutionPersistenceTTL(Duration eventExecutionPersistenceTTL) {
-        this.eventExecutionPersistenceTTL = eventExecutionPersistenceTTL;
+    public void setEventExecutionPersistenceTtl(Duration eventExecutionPersistenceTtl) {
+        this.eventExecutionPersistenceTtl = eventExecutionPersistenceTtl;
     }
 }

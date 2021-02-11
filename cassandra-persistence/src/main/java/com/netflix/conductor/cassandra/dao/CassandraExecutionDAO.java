@@ -94,7 +94,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         Statements statements) {
         super(session, objectMapper, properties);
 
-        eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTTL().getSeconds();
+        eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTtl().getSeconds();
 
         this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());

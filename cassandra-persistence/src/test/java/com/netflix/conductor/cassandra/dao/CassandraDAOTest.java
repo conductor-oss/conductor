@@ -100,7 +100,7 @@ public class CassandraDAOTest {
         when(properties.getWriteConsistencyLevel()).thenReturn(ConsistencyLevel.LOCAL_ONE);
         when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
         when(properties.getEventHandlerCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
-        when(properties.getEventExecutionPersistenceTTL()).thenReturn(Duration.ofSeconds(5));
+        when(properties.getEventExecutionPersistenceTtl()).thenReturn(Duration.ofSeconds(5));
         Statements statements = new Statements(keyspaceName);
         metadataDAO = new CassandraMetadataDAO(session, objectMapper, properties, statements);
         executionDAO = new CassandraExecutionDAO(session, objectMapper, properties, statements);

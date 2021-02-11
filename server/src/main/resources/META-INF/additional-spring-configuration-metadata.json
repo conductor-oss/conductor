@@ -23,7 +23,9 @@
     {
       "name": "conductor.default-event-processor.enabled",
       "type": "java.lang.Boolean",
-      "description": "If set to true, use the provided default event processor for handling events."
+      "description": "If set to true, use the provided default event processor for handling events.",
+      "sourceType": "com.netflix.conductor.core.events.SimpleEventProcessor",
+      "defaultValue": "true"
     },
     {
       "name": "conductor.default-event-queue.type",
@@ -38,17 +40,21 @@
     {
       "name": "conductor.workflow-execution-lock.type",
       "type": "java.lang.String",
-      "description": "The implementation of the workflow execution lock to be used."
+      "description": "The implementation of the workflow execution lock to be used.",
+      "defaultValue": "noop_lock"
     },
     {
       "name": "conductor.event-queues.default.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enable the use of the underlying queue implementation to provide queues for consuming events."
+      "description": "Enable the use of the underlying queue implementation to provide queues for consuming events.",
+      "sourceType": "com.netflix.conductor.core.events.queue.ConductorEventQueueProvider",
+      "defaultValue": "true"
     },
     {
       "name": "conductor.event-queues.sqs.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enable the use of AWS SQS implementation to provide queues for consuming events."
+      "description": "Enable the use of AWS SQS implementation to provide queues for consuming events.",
+      "sourceType": "com.netflix.conductor.contribs.queue.sqs.config.SQSEventQueueConfiguration"
     },
     {
       "name": "conductor.event-queues.amqp.enabled",
