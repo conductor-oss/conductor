@@ -143,14 +143,34 @@ An HTTP task is used to make calls to another microservice over HTTP.
 | connectionTimeOut | Integer | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100. |
 | readTimeOut | Integer | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150. |
 
-**Output:**
+**Output: (output.response)**
 
 |name|type|description|
 |---|---|---|
-| response | Map |  JSON body containing the response if one is present |
+| body | Map |  JSON body containing the response if one is present |
 | headers | Map[String, Any] | Response Headers |
-| statusCode | Integer | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
+| statusCode (in response object) | Integer | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
 | reasonPhrase | String | Http Status Code's reason phrase |
+
+
+**Response**
+```json
+{
+  "response": {
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "reasonPhrase": "OK",
+    "body": {
+      "status": "success"
+    },
+    "statusCode": 200
+  }
+}
+
+```
 
 **Example**
 
