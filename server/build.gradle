@@ -32,6 +32,7 @@ dependencies {
     compile project(':conductor-contribs')
     compile project(':conductor-es5-persistence')
     compile project(':conductor-es6-persistence')
+//    compile project(':conductor-es7-persistence')
     compile project(':conductor-grpc-server')
     compile project(':conductor-zookeeper-lock')
     compile project(':conductor-redis-lock')

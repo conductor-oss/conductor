@@ -48,5 +48,6 @@ public interface EmbeddedElasticSearch extends Lifecycle {
         cleanDataDir(path);
         return createDataDir(path);
     }
-    void waitForGreenCluster() ;
+
+    void waitForGreenCluster();
 }
