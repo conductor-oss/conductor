@@ -16,9 +16,6 @@ import com.amazonaws.util.IOUtils;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +24,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import javax.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} for storing large JSON payload data.
@@ -88,11 +88,14 @@ class PayloadStorage implements ExternalPayloadStorage {
             try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(connection.getOutputStream())) {
                 long count = IOUtils.copy(payload, bufferedOutputStream);
                 bufferedOutputStream.flush();
-                LOGGER.debug("Uploaded {} bytes to uri: {}", count, uri);
-
                 // Check the HTTP response code
                 int responseCode = connection.getResponseCode();
-                LOGGER.debug("Upload completed with HTTP response code: {}", responseCode);
+                if (Response.Status.fromStatusCode(responseCode).getFamily() != Response.Status.Family.SUCCESSFUL) {
+                    String errorMsg = String.format("Unable to upload. Response code: %d", responseCode);
+                    LOGGER.error(errorMsg);
+                    throw new ConductorClientException(errorMsg);
+                }
+                LOGGER.debug("Uploaded {} bytes to uri: {}, with HTTP response code: {}", count, uri, responseCode);
             }
         } catch (URISyntaxException | MalformedURLException e) {
             String errorMsg = String.format("Invalid path specified: %s", uri);

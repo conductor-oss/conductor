@@ -665,7 +665,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
 
         when: "The workflow is retried"
-        workflowExecutor.retry(workflowInstanceId)
+        workflowExecutor.retry(workflowInstanceId, false)
 
         then:
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

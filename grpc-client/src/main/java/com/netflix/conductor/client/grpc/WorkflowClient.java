@@ -250,10 +250,11 @@ public class WorkflowClient extends ClientBase {
      *
      * @param workflowId the workflow id of the workflow with the failed task
      */
-    public void retryLastFailedTask(String workflowId) {
+    public void retryLastFailedTask(String workflowId, boolean resumeSubworkflowTasks) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.retryWorkflow(WorkflowServicePb.RetryWorkflowRequest.newBuilder()
             .setWorkflowId(workflowId)
+            .setResumeSubworkflowTasks(resumeSubworkflowTasks)
             .build()
         );
     }

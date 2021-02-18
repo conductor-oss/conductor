@@ -175,7 +175,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         }
 
         when: "workflow is restarted when QueueDAO is unavailable"
-        workflowResource.retry(workflowInstanceId)
+        workflowResource.retry(workflowInstanceId, false)
 
         then: "Verify retry fails"
         1 * queueDAO.push(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue push failed from Spy") }

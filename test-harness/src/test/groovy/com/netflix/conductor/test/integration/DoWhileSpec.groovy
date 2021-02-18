@@ -387,7 +387,7 @@ class DoWhileSpec extends AbstractSpecification {
         }
 
         when: "The workflow is retried"
-        workflowExecutor.retry(workflowInstanceId)
+        workflowExecutor.retry(workflowInstanceId, false)
 
         then: "Verify that workflow is running"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

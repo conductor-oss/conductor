@@ -314,8 +314,8 @@ public class WorkflowServiceImpl implements WorkflowService {
      *
      * @param workflowId WorkflowId of the workflow.
      */
-    public void retryWorkflow(String workflowId) {
-        workflowExecutor.retry(workflowId);
+    public void retryWorkflow(String workflowId, boolean resumeSubworkflowTasks) {
+        workflowExecutor.retry(workflowId, resumeSubworkflowTasks);
     }
 
     /**

@@ -144,6 +144,7 @@ message RestartWorkflowResponse {}
 
 message RetryWorkflowRequest {
     string workflow_id = 1;
+    bool resume_subworkflow_tasks = 2;
 }
 
 message RetryWorkflowResponse {}

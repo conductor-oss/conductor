@@ -531,7 +531,7 @@ public class TestWorkflowExecutor {
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
 
     @Test(expected = ApplicationException.class)
@@ -542,7 +542,7 @@ public class TestWorkflowExecutor {
         workflow.setTasks(Collections.emptyList());
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
 
     @Test(expected = ApplicationException.class)
@@ -586,7 +586,7 @@ public class TestWorkflowExecutor {
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
 
     @Test
@@ -681,7 +681,7 @@ public class TestWorkflowExecutor {
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
@@ -764,11 +764,10 @@ public class TestWorkflowExecutor {
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(8, workflow.getTasks().size());
     }
-
 
     @Test
     public void testRetryWorkflowMultipleRetries() {
@@ -812,7 +811,7 @@ public class TestWorkflowExecutor {
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(4, workflow.getTasks().size());
 
@@ -825,7 +824,7 @@ public class TestWorkflowExecutor {
         lastTask.setStatus(Status.FAILED);
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(5, workflow.getTasks().size());
 
@@ -839,7 +838,7 @@ public class TestWorkflowExecutor {
         lastTask2.setStatus(Status.FAILED);
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(6, workflow.getTasks().size());
     }
@@ -904,10 +903,84 @@ public class TestWorkflowExecutor {
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
-        workflowExecutor.retry(workflow.getWorkflowId());
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(6, workflow.getTasks().size());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+    }
+
+    @Test
+    public void testRetryFromLastFailedSubWorkflowTaskThenStartWithLastFailedTask() {
+
+        //given
+        String id = IDGenerator.generate();
+        String workflowInstanceId = IDGenerator.generate();
+        Task task = new Task();
+        task.setTaskType(TaskType.SIMPLE.name());
+        task.setTaskDefName("task");
+        task.setReferenceTaskName("task_ref");
+        task.setWorkflowInstanceId(workflowInstanceId);
+        task.setScheduledTime(System.currentTimeMillis());
+        task.setTaskId(IDGenerator.generate());
+        task.setStatus(Status.COMPLETED);
+        task.setRetryCount(0);
+        task.setWorkflowTask(new WorkflowTask());
+        task.setOutputData(new HashMap<>());
+        task.setSubWorkflowId(id);
+        task.setSeq(1);
+
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.SIMPLE.name());
+        task1.setTaskDefName("task1");
+        task1.setReferenceTaskName("task1_ref");
+        task1.setWorkflowInstanceId(workflowInstanceId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(IDGenerator.generate());
+        task1.setStatus(Status.FAILED);
+        task1.setRetryCount(0);
+        task1.setWorkflowTask(new WorkflowTask());
+        task1.setOutputData(new HashMap<>());
+        task1.setSubWorkflowId(id);
+        task1.setSeq(2);
+
+        Workflow subWorkflow = new Workflow();
+        subWorkflow.setWorkflowId(id);
+        subWorkflow.setStatus(Workflow.WorkflowStatus.FAILED);
+        subWorkflow.getTasks().addAll(Arrays.asList(task,task1));
+        subWorkflow.setParentWorkflowId("testRunWorkflowId");
+
+        Task task2 = new Task();
+        task2.setWorkflowInstanceId(subWorkflow.getWorkflowId());
+        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setTaskId(IDGenerator.generate());
+        task2.setStatus(Status.FAILED);
+        task2.setRetryCount(0);
+        task2.setOutputData(new HashMap<>());
+        task2.setSubWorkflowId(id);
+        task2.setTaskType(TaskType.SUB_WORKFLOW.name());
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("testRunWorkflowId");
+        workflow.setStatus(Workflow.WorkflowStatus.FAILED);
+        workflow.setTasks(Collections.singletonList(task2));
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("first_workflow");
+        workflow.setWorkflowDefinition(workflowDef);
+
+        //when
+        when(executionDAOFacade.getWorkflowById(workflow.getWorkflowId(), true)).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(task.getSubWorkflowId(), true)).thenReturn(subWorkflow);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(executionDAOFacade.getTaskById(subWorkflow.getParentWorkflowTaskId())).thenReturn(task1);
+        when(executionDAOFacade.getWorkflowById(subWorkflow.getParentWorkflowId(), false)).thenReturn(workflow);
+
+        workflowExecutor.retry(workflow.getWorkflowId(), true);
+
+        //then
+        assertEquals(task.getStatus(), Status.COMPLETED);
+        assertEquals(task1.getStatus(),Status.IN_PROGRESS);
+        assertEquals(workflow.getStatus(),WorkflowStatus.RUNNING);
+        assertEquals(subWorkflow.getStatus(),WorkflowStatus.RUNNING);
     }
 
     @Test

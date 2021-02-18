@@ -15,9 +15,13 @@ dependencies {
     implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
 
     implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
 
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io:${revCommonsIo}"
 
     implementation "org.slf4j:slf4j-api"
+
+    testImplementation "org.powermock:powermock-module-junit4:${revPowerMock}"
+    testImplementation "org.powermock:powermock-api-mockito2:${revPowerMock}"
 }
