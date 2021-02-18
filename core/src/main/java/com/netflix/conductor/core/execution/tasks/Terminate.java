@@ -55,9 +55,7 @@ public class Terminate extends WorkflowSystemTask {
         String returnStatus = (String) task.getInputData().get(TERMINATION_STATUS_PARAMETER);
 
         if(validateInputStatus(returnStatus)) {
-            workflow.setStatus(Workflow.WorkflowStatus.valueOf(returnStatus));
             task.setOutputData(getInputFromParam(task.getInputData()));
-            setWorkflowOutput(task.getOutputData(), workflow);
             task.setStatus(Task.Status.COMPLETED);
             return true;
         }
@@ -78,12 +76,7 @@ public class Terminate extends WorkflowSystemTask {
         return COMPLETED.name().equals(status) || FAILED.name().equals(status);
     }
 
-    private void setWorkflowOutput(Map<String, Object> taskOutput, Workflow workflow) {
-        if(!taskOutput.isEmpty()) {
-            workflow.setOutput(taskOutput);
-        }
-    }
-
+    @SuppressWarnings("unchecked")
     private Map<String, Object> getInputFromParam(Map<String, Object> taskInput) {
         HashMap<String, Object> output = new HashMap<>();
         if(taskInput.get(TERMINATION_WORKFLOW_OUTPUT) == null) {

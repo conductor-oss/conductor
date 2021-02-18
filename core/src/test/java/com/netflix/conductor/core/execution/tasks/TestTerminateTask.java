@@ -32,7 +32,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.FAILED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
     }
 
     @Test
@@ -47,7 +46,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.FAILED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
     }
 
     @Test
@@ -62,7 +60,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.FAILED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
     }
 
     @Test
@@ -81,8 +78,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.COMPLETED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-        assertEquals(expectedOutput, workflow.getOutput());
         assertEquals(expectedOutput, task.getOutputData());
     }
 
@@ -102,8 +97,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.COMPLETED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
-        assertEquals(expectedOutput, workflow.getOutput());
         assertEquals(expectedOutput, task.getOutputData());
     }
 
@@ -119,8 +112,6 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.COMPLETED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
-        assertTrue(workflow.getOutput().isEmpty());
         assertTrue(task.getOutputData().isEmpty());
     }
 
@@ -139,7 +130,5 @@ public class TestTerminateTask {
         task.getInputData().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(Task.Status.COMPLETED, task.getStatus());
-        assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
-        assertEquals(expectedOutput, workflow.getOutput());
     }
 }

@@ -311,6 +311,11 @@ public class WorkflowDef extends Auditable {
 	}
 
 	public WorkflowTask getNextTask(String taskReferenceName){
+		WorkflowTask workflowTask = getTaskByRefName(taskReferenceName);
+		if (workflowTask != null && TaskType.TERMINATE.name().equals(workflowTask.getType())) {
+			return null;
+		}
+
 		Iterator<WorkflowTask> it = tasks.iterator();
 		while(it.hasNext()){
 			 WorkflowTask task = it.next();

@@ -18,6 +18,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TERMINATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -73,6 +74,10 @@ public class DeciderService {
     private final Map<String, TaskMapper> taskMappers;
 
     private final Predicate<Task> isNonPendingTask = task -> !task.isRetried() && !task.getStatus().equals(SKIPPED) && !task.isExecuted();
+
+    private final Predicate<Workflow> containsSuccessfulTerminateTask = workflow -> workflow.getTasks().stream()
+        .anyMatch(task -> TERMINATE.name().equals(task.getTaskType())
+            && task.getStatus().isTerminal() && task.getStatus().isSuccessful());
 
     private static final String PENDING_TASK_TIME_THRESHOLD_PROPERTY_NAME = "workflow.task.pending.time.threshold.minutes";
 
@@ -215,7 +220,8 @@ public class DeciderService {
                     workflow.getWorkflowId());
             outcome.tasksToBeScheduled.addAll(unScheduledTasks);
         }
-        if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow)) {
+        if (containsSuccessfulTerminateTask.test(workflow) || (outcome.tasksToBeScheduled.isEmpty()
+            && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
             outcome.isComplete = true;
         }
@@ -223,7 +229,8 @@ public class DeciderService {
         return outcome;
     }
 
-    protected List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
+    @VisibleForTesting
+    List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
 
         //Update the task reference name and iteration
         tasks.forEach(nextTask -> {
@@ -295,11 +302,22 @@ public class DeciderService {
             return;
         }
 
+        Optional<Task> terminateTask = allTasks.stream()
+            .filter(t -> TaskType.TERMINATE.name().equals(t.getTaskType()) && t.getStatus().isTerminal()
+                && t.getStatus().isSuccessful())
+            .findFirst();
+        if (terminateTask.isPresent()) {
+            if (!terminateTask.get().getOutputData().isEmpty()) {
+                workflow.setOutput(terminateTask.get().getOutputData());
+            }
+            return;
+        }
+
         Task last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
 
         WorkflowDef workflowDef = workflow.getWorkflowDefinition();
         Map<String, Object> output;
-        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty() && !(TaskType.TERMINATE.name().equals(last.getTaskType()))) {
+        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty()) {
             Workflow workflowInstance = populateWorkflowAndTaskData(workflow);
             output = parametersUtils.getTaskInput(workflowDef.getOutputParameters(), workflowInstance, null, null);
         } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
@@ -313,10 +331,15 @@ public class DeciderService {
         externalizeWorkflowData(workflow);
     }
 
-    private boolean checkForWorkflowCompletion(final Workflow workflow) throws TerminateWorkflowException {
+    @VisibleForTesting
+    boolean checkForWorkflowCompletion(final Workflow workflow) throws TerminateWorkflowException {
         List<Task> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {
             return false;
+        }
+
+        if (containsSuccessfulTerminateTask.test(workflow)) {
+            return true;
         }
 
         Map<String, Status> taskStatusMap = new HashMap<>();

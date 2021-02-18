@@ -628,6 +628,7 @@ public class WorkflowTask {
 				}
 				break;
 			case DYNAMIC:
+			case TERMINATE:
 			case SIMPLE:
 				return null;
 			default:
