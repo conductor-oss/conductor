@@ -40,6 +40,10 @@ If you are using the java client then a simple property change will force  TaskR
 ```
 	conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain "mydomain"
 ```
+If you want to define a common domain for all the workers. You can define a property as follows: -
+```
+	conductor.worker.all.domain=mydomain
+```
 #### REST call
 `GET /tasks/poll/batch/T2?workerid=myworker&domain=mydomain`
 `GET /tasks/poll/T2?workerid=myworker&domain=mydomain`
