@@ -34,11 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-@Component
+@Component(JsonJqTransform.NAME)
 public class JsonJqTransform extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonJqTransform.class);
-    private static final String NAME = "JSON_JQ_TRANSFORM";
+    public static final String NAME = "JSON_JQ_TRANSFORM";
     private static final String QUERY_EXPRESSION_PARAMETER = "queryExpression";
     private static final String OUTPUT_RESULT = "result";
     private static final String OUTPUT_RESULT_LIST = "resultList";

@@ -43,7 +43,7 @@ import java.util.Map;
 /**
  * Task that enables calling another HTTP endpoint as part of its execution
  */
-@Component
+@Component(HttpTask.NAME)
 public class HttpTask extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpTask.class);
@@ -76,7 +76,7 @@ public class HttpTask extends WorkflowSystemTask {
         this.restTemplateProvider = restTemplateProvider;
         this.objectMapper = objectMapper;
         this.requestParameter = REQUEST_PARAMETER_NAME;
-        LOGGER.info("HttpTask initialized...");
+        LOGGER.info("{} initialized...", getName());
     }
 
     @Override
@@ -127,10 +127,10 @@ public class HttpTask extends WorkflowSystemTask {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to invoke http task: {} - uri: {}, vipAddress: {} in workflow: {}", task.getTaskId(),
+            LOGGER.error("Failed to invoke {} task: {} - uri: {}, vipAddress: {} in workflow: {}", getName(), task.getTaskId(),
                 input.getUri(), input.getVipAddress(), task.getWorkflowInstanceId(), e);
             task.setStatus(Status.FAILED);
-            task.setReasonForIncompletion("Failed to invoke http task due to: " + e.toString());
+            task.setReasonForIncompletion("Failed to invoke " + getName() + " task due to: " + e.toString());
             task.getOutputData().put("response", e.toString());
         }
     }

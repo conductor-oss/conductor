@@ -19,13 +19,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -40,13 +33,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+@Component(KafkaPublishTask.NAME)
 public class KafkaPublishTask extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaPublishTask.class);
 
     static final String REQUEST_PARAMETER_NAME = "kafka_request";
-    private static final String NAME = "KAFKA_PUBLISH";
+    public static final String NAME = "KAFKA_PUBLISH";
     private static final String MISSING_REQUEST =
         "Missing Kafka request. Task input MUST have a '" + REQUEST_PARAMETER_NAME
             + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
