@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
@@ -51,20 +50,26 @@ public class TaskResource {
 
     @GetMapping("/poll/{tasktype}")
     @Operation(summary = "Poll for a task of a certain type")
-    public Task poll(@PathVariable("tasktype") String taskType,
-                     @RequestParam(value = "workerid", required = false) String workerId,
-                     @RequestParam(value = "domain", required = false) String domain) {
-        return taskService.poll(taskType, workerId, domain);
+    public ResponseEntity<Task> poll(@PathVariable("tasktype") String taskType,
+                                     @RequestParam(value = "workerid", required = false) String workerId,
+                                     @RequestParam(value = "domain", required = false) String domain) {
+        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
+        return Optional.ofNullable(taskService.poll(taskType, workerId, domain))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/poll/batch/{tasktype}")
     @Operation(summary = "Batch poll for a task of a certain type")
-    public List<Task> batchPoll(@PathVariable("tasktype") String taskType,
-                                @RequestParam(value = "workerid", required = false) String workerId,
-                                @RequestParam(value = "domain", required = false) String domain,
-                                @RequestParam(value = "count", defaultValue = "1") int count,
-                                @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
-        return taskService.batchPoll(taskType, workerId, domain, count, timeout);
+    public ResponseEntity<List<Task>> batchPoll(@PathVariable("tasktype") String taskType,
+                                                @RequestParam(value = "workerid", required = false) String workerId,
+                                                @RequestParam(value = "domain", required = false) String domain,
+                                                @RequestParam(value = "count", defaultValue = "1") int count,
+                                                @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
+        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
+        return Optional.ofNullable(taskService.batchPoll(taskType, workerId, domain, count, timeout))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/in_progress/{tasktype}")
