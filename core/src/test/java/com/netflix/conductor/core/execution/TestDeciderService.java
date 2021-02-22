@@ -1139,6 +1139,56 @@ public class TestDeciderService {
         assertEquals("junit_task_2", nextTask3.get(0).getReferenceTaskName());
     }
 
+    @Test
+    public void testCheckForWorkflowCompletion() {
+        WorkflowDef conditionalWorkflowDef = createConditionalWF();
+        WorkflowTask terminateWT = new WorkflowTask();
+        terminateWT.setType(TaskType.TERMINATE.name());
+        terminateWT.setTaskReferenceName("terminate");
+        terminateWT.setName("terminate");
+        terminateWT.getInputParameters().put("terminationStatus", "COMPLETED");
+        conditionalWorkflowDef.getTasks().add(terminateWT);
+
+        // when workflow has no tasks
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(conditionalWorkflowDef);
+
+        // then workflow completion check returns false
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        // when only part of the tasks are completed
+        Task decTask = new Task();
+        decTask.setTaskType(TaskType.DECISION.name());
+        decTask.setReferenceTaskName("conditional2");
+        decTask.setStatus(Status.COMPLETED);
+
+        Task task1 = new Task();
+        decTask.setTaskType(TaskType.SIMPLE.name());
+        task1.setReferenceTaskName("t1");
+        task1.setStatus(Status.COMPLETED);
+
+        workflow.getTasks().addAll(Arrays.asList(decTask, task1));
+
+        // then workflow completion check returns false
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        // when the terminate task is COMPLETED
+        Task task2 = new Task();
+        decTask.setTaskType(TaskType.SIMPLE.name());
+        task2.setReferenceTaskName("t2");
+        task2.setStatus(Status.SCHEDULED);
+
+        Task terminateTask = new Task();
+        decTask.setTaskType(TaskType.TERMINATE.name());
+        terminateTask.setReferenceTaskName("terminate");
+        terminateTask.setStatus(Status.COMPLETED);
+
+        workflow.getTasks().addAll(Arrays.asList(task2, terminateTask));
+
+        // then the workflow completion check returns true
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
     private WorkflowDef createConditionalWF() {
 
         WorkflowTask workflowTask1 = new WorkflowTask();
