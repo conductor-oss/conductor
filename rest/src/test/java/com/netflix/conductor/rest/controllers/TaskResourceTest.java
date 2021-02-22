@@ -59,7 +59,7 @@ public class TaskResourceTest {
         task.setDomain("test");
 
         when(mockTaskService.poll(anyString(), anyString(), anyString())).thenReturn(task);
-        assertEquals(task, taskResource.poll("SIMPLE", "123", "test"));
+        assertEquals(ResponseEntity.ok(task), taskResource.poll("SIMPLE", "123", "test"));
     }
 
     @Test
@@ -73,7 +73,7 @@ public class TaskResourceTest {
 
         when(mockTaskService.batchPoll(anyString(), anyString(), anyString(), anyInt(), anyInt()))
             .thenReturn(listOfTasks);
-        assertEquals(listOfTasks, taskResource.batchPoll("SIMPLE", "123",
+        assertEquals(ResponseEntity.ok(listOfTasks), taskResource.batchPoll("SIMPLE", "123",
             "test", 1, 100));
     }
 
