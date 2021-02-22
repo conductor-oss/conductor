@@ -241,7 +241,7 @@ router.post('/restart/:workflowId', async (req, res, next) => {
 
 router.post('/retry/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.post(baseURL2 + req.params.workflowId + '/retry', {}, req.token);
+    const result = await http.post(baseURL2 + req.params.workflowId + '/retry?resumeSubworkflowTasks=' + (req.query && req.query.resumeSubworkflowTasks || false) , {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);

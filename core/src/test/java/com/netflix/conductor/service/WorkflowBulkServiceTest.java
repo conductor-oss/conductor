@@ -12,7 +12,18 @@
  */
 package com.netflix.conductor.service;
 
+import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import javax.validation.ConstraintViolationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,16 +31,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.validation.ConstraintViolationException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
-import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -40,15 +41,21 @@ public class WorkflowBulkServiceTest {
     static class TestWorkflowBulkConfiguration {
 
         @Bean
-        public WorkflowBulkService workflowBulkService() {
-            WorkflowExecutor workflowExecutor = mock(WorkflowExecutor.class);
+        WorkflowExecutor workflowExecutor() {
+            return mock(WorkflowExecutor.class);
+        }
+
+        @Bean
+        public WorkflowBulkService workflowBulkService(WorkflowExecutor workflowExecutor) {
             return new WorkflowBulkServiceImpl(workflowExecutor);
         }
     }
 
     @Autowired
-    private WorkflowBulkService workflowBulkService;
+    private WorkflowExecutor workflowExecutor;
 
+    @Autowired
+    private WorkflowBulkService workflowBulkService;
 
     @Test(expected = ConstraintViolationException.class)
     public void testPauseWorkflowNull() {
@@ -112,6 +119,14 @@ public class WorkflowBulkServiceTest {
             assertTrue(messages.contains("WorkflowIds list cannot be null."));
             throw ex;
         }
+    }
+
+    @Test
+    public void testRetryWorkflowSuccessful() {
+        //When
+        workflowBulkService.retry(Collections.singletonList("anyId"));
+        //Then
+        verify(workflowExecutor).retry("anyId", false);
     }
 
     @Test(expected = ConstraintViolationException.class)

@@ -21,6 +21,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -151,8 +152,9 @@ public class WorkflowResource {
     @PostMapping("/{workflowId}/retry")
     @Operation(summary = "Retries the last failed task")
     @ResponseStatus(value = HttpStatus.NO_CONTENT) // for backwards compatibility with 2.x client which expects a 204 for this request
-    public void retry(@PathVariable("workflowId") String workflowId) {
-        workflowService.retryWorkflow(workflowId);
+    public void retry(@PathVariable("workflowId") String workflowId,
+        @RequestParam(value = "resumeSubworkflowTasks", defaultValue = "false", required = false) boolean resumeSubworkflowTasks) {
+        workflowService.retryWorkflow(workflowId, resumeSubworkflowTasks);
     }
 
     @PostMapping("/{workflowId}/resetcallbacks")

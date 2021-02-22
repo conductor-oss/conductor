@@ -68,15 +68,16 @@ export function restartWorfklow(workflowId, withLatestVersion){
   }
 }
 
-export function retryWorfklow(workflowId){
+export function retryWorfklow(workflowId, resumeSubworkflowTasks){
   return function (dispatch) {
     dispatch({
       type: 'REQUESTED_RETRY_WORKFLOW',
-      workflowId
+      workflowId,
+      resumeSubworkflowTasks: resumeSubworkflowTasks || false
     });
 
 
-    return http.post('/api/wfe/retry/' + workflowId).then((data) => {
+    return http.post('/api/wfe/retry/' + workflowId+'?resumeSubworkflowTasks=' + resumeSubworkflowTasks).then((data) => {
       dispatch({
         type: 'RECEIVED_RETRY_WORKFLOW',
         workflowId

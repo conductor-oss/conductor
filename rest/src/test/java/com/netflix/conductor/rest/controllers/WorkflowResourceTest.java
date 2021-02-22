@@ -172,8 +172,8 @@ public class WorkflowResourceTest {
 
     @Test
     public void testRetry() {
-        workflowResource.retry("w123");
-        verify(mockWorkflowService, times(1)).retryWorkflow(anyString());
+        workflowResource.retry("w123", false);
+        verify(mockWorkflowService, times(1)).retryWorkflow(anyString(), anyBoolean());
 
     }
 

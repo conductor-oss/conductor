@@ -31,14 +31,16 @@
       },
       "type": "SUB_WORKFLOW",
       "subWorkflowParam": {
-        "name": "sub_workflow"
+        "name": "${workflow.input.subwf}",
+        "version": 1
       },
       "startDelay": 0,
       "joinOn": [],
       "optional": false,
       "defaultExclusiveJoinTask": [],
       "asyncComplete": false,
-      "loopOver": []
+      "loopOver": [],
+      "retryCount": 0
     }
   ],
   "inputParameters": [
