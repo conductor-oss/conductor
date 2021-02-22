@@ -12,14 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -40,6 +32,13 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,12 +50,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
 
 /**
  * Decider evaluates the state of the workflow by inspecting the current state along with the blueprint. The result of
@@ -73,7 +74,7 @@ public class DeciderService {
     private final MetadataDAO metadataDAO;
     private final long taskPendingTimeThresholdMins;
 
-    private final Map<String, TaskMapper> taskMappers;
+    private final Map<TaskType, TaskMapper> taskMappers;
 
     private final Predicate<Task> isNonPendingTask = task -> !task.isRetried() && !task.getStatus().equals(SKIPPED)
         && !task.isExecuted();
@@ -84,7 +85,7 @@ public class DeciderService {
 
     public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
         ExternalPayloadStorageUtils externalPayloadStorageUtils,
-        @Qualifier("taskProcessorsMap") Map<String, TaskMapper> taskMappers,
+        @Qualifier("taskProcessorsMap") Map<TaskType, TaskMapper> taskMappers,
         @Value("${conductor.app.taskPendingTimeThreshold:60m}") Duration taskPendingTimeThreshold) {
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
@@ -755,7 +756,7 @@ public class DeciderService {
         // for static forks, each branch of the fork creates a join task upon completion
         // for dynamic forks, a join task is created with the fork and also with each branch of the fork
         // a new task must only be scheduled if a task with the same reference name is not already in this workflow instance
-        List<Task> tasks = taskMappers.get(taskType.name()).getMappedTasks(taskMapperContext).stream()
+        List<Task> tasks = taskMappers.get(taskType).getMappedTasks(taskMapperContext).stream()
             .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
             .collect(Collectors.toList());
         tasks.forEach(this::externalizeTaskData);

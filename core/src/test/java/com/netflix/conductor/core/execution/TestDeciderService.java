@@ -12,19 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -59,6 +46,16 @@ import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
@@ -74,15 +71,30 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+
+import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -121,18 +133,18 @@ public class TestDeciderService {
         when(metadataDAO.getLatestWorkflowDef(any())).thenReturn(Optional.of(workflowDef));
 
         parametersUtils = new ParametersUtils(objectMapper);
-        Map<String, TaskMapper> taskMappers = new HashMap<>();
-        taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
-        taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
-        taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
-        taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
+        Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
+        taskMappers.put(DECISION, new DecisionTaskMapper());
+        taskMappers.put(DYNAMIC, new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(FORK_JOIN, new ForkJoinTaskMapper());
+        taskMappers.put(JOIN, new JoinTaskMapper());
+        taskMappers.put(FORK_JOIN_DYNAMIC, new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
+        taskMappers.put(USER_DEFINED, new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(SIMPLE, new SimpleTaskMapper(parametersUtils));
+        taskMappers.put(SUB_WORKFLOW, new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(EVENT, new EventTaskMapper(parametersUtils));
+        taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
+        taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers,
             Duration.ofMinutes(60));
@@ -371,7 +383,7 @@ public class TestDeciderService {
 
         WorkflowTask taskAfterT3 = def.getNextTask("t3");
         assertNotNull(taskAfterT3);
-        assertEquals(TaskType.DECISION.name(), taskAfterT3.getType());
+        assertEquals(DECISION.name(), taskAfterT3.getType());
         assertEquals("d1", taskAfterT3.getTaskReferenceName());
 
         WorkflowTask taskAfterT4 = def.getNextTask("t4");
@@ -872,7 +884,7 @@ public class TestDeciderService {
         WorkflowTask workflowTask1 = new WorkflowTask();
         workflowTask1.setName("s1");
         workflowTask1.setTaskReferenceName("s1");
-        workflowTask1.setType(TaskType.SIMPLE.name());
+        workflowTask1.setType(SIMPLE.name());
         workflowTask1.setTaskDefinition(new TaskDef("s1"));
 
         List<Task> tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflow, workflowTask1, 0, null);
@@ -883,7 +895,7 @@ public class TestDeciderService {
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("s2");
         workflowTask2.setTaskReferenceName("s2");
-        workflowTask2.setType(TaskType.SIMPLE.name());
+        workflowTask2.setType(SIMPLE.name());
         workflowTask2.setTaskDefinition(new TaskDef("s2"));
         tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflow, workflowTask2, 0, null);
         assertNotNull(tasksToBeScheduled);
@@ -1094,12 +1106,12 @@ public class TestDeciderService {
 
         // when only part of the tasks are completed
         Task decTask = new Task();
-        decTask.setTaskType(TaskType.DECISION.name());
+        decTask.setTaskType(DECISION.name());
         decTask.setReferenceTaskName("conditional2");
         decTask.setStatus(Status.COMPLETED);
 
         Task task1 = new Task();
-        decTask.setTaskType(TaskType.SIMPLE.name());
+        decTask.setTaskType(SIMPLE.name());
         task1.setReferenceTaskName("t1");
         task1.setStatus(Status.COMPLETED);
 
@@ -1110,7 +1122,7 @@ public class TestDeciderService {
 
         // when the terminate task is COMPLETED
         Task task2 = new Task();
-        decTask.setTaskType(TaskType.SIMPLE.name());
+        decTask.setTaskType(SIMPLE.name());
         task2.setReferenceTaskName("t2");
         task2.setStatus(Status.SCHEDULED);
 
@@ -1158,7 +1170,7 @@ public class TestDeciderService {
         workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask decisionTask2 = new WorkflowTask();
-        decisionTask2.setType(TaskType.DECISION.name());
+        decisionTask2.setType(DECISION.name());
         decisionTask2.setCaseValueParam("case");
         decisionTask2.setName("conditional2");
         decisionTask2.setTaskReferenceName("conditional2");
@@ -1169,7 +1181,7 @@ public class TestDeciderService {
         decisionTask2.getInputParameters().put("case", "workflow.input.param2");
 
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setType(DECISION.name());
         decisionTask.setCaseValueParam("case");
         decisionTask.setName("conditional");
         decisionTask.setTaskReferenceName("conditional");
@@ -1189,7 +1201,7 @@ public class TestDeciderService {
         WorkflowTask finalDecisionTask = new WorkflowTask();
         finalDecisionTask.setName("finalcondition");
         finalDecisionTask.setTaskReferenceName("tf");
-        finalDecisionTask.setType(TaskType.DECISION.name());
+        finalDecisionTask.setType(DECISION.name());
         finalDecisionTask.setCaseValueParam("finalCase");
         Map<String, Object> fi = new HashMap<>();
         fi.put("finalCase", "workflow.input.finalCase");
@@ -1294,7 +1306,7 @@ public class TestDeciderService {
         }
 
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setType(DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("d1");
         decisionTask.setDefaultCase(Collections.singletonList(tasks.get(8)));
@@ -1306,7 +1318,7 @@ public class TestDeciderService {
 
         WorkflowDef subWorkflowDef = createLinearWorkflow();
         WorkflowTask subWorkflow = new WorkflowTask();
-        subWorkflow.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflow.setType(SUB_WORKFLOW.name());
         subWorkflow.setName("sw1");
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName(subWorkflowDef.getName());
@@ -1314,7 +1326,7 @@ public class TestDeciderService {
         subWorkflow.setTaskReferenceName("sw1");
 
         WorkflowTask forkTask2 = new WorkflowTask();
-        forkTask2.setType(TaskType.FORK_JOIN.name());
+        forkTask2.setType(FORK_JOIN.name());
         forkTask2.setName("second fork");
         forkTask2.setTaskReferenceName("fork2");
         forkTask2.getForkTasks().add(Arrays.asList(tasks.get(2), tasks.get(4)));
@@ -1322,12 +1334,12 @@ public class TestDeciderService {
 
         WorkflowTask joinTask2 = new WorkflowTask();
         joinTask2.setName("join2");
-        joinTask2.setType(TaskType.JOIN.name());
+        joinTask2.setType(JOIN.name());
         joinTask2.setTaskReferenceName("join2");
         joinTask2.setJoinOn(Arrays.asList("t4", "d1"));
 
         WorkflowTask forkTask1 = new WorkflowTask();
-        forkTask1.setType(TaskType.FORK_JOIN.name());
+        forkTask1.setType(FORK_JOIN.name());
         forkTask1.setName("fork1");
         forkTask1.setTaskReferenceName("fork1");
         forkTask1.getForkTasks().add(Collections.singletonList(tasks.get(1)));
@@ -1336,7 +1348,7 @@ public class TestDeciderService {
 
         WorkflowTask joinTask1 = new WorkflowTask();
         joinTask1.setName("join1");
-        joinTask1.setType(TaskType.JOIN.name());
+        joinTask1.setType(JOIN.name());
         joinTask1.setTaskReferenceName("join1");
         joinTask1.setJoinOn(Arrays.asList("t1", "fork2"));
 
