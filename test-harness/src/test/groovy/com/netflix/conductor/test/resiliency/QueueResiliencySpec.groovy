@@ -22,6 +22,7 @@ import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 
 /**
  * When QueueDAO is unavailable,
@@ -404,13 +405,13 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     def "Verify polls return with no result when QueueDAO is unavailable"() {
         when: "Some task 'integration_task_1' is polled"
-        def pollResult = taskResource.poll("integration_task_1", "test", "")
+        def responseEntity = taskResource.poll("integration_task_1", "test", "")
 
         then:
         1 * queueDAO.pop(*_) >> { throw new IllegalStateException("Queue pop failed from Spy") }
         0 * queueDAO._
         notThrown(Exception)
-        pollResult == null
+        responseEntity && responseEntity.statusCode == HttpStatus.NO_CONTENT && !responseEntity.body
     }
 
     def "Verify updateTask with COMPLETE status succeeds when QueueDAO is unavailable"() {
@@ -428,21 +429,21 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         }
 
         when: "The first task 'integration_task_1' is polled"
-        def task = taskResource.poll("integration_task_1", "test", null)
+        def responseEntity = taskResource.poll("integration_task_1", "test", null)
 
         then: "Verify task is returned successfully"
-        task
-        task.status == Task.Status.IN_PROGRESS
-        task.taskType == 'integration_task_1'
+        responseEntity && responseEntity.statusCode == HttpStatus.OK && responseEntity.body
+        responseEntity.body.status == Task.Status.IN_PROGRESS
+        responseEntity.body.taskType == 'integration_task_1'
 
         when: "the above task is updated, while QueueDAO is unavailable"
-        def taskResult = new TaskResult(task)
+        def taskResult = new TaskResult(responseEntity.body)
         taskResult.setStatus(TaskResult.Status.COMPLETED)
         def result = taskResource.updateTask(taskResult)
 
         then: "updateTask returns successfully without any exceptions"
         1 * queueDAO.remove(*_) >> { throw new IllegalStateException("Queue remove failed from Spy") }
-        result == task.getTaskId()
+        result == responseEntity.body.taskId
         notThrown(Exception)
     }
 
@@ -461,15 +462,15 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         }
 
         when: "The first task 'integration_task_1' is polled"
-        def task = taskResource.poll("integration_task_1", "test", null)
+        def responseEntity = taskResource.poll("integration_task_1", "test", null)
 
         then: "Verify task is returned successfully"
-        task
-        task.status == Task.Status.IN_PROGRESS
-        task.taskType == 'integration_task_1'
+        responseEntity && responseEntity.statusCode == HttpStatus.OK
+        responseEntity.body.status == Task.Status.IN_PROGRESS
+        responseEntity.body.taskType == 'integration_task_1'
 
         when: "the above task is updated, while QueueDAO is unavailable"
-        def taskResult = new TaskResult(task)
+        def taskResult = new TaskResult(responseEntity.body)
         taskResult.setStatus(TaskResult.Status.IN_PROGRESS)
         taskResult.setCallbackAfterSeconds(120)
         def result = taskResource.updateTask(taskResult)
