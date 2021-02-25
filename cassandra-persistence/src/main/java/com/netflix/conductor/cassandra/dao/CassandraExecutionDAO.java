@@ -24,7 +24,6 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
@@ -32,7 +31,6 @@ import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +56,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 
 @Trace
-public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO, PollDataDAO {
+public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
@@ -612,33 +610,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
         }
-    }
-
-    /**
-     * This is a dummy implementation and this feature is not implemented for Cassandra backed Conductor
-     */
-    @Override
-    public void updateLastPollData(String taskDefName, String domain, String workerId) {
-        throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
-    }
-
-    /**
-     * This is a dummy implementation and this feature is not implemented for Cassandra backed Conductor
-     */
-    @Override
-    public PollData getPollData(String taskDefName, String domain) {
-        throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
-    }
-
-    /**
-     * This is a dummy implementation and this feature is not implemented for Cassandra backed Conductor
-     */
-    @Override
-    public List<PollData> getPollData(String taskDefName) {
-        throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     private boolean removeTask(Task task) {

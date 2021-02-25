@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.cassandra.dao.CassandraExecutionDAO;
 import com.netflix.conductor.cassandra.dao.CassandraMetadataDAO;
+import com.netflix.conductor.cassandra.dao.CassandraPollDataDAO;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -78,6 +79,11 @@ public class CassandraConfiguration {
     public EventHandlerDAO cassandraEventHandlerDAO(Session session, ObjectMapper objectMapper,
         CassandraProperties properties, Statements statements) {
         return new CassandraEventHandlerDAO(session, objectMapper, properties, statements);
+    }
+
+    @Bean
+    public CassandraPollDataDAO cassandraPollDataDAO() {
+        return new CassandraPollDataDAO();
     }
 
     @Bean
