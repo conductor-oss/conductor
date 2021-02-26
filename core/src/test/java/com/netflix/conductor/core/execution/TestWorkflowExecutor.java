@@ -374,7 +374,6 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(0, updateTasksCalledCounter.get());
         assertEquals(0, removeQueueEntryCalledCounter.get());
-
         verify(workflowStatusListener, times(1)).onWorkflowCompletedIfEnabled(any(Workflow.class));
         verify(workflowStatusListener, times(0)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
 
