@@ -32,4 +32,9 @@ public class WorkflowStatusListenerStub implements WorkflowStatusListener {
     public void onWorkflowTerminated(Workflow workflow) {
         LOGGER.debug("Workflow {} is terminated", workflow.getWorkflowId());
     }
+
+    @Override
+    public void onWorkflowFinalized(Workflow workflow) {
+        LOGGER.debug("Workflow {} is finalized", workflow.getWorkflowId());
+    }
 }
