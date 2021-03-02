@@ -12,6 +12,6 @@
     </filter-mapping>
 
     <listener>
-        <listener-class>com.netflix.conductor.server.ServletContextListner</listener-class>
+        <listener-class>com.netflix.conductor.server.ServletContextListener</listener-class>
     </listener>
 </web-app>

@@ -32,7 +32,7 @@ import java.util.Optional;
  * @author Viren
  *
  */
-public class ServletContextListner extends GuiceServletContextListener {
+public class ServletContextListener extends GuiceServletContextListener {
     private Injector serverInjector;
 
     @Override
