@@ -12,6 +12,17 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -39,6 +50,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -83,18 +95,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -1038,6 +1039,34 @@ public class TestDeciderService {
         deciderService.updateWorkflowOutput(workflow, null);
         assertNotNull(workflow.getOutput());
         assertEquals("workflowValue", workflow.getOutput().get("workflowKey"));
+    }
+
+    @Test
+    public void testUpdateWorkflowOutput_WhenWorkflowHasTerminateTask() {
+        Workflow workflow = new Workflow();
+        Task task = new Task();
+        task.setTaskType(Terminate.NAME);
+        task.setStatus(Status.COMPLETED);
+        task.setOutputData(new HashMap() {{
+            put("taskKey", "taskValue");
+        }});
+        workflow.getTasks().add(task);
+        deciderService.updateWorkflowOutput(workflow, null);
+        assertNotNull(workflow.getOutput());
+        assertEquals("taskValue", workflow.getOutput().get("taskKey"));
+        verify(externalPayloadStorageUtils, never()).downloadPayload(anyString());
+
+        // when terminate task has output in external payload storage
+        String externalOutputPayloadStoragePath = "/task/output/terminate.json";
+        workflow.getTasks().get(0).setOutputData(null);
+        workflow.getTasks().get(0).setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+        when(externalPayloadStorageUtils.downloadPayload(externalOutputPayloadStoragePath)).thenReturn(new HashMap() {{
+            put("taskKey", "taskValue");
+        }});
+        deciderService.updateWorkflowOutput(workflow, null);
+        assertNotNull(workflow.getOutput());
+        assertEquals("taskValue", workflow.getOutput().get("taskKey"));
+        verify(externalPayloadStorageUtils, times(1)).downloadPayload(anyString());
     }
 
     @Test
