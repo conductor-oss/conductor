@@ -41,13 +41,18 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
     def FORK_JOIN_WF = 'FanInOutTest'
 
     @Shared
-    def WORKFLOW_WITH_INLINE_SUB_WF = "WorkflowWithInlineSubWorkflow"
+    def WORKFLOW_WITH_INLINE_SUB_WF = 'WorkflowWithInlineSubWorkflow'
+
+    @Shared
+    def WORKFLOW_WITH_DECISION_AND_TERMINATE = 'ConditionalTerminateWorkflow'
 
     def setup() {
         workflowTestUtil.registerWorkflows('simple_workflow_1_integration_test.json',
                 'conditional_system_task_workflow_integration_test.json',
                 'fork_join_integration_test.json',
-                'simple_workflow_with_sub_workflow_inline_def_integration_test.json')
+                'simple_workflow_with_sub_workflow_inline_def_integration_test.json',
+                'decision_and_terminate_integration_test.json'
+        )
     }
 
     def "Test simple workflow using external payload storage"() {
@@ -627,5 +632,62 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
 
         cleanup:
         metadataService.updateTaskDef(persistedTask2Definition)
+    }
+
+    def "Test workflow with terminate in decision branch using external payload storage"() {
+
+        given: "An existing workflow definition"
+        metadataService.getWorkflowDef(WORKFLOW_WITH_DECISION_AND_TERMINATE,1)
+
+        and: "input required to start large payload workflow"
+        def workflowInputPath = INITIAL_WORKFLOW_INPUT_PATH
+        def correlationId = "decision_terminate_external_storage"
+
+        when: "the workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_DECISION_AND_TERMINATE, 1, correlationId, null, workflowInputPath, null, null)
+
+        then: "verify that the workflow is in RUNNING state"
+        with (workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            input.isEmpty()
+            externalInputPayloadStoragePath == workflowInputPath
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].seq == 1
+        }
+
+        when: "poll and complete the 'integration_task_1' with external payload storage"
+        def taskOutputPath = TASK_OUTPUT_PATH
+        def pollAndCompleteLargePayloadTask = workflowTestUtil.pollAndCompleteLargePayloadTask('integration_task_1', 'task1.integration.worker', taskOutputPath)
+
+        then: "verify that the 'integration_task_1' was polled and acknowledged"
+        verifyPolledAndAcknowledgedLargePayloadTask(pollAndCompleteLargePayloadTask)
+
+        and: "verify that the 'integration_task_1' is COMPLETED and the workflow has FAILED due to terminate task"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.FAILED
+            input.isEmpty()
+            externalInputPayloadStoragePath == workflowInputPath
+            tasks.size() == 3
+            output.isEmpty()
+            externalOutputPayloadStoragePath == WORKFLOW_OUTPUT_PATH
+            reasonForIncompletion.contains('Workflow is FAILED by TERMINATE task')
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].outputData.isEmpty()
+            tasks[0].externalOutputPayloadStoragePath == taskOutputPath
+            tasks[0].seq == 1
+            tasks[1].taskType == 'DECISION'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].seq == 2
+            tasks[2].taskType == 'TERMINATE'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].inputData.isEmpty()
+            tasks[2].externalInputPayloadStoragePath == INPUT_PAYLOAD_PATH
+            tasks[2].seq == 3
+            tasks[2].outputData.isEmpty()
+            tasks[2].externalOutputPayloadStoragePath == TASK_OUTPUT_PATH
+        }
     }
 }

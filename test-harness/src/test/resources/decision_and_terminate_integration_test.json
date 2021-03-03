@@ -30,7 +30,7 @@
       "type": "DECISION",
       "caseValueParam": "case",
       "decisionCases": {
-        "pass": [
+        "one": [
           {
             "name": "integration_task_2",
             "taskReferenceName": "t2",
@@ -49,7 +49,7 @@
             "loopOver": []
           }
         ],
-        "fail": [
+        "two": [
           {
             "name": "terminate",
             "taskReferenceName": "terminate0",

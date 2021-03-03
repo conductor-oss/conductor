@@ -47,7 +47,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
                 'simple_lambda_workflow_integration_test.json',
                 'terminate_task_parent_workflow.json',
                 'terminate_task_sub_workflow.json',
-                "decision_and_terminate_integration_test.json"
+                'decision_and_terminate_integration_test.json'
         )
     }
 
@@ -208,7 +208,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         Map workflowInput = new HashMap<String, Object>()
         workflowInput['param1'] = 'p1'
         workflowInput['param2'] = 'p2'
-        workflowInput['case'] = 'fail'
+        workflowInput['case'] = 'two'
 
         when: "The workflow is started"
         def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_DECISION_AND_TERMINATE, 1, '',

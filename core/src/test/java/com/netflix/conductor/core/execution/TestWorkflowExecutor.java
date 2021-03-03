@@ -424,8 +424,8 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
 
-        verify(workflowStatusListener, times(0)).onWorkflowTerminated(any(Workflow.class));
-        verify(workflowStatusListener, times(0)).onWorkflowFinalized(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowTerminatedIfEnabled(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
 
         def.setWorkflowStatusListenerEnabled(true);
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
@@ -503,6 +503,8 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("test-workflow-id");
         workflow.getTasks().addAll(Arrays.asList(task_1, task_2));
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
+        workflow.setEndTime(500);
+        workflow.setLastRetriedTime(100);
 
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
         doNothing().when(executionDAOFacade).removeTask(any());
@@ -513,6 +515,8 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.rewind(workflow.getWorkflowId(), false);
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(0, workflow.getEndTime());
+        assertEquals(0, workflow.getLastRetriedTime());
         verify(metadataDAO, never()).getLatestWorkflowDef(any());
 
         ArgumentCaptor<Workflow> argumentCaptor = ArgumentCaptor.forClass(Workflow.class);
@@ -522,6 +526,8 @@ public class TestWorkflowExecutor {
 
         // add a new version of the workflow definition and restart with latest
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        workflow.setEndTime(500);
+        workflow.setLastRetriedTime(100);
         workflowDef = new WorkflowDef();
         workflowDef.setName("testDef");
         workflowDef.setVersion(2);
@@ -531,6 +537,8 @@ public class TestWorkflowExecutor {
         when(metadataDAO.getLatestWorkflowDef(workflow.getWorkflowName())).thenReturn(Optional.of(workflowDef));
         workflowExecutor.rewind(workflow.getWorkflowId(), true);
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(0, workflow.getEndTime());
+        assertEquals(0, workflow.getLastRetriedTime());
         verify(metadataDAO, times(1)).getLatestWorkflowDef(anyString());
 
         argumentCaptor = ArgumentCaptor.forClass(Workflow.class);

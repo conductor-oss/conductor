@@ -523,6 +523,7 @@ public class WorkflowExecutor {
         workflow.setReasonForIncompletion(null);
         workflow.setStartTime(System.currentTimeMillis());
         workflow.setEndTime(0);
+        workflow.setLastRetriedTime(0);
         // Change the status to running
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setOutput(null);
@@ -691,14 +692,14 @@ public class WorkflowExecutor {
 
     private void endExecution(Workflow workflow) {
         Optional<Task> terminateTask = workflow.getTasks().stream()
-            .filter(t -> TERMINATE.name().equals(t.getTaskType()) && t.getStatus().isTerminal()
-                && t.getStatus().isSuccessful())
-            .findFirst();
+                .filter(t -> TERMINATE.name().equals(t.getTaskType()) && t.getStatus().isTerminal()
+                        && t.getStatus().isSuccessful())
+                .findFirst();
         if (terminateTask.isPresent()) {
             String terminationStatus =
-                (String) terminateTask.get().getInputData().get(Terminate.getTerminationStatusParameter());
+                    (String) terminateTask.get().getWorkflowTask().getInputParameters().get(Terminate.getTerminationStatusParameter());
             String reason = String
-                .format("Workflow is %s by TERMINATE task: %s", terminationStatus, terminateTask.get().getTaskId());
+                    .format("Workflow is %s by TERMINATE task: %s", terminationStatus, terminateTask.get().getTaskId());
             if (WorkflowStatus.FAILED.name().equals(terminationStatus)) {
                 workflow.setStatus(WorkflowStatus.FAILED);
                 workflow = terminate(workflow, new TerminateWorkflowException(reason));
@@ -1082,15 +1083,16 @@ public class WorkflowExecutor {
 
             tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
 
+            Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
             for (Task task : outcome.tasksToBeScheduled) {
                 if (isSystemTask.and(isNonTerminalTask).test(task)) {
                     WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-                    Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
+                    deciderService.populateTaskData(task);
                     if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
-                        deciderService.externalizeTaskData(task);
                         tasksToBeUpdated.add(task);
                         stateChanged = true;
                     }
+                    deciderService.externalizeTaskData(task);
                 }
             }
 
