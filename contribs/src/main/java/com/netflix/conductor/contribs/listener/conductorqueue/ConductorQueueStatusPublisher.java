@@ -35,6 +35,7 @@ public class ConductorQueueStatusPublisher implements WorkflowStatusListener {
 
     private final String successStatusQueue;
     private final String failureStatusQueue;
+    private final String finalizeStatusQueue;
 
     public ConductorQueueStatusPublisher(QueueDAO queueDAO, ObjectMapper objectMapper,
         ConductorQueueStatusPublisherProperties properties) {
@@ -42,6 +43,7 @@ public class ConductorQueueStatusPublisher implements WorkflowStatusListener {
         this.objectMapper = objectMapper;
         this.successStatusQueue = properties.getSuccessQueue();
         this.failureStatusQueue = properties.getFailureQueue();
+        this.finalizeStatusQueue = properties.getFinalizeQueue();
     }
 
     @Override
@@ -54,6 +56,12 @@ public class ConductorQueueStatusPublisher implements WorkflowStatusListener {
     public void onWorkflowTerminated(Workflow workflow) {
         LOGGER.info("Publishing callback of workflow {} on termination", workflow.getWorkflowId());
         queueDAO.push(failureStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
+    }
+
+    @Override
+    public void onWorkflowFinalized(Workflow workflow) {
+        LOGGER.info("Publishing callback of workflow {} on finalization", workflow.getWorkflowId());
+        queueDAO.push(finalizeStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
     private Message workflowToMessage(Workflow workflow) {

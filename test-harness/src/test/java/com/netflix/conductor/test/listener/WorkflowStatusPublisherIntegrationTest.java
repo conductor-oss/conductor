@@ -47,12 +47,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(properties = {
     "conductor.workflow-status-listener.type=queue_publisher",
     "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
-    "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy"
+    "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
+    "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final"
 })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class WorkflowStatusPublisherIntegrationTest {
 
     private final String CALLBACK_QUEUE = "dummy";
+    private final String FINALIZED_QUEUE = "final";
     private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
     private static final int WORKFLOW_VERSION = 1;
     private static final String INCOMPLETION_REASON = "test reason";
@@ -108,7 +110,17 @@ public class WorkflowStatusPublisherIntegrationTest {
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
         WorkflowSummary payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        assertEquals(id, callbackMessages.get(0).getId());
+        assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
+        assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, payload.getStatus());
+        assertEquals(INCOMPLETION_REASON, payload.getReasonForIncompletion());
 
+        // check finalized queue
+        callbackMessages = queueDAO.pollMessages(FINALIZED_QUEUE, 1, 200);
+        queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
+
+        payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
@@ -149,7 +161,16 @@ public class WorkflowStatusPublisherIntegrationTest {
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
         WorkflowSummary payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        assertEquals(id, callbackMessages.get(0).getId());
+        assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
+        assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, payload.getStatus());
 
+        // check finalized queue
+        callbackMessages = queueDAO.pollMessages(FINALIZED_QUEUE, 1, 200);
+        queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
+
+        payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());

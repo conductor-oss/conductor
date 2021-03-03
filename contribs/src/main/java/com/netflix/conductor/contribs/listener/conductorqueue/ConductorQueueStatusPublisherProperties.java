@@ -21,6 +21,8 @@ public class ConductorQueueStatusPublisherProperties {
 
     private String failureQueue = "_callbackFailureQueue";
 
+    private String finalizeQueue = "_callbackFinalizeQueue";
+
     public String getSuccessQueue() {
         return successQueue;
     }
@@ -35,5 +37,13 @@ public class ConductorQueueStatusPublisherProperties {
 
     public void setFailureQueue(String failureQueue) {
         this.failureQueue = failureQueue;
+    }
+
+    public String getFinalizeQueue() {
+        return finalizeQueue;
+    }
+
+    public void setFinalizeQueue(String finalizeQueue) {
+        this.finalizeQueue = finalizeQueue;
     }
 }
