@@ -120,7 +120,6 @@ Modified properties in the `core` module:
 | APP_ID | conductor.app.appId | conductor |
 | workflow.executor.service.max.threads | conductor.app.executorServiceMaxThreadCount | 50 |
 | decider.sweep.frequency.seconds | conductor.app.sweepFrequency | 30s |
-| decider.sweep.disable | conductor.app.sweepDisabled | false |
 | workflow.sweeper.thread.count | conductor.app.sweeperThreadCount | 5 |
 | workflow.event.processor.thread.count | conductor.app.eventProcessorThreadCount | 2 |
 | workflow.event.message.indexing.enabled | conductor.app.eventMessageIndexingEnabled | true |
@@ -273,6 +272,7 @@ Modified properties that are used for configuring components:
 | --- | --- | --- |
 | db | conductor.db.type | "" | 
 | workflow.indexing.enabled | conductor.indexing.enabled | true |
+| decider.sweep.disable | conductor.workflow-sweeper.enabled | true |
 | conductor.grpc.server.enabled | conductor.grpc-server.enabled | false |
 | workflow.external.payload.storage | conductor.external-payload-storage.type | dummy |
 | workflow.default.event.processor.enabled | conductor.default-event-processor.enabled | true |

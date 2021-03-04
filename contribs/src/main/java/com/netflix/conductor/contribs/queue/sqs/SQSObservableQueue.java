@@ -40,6 +40,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -67,6 +68,7 @@ public class SQSObservableQueue implements ObservableQueue {
     private final long pollTimeInMS;
     private final String queueURL;
     private final Scheduler scheduler;
+    private final AtomicBoolean running = new AtomicBoolean();
 
     private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeoutInSeconds, int batchSize,
         long pollTimeInMS, List<String> accountsToAuthorize, Scheduler scheduler) {
@@ -141,6 +143,21 @@ public class SQSObservableQueue implements ObservableQueue {
 
     public int getVisibilityTimeoutInSeconds() {
         return visibilityTimeoutInSeconds;
+    }
+
+    @Override
+    public void start() {
+        running.set(true);
+    }
+
+    @Override
+    public void stop() {
+        running.set(false);
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
     }
 
     public static class Builder {
@@ -296,8 +313,12 @@ public class SQSObservableQueue implements ObservableQueue {
         return subscriber -> {
             Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
             interval.flatMap((Long x) -> {
-                List<Message> msgs = receiveMessages();
-                return Observable.from(msgs);
+                if (!isRunning()) {
+                    LOGGER.debug("Instance disabled, skip listening for messages from SQS");
+                    return Observable.from(Collections.emptyList());
+                }
+                List<Message> messages = receiveMessages();
+                return Observable.from(messages);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
     }

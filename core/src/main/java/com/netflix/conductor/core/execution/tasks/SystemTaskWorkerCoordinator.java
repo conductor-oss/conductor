@@ -19,10 +19,12 @@ import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-public class SystemTaskWorkerCoordinator {
+public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
@@ -59,6 +61,7 @@ public class SystemTaskWorkerCoordinator {
     private final QueueDAO queueDAO;
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionService executionService;
+    private final AtomicBoolean running = new AtomicBoolean();
 
     public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor,
                                        ConductorProperties properties,
@@ -115,7 +118,7 @@ public class SystemTaskWorkerCoordinator {
     }
 
     private void pollAndExecute(String queueName) {
-        if (properties.isSystemTaskWorkersDisabled()) {
+        if (properties.isSystemTaskWorkersDisabled() || !running.get()) {
             LOGGER.warn("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
             return;
         }
@@ -141,5 +144,20 @@ public class SystemTaskWorkerCoordinator {
             return Objects.nonNull(task) && task.isAsync();
         }
         return false;
+    }
+
+    @Override
+    public void start() {
+        running.set(true);
+    }
+
+    @Override
+    public void stop() {
+        running.set(false);
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
     }
 }

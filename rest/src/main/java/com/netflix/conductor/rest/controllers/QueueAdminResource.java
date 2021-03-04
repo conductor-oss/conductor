@@ -21,6 +21,7 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,14 +50,14 @@ public class QueueAdminResource {
     @Operation(summary = "Publish a message in queue to mark a wait task as completed.")
     @PostMapping(value = "/update/{workflowId}/{taskRefName}/{status}")
     public void update(@PathVariable("workflowId") String workflowId, @PathVariable("taskRefName") String taskRefName,
-        @PathVariable("status") Status status, Map<String, Object> output) throws Exception {
+        @PathVariable("status") Status status, @RequestBody Map<String, Object> output) throws Exception {
         queueManager.updateByTaskRefName(workflowId, taskRefName, output, status);
     }
 
     @Operation(summary = "Publish a message in queue to mark a wait task (by taskId) as completed.")
     @PostMapping("/update/{workflowId}/task/{taskId}/{status}")
     public void updateByTaskId(@PathVariable("workflowId") String workflowId, @PathVariable("taskId") String taskId,
-        @PathVariable("status") Status status, Map<String, Object> output) throws Exception {
+        @PathVariable("status") Status status, @RequestBody Map<String, Object> output) throws Exception {
         queueManager.updateByTaskId(workflowId, taskId, output, status);
     }
 }

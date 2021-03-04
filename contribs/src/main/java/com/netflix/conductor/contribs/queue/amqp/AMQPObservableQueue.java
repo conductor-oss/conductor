@@ -31,6 +31,7 @@ import com.rabbitmq.client.GetResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +65,7 @@ public class AMQPObservableQueue implements ObservableQueue {
     private Channel channel;
     private final Address[] addresses;
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+    private final AtomicBoolean running = new AtomicBoolean();
 
     public AMQPObservableQueue(ConnectionFactory factory, Address[] addresses, boolean useExchange,
         AMQPSettings settings, int batchSize, int pollTimeInMS) {
@@ -128,24 +131,29 @@ public class AMQPObservableQueue implements ObservableQueue {
         Observable.OnSubscribe<Message> onSubscribe = subscriber -> {
             Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
             interval.flatMap((Long x) -> {
-                List<Message> available = new LinkedList<>();
-                messages.drainTo(available);
+                if (!isRunning()) {
+                    LOGGER.debug("Instance disabled, skip listening for messages from RabbitMQ");
+                    return Observable.from(Collections.emptyList());
+                } else {
+                    List<Message> available = new LinkedList<>();
+                    messages.drainTo(available);
 
-                if (!available.isEmpty()) {
-                    AtomicInteger count = new AtomicInteger(0);
-                    StringBuilder buffer = new StringBuilder();
-                    available.forEach(msg -> {
-                        buffer.append(msg.getId()).append("=").append(msg.getPayload());
-                        count.incrementAndGet();
+                    if (!available.isEmpty()) {
+                        AtomicInteger count = new AtomicInteger(0);
+                        StringBuilder buffer = new StringBuilder();
+                        available.forEach(msg -> {
+                            buffer.append(msg.getId()).append("=").append(msg.getPayload());
+                            count.incrementAndGet();
 
-                        if (count.get() < available.size()) {
-                            buffer.append(",");
-                        }
-                    });
-                    LOGGER.info(String.format("Batch from %s to conductor is %s", settings.getQueueOrExchangeName(),
-                        buffer.toString()));
+                            if (count.get() < available.size()) {
+                                buffer.append(",");
+                            }
+                        });
+                        LOGGER.info(String.format("Batch from %s to conductor is %s", settings.getQueueOrExchangeName(),
+                            buffer.toString()));
+                    }
+                    return Observable.from(available);
                 }
-                return Observable.from(available);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
         return Observable.create(onSubscribe);
@@ -259,6 +267,21 @@ public class AMQPObservableQueue implements ObservableQueue {
     public void close() {
         closeChannel();
         closeConnection();
+    }
+
+    @Override
+    public void start() {
+        running.set(true);
+    }
+
+    @Override
+    public void stop() {
+        running.set(false);
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
     }
 
     public static class Builder {

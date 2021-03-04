@@ -105,7 +105,7 @@ public class TaskResource {
 
     @PostMapping("/{taskId}/log")
     @Operation(summary = "Log Task Execution Details")
-    public void log(@PathVariable("taskId") String taskId, String log) {
+    public void log(@PathVariable("taskId") String taskId, @RequestBody String log) {
         taskService.log(taskId, log);
     }
 

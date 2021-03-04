@@ -48,11 +48,6 @@ public class ConductorProperties {
     private Duration sweepFrequency = Duration.ofSeconds(30);
 
     /**
-     * Used to enable/disable the workflow sweeper.
-     */
-    private boolean sweepDisabled = false;
-
-    /**
      * The number of threads to configure the threadpool in the workflow sweeper.
      */
     private int sweeperThreadCount = 5;
@@ -287,14 +282,6 @@ public class ConductorProperties {
 
     public void setSweepFrequency(Duration sweepFrequency) {
         this.sweepFrequency = sweepFrequency;
-    }
-
-    public boolean isSweepDisabled() {
-        return sweepDisabled;
-    }
-
-    public void setSweepDisabled(boolean sweepDisabled) {
-        this.sweepDisabled = sweepDisabled;
     }
 
     public int getSweeperThreadCount() {

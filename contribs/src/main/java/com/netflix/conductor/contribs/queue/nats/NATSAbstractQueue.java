@@ -15,6 +15,7 @@ package com.netflix.conductor.contribs.queue.nats;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.NUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -50,6 +51,8 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     // Indicates that observe was called (Event Handler) and we must to re-initiate subscription upon reconnection
     private boolean observable;
     private boolean isOpened;
+
+    private final AtomicBoolean running = new AtomicBoolean();
 
     NATSAbstractQueue(String queueURI, String queueType, Scheduler scheduler) {
         this.queueURI = queueURI;
@@ -93,25 +96,29 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
         Observable.OnSubscribe<Message> onSubscribe = subscriber -> {
             Observable<Long> interval = Observable.interval(100, TimeUnit.MILLISECONDS, scheduler);
             interval.flatMap((Long x) -> {
-                List<Message> available = new LinkedList<>();
-                messages.drainTo(available);
+                if (!isRunning()) {
+                    LOGGER.debug("Instance disabled, skip listening for messages from NATS Queue");
+                    return Observable.from(Collections.emptyList());
+                } else {
+                    List<Message> available = new LinkedList<>();
+                    messages.drainTo(available);
 
-                if (!available.isEmpty()) {
-                    AtomicInteger count = new AtomicInteger(0);
-                    StringBuilder buffer = new StringBuilder();
-                    available.forEach(msg -> {
-                        buffer.append(msg.getId()).append("=").append(msg.getPayload());
-                        count.incrementAndGet();
+                    if (!available.isEmpty()) {
+                        AtomicInteger count = new AtomicInteger(0);
+                        StringBuilder buffer = new StringBuilder();
+                        available.forEach(msg -> {
+                            buffer.append(msg.getId()).append("=").append(msg.getPayload());
+                            count.incrementAndGet();
 
-                        if (count.get() < available.size()) {
-                            buffer.append(",");
-                        }
-                    });
+                            if (count.get() < available.size()) {
+                                buffer.append(",");
+                            }
+                        });
+                        LOGGER.info(String.format("Batch from %s to conductor is %s", subject, buffer.toString()));
+                    }
 
-                    LOGGER.info(String.format("Batch from %s to conductor is %s", subject, buffer.toString()));
+                    return Observable.from(available);
                 }
-
-                return Observable.from(available);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
         return Observable.create(onSubscribe);
@@ -254,4 +261,19 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     abstract void closeSubs();
 
     abstract void closeConn();
+
+    @Override
+    public void start() {
+        running.set(true);
+    }
+
+    @Override
+    public void stop() {
+        running.set(false);
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
+    }
 }
