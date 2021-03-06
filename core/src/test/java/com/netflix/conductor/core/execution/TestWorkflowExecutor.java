@@ -348,19 +348,20 @@ public class TestWorkflowExecutor {
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(0, updateTasksCalledCounter.get());
-        assertEquals(1, removeQueueEntryCalledCounter.get());
-
-        verify(workflowStatusListener, times(0)).onWorkflowCompleted(any(Workflow.class));
+        assertEquals(0, removeQueueEntryCalledCounter.get());
+        verify(workflowStatusListener, times(1)).onWorkflowCompletedIfEnabled(any(Workflow.class));
+        verify(workflowStatusListener, times(0)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
 
         def.setWorkflowStatusListenerEnabled(true);
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflowExecutor.completeWorkflow(workflow);
-        verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
+        verify(workflowStatusListener, times(2)).onWorkflowCompletedIfEnabled(any(Workflow.class));
+        verify(workflowStatusListener, times(0)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testTerminatedWorkflow() {
+    public void testTerminateWorkflow() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
 
@@ -397,13 +398,14 @@ public class TestWorkflowExecutor {
         assertEquals(Workflow.WorkflowStatus.TERMINATED, workflow.getStatus());
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
-
-        verify(workflowStatusListener, times(0)).onWorkflowTerminated(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowTerminatedIfEnabled(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
 
         def.setWorkflowStatusListenerEnabled(true);
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflowExecutor.completeWorkflow(workflow);
-        verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowCompletedIfEnabled(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
     }
 
     @Test
@@ -441,7 +443,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.terminateWorkflow("workflowId", "reason");
         assertEquals(Workflow.WorkflowStatus.TERMINATED, workflow.getStatus());
         assertEquals(1, updateWorkflowCalledCounter.get());
-        verify(workflowStatusListener, times(1)).onWorkflowTerminated(any(Workflow.class));
+        verify(workflowStatusListener, times(1)).onWorkflowTerminatedIfEnabled(any(Workflow.class));
     }
 
     @Test
@@ -1317,7 +1319,7 @@ public class TestWorkflowExecutor {
     }
 
     @Test(expected = ApplicationException.class)
-    public void testTerminateWorkflow() {
+    public void testTerminateCompletedWorkflow() {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testTerminateTerminalWorkflow");
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
@@ -1583,7 +1585,11 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testCancelNonTerminalTasks() {
+        WorkflowDef def = new WorkflowDef();
+        def.setWorkflowStatusListenerEnabled(true);
+
         Workflow workflow = generateSampleWorkflow();
+        workflow.setWorkflowDefinition(def);
 
         Task subWorkflowTask = new Task();
         subWorkflowTask.setTaskId(UUID.randomUUID().toString());
@@ -1611,6 +1617,7 @@ public class TestWorkflowExecutor {
         assertEquals(Status.CANCELED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(TaskType.LAMBDA.name(), argumentCaptor.getAllValues().get(1).getTaskType());
         assertEquals(Status.CANCELED, argumentCaptor.getAllValues().get(1).getStatus());
+        verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
     }
 
     private Workflow generateSampleWorkflow() {

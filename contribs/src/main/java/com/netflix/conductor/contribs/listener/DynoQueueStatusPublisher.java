@@ -43,6 +43,7 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
     private final Configuration config;
     private final String successStatusQueue;
     private final String failureStatusQueue;
+    private final String finalizeStatusQueue;
 
     @Inject
     public DynoQueueStatusPublisher(QueueDAO queueDAO, ObjectMapper objectMapper, Configuration config) {
@@ -51,6 +52,7 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
         this.config = config;
         this.successStatusQueue = config.getProperty("workflowstatuslistener.publisher.success.queue", "_callbackSuccessQueue");
         this.failureStatusQueue = config.getProperty("workflowstatuslistener.publisher.failure.queue", "_callbackFailureQueue");
+        this.finalizeStatusQueue = config.getProperty("workflowstatuslistener.publisher.finalize.queue", "_callbackFinalizeQueue");
     }
 
     @Override
@@ -63,6 +65,12 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
     public void onWorkflowTerminated(Workflow workflow) {
         LOGGER.info("Publishing callback of workflow {} on termination", workflow.getWorkflowId());
         queueDAO.push(failureStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
+    }
+
+    @Override
+    public void onWorkflowFinalized(Workflow workflow) {
+        LOGGER.info("Publishing callback of workflow {} on finalization", workflow.getWorkflowId());
+        queueDAO.push(finalizeStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
     private Message workflowToMessage(Workflow workflow) {
