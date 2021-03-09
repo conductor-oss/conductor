@@ -20,6 +20,7 @@ dependencies {
     compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
     // https://mvnrepository.com/artifact/org.glassfish/javax.el
     compile group: 'org.glassfish', name: 'javax.el', version: "${revJavaElApi}"
+    compile 'commons-lang:commons-lang:2.6'
 }
 
 import com.github.vmg.protogen.ProtoGenTask;

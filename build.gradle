@@ -4,12 +4,12 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:4.0.1'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.3'
         classpath 'org.apache.ant:ant:1.9.7'
     }
 }
 plugins {
-    id 'nebula.netflixoss' version '5.1.1'
+    id 'nebula.netflixoss' version '9.1.0'
     id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
@@ -75,8 +75,6 @@ configure(javaProjects) {
             // set heap size for the test JVM(s)
             minHeapSize = "256m"
             maxHeapSize = "2g"
-
-            jacocoTestReport.executionData += files("$buildDir/jacoco/${task.name}.exec")
     }
 
     jacocoTestReport {
@@ -110,15 +108,15 @@ task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
     }
     afterEvaluate {
         // Exclude generated files from top-level coverage report
-        classDirectories = files(
+        classDirectories.setFrom(files(
                 classDirectories.files.collect {
                     fileTree(
                             dir: it,
                             // Exclude es modules from code coverage reports
-                            exclude: 'com/netflix/conductor/elasticsearch'
+                            exclude: 'com/netflix/conductor/elasticsearch/**'
                     )
                 }
-        )
+        ))
     }
 }
 

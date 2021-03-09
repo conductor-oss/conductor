@@ -140,13 +140,13 @@ public class AMQPSettings {
 	 * <u>Example for queue:</u>
 	 * 
 	 * <pre>
-	 * amqp-queue:myQueue?deliveryMode=1&autoDelete=true&exclusive=true
+	 * amqp-queue:myQueue?deliveryMode=1;autoDelete=true;exclusive=true
 	 * </pre>
 	 * 
 	 * <u>Example for exchange:</u>
 	 * 
 	 * <pre>
-	 * amqp-exchange:myExchange?exchangeType=topic&routingKey=myRoutingKey&exclusive=true
+	 * amqp-exchange:myExchange?exchangeType=topic;routingKey=myRoutingKey;exclusive=true
 	 * </pre>
 	 * 
 	 * @param queueURI

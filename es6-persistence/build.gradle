@@ -1,5 +1,5 @@
 plugins {
-    id 'com.github.johnrengelman.plugin-shadow' version '2.0.3'
+    id "com.github.johnrengelman.shadow" version "6.1.0"
     id 'java'
 }
 
@@ -47,7 +47,16 @@ shadowJar {
 jar.enabled = false
 jar.dependsOn shadowJar
 
+/**
+ * Shadow is shipped with a task that can be used to automatically configure all packages from all dependencies to be relocated.
+ * This feature was formally shipped into a 2nd plugin (com.github.johnrengelman.plugin-shadow) but has been removed for clarity reasons in version 4.0.0.
+ */
 // Configure Auto Relocation
-configureRelocationShadowJar {
-    prefix = 'conductor'
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "conductor"
 }
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar

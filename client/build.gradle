@@ -1,4 +1,15 @@
-apply plugin: 'findbugs'
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.2"
+    }
+}
+
+apply plugin: 'com.github.spotbugs'
 apply plugin: 'pmd'
 
 configurations.all {
@@ -8,6 +19,7 @@ configurations.all {
 dependencies {
 
     compile project(':conductor-common')
+
     compile "com.sun.jersey:jersey-client:${revJerseyClient}"
     compile "com.netflix.spectator:spectator-api:${revSpectator}"
     compile "com.netflix.eureka:eureka-client:${revEurekaClient}"
@@ -22,9 +34,18 @@ dependencies {
     testCompile "org.powermock:powermock-api-mockito2:${revPowerMock}"
 }
 
-tasks.withType(FindBugs) {
+
+spotbugsMain {
     reports {
-        xml.enabled false
-        html.enabled true
+        xml {
+            enabled = false
+        }
+        html {
+            enabled = true
+        }
     }
+}
+
+pmd {
+    ignoreFailures = true
 }

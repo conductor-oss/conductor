@@ -1324,69 +1324,6 @@
             ]
         }
     },
-    "pmd": {
-        "com.beust:jcommander": {
-            "locked": "1.48",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core"
-            ]
-        },
-        "com.google.code.gson:gson": {
-            "locked": "2.5",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core"
-            ]
-        },
-        "commons-io:commons-io": {
-            "locked": "2.4",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core"
-            ]
-        },
-        "jaxen:jaxen": {
-            "locked": "1.1.6",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core",
-                "net.sourceforge.pmd:pmd-java"
-            ]
-        },
-        "net.java.dev.javacc:javacc": {
-            "locked": "5.0",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core",
-                "net.sourceforge.pmd:pmd-java"
-            ]
-        },
-        "net.sourceforge.pmd:pmd-core": {
-            "locked": "5.6.1",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-java"
-            ]
-        },
-        "net.sourceforge.pmd:pmd-java": {
-            "locked": "5.6.1"
-        },
-        "net.sourceforge.saxon:saxon": {
-            "locked": "9.1.0.8",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core",
-                "net.sourceforge.pmd:pmd-java"
-            ]
-        },
-        "org.apache.commons:commons-lang3": {
-            "locked": "3.4",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core"
-            ]
-        },
-        "org.ow2.asm:asm": {
-            "locked": "5.0.4",
-            "transitive": [
-                "net.sourceforge.pmd:pmd-core",
-                "net.sourceforge.pmd:pmd-java"
-            ]
-        }
-    },
     "runtime": {
         "antlr:antlr": {
             "locked": "2.7.7",

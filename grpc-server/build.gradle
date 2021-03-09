@@ -1,6 +1,6 @@
 plugins {
     // FIXME This is temporary until the server module refactoring is completed.
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
 dependencies {
