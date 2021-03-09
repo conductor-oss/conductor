@@ -87,7 +87,6 @@ public class WorkflowStatusPublisherIntegrationTest {
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
         WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
-
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
@@ -127,9 +126,7 @@ public class WorkflowStatusPublisherIntegrationTest {
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
-        WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
-
-        assertEquals(id, callbackMessages.get(0).getId());
+        WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());
         assertEquals(Workflow.WorkflowStatus.COMPLETED, payload.getStatus());
