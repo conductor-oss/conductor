@@ -28,7 +28,7 @@ import redis.clients.jedis.commands.JedisCommands
 import spock.mock.DetachedMockFactory
 
 @TestPropertySource(properties = [
-        "conductor.app.systemTaskWorkersDisabled=true",
+        "conductor.system-task-workers.enabled=false",
         "conductor.integ-test.queueSpyEnabled=true"
 ])
 abstract class AbstractResiliencySpecification extends AbstractSpecification {

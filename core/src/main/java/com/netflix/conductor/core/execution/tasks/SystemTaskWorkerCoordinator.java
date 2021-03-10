@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.EventListener;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
+@ConditionalOnProperty(name="conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
 public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
@@ -64,9 +66,9 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
     private final AtomicBoolean running = new AtomicBoolean();
 
     public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor,
-                                       ConductorProperties properties,
-                                       ExecutionService executionService,
-                                       List<WorkflowSystemTask> workflowSystemTasks) {
+        ConductorProperties properties,
+        ExecutionService executionService,
+        List<WorkflowSystemTask> workflowSystemTasks) {
         this.properties = properties;
         this.workflowSystemTasks = workflowSystemTasks;
         this.executionNameSpace = properties.getSystemTaskWorkerExecutionNamespace();
@@ -78,15 +80,12 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initSystemTaskExecutor() {
-        int threadCount = properties.getSystemTaskWorkerThreadCount();
-        if (threadCount > 0) {
-            this.workflowSystemTasks.forEach(this::add);
-            this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
-            new Thread(this::listen).start();
-            LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
-        } else {
-            LOGGER.info("System Task Worker DISABLED");
-        }
+        int threadCount =
+            properties.getSystemTaskWorkerThreadCount() > 0 ? properties.getSystemTaskWorkerThreadCount() : 1;
+        this.workflowSystemTasks.forEach(this::add);
+        this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        new Thread(this::listen).start();
+        LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
     }
 
     private void add(WorkflowSystemTask systemTask) {
@@ -100,7 +99,7 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
             for (; ; ) {
                 String workflowSystemTaskQueueName = queue.poll(60, TimeUnit.SECONDS);
                 if (workflowSystemTaskQueueName != null && !listeningTaskQueues.contains(workflowSystemTaskQueueName)
-                        && shouldListen(workflowSystemTaskQueueName)) {
+                    && shouldListen(workflowSystemTaskQueueName)) {
                     listen(workflowSystemTaskQueueName);
                     listeningTaskQueues.add(workflowSystemTaskQueueName);
                 }
@@ -113,13 +112,13 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     private void listen(String queueName) {
         Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(() -> pollAndExecute(queueName), 1000, pollInterval, TimeUnit.MILLISECONDS);
+            .scheduleWithFixedDelay(() -> pollAndExecute(queueName), 1000, pollInterval, TimeUnit.MILLISECONDS);
         LOGGER.info("Started listening for queue: {}", queueName);
     }
 
     private void pollAndExecute(String queueName) {
-        if (properties.isSystemTaskWorkersDisabled() || !running.get()) {
-            LOGGER.warn("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
+        if (!running.get()) {
+            LOGGER.debug("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
             return;
         }
         systemTaskExecutor.pollAndExecute(queueName);
@@ -133,7 +132,7 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     private boolean shouldListen(String workflowSystemTaskQueueName) {
         return isFromCoordinatorExecutionNameSpace(workflowSystemTaskQueueName)
-                && isAsyncSystemTask(workflowSystemTaskQueueName);
+            && isAsyncSystemTask(workflowSystemTaskQueueName);
     }
 
     @VisibleForTesting

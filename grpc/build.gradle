@@ -1,13 +1,13 @@
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.15'
     }
 }
 
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.8.13"
+    id "com.google.protobuf" version "0.8.15"
 }
 
 repositories{

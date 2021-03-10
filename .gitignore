@@ -21,3 +21,6 @@ bin/
 target/
 .DS_Store
 .vscode/
+
+# publishing secrets
+secrets/signing-key

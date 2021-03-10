@@ -137,11 +137,6 @@ public class ConductorProperties {
     private int systemTaskMaxPollCount = 1;
 
     /**
-     * Used to enable/disable the system task workers that execute async system tasks like HTTP, etc.
-     */
-    private boolean systemTaskWorkersDisabled = false;
-
-    /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow when async indexing to
      * elasticsearch is enabled.
      */
@@ -418,14 +413,6 @@ public class ConductorProperties {
 
     public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
         this.systemTaskMaxPollCount = systemTaskMaxPollCount;
-    }
-
-    public boolean isSystemTaskWorkersDisabled() {
-        return systemTaskWorkersDisabled;
-    }
-
-    public void setSystemTaskWorkersDisabled(boolean systemTaskWorkersDisabled) {
-        this.systemTaskWorkersDisabled = systemTaskWorkersDisabled;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {

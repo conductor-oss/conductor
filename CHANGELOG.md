@@ -137,7 +137,6 @@ Modified properties in the `core` module:
 | workflow.system.task.worker.executionNameSpace | conductor.app.systemTaskWorkerExecutionNamespace | "" |
 | workflow.isolated.system.task.worker.thread.count | conductor.app.isolatedSystemTaskWorkerThreadCount | 1 |
 | workflow.system.task.queue.pollCount | conductor.app.systemTaskMaxPollCount | 1 |
-| conductor.disable.async.workers | conductor.app.systemTaskWorkersDisabled | false |
 | async.update.short.workflow.duration.seconds | conductor.app.asyncUpdateShortRunningWorkflowDuration | 30s |
 | async.update.delay.seconds | conductor.app.asyncUpdateDelay | 60s |
 | workflow.owner.email.mandatory | conductor.app.ownerEmailMandatory | true |
@@ -272,6 +271,7 @@ Modified properties that are used for configuring components:
 | --- | --- | --- |
 | db | conductor.db.type | "" | 
 | workflow.indexing.enabled | conductor.indexing.enabled | true |
+| conductor.disable.async.workers | conductor.system-task-workers.enabled | true |
 | decider.sweep.disable | conductor.workflow-sweeper.enabled | true |
 | conductor.grpc.server.enabled | conductor.grpc-server.enabled | false |
 | workflow.external.payload.storage | conductor.external-payload-storage.type | dummy |
