@@ -887,27 +887,6 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         return workflowIds.getResults();
     }
 
-    public List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
-        DateTime dateTime = new DateTime();
-        QueryBuilder q = QueryBuilders.boolQuery()
-            .must(QueryBuilders.rangeQuery("updateTime")
-                .gt(dateTime.minusHours(lastModifiedHoursAgoFrom)))
-            .must(QueryBuilders.rangeQuery("updateTime")
-                .lt(dateTime.minusHours(lastModifiedHoursAgoTo)))
-            .must(QueryBuilders.termQuery("status", "RUNNING"));
-
-        SearchResult<String> workflowIds;
-        try {
-            workflowIds = searchObjectIds(workflowIndexName, q, 0, 5000, Collections.singletonList("updateTime:ASC"),
-                WORKFLOW_DOC_TYPE);
-        } catch (IOException e) {
-            LOGGER.error("Unable to communicate with ES to find recent running workflows", e);
-            return Collections.emptyList();
-        }
-
-        return workflowIds.getResults();
-    }
-
     private void indexObject(final String index, final String docType, final Object doc) {
         indexObject(index, docType, null, doc);
     }

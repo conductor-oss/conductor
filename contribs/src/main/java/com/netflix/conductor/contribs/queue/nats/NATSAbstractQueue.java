@@ -12,15 +12,10 @@
  */
 package com.netflix.conductor.contribs.queue.nats;
 
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.NUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,11 +26,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
  */
-public abstract class NATSAbstractQueue implements ObservableQueue {
+public abstract class NATSAbstractQueue extends LifecycleAwareComponent implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSAbstractQueue.class);
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
@@ -51,8 +50,6 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     // Indicates that observe was called (Event Handler) and we must to re-initiate subscription upon reconnection
     private boolean observable;
     private boolean isOpened;
-
-    private final AtomicBoolean running = new AtomicBoolean();
 
     NATSAbstractQueue(String queueURI, String queueType, Scheduler scheduler) {
         this.queueURI = queueURI;
@@ -97,7 +94,7 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
             Observable<Long> interval = Observable.interval(100, TimeUnit.MILLISECONDS, scheduler);
             interval.flatMap((Long x) -> {
                 if (!isRunning()) {
-                    LOGGER.debug("Instance disabled, skip listening for messages from NATS Queue");
+                    LOGGER.debug("Component stopped, skip listening for messages from NATS Queue");
                     return Observable.from(Collections.emptyList());
                 } else {
                     List<Message> available = new LinkedList<>();
@@ -261,19 +258,4 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     abstract void closeSubs();
 
     abstract void closeConn();
-
-    @Override
-    public void start() {
-        running.set(true);
-    }
-
-    @Override
-    public void stop() {
-        running.set(false);
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running.get();
-    }
 }

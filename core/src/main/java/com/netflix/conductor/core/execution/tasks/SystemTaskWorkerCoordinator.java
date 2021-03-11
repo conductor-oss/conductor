@@ -13,22 +13,13 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +30,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name="conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
-public class SystemTaskWorkerCoordinator implements SmartLifecycle {
+public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
@@ -63,7 +61,6 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
     private final QueueDAO queueDAO;
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionService executionService;
-    private final AtomicBoolean running = new AtomicBoolean();
 
     public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor,
         ConductorProperties properties,
@@ -80,8 +77,11 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initSystemTaskExecutor() {
-        int threadCount =
-            properties.getSystemTaskWorkerThreadCount() > 0 ? properties.getSystemTaskWorkerThreadCount() : 1;
+        int threadCount = properties.getSystemTaskWorkerThreadCount();
+        if (threadCount <= 0) {
+            throw new IllegalStateException("Cannot set system task worker thread count to <=0. To disable system "
+                + "task workers, set conductor.system-task-workers.enabled=false.");
+        }
         this.workflowSystemTasks.forEach(this::add);
         this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
         new Thread(this::listen).start();
@@ -117,8 +117,8 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
     }
 
     private void pollAndExecute(String queueName) {
-        if (!running.get()) {
-            LOGGER.debug("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
+        if (isRunning()) {
+            LOGGER.debug("Component stopped. Not polling for system task in queue : {}", queueName);
             return;
         }
         systemTaskExecutor.pollAndExecute(queueName);
@@ -143,20 +143,5 @@ public class SystemTaskWorkerCoordinator implements SmartLifecycle {
             return Objects.nonNull(task) && task.isAsync();
         }
         return false;
-    }
-
-    @Override
-    public void start() {
-        running.set(true);
-    }
-
-    @Override
-    public void stop() {
-        running.set(false);
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running.get();
     }
 }

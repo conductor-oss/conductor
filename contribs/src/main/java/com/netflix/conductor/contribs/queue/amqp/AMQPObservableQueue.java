@@ -16,6 +16,7 @@ import com.google.common.collect.Maps;
 import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
 import com.netflix.conductor.contribs.queue.amqp.util.AMQPConstants;
 import com.netflix.conductor.contribs.queue.amqp.util.AMQPSettings;
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
@@ -50,7 +51,7 @@ import rx.Observable;
 /**
  * @author Ritu Parathody
  */
-public class AMQPObservableQueue implements ObservableQueue {
+public class AMQPObservableQueue extends LifecycleAwareComponent implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQPObservableQueue.class);
 
@@ -65,7 +66,6 @@ public class AMQPObservableQueue implements ObservableQueue {
     private Channel channel;
     private final Address[] addresses;
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-    private final AtomicBoolean running = new AtomicBoolean();
 
     public AMQPObservableQueue(ConnectionFactory factory, Address[] addresses, boolean useExchange,
         AMQPSettings settings, int batchSize, int pollTimeInMS) {
@@ -132,7 +132,7 @@ public class AMQPObservableQueue implements ObservableQueue {
             Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
             interval.flatMap((Long x) -> {
                 if (!isRunning()) {
-                    LOGGER.debug("Instance disabled, skip listening for messages from RabbitMQ");
+                    LOGGER.debug("Component stopped, skip listening for messages from RabbitMQ");
                     return Observable.from(Collections.emptyList());
                 } else {
                     List<Message> available = new LinkedList<>();
@@ -267,21 +267,6 @@ public class AMQPObservableQueue implements ObservableQueue {
     public void close() {
         closeChannel();
         closeConnection();
-    }
-
-    @Override
-    public void start() {
-        running.set(true);
-    }
-
-    @Override
-    public void stop() {
-        running.set(false);
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running.get();
     }
 
     public static class Builder {

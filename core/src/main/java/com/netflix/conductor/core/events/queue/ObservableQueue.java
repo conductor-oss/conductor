@@ -17,7 +17,7 @@ import rx.Observable;
 
 import java.util.List;
 
-public interface ObservableQueue extends SmartLifecycle {
+public interface ObservableQueue {
 
     /**
      * @return An observable for the given queue

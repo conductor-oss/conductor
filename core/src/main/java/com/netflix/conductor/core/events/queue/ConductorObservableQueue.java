@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ import rx.Scheduler;
 /**
  * An {@link ObservableQueue} implementation using the underlying {@link QueueDAO} implementation.
  */
-public class ConductorObservableQueue implements ObservableQueue {
+public class ConductorObservableQueue extends LifecycleAwareComponent implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConductorObservableQueue.class);
 
@@ -42,7 +42,6 @@ public class ConductorObservableQueue implements ObservableQueue {
     private final int longPollTimeout;
     private final int pollCount;
     private final Scheduler scheduler;
-    private final AtomicBoolean running = new AtomicBoolean();
 
     ConductorObservableQueue(String queueName, QueueDAO queueDAO, ConductorProperties properties, Scheduler scheduler) {
         this.queueName = queueName;
@@ -114,27 +113,12 @@ public class ConductorObservableQueue implements ObservableQueue {
             Observable<Long> interval = Observable.interval(pollTimeMS, TimeUnit.MILLISECONDS, scheduler);
             interval.flatMap((Long x) -> {
                 if (!isRunning()) {
-                    LOGGER.debug("Instance disabled, skip listening for messages from Conductor Queue");
+                    LOGGER.debug("Component stopped, skip listening for messages from Conductor Queue");
                     return Observable.from(Collections.emptyList());
                 }
                 List<Message> messages = receiveMessages();
                 return Observable.from(messages);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
-    }
-
-    @Override
-    public void start() {
-        running.set(true);
-    }
-
-    @Override
-    public void stop() {
-        running.set(false);
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running.get();
     }
 }

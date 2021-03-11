@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
@@ -24,18 +25,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
-public class WorkflowSweeper implements SmartLifecycle {
+public class WorkflowSweeper extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
 
@@ -43,7 +42,6 @@ public class WorkflowSweeper implements SmartLifecycle {
     private final ConductorProperties properties;
     private final QueueDAO queueDAO;
     private final int executorThreadPoolSize;
-    private final AtomicBoolean running = new AtomicBoolean();
 
     private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
 
@@ -52,7 +50,11 @@ public class WorkflowSweeper implements SmartLifecycle {
         ConductorProperties properties, QueueDAO queueDAO) {
         this.properties = properties;
         this.queueDAO = queueDAO;
-        this.executorThreadPoolSize = properties.getSweeperThreadCount() > 0 ? properties.getSweeperThreadCount() : 1;
+        this.executorThreadPoolSize = properties.getSweeperThreadCount();
+        if (executorThreadPoolSize <= 0) {
+            throw new IllegalStateException("Cannot set workflow sweeper thread count to <=0. To disable workflow "
+                + "sweeper, set conductor.workflow-sweeper.enabled=false.");
+        }
         this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
         init(workflowExecutor, workflowRepairService);
         LOGGER.info("Workflow Sweeper Initialized");
@@ -61,8 +63,8 @@ public class WorkflowSweeper implements SmartLifecycle {
     public void init(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) {
         ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
         deciderPool.scheduleWithFixedDelay(() -> {
-            if (!running.get()) {
-                LOGGER.debug("Instance disabled, skip workflow sweep");
+            if (!isRunning()) {
+                LOGGER.debug("Component stopped, skip workflow sweep");
             } else {
                 try {
                     int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
@@ -128,20 +130,5 @@ public class WorkflowSweeper implements SmartLifecycle {
         for (Future<?> future : futures) {
             future.get();
         }
-    }
-
-    @Override
-    public void start() {
-        running.set(true);
-    }
-
-    @Override
-    public void stop() {
-        running.set(false);
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running.get();
     }
 }

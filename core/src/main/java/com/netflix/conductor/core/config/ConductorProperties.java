@@ -108,7 +108,7 @@ public class ConductorProperties {
     /**
      * The number of threads to be used within the threadpool for system task workers.
      */
-    private int systemTaskWorkerThreadCount = 10;
+    private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker for completion.

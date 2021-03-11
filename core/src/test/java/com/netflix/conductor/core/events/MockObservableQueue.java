@@ -77,17 +77,4 @@ public class MockObservableQueue implements ObservableQueue {
     public String toString() {
         return "MockObservableQueue [uri=" + uri + ", name=" + name + ", type=" + type + "]";
     }
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
-    }
-
-    @Override
-    public boolean isRunning() {
-        return false;
-    }
 }

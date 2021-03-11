@@ -131,7 +131,7 @@ Modified properties in the `core` module:
 | task.queue.message.postponeSeconds | conductor.app.taskExecutionPostponeDuration | 60s |
 | workflow.taskExecLog.indexing.enabled | conductor.app.taskExecLogIndexingEnabled | true |
 | async.indexing.enabled | conductor.app.asyncIndexingEnabled | false |
-| workflow.system.task.worker.thread.count | conductor.app.systemTaskWorkerThreadCount | 10 |
+| workflow.system.task.worker.thread.count | conductor.app.systemTaskWorkerThreadCount | # available processors * 2 |
 | workflow.system.task.worker.callback.seconds | conductor.app.systemTaskWorkerCallbackDuration | 30s |
 | workflow.system.task.worker.poll.interval | conductor.app.systemTaskWorkerPollInterval | 50s |
 | workflow.system.task.worker.executionNameSpace | conductor.app.systemTaskWorkerExecutionNamespace | "" |
