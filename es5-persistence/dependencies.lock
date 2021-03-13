@@ -337,8 +337,8 @@
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
+            "locked": "2.11.1",
+            "requested": "2.11.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-core",
                 "org.elasticsearch.plugin:aggs-matrix-stats-client",
@@ -352,8 +352,8 @@
             ]
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
+            "locked": "2.11.1",
+            "requested": "2.11.1",
             "transitive": [
                 "org.elasticsearch.plugin:aggs-matrix-stats-client",
                 "org.elasticsearch.plugin:lang-mustache-client",
@@ -937,34 +937,6 @@
                 "org.elasticsearch.client:elasticsearch-rest-client"
             ]
         },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
         "org.apache.lucene:lucene-analyzers-common": {
             "locked": "6.6.1",
             "transitive": [
@@ -1536,34 +1508,6 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
             ]
         },
         "org.apache.lucene:lucene-analyzers-common": {
@@ -2202,34 +2146,6 @@
                 "org.elasticsearch.client:elasticsearch-rest-client"
             ]
         },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
         "org.apache.lucene:lucene-analyzers-common": {
             "locked": "6.6.1",
             "transitive": [
@@ -2801,34 +2717,6 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
             ]
         },
         "org.apache.lucene:lucene-analyzers-common": {
@@ -3424,34 +3312,6 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
             ]
         },
         "org.apache.lucene:lucene-analyzers-common": {
@@ -4083,34 +3943,6 @@
                 "org.elasticsearch.client:elasticsearch-rest-client"
             ]
         },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
         "org.apache.lucene:lucene-analyzers-common": {
             "locked": "6.6.1",
             "transitive": [
@@ -4740,34 +4572,6 @@
                 "org.elasticsearch.client:elasticsearch-rest-client"
             ]
         },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
         "org.apache.lucene:lucene-analyzers-common": {
             "locked": "6.6.1",
             "transitive": [
@@ -5395,34 +5199,6 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.9.1",
-            "requested": "2.9.1",
-            "transitive": [
-                "org.elasticsearch.plugin:aggs-matrix-stats-client",
-                "org.elasticsearch.plugin:lang-mustache-client",
-                "org.elasticsearch.plugin:parent-join-client",
-                "org.elasticsearch.plugin:percolator-client",
-                "org.elasticsearch.plugin:reindex-client",
-                "org.elasticsearch.plugin:transport-netty3-client",
-                "org.elasticsearch.plugin:transport-netty4-client"
             ]
         },
         "org.apache.lucene:lucene-analyzers-common": {
