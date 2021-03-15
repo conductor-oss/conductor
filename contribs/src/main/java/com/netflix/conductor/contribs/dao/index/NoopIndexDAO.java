@@ -138,9 +138,4 @@ public class NoopIndexDAO implements IndexDAO {
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         return Collections.emptyList();
     }
-
-    @Override
-    public List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
-        return Collections.emptyList();
-    }
 }

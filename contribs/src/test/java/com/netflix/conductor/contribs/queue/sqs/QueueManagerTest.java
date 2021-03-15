@@ -75,6 +75,7 @@ public class QueueManagerTest {
 
         queue = mock(SQSObservableQueue.class);
         when(queue.getOrCreateQueue()).thenReturn("junit_queue_url");
+        when(queue.isRunning()).thenReturn(true);
         Answer<?> answer = (Answer<List<Message>>) invocation -> {
             List<Message> copy = new LinkedList<>(messages);
             messages.clear();
@@ -121,7 +122,6 @@ public class QueueManagerTest {
             return null;
         }).when(executionService).updateTask(any(Task.class));
     }
-
 
     @Test
     public void test() throws Exception {

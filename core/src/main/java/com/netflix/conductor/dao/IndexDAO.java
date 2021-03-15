@@ -177,13 +177,4 @@ public interface IndexDAO {
      * @return List of worlflow Ids matching the pattern
      */
     List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays);
-
-    /**
-     * Search for RUNNING workflows changed in the last lastModifiedHoursAgoFrom to lastModifiedHoursAgoTo hours
-     * @param lastModifiedHoursAgoFrom - last updated date should be lastModifiedHoursAgoFrom hours ago or later
-     * @param lastModifiedHoursAgoTo - last updated date should be lastModifiedHoursAgoTo hours ago or earlier
-     * 	 *
-     * @return List of workflow Ids matching the pattern
-     */
-    List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo);
 }

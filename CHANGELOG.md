@@ -120,7 +120,6 @@ Modified properties in the `core` module:
 | APP_ID | conductor.app.appId | conductor |
 | workflow.executor.service.max.threads | conductor.app.executorServiceMaxThreadCount | 50 |
 | decider.sweep.frequency.seconds | conductor.app.sweepFrequency | 30s |
-| decider.sweep.disable | conductor.app.sweepDisabled | false |
 | workflow.sweeper.thread.count | conductor.app.sweeperThreadCount | 5 |
 | workflow.event.processor.thread.count | conductor.app.eventProcessorThreadCount | 2 |
 | workflow.event.message.indexing.enabled | conductor.app.eventMessageIndexingEnabled | true |
@@ -132,13 +131,12 @@ Modified properties in the `core` module:
 | task.queue.message.postponeSeconds | conductor.app.taskExecutionPostponeDuration | 60s |
 | workflow.taskExecLog.indexing.enabled | conductor.app.taskExecLogIndexingEnabled | true |
 | async.indexing.enabled | conductor.app.asyncIndexingEnabled | false |
-| workflow.system.task.worker.thread.count | conductor.app.systemTaskWorkerThreadCount | 10 |
+| workflow.system.task.worker.thread.count | conductor.app.systemTaskWorkerThreadCount | # available processors * 2 |
 | workflow.system.task.worker.callback.seconds | conductor.app.systemTaskWorkerCallbackDuration | 30s |
 | workflow.system.task.worker.poll.interval | conductor.app.systemTaskWorkerPollInterval | 50s |
 | workflow.system.task.worker.executionNameSpace | conductor.app.systemTaskWorkerExecutionNamespace | "" |
 | workflow.isolated.system.task.worker.thread.count | conductor.app.isolatedSystemTaskWorkerThreadCount | 1 |
 | workflow.system.task.queue.pollCount | conductor.app.systemTaskMaxPollCount | 1 |
-| conductor.disable.async.workers | conductor.app.systemTaskWorkersDisabled | false |
 | async.update.short.workflow.duration.seconds | conductor.app.asyncUpdateShortRunningWorkflowDuration | 30s |
 | async.update.delay.seconds | conductor.app.asyncUpdateDelay | 60s |
 | workflow.owner.email.mandatory | conductor.app.ownerEmailMandatory | true |
@@ -273,6 +271,8 @@ Modified properties that are used for configuring components:
 | --- | --- | --- |
 | db | conductor.db.type | "" | 
 | workflow.indexing.enabled | conductor.indexing.enabled | true |
+| conductor.disable.async.workers | conductor.system-task-workers.enabled | true |
+| decider.sweep.disable | conductor.workflow-sweeper.enabled | true |
 | conductor.grpc.server.enabled | conductor.grpc-server.enabled | false |
 | workflow.external.payload.storage | conductor.external-payload-storage.type | dummy |
 | workflow.default.event.processor.enabled | conductor.default-event-processor.enabled | true |

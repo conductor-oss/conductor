@@ -12,16 +12,12 @@
  */
 package com.netflix.conductor.core.execution;
 
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -29,14 +25,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-@Service
-public class WorkflowSweeper {
+@Component
+@ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
+public class WorkflowSweeper extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
 
-    private ExecutorService executorService;
+    private final ExecutorService executorService;
     private final ConductorProperties properties;
     private final QueueDAO queueDAO;
     private final int executorThreadPoolSize;
@@ -49,35 +51,34 @@ public class WorkflowSweeper {
         this.properties = properties;
         this.queueDAO = queueDAO;
         this.executorThreadPoolSize = properties.getSweeperThreadCount();
-        if (this.executorThreadPoolSize > 0) {
-            this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
-            init(workflowExecutor, workflowRepairService);
-            LOGGER.info("Workflow Sweeper Initialized");
-        } else {
-            LOGGER.warn("Workflow sweeper is DISABLED");
+        if (executorThreadPoolSize <= 0) {
+            throw new IllegalStateException("Cannot set workflow sweeper thread count to <=0. To disable workflow "
+                + "sweeper, set conductor.workflow-sweeper.enabled=false.");
         }
+        this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
+        init(workflowExecutor, workflowRepairService);
+        LOGGER.info("Workflow Sweeper Initialized");
     }
 
     public void init(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) {
         ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
         deciderPool.scheduleWithFixedDelay(() -> {
-            try {
-                boolean disable = properties.isSweepDisabled();
-                if (disable) {
-                    LOGGER.info("Workflow sweep is disabled.");
-                    return;
+            if (!isRunning()) {
+                LOGGER.debug("Component stopped, skip workflow sweep");
+            } else {
+                try {
+                    int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
+                    LOGGER.debug("Sweeper's current decider queue size: {}", currentQueueSize);
+                    List<String> workflowIds = queueDAO
+                        .pop(WorkflowExecutor.DECIDER_QUEUE, 2 * executorThreadPoolSize, 2000);
+                    if (workflowIds != null) {
+                        LOGGER.debug("Sweeper retrieved {} workflows from the decider queue", workflowIds.size());
+                        sweep(workflowIds, workflowExecutor, workflowRepairService);
+                    }
+                } catch (Exception e) {
+                    Monitors.error(CLASS_NAME, "sweep");
+                    LOGGER.error("Error when sweeping workflow", e);
                 }
-                List<String> workflowIds = queueDAO
-                    .pop(WorkflowExecutor.DECIDER_QUEUE, 2 * executorThreadPoolSize, 2000);
-                int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
-                LOGGER.debug("Sweeper's current deciderqueue size: {}.", currentQueueSize);
-                int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
-                LOGGER.debug("Sweeper retrieved {} workflows from the decider queue.", retrievedWorkflows);
-
-                sweep(workflowIds, workflowExecutor, workflowRepairService);
-            } catch (Exception e) {
-                Monitors.error(CLASS_NAME, "sweep");
-                LOGGER.error("Error when sweeping workflow", e);
             }
         }, 500, 500, TimeUnit.MILLISECONDS);
     }

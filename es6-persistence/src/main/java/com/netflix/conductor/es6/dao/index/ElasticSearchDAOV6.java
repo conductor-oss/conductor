@@ -752,25 +752,6 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         return extractSearchIds(s);
     }
 
-    public List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
-        DateTime dateTime = new DateTime();
-        QueryBuilder q = QueryBuilders.boolQuery()
-            .must(QueryBuilders.rangeQuery("updateTime")
-                .gt(dateTime.minusHours(lastModifiedHoursAgoFrom)))
-            .must(QueryBuilders.rangeQuery("updateTime")
-                .lt(dateTime.minusHours(lastModifiedHoursAgoTo)))
-            .must(QueryBuilders.termQuery("status", "RUNNING"));
-
-        String docType = StringUtils.isBlank(docTypeOverride) ? WORKFLOW_DOC_TYPE : docTypeOverride;
-        SearchRequestBuilder s = elasticSearchClient.prepareSearch(workflowIndexName)
-            .setTypes(docType)
-            .setQuery(q)
-            .setSize(5000)
-            .addSort("updateTime", SortOrder.ASC);
-
-        return extractSearchIds(s);
-    }
-
     private UpdateRequest buildUpdateRequest(String id, byte[] doc, String indexName, String docType) {
         UpdateRequest req = new UpdateRequest(indexName, docType, id);
         req.doc(doc, XContentType.JSON);

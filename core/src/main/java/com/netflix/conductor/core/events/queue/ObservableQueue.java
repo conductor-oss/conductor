@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import org.springframework.context.SmartLifecycle;
 import rx.Observable;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public interface ObservableQueue {
     String getURI();
 
     /**
-     * @param messages messages to be ack'ed
+     * @param messages to be ack'ed
      * @return the id of the ones which could not be ack'ed
      */
     List<String> ack(List<Message> messages);

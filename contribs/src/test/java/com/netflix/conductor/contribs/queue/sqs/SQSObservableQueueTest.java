@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +48,7 @@ public class SQSObservableQueueTest {
         when(queue.getOrCreateQueue()).thenReturn("junit_queue_url");
         Answer<?> answer = (Answer<List<Message>>) invocation -> Collections.emptyList();
         when(queue.receiveMessages()).thenReturn(messages).thenAnswer(answer);
+        when(queue.isRunning()).thenReturn(true);
         when(queue.getOnSubscribe()).thenCallRealMethod();
         when(queue.observe()).thenCallRealMethod();
 
@@ -80,6 +82,7 @@ public class SQSObservableQueueTest {
         SQSObservableQueue queue = new SQSObservableQueue.Builder()
             .withQueueName("junit")
             .withClient(client).build();
+        queue.start();
 
         List<Message> found = new LinkedList<>();
         Observable<Message> observable = queue.observe();
@@ -87,7 +90,6 @@ public class SQSObservableQueueTest {
         observable.subscribe(found::add);
 
         Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
-
         assertEquals(1, found.size());
     }
 }

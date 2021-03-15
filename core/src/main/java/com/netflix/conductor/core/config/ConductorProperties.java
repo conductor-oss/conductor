@@ -48,11 +48,6 @@ public class ConductorProperties {
     private Duration sweepFrequency = Duration.ofSeconds(30);
 
     /**
-     * Used to enable/disable the workflow sweeper.
-     */
-    private boolean sweepDisabled = false;
-
-    /**
      * The number of threads to configure the threadpool in the workflow sweeper.
      */
     private int sweeperThreadCount = 5;
@@ -113,7 +108,7 @@ public class ConductorProperties {
     /**
      * The number of threads to be used within the threadpool for system task workers.
      */
-    private int systemTaskWorkerThreadCount = 10;
+    private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker for completion.
@@ -140,11 +135,6 @@ public class ConductorProperties {
      * The max number of system tasks to be polled in a single request.
      */
     private int systemTaskMaxPollCount = 1;
-
-    /**
-     * Used to enable/disable the system task workers that execute async system tasks like HTTP, etc.
-     */
-    private boolean systemTaskWorkersDisabled = false;
 
     /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow when async indexing to
@@ -289,14 +279,6 @@ public class ConductorProperties {
         this.sweepFrequency = sweepFrequency;
     }
 
-    public boolean isSweepDisabled() {
-        return sweepDisabled;
-    }
-
-    public void setSweepDisabled(boolean sweepDisabled) {
-        this.sweepDisabled = sweepDisabled;
-    }
-
     public int getSweeperThreadCount() {
         return sweeperThreadCount;
     }
@@ -431,14 +413,6 @@ public class ConductorProperties {
 
     public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
         this.systemTaskMaxPollCount = systemTaskMaxPollCount;
-    }
-
-    public boolean isSystemTaskWorkersDisabled() {
-        return systemTaskWorkersDisabled;
-    }
-
-    public void setSystemTaskWorkersDisabled(boolean systemTaskWorkersDisabled) {
-        this.systemTaskWorkersDisabled = systemTaskWorkersDisabled;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {

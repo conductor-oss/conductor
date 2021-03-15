@@ -14,13 +14,12 @@ package com.netflix.conductor.core.events;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import rx.Observable;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import rx.Observable;
 
 public class MockObservableQueue implements ObservableQueue {
 

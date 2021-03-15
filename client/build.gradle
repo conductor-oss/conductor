@@ -1,3 +1,17 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.2"
+    }
+}
+
+apply plugin: 'com.github.spotbugs'
+apply plugin: 'pmd'
+
 configurations.all {
     exclude group: 'amazon', module: 'aws-java-sdk'
 }
@@ -24,4 +38,19 @@ dependencies {
 
     testImplementation "org.powermock:powermock-module-junit4:${revPowerMock}"
     testImplementation "org.powermock:powermock-api-mockito2:${revPowerMock}"
+}
+
+spotbugsMain {
+    reports {
+        xml {
+            enabled = false
+        }
+        html {
+            enabled = true
+        }
+    }
+}
+
+pmd {
+    ignoreFailures = true
 }

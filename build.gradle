@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.2'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.3'
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.1.RELEASE'
     }
 }
@@ -14,7 +14,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
     id 'application'
-    id 'nebula.netflixoss' version '8.8.1'
+    id 'nebula.netflixoss' version '9.2.2'
     id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 

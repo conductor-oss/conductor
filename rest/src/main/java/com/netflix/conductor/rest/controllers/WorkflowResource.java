@@ -81,7 +81,7 @@ public class WorkflowResource {
     public Map<String, List<Workflow>> getWorkflows(@PathVariable("name") String name,
         @RequestParam(value = "includeClosed", defaultValue = "false", required = false) boolean includeClosed,
         @RequestParam(value = "includeTasks", defaultValue = "false", required = false) boolean includeTasks,
-        List<String> correlationIds) {
+        @RequestBody List<String> correlationIds) {
         return workflowService.getWorkflows(name, includeClosed, includeTasks, correlationIds);
     }
 
@@ -137,7 +137,7 @@ public class WorkflowResource {
     @PostMapping(value = "/{workflowId}/rerun", produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Reruns the workflow from a specific task")
     public String rerun(@PathVariable("workflowId") String workflowId,
-        RerunWorkflowRequest request) {
+        @RequestBody RerunWorkflowRequest request) {
         return workflowService.rerunWorkflow(workflowId, request);
     }
 

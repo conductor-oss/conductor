@@ -13,19 +13,13 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +30,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-public class SystemTaskWorkerCoordinator {
+@ConditionalOnProperty(name="conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
+public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
@@ -61,9 +63,9 @@ public class SystemTaskWorkerCoordinator {
     private final ExecutionService executionService;
 
     public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor,
-                                       ConductorProperties properties,
-                                       ExecutionService executionService,
-                                       List<WorkflowSystemTask> workflowSystemTasks) {
+        ConductorProperties properties,
+        ExecutionService executionService,
+        List<WorkflowSystemTask> workflowSystemTasks) {
         this.properties = properties;
         this.workflowSystemTasks = workflowSystemTasks;
         this.executionNameSpace = properties.getSystemTaskWorkerExecutionNamespace();
@@ -76,14 +78,14 @@ public class SystemTaskWorkerCoordinator {
     @EventListener(ApplicationReadyEvent.class)
     public void initSystemTaskExecutor() {
         int threadCount = properties.getSystemTaskWorkerThreadCount();
-        if (threadCount > 0) {
-            this.workflowSystemTasks.forEach(this::add);
-            this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
-            new Thread(this::listen).start();
-            LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
-        } else {
-            LOGGER.info("System Task Worker DISABLED");
+        if (threadCount <= 0) {
+            throw new IllegalStateException("Cannot set system task worker thread count to <=0. To disable system "
+                + "task workers, set conductor.system-task-workers.enabled=false.");
         }
+        this.workflowSystemTasks.forEach(this::add);
+        this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        new Thread(this::listen).start();
+        LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
     }
 
     private void add(WorkflowSystemTask systemTask) {
@@ -97,7 +99,7 @@ public class SystemTaskWorkerCoordinator {
             for (; ; ) {
                 String workflowSystemTaskQueueName = queue.poll(60, TimeUnit.SECONDS);
                 if (workflowSystemTaskQueueName != null && !listeningTaskQueues.contains(workflowSystemTaskQueueName)
-                        && shouldListen(workflowSystemTaskQueueName)) {
+                    && shouldListen(workflowSystemTaskQueueName)) {
                     listen(workflowSystemTaskQueueName);
                     listeningTaskQueues.add(workflowSystemTaskQueueName);
                 }
@@ -110,13 +112,13 @@ public class SystemTaskWorkerCoordinator {
 
     private void listen(String queueName) {
         Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(() -> pollAndExecute(queueName), 1000, pollInterval, TimeUnit.MILLISECONDS);
+            .scheduleWithFixedDelay(() -> pollAndExecute(queueName), 1000, pollInterval, TimeUnit.MILLISECONDS);
         LOGGER.info("Started listening for queue: {}", queueName);
     }
 
     private void pollAndExecute(String queueName) {
-        if (properties.isSystemTaskWorkersDisabled()) {
-            LOGGER.warn("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
+        if (isRunning()) {
+            LOGGER.debug("Component stopped. Not polling for system task in queue : {}", queueName);
             return;
         }
         systemTaskExecutor.pollAndExecute(queueName);
@@ -130,7 +132,7 @@ public class SystemTaskWorkerCoordinator {
 
     private boolean shouldListen(String workflowSystemTaskQueueName) {
         return isFromCoordinatorExecutionNameSpace(workflowSystemTaskQueueName)
-                && isAsyncSystemTask(workflowSystemTaskQueueName);
+            && isAsyncSystemTask(workflowSystemTaskQueueName);
     }
 
     @VisibleForTesting
