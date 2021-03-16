@@ -14,6 +14,7 @@ package com.netflix.conductor.bootstrap;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
@@ -56,6 +57,7 @@ public class Main {
             System.exit(3);
         }
 
+        BootstrapUtil.configureSummaryUtil(serverInjector.getInstance(Configuration.class));
 
         System.out.println("\n\n\n");
         System.out.println("                     _            _             ");

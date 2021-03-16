@@ -119,6 +119,9 @@ public interface Configuration {
     String WORKFLOW_ARCHIVAL_DELAY_QUEUE_WORKER_THREAD_COUNT_PROPERTY_NAME = "workflow.archival.delay.queue.worker.thread.count";
     int WORKFLOW_ARCHIVAL_DELAY_QUEUE_WORKER_THREAD_COUNT_DEFAULT_VALUE = 5;
 
+    String SUMMARY_INPUT_OUTPUT_JSON_SERIALIZATION_ENABLED_PROPERTY_NAME = "summary.input.output.json.serialization.enabled";
+    boolean SUMMARY_INPUT_OUTPUT_JSON_SERIALIZATION_ENABLED_DEFAULT_VALUE = false;
+
     String OWNER_EMAIL_MANDATORY_NAME = "workflow.owner.email.mandatory";
     boolean OWNER_EMAIL_MANDATORY_DEFAULT_VALUE = true;
 
@@ -369,6 +372,14 @@ public interface Configuration {
         return getIntProperty(WORKFLOW_ARCHIVAL_DELAY_QUEUE_WORKER_THREAD_COUNT_PROPERTY_NAME, WORKFLOW_ARCHIVAL_DELAY_QUEUE_WORKER_THREAD_COUNT_DEFAULT_VALUE);
     }
 
+    /**
+     * By default, this value is false, meaning that Java's default toString() method is used.
+     * @return if true, Workflow/Task Summary Input and Output are serialized as Json strings.
+     */
+    default boolean isSummaryInputOutputJsonSerializationEnabled()
+    {
+        return getBooleanProperty(SUMMARY_INPUT_OUTPUT_JSON_SERIALIZATION_ENABLED_PROPERTY_NAME, SUMMARY_INPUT_OUTPUT_JSON_SERIALIZATION_ENABLED_DEFAULT_VALUE);
+    }
 
     /**
      * @return the number of threads to be use in Scheduler used for polling events from multiple event queues.

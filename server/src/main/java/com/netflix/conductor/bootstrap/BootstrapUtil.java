@@ -15,6 +15,8 @@
  */
 package com.netflix.conductor.bootstrap;
 
+import com.netflix.conductor.common.utils.SummaryUtil;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.grpc.server.GRPCServer;
@@ -51,6 +53,13 @@ public class BootstrapUtil {
             System.out.println("Error setting up elasticsearch index");
             e.printStackTrace(System.err);
             System.exit(3);
+        }
+    }
+
+    public static void configureSummaryUtil(Configuration configuration) {
+        if (configuration.isSummaryInputOutputJsonSerializationEnabled() == true) {
+            System.out.println("Enabling Summary Input/Output Json Serialization based on configuration");
+            SummaryUtil.setSummaryInputOutputJsonSerializationEnabled(true);
         }
     }
 

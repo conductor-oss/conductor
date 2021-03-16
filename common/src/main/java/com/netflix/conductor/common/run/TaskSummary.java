@@ -19,6 +19,8 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.utils.SummaryUtil;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
@@ -94,17 +96,17 @@ public class TaskSummary {
 	@ProtoField(id = 19)
 	private int workflowPriority;
 
-    public TaskSummary() {
-    }
+	public TaskSummary() {
+	}
 
 	public TaskSummary(Task task) {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     	sdf.setTimeZone(gmt);
     	
-    	this.taskId = task.getTaskId();
-    	this.taskDefName = task.getTaskDefName();
-    	this.taskType = task.getTaskType();
+		this.taskId = task.getTaskId();
+		this.taskDefName = task.getTaskDefName();
+		this.taskType = task.getTaskType();
 		this.workflowId = task.getWorkflowInstanceId();
 		this.workflowType = task.getWorkflowType();
 		this.workflowPriority = task.getWorkflowPriority();
@@ -117,11 +119,11 @@ public class TaskSummary {
 		this.reasonForIncompletion = task.getReasonForIncompletion();
 		this.queueWaitTime = task.getQueueWaitTime();
 		if (task.getInputData() != null) {
-			this.input = task.getInputData().toString();
+			this.input = SummaryUtil.serializeInputOutput(task.getInputData());
 		}
 		
 		if (task.getOutputData() != null) {
-			this.output = task.getOutputData().toString();
+			this.output = SummaryUtil.serializeInputOutput(task.getOutputData());
 		}
 		
 		
