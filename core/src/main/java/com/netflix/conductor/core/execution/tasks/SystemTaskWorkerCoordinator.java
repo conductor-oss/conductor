@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-@ConditionalOnProperty(name="conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
 public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
@@ -117,7 +117,7 @@ public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
     }
 
     private void pollAndExecute(String queueName) {
-        if (isRunning()) {
+        if (!isRunning()) {
             LOGGER.debug("Component stopped. Not polling for system task in queue : {}", queueName);
             return;
         }
