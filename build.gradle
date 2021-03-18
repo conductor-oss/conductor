@@ -1,7 +1,9 @@
 buildscript {
     repositories {
         mavenCentral()
-        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.3'
@@ -10,7 +12,6 @@ buildscript {
 }
 
 plugins {
-//    id 'org.springframework.boot' version '2.3.1.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
     id 'application'
@@ -50,7 +51,26 @@ allprojects {
 
     repositories {
         mavenCentral()
-        jcenter()
+
+        // oss-candidate for -rc.* verions:
+        maven {
+            url "https://artifactory-oss.prod.netflix.net/artifactory/maven-oss-candidates"
+        }
+
+        /**
+         * This repository locates artifacts that don't exist in maven central but we had to backup from jcenter
+         * The exclusiveContent
+         */
+        exclusiveContent {
+            forRepository {
+                maven {
+                    url "https://artifactory-oss.prod.netflix.net/artifactory/required-jcenter-modules-backup"
+                }
+            }
+            filter {
+                includeGroupByRegex "com\\.github\\.vmg.*"
+            }
+        }
     }
 
     dependencyManagement {
