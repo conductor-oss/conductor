@@ -1,6 +1,9 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "com.github.vmg.protogen:protogen-codegen:${revProtogenCodegen}"
