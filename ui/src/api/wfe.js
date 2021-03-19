@@ -195,7 +195,7 @@ router.post('/bulk/restart', async (req, res, next) => {
 
 router.post('/bulk/restart_with_latest_definition', async (req, res, next) => {
   try {
-    const result = await http.post(baseURL2 + "bulk/restart?useLatestDefinition=true", req.body, req.token);
+    const result = await http.post(baseURL2 + "bulk/restart?useLatestDefinitions=true", req.body, req.token);
     res.status(200).send(result);
   } catch (err) {
     next(err);

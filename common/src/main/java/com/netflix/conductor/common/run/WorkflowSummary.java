@@ -15,6 +15,7 @@ package com.netflix.conductor.common.run;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.SummaryUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -110,10 +111,10 @@ public class WorkflowSummary {
         }
         this.status = workflow.getStatus();
         if (workflow.getInput() != null) {
-            this.input = workflow.getInput().toString();
+            this.input = SummaryUtil.serializeInputOutput(workflow.getInput());
         }
         if (workflow.getOutput() != null) {
-            this.output = workflow.getOutput().toString();
+            this.output = SummaryUtil.serializeInputOutput(workflow.getOutput());
         }
         this.reasonForIncompletion = workflow.getReasonForIncompletion();
         if (workflow.getEndTime() > 0) {

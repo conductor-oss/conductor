@@ -30,4 +30,6 @@ if [ -z "$LOG4J_PROP" ];
     export log4j_file=/app/config/$LOG4J_PROP
 fi
 
-java -jar conductor-server-*-all.jar $config_file $log4j_file
+echo "Using java options config: $JAVA_OPTS"
+
+java ${JAVA_OPTS} -jar conductor-server-*-all.jar $config_file $log4j_file
