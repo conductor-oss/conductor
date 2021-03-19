@@ -16,6 +16,8 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.utils.SummaryUtil;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -111,11 +113,11 @@ public class TaskSummary {
         this.reasonForIncompletion = task.getReasonForIncompletion();
         this.queueWaitTime = task.getQueueWaitTime();
         if (task.getInputData() != null) {
-            this.input = task.getInputData().toString();
+            this.input = SummaryUtil.serializeInputOutput(task.getInputData());
         }
 
         if (task.getOutputData() != null) {
-            this.output = task.getOutputData().toString();
+           this.output = SummaryUtil.serializeInputOutput(task.getOutputData());
         }
 
         if (task.getEndTime() > 0) {

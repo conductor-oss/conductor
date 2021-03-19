@@ -3,6 +3,7 @@ import http from '../core/HttpClientClientSide';
 export const FETCH_WORKFLOW_METADATA = "FETCH_WORKFLOW_METADATA";
 export const RECEIVE_WORKFLOW_METADATA = "RECEIVE_WORKFLOW_METADATA";
 export const FAIL_WORKFLOW_METADATA = "FAIL_WORKFLOW_METADATA";
+export const REQUEST_ERROR = "REQUEST_ERROR";
 
 export function fetchWorkflowMetadata() {
   return {type: FETCH_WORKFLOW_METADATA};
@@ -15,7 +16,7 @@ export function receiveWorkflowMetadata(workflows) {
 export function failWorkflowMetadata(error) {
   return function(dispatch) {
     dispatch({type: FAIL_WORKFLOW_METADATA, error});
-    dispatch({type: 'REQUEST_ERROR', e});
+    dispatch({type: REQUEST_ERROR, error});
   };
 }
 

@@ -139,6 +139,7 @@ Modified properties in the `core` module:
 | workflow.system.task.queue.pollCount | conductor.app.systemTaskMaxPollCount | 1 |
 | async.update.short.workflow.duration.seconds | conductor.app.asyncUpdateShortRunningWorkflowDuration | 30s |
 | async.update.delay.seconds | conductor.app.asyncUpdateDelay | 60s |
+| summary.input.output.json.serialization.enabled | conductor.app.summary-input-output-json-serialization.enabled | false |
 | workflow.owner.email.mandatory | conductor.app.ownerEmailMandatory | true |
 | workflow.repairservice.enabled | conductor.app.workflowRepairServiceEnabled | false |
 | workflow.event.queue.scheduler.poll.thread.count | conductor.app.eventSchedulerPollThreadCount | # CPU cores |
