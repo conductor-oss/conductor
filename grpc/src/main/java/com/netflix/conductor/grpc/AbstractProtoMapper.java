@@ -38,14 +38,16 @@ import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 import com.netflix.conductor.proto.WorkflowTaskPb;
-
-import javax.annotation.Generated;
+import java.lang.IllegalArgumentException;
+import java.lang.Object;
+import java.lang.String;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Generated;
 
 @Generated("com.github.vmg.protogen.ProtoGen")
 public abstract class AbstractProtoMapper {

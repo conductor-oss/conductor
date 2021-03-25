@@ -48,6 +48,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
 
-public class SQSObservableQueue extends LifecycleAwareComponent implements ObservableQueue {
+public class SQSObservableQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SQSObservableQueue.class);
     private static final String QUEUE_TYPE = "sqs";
@@ -67,6 +68,7 @@ public class SQSObservableQueue extends LifecycleAwareComponent implements Obser
     private final long pollTimeInMS;
     private final String queueURL;
     private final Scheduler scheduler;
+    private volatile boolean running;
 
     private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeoutInSeconds, int batchSize,
         long pollTimeInMS, List<String> accountsToAuthorize, Scheduler scheduler) {
@@ -141,6 +143,23 @@ public class SQSObservableQueue extends LifecycleAwareComponent implements Obser
 
     public int getVisibilityTimeoutInSeconds() {
         return visibilityTimeoutInSeconds;
+    }
+
+    @Override
+    public void start() {
+        LOGGER.info("Started listening to {}:{}", getClass().getSimpleName(), queueName);
+        running = true;
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Stopped listening to {}:{}", getClass().getSimpleName(), queueName);
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 
     public static class Builder {

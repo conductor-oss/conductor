@@ -102,4 +102,21 @@ public class JsonUtilsTest {
         Object jsonObject = jsonUtils.expand(parentMap);
         assertNotNull(jsonObject);
     }
+
+    // This test verifies that the types of the elements in the input are maintained upon expanding the JSON object
+    @Test
+    public void testTypes() throws Exception {
+        String map = "{\"requestId\":\"1375128656908832001\",\"workflowId\":\"fc147e1d-5408-4d41-b066-53cb2e551d0e\","
+            + "\"inner\":{\"num\":42,\"status\":\"READY\"}}";
+        jsonUtils.expand(map);
+
+        Object jsonObject = jsonUtils.expand(map);
+        assertNotNull(jsonObject);
+        assertTrue(jsonObject instanceof LinkedHashMap);
+        assertTrue(((LinkedHashMap<?, ?>) jsonObject).get("requestId") instanceof String);
+        assertTrue(((LinkedHashMap<?, ?>) jsonObject).get("workflowId") instanceof String);
+        assertTrue(((LinkedHashMap<?, ?>) jsonObject).get("inner") instanceof LinkedHashMap);
+        assertTrue(((LinkedHashMap<?, ?>) ((LinkedHashMap<?, ?>) jsonObject).get("inner")).get("num") instanceof Integer);
+        assertTrue(((LinkedHashMap<?, ?>) ((LinkedHashMap<?, ?>) jsonObject).get("inner")).get("status") instanceof String);
+    }
 }

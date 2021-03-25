@@ -12,12 +12,11 @@
  */
 package com.netflix.conductor.core.events.queue;
 
-import org.springframework.context.SmartLifecycle;
+import java.util.List;
+import org.springframework.context.Lifecycle;
 import rx.Observable;
 
-import java.util.List;
-
-public interface ObservableQueue {
+public interface ObservableQueue extends Lifecycle {
 
     /**
      * @return An observable for the given queue

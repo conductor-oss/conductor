@@ -12,26 +12,24 @@
  */
 package com.netflix.conductor.core.events.queue;
 
-import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 /**
  * An {@link ObservableQueue} implementation using the underlying {@link QueueDAO} implementation.
  */
-public class ConductorObservableQueue extends LifecycleAwareComponent implements ObservableQueue {
+public class ConductorObservableQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConductorObservableQueue.class);
 
@@ -43,6 +41,7 @@ public class ConductorObservableQueue extends LifecycleAwareComponent implements
     private final int longPollTimeout;
     private final int pollCount;
     private final Scheduler scheduler;
+    private volatile boolean running;
 
     ConductorObservableQueue(String queueName, QueueDAO queueDAO, ConductorProperties properties, Scheduler scheduler) {
         this.queueName = queueName;
@@ -121,5 +120,22 @@ public class ConductorObservableQueue extends LifecycleAwareComponent implements
                 return Observable.from(messages);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
+    }
+
+    @Override
+    public void start() {
+        LOGGER.info("Started listening to {}:{}", getClass().getSimpleName(), queueName);
+        running = true;
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Stopped listening to {}:{}", getClass().getSimpleName(), queueName);
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 }
