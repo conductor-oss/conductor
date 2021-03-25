@@ -20,19 +20,19 @@ import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+
 import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
@@ -301,6 +301,10 @@ public class WorkflowDef extends Auditable {
 
     public static String getKey(String name, int version) {
         return name + "." + version;
+    }
+
+    public boolean containsType(String taskType) {
+        return collectTasks().stream().anyMatch(t -> t.getType().equals(taskType));
     }
 
     public WorkflowTask getNextTask(String taskReferenceName) {

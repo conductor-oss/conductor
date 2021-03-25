@@ -52,7 +52,7 @@ public class Conductor {
                 properties.forEach((key, value) -> System.setProperty((String) key, (String) value));
                 log.info("Loaded {} properties from {}", properties.size(), configFile);
             }else {
-                log.warn("Ignoring {} since it doesn't exist", configFile);
+                log.warn("Ignoring {} since it does not exist", configFile);
             }
         }
     }

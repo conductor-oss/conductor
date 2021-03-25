@@ -38,16 +38,14 @@ import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 import com.netflix.conductor.proto.WorkflowTaskPb;
-import java.lang.IllegalArgumentException;
-import java.lang.Object;
-import java.lang.String;
+
+import javax.annotation.Generated;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Generated;
 
 @Generated("com.github.vmg.protogen.ProtoGen")
 public abstract class AbstractProtoMapper {
@@ -566,6 +564,7 @@ public abstract class AbstractProtoMapper {
         if (from.getSubWorkflowId() != null) {
             to.setSubWorkflowId( from.getSubWorkflowId() );
         }
+        to.setSubworkflowChanged( from.isSubworkflowChanged() );
         return to.build();
     }
 
@@ -624,6 +623,7 @@ public abstract class AbstractProtoMapper {
         to.setIsolationGroupId( from.getIsolationGroupId() );
         to.setIteration( from.getIteration() );
         to.setSubWorkflowId( from.getSubWorkflowId() );
+        to.setSubworkflowChanged( from.getSubworkflowChanged() );
         return to;
     }
 

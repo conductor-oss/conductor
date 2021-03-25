@@ -44,7 +44,7 @@ public class WorkflowTask {
     @Deprecated
     public enum Type {
         SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
-        private static Set<String> systemTasks = new HashSet<>();
+        private static final Set<String> systemTasks = new HashSet<>();
 
         static {
             systemTasks.add(Type.SIMPLE.name());

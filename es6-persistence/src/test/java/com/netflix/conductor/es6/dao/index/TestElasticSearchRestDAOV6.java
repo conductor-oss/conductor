@@ -22,7 +22,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.es6.utils.TestUtils;
-import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;

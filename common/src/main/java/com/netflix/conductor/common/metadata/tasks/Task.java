@@ -199,6 +199,13 @@ public class Task {
     @ProtoField(id = 41)
     private String subWorkflowId;
 
+    /**
+     * Use to note that a sub workflow associated with SUB_WORKFLOW task
+     * has an action performed on it directly.
+     */
+    @ProtoField(id = 42)
+    private boolean subworkflowChanged;
+
     public Task() {
     }
 
@@ -735,6 +742,14 @@ public class Task {
         this.workflowPriority = workflowPriority;
     }
 
+    public boolean isSubworkflowChanged() {
+        return subworkflowChanged;
+    }
+
+    public void setSubworkflowChanged(boolean subworkflowChanged) {
+        this.subworkflowChanged = subworkflowChanged;
+    }
+
     public String getSubWorkflowId() {
         // For backwards compatibility
         if (StringUtils.isNotBlank(subWorkflowId)) {
@@ -787,6 +802,7 @@ public class Task {
         copy.setExecutionNameSpace(executionNameSpace);
         copy.setIsolationGroupId(isolationGroupId);
         copy.setSubWorkflowId(getSubWorkflowId());
+        copy.setSubworkflowChanged(subworkflowChanged);
 
         return copy;
     }
@@ -855,6 +871,7 @@ public class Task {
             ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
             ", isolationGroupId='" + isolationGroupId + '\'' +
             ", executionNameSpace='" + executionNameSpace + '\'' +
+            ", subworkflowChanged='" + subworkflowChanged + '\'' +
             '}';
     }
 

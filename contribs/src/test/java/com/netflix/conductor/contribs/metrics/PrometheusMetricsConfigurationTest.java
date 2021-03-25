@@ -12,11 +12,8 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
+import com.netflix.spectator.api.Meter;
+import com.netflix.spectator.api.Spectator;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -25,8 +22,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.spectator.api.Meter;
-import com.netflix.spectator.api.Spectator;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @RunWith(SpringRunner.class)
 @TestPropertySource(properties = {"conductor.metrics-prometheus.enabled=true"})

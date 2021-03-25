@@ -25,7 +25,6 @@ import com.netflix.conductor.es6.utils.TestUtils;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.text.SimpleDateFormat;

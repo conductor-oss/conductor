@@ -12,18 +12,19 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import static com.netflix.conductor.rest.config.RequestMappingConstants.QUEUE;
-
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.core.events.queue.QueueManager;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+import static com.netflix.conductor.rest.config.RequestMappingConstants.QUEUE;
 
 @RestController
 @RequestMapping(QUEUE)

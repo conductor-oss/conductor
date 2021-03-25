@@ -26,14 +26,15 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.Utils;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Audit
 @Trace
@@ -306,7 +307,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param useLatestDefinitions if true, use the latest workflow and task definitions upon restart
      */
     public void restartWorkflow(String workflowId, boolean useLatestDefinitions) {
-        workflowExecutor.rewind(workflowId, useLatestDefinitions);
+        workflowExecutor.restart(workflowId, useLatestDefinitions);
     }
 
     /**

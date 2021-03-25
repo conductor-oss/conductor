@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *   the License. You may obtain a copy of the License at
+ *   <p>
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *   <p>
+ *   Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *   an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *   specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
@@ -17,8 +17,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowRepairService
-import com.netflix.conductor.core.execution.WorkflowSweeper
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
@@ -26,18 +24,13 @@ import com.netflix.conductor.test.base.AbstractSpecification
 import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 class SubWorkflowSpec extends AbstractSpecification {
 
     @Autowired
     QueueDAO queueDAO
-
-    @Autowired
-    WorkflowSweeper workflowSweeper
-
-    @Autowired
-    WorkflowRepairService workflowRepairService
 
     @Shared
     def WORKFLOW_WITH_SUBWORKFLOW = 'integration_test_wf_with_sub_wf'
@@ -111,7 +104,8 @@ class SubWorkflowSpec extends AbstractSpecification {
 
         when: "the subworkflow is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), polledTaskIds.get(0), 30)
+        String subworkflowTaskId = polledTaskIds.get(0)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), subworkflowTaskId, 30)
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -137,7 +131,7 @@ class SubWorkflowSpec extends AbstractSpecification {
 
         when: "a delay of 10 seconds is introduced and the workflow is sweeped to run the evaluation"
         Thread.sleep(10000)
-        workflowSweeper.sweep([workflowInstanceId], workflowExecutor, workflowRepairService)
+        sweep(workflowInstanceId)
 
         then: "ensure that the workflow has been TIMED OUT and subworkflow task is CANCELED"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -170,15 +164,8 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.SCHEDULED
         }
 
-        and: "the parent workflow has been resumed"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 2
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
-            tasks[1].status == Task.Status.IN_PROGRESS
-        }
+        and: "verify that change flag is set on the sub workflow task in parent"
+        workflowExecutionService.getTask(subworkflowTaskId).subworkflowChanged
 
         when: "Polled for simple_task_in_sub_wf task in subworkflow"
         pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('simple_task_in_sub_wf', 'task1.integration.worker', ['op': 'simple_task_in_sub_wf.done'])
@@ -196,6 +183,15 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.COMPLETED
         }
 
+        and: "subworkflow task is in a completed state"
+        with(workflowExecutionService.getTask(subworkflowTaskId)) {
+            status == Task.Status.COMPLETED
+            subworkflowChanged
+        }
+
+        and: "the parent workflow is swept"
+        sweep(workflowInstanceId)
+
         and: "the parent workflow has been resumed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
@@ -204,6 +200,7 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
             tasks[1].status == Task.Status.COMPLETED
+            !tasks[1].subworkflowChanged
             output['op'] == 'simple_task_in_sub_wf.done'
         }
 
@@ -290,6 +287,9 @@ class SubWorkflowSpec extends AbstractSpecification {
             reasonForIncompletion == terminateReason
         }
 
+        and:
+        sweep(workflowInstanceId)
+
         and: "verify that parent workflow is in terminated state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED
@@ -298,7 +298,7 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
             tasks[1].status == Task.Status.CANCELED
-            reasonForIncompletion == terminateReason
+            reasonForIncompletion && reasonForIncompletion.contains(terminateReason)
         }
     }
 
@@ -310,7 +310,7 @@ class SubWorkflowSpec extends AbstractSpecification {
                 persistedTask2Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTask2Definition)
 
-       and: "an existing workflow with subworkflow and registered definitions"
+        and: "an existing workflow with subworkflow and registered definitions"
         metadataService.getWorkflowDef(SIMPLE_WORKFLOW, 1)
         metadataService.getWorkflowDef(WORKFLOW_WITH_SUBWORKFLOW, 1)
 
@@ -408,6 +408,9 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
         }
 
+        and:
+        sweep(workflowInstanceId)
+
         and: "the workflow is in a FAILED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
@@ -421,17 +424,7 @@ class SubWorkflowSpec extends AbstractSpecification {
         when: "the workflow is retried by resuming subworkflow task"
         workflowExecutor.retry(workflowInstanceId, true)
 
-        then: "the workflow is in a RUNNING state"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 2
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.IN_PROGRESS
-        }
-
-        and: "the subworkflow is in a RUNNING state"
+        then: "the subworkflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 3
@@ -441,6 +434,17 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.SCHEDULED
+        }
+
+        and: "the workflow is in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
+            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[1].subworkflowChanged
         }
 
         when: "poll and complete the integration_task_2 task"
@@ -461,14 +465,18 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[2].status == Task.Status.COMPLETED
         }
 
+        and:
+        sweep(workflowInstanceId)
+
         then: "the workflow is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
             tasks[1].status == Task.Status.COMPLETED
+            !tasks[1].subworkflowChanged
         }
 
         cleanup: "Ensure that changes to the task def are reverted"

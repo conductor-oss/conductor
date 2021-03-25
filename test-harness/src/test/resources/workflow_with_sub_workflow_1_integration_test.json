@@ -27,7 +27,8 @@
       "taskReferenceName": "t2",
       "inputParameters": {
         "param1": "${workflow.input.param1}",
-        "param2": "${workflow.input.param2}"
+        "param2": "${workflow.input.param2}",
+        "subwf": "${workflow.input.nextSubwf}"
       },
       "type": "SUB_WORKFLOW",
       "subWorkflowParam": {

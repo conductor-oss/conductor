@@ -95,7 +95,7 @@ public class TaskTest {
     public void testDeepCopyTask() {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check the number of declared fields.
-        final int expectedTaskFieldsNumber = 39;
+        final int expectedTaskFieldsNumber = 40;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         assertEquals(expectedTaskFieldsNumber, declaredFieldsNumber);
@@ -135,6 +135,7 @@ public class TaskTest {
         task.setReasonForIncompletion("");
         task.setWorkerId("");
         task.setSubWorkflowId("");
+        task.setSubworkflowChanged(false);
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);

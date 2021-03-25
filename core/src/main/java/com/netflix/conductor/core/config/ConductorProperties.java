@@ -1,27 +1,30 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *
+ *  * Copyright 2021 Netflix, Inc.
+ *  * <p>
+ *  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  * the License. You may obtain a copy of the License at
+ *  * <p>
+ *  * http://www.apache.org/licenses/LICENSE-2.0
+ *  * <p>
+ *  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  * specific language governing permissions and limitations under the License.
+ *
  */
 package com.netflix.conductor.core.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DataSizeUnit;
+import org.springframework.boot.convert.DurationUnit;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.convert.DataSizeUnit;
-import org.springframework.boot.convert.DurationUnit;
-import org.springframework.util.unit.DataSize;
-import org.springframework.util.unit.DataUnit;
 
 @ConfigurationProperties("conductor.app")
 public class ConductorProperties {
@@ -154,14 +157,6 @@ public class ConductorProperties {
      * Used to control the validation for owner email field as mandatory within workflow and task definitions.
      */
     private boolean ownerEmailMandatory = true;
-
-    /**
-     * Configuration to enable {@link com.netflix.conductor.core.execution.WorkflowRepairService}, that tries to keep
-     * ExecutionDAO and QueueDAO in sync, based on the task or workflow state.
-     * <p>
-     * This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method.
-     */
-    private boolean workflowRepairServiceEnabled = false;
 
     /**
      * The number of threads to be usde in Scheduler used for polling events from multiple event queues. By default, a
@@ -437,14 +432,6 @@ public class ConductorProperties {
 
     public void setOwnerEmailMandatory(boolean ownerEmailMandatory) {
         this.ownerEmailMandatory = ownerEmailMandatory;
-    }
-
-    public boolean isWorkflowRepairServiceEnabled() {
-        return workflowRepairServiceEnabled;
-    }
-
-    public void setWorkflowRepairServiceEnabled(boolean workflowRepairServiceEnabled) {
-        this.workflowRepairServiceEnabled = workflowRepairServiceEnabled;
     }
 
     public int getEventQueueSchedulerPollThreadCount() {

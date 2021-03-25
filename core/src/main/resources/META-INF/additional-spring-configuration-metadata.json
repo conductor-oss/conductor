@@ -1,7 +1,17 @@
 {
   "properties": [
     {
-      "name": "conductor.app.isolatedSystemTaskEnabled",
+      "name": "conductor.workflow-sweeper.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enables the workflow sweeper."
+    },
+    {
+      "name": "conductor.workflow-repair-service.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Configuration to enable WorkflowRepairService, that tries to keep ExecutionDAO and QueueDAO in sync, based on the task or workflow state. This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method."
+    },
+    {
+      "name": "conductor.app.isolated-system-task-enabled",
       "type": "java.lang.Boolean",
       "description": "Used to enable/disable use of isolation groups for system task workers."
     },

@@ -183,7 +183,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
 
         when: "Rewind the running workflow that was just started"
-        workflowExecutor.rewind(workflowInstanceId, false)
+        workflowExecutor.restart(workflowInstanceId, false)
 
         then: "Ensure that a exception is thrown when a running workflow is being rewind"
         def exceptionThrown = thrown(ApplicationException)
@@ -395,7 +395,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
 
         when: "Rewind the workflow which is in the failed state without the latest definition"
-        workflowExecutor.rewind(workflowInstanceId, false)
+        workflowExecutor.restart(workflowInstanceId, false)
 
         then: "verify that the rewound workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -483,7 +483,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         metadataService.updateWorkflowDef(workflowDefinition)
 
         and: "rewind/restart the workflow with the latest workflow definition"
-        workflowExecutor.rewind(workflowInstanceId, true)
+        workflowExecutor.restart(workflowInstanceId, true)
 
         then: "verify that the rewound workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -910,7 +910,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
 
         when: "The failed workflow is rewound"
-        workflowExecutor.rewind(workflowInstanceId, false)
+        workflowExecutor.restart(workflowInstanceId, false)
 
         and: "The first task 'integration_task_1' is polled and completed"
         def task1Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker',
@@ -942,7 +942,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
 
         when: "The successfully completed non restartable workflow is rewound"
-        workflowExecutor.rewind(workflowInstanceId, false)
+        workflowExecutor.restart(workflowInstanceId, false)
 
         then: "Ensure that an exception is thrown"
         def exceptionThrown = thrown(ApplicationException)

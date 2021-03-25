@@ -26,10 +26,38 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestWorkflowDef {
+
+    @Test
+    public void testContainsType() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_workflow");
+        def.setVersion(1);
+        def.setSchemaVersion(2);
+        def.getTasks().add(createWorkflowTask("simple_task_1"));
+        def.getTasks().add(createWorkflowTask("simple_task_2"));
+
+        WorkflowTask task3 = createWorkflowTask("decision_task_1");
+        def.getTasks().add(task3);
+        task3.setType(TaskType.DECISION.name());
+        task3.getDecisionCases()
+                .put("Case1", Arrays.asList(createWorkflowTask("case_1_task_1"), createWorkflowTask("case_1_task_2")));
+        task3.getDecisionCases()
+                .put("Case2", Arrays.asList(createWorkflowTask("case_2_task_1"), createWorkflowTask("case_2_task_2")));
+        task3.getDecisionCases().put("Case3", Collections.singletonList(
+                deciderTask("decision_task_2", toMap("Case31", "case31_task_1", "case_31_task_2"),
+                        Collections.singletonList("case3_def_task"))));
+        def.getTasks().add(createWorkflowTask("simple_task_3"));
+
+        assertTrue(def.containsType(TaskType.SIMPLE.name()));
+        assertTrue(def.containsType(TaskType.DECISION.name()));
+        assertFalse(def.containsType(TaskType.DO_WHILE.name()));
+    }
 
     @Test
     public void testGetNextTask_Decision() {

@@ -60,4 +60,5 @@ message Task {
     string isolation_group_id = 38;
     int32 iteration = 40;
     string sub_workflow_id = 41;
+    bool subworkflow_changed = 42;
 }

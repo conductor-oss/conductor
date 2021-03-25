@@ -1,0 +1,71 @@
+{
+  "name": "hierarchical_fork_join_swf",
+  "description": "hierarchical_fork_join_swf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "fanouttask",
+      "inputParameters": {
+        "param1": "${workflow.input.param1}",
+        "param2": "${workflow.input.param2}",
+        "subwf": "${workflow.input.nextSubwf}"
+      },
+      "type": "FORK_JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [
+        [
+          {
+            "name": "sub_workflow_task",
+            "taskReferenceName": "st1",
+            "inputParameters": {
+              "param1": "${workflow.input.param1}",
+              "param2": "${workflow.input.param2}",
+              "subwf": "${workflow.input.nextSubwf}"
+            },
+            "type": "SUB_WORKFLOW",
+            "subWorkflowParam": {
+              "name": "${workflow.input.subwf}",
+              "version": 1
+            },
+            "retryCount": 0
+          }
+        ],
+        [
+          {
+            "name": "integration_task_2",
+            "taskReferenceName": "t2",
+            "inputParameters": {
+              "p1": "${workflow.input.param1}",
+              "p2": "${workflow.input.param2}"
+            },
+            "type": "SIMPLE",
+            "retryCount": 0
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join",
+      "taskReferenceName": "fanouttask_join",
+      "inputParameters": {},
+      "type": "JOIN",
+      "joinOn": [
+        "st1",
+        "t2"
+      ]
+    }
+  ],
+  "inputParameters": [
+    "param1",
+    "param2",
+    "subwf"
+  ],
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

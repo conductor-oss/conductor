@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *   the License. You may obtain a copy of the License at
+ *   <p>
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *   <p>
+ *   Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *   an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *   specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.tasks;
 
@@ -20,12 +20,13 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component(SubWorkflow.NAME)
 public class SubWorkflow extends WorkflowSystemTask {
@@ -45,7 +46,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void start(Workflow workflow, Task task, WorkflowExecutor provider) {
+    public void start(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
 
         Map<String, Object> input = task.getInputData();
         String name = input.get("subWorkflowName").toString();
@@ -70,7 +71,7 @@ public class SubWorkflow extends WorkflowSystemTask {
         try {
             String subWorkflowId;
             if (workflowDefinition != null) {
-                subWorkflowId = provider.startWorkflow(
+                subWorkflowId = workflowExecutor.startWorkflow(
                     workflowDefinition,
                     wfInput,
                     null,
@@ -81,7 +82,7 @@ public class SubWorkflow extends WorkflowSystemTask {
                     null,
                     taskToDomain);
             } else {
-                subWorkflowId = provider.startWorkflow(
+                subWorkflowId = workflowExecutor.startWorkflow(
                     name,
                     version,
                     wfInput,
@@ -98,7 +99,7 @@ public class SubWorkflow extends WorkflowSystemTask {
             task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 
             // Set task status based on current sub-workflow status, as the status can change in recursion by the time we update here.
-            Workflow subWorkflow = provider.getWorkflow(subWorkflowId, false);
+            Workflow subWorkflow = workflowExecutor.getWorkflow(subWorkflowId, false);
             updateTaskStatus(subWorkflow, task);
         } catch (Exception e) {
             task.setStatus(Status.FAILED);
@@ -108,13 +109,13 @@ public class SubWorkflow extends WorkflowSystemTask {
     }
 
     @Override
-    public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
+    public boolean execute(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
             return false;
         }
 
-        Workflow subWorkflow = provider.getWorkflow(workflowId, false);
+        Workflow subWorkflow = workflowExecutor.getWorkflow(workflowId, false);
         WorkflowStatus subWorkflowStatus = subWorkflow.getStatus();
         if (!subWorkflowStatus.isTerminal()) {
             return false;
@@ -125,17 +126,17 @@ public class SubWorkflow extends WorkflowSystemTask {
     }
 
     @Override
-    public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) {
+    public void cancel(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
         String workflowId = task.getSubWorkflowId();
         if (StringUtils.isEmpty(workflowId)) {
             return;
         }
-        Workflow subWorkflow = provider.getWorkflow(workflowId, true);
+        Workflow subWorkflow = workflowExecutor.getWorkflow(workflowId, true);
         subWorkflow.setStatus(WorkflowStatus.TERMINATED);
         String reason = StringUtils.isEmpty(workflow.getReasonForIncompletion())
             ? "Parent workflow has been terminated with status " + workflow.getStatus()
             : "Parent workflow has been terminated with reason: " + workflow.getReasonForIncompletion();
-        provider.terminateWorkflow(subWorkflow, reason, null);
+        workflowExecutor.terminateWorkflow(subWorkflow, reason, null);
     }
 
     @Override
@@ -187,7 +188,7 @@ public class SubWorkflow extends WorkflowSystemTask {
                 task.getOutputData().putAll(subworkflow.getOutput());
             }
             if(!status.isSuccessful()) {
-                task.setReasonForIncompletion(subworkflow.getReasonForIncompletion());
+                task.setReasonForIncompletion(String.format("Sub workflow %s failure reason: %s", subworkflow.identifierString(), subworkflow.getReasonForIncompletion()));
             }
         }
     }
