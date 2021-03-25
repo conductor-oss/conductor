@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,13 +13,12 @@
 package com.netflix.conductor.core.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.utils.RetryUtil;
-import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -31,137 +30,64 @@ import com.netflix.conductor.service.MetadataService;
 import com.spotify.futures.CompletableFutures;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.concurrent.ThreadFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.Lifecycle;
 import org.springframework.stereotype.Component;
 
 /**
- * Event Processor is used to dispatch actions based on the incoming events to execution queue.
+ * Event Processor is used to dispatch actions configured in the event handlers, based on incoming events to the event
+ * queues.
  *
  * <p><code>Set conductor.default-event-processor.enabled=false</code> to disable event processing.</p>
  */
 @Component
 @ConditionalOnProperty(name = "conductor.default-event-processor.enabled", havingValue = "true", matchIfMissing = true)
-public class SimpleEventProcessor extends LifecycleAwareComponent implements EventProcessor {
+public class DefaultEventProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleEventProcessor.class);
-    private static final String CLASS_NAME = SimpleEventProcessor.class.getSimpleName();
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventProcessor.class);
     private static final int RETRY_COUNT = 3;
 
     private final MetadataService metadataService;
     private final ExecutionService executionService;
     private final ActionProcessor actionProcessor;
-    private final EventQueues eventQueues;
 
-    private final ExecutorService executorService;
-    private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
+    private final ExecutorService eventActionExecutorService;
     private final ObjectMapper objectMapper;
     private final JsonUtils jsonUtils;
     private final boolean isEventMessageIndexingEnabled;
 
-    public SimpleEventProcessor(ExecutionService executionService, MetadataService metadataService,
-        ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, ConductorProperties properties,
+    public DefaultEventProcessor(ExecutionService executionService, MetadataService metadataService,
+        ActionProcessor actionProcessor, JsonUtils jsonUtils, ConductorProperties properties,
         ObjectMapper objectMapper) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
-        this.eventQueues = eventQueues;
         this.objectMapper = objectMapper;
         this.jsonUtils = jsonUtils;
 
-        this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
-        int executorThreadCount = properties.getEventProcessorThreadCount();
-        if (executorThreadCount <= 0) {
+        if (properties.getEventProcessorThreadCount() <= 0) {
             throw new IllegalStateException("Cannot set event processor thread count to <=0. To disable event "
                 + "processing, set conductor.default-event-processor.enabled=false.");
         }
-        executorService = Executors.newFixedThreadPool(executorThreadCount);
-        refresh();
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
-        LOGGER.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setNameFormat("event-action-executor-thread-%d")
+            .build();
+        eventActionExecutorService = Executors
+            .newFixedThreadPool(properties.getEventProcessorThreadCount(), threadFactory);
+
+        this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
+        LOGGER.info("Event Processing is ENABLED");
     }
 
-    /**
-     * @return Returns a map of queues which are active.  Key is event name and value is queue URI
-     */
-    public Map<String, String> getQueues() {
-        Map<String, String> queues = new HashMap<>();
-        eventToQueueMap.forEach((key, value) -> queues.put(key, value.getName()));
-        return queues;
-    }
-
-    public Map<String, Map<String, Long>> getQueueSizes() {
-        Map<String, Map<String, Long>> queues = new HashMap<>();
-        eventToQueueMap.forEach((key, value) -> {
-            Map<String, Long> size = new HashMap<>();
-            size.put(value.getName(), value.size());
-            queues.put(key, size);
-        });
-        return queues;
-    }
-
-    @Override
-    public void start() {
-        eventToQueueMap.forEach((event, queue) -> {
-            LOGGER.debug("Start listening for events: {}", event);
-            queue.start();
-        });
-    }
-
-    @Override
-    public void stop() {
-        eventToQueueMap.forEach((event, queue) -> {
-            LOGGER.debug("Stop listening for events: {}", event);
-            queue.stop();
-        });
-    }
-
-    private void refresh() {
-        try {
-            Set<String> events = metadataService.getAllEventHandlers().stream()
-                .map(EventHandler::getEvent)
-                .collect(Collectors.toSet());
-
-            List<ObservableQueue> createdQueues = new LinkedList<>();
-            events.forEach(event -> eventToQueueMap.computeIfAbsent(event, s -> {
-                    ObservableQueue q = eventQueues.getQueue(event);
-                    createdQueues.add(q);
-                    return q;
-                }
-            ));
-
-            // start listening on all of the created queues
-            createdQueues.stream()
-                .filter(Objects::nonNull)
-                .peek(Lifecycle::start)
-                .forEach(this::listen);
-
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "refresh");
-            LOGGER.error("refresh event queues failed", e);
-        }
-    }
-
-    private void listen(ObservableQueue queue) {
-        queue.observe().subscribe((Message msg) -> handle(queue, msg));
-    }
-
-    protected void handle(ObservableQueue queue, Message msg) {
+    public void handle(ObservableQueue queue, Message msg) {
         try {
             if (isEventMessageIndexingEnabled) {
                 executionService.addMessage(queue.getName(), msg);
@@ -264,7 +190,7 @@ public class SimpleEventProcessor extends LifecycleAwareComponent implements Eve
             if (executionService.addEventExecution(eventExecution)) {
                 futuresList.add(CompletableFuture
                     .supplyAsync(() -> execute(eventExecution, action, getPayloadObject(msg.getPayload())),
-                        executorService));
+                        eventActionExecutorService));
             } else {
                 LOGGER.warn("Duplicate delivery/execution of message: {}", msg.getId());
             }
@@ -279,7 +205,6 @@ public class SimpleEventProcessor extends LifecycleAwareComponent implements Eve
      * @return the event execution updated with execution output, if the execution is completed/failed with
      * non-transient error the input event execution, if the execution failed due to transient error
      */
-    @VisibleForTesting
     protected EventExecution execute(EventExecution eventExecution, Action action, Object payload) {
         try {
             String methodName = "executeEventAction";

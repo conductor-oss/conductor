@@ -18,29 +18,26 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.stereotype.Service;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
 public class MetadataServiceImpl implements MetadataService {
 
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
-    private final EventQueues eventQueues;
 
-    public MetadataServiceImpl(MetadataDAO metadataDAO, EventHandlerDAO eventHandlerDAO, EventQueues eventQueues,
+    public MetadataServiceImpl(MetadataDAO metadataDAO, EventHandlerDAO eventHandlerDAO,
         ConductorProperties properties) {
         this.metadataDAO = metadataDAO;
         this.eventHandlerDAO = eventHandlerDAO;
-        this.eventQueues = eventQueues;
 
         ValidationContext.initialize(metadataDAO);
         OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator
@@ -173,7 +170,6 @@ public class MetadataServiceImpl implements MetadataService {
      *                     the name
      */
     public void addEventHandler(EventHandler eventHandler) {
-        eventQueues.getQueue(eventHandler.getEvent());
         eventHandlerDAO.addEventHandler(eventHandler);
     }
 
@@ -181,7 +177,6 @@ public class MetadataServiceImpl implements MetadataService {
      * @param eventHandler Event handler to be updated.
      */
     public void updateEventHandler(EventHandler eventHandler) {
-        eventQueues.getQueue(eventHandler.getEvent());
         eventHandlerDAO.updateEventHandler(eventHandler);
     }
 

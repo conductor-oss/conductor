@@ -14,21 +14,21 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
+
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
-
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
 public class WorkflowPoller extends LifecycleAwareComponent {
@@ -53,14 +53,14 @@ public class WorkflowPoller extends LifecycleAwareComponent {
                 LOGGER.debug("Component stopped, skip workflow sweep");
             } else {
                 List<String> workflowIds = queueDAO.pop(DECIDER_QUEUE,
-                        properties.getSweeperThreadCount(), 2000);
+                    properties.getSweeperThreadCount(), 2000);
                 if (workflowIds != null) {
                     // wait for all workflow ids to be "swept"
                     CompletableFuture.allOf(workflowIds
-                            .stream()
-                            .map(workflowSweeper::sweepAsync)
-                            .toArray(CompletableFuture[]::new))
-                            .get();
+                        .stream()
+                        .map(workflowSweeper::sweepAsync)
+                        .toArray(CompletableFuture[]::new))
+                        .get();
                     LOGGER.debug("Sweeper processed {} from the decider queue", String.join(",", workflowIds));
                 }
                 //NOTE: Disabling the sweeper implicitly disables this metric.
