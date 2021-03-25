@@ -550,7 +550,7 @@ public class Workflow extends Auditable {
      * A string representation of all relevant fields that identify this workflow.
      * Intended for use in log and other system generated messages.
      */
-    public String identifierString() {
+    public String toShortString() {
         return String.format("%s.%s/%s", getWorkflowName(), getWorkflowVersion(), workflowId);
     }
 
