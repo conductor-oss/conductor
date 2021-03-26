@@ -13,10 +13,9 @@
 package com.netflix.conductor.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
 /**
  * This class contains utility functions for parsing/expanding JSON.
@@ -54,7 +53,9 @@ public class JsonUtils {
     private void expandList(List<Object> input) {
         for (Object value : input) {
             if (value instanceof String) {
-                value = getJson(value.toString());
+                if (isJsonString(value.toString())) {
+                    value = getJson(value.toString());
+                }
             } else if (value instanceof Map) {
                 expandMap((Map<String, Object>) value);
             } else if (value instanceof List) {
@@ -67,8 +68,9 @@ public class JsonUtils {
         for (Map.Entry<String, Object> entry : input.entrySet()) {
             Object value = entry.getValue();
             if (value instanceof String) {
-                value = getJson(value.toString());
-                entry.setValue(value);
+                if (isJsonString(value.toString())) {
+                   entry.setValue(getJson(value.toString()));
+                }
             } else if (value instanceof Map) {
                 expandMap((Map<String, Object>) value);
             } else if (value instanceof List) {
@@ -90,5 +92,10 @@ public class JsonUtils {
         } catch (Exception e) {
             return jsonAsString;
         }
+    }
+
+    private boolean isJsonString(String jsonAsString) {
+        jsonAsString = jsonAsString.trim();
+        return jsonAsString.startsWith("{") || jsonAsString.startsWith("[");
     }
 }

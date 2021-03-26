@@ -16,11 +16,10 @@ import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue;
 import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Ritu Parathody

@@ -13,15 +13,19 @@
 package com.netflix.conductor.contribs.queue.sqs.config;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 
 public class SQSEventQueueProvider implements EventQueueProvider {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SQSEventQueueProvider.class);
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
     private final AmazonSQSClient client;
     private final int batchSize;
@@ -44,15 +48,13 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 
     @Override
     public ObservableQueue getQueue(String queueURI) {
-        return queues.computeIfAbsent(queueURI, q -> {
-            Builder builder = new Builder();
-            return builder.withBatchSize(this.batchSize)
-                .withClient(client)
-                .withPollTimeInMS(this.pollTimeInMS)
-                .withQueueName(queueURI)
-                .withVisibilityTimeout(this.visibilityTimeoutInSeconds)
-                .withScheduler(scheduler)
-                .build();
-        });
+        return queues.computeIfAbsent(queueURI, q -> new Builder()
+            .withBatchSize(this.batchSize)
+            .withClient(client)
+            .withPollTimeInMS(this.pollTimeInMS)
+            .withQueueName(queueURI)
+            .withVisibilityTimeout(this.visibilityTimeoutInSeconds)
+            .withScheduler(scheduler)
+            .build());
     }
 }

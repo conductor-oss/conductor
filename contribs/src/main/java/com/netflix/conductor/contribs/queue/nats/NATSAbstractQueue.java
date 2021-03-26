@@ -34,7 +34,7 @@ import rx.Scheduler;
 /**
  * @author Oleksiy Lysak
  */
-public abstract class NATSAbstractQueue extends LifecycleAwareComponent implements ObservableQueue {
+public abstract class NATSAbstractQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSAbstractQueue.class);
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
@@ -50,6 +50,7 @@ public abstract class NATSAbstractQueue extends LifecycleAwareComponent implemen
     // Indicates that observe was called (Event Handler) and we must to re-initiate subscription upon reconnection
     private boolean observable;
     private boolean isOpened;
+    private volatile boolean running;
 
     NATSAbstractQueue(String queueURI, String queueType, Scheduler scheduler) {
         this.queueURI = queueURI;
@@ -245,6 +246,23 @@ public abstract class NATSAbstractQueue extends LifecycleAwareComponent implemen
         if (!isConnected()) {
             throw new RuntimeException("No nats connection");
         }
+    }
+
+    @Override
+    public void start() {
+        LOGGER.info("Started listening to {}:{}", getClass().getSimpleName(), queueURI);
+        running = true;
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Stopped listening to {}:{}", getClass().getSimpleName(), queueURI);
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 
     abstract void connect();

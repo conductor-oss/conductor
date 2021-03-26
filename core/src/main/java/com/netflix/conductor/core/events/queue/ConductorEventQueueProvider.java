@@ -17,6 +17,8 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.dao.QueueDAO;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import rx.Scheduler;
@@ -29,10 +31,12 @@ import rx.Scheduler;
  *
  * @see ConductorObservableQueue
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name = "conductor.event-queues.default.enabled", havingValue = "true", matchIfMissing = true)
 public class ConductorEventQueueProvider implements EventQueueProvider {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConductorEventQueueProvider.class);
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
     private final QueueDAO queueDAO;
     private final ConductorProperties properties;

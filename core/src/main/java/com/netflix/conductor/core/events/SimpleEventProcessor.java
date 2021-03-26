@@ -19,6 +19,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.utils.RetryUtil;
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -28,12 +29,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.spotify.futures.CompletableFutures;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +43,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.Lifecycle;
+import org.springframework.stereotype.Component;
 
 /**
  * Event Processor is used to dispatch actions based on the incoming events to execution queue.
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @ConditionalOnProperty(name = "conductor.default-event-processor.enabled", havingValue = "true", matchIfMissing = true)
-public class SimpleEventProcessor implements EventProcessor {
+public class SimpleEventProcessor extends LifecycleAwareComponent implements EventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleEventProcessor.class);
     private static final String CLASS_NAME = SimpleEventProcessor.class.getSimpleName();
@@ -85,16 +86,14 @@ public class SimpleEventProcessor implements EventProcessor {
 
         this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
         int executorThreadCount = properties.getEventProcessorThreadCount();
-        if (executorThreadCount > 0) {
-            executorService = Executors.newFixedThreadPool(executorThreadCount);
-            refresh();
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
-            LOGGER.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
-        } else {
-            LOGGER.warn("workflow.event.processor.thread.count={} must be greater than 0. " +
-                    "To disable event processing, set conductor.default-event-processor.enabled=false", executorThreadCount);
-            throw new IllegalStateException("workflow.event.processor.thread.count must be greater than 0");
+        if (executorThreadCount <= 0) {
+            throw new IllegalStateException("Cannot set event processor thread count to <=0. To disable event "
+                + "processing, set conductor.default-event-processor.enabled=false.");
         }
+        executorService = Executors.newFixedThreadPool(executorThreadCount);
+        refresh();
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
+        LOGGER.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
     }
 
     /**
@@ -116,6 +115,22 @@ public class SimpleEventProcessor implements EventProcessor {
         return queues;
     }
 
+    @Override
+    public void start() {
+        eventToQueueMap.forEach((event, queue) -> {
+            LOGGER.debug("Start listening for events: {}", event);
+            queue.start();
+        });
+    }
+
+    @Override
+    public void stop() {
+        eventToQueueMap.forEach((event, queue) -> {
+            LOGGER.debug("Stop listening for events: {}", event);
+            queue.stop();
+        });
+    }
+
     private void refresh() {
         try {
             Set<String> events = metadataService.getAllEventHandlers().stream()
@@ -133,6 +148,7 @@ public class SimpleEventProcessor implements EventProcessor {
             // start listening on all of the created queues
             createdQueues.stream()
                 .filter(Objects::nonNull)
+                .peek(Lifecycle::start)
                 .forEach(this::listen);
 
         } catch (Exception e) {

@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 /**
  * @author Ritu Parathody
  */
-public class AMQPObservableQueue extends LifecycleAwareComponent implements ObservableQueue {
+public class AMQPObservableQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQPObservableQueue.class);
 
@@ -67,6 +67,7 @@ public class AMQPObservableQueue extends LifecycleAwareComponent implements Obse
     private Channel channel;
     private final Address[] addresses;
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+    private volatile boolean running;
 
     public AMQPObservableQueue(ConnectionFactory factory, Address[] addresses, boolean useExchange,
         AMQPSettings settings, int batchSize, int pollTimeInMS) {
@@ -268,6 +269,23 @@ public class AMQPObservableQueue extends LifecycleAwareComponent implements Obse
     public void close() {
         closeChannel();
         closeConnection();
+    }
+
+    @Override
+    public void start() {
+        LOGGER.info("Started listening to {}:{}", getClass().getSimpleName(), settings.getQueueOrExchangeName());
+        running = true;
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Stopped listening to {}:{}", getClass().getSimpleName(), settings.getQueueOrExchangeName());
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 
     public static class Builder {
