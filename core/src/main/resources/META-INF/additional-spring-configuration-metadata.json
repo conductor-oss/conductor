@@ -34,6 +34,44 @@
       "name": "conductor.workflow-monitor.statsFrequencySeconds",
       "type": "java.lang.Integer",
       "description": "The time (in seconds) at which the workflow monitor publishes metrics about the system."
+    },
+    {
+      "name": "conductor.external-payload-storage.type",
+      "type": "java.lang.String",
+      "description": "The type of payload storage to be used for externalizing large payloads."
+    },
+    {
+      "name": "conductor.default-event-processor.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enables the default event processor for handling events.",
+      "sourceType": "com.netflix.conductor.core.events.SimpleEventProcessor",
+      "defaultValue": "true"
+    },
+    {
+      "name": "conductor.event-queues.default.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of the underlying queue implementation to provide queues for consuming events.",
+      "sourceType": "com.netflix.conductor.core.events.queue.ConductorEventQueueProvider",
+      "defaultValue": "true"
+    }
+  ],
+  "hints": [
+    {
+      "name": "conductor.external-payload-storage.type",
+      "values": [
+        {
+          "value": "dummy",
+          "description": "Use the dummy no-op implementation as the external payload storage."
+        },
+        {
+          "value": "azureblob",
+          "description": "Use Azure Blob as the external payload storage."
+        },
+        {
+          "value": "s3",
+          "description": "Use AWS S3 as the external payload storage."
+        }
+      ]
     }
   ]
 }
