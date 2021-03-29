@@ -49,7 +49,9 @@ public class DynomiteJedisProvider implements Provider<JedisCommands> {
                 .setConnectTimeout(0)
                 .setMaxConnsPerHost(
                         configuration.getMaxConnectionsPerHost()
-                );
+                )
+                .setMaxTimeoutWhenExhausted(configuration.getMaxTimeoutWhenExhausted())
+                .setRetryPolicyFactory(configuration.getConnectionRetryPolicy());
 
         return new DynoJedisClient.Builder()
                 .withHostSupplier(hostSupplier)

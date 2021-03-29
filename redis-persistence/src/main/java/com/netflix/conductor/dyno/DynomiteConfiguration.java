@@ -13,6 +13,9 @@
 package com.netflix.conductor.dyno;
 
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.dyno.connectionpool.RetryPolicy.RetryPolicyFactory;
+import com.netflix.dyno.connectionpool.impl.RetryNTimes;
+import com.netflix.dyno.connectionpool.impl.RunOnce;
 
 public interface DynomiteConfiguration extends Configuration {
     // FIXME Are cluster and cluster name really different things?
@@ -33,6 +36,13 @@ public interface DynomiteConfiguration extends Configuration {
 
     String NON_QUORUM_PORT_PROPERTY_NAME = "queues.dynomite.nonQuorum.port";
     int NON_QUORUM_PORT_DEFAULT_VALUE = 22122;
+    
+    //If attempt is set to 2, it will try for 2 + 1 = 3 times
+    String MAX_RETRY_ATTEMPT = "workflow.dynomite.connection.max.retry.attempt";    
+    int MAX_RETRY_ATTEMPT_VALUE = 0;
+
+	String MAX_TIMEOUT_WHEN_EXHASUTED = "workflow.dynomite.connection.max.timeout.exhausted.ms";
+    int MAX_TIMEOUT_WHEN_EXHAUSTED_VALUE = 800;
 
     default String getCluster() {
         return getProperty(CLUSTER_PROPERTY_NAME, CLUSTER_DEFAULT_VALUE);
@@ -73,5 +83,22 @@ public interface DynomiteConfiguration extends Configuration {
         }
 
         return prefix;
+    }
+    
+    default int getMaxTimeoutWhenExhausted() {
+        return getIntProperty(
+        		MAX_TIMEOUT_WHEN_EXHASUTED, 
+        		MAX_TIMEOUT_WHEN_EXHAUSTED_VALUE);
+    }
+
+    default RetryPolicyFactory getConnectionRetryPolicy() {
+    	int maxRetryAttempt = getIntProperty(
+    							MAX_RETRY_ATTEMPT, 
+    							MAX_RETRY_ATTEMPT_VALUE);    	
+    	if (maxRetryAttempt == 0) {
+    		return () -> new RunOnce();  				
+    	}else {
+    		return () -> new RetryNTimes(maxRetryAttempt,false);    				
+    	}    	
     }
 }
