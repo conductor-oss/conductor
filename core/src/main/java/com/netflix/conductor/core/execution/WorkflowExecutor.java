@@ -1,14 +1,14 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ *  Copyright 2021 Netflix, Inc.
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *   the License. You may obtain a copy of the License at
- *   <p>
- *   http://www.apache.org/licenses/LICENSE-2.0
- *   <p>
- *   Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *   an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *   specific language governing permissions and limitations under the License.
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution;
 
@@ -547,7 +547,7 @@ public class WorkflowExecutor {
 
         decide(workflowId);
 
-        updateAndPushParents(workflow);
+        updateAndPushParents(workflow, "restarted");
     }
 
     /**
@@ -570,15 +570,15 @@ public class WorkflowExecutor {
             if (taskToRetry.isPresent()) {
                 workflow = findLastFailedSubWorkflowIfAny(taskToRetry.get(), workflow);
                 retry(workflow);
-                updateAndPushParents(workflow);
+                updateAndPushParents(workflow, "retried");
             }
         } else {
             retry(workflow);
-            updateAndPushParents(workflow);
+            updateAndPushParents(workflow, "retried");
         }
     }
 
-    private void updateAndPushParents(Workflow workflow) {
+    private void updateAndPushParents(Workflow workflow, String operation) {
         String workflowIdentifier = "";
         while (workflow.hasParent()) {
             // update parent's sub workflow task
@@ -590,7 +590,7 @@ public class WorkflowExecutor {
             // add an execution log
             String currentWorkflowIdentifier = workflow.toShortString();
             workflowIdentifier = !workflowIdentifier.equals("") ? String.format("%s -> %s", currentWorkflowIdentifier, workflowIdentifier) : currentWorkflowIdentifier;
-            TaskExecLog log = new TaskExecLog(String.format("Workflow %s changed.", workflowIdentifier));
+            TaskExecLog log = new TaskExecLog(String.format("Sub workflow %s %s.", workflowIdentifier, operation));
             log.setTaskId(subWorkflowTask.getTaskId());
             executionDAOFacade.addTaskExecLog(Collections.singletonList(log));
             LOGGER.info("Task {} updated. {}", log.getTaskId(), log.getLog());
