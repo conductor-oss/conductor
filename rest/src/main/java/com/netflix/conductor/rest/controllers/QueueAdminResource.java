@@ -13,7 +13,7 @@
 package com.netflix.conductor.rest.controllers;
 
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.core.events.queue.QueueManager;
+import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,35 +30,35 @@ import static com.netflix.conductor.rest.config.RequestMappingConstants.QUEUE;
 @RequestMapping(QUEUE)
 public class QueueAdminResource {
 
-    private final QueueManager queueManager;
+    private final DefaultEventQueueProcessor defaultEventQueueProcessor;
 
-    public QueueAdminResource(QueueManager queueManager) {
-        this.queueManager = queueManager;
+    public QueueAdminResource(DefaultEventQueueProcessor defaultEventQueueProcessor) {
+        this.defaultEventQueueProcessor = defaultEventQueueProcessor;
     }
 
     @Operation(summary = "Get the queue length")
     @GetMapping(value = "/size")
     public Map<String, Long> size() {
-        return queueManager.size();
+        return defaultEventQueueProcessor.size();
     }
 
     @Operation(summary = "Get Queue Names")
     @GetMapping(value = "/")
     public Map<Status, String> names() {
-        return queueManager.queues();
+        return defaultEventQueueProcessor.queues();
     }
 
     @Operation(summary = "Publish a message in queue to mark a wait task as completed.")
     @PostMapping(value = "/update/{workflowId}/{taskRefName}/{status}")
     public void update(@PathVariable("workflowId") String workflowId, @PathVariable("taskRefName") String taskRefName,
         @PathVariable("status") Status status, @RequestBody Map<String, Object> output) throws Exception {
-        queueManager.updateByTaskRefName(workflowId, taskRefName, output, status);
+        defaultEventQueueProcessor.updateByTaskRefName(workflowId, taskRefName, output, status);
     }
 
     @Operation(summary = "Publish a message in queue to mark a wait task (by taskId) as completed.")
     @PostMapping("/update/{workflowId}/task/{taskId}/{status}")
     public void updateByTaskId(@PathVariable("workflowId") String workflowId, @PathVariable("taskId") String taskId,
         @PathVariable("status") Status status, @RequestBody Map<String, Object> output) throws Exception {
-        queueManager.updateByTaskId(workflowId, taskId, output, status);
+        defaultEventQueueProcessor.updateByTaskId(workflowId, taskId, output, status);
     }
 }

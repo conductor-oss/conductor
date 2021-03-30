@@ -14,7 +14,7 @@ package com.netflix.conductor.core.events;
 
 import java.util.Map;
 
-public interface EventProcessor {
+public interface EventQueueManager {
 
     Map<String, String> getQueues();
 

@@ -15,23 +15,29 @@
 package com.netflix.conductor.core.config;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 @Configuration(proxyBeanMethods = false)
 @EnableScheduling
 @EnableAsync
-public class SchedulerConfiguration {
+public class SchedulerConfiguration implements SchedulingConfigurer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerConfiguration.class);
     public static final String SWEEPER_EXECUTOR_NAME = "WorkflowSweeperExecutor";
+    public static final String EVENT_PROCESSOR_EXECUTOR_NAME = "EventProcessorExecutor";
 
     /**
      * Used by some {@link com.netflix.conductor.core.events.queue.ObservableQueue} implementations.
@@ -41,10 +47,10 @@ public class SchedulerConfiguration {
     @Bean
     public Scheduler scheduler(ConductorProperties properties) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-queue-poll-scheduler-thread-%d")
-                .build();
+            .setNameFormat("event-queue-poll-scheduler-thread-%d")
+            .build();
         Executor executorService = Executors
-                .newFixedThreadPool(properties.getEventQueueSchedulerPollThreadCount(), threadFactory);
+            .newFixedThreadPool(properties.getEventQueueSchedulerPollThreadCount(), threadFactory);
 
         return Schedulers.from(executorService);
     }
@@ -53,11 +59,20 @@ public class SchedulerConfiguration {
     public Executor sweeperExecutor(ConductorProperties properties) {
         if (properties.getSweeperThreadCount() <= 0) {
             throw new IllegalStateException("Cannot set workflow sweeper thread count to <=0. To disable workflow "
-                    + "sweeper, set conductor.workflow-sweeper.enabled=false.");
+                + "sweeper, set conductor.workflow-sweeper.enabled=false.");
         }
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("sweeper-thread-%d")
-                .build();
+            .setNameFormat("sweeper-thread-%d")
+            .build();
         return Executors.newFixedThreadPool(properties.getSweeperThreadCount(), threadFactory);
+    }
+
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+        threadPoolTaskScheduler.setPoolSize(2); // equal to the number of scheduled jobs
+        threadPoolTaskScheduler.setThreadNamePrefix("scheduled-task-pool-");
+        threadPoolTaskScheduler.initialize();
+        taskRegistrar.setTaskScheduler(threadPoolTaskScheduler);
     }
 }

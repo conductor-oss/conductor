@@ -13,25 +13,25 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.events.EventProcessor;
+import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.events.EventQueues;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventServiceImpl implements EventService {
 
     private final MetadataService metadataService;
-    private final EventProcessor eventProcessor;
+    private final EventQueueManager eventQueueManager;
     private final EventQueues eventQueues;
 
-    public EventServiceImpl(MetadataService metadataService, Optional<EventProcessor> optionalEventProcessor, EventQueues eventQueues) {
+    public EventServiceImpl(MetadataService metadataService, Optional<EventQueueManager> optionalEventQueueManager,
+        EventQueues eventQueues) {
         this.metadataService = metadataService;
-        // EventProcessor is optional and may not be enabled
-        this.eventProcessor = optionalEventProcessor.orElse(null);
+        // EventQueueManager is optional and may not be enabled
+        this.eventQueueManager = optionalEventQueueManager.orElse(null);
         this.eventQueues = eventQueues;
     }
 
@@ -89,10 +89,10 @@ public class EventServiceImpl implements EventService {
      * @return map of event queues
      */
     public Map<String, ?> getEventQueues(boolean verbose) {
-        if(eventProcessor == null) {
+        if (eventQueueManager == null) {
             throw new IllegalStateException("Event processing is DISABLED");
         }
-        return (verbose ? eventProcessor.getQueueSizes() : eventProcessor.getQueues());
+        return (verbose ? eventQueueManager.getQueueSizes() : eventQueueManager.getQueues());
     }
 
     /**

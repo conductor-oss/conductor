@@ -25,19 +25,27 @@ public abstract class LifecycleAwareComponent implements SmartLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(LifecycleAwareComponent.class);
 
     @Override
-    public void start() {
+    public final void start() {
         running = true;
         LOGGER.info("{} started.", getClass().getSimpleName());
+        doStart();
     }
 
     @Override
-    public void stop() {
+    public final void stop() {
         running = false;
         LOGGER.info("{} stopped.", getClass().getSimpleName());
+        doStop();
     }
 
     @Override
-    public boolean isRunning() {
+    public final boolean isRunning() {
         return running;
+    }
+
+    public void doStart() {
+    }
+
+    public void doStop() {
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,31 +23,33 @@ import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.service.ExecutionService;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+/**
+ * Monitors and processes messages on the default event queues that Conductor listens on.
+ * <p>
+ * The default event queue type is controlled using the property: <code>conductor.default-event-queue.type</code>
+ */
 @Component
-public class QueueManager {
+public class DefaultEventQueueProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueueManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventQueueProcessor.class);
     private final Map<Status, ObservableQueue> queues;
     private final ExecutionService executionService;
     private static final TypeReference<Map<String, Object>> _mapType = new TypeReference<Map<String, Object>>() {
     };
     private final ObjectMapper objectMapper;
 
-    @Autowired
-    public QueueManager(Map<Status, ObservableQueue> queues, ExecutionService executionService,
+    public DefaultEventQueueProcessor(Map<Status, ObservableQueue> queues, ExecutionService executionService,
         ObjectMapper objectMapper) {
         this.queues = queues;
         this.executionService = executionService;

@@ -12,9 +12,18 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.core.events.EventProcessor;
+import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
+import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.SimpleEventProcessor;
+import com.netflix.conductor.core.events.DefaultEventQueueManager;
+import java.util.Optional;
+import java.util.Set;
+import javax.validation.ConstraintViolationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +31,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.validation.ConstraintViolationException;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -44,9 +43,9 @@ public class EventServiceTest {
         @Bean
         public EventService eventService() {
             MetadataService metadataService = mock(MetadataService.class);
-            EventProcessor eventProcessor = mock(SimpleEventProcessor.class);
+            EventQueueManager eventQueueManager = mock(DefaultEventQueueManager.class);
             EventQueues eventQueues = mock(EventQueues.class);
-            return new EventServiceImpl(metadataService, Optional.of(eventProcessor), eventQueues);
+            return new EventServiceImpl(metadataService, Optional.of(eventQueueManager), eventQueues);
         }
     }
 
