@@ -92,6 +92,7 @@ import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT
 public class WorkflowExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
+    private static final int PARENT_WF_PRIORITY = 10;
 
     private final MetadataDAO metadataDAO;
     private final QueueDAO queueDAO;
@@ -601,7 +602,7 @@ public class WorkflowExecutor {
             parentWorkflow.setStatus(WorkflowStatus.RUNNING);
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
-            queueDAO.pushIfNotExists(DECIDER_QUEUE, parentWorkflowId, properties.getSweepFrequency().getSeconds());
+            pushParentWorkflow(parentWorkflowId);
 
             workflow = parentWorkflow;
         }
@@ -775,7 +776,7 @@ public class WorkflowExecutor {
         if (workflow.hasParent()) {
             updateParentWorkflowTask(workflow);
             LOGGER.info("{} updated parent {} task {}", workflow.toShortString(), workflow.getParentWorkflowId(), workflow.getParentWorkflowTaskId());
-            queueDAO.pushIfNotExists(DECIDER_QUEUE, workflow.getParentWorkflowId(), properties.getSweepFrequency().getSeconds());
+            pushParentWorkflow(workflow.getParentWorkflowId());
         }
 
         executionLockService.releaseLock(workflow.getWorkflowId());
@@ -829,7 +830,7 @@ public class WorkflowExecutor {
             if (workflow.hasParent()) {
                 updateParentWorkflowTask(workflow);
                 LOGGER.info("{} updated parent {} task {}", workflow.toShortString(), workflow.getParentWorkflowId(), workflow.getParentWorkflowTaskId());
-                queueDAO.pushIfNotExists(DECIDER_QUEUE, workflow.getParentWorkflowId(), properties.getSweepFrequency().getSeconds());
+                pushParentWorkflow(workflow.getParentWorkflowId());
             }
 
             if (!StringUtils.isBlank(failureWorkflow)) {
@@ -1820,6 +1821,17 @@ public class WorkflowExecutor {
             deciderService.populateTaskData(subWorkflowTask);
             subWorkflowTask.getOutputData().putAll(parentWorkflowTaskOutputData);
             deciderService.externalizeTaskData(subWorkflowTask);
+        }
+    }
+
+    /**
+     * Pushes parent workflow id into the decider queue with a priority.
+     */
+    private void pushParentWorkflow(String parentWorkflowId) {
+        if (queueDAO.containsMessage(DECIDER_QUEUE, parentWorkflowId)) {
+            queueDAO.postpone(DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
+        } else {
+            queueDAO.push(DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
         }
     }
 }
