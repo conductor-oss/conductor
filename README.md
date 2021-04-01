@@ -21,7 +21,7 @@ Conductor builds are run on Travis CI [here](https://travis-ci.com/Netflix/condu
 
 | Branch |                                                     Build                                                     |
 |:------:|:-------------------------------------------------------------------------------------------------------------:|
-| main | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=master)](https://travis-ci.com/Netflix/conductor) |
+| main | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=main)](https://travis-ci.com/Netflix/conductor) |
 | 2.31 | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=2.31)](https://travis-ci.com/Netflix/conductor) |
 
 ## Documentation & Getting Started
@@ -42,7 +42,6 @@ Below are the various artifacts published:
 |conductor-cassandra-persistence|Persistence using Cassandra|
 |conductor-mysql-persistence|Persistence and queue using MySQL|
 |conductor-postgres-persistence|Persistence and queue using Postgres|
-|conductor-es5-persistence|Indexing using Elasticsearch 5.X|
 |conductor-es6-persistence|Indexing using Elasticsearch 6.X|
 |conductor-rest|Spring MVC resources for the core services|
 |conductor-ui|node.js based UI for Conductor|
@@ -56,7 +55,6 @@ To build the server, use the following dependencies in your classpath:
 
 * conductor-common
 * conductor-core
-* conductor-jersey
 * conductor-redis-persistence (_unless using your own persistence module_)
 * conductor-es6-persistence (_unless using your own index module_)
 * conductor-contribs (_optional_)

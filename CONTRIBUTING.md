@@ -1,8 +1,8 @@
 # Contributing to Conductor
 
-We are following the Gitflow workflow. The active development branch is [dev](https://github.com/Netflix/conductor/tree/dev), the stable branch is [master](https://github.com/Netflix/conductor/tree/master).
+The stable branch is [main](https://github.com/Netflix/conductor/tree/main).
 
-Contributions will be accepted to the [dev](https://github.com/Netflix/conductor/tree/dev) only.
+Please create pull requests for your contributions against [main](https://github.com/Netflix/conductor/tree/main) only.
 
 ## How to provide a patch for a new feature
 
@@ -33,7 +33,7 @@ If you are adding a new file it should have a header like this:
 
 ```
 /**
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -48,4 +48,4 @@ If you are adding a new file it should have a header like this:
 
 ## Questions
 
-If you have questions or want to report a bug please create an [Issue]( https://github.com/Netflix/conductor/issues ) or chat with us on [![Dev chat at https://gitter.im/Netflix/dynomite](https://badges.gitter.im/netflix-conductor/community.svg)](https://gitter.im/netflix-conductor/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+If you have questions or want to report a bug please create an [Issue]( https://github.com/Netflix/conductor/issues ) or chat with us on [!(https://badges.gitter.im/netflix-conductor/community.svg)](https://gitter.im/netflix-conductor/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
