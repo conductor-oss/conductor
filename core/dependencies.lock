@@ -1,0 +1,249 @@
+{
+    "annotationProcessor": {
+        "org.springframework.boot:spring-boot-configuration-processor": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "compileClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.4.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.servo:servo-core": {
+            "locked": "0.13.0"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.3"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "io.reactivex:rxjava": {
+            "locked": "1.2.2"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "runtimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.4.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.servo:servo-core": {
+            "locked": "0.13.0"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.3"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "io.reactivex:rxjava": {
+            "locked": "1.2.2"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        }
+    },
+    "testCompileClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.4.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.servo:servo-core": {
+            "locked": "0.13.0"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.3"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "io.reactivex:rxjava": {
+            "locked": "1.2.2"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.4.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.servo:servo-core": {
+            "locked": "0.13.0"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.3"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "io.reactivex:rxjava": {
+            "locked": "1.2.2"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    }
+}

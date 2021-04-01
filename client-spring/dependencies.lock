@@ -1,0 +1,269 @@
+{
+    "annotationProcessor": {
+        "org.springframework.boot:spring-boot-configuration-processor": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "compileClasspath": {
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "30.0-jre"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.7.30"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "testCompileClasspath": {
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "30.0-jre"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.7.30"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        }
+    }
+}

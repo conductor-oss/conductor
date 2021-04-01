@@ -1,0 +1,123 @@
+{
+    "annotationProcessor": {
+        "org.springframework.boot:spring-boot-configuration-processor": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "compileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "runtimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        }
+    },
+    "testCompileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.13.0"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-validation": {
+            "locked": "2.3.1.RELEASE"
+        }
+    }
+}

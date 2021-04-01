@@ -1,0 +1,264 @@
+{
+    "annotationProcessor": {
+        "org.springframework.boot:spring-boot-configuration-processor": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "compileClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.0"
+        },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30"
+        }
+    },
+    "pmd": {
+        "net.sourceforge.pmd:pmd-java": {
+            "locked": "6.26.0"
+        }
+    },
+    "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30"
+        }
+    },
+    "spotbugs": {
+        "com.github.spotbugs:spotbugs": {
+            "locked": "4.2.1"
+        }
+    },
+    "spotbugsSlf4j": {
+        "org.slf4j:slf4j-simple": {
+            "locked": "1.8.0-beta4"
+        }
+    },
+    "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.0"
+        },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10"
+        },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.0"
+        },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.13.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.eureka:eureka-client": {
+            "locked": "1.10.10"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.122.0"
+        },
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
+        },
+        "commons-io:commons-io": {
+            "locked": "2.7"
+        },
+        "org.apache.bval:bval-jsr": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.4"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.10"
+        },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30"
+        },
+        "org.springframework.boot:spring-boot-starter-log4j2": {
+            "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-test": {
+            "locked": "2.3.1.RELEASE"
+        }
+    }
+}
