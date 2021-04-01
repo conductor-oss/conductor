@@ -647,7 +647,7 @@ public class WorkflowExecutor {
         workflow.setLastRetriedTime(System.currentTimeMillis());
         // Add to decider queue
         queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
-                properties.getSweepFrequency().getSeconds());
+                properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
@@ -1698,7 +1698,7 @@ public class WorkflowExecutor {
             }
 
             queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
-                    properties.getSweepFrequency().getSeconds());
+                    properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
 
             decide(workflowId);
@@ -1741,7 +1741,7 @@ public class WorkflowExecutor {
             }
             // Add to decider queue
             queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(),
-                    properties.getSweepFrequency().getSeconds());
+                    properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
             //update tasks in datastore to update workflow-tasks relationship for archived workflows
             executionDAOFacade.updateTasks(workflow.getTasks());
