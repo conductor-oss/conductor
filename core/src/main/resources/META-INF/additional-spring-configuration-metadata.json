@@ -6,9 +6,16 @@
       "description": "Enables the workflow sweeper."
     },
     {
+      "name": "conductor.sweep-frequency.millis",
+      "type": "java.lang.Integer",
+      "description": "The frequency in milliseconds, at which the workflow sweeper should evaluate active workflows.",
+      "sourceType": "com.netflix.conductor.core.execution.WorkflowPoller"
+    },
+    {
       "name": "conductor.workflow-repair-service.enabled",
       "type": "java.lang.Boolean",
-      "description": "Configuration to enable WorkflowRepairService, that tries to keep ExecutionDAO and QueueDAO in sync, based on the task or workflow state. This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method."
+      "description": "Configuration to enable WorkflowRepairService, that tries to keep ExecutionDAO and QueueDAO in sync, based on the task or workflow state. This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method.",
+      "sourceType": "com.netflix.conductor.core.execution.WorkflowRepairService"
     },
     {
       "name": "conductor.app.isolated-system-task-enabled",
@@ -44,7 +51,7 @@
       "name": "conductor.default-event-processor.enabled",
       "type": "java.lang.Boolean",
       "description": "Enables the default event processor for handling events.",
-      "sourceType": "com.netflix.conductor.core.events.SimpleEventProcessor",
+      "sourceType": "com.netflix.conductor.core.events.DefaultEventProcessor",
       "defaultValue": "true"
     },
     {
