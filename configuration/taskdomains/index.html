@@ -280,6 +280,11 @@
 </pre></div>
 
 
+<p>If you want to define a common domain for all the workers. You can define a property as follows: -</p>
+<div class="codehilite"><pre><span></span>    conductor.worker.all.domain=mydomain
+</pre></div>
+
+
 <h4 id="rest-call">REST call<a class="headerlink" href="#rest-call" title="Permanent link">&para;</a></h4>
 <p><code>GET /tasks/poll/batch/T2?workerid=myworker&amp;domain=mydomain</code>
 <code>GET /tasks/poll/T2?workerid=myworker&amp;domain=mydomain</code></p>

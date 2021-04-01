@@ -444,6 +444,10 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
 <p class="admonition-title">JSON Path Support</p>
 <p>Conductor supports <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> specification and uses Java implementation from <a href="https://github.com/jayway/JsonPath">here</a>.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Escaping expressions</p>
+<p>To escape an expression, prefix it with an extra <em>$</em> character (ex.: <code>$${workflow.input...}</code>).</p>
+</div>
 <p><strong>Example</strong></p>
 <p>Consider a task with input configured to use input/output parameters from workflow and a task named <strong>loc_task</strong>.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>

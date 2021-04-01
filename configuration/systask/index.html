@@ -564,7 +564,7 @@ The task takes 3 parameters:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Output:</strong></p>
+<p><strong>Output: (output.response)</strong></p>
 <table>
 <thead>
 <tr>
@@ -575,7 +575,7 @@ The task takes 3 parameters:</p>
 </thead>
 <tbody>
 <tr>
-<td>response</td>
+<td>body</td>
 <td>Map</td>
 <td>JSON body containing the response if one is present</td>
 </tr>
@@ -585,7 +585,7 @@ The task takes 3 parameters:</p>
 <td>Response Headers</td>
 </tr>
 <tr>
-<td>statusCode</td>
+<td>statusCode (in response object)</td>
 <td>Integer</td>
 <td><a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes">Http Status Code</a></td>
 </tr>
@@ -596,6 +596,24 @@ The task takes 3 parameters:</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Response</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;application/json&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;reasonPhrase&quot;</span><span class="p">:</span> <span class="s2">&quot;OK&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;statusCode&quot;</span><span class="p">:</span> <span class="mi">200</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
 <p><strong>Example</strong></p>
 <p>Task Input payload using vipAddress</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
