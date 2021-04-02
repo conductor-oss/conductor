@@ -12,23 +12,22 @@
  */
 package com.netflix.conductor.common.utils;
 
+import static org.junit.Assert.assertEquals;
+
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ConstraintParamUtilTest {
 
     @Before
-    public void before(){
+    public void before() {
         System.setProperty("NETFLIX_STACK", "test");
         System.setProperty("NETFLIX_ENVIRONMENT", "test");
         System.setProperty("TEST_ENV", "test");
@@ -106,7 +105,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
@@ -136,7 +135,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
@@ -164,7 +163,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 1);
     }
 
@@ -186,7 +185,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
@@ -200,7 +199,7 @@ public class ConstraintParamUtilTest {
         workflowTask_1.setType(TaskType.TASK_TYPE_SIMPLE);
 
         Map<String, Object> inputParam = new HashMap<>();
-        inputParam.put("taskId", new String[] {""});
+        inputParam.put("taskId", new String[]{""});
         workflowTask_1.setInputParameters(inputParam);
 
         List<WorkflowTask> tasks = new ArrayList<>();
@@ -208,7 +207,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
@@ -230,7 +229,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 1);
     }
 
@@ -253,7 +252,29 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
+        assertEquals(results.size(), 0);
+    }
+
+    @Test
+    public void testExtractParamPathComponentsWithEscapedChar() {
+        WorkflowDef workflowDef = constructWorkflowDef();
+
+        WorkflowTask workflowTask_1 = new WorkflowTask();
+        workflowTask_1.setName("task_1");
+        workflowTask_1.setTaskReferenceName("task_1");
+        workflowTask_1.setType(TaskType.TASK_TYPE_SIMPLE);
+
+        Map<String, Object> inputParam = new HashMap<>();
+        inputParam.put("taskId", "$${expression with spaces}");
+        workflowTask_1.setInputParameters(inputParam);
+
+        List<WorkflowTask> tasks = new ArrayList<>();
+        tasks.add(workflowTask_1);
+
+        workflowDef.setTasks(tasks);
+
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 }

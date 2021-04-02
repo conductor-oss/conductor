@@ -12,16 +12,13 @@
  */
 package com.netflix.conductor.core.utils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -32,13 +29,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
+@SuppressWarnings("rawtypes")
 public class ParametersUtilsTest {
 
     private ParametersUtils parametersUtils;
@@ -162,7 +162,6 @@ public class ParametersUtilsTest {
     }
 
     // Tests ParametersUtils with Map and List input values, and verifies input map is not mutated by ParametersUtils.
-    @SuppressWarnings("rawtypes")
     @Test
     public void testReplaceInputWithMapAndList() throws Exception {
         Map<String, Object> map = new HashMap<>();
@@ -217,5 +216,67 @@ public class ParametersUtilsTest {
         assertEquals(2, inputList.size());
         assertEquals("${name}", inputList.get(0));
         assertEquals("${version}", inputList.get(1));
+    }
+
+    @Test
+    public void testReplaceWithEscapedTags() throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("someString", "conductor");
+        map.put("someNumber", 2);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("k1", "${$.someString} $${$.someNumber}${$.someNumber} ${$.someNumber}$${$.someString}");
+        input.put("k2", "$${$.someString}afterText");
+        input.put("k3", "beforeText$${$.someString}");
+        input.put("k4", "$${$.someString} afterText");
+        input.put("k5", "beforeText $${$.someString}");
+
+        Map<String, String> mapValue = new HashMap<>();
+        mapValue.put("a", "${someString}");
+        mapValue.put("b", "${someNumber}");
+        mapValue.put("c", "$${someString} ${someNumber}");
+        input.put("map", mapValue);
+
+        List<String> listValue = new ArrayList<>();
+        listValue.add("${someString}");
+        listValue.add("${someNumber}");
+        listValue.add("${someString} $${someNumber}");
+        input.put("list", listValue);
+
+        Object jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(map), Object.class);
+
+        Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
+        assertNotNull(replaced);
+
+        // Verify that values are replaced correctly.
+        assertEquals("conductor ${$.someNumber}2 2${$.someString}", replaced.get("k1"));
+        assertEquals("${$.someString}afterText", replaced.get("k2"));
+        assertEquals("beforeText${$.someString}", replaced.get("k3"));
+        assertEquals("${$.someString} afterText", replaced.get("k4"));
+        assertEquals("beforeText ${$.someString}", replaced.get("k5"));
+
+        Map replacedMap = (Map) replaced.get("map");
+        assertEquals("conductor", replacedMap.get("a"));
+        assertEquals(2, replacedMap.get("b"));
+        assertEquals("${someString} 2", replacedMap.get("c"));
+
+        List replacedList = (List) replaced.get("list");
+        assertEquals(3, replacedList.size());
+        assertEquals("conductor", replacedList.get(0));
+        assertEquals(2, replacedList.get(1));
+        assertEquals("conductor ${someNumber}", replacedList.get(2));
+
+        // Verify that input map is not mutated
+        Map inputMap = (Map) input.get("map");
+        assertEquals("${someString}", inputMap.get("a"));
+        assertEquals("${someNumber}", inputMap.get("b"));
+        assertEquals("$${someString} ${someNumber}", inputMap.get("c"));
+
+        // Verify that input list is not mutated
+        List inputList = (List) input.get("list");
+        assertEquals(3, inputList.size());
+        assertEquals("${someString}", inputList.get(0));
+        assertEquals("${someNumber}", inputList.get(1));
+        assertEquals("${someString} $${someNumber}", inputList.get(2));
     }
 }
