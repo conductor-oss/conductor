@@ -72,35 +72,10 @@ public class TaskResource {
                 .orElse(ResponseEntity.noContent().build());
     }
 
-    @GetMapping("/in_progress/{tasktype}")
-    @Operation(summary = "Get in progress tasks. The results are paginated.")
-    public List<Task> getTasks(@PathVariable("tasktype") String taskType,
-                               @RequestParam(value = "startKey", required = false) String startKey,
-                               @RequestParam(value = "count", defaultValue = "100", required = false) int count) {
-        return taskService.getTasks(taskType, startKey, count);
-    }
-
-    @GetMapping(value = "/in_progress/{workflowId}/{taskRefName}")
-    @Operation(summary = "Get in progress task for a given workflow id.")
-    public ResponseEntity<Task> getPendingTaskForWorkflow(@PathVariable("workflowId") String workflowId,
-                                                          @PathVariable("taskRefName") String taskReferenceName) {
-        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
-        return Optional.ofNullable(taskService.getPendingTaskForWorkflow(workflowId, taskReferenceName))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.noContent().build());
-    }
-
     @PostMapping(produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Update a task")
     public String updateTask(@RequestBody TaskResult taskResult) {
         return taskService.updateTask(taskResult);
-    }
-
-    @PostMapping("/{taskId}/ack")
-    @Operation(summary = "Ack Task is received")
-    public String ack(@PathVariable("taskId") String taskId,
-                      @RequestParam(value = "workerid", required = false) String workerId) {
-        return taskService.ackTaskReceived(taskId, workerId);
     }
 
     @PostMapping("/{taskId}/log")
@@ -120,13 +95,6 @@ public class TaskResource {
     public ResponseEntity<Task> getTask(@PathVariable("taskId") String taskId) {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.getTask(taskId)).map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
-    }
-
-    @DeleteMapping("/queue/{taskType}/{taskId}")
-    @Operation(summary = "Remove Task from a Task type queue")
-    public void removeTaskFromQueue(@PathVariable("taskType") String taskType,
-                                    @PathVariable("taskId") String taskId) {
-        taskService.removeTaskFromQueue(taskType, taskId);
     }
 
     @GetMapping("/queue/sizes")

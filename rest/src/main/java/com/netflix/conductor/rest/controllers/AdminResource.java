@@ -64,4 +64,11 @@ public class AdminResource {
     public String verifyAndRepairWorkflowConsistency(@PathVariable("workflowId") String workflowId) {
         return String.valueOf(adminService.verifyAndRepairWorkflowConsistency(workflowId));
     }
+
+    @GetMapping("/queues")
+    @Operation(summary = "Get registered queues")
+    public Map<String, ?> getEventQueues(
+        @RequestParam(value = "verbose", defaultValue = "false", required = false) boolean verbose) {
+        return adminService.getEventQueues(verbose);
+    }
 }

@@ -480,22 +480,6 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         thrown(Exception)
     }
 
-    def "verify removeTaskFromQueue fail when QueueDAO is unavailable"() {
-        when: "Start a simple workflow"
-        def workflowInstanceId = workflowResource.startWorkflow(new StartWorkflowRequest()
-                .withName(SIMPLE_TWO_TASK_WORKFLOW)
-                .withVersion(1))
-        def workflow = workflowResource.getExecutionStatus(workflowInstanceId, true)
-
-        and: "Task is removed from the queue"
-        def task = workflow.getTasks().get(0)
-        taskResource.removeTaskFromQueue(task.getTaskType(), task.getTaskId())
-
-        then: "Verify an exception is thrown"
-        1 * queueDAO.remove(*_) >> { throw new IllegalStateException("Queue remove failed from Spy") }
-        thrown(Exception)
-    }
-
     def "verify getTaskQueueSizes fails when QueueDAO is unavailable"() {
         when:
         taskResource.size(Arrays.asList("testTaskType", "testTaskType2"))

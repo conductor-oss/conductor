@@ -22,13 +22,6 @@ service EventService {
 
     // GET /{name}
     rpc GetEventHandlersForEvent(GetEventHandlersForEventRequest) returns (stream conductor.proto.EventHandler);
-
-    // GET /queues
-    rpc GetQueues(GetQueuesRequest) returns (GetQueuesResponse);
-    rpc GetQueueSizes(GetQueueSizesRequest) returns (GetQueueSizesResponse);
-
-    // GET /queues/providers
-    rpc GetQueueProviders(GetQueueProvidersRequest) returns (GetQueueProvidersResponse);
 }
 
 message AddEventHandlerRequest {
@@ -54,25 +47,4 @@ message GetEventHandlersRequest {}
 message GetEventHandlersForEventRequest {
     string event = 1;
     bool active_only = 2;
-}
-
-message GetQueuesRequest {}
-
-message GetQueuesResponse {
-    map<string, string> event_to_queue_uri = 1;
-}
-
-message GetQueueSizesRequest {}
-
-message GetQueueSizesResponse {
-    message QueueInfo {
-        map<string, int64> queue_sizes = 1;
-    }
-    map<string, QueueInfo> event_to_queue_info = 2;
-}
-
-message GetQueueProvidersRequest {}
-
-message GetQueueProvidersResponse {
-    repeated string providers = 1;
 }

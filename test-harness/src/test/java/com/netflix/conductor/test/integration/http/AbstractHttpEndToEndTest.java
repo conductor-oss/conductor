@@ -148,10 +148,6 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         assertEquals(t0.getName(), polled.get(0).getTaskDefName());
         Task task = polled.get(0);
 
-        Boolean acked = taskClient.ack(task.getTaskId(), "test");
-        assertNotNull(acked);
-        assertTrue(acked);
-
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
         taskClient.updateTask(new TaskResult(task));
@@ -175,19 +171,6 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
         queueSize = taskClient.getQueueSizeForTask(workflow.getTasks().get(1).getTaskType());
         assertEquals(1, queueSize);
-
-        List<Task> getTasks = taskClient.getPendingTasksByType(t0.getName(), null, 1);
-        assertNotNull(getTasks);
-        assertEquals(0, getTasks.size());        //getTasks only gives pending tasks
-
-        getTasks = taskClient.getPendingTasksByType(t1.getName(), null, 1);
-        assertNotNull(getTasks);
-        assertEquals(1, getTasks.size());
-
-        Task pending = taskClient.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
-        assertNotNull(pending);
-        assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
-        assertEquals(workflowId, pending.getWorkflowInstanceId());
 
         Thread.sleep(1000);
         SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
@@ -375,21 +358,6 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
-            throw e;
-        }
-    }
-
-    @Test
-    public void testGetTaskInProgress() {
-        taskClient.getPendingTaskForWorkflow("test", "t1");
-    }
-
-    @Test(expected = ConductorClientException.class)
-    public void testRemoveTaskFromTaskQueue() {
-        try {
-            taskClient.removeTaskFromQueue("test", "fakeQueue");
-        } catch (ConductorClientException e) {
-            assertEquals(404, e.getStatus());
             throw e;
         }
     }

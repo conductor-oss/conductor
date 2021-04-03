@@ -199,36 +199,6 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * Retrieve pending tasks by type
-     *
-     * @param taskType Type of task
-     * @param startKey id of the task from where to return the results. NULL to start from the beginning.
-     * @param count    number of tasks to retrieve
-     * @return Returns the list of PENDING tasks by type, starting with a given task Id.
-     */
-    public List<Task> getPendingTasksByType(String taskType, String startKey, Integer count) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-
-        Object[] params = new Object[]{"startKey", startKey, "count", count};
-        return getForEntity("tasks/in_progress/{taskType}", params, taskList, taskType);
-    }
-
-    /**
-     * Retrieve pending task identified by reference name for a workflow
-     *
-     * @param workflowId        Workflow instance id
-     * @param taskReferenceName reference name of the task
-     * @return Returns the pending workflow task identified by the reference name
-     */
-    public Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
-
-        return getForEntity("tasks/in_progress/{workflowId}/{taskRefName}", null, Task.class, workflowId,
-            taskReferenceName);
-    }
-
-    /**
      * Updates the result of a task execution. If the size of the task output payload is bigger than {@link
      * ConductorClientConfiguration#getTaskOutputPayloadThresholdKB()}, it is uploaded to {@link
      * ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.

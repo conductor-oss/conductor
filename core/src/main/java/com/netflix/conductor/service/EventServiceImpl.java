@@ -13,26 +13,17 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.events.EventQueues;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EventServiceImpl implements EventService {
 
     private final MetadataService metadataService;
-    private final EventQueueManager eventQueueManager;
-    private final EventQueues eventQueues;
 
-    public EventServiceImpl(MetadataService metadataService, Optional<EventQueueManager> optionalEventQueueManager,
-        EventQueues eventQueues) {
+    public EventServiceImpl(MetadataService metadataService, EventQueues eventQueues) {
         this.metadataService = metadataService;
-        // EventQueueManager is optional and may not be enabled
-        this.eventQueueManager = optionalEventQueueManager.orElse(null);
-        this.eventQueues = eventQueues;
     }
 
     /**
@@ -80,27 +71,5 @@ public class EventServiceImpl implements EventService {
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return metadataService.getEventHandlersForEvent(event, activeOnly);
-    }
-
-    /**
-     * Get registered queues.
-     *
-     * @param verbose `true|false` for verbose logs
-     * @return map of event queues
-     */
-    public Map<String, ?> getEventQueues(boolean verbose) {
-        if (eventQueueManager == null) {
-            throw new IllegalStateException("Event processing is DISABLED");
-        }
-        return (verbose ? eventQueueManager.getQueueSizes() : eventQueueManager.getQueues());
-    }
-
-    /**
-     * Get registered queue providers.
-     *
-     * @return list of registered queue providers.
-     */
-    public List<String> getEventQueueProviders() {
-        return eventQueues.getProviders();
     }
 }

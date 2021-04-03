@@ -12,22 +12,24 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.service.AdminService;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
 
 public class AdminResourceTest {
 
@@ -66,5 +68,11 @@ public class AdminResourceTest {
         String workflowId = "w123";
         when(mockAdminService.requeueSweep(anyString())).thenReturn(workflowId);
         assertEquals(workflowId, adminResource.requeueSweep(workflowId));
+    }
+
+    @Test
+    public void testGetEventQueues() {
+        adminResource.getEventQueues(false);
+        verify(mockAdminService, times(1)).getEventQueues(anyBoolean());
     }
 }

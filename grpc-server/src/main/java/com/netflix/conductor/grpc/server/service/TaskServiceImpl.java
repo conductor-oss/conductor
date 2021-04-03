@@ -93,42 +93,6 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void getTasksInProgress(TaskServicePb.TasksInProgressRequest req,
-        StreamObserver<TaskServicePb.TasksInProgressResponse> response) {
-        final String startKey = GRPC_HELPER.optional(req.getStartKey());
-        final int count = GRPC_HELPER.optionalOr(req.getCount(), MAX_TASK_COUNT);
-
-        try {
-            response.onNext(
-                TaskServicePb.TasksInProgressResponse.newBuilder().addAllTasks(
-                    taskService.getTasks(req.getTaskType(), startKey, count)
-                        .stream()
-                        .map(PROTO_MAPPER::toProto)::iterator
-                ).build()
-            );
-            response.onCompleted();
-        } catch (Exception e) {
-            GRPC_HELPER.onError(response, e);
-        }
-    }
-
-    @Override
-    public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req,
-        StreamObserver<TaskServicePb.PendingTaskResponse> response) {
-        try {
-            Task t = taskService.getPendingTaskForWorkflow(req.getWorkflowId(), req.getTaskRefName());
-            response.onNext(
-                TaskServicePb.PendingTaskResponse.newBuilder()
-                    .setTask(PROTO_MAPPER.toProto(t))
-                    .build()
-            );
-            response.onCompleted();
-        } catch (Exception e) {
-            GRPC_HELPER.onError(response, e);
-        }
-    }
-
-    @Override
     public void updateTask(TaskServicePb.UpdateTaskRequest req,
         StreamObserver<TaskServicePb.UpdateTaskResponse> response) {
         try {
@@ -140,17 +104,6 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                     .setTaskId(task.getTaskId())
                     .build()
             );
-            response.onCompleted();
-        } catch (Exception e) {
-            GRPC_HELPER.onError(response, e);
-        }
-    }
-
-    @Override
-    public void ackTask(TaskServicePb.AckTaskRequest req, StreamObserver<TaskServicePb.AckTaskResponse> response) {
-        try {
-            boolean ack = taskService.ackTaskReceived(req.getTaskId());
-            response.onNext(TaskServicePb.AckTaskResponse.newBuilder().setAck(ack).build());
             response.onCompleted();
         } catch (Exception e) {
             GRPC_HELPER.onError(response, e);
@@ -196,14 +149,6 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             GRPC_HELPER.onError(response, e);
         }
 
-    }
-
-    @Override
-    public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req,
-        StreamObserver<TaskServicePb.RemoveTaskResponse> response) {
-        taskService.removeTaskFromQueue(req.getTaskId());
-        response.onNext(TaskServicePb.RemoveTaskResponse.getDefaultInstance());
-        response.onCompleted();
     }
 
     @Override

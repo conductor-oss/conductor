@@ -18,10 +18,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
-import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.DefaultEventQueueManager;
-import java.util.Optional;
 import java.util.Set;
 import javax.validation.ConstraintViolationException;
 import org.junit.Test;
@@ -43,9 +40,8 @@ public class EventServiceTest {
         @Bean
         public EventService eventService() {
             MetadataService metadataService = mock(MetadataService.class);
-            EventQueueManager eventQueueManager = mock(DefaultEventQueueManager.class);
             EventQueues eventQueues = mock(EventQueues.class);
-            return new EventServiceImpl(metadataService, Optional.of(eventQueueManager), eventQueues);
+            return new EventServiceImpl(metadataService, eventQueues);
         }
     }
 

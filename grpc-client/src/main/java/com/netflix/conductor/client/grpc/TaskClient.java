@@ -104,53 +104,6 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * Retrieve pending tasks by type
-     *
-     * @param taskType Type of task
-     * @param startKey id of the task from where to return the results. NULL to start from the beginning.
-     * @param count    number of tasks to retrieve
-     * @return Returns the list of PENDING tasks by type, starting with a given task Id.
-     */
-    public List<Task> getPendingTasksByType(String taskType, @Nullable String startKey, @Nullable Integer count) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-
-        TaskServicePb.TasksInProgressRequest.Builder request = TaskServicePb.TasksInProgressRequest.newBuilder();
-        request.setTaskType(taskType);
-        if (startKey != null) {
-            request.setStartKey(startKey);
-        }
-        if (count != null) {
-            request.setCount(count);
-        }
-
-        return stub.getTasksInProgress(request.build())
-            .getTasksList()
-            .stream()
-            .map(protoMapper::fromProto)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Retrieve pending task identified by reference name for a workflow
-     *
-     * @param workflowId        Workflow instance id
-     * @param taskReferenceName reference name of the task
-     * @return Returns the pending workflow task identified by the reference name
-     */
-    public Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
-
-        TaskServicePb.PendingTaskResponse response = stub.getPendingTaskForWorkflow(
-            TaskServicePb.PendingTaskRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .setTaskRefName(taskReferenceName)
-                .build()
-        );
-        return protoMapper.fromProto(response.getTask());
-    }
-
-    /**
      * Updates the result of a task execution.
      *
      * @param taskResult TaskResults to be updated.
@@ -161,26 +114,6 @@ public class TaskClient extends ClientBase {
             .setResult(protoMapper.toProto(taskResult))
             .build()
         );
-    }
-
-    /**
-     * Ack for the task poll.
-     *
-     * @param taskId   Id of the task to be polled
-     * @param workerId user identified worker.
-     * @return true if the task was found with the given ID and acknowledged. False otherwise. If the server returns
-     * false, the client should NOT attempt to ack again.
-     */
-    public boolean ack(String taskId, @Nullable String workerId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-
-        TaskServicePb.AckTaskRequest.Builder request = TaskServicePb.AckTaskRequest.newBuilder();
-        request.setTaskId(taskId);
-        if (workerId != null) {
-            request.setWorkerId(workerId);
-        }
-
-        return stub.ackTask(request.build()).getAck();
     }
 
     /**
@@ -227,23 +160,6 @@ public class TaskClient extends ClientBase {
                 .setTaskId(taskId)
                 .build()
             ).getTask()
-        );
-    }
-
-    /**
-     * Removes a task from a taskType queue
-     *
-     * @param taskType the taskType to identify the queue
-     * @param taskId   the id of the task to be removed
-     */
-    public void removeTaskFromQueue(String taskType, String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-        stub.removeTaskFromQueue(
-            TaskServicePb.RemoveTaskRequest.newBuilder()
-                .setTaskType(taskType)
-                .setTaskId(taskId)
-                .build()
         );
     }
 

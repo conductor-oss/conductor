@@ -12,22 +12,6 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.service.TaskService;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.http.ResponseEntity;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +22,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.service.TaskService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.http.ResponseEntity;
 
 public class TaskResourceTest {
 
@@ -78,46 +77,12 @@ public class TaskResourceTest {
     }
 
     @Test
-    public void testGetInProgressTasks() {
-        Task task = new Task();
-        task.setTaskType("SIMPLE");
-        task.setWorkerId("123");
-        task.setDomain("test");
-        task.setStatus(Task.Status.IN_PROGRESS);
-        List<Task> listOfTasks = new ArrayList<>();
-        listOfTasks.add(task);
-
-        when(mockTaskService.getTasks(anyString(), anyString(), anyInt())).thenReturn(listOfTasks);
-        assertEquals(listOfTasks, taskResource.getTasks("SIMPLE", "123", 123));
-    }
-
-    @Test
-    public void testGetPendingTaskForWorkflow() {
-        Task task = new Task();
-        task.setTaskType("SIMPLE");
-        task.setWorkerId("123");
-        task.setDomain("test");
-        task.setStatus(Task.Status.IN_PROGRESS);
-        when(mockTaskService.getPendingTaskForWorkflow(anyString(), anyString())).thenReturn(task);
-        ResponseEntity<Task> entity = taskResource.getPendingTaskForWorkflow("SIMPLE", "123");
-        assertNotNull(entity);
-        assertEquals(task, entity.getBody());
-    }
-
-    @Test
     public void testUpdateTask() {
         TaskResult taskResult = new TaskResult();
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId("123");
         when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn("123");
         assertEquals("123", taskResource.updateTask(taskResult));
-    }
-
-    @Test
-    public void testAck() {
-        String acked = "true";
-        when(mockTaskService.ackTaskReceived(anyString(), anyString())).thenReturn(acked);
-        assertEquals("true", taskResource.ack("123", "456"));
     }
 
     @Test
@@ -145,12 +110,6 @@ public class TaskResourceTest {
         ResponseEntity<Task> entity = taskResource.getTask("123");
         assertNotNull(entity);
         assertEquals(task, entity.getBody());
-    }
-
-    @Test
-    public void testRemoveTaskFromQueue() {
-        taskResource.removeTaskFromQueue("SIMPLE", "123");
-        verify(mockTaskService, times(1)).removeTaskFromQueue(anyString(), anyString());
     }
 
     @Test
