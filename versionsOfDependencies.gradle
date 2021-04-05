@@ -16,7 +16,7 @@ ext {
     revElasticSearch6 = '6.8.12'
     revElasticSearch7 = '7.10.1'
     revEurekaClient = '1.8.7'
-    revFlywayCore ='4.0.3'
+    revFlywayCore ='7.5.2'
     revGrpc = '1.14.+'
     revGuavaRetrying = '2.0.0'
     revGuice = '4.1.0'

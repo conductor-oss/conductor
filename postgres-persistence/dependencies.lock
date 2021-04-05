@@ -227,8 +227,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -492,8 +492,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -757,8 +757,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -1085,8 +1085,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -1350,8 +1350,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -1652,8 +1652,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -2074,8 +2074,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -2496,8 +2496,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",
@@ -2918,8 +2918,8 @@
             ]
         },
         "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
+            "locked": "7.5.2",
+            "requested": "7.5.2"
         },
         "org.glassfish:javax.el": {
             "locked": "3.0.0",

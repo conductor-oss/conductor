@@ -18,6 +18,7 @@ import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,11 +75,15 @@ public class PostgresDAOTestUtil {
 
     private void flywayMigrate(DataSource dataSource) {
 
-        Flyway flyway = new Flyway();
-        flyway.setLocations(Paths.get("db","migration_postgres").toString());
-        flyway.setDataSource(dataSource);
-        flyway.setPlaceholderReplacement(false);
+        FluentConfiguration flywayConfiguration = Flyway.configure()
+                .table("schema_version")
+                .locations(Paths.get("db","migration_postgres").toString())
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
+
+        Flyway flyway = flywayConfiguration.load();
         flyway.migrate();
+
     }
 
     public HikariDataSource getDataSource() {

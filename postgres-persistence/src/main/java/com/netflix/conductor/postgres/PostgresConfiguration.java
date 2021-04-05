@@ -14,7 +14,6 @@ package com.netflix.conductor.postgres;
 
 import com.netflix.conductor.core.config.Configuration;
 
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public interface PostgresConfiguration extends Configuration {
@@ -32,7 +31,7 @@ public interface PostgresConfiguration extends Configuration {
     boolean FLYWAY_ENABLED_DEFAULT_VALUE = true;
 
     String FLYWAY_TABLE_PROPERTY_NAME = "flyway.table";
-    Optional<String> FLYWAY_TABLE_DEFAULT_VALUE = Optional.empty();
+    String FLYWAY_TABLE_DEFAULT_VALUE = "schema_version";
 
     // The defaults are currently in line with the HikariConfig defaults, which are unfortunately private.
     String CONNECTION_POOL_MAX_SIZE_PROPERTY_NAME = "conductor.postgres.connection.pool.size.max";
@@ -73,8 +72,8 @@ public interface PostgresConfiguration extends Configuration {
         return getBoolProperty(FLYWAY_ENABLED_PROPERTY_NAME, FLYWAY_ENABLED_DEFAULT_VALUE);
     }
 
-    default Optional<String> getFlywayTable() {
-        return Optional.ofNullable(getProperty(FLYWAY_TABLE_PROPERTY_NAME, null));
+    default String getFlywayTable() {
+        return getProperty(FLYWAY_TABLE_PROPERTY_NAME, FLYWAY_TABLE_DEFAULT_VALUE);
     }
 
     default int getConnectionPoolMaxSize() {

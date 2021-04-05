@@ -72,9 +72,12 @@ public class MySQLDAOTestUtil {
 
     private void flywayMigrate(DataSource dataSource) {
 
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(dataSource);
-        flyway.setPlaceholderReplacement(false);
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .table("schema_version")
+                .placeholderReplacement(false)
+                .load();
+
         flyway.migrate();
     }
 

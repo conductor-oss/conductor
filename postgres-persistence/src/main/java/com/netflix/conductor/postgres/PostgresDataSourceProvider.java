@@ -16,6 +16,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,17 +81,16 @@ public class PostgresDataSourceProvider implements Provider<DataSource> {
             logger.debug("Flyway migrations are disabled");
             return;
         }
+        String flywayTable = configuration.getFlywayTable();
+        logger.debug("Using Flyway migration table '{}'", flywayTable);
 
+        FluentConfiguration flywayConfiguration = Flyway.configure()
+                .table(flywayTable)
+                .locations(Paths.get("db","migration_postgres").toString())
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
 
-        Flyway flyway = new Flyway();
-        configuration.getFlywayTable().ifPresent(tableName -> {
-            logger.debug("Using Flyway migration table '{}'", tableName);
-            flyway.setTable(tableName);
-        });
-
-        flyway.setLocations(Paths.get("db","migration_postgres").toString());
-        flyway.setDataSource(dataSource);
-        flyway.setPlaceholderReplacement(false);
+        Flyway flyway = flywayConfiguration.load();
         flyway.migrate();
     }
 }

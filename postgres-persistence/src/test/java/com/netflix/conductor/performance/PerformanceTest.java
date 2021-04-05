@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -447,10 +448,15 @@ public class PerformanceTest {
     }
 
     private void flywayMigrate(DataSource dataSource) {
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(dataSource);
-        flyway.setPlaceholderReplacement(false);
-        flyway.setLocations(Paths.get("db", "migration_postgres").toString());
+
+        FluentConfiguration flywayConfiguration = Flyway.configure()
+                .table(configuration.getFlywayTable())
+                .locations(Paths.get("db","migration_postgres").toString())
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
+
+        Flyway flyway = flywayConfiguration.load();
+
         try {
             flyway.migrate();
         } catch (FlywayException e) {
