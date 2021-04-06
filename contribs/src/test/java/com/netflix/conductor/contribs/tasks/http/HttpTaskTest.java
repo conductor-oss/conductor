@@ -12,6 +12,14 @@
  */
 package com.netflix.conductor.contribs.tasks.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,32 +35,20 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.model.MediaType;
+import org.testcontainers.containers.MockServerContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @SuppressWarnings("unchecked")
 public class HttpTaskTest {
@@ -65,9 +61,12 @@ public class HttpTaskTest {
     private WorkflowExecutor workflowExecutor;
     private final Workflow workflow = new Workflow();
 
-    private static Server server;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static String JSON_RESPONSE;
+
+    @ClassRule
+    public static MockServerContainer mockServer = new MockServerContainer(
+        DockerImageName.parse("mockserver/mockserver"));
 
     @BeforeClass
     public static void init() throws Exception {
@@ -77,22 +76,55 @@ public class HttpTaskTest {
         map.put("SomeKey", null);
         JSON_RESPONSE = objectMapper.writeValueAsString(map);
 
-        server = new Server(7009);
-        ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/",
-            ServletContextHandler.SESSIONS);
-        servletContextHandler.setHandler(new EchoHandler());
-        server.start();
-    }
-
-    @AfterClass
-    public static void cleanup() {
-        if (server != null) {
-            try {
-                server.stop();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<Map<String, Object>>() {
+        };
+        MockServerClient client = new MockServerClient(mockServer.getHost(), mockServer.getServerPort());
+        client.when(
+            request()
+                .withPath("/post")
+                .withMethod("POST"))
+            .respond(request -> {
+                Map<String, Object> reqBody = objectMapper.readValue(request.getBody().toString(), mapOfObj);
+                Set<String> keys = reqBody.keySet();
+                Map<String, Object> respBody = new HashMap<>();
+                keys.forEach(k -> respBody.put(k, k));
+                return response()
+                    .withContentType(MediaType.APPLICATION_JSON)
+                    .withBody(objectMapper.writeValueAsString(respBody));
+            });
+        client.when(
+            request()
+                .withPath("/post2")
+                .withMethod("POST"))
+            .respond(response()
+                .withStatusCode(204));
+        client.when(
+            request()
+                .withPath("/failure")
+                .withMethod("GET"))
+            .respond(response()
+                .withStatusCode(500)
+                .withContentType(MediaType.TEXT_PLAIN)
+                .withBody(ERROR_RESPONSE));
+        client.when(
+            request()
+                .withPath("/text")
+                .withMethod("GET"))
+            .respond(response()
+                .withBody(TEXT_RESPONSE));
+        client.when(
+            request()
+                .withPath("/numeric")
+                .withMethod("GET"))
+            .respond(response()
+                .withBody(String.valueOf(NUM_RESPONSE)));
+        client.when(
+            request()
+                .withPath("/json")
+                .withMethod("GET"))
+            .respond(response()
+                .withContentType(MediaType.APPLICATION_JSON)
+                .withBody(JSON_RESPONSE));
     }
 
     @Before
@@ -108,13 +140,14 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/post");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/post");
         Map<String, Object> body = new HashMap<>();
         body.put("input_key1", "value1");
         body.put("input_key2", 45.3d);
         body.put("someKey", null);
         input.setBody(body);
         input.setMethod("POST");
+        input.setReadTimeOut(1000);
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
@@ -135,7 +168,7 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/post2");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/post2");
         Map<String, Object> body = new HashMap<>();
         body.put("input_key1", "value1");
         body.put("input_key2", 45.3d);
@@ -156,7 +189,7 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/failure");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/failure");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -176,7 +209,7 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/post");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/post");
         Map<String, Object> body = new HashMap<>();
         body.put("input_key1", "value1");
         body.put("input_key2", 45.3d);
@@ -200,10 +233,9 @@ public class HttpTaskTest {
 
     @Test
     public void testTextGET() {
-
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/text");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/text");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -216,10 +248,9 @@ public class HttpTaskTest {
 
     @Test
     public void testNumberGET() {
-
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/numeric");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/numeric");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -236,7 +267,7 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/json");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/json");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -254,11 +285,12 @@ public class HttpTaskTest {
 
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/json");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/json");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
         task.setStatus(Status.SCHEDULED);
         task.setScheduledTime(0);
+
         boolean executed = httpTask.execute(workflow, task, workflowExecutor);
         assertFalse(executed);
     }
@@ -287,10 +319,11 @@ public class HttpTaskTest {
         Input input = new Input();
         input.setReadTimeOut(-1);
         input.setMethod("GET");
-        input.setUri("http://localhost:7009/json");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/json");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
         task.setStatus(Status.SCHEDULED);
         task.setScheduledTime(0);
+
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(task.getStatus(), Status.FAILED);
     }
@@ -299,7 +332,7 @@ public class HttpTaskTest {
     public void testOptional() {
         Task task = new Task();
         Input input = new Input();
-        input.setUri("http://localhost:7009/failure");
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/failure");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -333,61 +366,8 @@ public class HttpTaskTest {
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
 
-        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, Collections.emptyMap(), Duration.ofMinutes(60))
+        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, Collections.emptyMap(),
+            Duration.ofMinutes(60))
             .decide(workflow);
-    }
-
-    private static class EchoHandler extends AbstractHandler {
-
-        private final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<Map<String, Object>>() {
-        };
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-            if (request.getMethod().equals("GET") && request.getRequestURI().equals("/text")) {
-                PrintWriter writer = response.getWriter();
-                writer.print(TEXT_RESPONSE);
-                writer.flush();
-                writer.close();
-            } else if (request.getMethod().equals("GET") && request.getRequestURI().equals("/json")) {
-                response.addHeader("Content-Type", "application/json");
-                PrintWriter writer = response.getWriter();
-                writer.print(JSON_RESPONSE);
-                writer.flush();
-                writer.close();
-            } else if (request.getMethod().equals("GET") && request.getRequestURI().equals("/failure")) {
-                response.addHeader("Content-Type", "text/plain");
-                response.setStatus(500);
-                PrintWriter writer = response.getWriter();
-                writer.print(ERROR_RESPONSE);
-                writer.flush();
-                writer.close();
-            } else if (request.getMethod().equals("POST") && request.getRequestURI().equals("/post")) {
-                response.addHeader("Content-Type", "application/json");
-                BufferedReader reader = request.getReader();
-                Map<String, Object> input = objectMapper.readValue(reader, mapOfObj);
-                Set<String> keys = input.keySet();
-                for (String key : keys) {
-                    input.put(key, key);
-                }
-                PrintWriter writer = response.getWriter();
-                writer.print(objectMapper.writeValueAsString(input));
-                writer.flush();
-                writer.close();
-            } else if (request.getMethod().equals("POST") && request.getRequestURI().equals("/post2")) {
-                response.addHeader("Content-Type", "application/json");
-                response.setStatus(204);
-                BufferedReader reader = request.getReader();
-                Map<String, Object> input = objectMapper.readValue(reader, mapOfObj);
-                Set<String> keys = input.keySet();
-                response.getWriter().close();
-            } else if (request.getMethod().equals("GET") && request.getRequestURI().equals("/numeric")) {
-                PrintWriter writer = response.getWriter();
-                writer.print(NUM_RESPONSE);
-                writer.flush();
-                writer.close();
-            }
-        }
     }
 }

@@ -28,7 +28,7 @@ dependencies {
 	implementation "io.prometheus:simpleclient:${revPrometheus}"
 	implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
-    testImplementation "org.eclipse.jetty:jetty-server:${revJettyServer}"
-    testImplementation "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation "org.testcontainers:mockserver:${revTestContainer}"
+    testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
 }
