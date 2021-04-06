@@ -201,7 +201,10 @@ public class TestWorkflowExecutor {
 
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("1");
-
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("1");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         List<Task> tasks = new LinkedList<>();
 
         WorkflowTask taskToSchedule = new WorkflowTask();
@@ -315,7 +318,10 @@ public class TestWorkflowExecutor {
     public void testQueueFailuresDuringScheduleTask() {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("wid_01");
-
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("wid");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         List<Task> tasks = new LinkedList<>();
 
         Task task1 = new Task();
@@ -574,8 +580,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -607,8 +615,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
@@ -618,8 +625,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -702,8 +711,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -721,8 +729,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -785,8 +795,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -798,8 +807,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -832,8 +843,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -872,8 +882,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -924,8 +936,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -969,6 +980,10 @@ public class TestWorkflowExecutor {
 
         Workflow subWorkflow = new Workflow();
         subWorkflow.setWorkflowId(id);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("subworkflow");
+        workflowDef.setVersion(1);
+        subWorkflow.setWorkflowDefinition(workflowDef);
         subWorkflow.setStatus(Workflow.WorkflowStatus.FAILED);
         subWorkflow.getTasks().addAll(Arrays.asList(task,task1));
         subWorkflow.setParentWorkflowId("testRunWorkflowId");
@@ -987,7 +1002,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("testRunWorkflowId");
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
         workflow.setTasks(Collections.singletonList(task2));
-        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef = new WorkflowDef();
         workflowDef.setName("first_workflow");
         workflow.setWorkflowDefinition(workflowDef);
 
@@ -1012,8 +1027,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRerunWorkflowId");
-        workflow.setWorkflowType("testRerunWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -1051,8 +1068,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
         rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
         workflowExecutor.rerun(rerunWorkflowRequest);
@@ -1070,8 +1086,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRerunWorkflowId");
-        workflow.setWorkflowType("testRerunWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -1109,8 +1127,7 @@ public class TestWorkflowExecutor {
 
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
-        WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
         rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
         rerunWorkflowRequest.setReRunFromTaskId(task_1_1.getTaskId());
@@ -1579,8 +1596,10 @@ public class TestWorkflowExecutor {
         //setup
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
-        workflow.setWorkflowType("testRetryWorkflowId");
-        workflow.setVersion(1);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryWorkflowId");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);

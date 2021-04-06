@@ -10,6 +10,10 @@ option java_outer_classname = "WorkflowPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message Workflow {
+    // removed fields
+    reserved 10, 11, 15;
+    reserved "workflow_type","version", "schema_version";
+
     enum WorkflowStatus {
         RUNNING = 0;
         COMPLETED = 1;
@@ -26,12 +30,9 @@ message Workflow {
     repeated Task tasks = 6;
     map<string, google.protobuf.Value> input = 8;
     map<string, google.protobuf.Value> output = 9;
-    string workflow_type = 10;
-    int32 version = 11;
     string correlation_id = 12;
     string re_run_from_workflow_id = 13;
     string reason_for_incompletion = 14;
-    int32 schema_version = 15;
     string event = 16;
     map<string, string> task_to_domain = 17;
     repeated string failed_reference_task_names = 18;

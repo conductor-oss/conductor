@@ -42,7 +42,7 @@ public class WorkflowPoller extends LifecycleAwareComponent {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
         this.properties = properties;
-        LOGGER.info("WorkflowPoller Initialized.");
+        LOGGER.info("WorkflowPoller initialized with {} sweeper threads", properties.getSweeperThreadCount());
     }
 
     @Scheduled(fixedDelayString = "${conductor.sweep-frequency.millis:500}", initialDelayString = "${conductor.sweep-frequency.millis:500}")

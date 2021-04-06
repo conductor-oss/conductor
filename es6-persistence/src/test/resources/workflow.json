@@ -67,8 +67,10 @@
     },
     "outputPath": "s3://bucket/outputPath"
   },
-  "workflowType": "template_workflow",
-  "version": 1,
+  "workflowDefinition": {
+    "name": "template_workflow",
+    "version": 1
+  },
   "correlationId": "testTaskDefTemplate",
   "schemaVersion": 2,
   "startTime": 1534983505050

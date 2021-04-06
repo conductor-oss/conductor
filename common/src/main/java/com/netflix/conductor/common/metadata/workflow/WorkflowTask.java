@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.common.metadata.workflow;
 
@@ -22,14 +22,12 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow
@@ -37,32 +35,6 @@ import java.util.Set;
  */
 @ProtoMessage
 public class WorkflowTask {
-
-    /**
-     * This field is deprecated and will be removed in the next version. Please use {@link TaskType} instead.
-     */
-    @Deprecated
-    public enum Type {
-        SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
-        private static final Set<String> systemTasks = new HashSet<>();
-
-        static {
-            systemTasks.add(Type.SIMPLE.name());
-            systemTasks.add(Type.DYNAMIC.name());
-            systemTasks.add(Type.FORK_JOIN.name());
-            systemTasks.add(Type.FORK_JOIN_DYNAMIC.name());
-            systemTasks.add(Type.DECISION.name());
-            systemTasks.add(Type.JOIN.name());
-            systemTasks.add(Type.SUB_WORKFLOW.name());
-            systemTasks.add(Type.EVENT.name());
-            systemTasks.add(Type.WAIT.name());
-            //Do NOT add USER_DEFINED here...
-        }
-
-        public static boolean isSystemTask(String name) {
-            return systemTasks.contains(name);
-        }
-    }
 
     @ProtoField(id = 1)
     @NotEmpty(message = "WorkflowTask name cannot be empty or null")

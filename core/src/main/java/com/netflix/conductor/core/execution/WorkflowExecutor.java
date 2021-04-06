@@ -508,8 +508,6 @@ public class WorkflowExecutor {
             workflowDef = metadataDAO.getLatestWorkflowDef(workflow.getWorkflowName())
                     .orElseThrow(() -> new ApplicationException(NOT_FOUND,
                             String.format("Unable to find latest definition for %s", workflowId)));
-            workflow.setVersion(workflowDef
-                    .getVersion()); // setting this here to ensure backward compatibility and consistency for workflows without the embedded workflow definition
             workflow.setWorkflowDefinition(workflowDef);
         } else {
             workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())

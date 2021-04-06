@@ -1,3 +1,16 @@
+/*
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+
 package com.netflix.conductor.grpc;
 
 import com.google.protobuf.Any;
@@ -38,16 +51,14 @@ import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 import com.netflix.conductor.proto.WorkflowTaskPb;
-import java.lang.IllegalArgumentException;
-import java.lang.Object;
-import java.lang.String;
+
+import javax.annotation.Generated;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Generated;
 
 @Generated("com.github.vmg.protogen.ProtoGen")
 public abstract class AbstractProtoMapper {
@@ -949,10 +960,6 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
-        if (from.getWorkflowType() != null) {
-            to.setWorkflowType( from.getWorkflowType() );
-        }
-        to.setVersion( from.getVersion() );
         if (from.getCorrelationId() != null) {
             to.setCorrelationId( from.getCorrelationId() );
         }
@@ -962,7 +969,6 @@ public abstract class AbstractProtoMapper {
         if (from.getReasonForIncompletion() != null) {
             to.setReasonForIncompletion( from.getReasonForIncompletion() );
         }
-        to.setSchemaVersion( from.getSchemaVersion() );
         if (from.getEvent() != null) {
             to.setEvent( from.getEvent() );
         }
@@ -1003,12 +1009,9 @@ public abstract class AbstractProtoMapper {
             outputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setOutput(outputMap);
-        to.setWorkflowType( from.getWorkflowType() );
-        to.setVersion( from.getVersion() );
         to.setCorrelationId( from.getCorrelationId() );
         to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
         to.setReasonForIncompletion( from.getReasonForIncompletion() );
-        to.setSchemaVersion( from.getSchemaVersion() );
         to.setEvent( from.getEvent() );
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );

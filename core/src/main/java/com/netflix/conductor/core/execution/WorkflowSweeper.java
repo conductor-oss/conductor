@@ -54,7 +54,7 @@ public class WorkflowSweeper {
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
         this.workflowRepairService = workflowRepairService.orElse(null);
-        LOGGER.info("Workflow Sweeper Initialized");
+        LOGGER.info("WorkflowSweeper initialized.");
     }
 
     @Async(SWEEPER_EXECUTOR_NAME)
