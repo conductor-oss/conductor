@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.mapper;
 
@@ -22,7 +22,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
-import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -44,8 +43,8 @@ import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#FORK_JOIN_DYNAMIC} to a
- * LinkedList of {@link Task} beginning with a {@link SystemTaskType#FORK}, followed by the user defined dynamic tasks
- * and a {@link SystemTaskType#JOIN} at the end
+ * LinkedList of {@link Task} beginning with a {@link TaskType#TASK_TYPE_FORK}, followed by the user defined dynamic tasks
+ * and a {@link TaskType#JOIN} at the end
  */
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
@@ -95,13 +94,13 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * @return List of tasks in the following order:
      * <ul>
      * <li>
-     * {@link SystemTaskType#FORK} with {@link Task.Status#COMPLETED}
+     * {@link TaskType#TASK_TYPE_FORK} with {@link Task.Status#COMPLETED}
      * </li>
      * <li>
      * Might be any kind of task, but this is most cases is a UserDefinedTask with {@link Task.Status#SCHEDULED}
      * </li>
      * <li>
-     * {@link SystemTaskType#JOIN} with {@link Task.Status#IN_PROGRESS}
+     * {@link TaskType#JOIN} with {@link Task.Status#IN_PROGRESS}
      * </li>
      * </ul>
      * @throws TerminateWorkflowException In case of:
@@ -181,14 +180,14 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * @param taskId:           The string representation of {@link java.util.UUID} which will be set as the taskId.
      * @param dynForkTasks:     The list of dynamic forked tasks, the reference names of these tasks will be added to
      *                          the forkDynamicTask
-     * @return A new instance of {@link Task} representing a {@link SystemTaskType#FORK}
+     * @return A new instance of {@link Task} representing a {@link TaskType#TASK_TYPE_FORK}
      */
     @VisibleForTesting
     Task createDynamicForkTask(WorkflowTask taskToSchedule, Workflow workflowInstance, String taskId,
         List<WorkflowTask> dynForkTasks) {
         Task forkDynamicTask = new Task();
-        forkDynamicTask.setTaskType(SystemTaskType.FORK.name());
-        forkDynamicTask.setTaskDefName(SystemTaskType.FORK.name());
+        forkDynamicTask.setTaskType(TaskType.TASK_TYPE_FORK);
+        forkDynamicTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
         forkDynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         forkDynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         forkDynamicTask.setCorrelationId(workflowInstance.getCorrelationId());
@@ -214,13 +213,13 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * @param workflowInstance: A instance of the {@link Workflow} which represents the workflow being executed.
      * @param joinWorkflowTask: A instance of {@link WorkflowTask} which is of type {@link TaskType#JOIN}
      * @param joinInput:        The input which is set in the {@link Task#setInputData(Map)}
-     * @return a new instance of {@link Task} representing a {@link SystemTaskType#JOIN}
+     * @return a new instance of {@link Task} representing a {@link TaskType#JOIN}
      */
     @VisibleForTesting
     Task createJoinTask(Workflow workflowInstance, WorkflowTask joinWorkflowTask, HashMap<String, Object> joinInput) {
         Task joinTask = new Task();
-        joinTask.setTaskType(SystemTaskType.JOIN.name());
-        joinTask.setTaskDefName(SystemTaskType.JOIN.name());
+        joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
+        joinTask.setTaskDefName(TaskType.TASK_TYPE_JOIN);
         joinTask.setReferenceTaskName(joinWorkflowTask.getTaskReferenceName());
         joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         joinTask.setWorkflowType(workflowInstance.getWorkflowName());

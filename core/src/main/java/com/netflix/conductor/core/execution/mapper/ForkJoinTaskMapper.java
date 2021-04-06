@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.mapper;
 
@@ -18,7 +18,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
-import com.netflix.conductor.core.execution.SystemTaskType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,7 @@ import java.util.Map;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#FORK_JOIN} to a
- * LinkedList of {@link Task} beginning with a completed {@link SystemTaskType#FORK}, followed by the user defined fork
+ * LinkedList of {@link Task} beginning with a completed {@link TaskType#TASK_TYPE_FORK}, followed by the user defined fork
  * tasks
  */
 @Component
@@ -51,7 +50,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
      * @return List of tasks in the following order:
      * * <ul>
      * <li>
-     * {@link SystemTaskType#FORK} with {@link Task.Status#COMPLETED}
+     * {@link TaskType#TASK_TYPE_FORK} with {@link Task.Status#COMPLETED}
      * </li>
      * <li>
      * Might be any kind of task, but in most cases is a UserDefinedTask with {@link Task.Status#SCHEDULED}
@@ -73,8 +72,8 @@ public class ForkJoinTaskMapper implements TaskMapper {
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
         Task forkTask = new Task();
-        forkTask.setTaskType(SystemTaskType.FORK.name());
-        forkTask.setTaskDefName(SystemTaskType.FORK.name());
+        forkTask.setTaskType(TaskType.TASK_TYPE_FORK);
+        forkTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
         forkTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         forkTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         forkTask.setWorkflowType(workflowInstance.getWorkflowName());

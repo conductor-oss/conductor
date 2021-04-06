@@ -116,7 +116,7 @@ public class WorkflowExecutor {
     private final Predicate<PollData> validateLastPolledTime = pollData ->
             pollData.getLastPollTime() > System.currentTimeMillis() - activeWorkerLastPollMs;
 
-    private static final Predicate<Task> SYSTEM_TASK = task -> SystemTaskType.is(task.getTaskType());
+    private static final Predicate<Task> SYSTEM_TASK = task -> WorkflowSystemTask.is(task.getTaskType());
 
     private static final Predicate<Task> NON_TERMINAL_TASK = task -> !task.getStatus().isTerminal();
 

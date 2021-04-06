@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.service;
 
@@ -31,12 +31,11 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
@@ -63,7 +62,6 @@ public class ExecutionService {
 
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionDAOFacade executionDAOFacade;
-    private final MetadataDAO metadataDAO;
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
 
@@ -74,11 +72,10 @@ public class ExecutionService {
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
     public ExecutionService(WorkflowExecutor workflowExecutor, ExecutionDAOFacade executionDAOFacade,
-        MetadataDAO metadataDAO, QueueDAO queueDAO, ConductorProperties properties,
+        QueueDAO queueDAO, ConductorProperties properties,
         ExternalPayloadStorage externalPayloadStorage) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
-        this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
 
@@ -269,7 +266,7 @@ public class ExecutionService {
 
         for (Task pending : tasks) {
 
-            if (SystemTaskType.is(pending.getTaskType())) {
+            if (WorkflowSystemTask.is(pending.getTaskType())) {
                 continue;
             }
             if (pending.getStatus().isTerminal()) {

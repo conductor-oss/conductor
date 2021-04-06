@@ -27,6 +27,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -159,7 +160,7 @@ public class DeciderService {
         // A new workflow does not enter this code branch
         for (Task pendingTask : pendingTasks) {
 
-            if (SystemTaskType.is(pendingTask.getTaskType()) && !pendingTask.getStatus().isTerminal()) {
+            if (WorkflowSystemTask.is(pendingTask.getTaskType()) && !pendingTask.getStatus().isTerminal()) {
                 tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
@@ -387,7 +388,7 @@ public class DeciderService {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
         // Get the following task after the last completed task
-        if (SystemTaskType.is(task.getTaskType()) && SystemTaskType.DECISION.name().equals(task.getTaskType())) {
+        if (WorkflowSystemTask.is(task.getTaskType()) && TaskType.TASK_TYPE_DECISION.equals(task.getTaskType())) {
             if (task.getInputData().get("hasChildren") != null) {
                 return Collections.emptyList();
             }
@@ -438,7 +439,7 @@ public class DeciderService {
 
         final int expectedRetryCount = taskDefinition == null ? 0
                 : Optional.ofNullable(workflowTask).map(WorkflowTask::getRetryCount).orElse(taskDefinition.getRetryCount());
-        if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType())
+        if (!task.getStatus().isRetriable() || TaskType.isBuiltIn(task.getTaskType())
                 || expectedRetryCount <= retryCount) {
             if (workflowTask != null && workflowTask.isOptional()) {
                 return Optional.empty();
