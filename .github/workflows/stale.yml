@@ -19,4 +19,4 @@ jobs:
           days-before-issue-close: 7
           days-before-pr-stale: 45
           days-before-pr-close: 7
-          exempt-issue-labels: 'bug,enhancement,work_in_progress,help_wanted'
+          exempt-issue-labels: 'type: bug,enhancement,work_in_progress,help_wanted'
