@@ -28,8 +28,11 @@ import java.util.Map;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,8 @@ public class JettyServer implements Lifecycle {
 
     private final int port;
     private final boolean join;
+    private final int maxThreads;
+    private final int minThreads;
 
     private Server server;
 
@@ -54,8 +59,16 @@ public class JettyServer implements Lifecycle {
     public JettyServer(int port, boolean join) {
         this.port = port;
         this.join = join;
+        maxThreads = JettyServerConfiguration.THREAD_POOL_MAX_THREADS_DEFAULT_VALUE;
+        minThreads = JettyServerConfiguration.THREAD_POOL_MIN_THREADS_DEFAULT_VALUE;
     }
 
+    public JettyServer(int port, boolean join, int maxThreads, int minThreads) {
+        this.port = port;
+        this.join = join;
+        this.maxThreads = maxThreads;
+        this.minThreads = minThreads;
+    }
 
     @Override
     public synchronized void start() throws Exception {
@@ -64,7 +77,10 @@ public class JettyServer implements Lifecycle {
             throw new IllegalStateException("Server is already running");
         }
 
-        this.server = new Server(port);
+        this.server = new Server(new QueuedThreadPool(maxThreads,minThreads));
+        ServerConnector connector = new ServerConnector(this.server);
+        connector.setPort(port);
+        this.server.setConnectors(new Connector[]{connector});
 
         ServletContextHandler context = new ServletContextHandler();
         context.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));

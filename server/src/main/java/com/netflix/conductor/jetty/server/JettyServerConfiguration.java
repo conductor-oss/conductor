@@ -12,6 +12,12 @@ public interface JettyServerConfiguration extends Configuration {
     String JOIN_PROPERTY_NAME = "conductor.jetty.server.join";
     boolean JOIN_DEFAULT_VALUE = true;
 
+    String THREAD_POOL_MIN_THREADS_PROPERTY_NAME="conductor.jetty.server.threadpool.minThreads";
+    int  THREAD_POOL_MIN_THREADS_DEFAULT_VALUE = 8;
+
+    String THREAD_POOL_MAX_THREADS_PROPERTY_NAME="conductor.jetty.server.threadpool.maxThreads";
+    int  THREAD_POOL_MAX_THREADS_DEFAULT_VALUE = 200;
+
     default boolean isEnabled(){
         return getBooleanProperty(ENABLED_PROPERTY_NAME, ENABLED_DEFAULT_VALUE);
     }
@@ -22,5 +28,13 @@ public interface JettyServerConfiguration extends Configuration {
 
     default boolean isJoin(){
         return getBooleanProperty(JOIN_PROPERTY_NAME, JOIN_DEFAULT_VALUE);
+    }
+
+    default int getThreadPoolMinThreads() {
+        return getIntProperty(THREAD_POOL_MIN_THREADS_PROPERTY_NAME,THREAD_POOL_MIN_THREADS_DEFAULT_VALUE);
+    }
+
+    default int getThreadPoolMaxThreads() {
+        return getIntProperty(THREAD_POOL_MAX_THREADS_PROPERTY_NAME,THREAD_POOL_MAX_THREADS_DEFAULT_VALUE);
     }
 }
