@@ -1,20 +1,19 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.utils.UserTask
@@ -26,6 +25,9 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
     @Autowired
     QueueDAO queueDAO
+
+    @Autowired
+    UserTask userTask
 
     def RATE_LIMITED_SYSTEM_TASK_WORKFLOW = 'test_rate_limit_system_task_workflow'
     def RATE_LIMITED_SIMPLE_TASK_WORKFLOW = 'test_rate_limit_simple_task_workflow'
@@ -54,7 +56,7 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "Execute the user task"
         def scheduledTask1 = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(UserTask.NAME), scheduledTask1.taskId, 30)
+        workflowExecutor.executeSystemTask(userTask, scheduledTask1.taskId, 30)
 
         then: "Verify the state of the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -78,7 +80,7 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "Execute the user task on the second workflow"
         def scheduledTask2 = workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(UserTask.NAME), scheduledTask2.taskId, 30)
+        workflowExecutor.executeSystemTask(userTask, scheduledTask2.taskId, 30)
 
         then: "Verify the state of the workflow is still in running state"
         with(workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true)) {

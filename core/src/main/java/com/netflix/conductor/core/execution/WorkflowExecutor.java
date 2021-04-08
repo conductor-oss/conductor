@@ -36,6 +36,7 @@ import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
@@ -102,6 +103,7 @@ public class WorkflowExecutor {
     private final ExecutionDAOFacade executionDAOFacade;
     private final ParametersUtils parametersUtils;
     private final WorkflowStatusListener workflowStatusListener;
+    private final SystemTaskRegistry systemTaskRegistry;
 
     private long activeWorkerLastPollMs;
     private final long queueTaskMessagePostponeSecs;
@@ -116,8 +118,6 @@ public class WorkflowExecutor {
     private final Predicate<PollData> validateLastPolledTime = pollData ->
             pollData.getLastPollTime() > System.currentTimeMillis() - activeWorkerLastPollMs;
 
-    private static final Predicate<Task> SYSTEM_TASK = task -> WorkflowSystemTask.is(task.getTaskType());
-
     private static final Predicate<Task> NON_TERMINAL_TASK = task -> !task.getStatus().isTerminal();
 
     @Autowired
@@ -125,6 +125,7 @@ public class WorkflowExecutor {
                             MetadataMapperService metadataMapperService, WorkflowStatusListener workflowStatusListener,
                             ExecutionDAOFacade executionDAOFacade, ConductorProperties properties,
                             ExecutionLockService executionLockService,
+                            SystemTaskRegistry systemTaskRegistry,
                             ParametersUtils parametersUtils) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
@@ -137,6 +138,7 @@ public class WorkflowExecutor {
         this.workflowStatusListener = workflowStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
+        this.systemTaskRegistry = systemTaskRegistry;
     }
 
     /**
@@ -465,7 +467,7 @@ public class WorkflowExecutor {
 
         // Get SIMPLE tasks in SCHEDULED state that have callbackAfterSeconds > 0 and set the callbackAfterSeconds to 0
         workflow.getTasks().stream()
-                .filter(task -> SYSTEM_TASK.negate().test(task)
+                .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType())
                         && SCHEDULED == task.getStatus()
                         && task.getCallbackAfterSeconds() > 0)
                 .forEach(task -> {
@@ -924,7 +926,7 @@ public class WorkflowExecutor {
 
         // for system tasks, setting to SCHEDULED would mean restarting the task which is undesirable
         // for worker tasks, set status to SCHEDULED and push to the queue
-        if (!SYSTEM_TASK.test(task) && taskResult.getStatus() == Status.IN_PROGRESS) {
+        if (!systemTaskRegistry.isSystemTask(task.getTaskType()) && taskResult.getStatus() == Status.IN_PROGRESS) {
             task.setStatus(SCHEDULED);
         } else {
             task.setStatus(valueOf(taskResult.getStatus().name()));
@@ -1110,8 +1112,8 @@ public class WorkflowExecutor {
 
             Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
             for (Task task : outcome.tasksToBeScheduled) {
-                if (SYSTEM_TASK.and(NON_TERMINAL_TASK).test(task)) {
-                    WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                if (systemTaskRegistry.isSystemTask(task.getTaskType()) && NON_TERMINAL_TASK.test(task)) {
+                    WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
                     deciderService.populateTaskData(task);
                     if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
                         tasksToBeUpdated.add(task);
@@ -1220,8 +1222,8 @@ public class WorkflowExecutor {
             if (!task.getStatus().isTerminal()) {
                 // Cancel the ones which are not completed yet....
                 task.setStatus(CANCELED);
-                if (SYSTEM_TASK.test(task)) {
-                    WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                if (systemTaskRegistry.isSystemTask(task.getTaskType())) {
+                    WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
                     try {
                         workflowSystemTask.cancel(workflow, task, this);
                     } catch (Exception e) {
@@ -1558,16 +1560,16 @@ public class WorkflowExecutor {
             createdTasks = executionDAOFacade.createTasks(tasks);
 
             List<Task> systemTasks = createdTasks.stream()
-                    .filter(SYSTEM_TASK)
+                    .filter(task -> systemTaskRegistry.isSystemTask(task.getTaskType()))
                     .collect(Collectors.toList());
 
             tasksToBeQueued = createdTasks.stream()
-                    .filter(SYSTEM_TASK.negate())
+                    .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
                     .collect(Collectors.toList());
 
             // Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
             for (Task task : systemTasks) {
-                WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
                 if (workflowSystemTask == null) {
                     throw new ApplicationException(NOT_FOUND, "No system task found by name " + task.getTaskType());
                 }
@@ -1810,7 +1812,7 @@ public class WorkflowExecutor {
     }
 
     private void executeSubworkflowTaskAndSyncData(Workflow subWorkflow, Task subWorkflowTask) {
-        WorkflowSystemTask subWorkflowSystemTask = WorkflowSystemTask.get(SubWorkflow.NAME);
+        WorkflowSystemTask subWorkflowSystemTask = systemTaskRegistry.get(SubWorkflow.NAME);
         subWorkflowSystemTask.execute(subWorkflow, subWorkflowTask, this);
         // Keep Subworkflow task's data consistent with Subworkflow's.
         if (subWorkflowTask.getStatus().isTerminal() && subWorkflowTask.getExternalOutputPayloadStoragePath() != null

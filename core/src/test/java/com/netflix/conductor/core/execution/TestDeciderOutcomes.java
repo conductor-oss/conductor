@@ -37,6 +37,8 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Decision;
 import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -44,6 +46,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -80,7 +84,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {ObjectMapperConfiguration.class, TestDeciderOutcomes.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestDeciderOutcomes {
 
@@ -88,6 +92,29 @@ public class TestDeciderOutcomes {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SystemTaskRegistry systemTaskRegistry;
+
+    @Configuration
+    public static class TestConfiguration {
+
+        @Bean(Decision.NAME)
+        public Decision decision() {
+            return new Decision();
+        }
+
+        @Bean(Join.NAME)
+        public Join join() {
+            return new Join();
+        }
+
+        @Bean
+        public SystemTaskRegistry systemTaskRegistry(Map<String, WorkflowSystemTask> beanFactory) {
+            return new SystemTaskRegistry(beanFactory);
+        }
+
+    }
 
     @Before
     public void init() {
@@ -97,9 +124,6 @@ public class TestDeciderOutcomes {
         ConductorProperties properties = mock(ConductorProperties.class);
         when(properties.getTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10L));
         when(properties.getMaxTaskInputPayloadSizeThreshold()).thenReturn(DataSize.ofKilobytes(10240L));
-
-        new Decision();
-        new Join();
 
         TaskDef taskDef = new TaskDef();
         taskDef.setRetryCount(1);
@@ -120,7 +144,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        this.deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers,
+        this.deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry, taskMappers,
             Duration.ofMinutes(60));
     }
 

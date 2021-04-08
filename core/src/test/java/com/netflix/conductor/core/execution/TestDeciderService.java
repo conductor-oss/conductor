@@ -39,6 +39,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -150,7 +151,7 @@ public class TestDeciderService {
         taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers,
+        deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, mock(SystemTaskRegistry.class), taskMappers,
             Duration.ofMinutes(60));
     }
 

@@ -61,6 +61,7 @@ public class TestDoWhile {
     ExecutionLockService executionLockService;
     ConductorProperties properties;
     ParametersUtils parametersUtils;
+    SystemTaskRegistry systemTaskRegistry;
     private Workflow workflow;
     private Task loopTask;
     private TaskDef loopTaskDef;
@@ -82,11 +83,12 @@ public class TestDoWhile {
         executionDAOFacade = mock(ExecutionDAOFacade.class);
         executionLockService = mock(ExecutionLockService.class);
         properties = mock(ConductorProperties.class);
+        systemTaskRegistry = mock(SystemTaskRegistry.class);
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
-            workflowStatusListener, executionDAOFacade, properties, executionLockService, parametersUtils));
+            workflowStatusListener, executionDAOFacade, properties, executionLockService, systemTaskRegistry, parametersUtils));
         WorkflowTask loopWorkflowTask1 = new WorkflowTask();
         loopWorkflowTask1.setTaskReferenceName("task1");
         loopWorkflowTask1.setName("task1");

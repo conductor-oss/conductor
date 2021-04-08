@@ -27,7 +27,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -73,6 +73,7 @@ public class DeciderService {
     private final ParametersUtils parametersUtils;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
+    private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
     private final Map<TaskType, TaskMapper> taskMappers;
@@ -86,6 +87,7 @@ public class DeciderService {
 
     public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
                           ExternalPayloadStorageUtils externalPayloadStorageUtils,
+                          SystemTaskRegistry systemTaskRegistry,
                           @Qualifier("taskProcessorsMap") Map<TaskType, TaskMapper> taskMappers,
                           @Value("${conductor.app.taskPendingTimeThreshold:60m}") Duration taskPendingTimeThreshold) {
         this.metadataDAO = metadataDAO;
@@ -93,6 +95,7 @@ public class DeciderService {
         this.taskMappers = taskMappers;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
+        this.systemTaskRegistry = systemTaskRegistry;
     }
 
     public DeciderOutcome decide(Workflow workflow) throws TerminateWorkflowException {
@@ -160,7 +163,7 @@ public class DeciderService {
         // A new workflow does not enter this code branch
         for (Task pendingTask : pendingTasks) {
 
-            if (WorkflowSystemTask.is(pendingTask.getTaskType()) && !pendingTask.getStatus().isTerminal()) {
+            if (systemTaskRegistry.isSystemTask(pendingTask.getTaskType()) && !pendingTask.getStatus().isTerminal()) {
                 tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
@@ -388,7 +391,7 @@ public class DeciderService {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
         // Get the following task after the last completed task
-        if (WorkflowSystemTask.is(task.getTaskType()) && TaskType.TASK_TYPE_DECISION.equals(task.getTaskType())) {
+        if (systemTaskRegistry.isSystemTask(task.getTaskType()) && TaskType.TASK_TYPE_DECISION.equals(task.getTaskType())) {
             if (task.getInputData().get("hasChildren") != null) {
                 return Collections.emptyList();
             }

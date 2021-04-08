@@ -43,6 +43,7 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Lambda;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -61,6 +62,9 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -76,7 +80,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -115,7 +118,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {ObjectMapperConfiguration.class, TestWorkflowExecutor.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestWorkflowExecutor {
 
@@ -125,8 +128,53 @@ public class TestWorkflowExecutor {
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
 
+    @Configuration
+    public static class TestConfiguration {
+
+        @Bean(SubWorkflow.NAME)
+        public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
+            return new SubWorkflow(objectMapper);
+        }
+
+        @Bean(Lambda.NAME)
+        public Lambda lambda() {
+            return new Lambda();
+        }
+
+        @Bean(Wait.NAME)
+        public Wait waitBean() {
+            return new Wait();
+        }
+
+        @Bean("HTTP")
+        public WorkflowSystemTask http() {
+            return new WorkflowSystemTaskStub("HTTP") {
+                @Override
+                public boolean isAsync() {
+                    return true;
+                }
+            };
+        }
+
+        @Bean("HTTP2")
+        public WorkflowSystemTask http2() {
+            return new WorkflowSystemTaskStub("HTTP2");
+        }
+
+        @Bean
+        public SystemTaskRegistry systemTaskRegistry(Map<String, WorkflowSystemTask> registry) {
+            return new SystemTaskRegistry(registry);
+        }
+    }
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SystemTaskRegistry systemTaskRegistry;
+
+    @Autowired
+    private DefaultListableBeanFactory beanFactory;
 
     @Before
     public void init() {
@@ -151,11 +199,8 @@ public class TestWorkflowExecutor {
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(LAMBDA, new LambdaTaskMapper(parametersUtils, metadataDAO));
 
-        new SubWorkflow(objectMapper);
-        new Lambda();
-
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
-            taskMappers, Duration.ofMinutes(60));
+            systemTaskRegistry, taskMappers, Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
         ConductorProperties properties = mock(ConductorProperties.class);
@@ -164,40 +209,14 @@ public class TestWorkflowExecutor {
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
-            workflowStatusListener, executionDAOFacade, properties, executionLockService,
+            workflowStatusListener, executionDAOFacade, properties, executionLockService, systemTaskRegistry,
             parametersUtils);
     }
 
     @Test
     public void testScheduleTask() {
-
-        AtomicBoolean httpTaskExecuted = new AtomicBoolean(false);
-        AtomicBoolean http2TaskExecuted = new AtomicBoolean(false);
-
-        new Wait();
-        new WorkflowSystemTask("HTTP") {
-            @Override
-            public boolean isAsync() {
-                return true;
-            }
-
-            @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
-                httpTaskExecuted.set(true);
-                task.setStatus(Status.COMPLETED);
-                super.start(workflow, task, executor);
-            }
-        };
-
-        new WorkflowSystemTask("HTTP2") {
-
-            @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
-                http2TaskExecuted.set(true);
-                task.setStatus(Status.COMPLETED);
-                super.start(workflow, task, executor);
-            }
-        };
+        WorkflowSystemTaskStub httpTask = beanFactory.getBean("HTTP", WorkflowSystemTaskStub.class);
+        WorkflowSystemTaskStub http2Task = beanFactory.getBean("HTTP2", WorkflowSystemTaskStub.class);
 
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("1");
@@ -285,8 +304,8 @@ public class TestWorkflowExecutor {
         assertEquals(2, startedTaskCount.get());
         assertEquals(1, queuedTaskCount.get());
         assertTrue(stateChanged);
-        assertFalse(httpTaskExecuted.get());
-        assertTrue(http2TaskExecuted.get());
+        assertFalse(httpTask.isStarted());
+        assertTrue(http2Task.isStarted());
     }
 
     @Test(expected = TerminateWorkflowException.class)
@@ -1628,5 +1647,25 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
+    }
+
+    private static class WorkflowSystemTaskStub extends WorkflowSystemTask {
+
+        private boolean started = false;
+
+        public WorkflowSystemTaskStub(String name) {
+            super(name);
+        }
+
+        @Override
+        public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
+            started = true;
+            task.setStatus(Status.COMPLETED);
+            super.start(workflow, task, executor);
+        }
+
+        public boolean isStarted() {
+            return started;
+        }
     }
 }

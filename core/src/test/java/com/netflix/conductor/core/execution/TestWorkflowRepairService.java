@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution;
 
@@ -18,6 +18,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.tasks.Decision;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -41,13 +42,15 @@ public class TestWorkflowRepairService {
     QueueDAO queueDAO;
     ConductorProperties properties;
     WorkflowRepairService workflowRepairService;
+    SystemTaskRegistry systemTaskRegistry;
 
     @Before
     public void setUp() {
         executionDAO = mock(ExecutionDAO.class);
         queueDAO = mock(QueueDAO.class);
         properties = mock(ConductorProperties.class);
-        workflowRepairService = new WorkflowRepairService(executionDAO, queueDAO, properties);
+        systemTaskRegistry = mock(SystemTaskRegistry.class);
+        workflowRepairService = new WorkflowRepairService(executionDAO, queueDAO, properties, systemTaskRegistry);
     }
 
     @Test
@@ -83,14 +86,15 @@ public class TestWorkflowRepairService {
 
     @Test
     public void verifyAndRepairSystemTask() {
+        String taskType = "TEST_SYS_TASK";
         Task task = new Task();
-        task.setTaskType("TEST_SYS_TASK");
+        task.setTaskType(taskType);
         task.setStatus(Task.Status.SCHEDULED);
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
-        // Create a Custom system task to init WorkflowSystemTask registry.
-        WorkflowSystemTask workflowSystemTask = new WorkflowSystemTask("TEST_SYS_TASK") {
+        when(systemTaskRegistry.isSystemTask("TEST_SYS_TASK")).thenReturn(true);
+        when(systemTaskRegistry.get(taskType)).thenReturn(new WorkflowSystemTask("TEST_SYS_TASK") {
             @Override
             public boolean isAsync() {
                 return true;
@@ -105,7 +109,7 @@ public class TestWorkflowRepairService {
             public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
                 super.start(workflow, task, executor);
             }
-        };
+        });
 
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
@@ -123,11 +127,12 @@ public class TestWorkflowRepairService {
 
     @Test
     public void assertSyncSystemTasksAreNotCheckedAgainstQueue() {
-        // Create a Decision object to init WorkflowSystemTask registry.
-        Decision decision = new Decision();
+        // Return a Decision object to init WorkflowSystemTask registry.
+        when(systemTaskRegistry.get(Decision.NAME)).thenReturn(new Decision());
+        when(systemTaskRegistry.isSystemTask(Decision.NAME)).thenReturn(true);
 
         Task task = new Task();
-        task.setTaskType("DECISION");
+        task.setTaskType(Decision.NAME);
         task.setStatus(Task.Status.SCHEDULED);
 
         assertFalse(workflowRepairService.verifyAndRepairTask(task));
@@ -140,12 +145,13 @@ public class TestWorkflowRepairService {
     @Test
     public void assertAsyncCompleteSystemTasksAreNotCheckedAgainstQueue() {
         Task task = new Task();
-        task.setTaskType("SUB_WORKFLOW");
+        task.setTaskType(SubWorkflow.NAME);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
         WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
+        when(systemTaskRegistry.get(SubWorkflow.NAME)).thenReturn(workflowSystemTask);
 
         assertTrue(workflowSystemTask.isAsyncComplete(task));
 

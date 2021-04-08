@@ -1,14 +1,14 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ *  Copyright 2021 Netflix, Inc.
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *   the License. You may obtain a copy of the License at
- *   <p>
- *   http://www.apache.org/licenses/LICENSE-2.0
- *   <p>
- *   Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *   an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *   specific language governing permissions and limitations under the License.
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
@@ -18,7 +18,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,6 +30,9 @@ class SubWorkflowSpec extends AbstractSpecification {
 
     @Autowired
     QueueDAO queueDAO
+
+    @Autowired
+    SubWorkflow subWorkflowTask
 
     @Shared
     def WORKFLOW_WITH_SUBWORKFLOW = 'integration_test_wf_with_sub_wf'
@@ -105,7 +107,7 @@ class SubWorkflowSpec extends AbstractSpecification {
         when: "the subworkflow is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
         String subworkflowTaskId = polledTaskIds.get(0)
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), subworkflowTaskId, 30)
+        workflowExecutor.executeSystemTask(subWorkflowTask, subworkflowTaskId, 30)
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -252,7 +254,7 @@ class SubWorkflowSpec extends AbstractSpecification {
 
         when: "Polled for and executed subworkflow task"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), polledTaskIds.get(0), 30)
+        workflowExecutor.executeSystemTask(subWorkflowTask, polledTaskIds.get(0), 30)
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
 
@@ -352,7 +354,7 @@ class SubWorkflowSpec extends AbstractSpecification {
 
         when: "the subworkflow is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), polledTaskIds.get(0), 30)
+        workflowExecutor.executeSystemTask(subWorkflowTask, polledTaskIds.get(0), 30)
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

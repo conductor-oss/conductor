@@ -16,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -45,12 +46,13 @@ public class WorkflowRepairService {
     private final ExecutionDAO executionDAO;
     private final QueueDAO queueDAO;
     private final ConductorProperties properties;
+    private SystemTaskRegistry systemTaskRegistry;
 
     // For system task -> Verify the task isAsync(), not isAsyncComplete() and in SCHEDULED or IN_PROGRESS state
     // For simple task -> Verify the task is in SCHEDULED state
     private final Predicate<Task> isTaskRepairable = task -> {
-        if (WorkflowSystemTask.is(task.getTaskType())) {    // If system task
-            WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+        if (systemTaskRegistry.isSystemTask(task.getTaskType())) {    // If system task
+            WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
             return workflowSystemTask.isAsync() && !workflowSystemTask.isAsyncComplete(task) &&
                 (task.getStatus() == Task.Status.IN_PROGRESS || task.getStatus() == Task.Status.SCHEDULED);
         } else {    // Else if simple task
@@ -58,10 +60,11 @@ public class WorkflowRepairService {
         }
     };
 
-    public WorkflowRepairService(ExecutionDAO executionDAO, QueueDAO queueDAO, ConductorProperties properties) {
+    public WorkflowRepairService(ExecutionDAO executionDAO, QueueDAO queueDAO, ConductorProperties properties, SystemTaskRegistry systemTaskRegistry) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.properties = properties;
+        this.systemTaskRegistry = systemTaskRegistry;
         LOGGER.info("WorkflowRepairService Initialized");
     }
 

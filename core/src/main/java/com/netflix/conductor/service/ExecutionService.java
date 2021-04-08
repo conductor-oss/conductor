@@ -32,7 +32,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
@@ -64,6 +64,7 @@ public class ExecutionService {
     private final ExecutionDAOFacade executionDAOFacade;
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
+    private final SystemTaskRegistry systemTaskRegistry;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -72,14 +73,15 @@ public class ExecutionService {
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
     public ExecutionService(WorkflowExecutor workflowExecutor, ExecutionDAOFacade executionDAOFacade,
-        QueueDAO queueDAO, ConductorProperties properties,
-        ExternalPayloadStorage externalPayloadStorage) {
+                            QueueDAO queueDAO, ConductorProperties properties,
+                            ExternalPayloadStorage externalPayloadStorage, SystemTaskRegistry systemTaskRegistry) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
 
         this.queueTaskMessagePostponeSecs = properties.getTaskExecutionPostponeDuration().getSeconds();
+        this.systemTaskRegistry = systemTaskRegistry;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -266,7 +268,7 @@ public class ExecutionService {
 
         for (Task pending : tasks) {
 
-            if (WorkflowSystemTask.is(pending.getTaskType())) {
+            if (systemTaskRegistry.isSystemTask(pending.getTaskType())) {
                 continue;
             }
             if (pending.getStatus().isTerminal()) {

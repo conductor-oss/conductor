@@ -10,10 +10,6 @@ option java_outer_classname = "WorkflowPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message Workflow {
-    // removed fields
-    reserved 10, 11, 15;
-    reserved "workflow_type","version", "schema_version";
-
     enum WorkflowStatus {
         RUNNING = 0;
         COMPLETED = 1;
