@@ -1,27 +1,52 @@
-# Contributing to Conductor
+Thanks for your interest in Conductor!
+This guide helps to find the most efficient way to contribute, ask questions, and report issues.
+
+Code of conduct
+-----
+
+Please review our [code of conduct](CODE_OF_CONDUCT.md).
+
+I have a question!
+-----
+
+We have a dedicated [discussion forum](https://github.com/Netflix/conductor/discussions) for asking "how to" questions and to discuss ideas. The discussion forum is a great place to start if you're considering creating a feature request or work on a Pull Request.
+*Please do not create issues to ask questions.*
+
+I want to contribute!
+------
+
+We welcome Pull Requests and already had many outstanding community contributions!
+Creating and reviewing Pull Requests take considerable time. This section helps you set up for a smooth Pull Request experience.
 
 The stable branch is [main](https://github.com/Netflix/conductor/tree/main).
 
 Please create pull requests for your contributions against [main](https://github.com/Netflix/conductor/tree/main) only.
 
-## How to provide a patch for a new feature
+It's a great idea to discuss the new feature you're considering on the [discussion forum](https://github.com/Netflix/conductor/discussions) before writing any code. There are often different ways you can implement a feature. Getting some discussion about different options helps shape the best solution. When starting directly with a Pull Request, there is the risk of having to make considerable changes. Sometimes that is the best approach, though! Showing an idea with code can be very helpful; be aware that it might be throw-away work. Some of our best Pull Requests came out of multiple competing implementations, which helped shape it to perfection.
 
-1. If it is a major feature, please create an [Issue]( https://github.com/Netflix/conductor/issues ) and discuss with the project leaders.
+Also, consider that not every feature is a good fit for Conductor. A few things to consider are:
 
-2. If in step 1 you get an acknowledge from the project leaders, use the
-   following procedure to submit a patch:
+* Is it increasing complexity for the user, or might it be confusing?
+* Does it, in any way, break backward compatibility (this is seldom acceptable)
+* Does it require new dependencies (this is rarely acceptable for core modules)
+* Should the feature be opt-in or enabled by default. For integration with a new Queuing recipe or persistence module, a separate module which can be optionally enabled is the right choice.  
+* Should the feature be implemented in the main Conductor repository, or would it be better to set up a separate repository? Especially for integration with other systems, a separate repository is often the right choice because the life-cycle of it will be different.
 
-    a. Fork conductor on github ( http://help.github.com/fork-a-repo/ )
+Of course, for more minor bug fixes and improvements, the process can be more light-weight.
 
-    b. Create a topic branch (git checkout -b my_branch)
+We'll try to be responsive to Pull Requests. Do keep in mind that because of the inherently distributed nature of open source projects, responses to a PR might take some time because of time zones, weekends, and other things we may be working on.
 
-    c. Push to your branch (git push origin my_branch)
+I want to report an issue
+-----
 
-    d. Initiate a pull request on github ( http://help.github.com/en/articles/creating-a-pull-request/ )
+If you found a bug, it is much appreciated if you create an issue. Please include clear instructions on how to reproduce the issue, or even better, include a test case on a branch. Make sure to come up with a descriptive title for the issue because this helps while organizing issues.
 
-    e. Done :)
+I have a great idea for a new feature
+----
+Many features in Conductor have come from ideas from the community. If you think something is missing or certain use cases could be supported better, let us know! You can do so by opening a discussion on the [discussion forum](https://github.com/Netflix/conductor/discussions). Provide as much relevant context to why and when the feature would be helpful. Providing context is especially important for "Support XYZ" issues since we might not be familiar with what "XYZ" is and why it's useful. If you have an idea of how to implement the feature, include that as well.
 
-For minor fixes just open a pull request to the [dev]( https://github.com/Netflix/conductor/tree/dev ) branch on Github.
+Once we have decided on a direction, it's time to summarize the idea by creating a new issue.
+
 
 ## License
 
@@ -45,7 +70,3 @@ If you are adding a new file it should have a header like this:
  * specific language governing permissions and limitations under the License.
  */
 ```
-
-## Questions
-
-If you have questions or want to report a bug please create an [Issue]( https://github.com/Netflix/conductor/issues ) or chat with us on [!(https://badges.gitter.im/netflix-conductor/community.svg)](https://gitter.im/netflix-conductor/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
