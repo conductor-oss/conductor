@@ -13,11 +13,10 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import org.springframework.validation.annotation.Validated;
-
-import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Map;
+import javax.validation.constraints.NotEmpty;
+import org.springframework.validation.annotation.Validated;
 
 @Validated
 public interface AdminService {
@@ -56,4 +55,12 @@ public interface AdminService {
      */
     boolean verifyAndRepairWorkflowConsistency(
         @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
+
+    /**
+     * Get registered queues.
+     *
+     * @param verbose `true|false` for verbose logs
+     * @return map of event queues
+     */
+    Map<String, ?> getEventQueues(boolean verbose);
 }

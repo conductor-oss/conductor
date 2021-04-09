@@ -16,14 +16,14 @@ import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowRepairService;
 import com.netflix.conductor.dao.QueueDAO;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.stereotype.Service;
 
 @Audit
 @Trace
@@ -35,13 +35,15 @@ public class AdminServiceImpl implements AdminService {
     private final ExecutionService executionService;
     private final QueueDAO queueDAO;
     private final WorkflowRepairService workflowRepairService;
+    private final EventQueueManager eventQueueManager;
 
     public AdminServiceImpl(ConductorProperties properties, ExecutionService executionService, QueueDAO queueDAO,
-                            Optional<WorkflowRepairService> workflowRepairService) {
+        Optional<WorkflowRepairService> workflowRepairService, Optional<EventQueueManager> eventQueueManager) {
         this.properties = properties;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
         this.workflowRepairService = workflowRepairService.orElse(null);
+        this.eventQueueManager = eventQueueManager.orElse(null);
     }
 
     /**
@@ -87,7 +89,21 @@ public class AdminServiceImpl implements AdminService {
      */
     public String requeueSweep(String workflowId) {
         boolean pushed = queueDAO
-                .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().getSeconds());
+            .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId,
+                properties.getWorkflowOffsetTimeout().getSeconds());
         return pushed + "." + workflowId;
+    }
+
+    /**
+     * Get registered queues.
+     *
+     * @param verbose `true|false` for verbose logs
+     * @return map of event queues
+     */
+    public Map<String, ?> getEventQueues(boolean verbose) {
+        if (eventQueueManager == null) {
+            throw new IllegalStateException("Event processing is DISABLED");
+        }
+        return (verbose ? eventQueueManager.getQueueSizes() : eventQueueManager.getQueues());
     }
 }

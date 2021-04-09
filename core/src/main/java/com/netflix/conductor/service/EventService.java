@@ -13,13 +13,11 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import org.springframework.validation.annotation.Validated;
-
+import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Map;
+import org.springframework.validation.annotation.Validated;
 
 @Validated
 public interface EventService {
@@ -62,19 +60,4 @@ public interface EventService {
     List<EventHandler> getEventHandlersForEvent(
         @NotEmpty(message = "Event cannot be null or empty.") String event,
         boolean activeOnly);
-
-    /**
-     * Get registered queues.
-     *
-     * @param verbose `true|false` for verbose logs
-     * @return map of event queues
-     */
-    Map<String, ?> getEventQueues(boolean verbose);
-
-    /**
-     * Get registered queue providers.
-     *
-     * @return list of registered queue providers.
-     */
-    List<String> getEventQueueProviders();
 }

@@ -139,9 +139,6 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         assertEquals(t0.getName(), polled.get(0).getTaskDefName());
         Task task = polled.get(0);
 
-        boolean acked = taskClient.ack(task.getTaskId(), "test");
-        assertTrue(acked);
-
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
         taskClient.updateTask(new TaskResult(task));
@@ -162,19 +159,6 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         Task taskById = taskClient.getTaskDetails(task.getTaskId());
         assertNotNull(taskById);
         assertEquals(task.getTaskId(), taskById.getTaskId());
-
-        List<Task> getTasks = taskClient.getPendingTasksByType(t0.getName(), null, 1);
-        assertNotNull(getTasks);
-        assertEquals(0, getTasks.size());        //getTasks only gives pending tasks
-
-        getTasks = taskClient.getPendingTasksByType(t1.getName(), null, 1);
-        assertNotNull(getTasks);
-        assertEquals(1, getTasks.size());
-
-        Task pending = taskClient.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
-        assertNotNull(pending);
-        assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
-        assertEquals(workflowId, pending.getWorkflowInstanceId());
 
         Thread.sleep(1000);
         SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");

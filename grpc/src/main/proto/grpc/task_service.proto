@@ -16,17 +16,8 @@ service TaskService {
     // /poll/batch/{tasktype}
     rpc BatchPoll(BatchPollRequest) returns (stream conductor.proto.Task);
 
-    // GET /in_progress/{tasktype}
-    rpc GetTasksInProgress(TasksInProgressRequest) returns (TasksInProgressResponse);
-
-    // GET /in_progress/{workflowId}/{taskRefName}
-    rpc GetPendingTaskForWorkflow(PendingTaskRequest) returns (PendingTaskResponse);
-
     // POST /
     rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
-
-    // POST /{taskId}/ack
-    rpc AckTask(AckTaskRequest) returns (AckTaskResponse);
 
     // POST /{taskId}/log
     rpc AddLog(AddLogRequest) returns (AddLogResponse);
@@ -36,9 +27,6 @@ service TaskService {
 
     // GET /{taskId}
     rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
-
-    // DELETE /queue/{taskType}/{taskId}
-    rpc RemoveTaskFromQueue(RemoveTaskRequest) returns (RemoveTaskResponse);
 
     // GET /queue/sizes
     rpc GetQueueSizesForTasks(QueueSizesRequest) returns (QueueSizesResponse);
@@ -68,40 +56,12 @@ message BatchPollRequest {
     int32 timeout = 5;
 }
 
-message TasksInProgressRequest {
-    string task_type = 1;
-    string start_key = 2;
-    int32 count = 3;
-}
-
-message TasksInProgressResponse {
-    repeated conductor.proto.Task tasks = 1;
-}
-
-message PendingTaskRequest {
-    string workflow_id = 1;
-    string task_ref_name = 2;
-}
-
-message PendingTaskResponse {
-    conductor.proto.Task task = 1;
-}
-
 message UpdateTaskRequest {
     conductor.proto.TaskResult result = 1;
 }
 
 message UpdateTaskResponse {
     string task_id = 1;
-}
-
-message AckTaskRequest {
-    string task_id = 1;
-    string worker_id = 2;
-}
-
-message AckTaskResponse {
-    bool ack = 1;
 }
 
 message AddLogRequest {
@@ -126,13 +86,6 @@ message GetTaskRequest {
 message GetTaskResponse {
     conductor.proto.Task task = 1;
 }
-
-message RemoveTaskRequest {
-    string task_type = 1;
-    string task_id = 2;
-}
-
-message RemoveTaskResponse {}
 
 message QueueSizesRequest {
     repeated string task_types = 1;

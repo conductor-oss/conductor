@@ -69,17 +69,4 @@ public class EventResource {
         @RequestParam(value = "activeOnly", defaultValue = "true", required = false) boolean activeOnly) {
         return eventService.getEventHandlersForEvent(event, activeOnly);
     }
-
-    @GetMapping("/queues")
-    @Operation(summary = "Get registered queues")
-    public Map<String, ?> getEventQueues(
-        @RequestParam(value = "verbose", defaultValue = "false", required = false) boolean verbose) {
-        return eventService.getEventQueues(verbose);
-    }
-
-    @GetMapping("/queues/providers")
-    @Operation(summary = "Get registered queue providers")
-    public List<String> getEventQueueProviders() {
-        return eventService.getEventQueueProviders();
-    }
 }
