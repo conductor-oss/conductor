@@ -1228,7 +1228,7 @@ public class WorkflowExecutor {
                     } catch (Exception e) {
                         erroredTasks.add(task.getReferenceTaskName());
                         LOGGER.error("Error canceling system task:{}/{} in workflow: {}",
-                                workflowSystemTask.getName(), task.getTaskId(), workflow.getWorkflowId(), e);
+                                workflowSystemTask.getTaskType(), task.getTaskId(), workflow.getWorkflowId(), e);
                     }
                 }
                 executionDAOFacade.updateTask(task);
@@ -1394,7 +1394,7 @@ public class WorkflowExecutor {
             }
 
             if (workflow.getStatus().isTerminal()) {
-                LOGGER.info("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(), systemTask.getName(),
+                LOGGER.info("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(), systemTask.getTaskType(),
                         task.getTaskId());
                 if (!task.getStatus().isTerminal()) {
                     task.setStatus(CANCELED);

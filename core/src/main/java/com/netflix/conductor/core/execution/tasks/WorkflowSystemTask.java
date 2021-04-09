@@ -21,10 +21,10 @@ import java.util.Optional;
 
 public abstract class WorkflowSystemTask {
 
-    private final String name;
+    private final String taskType;
 
-    public WorkflowSystemTask(String name) {
-        this.name = name;
+    public WorkflowSystemTask(String taskType) {
+        this.taskType = taskType;
     }
 
     /**
@@ -55,8 +55,7 @@ public abstract class WorkflowSystemTask {
      * @param task             Instance of the Task
      * @param workflowExecutor Workflow Executor
      */
-    public void cancel(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
-    }
+    public void cancel(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {}
 
     /**
      * @return True if the task is supposed to be started asynchronously using internal queues.
@@ -83,12 +82,12 @@ public abstract class WorkflowSystemTask {
     /**
      * @return name of the system task
      */
-    public String getName() {
-        return name;
+    public String getTaskType() {
+        return taskType;
     }
 
     @Override
     public String toString() {
-        return name;
+        return taskType;
     }
 }

@@ -93,10 +93,10 @@ public class WorkflowMonitor {
                         .stream()
                         .filter(WorkflowSystemTask::isAsync)
                         .forEach(workflowSystemTask -> {
-                            long size = queueDAO.getSize(workflowSystemTask.getName());
-                            long inProgressCount = executionDAOFacade.getInProgressTaskCount(workflowSystemTask.getName());
-                            Monitors.recordQueueDepth(workflowSystemTask.getName(), size, "system");
-                            Monitors.recordTaskInProgress(workflowSystemTask.getName(), inProgressCount, "system");
+                            long size = queueDAO.getSize(workflowSystemTask.getTaskType());
+                            long inProgressCount = executionDAOFacade.getInProgressTaskCount(workflowSystemTask.getTaskType());
+                            Monitors.recordQueueDepth(workflowSystemTask.getTaskType(), size, "system");
+                            Monitors.recordTaskInProgress(workflowSystemTask.getTaskType(), inProgressCount, "system");
                         });
 
                 refreshCounter--;

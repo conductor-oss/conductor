@@ -33,7 +33,7 @@ public class SystemTaskRegistry {
     private final Map<String, WorkflowSystemTask> registry;
 
     public SystemTaskRegistry(Set<WorkflowSystemTask> tasks) {
-        this.registry = tasks.stream().collect(Collectors.toMap(WorkflowSystemTask::getName, Function.identity()));
+        this.registry = tasks.stream().collect(Collectors.toMap(WorkflowSystemTask::getTaskType, Function.identity()));
     }
 
     public WorkflowSystemTask get(String taskType) {

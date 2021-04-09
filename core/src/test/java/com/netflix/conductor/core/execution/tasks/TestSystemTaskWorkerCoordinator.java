@@ -76,7 +76,7 @@ public class TestSystemTaskWorkerCoordinator {
 
     private void createTaskMapping() {
         WorkflowSystemTask mockWorkflowTask = mock(WorkflowSystemTask.class);
-        when(mockWorkflowTask.getName()).thenReturn(TEST_QUEUE);
+        when(mockWorkflowTask.getTaskType()).thenReturn(TEST_QUEUE);
         when(mockWorkflowTask.isAsync()).thenReturn(true);
         SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.put(TEST_QUEUE, mockWorkflowTask);
     }

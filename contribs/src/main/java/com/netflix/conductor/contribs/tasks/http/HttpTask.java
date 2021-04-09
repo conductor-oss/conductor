@@ -23,6 +23,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -62,6 +63,7 @@ public class HttpTask extends WorkflowSystemTask {
     protected RestTemplateProvider restTemplateProvider;
     private final String requestParameter;
 
+    @Autowired
     public HttpTask(RestTemplateProvider restTemplateProvider,
                     ObjectMapper objectMapper) {
         this(TASK_TYPE_HTTP, restTemplateProvider, objectMapper);
@@ -74,7 +76,7 @@ public class HttpTask extends WorkflowSystemTask {
         this.restTemplateProvider = restTemplateProvider;
         this.objectMapper = objectMapper;
         this.requestParameter = REQUEST_PARAMETER_NAME;
-        LOGGER.info("{} initialized...", getName());
+        LOGGER.info("{} initialized...", getTaskType());
     }
 
     @Override
@@ -125,10 +127,10 @@ public class HttpTask extends WorkflowSystemTask {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to invoke {} task: {} - uri: {}, vipAddress: {} in workflow: {}", getName(), task.getTaskId(),
+            LOGGER.error("Failed to invoke {} task: {} - uri: {}, vipAddress: {} in workflow: {}", getTaskType(), task.getTaskId(),
                 input.getUri(), input.getVipAddress(), task.getWorkflowInstanceId(), e);
             task.setStatus(Status.FAILED);
-            task.setReasonForIncompletion("Failed to invoke " + getName() + " task due to: " + e.toString());
+            task.setReasonForIncompletion("Failed to invoke " + getTaskType() + " task due to: " + e);
             task.getOutputData().put("response", e.toString());
         }
     }
