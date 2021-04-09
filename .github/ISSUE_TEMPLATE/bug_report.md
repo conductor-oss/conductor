@@ -1,16 +1,27 @@
 ---
-name: Bug Report
-about: Create a bug report
-title: 'bug: '
-labels: type: bug
+name: Bug report
+about: Create a report to help us improve
+title: "[BUG]: "
+labels: 'type: bug'
+assignees: ''
+
 ---
 
-Please read our [contributor guide](https://github.com/Netflix/conductor/blob/main/CONTRIBUTING.md) before creating an issue.
+**Describe the bug**
+A clear and concise description of what the bug is.
 
-## Expected behavior
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
-## Actual behavior
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-## Steps to reproduce
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
-_Note: A test case would be highly appreciated, but we understand that's not always possible_ 
+**Additional context**
+Add any other context about the problem here.
