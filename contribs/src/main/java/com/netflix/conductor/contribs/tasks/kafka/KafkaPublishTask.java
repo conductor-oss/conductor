@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.contribs.tasks.kafka;
 
@@ -41,13 +41,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-@Component(KafkaPublishTask.NAME)
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_KAFKA_PUBLISH;
+
+@Component(TASK_TYPE_KAFKA_PUBLISH)
 public class KafkaPublishTask extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaPublishTask.class);
 
     static final String REQUEST_PARAMETER_NAME = "kafka_request";
-    public static final String NAME = "KAFKA_PUBLISH";
     private static final String MISSING_REQUEST =
         "Missing Kafka request. Task input MUST have a '" + REQUEST_PARAMETER_NAME
             + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
@@ -62,11 +63,11 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
     @Autowired
     public KafkaPublishTask(KafkaProducerManager clientManager, ObjectMapper objectMapper) {
-        super(NAME);
+        super(TASK_TYPE_KAFKA_PUBLISH);
         this.requestParameter = REQUEST_PARAMETER_NAME;
         this.producerManager = clientManager;
         this.objectMapper = objectMapper;
-        LOGGER.info("KafkaTask initialized...");
+        LOGGER.info("KafkaTask initialized.");
     }
 
     @Override

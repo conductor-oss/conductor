@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.common.metadata.tasks;
 
@@ -90,24 +90,24 @@ public class TaskDef extends Auditable {
     //	@ProtoField(id = 13)
     //	private Integer rateLimitPerSecond;
 
-        @ProtoField(id = 14)
+    @ProtoField(id = 14)
     private Integer rateLimitPerFrequency;
 
-        @ProtoField(id = 15)
+    @ProtoField(id = 15)
     private Integer rateLimitFrequencyInSeconds;
 
-        @ProtoField(id = 16)
+    @ProtoField(id = 16)
     private String isolationGroupId;
 
-        @ProtoField(id = 17)
+    @ProtoField(id = 17)
     private String executionNameSpace;
 
-        @ProtoField(id = 18)
+    @ProtoField(id = 18)
     @OwnerEmailMandatoryConstraint
     @Email(message = "ownerEmail should be valid email address")
     private String ownerEmail;
 
-        @ProtoField(id = 19)
+    @ProtoField(id = 19)
     @Min(value = 0, message = "TaskDef pollTimeoutSeconds: {value} must be >= 0")
     private Integer pollTimeoutSeconds;
 
@@ -131,7 +131,7 @@ public class TaskDef extends Auditable {
     }
 
     public TaskDef(String name, String description, String ownerEmail, int retryCount,
-        long timeoutSeconds, long responseTimeoutSeconds) {
+                   long timeoutSeconds, long responseTimeoutSeconds) {
         this.name = name;
         this.description = description;
         this.ownerEmail = ownerEmail;
@@ -411,29 +411,29 @@ public class TaskDef extends Auditable {
         }
         TaskDef taskDef = (TaskDef) o;
         return getRetryCount() == taskDef.getRetryCount() &&
-            getTimeoutSeconds() == taskDef.getTimeoutSeconds() &&
-            getRetryDelaySeconds() == taskDef.getRetryDelaySeconds() &&
-            getResponseTimeoutSeconds() == taskDef.getResponseTimeoutSeconds() &&
-            Objects.equals(getName(), taskDef.getName()) &&
-            Objects.equals(getDescription(), taskDef.getDescription()) &&
-            Objects.equals(getInputKeys(), taskDef.getInputKeys()) &&
-            Objects.equals(getOutputKeys(), taskDef.getOutputKeys()) &&
-            getTimeoutPolicy() == taskDef.getTimeoutPolicy() &&
-            getRetryLogic() == taskDef.getRetryLogic() &&
-            Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
-            Objects.equals(getRateLimitPerFrequency(), taskDef.getRateLimitPerFrequency()) &&
-            Objects.equals(getInputTemplate(), taskDef.getInputTemplate()) &&
-            Objects.equals(getIsolationGroupId(), taskDef.getIsolationGroupId()) &&
-            Objects.equals(getExecutionNameSpace(), taskDef.getExecutionNameSpace()) &&
-            Objects.equals(getOwnerEmail(), taskDef.getOwnerEmail());
+                getTimeoutSeconds() == taskDef.getTimeoutSeconds() &&
+                getRetryDelaySeconds() == taskDef.getRetryDelaySeconds() &&
+                getResponseTimeoutSeconds() == taskDef.getResponseTimeoutSeconds() &&
+                Objects.equals(getName(), taskDef.getName()) &&
+                Objects.equals(getDescription(), taskDef.getDescription()) &&
+                Objects.equals(getInputKeys(), taskDef.getInputKeys()) &&
+                Objects.equals(getOutputKeys(), taskDef.getOutputKeys()) &&
+                getTimeoutPolicy() == taskDef.getTimeoutPolicy() &&
+                getRetryLogic() == taskDef.getRetryLogic() &&
+                Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
+                Objects.equals(getRateLimitPerFrequency(), taskDef.getRateLimitPerFrequency()) &&
+                Objects.equals(getInputTemplate(), taskDef.getInputTemplate()) &&
+                Objects.equals(getIsolationGroupId(), taskDef.getIsolationGroupId()) &&
+                Objects.equals(getExecutionNameSpace(), taskDef.getExecutionNameSpace()) &&
+                Objects.equals(getOwnerEmail(), taskDef.getOwnerEmail());
     }
 
     @Override
     public int hashCode() {
 
         return Objects.hash(getName(), getDescription(), getRetryCount(), getTimeoutSeconds(), getInputKeys(),
-            getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
-            getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate(),
-            getIsolationGroupId(), getExecutionNameSpace(), getOwnerEmail());
+                getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
+                getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate(),
+                getIsolationGroupId(), getExecutionNameSpace(), getOwnerEmail());
     }
 }

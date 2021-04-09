@@ -25,6 +25,8 @@ import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -128,11 +130,11 @@ public class TestWorkflowRepairService {
     @Test
     public void assertSyncSystemTasksAreNotCheckedAgainstQueue() {
         // Return a Decision object to init WorkflowSystemTask registry.
-        when(systemTaskRegistry.get(Decision.NAME)).thenReturn(new Decision());
-        when(systemTaskRegistry.isSystemTask(Decision.NAME)).thenReturn(true);
+        when(systemTaskRegistry.get(TASK_TYPE_DECISION)).thenReturn(new Decision());
+        when(systemTaskRegistry.isSystemTask(TASK_TYPE_DECISION)).thenReturn(true);
 
         Task task = new Task();
-        task.setTaskType(Decision.NAME);
+        task.setTaskType(TASK_TYPE_DECISION);
         task.setStatus(Task.Status.SCHEDULED);
 
         assertFalse(workflowRepairService.verifyAndRepairTask(task));
@@ -145,13 +147,13 @@ public class TestWorkflowRepairService {
     @Test
     public void assertAsyncCompleteSystemTasksAreNotCheckedAgainstQueue() {
         Task task = new Task();
-        task.setTaskType(SubWorkflow.NAME);
+        task.setTaskType(TASK_TYPE_SUB_WORKFLOW);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
         WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
-        when(systemTaskRegistry.get(SubWorkflow.NAME)).thenReturn(workflowSystemTask);
+        when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
 
         assertTrue(workflowSystemTask.isAsyncComplete(task));
 

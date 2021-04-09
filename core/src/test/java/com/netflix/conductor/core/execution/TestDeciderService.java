@@ -40,7 +40,6 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
-import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -83,6 +82,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
 import static org.junit.Assert.assertEquals;
@@ -1053,9 +1053,9 @@ public class TestDeciderService {
     public void testUpdateWorkflowOutput_WhenWorkflowHasTerminateTask() {
         Workflow workflow = new Workflow();
         Task task = new Task();
-        task.setTaskType(Terminate.NAME);
+        task.setTaskType(TASK_TYPE_TERMINATE);
         task.setStatus(Status.COMPLETED);
-        task.setOutputData(new HashMap() {{
+        task.setOutputData(new HashMap<String, Object>() {{
             put("taskKey", "taskValue");
         }});
         workflow.getTasks().add(task);

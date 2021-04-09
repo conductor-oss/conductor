@@ -1,27 +1,28 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.tasks;
-
-import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.COMPLETED;
-import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import org.springframework.stereotype.Component;
+
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.COMPLETED;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
 
 /**
  * Task that can terminate a workflow with a given status and modify the workflow's output with a given parameter, it
@@ -50,16 +51,14 @@ import org.springframework.stereotype.Component;
  * This task has some validations on creation and execution, they are: - the "terminationStatus" parameter is mandatory
  * and it can only receive the values "COMPLETED" or "FAILED" - the terminate task cannot be optional
  */
-@Component(Terminate.NAME)
+@Component(TASK_TYPE_TERMINATE)
 public class Terminate extends WorkflowSystemTask {
 
     private static final String TERMINATION_STATUS_PARAMETER = "terminationStatus";
     private static final String TERMINATION_WORKFLOW_OUTPUT = "workflowOutput";
-    public static final String NAME = "TERMINATE";
 
-    @Autowired
     public Terminate() {
-        super(NAME);
+        super(TASK_TYPE_TERMINATE);
     }
 
     @Override

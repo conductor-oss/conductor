@@ -93,6 +93,9 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.LAMBDA;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_LAMBDA;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
 import static java.util.Comparator.comparingInt;
@@ -131,17 +134,17 @@ public class TestWorkflowExecutor {
     @Configuration
     public static class TestConfiguration {
 
-        @Bean(SubWorkflow.NAME)
+        @Bean(TASK_TYPE_SUB_WORKFLOW)
         public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
             return new SubWorkflow(objectMapper);
         }
 
-        @Bean(Lambda.NAME)
+        @Bean(TASK_TYPE_LAMBDA)
         public Lambda lambda() {
             return new Lambda();
         }
 
-        @Bean(Wait.NAME)
+        @Bean(TASK_TYPE_WAIT)
         public Wait waitBean() {
             return new Wait();
         }
@@ -254,7 +257,7 @@ public class TestWorkflowExecutor {
         task1.setWorkflowTask(taskToSchedule);
 
         Task task2 = new Task();
-        task2.setTaskType(Wait.NAME);
+        task2.setTaskType(TASK_TYPE_WAIT);
         task2.setTaskDefName(taskToSchedule.getName());
         task2.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         task2.setWorkflowInstanceId(workflow.getWorkflowId());

@@ -1,21 +1,20 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.validations;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -27,6 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Optional;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
 import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
@@ -90,7 +90,7 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_DO_WHILE:
                     valid = isDoWhileTaskValid(workflowTask, context);
                     break;
-                case TaskType.TASK_TYPE_SUB_WORKFLOW:
+                case TASK_TYPE_SUB_WORKFLOW:
                     valid = isSubWorkflowTaskValid(workflowTask, context);
                     break;
                 case TaskType.TASK_TYPE_JSON_JQ_TRANSFORM:
@@ -151,7 +151,7 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
-            if (workflowTask.collectTasks().stream().anyMatch(t -> t.getType().equals(SubWorkflow.NAME))) {
+            if (workflowTask.collectTasks().stream().anyMatch(t -> t.getType().equals(TASK_TYPE_SUB_WORKFLOW))) {
                 String message = String
                     .format("SUB_WORKFLOW task inside loopover task: %s is not supported.", workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();

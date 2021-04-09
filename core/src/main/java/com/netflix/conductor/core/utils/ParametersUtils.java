@@ -45,8 +45,7 @@ public class ParametersUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParametersUtils.class);
 
     private final ObjectMapper objectMapper;
-    private final TypeReference<Map<String, Object>> map = new TypeReference<Map<String, Object>>() {
-    };
+    private final TypeReference<Map<String, Object>> map = new TypeReference<Map<String, Object>>() {};
 
     public ParametersUtils(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;

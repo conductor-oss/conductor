@@ -35,7 +35,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
-import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -1717,7 +1716,7 @@ public class WorkflowExecutor {
         // If not found look into sub workflows
         if (rerunFromTask == null) {
             for (Task task : workflow.getTasks()) {
-                if (task.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
+                if (task.getTaskType().equalsIgnoreCase(TASK_TYPE_SUB_WORKFLOW)) {
                     String subWorkflowId = task.getSubWorkflowId();
                     if (rerunWF(subWorkflowId, taskId, taskInput, null, null)) {
                         rerunFromTask = task;
@@ -1760,7 +1759,7 @@ public class WorkflowExecutor {
             rerunFromTask.setRetried(false);
             rerunFromTask.setExecuted(false);
             rerunFromTask.setExternalOutputPayloadStoragePath(null);
-            if (rerunFromTask.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
+            if (rerunFromTask.getTaskType().equalsIgnoreCase(TASK_TYPE_SUB_WORKFLOW)) {
                 // if task is sub workflow set task as IN_PROGRESS and reset start time
                 rerunFromTask.setStatus(IN_PROGRESS);
                 rerunFromTask.setStartTime(System.currentTimeMillis());
@@ -1812,7 +1811,7 @@ public class WorkflowExecutor {
     }
 
     private void executeSubworkflowTaskAndSyncData(Workflow subWorkflow, Task subWorkflowTask) {
-        WorkflowSystemTask subWorkflowSystemTask = systemTaskRegistry.get(SubWorkflow.NAME);
+        WorkflowSystemTask subWorkflowSystemTask = systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW);
         subWorkflowSystemTask.execute(subWorkflow, subWorkflowTask, this);
         // Keep Subworkflow task's data consistent with Subworkflow's.
         if (subWorkflowTask.getStatus().isTerminal() && subWorkflowTask.getExternalOutputPayloadStoragePath() != null

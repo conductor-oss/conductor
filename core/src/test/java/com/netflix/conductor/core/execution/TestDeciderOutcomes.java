@@ -71,6 +71,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
@@ -99,12 +100,12 @@ public class TestDeciderOutcomes {
     @Configuration
     public static class TestConfiguration {
 
-        @Bean(Decision.NAME)
+        @Bean(TASK_TYPE_DECISION)
         public Decision decision() {
             return new Decision();
         }
 
-        @Bean(Join.NAME)
+        @Bean(TASK_TYPE_JOIN)
         public Join join() {
             return new Join();
         }

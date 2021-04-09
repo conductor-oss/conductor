@@ -23,7 +23,6 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -40,10 +39,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HTTP;
+
 /**
  * Task that enables calling another HTTP endpoint as part of its execution
  */
-@Component(HttpTask.NAME)
+@Component(TASK_TYPE_HTTP)
 public class HttpTask extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpTask.class);
@@ -53,8 +54,6 @@ public class HttpTask extends WorkflowSystemTask {
     static final String MISSING_REQUEST = "Missing HTTP request. Task input MUST have a '" + REQUEST_PARAMETER_NAME
         + "' key with HttpTask.Input as value. See documentation for HttpTask for required input parameters";
 
-    public static final String NAME = "HTTP";
-
     private final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<Map<String, Object>>() {
     };
     private final TypeReference<List<Object>> listOfObj = new TypeReference<List<Object>>() {
@@ -63,10 +62,9 @@ public class HttpTask extends WorkflowSystemTask {
     protected RestTemplateProvider restTemplateProvider;
     private final String requestParameter;
 
-    @Autowired
     public HttpTask(RestTemplateProvider restTemplateProvider,
                     ObjectMapper objectMapper) {
-        this(NAME, restTemplateProvider, objectMapper);
+        this(TASK_TYPE_HTTP, restTemplateProvider, objectMapper);
     }
 
     public HttpTask(String name,

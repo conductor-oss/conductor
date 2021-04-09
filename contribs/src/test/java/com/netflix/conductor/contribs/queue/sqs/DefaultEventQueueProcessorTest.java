@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
@@ -18,10 +18,9 @@ import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
-import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.service.ExecutionService;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -38,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -91,7 +91,7 @@ public class DefaultEventQueueProcessorTest {
         task0.setStatus(Status.IN_PROGRESS);
         task0.setTaskId("t0");
         task0.setReferenceTaskName("t0");
-        task0.setTaskType(Wait.NAME);
+        task0.setTaskType(TASK_TYPE_WAIT);
         Workflow workflow0 = new Workflow();
         workflow0.setWorkflowId("v_0");
         workflow0.getTasks().add(task0);
@@ -99,7 +99,7 @@ public class DefaultEventQueueProcessorTest {
         Task task2 = new Task();
         task2.setStatus(Status.IN_PROGRESS);
         task2.setTaskId("t2");
-        task2.setTaskType(Wait.NAME);
+        task2.setTaskType(TASK_TYPE_WAIT);
         Workflow workflow2 = new Workflow();
         workflow2.setWorkflowId("v_2");
         workflow2.getTasks().add(task2);

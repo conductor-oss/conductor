@@ -1,14 +1,14 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ *  Copyright 2021 Netflix, Inc.
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *   the License. You may obtain a copy of the License at
- *   <p>
- *   http://www.apache.org/licenses/LICENSE-2.0
- *   <p>
- *   Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *   an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *   specific language governing permissions and limitations under the License.
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.tasks;
 
@@ -23,24 +23,22 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component(SubWorkflow.NAME)
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+
+@Component(TASK_TYPE_SUB_WORKFLOW)
 public class SubWorkflow extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SubWorkflow.class);
     private static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
-    public static final String NAME = "SUB_WORKFLOW";
-
     private final ObjectMapper objectMapper;
 
-    @Autowired
     public SubWorkflow(ObjectMapper objectMapper) {
-        super(NAME);
+        super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
     }
 

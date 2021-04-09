@@ -19,7 +19,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 import java.util.Optional;
 
-public class WorkflowSystemTask {
+public abstract class WorkflowSystemTask {
 
     private final String name;
 
