@@ -61,6 +61,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
@@ -111,8 +112,8 @@ public class TestDeciderOutcomes {
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Map<String, WorkflowSystemTask> beanFactory) {
-            return new SystemTaskRegistry(beanFactory);
+        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
+            return new SystemTaskRegistry(tasks);
         }
 
     }

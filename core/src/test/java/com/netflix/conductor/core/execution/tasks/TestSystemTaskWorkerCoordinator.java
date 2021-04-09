@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.Collections;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -52,7 +53,7 @@ public class TestSystemTaskWorkerCoordinator {
     public void isSystemTask() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, properties, executionService, null);
+            workflowExecutor, properties, executionService, Collections.emptyList());
         assertTrue(systemTaskWorkerCoordinator.isAsyncSystemTask(TEST_QUEUE + ISOLATION_CONSTANT));
     }
 
@@ -60,7 +61,7 @@ public class TestSystemTaskWorkerCoordinator {
     public void isSystemTaskNotPresent() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, properties, executionService, null);
+            workflowExecutor, properties, executionService, Collections.emptyList());
         assertFalse(systemTaskWorkerCoordinator.isAsyncSystemTask(null));
     }
 
@@ -68,7 +69,7 @@ public class TestSystemTaskWorkerCoordinator {
     public void testIsFromCoordinatorExecutionNameSpace() {
         doReturn("exeNS").when(properties).getSystemTaskWorkerExecutionNamespace();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, properties, executionService, null);
+            workflowExecutor, properties, executionService, Collections.emptyList());
         assertTrue(
             systemTaskWorkerCoordinator.isFromCoordinatorExecutionNameSpace(TEST_QUEUE + EXECUTION_NAMESPACE_CONSTANT));
     }
@@ -77,6 +78,6 @@ public class TestSystemTaskWorkerCoordinator {
         WorkflowSystemTask mockWorkflowTask = mock(WorkflowSystemTask.class);
         when(mockWorkflowTask.getName()).thenReturn(TEST_QUEUE);
         when(mockWorkflowTask.isAsync()).thenReturn(true);
-//        SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.put(TEST_QUEUE, mockWorkflowTask);
+        SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.put(TEST_QUEUE, mockWorkflowTask);
     }
 }

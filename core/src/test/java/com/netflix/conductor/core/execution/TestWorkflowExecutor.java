@@ -78,6 +78,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -165,8 +166,8 @@ public class TestWorkflowExecutor {
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Map<String, WorkflowSystemTask> registry) {
-            return new SystemTaskRegistry(registry);
+        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
+            return new SystemTaskRegistry(tasks);
         }
     }
 

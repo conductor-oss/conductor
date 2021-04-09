@@ -16,8 +16,12 @@ package com.netflix.conductor.core.execution.tasks;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A container class that holds a mapping of system task types {@link com.netflix.conductor.common.metadata.tasks.TaskType} to
@@ -28,14 +32,8 @@ public class SystemTaskRegistry {
 
     private final Map<String, WorkflowSystemTask> registry;
 
-    /**
-     * Spring creates a map of bean names to {@link WorkflowSystemTask} instances and injects it.
-     * <p>
-     * NOTE: It is important the {@link WorkflowSystemTask} instances are "qualified" with their respective
-     * {@link com.netflix.conductor.common.metadata.tasks.TaskType}.
-     */
-    public SystemTaskRegistry(Map<String, WorkflowSystemTask> registry) {
-        this.registry = registry;
+    public SystemTaskRegistry(Set<WorkflowSystemTask> tasks) {
+        this.registry = tasks.stream().collect(Collectors.toMap(WorkflowSystemTask::getName, Function.identity()));
     }
 
     public WorkflowSystemTask get(String taskType) {
@@ -48,6 +46,6 @@ public class SystemTaskRegistry {
     }
 
     public Collection<WorkflowSystemTask> all() {
-        return registry.values();
+        return Collections.unmodifiableCollection(registry.values());
     }
 }
