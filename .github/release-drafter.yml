@@ -12,9 +12,9 @@ categories:
   - title: 'New'
     label: 'type: feature'
   - title: 'Bug Fixes'
-    labels:
-      - 'type: bug'
-      - 'type: maintenance'
+    label: 'type: bug'
+  - title: 'Refactor'
+    label: 'type: maintenance'
   - title: 'Documentation'
     label: 'type: docs'
   - title: 'Dependency Updates'
