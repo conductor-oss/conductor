@@ -34,30 +34,28 @@ Binaries are available from Maven Central.
 
 Below are the various artifacts published:
 
-|Artifact|Description|
-|-----------|---------------|
-|conductor-common|Common models used by various conductor modules|
-|conductor-core|Core Conductor module|
-|conductor-redis-persistence|Persistence using Redis/Dynomite|
-|conductor-cassandra-persistence|Persistence using Cassandra|
-|conductor-mysql-persistence|Persistence and queue using MySQL|
-|conductor-postgres-persistence|Persistence and queue using Postgres|
-|conductor-es6-persistence|Indexing using Elasticsearch 6.X|
-|conductor-rest|Spring MVC resources for the core services|
-|conductor-ui|node.js based UI for Conductor|
-|conductor-contribs|Optional contrib package that holds extended workflow tasks and support for SQS|
-|conductor-client|Java client for Conductor that includes helpers for running worker tasks|
-|conductor-server|Spring Boot Web Application|
-|conductor-test-harness|Used for building test harness and an in-memory kitchensink demo|
-
-## Building
-To build the server, use the following dependencies in your classpath:
-
-* conductor-common
-* conductor-core
-* conductor-redis-persistence (_unless using your own persistence module_)
-* conductor-es6-persistence (_unless using your own index module_)
-* conductor-contribs (_optional_)
+| Artifact | Description |
+| ----------- | --------------- |
+| conductor-common | Common models used by various conductor modules |
+| conductor-core | Core Conductor module |
+| conductor-redis-persistence | Persistence and queue using Redis/Dynomite |
+| conductor-cassandra-persistence | Persistence using Cassandra |
+| conductor-mysql-persistence | Persistence and queue using MySQL |
+| conductor-postgres-persistence | Persistence and queue using Postgres |
+| conductor-es6-persistence | Indexing using Elasticsearch 6.X |
+| conductor-rest | Spring MVC resources for the core services |
+| conductor-ui | node.js based UI for Conductor |
+| conductor-contribs | Optional contrib package that holds extended workflow tasks and support for SQS, AMQP, etc|
+| conductor-client | Java client for Conductor that includes helpers for running worker tasks |
+| conductor-client-spring | Client starter kit for Spring |
+| conductor-server | Spring Boot Web Application |
+| conductor-azureblob-storage | External payload storage implementation using AzureBlob |
+| conductor-redis-lock | Workflow execution lock implementation using Redis |
+| conductor-zookeeper-lock | Workflow execution lock implementation using Zookeeper |
+| conductor-grpc | Protobuf models used by the server and client |
+| conductor-grpc-client | gRPC server Application |
+| conductor-grpc-server | gRPC client to interact with the gRPC server |
+| conductor-test-harness | Integration and regression tests |
 
 ## Database Requirements
 
