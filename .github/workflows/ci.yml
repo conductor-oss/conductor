@@ -1,4 +1,4 @@
-name: Continuous Integration Workflow
+name: CI
 
 on: [ push, pull_request ]
 
