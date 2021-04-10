@@ -203,11 +203,11 @@ public class ParametersUtils {
     }
 
     private Object replaceVariables(String paramString, DocumentContext documentContext, String taskId) {
-        String[] values = paramString.split("(?=\\$\\{)|(?<=\\})");
+        String[] values = paramString.split("(?=(?<!\\$)\\$\\{)|(?<=\\})");
         Object[] convertedValues = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
             convertedValues[i] = values[i];
-            if (values != null && values[i].startsWith("${") && values[i].endsWith("}")) {
+            if (values[i].startsWith("${") && values[i].endsWith("}")) {
                 String paramPath = values[i].substring(2, values[i].length() - 1);
                 if (EnvUtils.isEnvironmentVariable(paramPath)) {
                     String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
@@ -218,12 +218,13 @@ public class ParametersUtils {
                 } else {
                     try {
                         convertedValues[i] = documentContext.read(paramPath);
-                    } catch (Exception e) {
+                    }catch (Exception e) {
                         LOGGER.warn("Error reading documentContext for paramPath: {}. Exception: {}", paramPath, e);
                         convertedValues[i] = null;
                     }
                 }
-
+            } else if (values[i].contains("$${")) {
+                convertedValues[i] = values[i].replaceAll("\\$\\$\\{", "\\${");
             }
         }
 

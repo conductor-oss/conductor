@@ -84,6 +84,9 @@ __${SOURCE.input/output.JSONPath}__
 !!! note "JSON Path Support"
 	Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses Java implementation from [here](https://github.com/jayway/JsonPath).
 
+!!! note "Escaping expressions"
+	To escape an expression, prefix it with an extra _$_ character (ex.: ```$${workflow.input...}```).
+
 **Example**
 
 Consider a task with input configured to use input/output parameters from workflow and a task named __loc_task__.

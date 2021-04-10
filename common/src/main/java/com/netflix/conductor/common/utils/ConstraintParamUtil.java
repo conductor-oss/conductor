@@ -15,12 +15,11 @@ package com.netflix.conductor.common.utils;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.EnvUtils.SystemParameters;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.apache.commons.lang3.StringUtils;
 
 @SuppressWarnings("unchecked")
 public class ConstraintParamUtil {
@@ -78,11 +77,11 @@ public class ConstraintParamUtil {
             return errorList;
         }
 
-        String[] values = value.split("(?=\\$\\{)|(?<=\\})");
+        String[] values = value.split("(?=(?<!\\$)\\$\\{)|(?<=\\})");
 
-        for (int i = 0; i < values.length; i++) {
-            if (values[i].startsWith("${") && values[i].endsWith("}")) {
-                String paramPath = values[i].substring(2, values[i].length() - 1);
+        for (String s : values) {
+            if (s.startsWith("${") && s.endsWith("}")) {
+                String paramPath = s.substring(2, s.length() - 1);
 
                 if (StringUtils.containsWhitespace(paramPath)) {
                     String message = String.format("key: %s input parameter value: %s is not valid",
