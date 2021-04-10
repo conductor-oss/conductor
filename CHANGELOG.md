@@ -1,31 +1,36 @@
-DynoQueueDAO - removed deprecated Constructors int getLongPollTimeoutInMS() - removed deprecated Worker method in client
+Conductor has been upgraded to use the SpringBoot framework.
 
-workflow.sqs.event.queue.enabled workflow.amqp.event.queue.enabled workflow.nats.event.queue.enabled
-workflow.nats_stream.event.queue.enabled
+## Removals/Deprecations
+- Removed support for EmbeddedElasticSearch
+- Removed deprecated constructors in DynoQueueDAO
+- Removed deprecated methods in the Worker interface
+- Removed OAuth Support in HTTP task (Looking for contributions for OAuth/OAuth2.0)
+- Removed deprecated fields and methods in the Workflow object
+- Removed deprecated fields and methods in the Task object
+- Removed deprecated fields and methods in the WorkflowTask object
 
-workflow.executor.service.max.threads=50(default)
+Removed APIs:
+- GET /tasks/in_progress/{tasktype}
+- GET /tasks/in_progress/{workflowId}/{taskRefName}
+- POST /tasks/{taskId}/ack
+- POST /tasks/queue/requeue
+- DELETE /queue/{taskType}/{taskId}
 
-workflow.events.default.queue.type=sqs (default)/amqp
 
-(Fixed) workflow.listener.queue.prefix
+- GET /event/queues
+- GET /event/queues/providers
 
-workflow.status.listener.type=stub(default)/archive/queue_publisher
 
-conductor.metrics-logger.enabled
+- void restart(String) in workflow client
+- List<Task> getPendingTasksByType(String, String, Integer) in task client
+- Task getPendingTaskForWorkflow(String, String) in task client
+- boolean preAck(Task) in Worker
+- int getPollCount() in Worker
 
-conductor.metrics-prometheus.enabled
+## What's changed
+Changes to configurations:
 
-HTTP task - removed OAuth support (Create a task for OAuth2 support)
-
-Removed deprecated API - /queue/requeue from /tasks
-
-Upgraded protobuf-java to 3.13.0 Upgraded grpc-protobuf to 1.33.+ Renamed DynoProxy to JedisProxy Removed support for
-EmbeddedElasticSearch
-
-Ignored a flaky test class - LocalOnlyLockTest. Test Harness module uses TestContainers for MySql,Postgres &
-Elasticsearch
-
-Modified properties in the `azureblob-storage` module:
+`azureblob-storage` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -39,7 +44,7 @@ Modified properties in the `azureblob-storage` module:
 | workflow.external.payload.storage.azure_blob.task_input_path | conductor.external-payload-storage.azureblob.taskInputPath | task/input/ |
 | workflow.external.payload.storage.azure_blob.task_output_path | conductor.external-payload-storage.azureblob.taskOutputPath | task/output/ |
 
-Modified properties in the `cassandra-persistence` module:
+`cassandra-persistence` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -57,7 +62,7 @@ Modified properties in the `cassandra-persistence` module:
 | conductor.eventhandler.cache.refresh.time.seconds | conductor.cassandra.eventHandlerCacheRefreshInterval | 60s |
 | workflow.event.execution.persistence.ttl.seconds | conductor.cassandra.eventExecutionPersistenceTTL | 0s |
 
-Modified properties in the `contribs` module:
+`contribs` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -111,7 +116,7 @@ Modified properties in the `contribs` module:
 | kafka.publish.producer.cache.size | conductor.tasks.kafka-publish.cacheSize | 10 |
 | kafka.publish.producer.cache.time.ms | conductor.tasks.kafka-publish.cacheTime | 120000ms |
 
-Modified properties in the `core` module:
+`core` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -164,7 +169,7 @@ Modified properties in the `core` module:
 | workflow.monitor.metadata.refresh.counter | conductor.workflow-monitor.metadataRefreshInterval | 10 |
 | workflow.monitor.stats.freq.seconds | conductor.workflow-monitor.statsFrequency | 60s |
 
-Modified properties in the `es6-persistence` module:
+`es6-persistence` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -185,14 +190,14 @@ Modified properties in the `es6-persistence` module:
 | workflow.elasticsearch.auto.index.management.enabled | conductor.elasticsearch.autoIndexManagementEnabled | true |
 | workflow.elasticsearch.document.type.override | conductor.elasticsearch.documentTypeOverride | "" |
 
-Modified properties in the `grpc-server` module:
+`grpc-server` module:
 
 | Old | New | Default |
 | --- | --- | --- |
 | conductor.grpc.server.port | conductor.grpc-server.port | 8090 |
 | conductor.grpc.server.reflectionEnabled | conductor.grpc-server.reflectionEnabled | true |
 
-Modified properties in the `mysql-persistence` module:
+`mysql-persistence` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -210,7 +215,7 @@ Modified properties in the `mysql-persistence` module:
 | conductor.mysql.autocommit | conductor.mysql.autoCommit | false |
 | conductor.taskdef.cache.refresh.time.seconds | conductor.mysql.taskDefCacheRefreshInterval | 60s |
 
-Modified properties in the `postgres-persistence` module:
+`postgres-persistence` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -228,7 +233,7 @@ Modified properties in the `postgres-persistence` module:
 | conductor.postgres.autocommit | conductor.postgres.autoCommit | false |
 | conductor.taskdef.cache.refresh.time.seconds | conductor.postgres.taskDefCacheRefreshInterval | 60s |
 
-Modified properties in the `redis-lock` module:
+`redis-lock` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -239,7 +244,7 @@ Modified properties in the `redis-lock` module:
 | workflow.decider.locking.namespace | conductor.redis-lock.namespace | "" |
 | workflow.decider.locking.exceptions.ignore | conductor.redis-lock.ignoreLockingExceptions | false |
 
-Modified properties in the `redis-persistence` module:
+`redis-persistence` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -257,7 +262,7 @@ Modified properties in the `redis-persistence` module:
 | conductor.taskdef.cache.refresh.time.seconds | conductor.redis.taskDefCacheRefreshInterval | 60s |
 | workflow.event.execution.persistence.ttl.seconds | conductor.redis.eventExecutionPersistenceTTL | 60s |
 
-Modified properties in the `zookeeper-lock` module:
+`zookeeper-lock` module:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -266,7 +271,7 @@ Modified properties in the `zookeeper-lock` module:
 | workflow.zookeeper.lock.connectionTimeoutMs | conductor.zookeeper-lock.connectionTimeout | 15000ms |
 | workflow.decider.locking.namespace | conductor.zookeeper-lock.namespace | "" |
 
-Modified properties that are used for configuring components:
+Component configuration:
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -286,3 +291,6 @@ Modified properties that are used for configuring components:
 | workflow.amqp.event.queue.enabled | conductor.event-queues.amqp.enabled | false |
 | workflow.nats.event.queue.enabled | conductor.event-queues.nats.enabled | false |
 | workflow.nats_stream.event.queue.enabled | conductor.event-queues.nats-stream.enabled | false |
+|  |  |  |
+| - | conductor.metrics-logger.enabled | false |
+| - | conductor.metrics-prometheus.enabled | false |

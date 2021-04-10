@@ -12,7 +12,6 @@ ext {
     revCommonsIo = '2.7'
     revCuratorRecipes = '2.4.0'
     revCuratorTest = '2.4.0'
-    revDockerCompose = '0.13.4'
     revDynoQueues = '2.0.20'
     revElasticSearch6 = '6.8.12'
     revEmbeddedRedis = '0.6'
