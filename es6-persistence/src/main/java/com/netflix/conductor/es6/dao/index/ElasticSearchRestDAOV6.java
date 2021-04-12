@@ -835,6 +835,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         searchSourceBuilder.query(queryBuilder);
         searchSourceBuilder.from(start);
         searchSourceBuilder.size(size);
+        searchSourceBuilder.fetchSource(false);
 
         if (sortOptions != null && !sortOptions.isEmpty()) {
 

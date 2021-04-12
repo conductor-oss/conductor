@@ -41,13 +41,15 @@ abstract class AbstractSpecification extends Specification {
     WorkflowTestUtil workflowTestUtil
 
     @Autowired
-    WorkflowSweeper workflowSweeper
+    Optional<WorkflowSweeper> workflowSweeper
 
     def cleanup() {
         workflowTestUtil.clearWorkflows()
     }
 
     void sweep(String workflowId) {
-        workflowSweeper.sweep(workflowId)
+        if (workflowSweeper.isPresent()) {
+            workflowSweeper.get().sweep(workflowId)
+        }
     }
 }

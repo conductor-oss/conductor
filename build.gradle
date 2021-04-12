@@ -92,6 +92,11 @@ allprojects {
 
     test {
         useJUnitPlatform()
+        testLogging {
+            events = ["SKIPPED", "FAILED"]
+            exceptionFormat = "full"
+            showStandardStreams = false
+        }
     }
 }
 

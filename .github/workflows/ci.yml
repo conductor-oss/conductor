@@ -28,14 +28,25 @@ jobs:
         if: github.ref != 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }} in ${{ github.head_ref }}"
-          ./gradlew build --stacktrace
+          ./gradlew build
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
             echo "Running build for commit ${{ github.sha }}"
-            ./gradlew build snapshot --stacktrace
+            ./gradlew build snapshot
         env:
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
           NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
           NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          comment_on_pr: false
+          files: './**/**/test-results/**/*.xml'
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: '**/build/reports'
