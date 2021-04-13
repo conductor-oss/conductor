@@ -18,6 +18,13 @@
       "sourceType": "com.netflix.conductor.core.execution.WorkflowRepairService"
     },
     {
+      "name": "conductor.system-task-workers.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Configuration to enable SystemTaskWorkerCoordinator, that polls and executes the asynchronous system tasks.",
+      "sourceType": "com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator",
+      "defaultValue": true
+    },
+    {
       "name": "conductor.app.isolated-system-task-enabled",
       "type": "java.lang.Boolean",
       "description": "Used to enable/disable use of isolation groups for system task workers."
