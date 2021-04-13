@@ -19,6 +19,19 @@ plugins {
     id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
+/*
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
@@ -37,8 +50,8 @@ allprojects {
     apply plugin: 'java-library'
     apply plugin: 'project-report'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     group = 'com.netflix.conductor'
 
@@ -96,6 +109,15 @@ allprojects {
             events = ["SKIPPED", "FAILED"]
             exceptionFormat = "full"
             showStandardStreams = false
+        }
+    }
+}
+
+// all client and their related modules are published with Java 8 compatibility
+["common", "client", "client-spring", "grpc", "grpc-client"].each {
+    project(":conductor-$it") {
+        compileJava {
+            options.release = 8
         }
     }
 }
