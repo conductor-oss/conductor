@@ -49,6 +49,12 @@ public class ConductorProperties {
     private Duration workflowOffsetTimeout = Duration.ofSeconds(30);
 
     /**
+     * The lease duration to use when a workflow is popped from the decider queue.
+     */
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration workflowLeaseDuration = Duration.ofMinutes(5);
+
+    /**
      * The number of threads to use to do background sweep on active workflows.
      */
     private int sweeperThreadCount = Runtime.getRuntime().availableProcessors() * 2;
@@ -534,6 +540,14 @@ public class ConductorProperties {
 
     public void setMaxWorkflowVariablesPayloadSizeThreshold(DataSize maxWorkflowVariablesPayloadSizeThreshold) {
         this.maxWorkflowVariablesPayloadSizeThreshold = maxWorkflowVariablesPayloadSizeThreshold;
+    }
+
+    public Duration getWorkflowLeaseDuration() {
+        return workflowLeaseDuration;
+    }
+
+    public void setWorkflowLeaseDuration(Duration workflowLeaseDuration) {
+        this.workflowLeaseDuration = workflowLeaseDuration;
     }
 
     /**

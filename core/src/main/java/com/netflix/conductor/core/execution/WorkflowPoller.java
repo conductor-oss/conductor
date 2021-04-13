@@ -52,7 +52,7 @@ public class WorkflowPoller extends LifecycleAwareComponent {
                 LOGGER.debug("Component stopped, skip workflow sweep");
             } else {
                 List<String> workflowIds = queueDAO.pop(DECIDER_QUEUE,
-                    properties.getSweeperThreadCount(), 2000);
+                    properties.getSweeperThreadCount(), 2000, properties.getWorkflowLeaseDuration().getSeconds());
                 if (workflowIds != null) {
                     // wait for all workflow ids to be "swept"
                     CompletableFuture.allOf(workflowIds
