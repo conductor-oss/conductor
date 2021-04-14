@@ -15,12 +15,13 @@ package com.netflix.conductor.mysql.config;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.util.concurrent.ThreadFactory;
-import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.util.concurrent.ThreadFactory;
 
 public class MySQLDataSourceProvider {
 
@@ -62,9 +63,9 @@ public class MySQLDataSourceProvider {
         hikariConfig.setAutoCommit(properties.isAutoCommit());
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("hikari-mysql-%d")
-            .build();
+                .setDaemon(true)
+                .setNameFormat("hikari-mysql-%d")
+                .build();
 
         hikariConfig.setThreadFactory(threadFactory);
         return hikariConfig;
@@ -78,16 +79,15 @@ public class MySQLDataSourceProvider {
             return;
         }
 
+        String flywayTable = properties.getFlywayTable();
+        LOGGER.debug("Using Flyway migration table '{}'", flywayTable);
+
         FluentConfiguration fluentConfiguration = Flyway.configure()
-            .dataSource(dataSource)
-            .placeholderReplacement(false);
+                .table(flywayTable)
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
 
-        properties.getFlywayTable().ifPresent(tableName -> {
-            LOGGER.debug("Using Flyway migration table '{}'", tableName);
-            fluentConfiguration.table(tableName);
-        });
-
-        Flyway flyway = new Flyway(fluentConfiguration);
+        Flyway flyway = fluentConfiguration.load();
         flyway.migrate();
     }
 }

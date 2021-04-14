@@ -12,24 +12,25 @@
  */
 package com.netflix.conductor.postgres.util;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.zaxxer.hikari.HikariDataSource;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.time.Duration;
-import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import javax.sql.DataSource;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.time.Duration;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class PostgresDAOTestUtil {
 
@@ -76,11 +77,12 @@ public class PostgresDAOTestUtil {
 
     private void flywayMigrate(DataSource dataSource) {
         FluentConfiguration fluentConfiguration = Flyway.configure()
-            .locations(Paths.get("db", "migration_postgres").toString())
-            .dataSource(dataSource)
-            .placeholderReplacement(false);
+                .table("schema_version")
+                .locations(Paths.get("db", "migration_postgres").toString())
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
 
-        Flyway flyway = new Flyway(fluentConfiguration);
+        Flyway flyway = fluentConfiguration.load();
         flyway.migrate();
     }
 
