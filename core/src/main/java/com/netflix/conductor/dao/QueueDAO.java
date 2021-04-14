@@ -1,14 +1,14 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.dao;
 
@@ -71,39 +71,12 @@ public interface QueueDAO {
     List<String> pop(String queueName, int count, int timeout);
 
     /**
-     * Pop the messages from queue with given leaseDuration.
-     *
-     * @param queueName            Name of the queue
-     * @param count                number of messages to be read from the queue
-     * @param timeout              timeout in milliseconds
-     * @param leaseDurationSeconds Message lease duration in seconds
-     * @return list of elements from the named queue
-     */
-    default List<String> pop(String queueName, int count, int timeout, long leaseDurationSeconds) {
-        return pop(queueName, count, timeout);
-    }
-
-
-    /**
      * @param queueName Name of the queue
      * @param count     number of messages to be read from the queue
      * @param timeout   timeout in milliseconds
      * @return list of elements from the named queue
      */
     List<Message> pollMessages(String queueName, int count, int timeout);
-
-    /**
-     * Pop the messages from queue with given leaseDuration.
-     *
-     * @param queueName            Name of the queue
-     * @param count                number of messages to be read from the queue
-     * @param timeout              timeout in milliseconds
-     * @param leaseDurationSeconds Message lease duration in seconds
-     * @return list of Messages from the named queue
-     */
-    default List<Message> pollMessages(String queueName, int count, int timeout, long leaseDurationSeconds) {
-        return pollMessages(queueName, count, timeout);
-    }
 
     /**
      * @param queueName Name of the queue

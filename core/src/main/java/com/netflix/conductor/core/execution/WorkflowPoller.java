@@ -34,14 +34,14 @@ public class WorkflowPoller extends LifecycleAwareComponent {
 
     private final WorkflowSweeper workflowSweeper;
     private final QueueDAO queueDAO;
-    private final ConductorProperties properties;
+    private final int sweeperThreadCount;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowPoller.class);
 
     public WorkflowPoller(WorkflowSweeper workflowSweeper, QueueDAO queueDAO, ConductorProperties properties) {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
-        this.properties = properties;
+        this.sweeperThreadCount = properties.getSweeperThreadCount();
         LOGGER.info("WorkflowPoller initialized with {} sweeper threads", properties.getSweeperThreadCount());
     }
 
@@ -51,8 +51,7 @@ public class WorkflowPoller extends LifecycleAwareComponent {
             if (!isRunning()) {
                 LOGGER.debug("Component stopped, skip workflow sweep");
             } else {
-                List<String> workflowIds = queueDAO.pop(DECIDER_QUEUE,
-                    properties.getSweeperThreadCount(), 2000, properties.getWorkflowLeaseDuration().getSeconds());
+                List<String> workflowIds = queueDAO.pop(DECIDER_QUEUE, sweeperThreadCount, 2000);
                 if (workflowIds != null) {
                     // wait for all workflow ids to be "swept"
                     CompletableFuture.allOf(workflowIds
