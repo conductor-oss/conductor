@@ -417,10 +417,13 @@ package com.netflix.conductor.postgres.performance;
 //    }
 //
 //    private void flywayMigrate(DataSource dataSource) {
-//        Flyway flyway = new Flyway();
-//        flyway.setDataSource(dataSource);
-//        flyway.setPlaceholderReplacement(false);
-//        flyway.setLocations(Paths.get("db", "migration_postgres").toString());
+//        FluentConfiguration flywayConfiguration = Flyway.configure()
+//                .table(configuration.getFlywayTable())
+//                .locations(Paths.get("db","migration_postgres").toString())
+//                .dataSource(dataSource)
+//                .placeholderReplacement(false);
+//
+//        Flyway flyway = flywayConfiguration.load();
 //        try {
 //            flyway.migrate();
 //        } catch (FlywayException e) {

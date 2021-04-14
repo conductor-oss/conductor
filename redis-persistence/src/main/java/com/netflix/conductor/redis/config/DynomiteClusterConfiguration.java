@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -35,8 +35,9 @@ public class DynomiteClusterConfiguration extends JedisCommandsConfigurer {
                 .setSocketTimeout(0)
                 .setConnectTimeout(0)
                 .setMaxConnsPerHost(
-                    properties.getMaxConnectionsPerHost()
-                );
+                    properties.getMaxConnectionsPerHost())
+                .setMaxTimeoutWhenExhausted((int)properties.getMaxTimeoutWhenExhausted().toMillis())
+                .setRetryPolicyFactory(properties.getConnectionRetryPolicy());
 
         return new DynoJedisClient.Builder()
             .withHostSupplier(hostSupplier)

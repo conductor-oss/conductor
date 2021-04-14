@@ -15,13 +15,14 @@ package com.netflix.conductor.postgres.config;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.nio.file.Paths;
-import java.util.concurrent.ThreadFactory;
-import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.nio.file.Paths;
+import java.util.concurrent.ThreadFactory;
 
 public class PostgresDataSourceProvider {
 
@@ -63,9 +64,9 @@ public class PostgresDataSourceProvider {
         hikariConfig.setAutoCommit(properties.isAutoCommit());
 
         ThreadFactory tf = new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("hikari-postgres-%d")
-            .build();
+                .setDaemon(true)
+                .setNameFormat("hikari-postgres-%d")
+                .build();
 
         hikariConfig.setThreadFactory(tf);
         return hikariConfig;
@@ -79,17 +80,16 @@ public class PostgresDataSourceProvider {
             return;
         }
 
+        String flywayTable = properties.getFlywayTable();
+        LOGGER.debug("Using Flyway migration table '{}'", flywayTable);
+
         FluentConfiguration fluentConfiguration = Flyway.configure()
-            .locations(Paths.get("db", "migration_postgres").toString())
-            .dataSource(dataSource)
-            .placeholderReplacement(false);
+                .table(flywayTable)
+                .locations(Paths.get("db", "migration_postgres").toString())
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
 
-        properties.getFlywayTable().ifPresent(tableName -> {
-            LOGGER.debug("Using Flyway migration table '{}'", tableName);
-            fluentConfiguration.table(tableName);
-        });
-
-        Flyway flyway = new Flyway(fluentConfiguration);
+        Flyway flyway = fluentConfiguration.load();
         flyway.migrate();
     }
 }

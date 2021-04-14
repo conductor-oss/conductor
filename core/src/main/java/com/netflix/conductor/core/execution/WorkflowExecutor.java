@@ -1236,8 +1236,8 @@ public class WorkflowExecutor {
         }
         if (erroredTasks.isEmpty()) {
             try {
-                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
                 workflowStatusListener.onWorkflowFinalizedIfEnabled(workflow);
+                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
             } catch (Exception e) {
                 LOGGER.error("Error removing workflow: {} from decider queue", workflow.getWorkflowId(), e);
             }

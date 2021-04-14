@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2021 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,11 +14,15 @@ package com.netflix.conductor.redis.config;
 
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import com.netflix.dyno.connectionpool.RetryPolicy.RetryPolicyFactory;
+import com.netflix.dyno.connectionpool.impl.RetryNTimes;
+import com.netflix.dyno.connectionpool.impl.RunOnce;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 @ConfigurationProperties("conductor.redis")
 public class RedisProperties {
@@ -70,6 +74,16 @@ public class RedisProperties {
      * The maximum number of connections that can be managed by the connection pool on a given instance
      */
     private int maxConnectionsPerHost = 10;
+
+    /**
+     * The maximum amount of time to wait for a connection to become available from the connection pool
+     */
+    private Duration maxTimeoutWhenExhausted = Duration.ofMillis(800);
+
+    /**
+     * The maximum retry attempts to use with this connection pool
+     */
+    private int maxRetryAttempts = 0;
 
     /**
      * The read connection port to be used for connecting to dyno-queues
@@ -157,6 +171,22 @@ public class RedisProperties {
         this.maxConnectionsPerHost = maxConnectionsPerHost;
     }
 
+    public Duration getMaxTimeoutWhenExhausted() {
+        return maxTimeoutWhenExhausted;
+    }
+
+    public void setMaxTimeoutWhenExhausted(Duration maxTimeoutWhenExhausted) {
+        this.maxTimeoutWhenExhausted = maxTimeoutWhenExhausted;
+    }
+
+    public int getMaxRetryAttempts() {
+        return maxRetryAttempts;
+    }
+
+    public void setMaxRetryAttempts(int maxRetryAttempts) {
+        this.maxRetryAttempts = maxRetryAttempts;
+    }
+
     public int getQueuesNonQuorumPort() {
         return queuesNonQuorumPort;
     }
@@ -195,5 +225,13 @@ public class RedisProperties {
             prefix = prefix + "." + getKeyspaceDomain();
         }
         return prefix;
+    }
+
+    public RetryPolicyFactory getConnectionRetryPolicy() {
+        if (getMaxRetryAttempts() == 0) {
+            return RunOnce::new;
+        } else {
+            return () -> new RetryNTimes(maxRetryAttempts, false);
+        }
     }
 }

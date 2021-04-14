@@ -12,23 +12,24 @@
  */
 package com.netflix.conductor.mysql.util;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.mysql.config.MySQLProperties;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.Duration;
-import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MySQLContainer;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Duration;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MySQLDAOTestUtil {
 
@@ -40,7 +41,7 @@ public class MySQLDAOTestUtil {
     public MySQLDAOTestUtil(MySQLContainer mySQLContainer, ObjectMapper objectMapper, String dbName) {
         properties = mock(MySQLProperties.class);
         when(properties.getJdbcUrl()).thenReturn(mySQLContainer.getJdbcUrl()
-            + "?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+                + "?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         when(properties.getJdbcUsername()).thenReturn(mySQLContainer.getUsername());
         when(properties.getJdbcPassword()).thenReturn(mySQLContainer.getPassword());
         when(properties.getTaskDefCacheRefreshInterval()).thenReturn(Duration.ofSeconds(60));
@@ -66,10 +67,11 @@ public class MySQLDAOTestUtil {
 
     private void flywayMigrate(DataSource dataSource) {
         FluentConfiguration fluentConfiguration = Flyway.configure()
-            .dataSource(dataSource)
-            .placeholderReplacement(false);
+                .table("schema_version")
+                .dataSource(dataSource)
+                .placeholderReplacement(false);
 
-        Flyway flyway = new Flyway(fluentConfiguration);
+        Flyway flyway = fluentConfiguration.load();
         flyway.migrate();
     }
 
@@ -89,7 +91,7 @@ public class MySQLDAOTestUtil {
         LOGGER.info("Resetting data for test");
         try (Connection connection = dataSource.getConnection()) {
             try (ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();
-                PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
+                 PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
                 try (PreparedStatement keysOff = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
                     keysOff.execute();
                     while (rs.next()) {
