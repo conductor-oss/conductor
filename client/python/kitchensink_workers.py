@@ -1,8 +1,12 @@
 from __future__ import print_function
-from conductor.ConductorWorker import ConductorWorker
+from conductor.ConductorWorker import ConductorWorker,TaskStatus
 
 def execute(task):
-    return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0}, 'logs': ['one','two']}
+    return ConductorWorker.task_result(
+        status=TaskStatus.COMPLETED,
+        output= {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0},
+        logs=['one','two']
+    )
 
 def execute4(task):
     forkTasks = [{"name": "task_1", "taskReferenceName": "task_1_1", "type": "SIMPLE"},{"name": "sub_workflow_4", "taskReferenceName": "wf_dyn", "type": "SUB_WORKFLOW", "subWorkflowParam": {"name": "sub_flow_1"}}];

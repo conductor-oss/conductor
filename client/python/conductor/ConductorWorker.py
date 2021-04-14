@@ -18,8 +18,19 @@ import time
 from conductor.conductor import WFClientMgr
 from threading import Thread
 import socket
+from enum import Enum
 
 hostname = socket.gethostname()
+
+class TaskStatus(Enum):
+    IN_PROGRESS = 'IN_PROGRESS'
+    FAILED = 'FAILED'
+    FAILED_WITH_TERMINAL_ERROR = 'FAILED_WITH_TERMINAL_ERROR'
+    COMPLETED = 'COMPLETED'
+
+    def __str__(self):
+        return str(self.value)
+
 
 
 class ConductorWorker:
@@ -65,6 +76,35 @@ class ConductorWorker:
         self.thread_count = thread_count
         self.polling_interval = polling_interval
         self.worker_id = worker_id or hostname
+
+    @staticmethod
+    def task_result(status: TaskStatus, output=None, logs=None, reasonForIncompletion=None):
+        """
+        Get task result
+        Parameters
+        ----------
+        status: TaskStatus
+            The status of the task 
+            Ex: TaskStatus.COMPLETED
+        output: dict
+            results of task processing 
+        logs: list
+            log list
+        reasonForIncompletion: str, optional
+            the reason for not completing the task if any
+        """
+        if logs is None:
+            logs = []
+        if output is None:
+            output = {}
+        ret = {
+            'status': status.__str__(),
+            'output': output,
+            'logs': logs
+        }
+        if reasonForIncompletion:
+            ret['reasonForIncompletion'] = reasonForIncompletion
+        return ret
 
     def execute(self, task, exec_function):
         try:
