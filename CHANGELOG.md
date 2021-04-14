@@ -1,4 +1,5 @@
-Conductor has been upgraded to use the SpringBoot framework.
+Conductor has been upgraded to use the SpringBoot framework and requires Java11 or above.  
+#### NOTE: The java clients (conductor-client, conductor-client-spring, conductor-grpc-client) are still compiled using Java8 to ensure backward compatibility and smoother migration.
 
 ## Removals/Deprecations
 - Removed support for EmbeddedElasticSearch
@@ -8,6 +9,10 @@ Conductor has been upgraded to use the SpringBoot framework.
 - Removed deprecated fields and methods in the Workflow object
 - Removed deprecated fields and methods in the Task object
 - Removed deprecated fields and methods in the WorkflowTask object
+
+Removed unused methods from QueueDAO:
+- List pop(String, int, int, long)
+- List pollMessages(String, int, int, long)
 
 Removed APIs:
 - GET /tasks/in_progress/{tasktype}
@@ -22,7 +27,7 @@ Removed APIs:
 
 
 - void restart(String) in workflow client
-- List<Task> getPendingTasksByType(String, String, Integer) in task client
+- List getPendingTasksByType(String, String, Integer) in task client
 - Task getPendingTaskForWorkflow(String, String) in task client
 - boolean preAck(Task) in Worker
 - int getPollCount() in Worker
@@ -257,6 +262,8 @@ Changes to configurations:
 | workflow.namespace.queue.prefix | conductor.redis.queueNamespacePrefix | null |
 | workflow.dyno.keyspace.domain | conductor.redis.keyspaceDomain | null |
 | workflow.dynomite.connection.maxConnsPerHost | conductor.redis.maxConnectionsPerHost | 10 |
+| workflow.dynomite.connection.max.retry.attempt | conductor.redis.maxRetryAttempts | 0 |
+| workflow.dynomite.connection.max.timeout.exhausted.ms | conductor.redis.maxTimeoutWhenExhausted | 800ms |
 | queues.dynomite.nonQuorum.port | conductor.redis.queuesNonQuorumPort | 22122 |
 | workflow.dyno.queue.sharding.strategy | conductor.redis.queueShardingStrategy | roundRobin |
 | conductor.taskdef.cache.refresh.time.seconds | conductor.redis.taskDefCacheRefreshInterval | 60s |
