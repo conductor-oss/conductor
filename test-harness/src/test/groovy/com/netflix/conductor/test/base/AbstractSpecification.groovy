@@ -14,8 +14,8 @@
  */
 package com.netflix.conductor.test.base
 
+import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.execution.WorkflowSweeper
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil

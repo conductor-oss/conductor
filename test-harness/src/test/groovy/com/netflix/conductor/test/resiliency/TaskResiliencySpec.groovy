@@ -14,7 +14,7 @@ package com.netflix.conductor.test.resiliency
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowRepairService
+import com.netflix.conductor.core.reconciliation.WorkflowRepairService
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
 import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared

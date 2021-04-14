@@ -10,35 +10,34 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.core.execution;
+package com.netflix.conductor.core.reconciliation;
+
+import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
 
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
-
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-@ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
-public class WorkflowPoller extends LifecycleAwareComponent {
+@ConditionalOnProperty(name = "conductor.default-workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
+public class DefaultWorkflowPoller extends LifecycleAwareComponent implements WorkflowPoller {
 
     private final WorkflowSweeper workflowSweeper;
     private final QueueDAO queueDAO;
     private final int sweeperThreadCount;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowPoller.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWorkflowPoller.class);
 
-    public WorkflowPoller(WorkflowSweeper workflowSweeper, QueueDAO queueDAO, ConductorProperties properties) {
+    public DefaultWorkflowPoller(WorkflowSweeper workflowSweeper, QueueDAO queueDAO, ConductorProperties properties) {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
         this.sweeperThreadCount = properties.getSweeperThreadCount();
@@ -46,6 +45,7 @@ public class WorkflowPoller extends LifecycleAwareComponent {
     }
 
     @Scheduled(fixedDelayString = "${conductor.sweep-frequency.millis:500}", initialDelayString = "${conductor.sweep-frequency.millis:500}")
+    @Override
     public void pollAndSweep() {
         try {
             if (!isRunning()) {
@@ -65,8 +65,12 @@ public class WorkflowPoller extends LifecycleAwareComponent {
                 recordQueueDepth();
             }
         } catch (Exception e) {
-            Monitors.error(WorkflowPoller.class.getSimpleName(), "poll");
+            Monitors.error(DefaultWorkflowPoller.class.getSimpleName(), "poll");
             LOGGER.error("Error when polling for workflows", e);
+            if (e instanceof InterruptedException) {
+                // Restore interrupted state...
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

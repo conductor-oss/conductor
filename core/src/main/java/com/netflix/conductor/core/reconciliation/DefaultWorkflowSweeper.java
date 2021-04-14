@@ -10,12 +10,13 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.core.execution;
+package com.netflix.conductor.core.reconciliation;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
@@ -33,23 +34,23 @@ import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEU
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-@ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
-public class WorkflowSweeper {
+@ConditionalOnProperty(name = "conductor.default-workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
+public class DefaultWorkflowSweeper implements WorkflowSweeper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWorkflowSweeper.class);
 
     private final ConductorProperties properties;
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowRepairService workflowRepairService;
     private final QueueDAO queueDAO;
 
-    private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
+    private static final String CLASS_NAME = DefaultWorkflowSweeper.class.getSimpleName();
 
     @Autowired
-    public WorkflowSweeper(WorkflowExecutor workflowExecutor,
-                           Optional<WorkflowRepairService> workflowRepairService,
-                           ConductorProperties properties,
-                           QueueDAO queueDAO) {
+    public DefaultWorkflowSweeper(WorkflowExecutor workflowExecutor,
+                                  Optional<WorkflowRepairService> workflowRepairService,
+                                  ConductorProperties properties,
+                                  QueueDAO queueDAO) {
         this.properties = properties;
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
@@ -58,12 +59,13 @@ public class WorkflowSweeper {
     }
 
     @Async(SWEEPER_EXECUTOR_NAME)
+    @Override
     public CompletableFuture<Void> sweepAsync(String workflowId) {
         sweep(workflowId);
         return CompletableFuture.completedFuture(null);
     }
 
-    @VisibleForTesting
+    @Override
     public void sweep(String workflowId) {
         try {
             WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
