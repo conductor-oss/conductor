@@ -1,21 +1,24 @@
 {
   "properties": [
     {
-      "name": "conductor.workflow-sweeper.enabled",
+      "name": "conductor.workflow-reconciler.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enables the workflow sweeper."
+      "description": "Enables the workflow reconciliation mechanism.",
+      "sourceType": "com.netflix.conductor.core.reconciliation.WorkflowReconciler",
+      "defaultValue": true
     },
     {
       "name": "conductor.sweep-frequency.millis",
       "type": "java.lang.Integer",
       "description": "The frequency in milliseconds, at which the workflow sweeper should evaluate active workflows.",
-      "sourceType": "com.netflix.conductor.core.execution.WorkflowPoller"
+      "sourceType": "com.netflix.conductor.core.reconciliation.WorkflowReconciler",
+      "defaultValue": 500
     },
     {
       "name": "conductor.workflow-repair-service.enabled",
       "type": "java.lang.Boolean",
       "description": "Configuration to enable WorkflowRepairService, that tries to keep ExecutionDAO and QueueDAO in sync, based on the task or workflow state. This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method.",
-      "sourceType": "com.netflix.conductor.core.execution.WorkflowRepairService"
+      "sourceType": "com.netflix.conductor.core.reconciliation.WorkflowRepairService"
     },
     {
       "name": "conductor.system-task-workers.enabled",
@@ -64,8 +67,15 @@
     {
       "name": "conductor.event-queues.default.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enable the use of the underlying queue implementation to provide queues for consuming events.",
+      "description": "Enables the use of the underlying queue implementation to provide queues for consuming events.",
       "sourceType": "com.netflix.conductor.core.events.queue.ConductorEventQueueProvider",
+      "defaultValue": "true"
+    },
+    {
+      "name": "conductor.default-event-queue-processor.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enables the processor for the default event queues that conductor is configured to listen on.",
+      "sourceType": "com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor",
       "defaultValue": "true"
     }
   ],

@@ -12,47 +12,47 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import com.netflix.spectator.api.Meter;
+import static org.junit.Assert.assertTrue;
+
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.micrometer.MicrometerRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import org.junit.Assert;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
 @RunWith(SpringRunner.class)
 @Import({PrometheusMetricsConfiguration.class})
 @TestPropertySource(properties = {"conductor.metrics-prometheus.enabled=true"})
 public class PrometheusMetricsConfigurationTest {
 
-
+    @SuppressWarnings("unchecked")
     @Test
     public void testCollector() throws IllegalAccessException {
         final Optional<Field> registries = Arrays
-                .stream(Spectator.globalRegistry().getClass().getDeclaredFields())
-                .filter(f -> f.getName().equals("registries")).findFirst();
-        Assert.assertTrue(registries.isPresent());
+            .stream(Spectator.globalRegistry().getClass().getDeclaredFields())
+            .filter(f -> f.getName().equals("registries")).findFirst();
+        assertTrue(registries.isPresent());
         registries.get().setAccessible(true);
 
         List<Registry> meters = (List<Registry>) registries.get().get(Spectator.globalRegistry());
-        Assert.assertTrue ( meters.size() > 0);
-        Optional<Registry> microMeterReg = meters.stream().filter(r -> r.getClass().equals(MicrometerRegistry.class)).findFirst();
-        Assert.assertTrue(microMeterReg.isPresent());
+        assertTrue(meters.size() > 0);
+        Optional<Registry> microMeterReg = meters.stream()
+            .filter(r -> r.getClass().equals(MicrometerRegistry.class))
+            .findFirst();
+        assertTrue(microMeterReg.isPresent());
     }
 
 

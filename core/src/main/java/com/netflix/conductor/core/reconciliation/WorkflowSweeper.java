@@ -10,30 +10,27 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.core.execution;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.netflix.conductor.core.WorkflowContext;
-import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+package com.netflix.conductor.core.reconciliation;
 
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
 
+import com.netflix.conductor.core.WorkflowContext;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
-@ConditionalOnProperty(name = "conductor.workflow-sweeper.enabled", havingValue = "true", matchIfMissing = true)
 public class WorkflowSweeper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
@@ -46,10 +43,8 @@ public class WorkflowSweeper {
     private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
 
     @Autowired
-    public WorkflowSweeper(WorkflowExecutor workflowExecutor,
-                           Optional<WorkflowRepairService> workflowRepairService,
-                           ConductorProperties properties,
-                           QueueDAO queueDAO) {
+    public WorkflowSweeper(WorkflowExecutor workflowExecutor, Optional<WorkflowRepairService> workflowRepairService,
+        ConductorProperties properties, QueueDAO queueDAO) {
         this.properties = properties;
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
@@ -63,7 +58,6 @@ public class WorkflowSweeper {
         return CompletableFuture.completedFuture(null);
     }
 
-    @VisibleForTesting
     public void sweep(String workflowId) {
         try {
             WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
@@ -79,8 +73,7 @@ public class WorkflowSweeper {
             if (done) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
             } else {
-                queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId,
-                        properties.getWorkflowOffsetTimeout().toMillis());
+                queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().toMillis());
             }
         } catch (ApplicationException e) {
             if (e.getCode() == ApplicationException.Code.NOT_FOUND) {
@@ -88,8 +81,7 @@ public class WorkflowSweeper {
                 LOGGER.info("Workflow NOT found for id:{}. Removed it from decider queue", workflowId, e);
             }
         } catch (Exception e) {
-            queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId,
-                    properties.getWorkflowOffsetTimeout().toMillis());
+            queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().toMillis());
             Monitors.error(CLASS_NAME, "sweep");
             LOGGER.error("Error running sweep for " + workflowId, e);
         }
