@@ -29,12 +29,12 @@ jobs:
         if: github.ref != 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }} in ${{ github.head_ref }}"
-          ./gradlew build
+          ./gradlew build --scan
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
             echo "Running build for commit ${{ github.sha }}"
-            ./gradlew build snapshot
+            ./gradlew build snapshot --scan
         env:
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
@@ -51,3 +51,8 @@ jobs:
         with:
           name: build-artifacts
           path: '**/build/reports'
+      - name: Store Buildscan URL
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-scan
+          path: 'buildscan.log'

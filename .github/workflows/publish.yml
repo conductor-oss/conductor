@@ -27,7 +27,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Publish candidate
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc.')
-        run: ./gradlew -Prelease.useLastTag=true candidate
+        run: ./gradlew -Prelease.useLastTag=true candidate --scan
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
@@ -37,7 +37,7 @@ jobs:
           NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v') && (!contains(github.ref, '-rc.'))
-        run: ./gradlew -Prelease.useLastTag=true final
+        run: ./gradlew -Prelease.useLastTag=true final --scan
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
