@@ -21,12 +21,6 @@ dependencies {
 
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
-    // JAXB is not bundled with Java 11, dependencies added explicitly
-    // These are needed by Apache BVAL
-    implementation "javax.xml.bind:jaxb-api:${revJAXB}"
-    implementation "javax.activation:activation:${revActivation}"
-    implementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
-
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
 
@@ -34,7 +28,6 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
-
 }
 
 /*
