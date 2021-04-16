@@ -5,6 +5,61 @@
         }
     },
     "compileClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-models"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-parameter-names": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
@@ -14,64 +69,363 @@
         "com.netflix.runtime:health-api": {
             "locked": "1.1.4"
         },
+        "io.github.classgraph:classgraph": {
+            "locked": "4.8.69",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-annotations": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-core": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-integration"
+            ]
+        },
+        "io.swagger.core.v3:swagger-integration": {
+            "locked": "2.1.4",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-models": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-integration",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "1.2.2",
+            "transitive": [
+                "jakarta.xml.bind:jakarta.xml.bind-api"
+            ]
+        },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "locked": "1.3.5",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "jakarta.validation:jakarta.validation-api": {
+            "locked": "2.0.2",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-core": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.apache.tomcat.embed:tomcat-embed-websocket",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-websocket": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.glassfish:jakarta.el": {
+            "locked": "3.0.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.slf4j:jul-to-slf4j": {
+            "locked": "1.7.30",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-logging"
+            ]
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.slf4j:jul-to-slf4j",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "org.springdoc:springdoc-openapi-common": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core"
+            ]
+        },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.4.8"
         },
+        "org.springdoc:springdoc-openapi-webmvc-core": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.springframework.boot:spring-boot": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-dependencies": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-logging",
+                "org.springframework.boot:spring-boot-starter-tomcat",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-json": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-logging": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-tomcat": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-web": {
             "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework:spring-aop": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-beans": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-aop",
+                "org.springframework:spring-context",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-context": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-core": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework:spring-aop",
+                "org.springframework:spring-beans",
+                "org.springframework:spring-context",
+                "org.springframework:spring-expression",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-expression": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-jcl": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-core"
+            ]
+        },
+        "org.springframework:spring-web": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-webmvc": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.webjars:swagger-ui": {
+            "locked": "3.34.0",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.webjars:webjars-locator-core": {
+            "locked": "0.45",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.yaml:snakeyaml": {
+            "locked": "1.26",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "org.springframework.boot:spring-boot-starter"
+            ]
         }
     },
     "runtimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-models"
+            ]
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+                "com.netflix.conductor:conductor-core",
+                "org.webjars:webjars-locator-core"
+            ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-parameter-names": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
         },
         "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
+            "locked": "2.0.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
+            ]
         },
         "com.github.vmg.protogen:protogen-annotations": {
-            "firstLevelTransitive": [
+            "locked": "1.0.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.0.0"
+            ]
+        },
+        "com.google.code.findbugs:jsr305": {
+            "locked": "2.0.2",
+            "transitive": [
+                "com.github.rholder:guava-retrying"
+            ]
+        },
+        "com.google.guava:guava": {
+            "locked": "19.0",
+            "transitive": [
+                "com.github.rholder:guava-retrying",
+                "com.netflix.servo:servo-core"
+            ]
         },
         "com.google.protobuf:protobuf-java": {
-            "firstLevelTransitive": [
+            "locked": "3.13.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.13.0"
+            ]
         },
         "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
+            "locked": "2.4.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.4.0"
+            ]
         },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
+            "project": true,
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "project": true
+            ]
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
@@ -80,78 +434,423 @@
             "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
+            "locked": "0.13.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
+            ]
         },
         "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.122.0"
+            "locked": "0.122.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.servo:servo-core"
+            ]
         },
         "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
+            "locked": "0.3.3",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.3"
+            ]
+        },
+        "com.sun.activation:jakarta.activation": {
+            "locked": "1.2.2",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
+        },
+        "com.sun.istack:istack-commons-runtime": {
+            "locked": "3.0.11",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
         },
         "commons-io:commons-io": {
-            "firstLevelTransitive": [
+            "locked": "2.7",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7"
+            ]
+        },
+        "io.github.classgraph:classgraph": {
+            "locked": "4.8.69",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
         },
         "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
+            "locked": "1.3.8",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.3.8"
+            ]
+        },
+        "io.swagger.core.v3:swagger-annotations": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-core": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-integration"
+            ]
+        },
+        "io.swagger.core.v3:swagger-integration": {
+            "locked": "2.1.4",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-models": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-integration",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "1.2.2",
+            "transitive": [
+                "jakarta.xml.bind:jakarta.xml.bind-api"
+            ]
+        },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "locked": "1.3.5",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "jakarta.validation:jakarta.validation-api": {
+            "locked": "2.0.2",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
         },
         "javax.activation:activation": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "1.1.1",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.1.1"
+            ]
+        },
+        "javax.activation:javax.activation-api": {
+            "locked": "1.2.0",
+            "transitive": [
+                "javax.xml.bind:jaxb-api"
+            ]
         },
         "javax.xml.bind:jaxb-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "2.3.1",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.1"
+            ]
+        },
+        "net.minidev:accessors-smart": {
+            "locked": "1.2",
+            "transitive": [
+                "net.minidev:json-smart"
+            ]
+        },
+        "net.minidev:json-smart": {
+            "locked": "2.3",
+            "transitive": [
+                "com.jayway.jsonpath:json-path"
+            ]
         },
         "org.apache.bval:bval-jsr": {
-            "firstLevelTransitive": [
+            "locked": "2.0.5",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.0.5"
+            ]
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
+            "locked": "3.10",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.10"
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-core": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.apache.tomcat.embed:tomcat-embed-websocket",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-websocket": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "2.3.3",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.3"
+            ]
+        },
+        "org.glassfish.jaxb:txw2": {
+            "locked": "2.3.3",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
+        },
+        "org.glassfish:jakarta.el": {
+            "locked": "3.0.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.ow2.asm:asm": {
+            "locked": "5.0.4",
+            "transitive": [
+                "net.minidev:accessors-smart"
+            ]
+        },
+        "org.slf4j:jul-to-slf4j": {
+            "locked": "1.7.30",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-logging"
+            ]
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30",
+            "transitive": [
+                "com.jayway.jsonpath:json-path",
+                "com.netflix.servo:servo-core",
+                "com.netflix.spectator:spectator-api",
+                "io.swagger.core.v3:swagger-core",
+                "org.slf4j:jul-to-slf4j",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "org.springdoc:springdoc-openapi-common": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core"
+            ]
         },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.4.8"
         },
+        "org.springdoc:springdoc-openapi-webmvc-core": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.springframework.boot:spring-boot": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-dependencies": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-logging",
+                "org.springframework.boot:spring-boot-starter-tomcat",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-json": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-logging": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-tomcat": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-web": {
             "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework:spring-aop": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-beans": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-aop",
+                "org.springframework:spring-context",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-context": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-core": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework:spring-aop",
+                "org.springframework:spring-beans",
+                "org.springframework:spring-context",
+                "org.springframework:spring-expression",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-expression": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-jcl": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-core"
+            ]
+        },
+        "org.springframework:spring-web": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-webmvc": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.webjars:swagger-ui": {
+            "locked": "3.34.0",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.webjars:webjars-locator-core": {
+            "locked": "0.45",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.yaml:snakeyaml": {
+            "locked": "1.26",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "org.springframework.boot:spring-boot-starter"
+            ]
         }
     },
     "testCompileClasspath": {
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-models"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-parameter-names": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.4.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
@@ -161,70 +860,579 @@
         "com.netflix.runtime:health-api": {
             "locked": "1.1.4"
         },
+        "com.vaadin.external.google:android-json": {
+            "locked": "0.0.20131108.vaadin1",
+            "transitive": [
+                "org.skyscreamer:jsonassert"
+            ]
+        },
+        "io.github.classgraph:classgraph": {
+            "locked": "4.8.69",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-annotations": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-core": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-integration"
+            ]
+        },
+        "io.swagger.core.v3:swagger-integration": {
+            "locked": "2.1.4",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-models": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-integration",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "1.2.2",
+            "transitive": [
+                "jakarta.xml.bind:jakarta.xml.bind-api"
+            ]
+        },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "locked": "1.3.5",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "jakarta.validation:jakarta.validation-api": {
+            "locked": "2.0.2",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "junit:junit": {
+            "locked": "4.13",
+            "transitive": [
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "net.bytebuddy:byte-buddy": {
+            "locked": "1.10.11",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "net.bytebuddy:byte-buddy-agent": {
+            "locked": "1.10.11",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "net.minidev:accessors-smart": {
+            "locked": "1.2",
+            "transitive": [
+                "net.minidev:json-smart"
+            ]
+        },
+        "net.minidev:json-smart": {
+            "locked": "2.3",
+            "transitive": [
+                "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.10",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-api": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.apache.logging.log4j:log4j-core",
+                "org.apache.logging.log4j:log4j-jul"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-core": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.apache.tomcat.embed:tomcat-embed-websocket",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-websocket": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apiguardian:apiguardian-api": {
+            "locked": "1.1.0",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.jupiter:junit-jupiter-params",
+                "org.junit.platform:junit-platform-commons",
+                "org.junit.platform:junit-platform-engine",
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.assertj:assertj-core": {
+            "locked": "3.16.1",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.glassfish:jakarta.el": {
+            "locked": "3.0.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.hamcrest:hamcrest": {
+            "locked": "2.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter-api": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter",
+                "org.junit.jupiter:junit-jupiter-params"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter-params": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter"
+            ]
+        },
+        "org.junit.platform:junit-platform-commons": {
+            "locked": "1.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.platform:junit-platform-engine"
+            ]
+        },
+        "org.junit.platform:junit-platform-engine": {
+            "locked": "1.6.2",
+            "transitive": [
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit:junit-bom": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter",
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.jupiter:junit-jupiter-params",
+                "org.junit.platform:junit-platform-commons",
+                "org.junit.platform:junit-platform-engine",
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.mockito:mockito-core": {
+            "locked": "3.3.3",
+            "transitive": [
+                "org.mockito:mockito-junit-jupiter",
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.mockito:mockito-junit-jupiter": {
+            "locked": "3.3.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.objenesis:objenesis": {
+            "locked": "2.6",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "org.opentest4j:opentest4j": {
+            "locked": "1.2.0",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.platform:junit-platform-engine"
+            ]
+        },
+        "org.ow2.asm:asm": {
+            "locked": "5.0.4",
+            "transitive": [
+                "net.minidev:accessors-smart"
+            ]
+        },
+        "org.skyscreamer:jsonassert": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.slf4j:jul-to-slf4j": {
+            "locked": "1.7.30",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2",
+                "org.springframework.boot:spring-boot-starter-logging"
+            ]
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30",
+            "transitive": [
+                "com.jayway.jsonpath:json-path",
+                "io.swagger.core.v3:swagger-core",
+                "org.apache.logging.log4j:log4j-slf4j-impl",
+                "org.slf4j:jul-to-slf4j",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "org.springdoc:springdoc-openapi-common": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core"
+            ]
+        },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.4.8"
+        },
+        "org.springdoc:springdoc-openapi-webmvc-core": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.springframework.boot:spring-boot": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-dependencies": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-log4j2",
+                "org.springframework.boot:spring-boot-starter-logging",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-starter-tomcat",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework.boot:spring-boot-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-json": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.3.1.RELEASE"
         },
+        "org.springframework.boot:spring-boot-starter-logging": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-test": {
             "locked": "2.3.1.RELEASE"
         },
+        "org.springframework.boot:spring-boot-starter-tomcat": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-web": {
             "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-test": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-test-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.springframework:spring-aop": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-beans": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-aop",
+                "org.springframework:spring-context",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-context": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-core": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework:spring-aop",
+                "org.springframework:spring-beans",
+                "org.springframework:spring-context",
+                "org.springframework:spring-expression",
+                "org.springframework:spring-test",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-expression": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-jcl": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-core"
+            ]
+        },
+        "org.springframework:spring-test": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.springframework:spring-web": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-webmvc": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.webjars:swagger-ui": {
+            "locked": "3.34.0",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.webjars:webjars-locator-core": {
+            "locked": "0.45",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.xmlunit:xmlunit-core": {
+            "locked": "2.7.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.yaml:snakeyaml": {
+            "locked": "1.26",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "org.springframework.boot:spring-boot-starter"
+            ]
         }
     },
     "testRuntimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-models"
+            ]
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+                "com.netflix.conductor:conductor-core",
+                "org.webjars:webjars-locator-core"
+            ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
+            "locked": "2.11.0",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-parameter-names",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.11.0"
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.0",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-parameter-names": {
+            "locked": "2.11.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json"
+            ]
         },
         "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
+            "locked": "2.0.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
+            ]
         },
         "com.github.vmg.protogen:protogen-annotations": {
-            "firstLevelTransitive": [
+            "locked": "1.0.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.0.0"
+            ]
+        },
+        "com.google.code.findbugs:jsr305": {
+            "locked": "2.0.2",
+            "transitive": [
+                "com.github.rholder:guava-retrying"
+            ]
+        },
+        "com.google.guava:guava": {
+            "locked": "19.0",
+            "transitive": [
+                "com.github.rholder:guava-retrying",
+                "com.netflix.servo:servo-core"
+            ]
         },
         "com.google.protobuf:protobuf-java": {
-            "firstLevelTransitive": [
+            "locked": "3.13.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.13.0"
+            ]
         },
         "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.4.0"
+            "locked": "2.4.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core",
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
         },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
+            "project": true,
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "project": true
+            ]
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
@@ -233,81 +1441,566 @@
             "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
+            "locked": "0.13.0",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
+            ]
         },
         "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.122.0"
+            "locked": "0.122.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.servo:servo-core"
+            ]
         },
         "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
+            "locked": "0.3.3",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.3"
+            ]
+        },
+        "com.sun.activation:jakarta.activation": {
+            "locked": "1.2.2",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
+        },
+        "com.sun.istack:istack-commons-runtime": {
+            "locked": "3.0.11",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
+        },
+        "com.vaadin.external.google:android-json": {
+            "locked": "0.0.20131108.vaadin1",
+            "transitive": [
+                "org.skyscreamer:jsonassert"
+            ]
         },
         "commons-io:commons-io": {
-            "firstLevelTransitive": [
+            "locked": "2.7",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7"
+            ]
+        },
+        "io.github.classgraph:classgraph": {
+            "locked": "4.8.69",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
         },
         "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
+            "locked": "1.3.8",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.3.8"
+            ]
+        },
+        "io.swagger.core.v3:swagger-annotations": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-core": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-integration"
+            ]
+        },
+        "io.swagger.core.v3:swagger-integration": {
+            "locked": "2.1.4",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "io.swagger.core.v3:swagger-models": {
+            "locked": "2.1.4",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "io.swagger.core.v3:swagger-integration",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "1.2.2",
+            "transitive": [
+                "jakarta.xml.bind:jakarta.xml.bind-api"
+            ]
+        },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "locked": "1.3.5",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "jakarta.validation:jakarta.validation-api": {
+            "locked": "2.0.2",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core"
+            ]
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3",
+            "transitive": [
+                "io.swagger.core.v3:swagger-core",
+                "org.glassfish.jaxb:jaxb-runtime",
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
         },
         "javax.activation:activation": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "1.1.1",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.1.1"
+            ]
+        },
+        "javax.activation:javax.activation-api": {
+            "locked": "1.2.0",
+            "transitive": [
+                "javax.xml.bind:jaxb-api"
+            ]
         },
         "javax.xml.bind:jaxb-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "2.3.1",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.1"
+            ]
+        },
+        "junit:junit": {
+            "locked": "4.13",
+            "transitive": [
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "net.bytebuddy:byte-buddy": {
+            "locked": "1.10.11",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "net.bytebuddy:byte-buddy-agent": {
+            "locked": "1.10.11",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "net.minidev:accessors-smart": {
+            "locked": "1.2",
+            "transitive": [
+                "net.minidev:json-smart"
+            ]
+        },
+        "net.minidev:json-smart": {
+            "locked": "2.3",
+            "transitive": [
+                "com.jayway.jsonpath:json-path"
+            ]
         },
         "org.apache.bval:bval-jsr": {
-            "firstLevelTransitive": [
+            "locked": "2.0.5",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.0.5"
+            ]
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
+            "locked": "3.10",
+            "transitive": [
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.10"
+                "com.netflix.conductor:conductor-core",
+                "io.swagger.core.v3:swagger-core",
+                "org.springdoc:springdoc-openapi-common"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-api": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.apache.logging.log4j:log4j-core",
+                "org.apache.logging.log4j:log4j-jul"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.apache.logging.log4j:log4j-slf4j-impl",
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "locked": "2.13.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-core": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.apache.tomcat.embed:tomcat-embed-websocket",
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apache.tomcat.embed:tomcat-embed-websocket": {
+            "locked": "9.0.36",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.apiguardian:apiguardian-api": {
+            "locked": "1.1.0",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.jupiter:junit-jupiter-engine",
+                "org.junit.jupiter:junit-jupiter-params",
+                "org.junit.platform:junit-platform-commons",
+                "org.junit.platform:junit-platform-engine",
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.assertj:assertj-core": {
+            "locked": "3.16.1",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common",
+            "locked": "2.3.3",
+            "transitive": [
                 "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.3"
+            ]
+        },
+        "org.glassfish.jaxb:txw2": {
+            "locked": "2.3.3",
+            "transitive": [
+                "org.glassfish.jaxb:jaxb-runtime"
+            ]
+        },
+        "org.glassfish:jakarta.el": {
+            "locked": "3.0.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.hamcrest:hamcrest": {
+            "locked": "2.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter-api": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-engine",
+                "org.junit.jupiter:junit-jupiter-params",
+                "org.mockito:mockito-junit-jupiter"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter-engine": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter"
+            ]
+        },
+        "org.junit.jupiter:junit-jupiter-params": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter"
+            ]
+        },
+        "org.junit.platform:junit-platform-commons": {
+            "locked": "1.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.platform:junit-platform-engine"
+            ]
+        },
+        "org.junit.platform:junit-platform-engine": {
+            "locked": "1.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-engine",
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.junit:junit-bom": {
+            "locked": "5.6.2",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter",
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.jupiter:junit-jupiter-engine",
+                "org.junit.jupiter:junit-jupiter-params",
+                "org.junit.platform:junit-platform-commons",
+                "org.junit.platform:junit-platform-engine",
+                "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.mockito:mockito-core": {
+            "locked": "3.3.3",
+            "transitive": [
+                "org.mockito:mockito-junit-jupiter",
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.mockito:mockito-junit-jupiter": {
+            "locked": "3.3.3",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.objenesis:objenesis": {
+            "locked": "2.6",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "org.opentest4j:opentest4j": {
+            "locked": "1.2.0",
+            "transitive": [
+                "org.junit.jupiter:junit-jupiter-api",
+                "org.junit.platform:junit-platform-engine"
+            ]
+        },
+        "org.ow2.asm:asm": {
+            "locked": "5.0.4",
+            "transitive": [
+                "net.minidev:accessors-smart"
+            ]
+        },
+        "org.skyscreamer:jsonassert": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.slf4j:jul-to-slf4j": {
+            "locked": "1.7.30",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-log4j2",
+                "org.springframework.boot:spring-boot-starter-logging"
+            ]
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.30",
+            "transitive": [
+                "com.jayway.jsonpath:json-path",
+                "com.netflix.servo:servo-core",
+                "com.netflix.spectator:spectator-api",
+                "io.swagger.core.v3:swagger-core",
+                "org.apache.logging.log4j:log4j-slf4j-impl",
+                "org.slf4j:jul-to-slf4j",
+                "org.webjars:webjars-locator-core"
+            ]
+        },
+        "org.springdoc:springdoc-openapi-common": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core"
+            ]
         },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.4.8"
         },
+        "org.springdoc:springdoc-openapi-webmvc-core": {
+            "locked": "1.4.8",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.springframework.boot:spring-boot": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-dependencies": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-autoconfigure",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-log4j2",
+                "org.springframework.boot:spring-boot-starter-logging",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-starter-tomcat",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework.boot:spring-boot-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.springframework.boot:spring-boot-starter-json": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-starter-logging": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter"
+            ]
         },
         "org.springframework.boot:spring-boot-starter-test": {
             "locked": "2.3.1.RELEASE"
         },
+        "org.springframework.boot:spring-boot-starter-tomcat": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
         "org.springframework.boot:spring-boot-starter-web": {
             "locked": "2.3.1.RELEASE"
+        },
+        "org.springframework.boot:spring-boot-test": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.boot:spring-boot-test-autoconfigure"
+            ]
+        },
+        "org.springframework.boot:spring-boot-test-autoconfigure": {
+            "locked": "2.3.1.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.springframework:spring-aop": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-beans": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-aop",
+                "org.springframework:spring-context",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-context": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-core": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot",
+                "org.springframework.boot:spring-boot-starter",
+                "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework:spring-aop",
+                "org.springframework:spring-beans",
+                "org.springframework:spring-context",
+                "org.springframework:spring-expression",
+                "org.springframework:spring-test",
+                "org.springframework:spring-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-expression": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-context",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-jcl": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework:spring-core"
+            ]
+        },
+        "org.springframework:spring-test": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.springframework:spring-web": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-common",
+                "org.springframework.boot:spring-boot-starter-json",
+                "org.springframework.boot:spring-boot-starter-web",
+                "org.springframework:spring-webmvc"
+            ]
+        },
+        "org.springframework:spring-webmvc": {
+            "locked": "5.2.7.RELEASE",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-webmvc-core",
+                "org.springframework.boot:spring-boot-starter-web"
+            ]
+        },
+        "org.webjars:swagger-ui": {
+            "locked": "3.34.0",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.webjars:webjars-locator-core": {
+            "locked": "0.45",
+            "transitive": [
+                "org.springdoc:springdoc-openapi-ui"
+            ]
+        },
+        "org.xmlunit:xmlunit-core": {
+            "locked": "2.7.0",
+            "transitive": [
+                "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.yaml:snakeyaml": {
+            "locked": "1.26",
+            "transitive": [
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+                "org.springframework.boot:spring-boot-starter"
+            ]
         }
     }
 }
