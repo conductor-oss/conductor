@@ -39,7 +39,9 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -54,37 +56,21 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -101,7 +87,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {ObjectMapperConfiguration.class, TestDeciderService.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestDeciderService {
 
@@ -110,10 +96,37 @@ public class TestDeciderService {
     private ParametersUtils parametersUtils;
     private MetadataDAO metadataDAO;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
-    private static Registry registry = Spectator.globalRegistry();
+    private static Registry registry;
+
+    @Configuration
+    public static class TestConfiguration {
+
+        @Bean(TASK_TYPE_SUB_WORKFLOW)
+        public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
+            return new SubWorkflow(objectMapper);
+        }
+
+        @Bean("asyncCompleteSystemTask")
+        public WorkflowSystemTaskStub asyncCompleteSystemTask() {
+            return new WorkflowSystemTaskStub("asyncCompleteSystemTask") {
+                @Override
+                public boolean isAsyncComplete(Task task) {
+                    return true;
+                }
+            };
+        }
+
+        @Bean
+        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
+            return new SystemTaskRegistry(tasks);
+        }
+    }
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SystemTaskRegistry systemTaskRegistry;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -151,7 +164,8 @@ public class TestDeciderService {
         taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, mock(SystemTaskRegistry.class), taskMappers,
+        deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
+            systemTaskRegistry, taskMappers,
             Duration.ofMinutes(60));
     }
 
@@ -925,6 +939,9 @@ public class TestDeciderService {
 
         // verify that sub workflow tasks are not response timed out
         task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        assertFalse(deciderService.isResponseTimedOut(taskDef, task));
+
+        task.setTaskType("asyncCompleteSystemTask");
         assertFalse(deciderService.isResponseTimedOut(taskDef, task));
     }
 

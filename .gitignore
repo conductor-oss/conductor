@@ -21,6 +21,7 @@ bin/
 target/
 .DS_Store
 .vscode/
+buildscan.log
 
 # publishing secrets
 secrets/signing-key

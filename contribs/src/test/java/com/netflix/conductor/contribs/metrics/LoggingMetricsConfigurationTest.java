@@ -12,9 +12,15 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+
 import com.codahale.metrics.MetricRegistry;
 import com.netflix.conductor.contribs.metrics.LoggingMetricsConfiguration.Slf4jReporterProvider;
-import org.junit.Ignore;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -22,18 +28,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.concurrent.TimeUnit;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-
 @RunWith(SpringRunner.class)
 @TestPropertySource(properties = {"conductor.metrics-logger.enabled=true"})
-@Ignore
-// Test causes "OutOfMemoryError: GC overhead limit reached" error during build
 public class LoggingMetricsConfigurationTest {
 
     @Test
