@@ -1008,7 +1008,7 @@ public class TestWorkflowExecutor {
         workflowDef.setVersion(1);
         subWorkflow.setWorkflowDefinition(workflowDef);
         subWorkflow.setStatus(Workflow.WorkflowStatus.FAILED);
-        subWorkflow.getTasks().addAll(Arrays.asList(task,task1));
+        subWorkflow.getTasks().addAll(Arrays.asList(task, task1));
         subWorkflow.setParentWorkflowId("testRunWorkflowId");
 
         Task task2 = new Task();
@@ -1040,9 +1040,9 @@ public class TestWorkflowExecutor {
 
         //then
         assertEquals(task.getStatus(), Status.COMPLETED);
-        assertEquals(task1.getStatus(),Status.IN_PROGRESS);
-        assertEquals(workflow.getStatus(),WorkflowStatus.RUNNING);
-        assertEquals(subWorkflow.getStatus(),WorkflowStatus.RUNNING);
+        assertEquals(task1.getStatus(), Status.IN_PROGRESS);
+        assertEquals(workflow.getStatus(), WorkflowStatus.RUNNING);
+        assertEquals(subWorkflow.getStatus(), WorkflowStatus.RUNNING);
     }
 
     @Test
@@ -1651,25 +1651,5 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
-    }
-
-    private static class WorkflowSystemTaskStub extends WorkflowSystemTask {
-
-        private boolean started = false;
-
-        public WorkflowSystemTaskStub(String name) {
-            super(name);
-        }
-
-        @Override
-        public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
-            started = true;
-            task.setStatus(Status.COMPLETED);
-            super.start(workflow, task, executor);
-        }
-
-        public boolean isStarted() {
-            return started;
-        }
     }
 }
