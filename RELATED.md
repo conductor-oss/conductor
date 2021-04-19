@@ -30,3 +30,6 @@
 
 * https://github.com/davidwadden/conductor-workers - Various ready made Conductor workers for common operations on some platforms (ex.: Jira, Github, Concourse)
 
+## Conductor Web UI
+
+* https://github.com/maheshyaddanapudi/conductor-ng-ui - Angular based - Conductor Workflow Management UI
