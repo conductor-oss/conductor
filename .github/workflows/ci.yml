@@ -38,7 +38,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           echo "Running build for commit ${{ github.sha }} in ${{ github.head_ref }}"
-          ./gradlew build sonarqube --scan
+          ./gradlew build --scan
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
