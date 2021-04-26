@@ -19,6 +19,10 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation 'org.apache.logging.log4j:log4j-web'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    runtimeOnly 'com.netflix.spectator:spectator-reg-micrometer'
 }
 
 jar {

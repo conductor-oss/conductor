@@ -42,7 +42,7 @@ public class LoggingMetricsConfiguration {
     // This way one can cleanly separate the metrics stream from rest of the logs
     private static final Logger METRICS_LOGGER = LoggerFactory.getLogger("ConductorMetrics");
 
-    @Value("${conductor.metrics-logger.reportInterval:30s}")
+    @Value("${conductor.metrics-logger.reportInterval:#{T(java.time.Duration).ofSeconds(30)}}")
     private Duration reportInterval;
 
     @Bean

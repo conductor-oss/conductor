@@ -36,3 +36,12 @@ To ensure images are stopped do:
 In interactive mode the default startup script for the container do not run
  - `docker run -p 8080:8080 -t -i conductor:server -`
  - `docker run -p 5000:5000 -t -i conductor:ui -`
+
+
+## Monitoring with Prometheus
+
+Start Prometheus with:
+
+`docker-compose -f docker-compose-prometheus.yaml up -d`
+
+Go to [http://127.0.0.1:9090](http://127.0.0.1:9090).

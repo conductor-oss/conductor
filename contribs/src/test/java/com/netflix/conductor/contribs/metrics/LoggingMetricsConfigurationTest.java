@@ -24,29 +24,28 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
+@Import({LoggingMetricsConfiguration.class, MetricsRegistryConfiguration.class})
 @TestPropertySource(properties = {"conductor.metrics-logger.enabled=true"})
 public class LoggingMetricsConfigurationTest {
+
+    @Autowired
+    MetricRegistry metricRegistry;
 
     @Test
     public void testCollector() {
         Logger logger = spy(Logger.class);
         doReturn(true).when(logger).isInfoEnabled(any());
+        Slf4jReporterProvider reporterProvider = new Slf4jReporterProvider(metricRegistry, logger, 1);
+        metricRegistry.counter("test").inc();
 
-        new ApplicationContextRunner()
-            .withPropertyValues("conductor.metrics-logger.enabled:true")
-            .withUserConfiguration(MetricsRegistryConfiguration.class)
-            .run(context -> {
-                MetricRegistry metricRegistry = context.getBean(MetricRegistry.class);
-                Slf4jReporterProvider reporterProvider = new Slf4jReporterProvider(metricRegistry, logger, 1);
-                metricRegistry.counter("test").inc();
-
-                reporterProvider.getReporter();
-                verify(logger, timeout(TimeUnit.SECONDS.toMillis(10))).isInfoEnabled(null);
-            });
+        reporterProvider.getReporter();
+        verify(logger, timeout(TimeUnit.SECONDS.toMillis(10))).isInfoEnabled(null);
     }
 }
