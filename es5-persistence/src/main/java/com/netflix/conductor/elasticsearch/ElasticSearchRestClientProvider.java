@@ -18,12 +18,18 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ElasticSearchRestClientProvider implements Provider<RestClient> {
     private final ElasticSearchConfiguration configuration;
-
+    private static Logger logger = LoggerFactory.getLogger(ElasticSearchRestClientProvider.class);
     @Inject
     public ElasticSearchRestClientProvider(ElasticSearchConfiguration configuration) {
         this.configuration = configuration;
@@ -35,6 +41,16 @@ public class ElasticSearchRestClientProvider implements Provider<RestClient> {
 
         if (configuration.getElasticsearchRestClientConnectionRequestTimeout() > 0) {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(configuration.getElasticsearchRestClientConnectionRequestTimeout()));
+        }
+
+        if (configuration.getElasticSearchBasicAuthUsername() != null && configuration.getElasticSearchBasicAuthPassword() != null) {
+            logger.info("Configure ElasticSearch with BASIC authentication. User:{}",configuration.getElasticSearchBasicAuthUsername());
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(configuration.getElasticSearchBasicAuthUsername(), configuration.getElasticSearchBasicAuthPassword()));
+            restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        } else {
+            logger.info("Configure ElasticSearch with no authentication.");
         }
 
         return restClientBuilder.build();

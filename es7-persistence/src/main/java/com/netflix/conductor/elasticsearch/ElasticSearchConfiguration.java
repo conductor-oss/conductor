@@ -82,10 +82,10 @@ public interface ElasticSearchConfiguration extends Configuration {
     int ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_DEFAULT_VALUE = -1;
 
     String ELASTIC_SEARCH_BASIC_AUTH_USERNAME = "workflow.elasticsearch.basic.auth.username";
-    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_USERNAME = "username";
+    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_USERNAME = null;
 
     String ELASTIC_SEARCH_BASIC_AUTH_PASSWORD = "workflow.elasticsearch.basic.auth.password";
-    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_PASSWORD = "password";
+    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_PASSWORD = null;
 
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);

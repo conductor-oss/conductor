@@ -81,6 +81,12 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_PROPERTY_NAME = "workflow.elasticsearch.rest.client.connectionRequestTimeout.milliseconds";
     int ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_DEFAULT_VALUE = -1;
 
+    String ELASTIC_SEARCH_BASIC_AUTH_USERNAME = "workflow.elasticsearch.basic.auth.username";
+    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_USERNAME = null;
+
+    String ELASTIC_SEARCH_BASIC_AUTH_PASSWORD = "workflow.elasticsearch.basic.auth.password";
+    String DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_PASSWORD = null;
+
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
@@ -190,5 +196,12 @@ public interface ElasticSearchConfiguration extends Configuration {
     {
         return getIntProperty(ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT,
                 ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE);
+    }
+
+    default String getElasticSearchBasicAuthUsername() {
+        return getProperty(ELASTIC_SEARCH_BASIC_AUTH_USERNAME, DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_USERNAME);
+    }
+    default String getElasticSearchBasicAuthPassword() {
+        return getProperty(ELASTIC_SEARCH_BASIC_AUTH_PASSWORD, DEFAULT_ELASTIC_SEARCH_BASIC_AUTH_PASSWORD);
     }
 }
