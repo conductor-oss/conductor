@@ -93,7 +93,9 @@ public class WorkflowRepairService {
      */
     public void verifyAndRepairWorkflowTasks(String workflowId) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
-        workflow.getTasks().forEach(task -> verifyAndRepairTask(task));
+        if (workflow != null) {
+            workflow.getTasks().forEach(task -> verifyAndRepairTask(task));
+        }
     }
 
     /**
