@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.core.utils.BulkResponse;
+import com.netflix.conductor.common.model.BulkResponse;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotEmpty;

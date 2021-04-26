@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.client.http;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
@@ -19,6 +20,7 @@ import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -212,7 +214,20 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
 
         Object[] params = new Object[]{"archiveWorkflow", archiveWorkflow};
-        delete(params, "workflow/{workflowId}/remove", workflowId);
+        deleteWithUriVariables(params, "workflow/{workflowId}/remove", workflowId);
+    }
+
+    /**
+     * Terminates the execution of all given workflows instances
+     *
+     * @param workflowIds the ids of the workflows to be terminated
+     * @param reason      the reason to be logged and displayed
+     * @return the {@link BulkResponse} contains bulkErrorResults and bulkSuccessfulResults
+     */
+    public BulkResponse terminateWorkflows(List<String> workflowIds, String reason) throws JsonProcessingException {
+        Preconditions.checkArgument(!workflowIds.isEmpty(), "workflow id cannot be blank");
+        return deleteWithRequestBody(new Object[]{"reason", reason}, "workflow/bulk/terminate",
+                objectMapper.writeValueAsString(workflowIds));
     }
 
     /**
@@ -347,7 +362,7 @@ public class WorkflowClient extends ClientBase {
      */
     public void terminateWorkflow(String workflowId, String reason) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
-        delete(new Object[]{"reason", reason}, "workflow/{workflowId}", workflowId);
+        deleteWithUriVariables(new Object[]{"reason", reason}, "workflow/{workflowId}", workflowId);
     }
 
     /**

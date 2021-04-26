@@ -14,7 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW_BULK;
 
-import com.netflix.conductor.core.utils.BulkResponse;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.service.WorkflowBulkService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;

@@ -21,6 +21,7 @@ import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.validation.ErrorResponse;
@@ -107,19 +108,34 @@ public abstract class ClientBase {
     }
 
     protected void delete(String url, Object... uriVariables) {
-        delete(null, url, uriVariables);
+        deleteWithUriVariables(null, url, uriVariables);
     }
 
-    protected void delete(Object[] queryParams, String url, Object... uriVariables) {
+    protected void deleteWithUriVariables(Object[] queryParams, String url, Object... uriVariables) {
+        delete(queryParams, url, uriVariables, null);
+    }
+
+    protected BulkResponse deleteWithRequestBody(Object[] queryParams, String url, Object body) {
+        return delete(queryParams, url, null, body);
+    }
+
+    private BulkResponse delete(Object[] queryParams, String url, Object[] uriVariables, Object body) {
         URI uri = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
+            if (body != null) {
+                return client.resource(uri).type(MediaType.APPLICATION_JSON_TYPE).delete(BulkResponse.class, body);
+            } else {
+                client.resource(uri).delete();
+            }
         } catch (UniformInterfaceException e) {
             handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
             handleRuntimeException(e, uri);
         }
+
+        return null;
     }
 
     protected void put(String url, Object[] queryParams, Object request, Object... uriVariables) {
