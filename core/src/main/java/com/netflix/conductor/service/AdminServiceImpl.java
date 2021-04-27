@@ -18,7 +18,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.WorkflowRepairService;
+import com.netflix.conductor.core.reconciliation.WorkflowRepairService;
 import com.netflix.conductor.dao.QueueDAO;
 import java.util.List;
 import java.util.Map;

@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,19 +24,17 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.service.ExecutionService;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 /**
  * Monitors and processes messages on the default event queues that Conductor listens on.
@@ -42,6 +42,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
  * The default event queue type is controlled using the property: <code>conductor.default-event-queue.type</code>
  */
 @Component
+@ConditionalOnProperty(name = "conductor.default-event-queue-processor.enabled", havingValue = "true", matchIfMissing = true)
 public class DefaultEventQueueProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventQueueProcessor.class);
@@ -57,6 +58,7 @@ public class DefaultEventQueueProcessor {
         this.executionService = executionService;
         this.objectMapper = objectMapper;
         queues.forEach(this::startMonitor);
+        LOGGER.info("DefaultEventQueueProcessor initialized with {} queues", queues.entrySet().size());
     }
 
     private void startMonitor(Status status, ObservableQueue queue) {
@@ -94,8 +96,8 @@ public class DefaultEventQueueProcessor {
                         "No taskRefName found in the message. If there is only one WAIT task, will mark it as completed. {}",
                         payload);
                     taskOptional = workflow.getTasks().stream()
-                        .filter(task -> !task.getStatus().isTerminal() && task.getTaskType().equals(
-                                TASK_TYPE_WAIT)).findFirst();
+                        .filter(task -> !task.getStatus().isTerminal()
+                            && task.getTaskType().equals(TASK_TYPE_WAIT)).findFirst();
                 } else {
                     taskOptional = workflow.getTasks().stream().filter(
                         task -> !task.getStatus().isTerminal() && task.getReferenceTaskName().equals(taskRefName))

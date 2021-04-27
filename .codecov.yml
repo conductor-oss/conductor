@@ -1,3 +1,0 @@
-codecov:
-  branch: dev
-  # strict_yaml_branch: master # Enable this if we want to use the yml file in master to dictate the reports for all branches

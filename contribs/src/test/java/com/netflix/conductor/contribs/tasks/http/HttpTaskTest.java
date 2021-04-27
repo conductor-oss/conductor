@@ -28,7 +28,11 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.MediaType;
 import org.testcontainers.containers.MockServerContainer;
@@ -367,7 +371,8 @@ public class HttpTaskTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         SystemTaskRegistry systemTaskRegistry = mock(SystemTaskRegistry.class);
 
-        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry, Collections.emptyMap(),
+        new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry,
+            Collections.emptyMap(),
             Duration.ofMinutes(60))
             .decide(workflow);
     }

@@ -285,7 +285,7 @@ Component configuration:
 | db | conductor.db.type | "" | 
 | workflow.indexing.enabled | conductor.indexing.enabled | true |
 | conductor.disable.async.workers | conductor.system-task-workers.enabled | true |
-| decider.sweep.disable | conductor.workflow-sweeper.enabled | true |
+| decider.sweep.disable | conductor.workflow-reconciler.enabled | true |
 | conductor.grpc.server.enabled | conductor.grpc-server.enabled | false |
 | workflow.external.payload.storage | conductor.external-payload-storage.type | dummy |
 | workflow.default.event.processor.enabled | conductor.default-event-processor.enabled | true |
