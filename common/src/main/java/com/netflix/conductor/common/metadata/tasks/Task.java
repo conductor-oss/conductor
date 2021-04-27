@@ -17,6 +17,7 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -163,9 +164,11 @@ public class Task {
     private String domain;
 
     @ProtoField(id = 29)
+    @Hidden
     private Any inputMessage;
 
     @ProtoField(id = 30)
+    @Hidden
     private Any outputMessage;
 
     // id 31 is reserved

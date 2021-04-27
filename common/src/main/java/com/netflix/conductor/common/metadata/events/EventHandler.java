@@ -16,6 +16,7 @@ import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
+import io.swagger.v3.oas.annotations.Hidden;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
@@ -232,6 +233,7 @@ public class EventHandler {
         private Map<String, Object> output = new HashMap<>();
 
         @ProtoField(id = 4)
+        @Hidden
         private Any outputMessage;
 
         @ProtoField(id = 5)
@@ -318,6 +320,7 @@ public class EventHandler {
         private Map<String, Object> input = new HashMap<>();
 
         @ProtoField(id = 5)
+        @Hidden
         private Any inputMessage;
 
         @ProtoField(id = 6)
