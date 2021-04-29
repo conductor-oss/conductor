@@ -1,8 +1,6 @@
 language: java
 jdk:
 - openjdk8
-after_success:
-- bash <(curl -s https://codecov.io/bash)
 install: "./installViaTravis.sh"
 script: "./buildViaTravis.sh"
 git:
