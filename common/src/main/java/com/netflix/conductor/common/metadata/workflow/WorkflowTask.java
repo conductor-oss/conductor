@@ -494,12 +494,8 @@ public class WorkflowTask {
 
     private Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
-        TaskType taskType = TaskType.USER_DEFINED;
-        if (TaskType.isSystemTask(type)) {
-            taskType = TaskType.valueOf(type);
-        }
 
-        switch (taskType) {
+        switch (TaskType.of(type)) {
             case DECISION:
                 workflowTaskLists.addAll(decisionCases.values());
                 workflowTaskLists.add(defaultCase);
@@ -529,10 +525,7 @@ public class WorkflowTask {
     }
 
     public WorkflowTask next(String taskReferenceName, WorkflowTask parent) {
-        TaskType taskType = TaskType.USER_DEFINED;
-        if (TaskType.isSystemTask(type)) {
-            taskType = TaskType.valueOf(type);
-        }
+        TaskType taskType = TaskType.of(type);
 
         switch (taskType) {
             case DO_WHILE:
@@ -606,12 +599,7 @@ public class WorkflowTask {
             return true;
         }
 
-        TaskType taskType = TaskType.USER_DEFINED;
-        if (TaskType.isSystemTask(type)) {
-            taskType = TaskType.valueOf(type);
-        }
-
-        switch (taskType) {
+        switch (TaskType.of(type)) {
             case DECISION:
             case DO_WHILE:
             case FORK_JOIN:

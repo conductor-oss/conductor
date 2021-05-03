@@ -51,7 +51,6 @@ import com.netflix.conductor.service.ExecutionLockService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -87,7 +86,6 @@ import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT
  * Workflow services provider interface
  */
 @Trace
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class WorkflowExecutor {
 
@@ -119,7 +117,6 @@ public class WorkflowExecutor {
 
     private static final Predicate<Task> NON_TERMINAL_TASK = task -> !task.getStatus().isTerminal();
 
-    @Autowired
     public WorkflowExecutor(DeciderService deciderService, MetadataDAO metadataDAO, QueueDAO queueDAO,
                             MetadataMapperService metadataMapperService, WorkflowStatusListener workflowStatusListener,
                             ExecutionDAOFacade executionDAOFacade, ConductorProperties properties,
@@ -1472,7 +1469,7 @@ public class WorkflowExecutor {
                 String[] domains = domainstr.split(",");
                 tasks.forEach(task -> {
                     // Filter out SystemTask
-                    if (!TaskType.isSystemTask(task.getTaskType())) {
+                    if (!systemTaskRegistry.isSystemTask(task.getTaskType())) {
                         // Check which domain worker is polling
                         // Set the task domain
                         task.setDomain(getActiveDomain(task.getTaskType(), domains));
@@ -1481,7 +1478,7 @@ public class WorkflowExecutor {
             }
             // Step 2: Override additional mappings.
             tasks.forEach(task -> {
-                if (!TaskType.isSystemTask(task.getTaskType())) {
+                if (!systemTaskRegistry.isSystemTask(task.getTaskType())) {
                     String taskDomainstr = taskToDomain.get(task.getTaskType());
                     if (taskDomainstr != null) {
                         task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
