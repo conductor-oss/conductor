@@ -13,7 +13,7 @@
 package com.netflix.conductor.core.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.ObjectMapperConfiguration;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -86,7 +86,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class, TestDeciderOutcomes.TestConfiguration.class})
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class, TestDeciderOutcomes.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestDeciderOutcomes {
 

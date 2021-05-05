@@ -45,4 +45,5 @@ dependencies {
     implementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
+    testImplementation project(':conductor-common').sourceSets.test.output
 }
