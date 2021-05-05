@@ -32,4 +32,4 @@ fi
 
 echo "Using java options config: $JAVA_OPTS"
 
-java ${JAVA_OPTS} -jar conductor-server-*-all.jar $config_file $log4j_file
+java ${JAVA_OPTS} -jar conductor-server-*-boot.jar $config_file $log4j_file
