@@ -65,6 +65,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -204,7 +205,7 @@ public class TestWorkflowExecutor {
         taskMappers.put(LAMBDA, new LambdaTaskMapper(parametersUtils, metadataDAO));
 
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
-            systemTaskRegistry, taskMappers, Duration.ofMinutes(60));
+            systemTaskRegistry, taskMappers, Duration.ofMinutes(60), mock(Environment.class));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
         ConductorProperties properties = mock(ConductorProperties.class);
