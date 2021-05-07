@@ -21,13 +21,23 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 | main | [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml) |
 | 2.31 | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=2.31)](https://travis-ci.com/Netflix/conductor) |
 
+
+## Running Conductor
+The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases). Conductor can be started up with an in-memory persistence and queue implementation. It is not recommended for production use but can come in handy for quickly evaluating what Conductor's all about. For actual production use-cases, please use one of the supported persistence and queue implementations.
+
+If Docker is installed, please follow the instructions [here](https://github.com/Netflix/conductor/tree/main/docker). 
+
+If Java 11 or above is installed, Conductor [publishes](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/conductor-server/) an executable jar that can be run using,
+
+`java -jar conductor-server-*-boot.jar`
+
 ## Documentation & Getting Started
-[http://netflix.github.io/conductor/](http://netflix.github.io/conductor/)
+[Documentation](http://netflix.github.io/conductor/)
 
 [Getting Started](https://netflix.github.io/conductor/gettingstarted/basicconcepts/) guide.
 
 ## Get Conductor
-Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/conductor-server/) repository.
+Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository.
 
 Below are the various artifacts published:
 
