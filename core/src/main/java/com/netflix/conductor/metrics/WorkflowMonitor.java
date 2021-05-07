@@ -22,18 +22,17 @@ import com.netflix.conductor.dao.QueueDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
+@ConditionalOnProperty(name = "conductor.workflow-monitor.enabled", havingValue = "true", matchIfMissing = true)
 public class WorkflowMonitor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowMonitor.class);
@@ -42,7 +41,6 @@ public class WorkflowMonitor {
     private final QueueDAO queueDAO;
     private final ExecutionDAOFacade executionDAOFacade;
     private final int metadataRefreshInterval;
-    private final long statsFrequencyInSeconds;
     private final Collection<WorkflowSystemTask> allSystemTasks;
 
     private List<TaskDef> taskDefs;
@@ -50,59 +48,56 @@ public class WorkflowMonitor {
     private int refreshCounter = 0;
 
     public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade,
-                           @Value("${conductor.workflow-monitor.metadataRefreshInterval:10}") int metadataRefreshInterval,
-                           @Value("${conductor.workflow-monitor.statsFrequency:60s}") Duration statsFrequency,
+                           @Value("${conductor.workflow-monitor.metadata-refresh-interval:10}") int metadataRefreshInterval,
                            SystemTaskRegistry systemTaskRegistry) {
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
         this.executionDAOFacade = executionDAOFacade;
         this.metadataRefreshInterval = metadataRefreshInterval;
-        this.statsFrequencyInSeconds = statsFrequency.getSeconds();
         this.allSystemTasks = systemTaskRegistry.all();
-        init();
+        LOGGER.info("{} initialized.", WorkflowMonitor.class.getSimpleName());
     }
 
-    public void init() {
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                if (refreshCounter <= 0) {
-                    workflowDefs = metadataDAO.getAllWorkflowDefs();
-                    taskDefs = new ArrayList<>(metadataDAO.getAllTaskDefs());
-                    refreshCounter = metadataRefreshInterval;
-                }
-
-                workflowDefs.forEach(workflowDef -> {
-                    String name = workflowDef.getName();
-                    String version = String.valueOf(workflowDef.getVersion());
-                    String ownerApp = workflowDef.getOwnerApp();
-                    long count = executionDAOFacade.getPendingWorkflowCount(name);
-                    Monitors.recordRunningWorkflows(count, name, version, ownerApp);
-                });
-
-                taskDefs.forEach(taskDef -> {
-                    long size = queueDAO.getSize(taskDef.getName());
-                    long inProgressCount = executionDAOFacade.getInProgressTaskCount(taskDef.getName());
-                    Monitors.recordQueueDepth(taskDef.getName(), size, taskDef.getOwnerApp());
-                    if (taskDef.concurrencyLimit() > 0) {
-                        Monitors.recordTaskInProgress(taskDef.getName(), inProgressCount, taskDef.getOwnerApp());
-                    }
-                });
-
-                allSystemTasks
-                        .stream()
-                        .filter(WorkflowSystemTask::isAsync)
-                        .forEach(workflowSystemTask -> {
-                            long size = queueDAO.getSize(workflowSystemTask.getTaskType());
-                            long inProgressCount = executionDAOFacade.getInProgressTaskCount(workflowSystemTask.getTaskType());
-                            Monitors.recordQueueDepth(workflowSystemTask.getTaskType(), size, "system");
-                            Monitors.recordTaskInProgress(workflowSystemTask.getTaskType(), inProgressCount, "system");
-                        });
-
-                refreshCounter--;
-            } catch (Exception e) {
-                LOGGER.error("Error while publishing scheduled metrics", e);
+    @Scheduled(initialDelayString = "${conductor.workflow-monitor.stats.initial-delay:120000}",
+            fixedDelayString = "${conductor.workflow-monitor.stats.delay:60000}")
+    public void reportMetrics() {
+        try {
+            if (refreshCounter <= 0) {
+                workflowDefs = metadataDAO.getAllWorkflowDefs();
+                taskDefs = new ArrayList<>(metadataDAO.getAllTaskDefs());
+                refreshCounter = metadataRefreshInterval;
             }
-        }, 120, statsFrequencyInSeconds, TimeUnit.SECONDS);
+
+            workflowDefs.forEach(workflowDef -> {
+                String name = workflowDef.getName();
+                String version = String.valueOf(workflowDef.getVersion());
+                String ownerApp = workflowDef.getOwnerApp();
+                long count = executionDAOFacade.getPendingWorkflowCount(name);
+                Monitors.recordRunningWorkflows(count, name, version, ownerApp);
+            });
+
+            taskDefs.forEach(taskDef -> {
+                long size = queueDAO.getSize(taskDef.getName());
+                long inProgressCount = executionDAOFacade.getInProgressTaskCount(taskDef.getName());
+                Monitors.recordQueueDepth(taskDef.getName(), size, taskDef.getOwnerApp());
+                if (taskDef.concurrencyLimit() > 0) {
+                    Monitors.recordTaskInProgress(taskDef.getName(), inProgressCount, taskDef.getOwnerApp());
+                }
+            });
+
+            allSystemTasks
+                    .stream()
+                    .filter(WorkflowSystemTask::isAsync)
+                    .forEach(workflowSystemTask -> {
+                        long size = queueDAO.getSize(workflowSystemTask.getTaskType());
+                        long inProgressCount = executionDAOFacade.getInProgressTaskCount(workflowSystemTask.getTaskType());
+                        Monitors.recordQueueDepth(workflowSystemTask.getTaskType(), size, "system");
+                        Monitors.recordTaskInProgress(workflowSystemTask.getTaskType(), inProgressCount, "system");
+                    });
+
+            refreshCounter--;
+        } catch (Exception e) {
+            LOGGER.error("Error while publishing scheduled metrics", e);
+        }
     }
 }
