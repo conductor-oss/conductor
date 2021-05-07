@@ -10,29 +10,21 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
+
 package com.netflix.conductor.common.config;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
-
+/**
+ * Supplies the standard Conductor {@link ObjectMapper} for tests that need them.
+ */
 @Configuration
-public class ObjectMapperConfiguration {
+public class TestObjectMapperConfiguration {
 
-    private final ObjectMapper objectMapper;
-
-    public ObjectMapperConfiguration(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
-    /**
-     * Set default property inclusion like {@link ObjectMapperProvider#getObjectMapper()}.
-     */
-    @PostConstruct
-    public void customizeDefaultObjectMapper() {
-        objectMapper.setDefaultPropertyInclusion(
-                JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS));
+    @Bean
+    public ObjectMapper testObjectMapper() {
+        return new ObjectMapperProvider().getObjectMapper();
     }
 }

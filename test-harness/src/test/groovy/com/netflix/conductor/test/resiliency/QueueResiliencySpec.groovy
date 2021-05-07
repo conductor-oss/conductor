@@ -300,6 +300,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         workflowResource.pauseWorkflow(workflowInstanceId)
 
         then: "Verify workflow is paused without any exceptions"
+        1 * queueDAO.remove(*_) >> { throw new IllegalStateException("Queue remove failed from Spy") }
         0 * queueDAO._
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.PAUSED
@@ -309,7 +310,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         }
     }
 
-    def "Verify resume succeeds when QueueDAO is unavailable"() {
+    def "Verify resume fails when QueueDAO is unavailable"() {
         when: "Start a simple workflow"
         def workflowInstanceId = workflowResource.startWorkflow(new StartWorkflowRequest()
                 .withName(SIMPLE_TWO_TASK_WORKFLOW)
@@ -337,10 +338,11 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         when: "Workflow is resumed when QueueDAO is unavailable"
         workflowResource.resumeWorkflow(workflowInstanceId)
 
-        then: "Verify QueueDAO is not involved and Workflow is resumed successfully"
-        0 * queueDAO._
+        then: "exception is thrown"
+        1 * queueDAO.push(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue push failed from Spy") }
+        thrown(ApplicationException)
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
+            status == Workflow.WorkflowStatus.PAUSED
             tasks.size() == 1
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.SCHEDULED

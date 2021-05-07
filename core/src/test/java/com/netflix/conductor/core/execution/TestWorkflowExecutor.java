@@ -12,9 +12,52 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.LAMBDA;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_LAMBDA;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.COMPLETED;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.PAUSED;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.RUNNING;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.maxBy;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.netflix.conductor.common.config.ObjectMapperConfiguration;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -84,46 +127,19 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.LAMBDA;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_LAMBDA;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
-import static java.util.Comparator.comparingInt;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.maxBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class, TestWorkflowExecutor.TestConfiguration.class})
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class, TestWorkflowExecutor.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestWorkflowExecutor {
 
@@ -132,6 +148,7 @@ public class TestWorkflowExecutor {
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
+    private ExecutionLockService executionLockService;
 
     @Configuration
     public static class TestConfiguration {
@@ -188,7 +205,7 @@ public class TestWorkflowExecutor {
         queueDAO = mock(QueueDAO.class);
         workflowStatusListener = mock(WorkflowStatusListener.class);
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
-        ExecutionLockService executionLockService = mock(ExecutionLockService.class);
+        executionLockService = mock(ExecutionLockService.class);
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
         Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put(DECISION, new DecisionTaskMapper());
@@ -1327,68 +1344,6 @@ public class TestWorkflowExecutor {
         assertEquals(3, workflow.getTasks().size());
     }
 
-    @Test
-    public void testRollbackTasks() {
-        String workflowId = "workflow-id";
-
-        Task task1 = new Task();
-        task1.setTaskType(TaskType.SIMPLE.name());
-        task1.setTaskDefName("simpleTask");
-        task1.setReferenceTaskName("simpleTask");
-        task1.setWorkflowInstanceId(workflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
-        task1.setTaskId(IDGenerator.generate());
-        task1.setStatus(Status.SCHEDULED);
-
-        WorkflowTask waitTask = new WorkflowTask();
-        waitTask.setWorkflowTaskType(TaskType.WAIT);
-        waitTask.setType(TaskType.WAIT.name());
-        waitTask.setTaskReferenceName("wait");
-        Task task2 = new Task();
-        task2.setTaskType(waitTask.getType());
-        task2.setTaskDefName(waitTask.getName());
-        task2.setReferenceTaskName(waitTask.getTaskReferenceName());
-        task2.setWorkflowInstanceId(workflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
-        task2.setTaskId(IDGenerator.generate());
-        task2.setStatus(Status.IN_PROGRESS);
-        task2.setRetryCount(0);
-        task2.setWorkflowTask(waitTask);
-
-        WorkflowTask subWorkflowTask = new WorkflowTask();
-        subWorkflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
-        subWorkflowTask.setType(TaskType.SUB_WORKFLOW.name());
-        subWorkflowTask.setTaskReferenceName("sub-workflow");
-        Task task3 = new Task();
-        task3.setTaskType(subWorkflowTask.getType());
-        task3.setTaskDefName(subWorkflowTask.getName());
-        task3.setReferenceTaskName(subWorkflowTask.getTaskReferenceName());
-        task3.setWorkflowInstanceId(workflowId);
-        task3.setScheduledTime(System.currentTimeMillis());
-        task3.setTaskId(IDGenerator.generate());
-        task3.setStatus(Status.IN_PROGRESS);
-        task3.setRetryCount(0);
-        task3.setWorkflowTask(subWorkflowTask);
-        task3.setOutputData(new HashMap<>());
-        task3.setSubWorkflowId(IDGenerator.generate());
-
-        AtomicInteger removeWorkflowCalledCounter = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            removeWorkflowCalledCounter.incrementAndGet();
-            return null;
-        }).when(executionDAOFacade).removeWorkflow(anyString(), anyBoolean());
-
-        AtomicInteger removeTaskCalledCounter = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            removeTaskCalledCounter.incrementAndGet();
-            return null;
-        }).when(executionDAOFacade).removeTask(anyString());
-
-        workflowExecutor.rollbackTasks(workflowId, Arrays.asList(task1, task2, task3));
-        assertEquals(1, removeWorkflowCalledCounter.get());
-        assertEquals(3, removeTaskCalledCounter.get());
-    }
-
     @Test(expected = ApplicationException.class)
     public void testTerminateCompletedWorkflow() {
         Workflow workflow = new Workflow();
@@ -1614,6 +1569,71 @@ public class TestWorkflowExecutor {
         assertEquals(TaskType.LAMBDA.name(), argumentCaptor.getAllValues().get(1).getTaskType());
         assertEquals(Status.CANCELED, argumentCaptor.getAllValues().get(1).getStatus());
         verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
+    }
+
+    @Test
+    public void testPauseWorkflow() {
+        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
+        doNothing().when(executionLockService).releaseLock(anyString());
+
+        String workflowId = "testPauseWorkflowId";
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+
+        // if workflow is in terminal state
+        workflow.setStatus(COMPLETED);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(workflow);
+        try {
+            workflowExecutor.pauseWorkflow(workflowId);
+            fail("Expected " + ApplicationException.class);
+        } catch (ApplicationException e) {
+            assertEquals(e.getCode(), CONFLICT);
+            verify(executionDAOFacade, never()).updateWorkflow(any(Workflow.class));
+            verify(queueDAO, never()).remove(anyString(), anyString());
+        }
+
+        // if workflow is already PAUSED
+        workflow.setStatus(PAUSED);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.pauseWorkflow(workflowId);
+        assertEquals(PAUSED, workflow.getStatus());
+        verify(executionDAOFacade, never()).updateWorkflow(any(Workflow.class));
+        verify(queueDAO, never()).remove(anyString(), anyString());
+
+        // if workflow is RUNNING
+        workflow.setStatus(RUNNING);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.pauseWorkflow(workflowId);
+        assertEquals(PAUSED, workflow.getStatus());
+        verify(executionDAOFacade, times(1)).updateWorkflow(any(Workflow.class));
+        verify(queueDAO, times(1)).remove(anyString(), anyString());
+    }
+
+    @Test
+    public void testResumeWorkflow() {
+        String workflowId = "testResumeWorkflowId";
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+
+        // if workflow is not in PAUSED state
+        workflow.setStatus(COMPLETED);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(workflow);
+        try {
+            workflowExecutor.resumeWorkflow(workflowId);
+        } catch (Exception e) {
+            assertTrue(e instanceof IllegalStateException);
+            verify(executionDAOFacade, never()).updateWorkflow(any(Workflow.class));
+            verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
+        }
+
+        // if workflow is in PAUSED state
+        workflow.setStatus(PAUSED);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.resumeWorkflow(workflowId);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertTrue(workflow.getLastRetriedTime() > 0);
+        verify(executionDAOFacade, times(1)).updateWorkflow(any(Workflow.class));
+        verify(queueDAO, times(1)).push(anyString(), anyString(), anyInt(), anyLong());
     }
 
     private Workflow generateSampleWorkflow() {

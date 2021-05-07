@@ -13,7 +13,7 @@
 package com.netflix.conductor.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.ObjectMapperConfiguration;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {ObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
 public class ExternalPayloadStorageUtilsTest {
 
