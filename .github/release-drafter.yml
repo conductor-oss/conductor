@@ -24,13 +24,14 @@ version-resolver:
   minor:
     labels:
       - 'type: important'
-      - 'type: feature'
+
   patch:
     labels:
       - 'type: bug'
       - 'type: maintenance'
       - 'type: docs'
       - 'type: dependencies'
+      - 'type: feature'
 
 exclude-labels:
   - 'skip-changelog'
