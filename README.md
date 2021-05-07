@@ -27,7 +27,7 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 [Getting Started](https://netflix.github.io/conductor/gettingstarted/basicconcepts/) guide.
 
 ## Get Conductor
-Binaries are available from Maven Central.
+Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/conductor-server/) repository.
 
 Below are the various artifacts published:
 
