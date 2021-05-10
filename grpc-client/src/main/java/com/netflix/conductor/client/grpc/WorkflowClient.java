@@ -279,8 +279,18 @@ public class WorkflowClient extends ClientBase {
      * @param query the search query
      * @return the {@link SearchResult} containing the {@link WorkflowSummary} that match the query
      */
-    public SearchResult<WorkflowSummary> search(@Nonnull String query) {
+    public SearchResult<WorkflowSummary> search(String query) {
         return search(null, null, null, null, query);
+    }
+
+    /**
+     * Search for workflows based on payload
+     *
+     * @param query the search query
+     * @return the {@link SearchResult} containing the {@link Workflow} that match the query
+     */
+    public SearchResult<Workflow> searchV2(String query) {
+        return searchV2(null, null, null, null, query);
     }
 
     /**
@@ -295,11 +305,9 @@ public class WorkflowClient extends ClientBase {
      */
     public SearchResult<WorkflowSummary> search(
             @Nullable Integer start, @Nullable Integer size,
-            @Nullable String sort, @Nullable String freeText, @Nonnull String query) {
-        Preconditions.checkNotNull(query, "query cannot be null");
+            @Nullable String sort, @Nullable String freeText, @Nullable String query) {
 
         SearchPb.Request.Builder request = SearchPb.Request.newBuilder();
-        request.setQuery(query);
         if (start != null)
             request.setStart(start);
         if (size != null)
@@ -308,9 +316,44 @@ public class WorkflowClient extends ClientBase {
             request.setSort(sort);
         if (freeText != null)
             request.setFreeText(freeText);
+        if (query != null)
+            request.setQuery(query);
 
         WorkflowServicePb.WorkflowSummarySearchResult result = stub.search(request.build());
         return new SearchResult<WorkflowSummary>(
+                result.getTotalHits(),
+                result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Paginated search for workflows based on payload
+     *
+     * @param start    start value of page
+     * @param size     number of workflows to be returned
+     * @param sort     sort order
+     * @param freeText additional free text query
+     * @param query    the search query
+     * @return the {@link SearchResult} containing the {@link Workflow} that match the query
+     */
+    public SearchResult<Workflow> searchV2(
+            @Nullable Integer start, @Nullable Integer size,
+            @Nullable String sort, @Nullable String freeText, @Nullable String query) {
+
+        SearchPb.Request.Builder request = SearchPb.Request.newBuilder();
+        if (start != null)
+            request.setStart(start);
+        if (size != null)
+            request.setSize(size);
+        if (sort != null)
+            request.setSort(sort);
+        if (freeText != null)
+            request.setFreeText(freeText);
+        if (query != null)
+            request.setQuery(query);
+
+        WorkflowServicePb.WorkflowSearchResult result = stub.searchV2(request.build());
+        return new SearchResult<Workflow>(
                 result.getTotalHits(),
                 result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
         );

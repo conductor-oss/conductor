@@ -240,6 +240,36 @@ public class WorkflowResource {
         return workflowService.searchWorkflowsByTasks(start, size, sort, freeText, query);
     }
 
+    @ApiOperation(value = "Search for workflows based on payload and other parameters",
+            notes = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+                    " If order is not specified, defaults to ASC.")
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/search-v2")
+    public SearchResult<Workflow> searchV2(@QueryParam("start") @DefaultValue("0") int start,
+                                                @QueryParam("size") @DefaultValue("100") int size,
+                                                @QueryParam("sort") String sort,
+                                                @QueryParam("freeText") @DefaultValue("*") String freeText,
+                                                @QueryParam("query") String query) {
+        return workflowService.searchWorkflowsV2(start, size, sort, freeText, query);
+    }
+
+    @ApiOperation(value = "Search for workflows based on task parameters",
+            notes = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+                    " If order is not specified, defaults to ASC")
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/search-by-tasks-v2")
+    public SearchResult<Workflow> searchWorkflowsByTasksV2(@QueryParam("start") @DefaultValue("0") int start,
+                                                                @QueryParam("size") @DefaultValue("100") int size,
+                                                                @QueryParam("sort") String sort,
+                                                                @QueryParam("freeText") @DefaultValue("*") String freeText,
+                                                                @QueryParam("query") String query) {
+        return workflowService.searchWorkflowsByTasksV2(start, size, sort, freeText, query);
+    }
+
     @GET
     @ApiOperation("Get the uri and path of the external storage where the workflow payload is to be stored")
     @Consumes(MediaType.WILDCARD)

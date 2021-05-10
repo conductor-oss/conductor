@@ -183,6 +183,24 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
         assertNotNull(searchResult);
         assertEquals(1, searchResult.getTotalHits());
+        assertEquals(wf.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
+
+        SearchResult<Workflow> searchResultV2 = workflowClient.searchV2("workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultV2);
+        assertEquals(1, searchResultV2.getTotalHits());
+        assertEquals(wf.getWorkflowId(), searchResultV2.getResults().get(0).getWorkflowId());
+
+
+        SearchResult<WorkflowSummary> searchResultAdvanced = workflowClient.search(0,1,null,null,"workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultAdvanced);
+        assertEquals(1, searchResultAdvanced.getTotalHits());
+        assertEquals(wf.getWorkflowId(), searchResultAdvanced.getResults().get(0).getWorkflowId());
+
+
+        SearchResult<Workflow> searchResultV2Advanced = workflowClient.searchV2(0,1,null,null,"workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultV2Advanced);
+        assertEquals(1, searchResultV2Advanced.getTotalHits());
+        assertEquals(wf.getWorkflowId(), searchResultV2Advanced.getResults().get(0).getWorkflowId());
 
         workflowClient.terminateWorkflow(workflowId, "terminate reason");
         wf = workflowClient.getWorkflow(workflowId, true);

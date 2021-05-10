@@ -391,6 +391,22 @@ public class WorkflowServiceImpl implements WorkflowService {
      *
      * @param start    Start index of pagination
      * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
+     * @param freeText Text you want to search
+     * @param query    Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    @Service
+    public SearchResult<Workflow> searchWorkflowsV2(int start, int size, String sort, String freeText, String query) {
+        return executionService.searchV2(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
+    }
+
+    /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
      * @param sort     list of sorting options, separated by "|" delimiter
      * @param freeText Text you want to search
      * @param query    Query you want to search
@@ -399,6 +415,22 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Service
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, List<String> sort, String freeText, String query) {
         return executionService.search(query, freeText, start, size, sort);
+    }
+
+    /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query    Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    @Service
+    public SearchResult<Workflow> searchWorkflowsV2(int start, int size, List<String> sort, String freeText, String query) {
+        return executionService.searchV2(query, freeText, start, size, sort);
     }
 
 
@@ -423,6 +455,21 @@ public class WorkflowServiceImpl implements WorkflowService {
      *
      * @param start    Start index of pagination
      * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
+     * @param freeText Text you want to search
+     * @param query    Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    public SearchResult<Workflow> searchWorkflowsByTasksV2(int start, int size, String sort, String freeText, String query) {
+        return executionService.searchWorkflowByTasksV2(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
+    }
+
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
      * @param sort     list of sorting options, separated by "|" delimiter
      * @param freeText Text you want to search
      * @param query    Query you want to search
@@ -430,6 +477,21 @@ public class WorkflowServiceImpl implements WorkflowService {
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, List<String> sort, String freeText, String query) {
         return executionService.searchWorkflowByTasks(query, freeText, start, size, sort);
+    }
+
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query    Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    public SearchResult<Workflow> searchWorkflowsByTasksV2(int start, int size, List<String> sort, String freeText, String query) {
+        return executionService.searchWorkflowByTasksV2(query, freeText, start, size, sort);
     }
 
     /**
