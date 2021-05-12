@@ -44,7 +44,7 @@
     },
     {
       "name": "conductor.workflow-monitor.enabled",
-      "type": "java.lang.Integer",
+      "type": "java.lang.Boolean",
       "description": "Enables the workflow monitor that publishes workflow and task metrics.",
       "defaultValue": "true",
       "sourceType": "com.netflix.conductor.metrics.WorkflowMonitor"
