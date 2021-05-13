@@ -1150,7 +1150,7 @@ public class TestDeciderService {
         try {
             deciderService.checkWorkflowTimeout(workflow);
         } catch (TerminateWorkflowException twe) {
-            assertTrue(twe.getMessage().contains("Workflow 'workflow_id' timed out"));
+            assertTrue(twe.getMessage().contains("Workflow timed out"));
         }
 
         // for a retried workflow
@@ -1158,7 +1158,7 @@ public class TestDeciderService {
         try {
             deciderService.checkWorkflowTimeout(workflow);
         } catch (TerminateWorkflowException twe) {
-            assertTrue(twe.getMessage().contains("Workflow 'workflow_id' timed out"));
+            assertTrue(twe.getMessage().contains("Workflow timed out"));
         }
     }
 

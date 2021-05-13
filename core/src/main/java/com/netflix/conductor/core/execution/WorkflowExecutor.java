@@ -74,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -763,6 +764,13 @@ public class WorkflowExecutor {
         workflow.setOutput(workflow.getOutput());
         workflow.setReasonForIncompletion(workflow.getReasonForIncompletion());
         workflow.setExternalOutputPayloadStoragePath(workflow.getExternalOutputPayloadStoragePath());
+
+        // update the failed reference task names
+        workflow.getFailedReferenceTaskNames().addAll(workflow.getTasks().stream()
+            .filter(t -> FAILED.equals(t.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(t.getStatus()))
+            .map(Task::getReferenceTaskName)
+            .collect(Collectors.toSet()));
+
         executionDAOFacade.updateWorkflow(workflow);
         LOGGER.debug("Completed workflow execution for {}", workflow.getWorkflowId());
         workflowStatusListener.onWorkflowCompletedIfEnabled(workflow);
@@ -808,6 +816,12 @@ public class WorkflowExecutor {
                 workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
             }
             deciderService.updateWorkflowOutput(workflow, null);
+
+            // update the failed reference task names
+            workflow.getFailedReferenceTaskNames().addAll(workflow.getTasks().stream()
+                .filter(t -> FAILED.equals(t.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(t.getStatus()))
+                .map(Task::getReferenceTaskName)
+                .collect(Collectors.toSet()));
 
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
@@ -1002,15 +1016,6 @@ public class WorkflowExecutor {
                 executionDAOFacade.updateTask(task);
                 return null;
             }, null, null, 2, updateTaskDesc, updateTaskOperation);
-
-            //If the task has failed update the failed task reference name in the workflow.
-            //This gives the ability to look at workflow and see what tasks have failed at a high level.
-            if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
-                workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
-                executionDAOFacade.updateWorkflow(workflowInstance);
-                LOGGER.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference",
-                        task, task.getStatus());
-            }
         } catch (Exception e) {
             String errorMsg = String.format("Error updating task: %s for workflow: %s", task.getTaskId(), workflowId);
             LOGGER.error(errorMsg, e);
@@ -1176,38 +1181,6 @@ public class WorkflowExecutor {
                     .findFirst();
         }
         return Optional.empty();
-    }
-
-    /**
-     * When a TERMINATE task runs, it only affects the workflow in which it runs; it does not do anything with
-     * in-progress tasks and subworkflows that are still running. This recursive method will ensure that all tasks
-     * within all subworkflows are set to SKIPPED status so they can complete.
-     *
-     * @param workflow a subworkflow within the hierarchy of the original workflow containing the TERMINATE task
-     */
-    private void skipTasksAffectedByTerminateTask(Workflow workflow) {
-        if (!workflow.getStatus().isTerminal()) {
-            List<Task> tasksToBeUpdated = new ArrayList<>();
-            for (Task workflowTask : workflow.getTasks()) {
-                if (!workflowTask.getStatus().isTerminal()) {
-                    workflowTask.setStatus(SKIPPED);
-                    tasksToBeUpdated.add(workflowTask);
-                }
-                if (SUB_WORKFLOW.name().equals(workflowTask.getTaskType()) && StringUtils
-                        .isNotBlank(workflowTask.getSubWorkflowId())) {
-                    Workflow subWorkflow = executionDAOFacade.getWorkflowById(workflowTask.getSubWorkflowId(), true);
-                    if (subWorkflow != null) {
-                        skipTasksAffectedByTerminateTask(subWorkflow);
-                    }
-                }
-            }
-            if (!tasksToBeUpdated.isEmpty()) {
-                executionDAOFacade.updateTasks(tasksToBeUpdated);
-                workflow.setStatus(Workflow.WorkflowStatus.TERMINATED);
-                workflow.setReasonForIncompletion("Parent workflow was terminated with a TERMINATE task");
-                executionDAOFacade.updateWorkflow(workflow);
-            }
-        }
     }
 
     @VisibleForTesting
