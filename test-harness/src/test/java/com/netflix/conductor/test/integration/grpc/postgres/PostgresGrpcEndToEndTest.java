@@ -25,12 +25,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 @TestPropertySource(properties = {
     "conductor.db.type=postgres",
     "conductor.grpc-server.port=8098",
-    "conductor.postgres.jdbcUrl=jdbc:tc:postgresql:///conductor", // "tc" prefix starts the Postgres container
-    "conductor.postgres.jdbcUsername=postgres",
-    "conductor.postgres.jdbcPassword=postgres",
-    "conductor.postgres.connectionPoolMaxSize=8",
-    "conductor.postgres.connectionPoolMinIdle=300000",
-    "spring.flyway.enabled=false"
+    "spring.datasource.url=jdbc:tc:postgresql:///conductor", // "tc" prefix starts the Postgres container
+    "spring.datasource.username=postgres",
+    "spring.datasource.password=postgres",
+    "spring.datasource.hikari.maximum-pool-size=8",
+    "spring.datasource.hikari.minimum-idle=300000"
 })
 public class PostgresGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 

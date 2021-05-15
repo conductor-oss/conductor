@@ -55,14 +55,12 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
     public void setup() {
         mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
         mySQLContainer.start();
-        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper);
         executionDAO = new MySQLExecutionDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
-        testUtil.resetAllData();
     }
 
     @After
     public void teardown() {
-        testUtil.resetAllData();
         testUtil.getDataSource().close();
     }
 

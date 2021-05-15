@@ -25,7 +25,7 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
     implementation "mysql:mysql-connector-java"
-    implementation "com.zaxxer:HikariCP"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-core"
 
     testImplementation "org.testcontainers:mysql:${revTestContainer}"

@@ -71,14 +71,13 @@ public class MySQLMetadataDAOTest {
     public void setup() {
         mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
         mySQLContainer.start();
-        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper);
         metadataDAO = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(),
             testUtil.getTestProperties());
     }
 
     @After
     public void teardown() {
-        testUtil.resetAllData();
         testUtil.getDataSource().close();
     }
 

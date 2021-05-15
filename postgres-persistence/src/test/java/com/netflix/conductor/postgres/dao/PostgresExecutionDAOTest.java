@@ -56,17 +56,15 @@ public class PostgresExecutionDAOTest extends ExecutionDAOTest {
         postgreSQLContainer =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres")).withDatabaseName(name.getMethodName().toLowerCase());
         postgreSQLContainer.start();
-        testPostgres = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper, name.getMethodName().toLowerCase());
+        testPostgres = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper);
         executionDAO = new PostgresExecutionDAO(
             testPostgres.getObjectMapper(),
             testPostgres.getDataSource()
         );
-        testPostgres.resetAllData();
     }
 
     @After
     public void teardown() {
-        testPostgres.resetAllData();
         testPostgres.getDataSource().close();
     }
 

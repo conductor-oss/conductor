@@ -72,14 +72,13 @@ public class PostgresMetadataDAOTest {
         postgreSQLContainer =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres")).withDatabaseName(name.getMethodName().toLowerCase());
         postgreSQLContainer.start();
-        testUtil = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper, name.getMethodName().toLowerCase());
+        testUtil = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper);
         metadataDAO = new PostgresMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(),
             testUtil.getTestProperties());
     }
 
     @After
     public void teardown() {
-        testUtil.resetAllData();
         testUtil.getDataSource().close();
     }
 

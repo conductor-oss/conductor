@@ -70,13 +70,12 @@ public class MySQLQueueDAOTest {
     public void setup() {
         mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
         mySQLContainer.start();
-        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper, name.getMethodName());
+        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper);
         queueDAO = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
     }
 
     @After
     public void teardown() {
-        testUtil.resetAllData();
         testUtil.getDataSource().close();
     }
 
