@@ -18,6 +18,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WIT
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
@@ -633,9 +634,11 @@ public class WorkflowExecutor {
             }
         }
 
-        if (retriableMap.values().size() == 0) {
+        // if workflow TIMED_OUT due to timeoutSeconds configured in the workflow definition,
+        // it may not have any unsuccessful tasks that can be retried
+        if (retriableMap.values().size() == 0 && workflow.getStatus() != WorkflowStatus.TIMED_OUT) {
             throw new ApplicationException(CONFLICT,
-                    "There are no retriable tasks! Use restart if you want to attempt entire workflow execution again.");
+                    "There are no retryable tasks! Use restart if you want to attempt entire workflow execution again.");
         }
 
         // Update Workflow with new status.
