@@ -12,8 +12,23 @@
  */
 package com.netflix.conductor.core.reconciliation;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -23,28 +38,23 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 public class TestWorkflowRepairService {
 
     private QueueDAO queueDAO;
+    private ExecutionDAO executionDAO;
+    private ConductorProperties properties;
     private WorkflowRepairService workflowRepairService;
     private SystemTaskRegistry systemTaskRegistry;
 
     @Before
     public void setUp() {
-        ExecutionDAO executionDAO = mock(ExecutionDAO.class);
+        executionDAO = mock(ExecutionDAO.class);
         queueDAO = mock(QueueDAO.class);
-        ConductorProperties properties = mock(ConductorProperties.class);
+        properties = mock(ConductorProperties.class);
         systemTaskRegistry = mock(SystemTaskRegistry.class);
         workflowRepairService = new WorkflowRepairService(executionDAO, queueDAO, properties, systemTaskRegistry);
     }
@@ -139,7 +149,7 @@ public class TestWorkflowRepairService {
     }
 
     @Test
-    public void assertAsyncCompleteSystemTasksAreNotCheckedAgainstQueue() {
+    public void assertAsyncCompleteInProgressSystemTasksAreNotCheckedAgainstQueue() {
         Task task = new Task();
         task.setTaskType(TASK_TYPE_SUB_WORKFLOW);
         task.setStatus(Task.Status.IN_PROGRESS);
@@ -155,5 +165,40 @@ public class TestWorkflowRepairService {
         // Verify that queue message is never pushed for async complete system tasks
         verify(queueDAO, never()).containsMessage(anyString(), anyString());
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    public void assertAsyncCompleteScheduledSystemTasksAreCheckedAgainstQueue() {
+        Task task = new Task();
+        task.setTaskType(TASK_TYPE_SUB_WORKFLOW);
+        task.setStatus(Status.SCHEDULED);
+        task.setTaskId("abcd");
+        task.setCallbackAfterSeconds(60);
+
+        WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
+        when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
+        when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
+
+        assertTrue(workflowSystemTask.isAsyncComplete(task));
+
+        assertTrue(workflowRepairService.verifyAndRepairTask(task));
+        // Verify that queue message is never pushed for async complete system tasks
+        verify(queueDAO, times(1)).containsMessage(anyString(), anyString());
+        verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    public void verifyAndRepairParentWorkflow() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("abcd");
+        workflow.setParentWorkflowId("parentWorkflowId");
+
+        when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(10));
+        when(executionDAO.getWorkflow("abcd", true)).thenReturn(workflow);
+        when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
+
+       workflowRepairService.verifyAndRepairWorkflowTasks("abcd");
+       verify(queueDAO, times(1)).containsMessage(anyString(), anyString());
+       verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
     }
 }
