@@ -20,6 +20,9 @@ import com.netflix.conductor.core.events.EventQueueManager;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.reconciliation.WorkflowRepairService;
 import com.netflix.conductor.dao.QueueDAO;
+import org.springframework.boot.info.BuildProperties;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,14 +39,18 @@ public class AdminServiceImpl implements AdminService {
     private final QueueDAO queueDAO;
     private final WorkflowRepairService workflowRepairService;
     private final EventQueueManager eventQueueManager;
+    private final BuildProperties buildProperties;
+
 
     public AdminServiceImpl(ConductorProperties properties, ExecutionService executionService, QueueDAO queueDAO,
-        Optional<WorkflowRepairService> workflowRepairService, Optional<EventQueueManager> eventQueueManager) {
+        Optional<WorkflowRepairService> workflowRepairService, Optional<EventQueueManager> eventQueueManager,
+        BuildProperties buildProperties) {
         this.properties = properties;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
         this.workflowRepairService = workflowRepairService.orElse(null);
         this.eventQueueManager = eventQueueManager.orElse(null);
+        this.buildProperties = buildProperties;
     }
 
     /**
@@ -52,7 +59,20 @@ public class AdminServiceImpl implements AdminService {
      * @return all the configuration parameters.
      */
     public Map<String, Object> getAllConfig() {
-        return properties.getAll();
+        Map<String, Object> configs = properties.getAll();
+        configs.putAll(getBuildProperties());
+        return configs;
+    }
+
+    /**
+     * Get all build properties
+     * @return all the build properties.
+     */
+    private Map<String, Object> getBuildProperties(){
+        Map<String, Object> buildProps = new HashMap<>();
+        buildProps.put("version", buildProperties.getVersion());
+        buildProps.put("buildDate", buildProperties.getTime());
+        return buildProps;
     }
 
     /**

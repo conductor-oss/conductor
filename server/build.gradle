@@ -57,3 +57,7 @@ bootJar {
     mainClassName = 'com.netflix.conductor.Conductor'
     classifier = 'boot'
 }
+
+springBoot {
+    buildInfo()
+}
