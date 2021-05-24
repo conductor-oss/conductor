@@ -30,20 +30,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.validation.ConstraintViolationException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -193,9 +190,7 @@ public class WorkflowServiceTest {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
-        List<Workflow> workflowArrayList = new ArrayList<Workflow>() {{
-            add(workflow);
-        }};
+        List<Workflow> workflowArrayList = Collections.singletonList(workflow);
 
         when(executionService.getWorkflowInstances(anyString(), anyString(), anyBoolean(), anyBoolean()))
             .thenReturn(workflowArrayList);
@@ -208,13 +203,9 @@ public class WorkflowServiceTest {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
-        List<Workflow> workflowArrayList = new ArrayList<Workflow>() {{
-            add(workflow);
-        }};
+        List<Workflow> workflowArrayList = Collections.singletonList(workflow);
 
-        List<String> correlationIdList = new ArrayList<String>() {{
-            add("c123");
-        }};
+        List<String> correlationIdList = Collections.singletonList("c123");
 
         Map<String, List<Workflow>> workflowMap = new HashMap<>();
         workflowMap.put("c123", workflowArrayList);
@@ -474,31 +465,74 @@ public class WorkflowServiceTest {
         workflow.setCorrelationId("c123");
 
         WorkflowSummary workflowSummary = new WorkflowSummary(workflow);
-        List<WorkflowSummary> listOfWorkflowSummary = new ArrayList<WorkflowSummary>() {{
-            add(workflowSummary);
-        }};
-        SearchResult<WorkflowSummary> searchResult = new SearchResult<WorkflowSummary>(100, listOfWorkflowSummary);
+        List<WorkflowSummary> listOfWorkflowSummary = Collections.singletonList(workflowSummary);
 
-        when(executionService.search(anyString(), anyString(), anyInt(), anyInt(), anyList())).thenReturn(searchResult);
+        SearchResult<WorkflowSummary> searchResult = new SearchResult<>(100, listOfWorkflowSummary);
+
+        when(executionService.search("*", "*", 0, 100, Collections.singletonList("asc"))).thenReturn(searchResult);
         assertEquals(searchResult, workflowService.searchWorkflows(0, 100, "asc", "*", "*"));
-    }
-
-    @Test(expected = ConstraintViolationException.class)
-    public void testInvalidSizeSearchWorkflows() {
-        try {
-            workflowService.searchWorkflows(0, 6000, "asc", "*", "*");
-        } catch (ConstraintViolationException ex) {
-            assertEquals(1, ex.getConstraintViolations().size());
-            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("Cannot return more than 5000 workflows. Please use pagination."));
-            throw ex;
-        }
+        assertEquals(searchResult, workflowService.searchWorkflows(0,100,Collections.singletonList("asc"), "*", "*"));
     }
 
     @Test
-    public void searchWorkflowsByTasks() {
-        workflowService.searchWorkflowsByTasks(0, 100, "asc", "*", "*");
-        verify(executionService, times(1))
-            .searchWorkflowByTasks(anyString(), anyString(), anyInt(), anyInt(), anyList());
+    public void testSearchWorkflowsV2() {
+        Workflow workflow = new Workflow();
+        workflow.setCorrelationId("c123");
+
+        List<Workflow> listOfWorkflow = Collections.singletonList(workflow);
+        SearchResult<Workflow> searchResult = new SearchResult<>(1, listOfWorkflow);
+
+        when(executionService.searchV2("*", "*", 0, 100, Collections.singletonList("asc"))).thenReturn(searchResult);
+        assertEquals(searchResult, workflowService.searchWorkflowsV2(0,100,"asc", "*", "*"));
+        assertEquals(searchResult, workflowService.searchWorkflowsV2(0,100,Collections.singletonList("asc"), "*", "*"));
+    }
+
+    @Test
+    public void testInvalidSizeSearchWorkflows() {
+        ConstraintViolationException ex = assertThrows(ConstraintViolationException.class,
+                () -> workflowService.searchWorkflows(0, 6000, "asc", "*", "*"));
+        assertEquals(1, ex.getConstraintViolations().size());
+        Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+        assertTrue(messages.contains("Cannot return more than 5000 workflows. Please use pagination."));
+    }
+
+    @Test
+    public void testInvalidSizeSearchWorkflowsV2() {
+        ConstraintViolationException ex = assertThrows(ConstraintViolationException.class,
+                () -> workflowService.searchWorkflowsV2(0, 6000, "asc", "*", "*"));
+        assertEquals(1, ex.getConstraintViolations().size());
+        Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+        assertTrue(messages.contains("Cannot return more than 5000 workflows. Please use pagination."));
+    }
+
+    @Test
+    public void testSearchWorkflowsByTasks() {
+        Workflow workflow = new Workflow();
+        WorkflowDef def = new WorkflowDef();
+        def.setName("name");
+        def.setVersion(1);
+        workflow.setWorkflowDefinition(def);
+        workflow.setCorrelationId("c123");
+
+        WorkflowSummary workflowSummary = new WorkflowSummary(workflow);
+        List<WorkflowSummary> listOfWorkflowSummary = Collections.singletonList(workflowSummary);
+        SearchResult<WorkflowSummary> searchResult = new SearchResult<>(100, listOfWorkflowSummary);
+
+        when(executionService.searchWorkflowByTasks("*", "*", 0, 100, Collections.singletonList("asc"))).thenReturn(searchResult);
+        assertEquals(searchResult, workflowService.searchWorkflowsByTasks(0,100,"asc", "*", "*"));
+        assertEquals(searchResult, workflowService.searchWorkflowsByTasks(0,100,Collections.singletonList("asc"), "*", "*"));
+    }
+
+    @Test
+    public void testSearchWorkflowsByTasksV2() {
+        Workflow workflow = new Workflow();
+        workflow.setCorrelationId("c123");
+
+        List<Workflow> listOfWorkflow = Collections.singletonList(workflow);
+        SearchResult<Workflow> searchResult = new SearchResult<>(1, listOfWorkflow);
+
+        when(executionService.searchWorkflowByTasksV2("*", "*", 0, 100, Collections.singletonList("asc"))).thenReturn(searchResult);
+        assertEquals(searchResult, workflowService.searchWorkflowsByTasksV2(0,100,"asc", "*", "*"));
+        assertEquals(searchResult, workflowService.searchWorkflowsByTasksV2(0,100,Collections.singletonList("asc"), "*", "*"));
     }
 }

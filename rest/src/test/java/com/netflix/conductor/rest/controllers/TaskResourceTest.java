@@ -27,10 +27,12 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +120,7 @@ public class TaskResourceTest {
         map.put("test1", 1);
         map.put("test2", 2);
 
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         list.add("test1");
         list.add("test2");
 
@@ -179,21 +181,42 @@ public class TaskResourceTest {
     }
 
     @Test
-    public void search() {
+    public void testSearch() {
         Task task = new Task();
         task.setTaskType("SIMPLE");
         task.setWorkerId("123");
         task.setDomain("test");
         task.setStatus(Task.Status.IN_PROGRESS);
         TaskSummary taskSummary = new TaskSummary(task);
-        ArrayList<TaskSummary> listOfTaskSummary = new ArrayList<TaskSummary>() {{
-            add(taskSummary);
-        }};
-        SearchResult<TaskSummary> searchResult = new SearchResult<TaskSummary>(100, listOfTaskSummary);
-        listOfTaskSummary.add(taskSummary);
+        List<TaskSummary> listOfTaskSummary = Collections.singletonList(taskSummary);
+        SearchResult<TaskSummary> searchResult = new SearchResult<>(100, listOfTaskSummary);
 
-        when(mockTaskService.search(anyInt(), anyInt(), anyString(), anyString(), anyString()))
+        when(mockTaskService.search(0, 100, "asc", "*", "*"))
             .thenReturn(searchResult);
         assertEquals(searchResult, taskResource.search(0, 100, "asc", "*", "*"));
+    }
+
+    @Test
+    public void testSearchV2() {
+        Task task = new Task();
+        task.setTaskType("SIMPLE");
+        task.setWorkerId("123");
+        task.setDomain("test");
+        task.setStatus(Task.Status.IN_PROGRESS);
+        List<Task> listOfTasks = Collections.singletonList(task);
+        SearchResult<Task> searchResult = new SearchResult<>(100, listOfTasks);
+
+        when(mockTaskService.searchV2(0, 100, "asc", "*", "*"))
+            .thenReturn(searchResult);
+        assertEquals(searchResult, taskResource.searchV2(0, 100, "asc", "*", "*"));
+    }
+
+    @Test
+    public void testGetExternalStorageLocation() {
+        ExternalStorageLocation externalStorageLocation = mock(ExternalStorageLocation.class);
+        when(mockTaskService.getExternalStorageLocation("path", "operation", "payloadType"))
+            .thenReturn(externalStorageLocation);
+        assertEquals(externalStorageLocation,
+                taskResource.getExternalStorageLocation("path", "operation", "payloadType"));
     }
 }

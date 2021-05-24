@@ -146,6 +146,19 @@ public class TaskResource {
         return taskService.search(start, size, sort, freeText, query);
     }
 
+    @Operation(summary = "Search for tasks based in payload and other parameters",
+            description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+                    " If order is not specified, defaults to ASC")
+    @GetMapping(value = "/search-v2")
+    public SearchResult<Task> searchV2(
+            @RequestParam(value = "start", defaultValue = "0", required = false) int start,
+            @RequestParam(value = "size", defaultValue = "100", required = false) int size,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
+            @RequestParam(value = "query", required = false) String query) {
+        return taskService.searchV2(start, size, sort, freeText, query);
+    }
+
     @Operation(summary = "Get the external uri where the task payload is to be stored")
     @GetMapping("/externalstoragelocation")
     public ExternalStorageLocation getExternalStorageLocation(@RequestParam("path") String path,

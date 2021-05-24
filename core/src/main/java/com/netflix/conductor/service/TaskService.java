@@ -198,6 +198,19 @@ public interface TaskService {
     SearchResult<TaskSummary> search(int start, int size, String sort, String freeText, String query);
 
     /**
+     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g. sort=name or
+     * sort=workflowId. If order is not specified, defaults to ASC.
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
+     * @param freeText Text you want to search
+     * @param query    Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    SearchResult<Task> searchV2(int start, int size, String sort, String freeText, String query);
+
+    /**
      * Get the external storage location where the task output payload is stored/to be stored
      *
      * @param path        the path for which the external storage location is to be populated

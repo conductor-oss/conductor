@@ -43,6 +43,9 @@ public class WorkflowClient extends ClientBase {
     private static final GenericType<SearchResult<WorkflowSummary>> searchResultWorkflowSummary = new GenericType<SearchResult<WorkflowSummary>>() {
     };
 
+    private static final GenericType<SearchResult<Workflow>> searchResultWorkflow = new GenericType<SearchResult<Workflow>>() {
+    };
+
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowClient.class);
 
     /**
@@ -376,6 +379,16 @@ public class WorkflowClient extends ClientBase {
     }
 
     /**
+     * Search for workflows based on payload
+     *
+     * @param query the search query
+     * @return the {@link SearchResult} containing the {@link Workflow} that match the query
+     */
+    public SearchResult<Workflow> searchV2(String query) {
+        return getForEntity("workflow/search-v2", new Object[]{"query", query}, searchResultWorkflow);
+    }
+
+    /**
      * Paginated search for workflows based on payload
      *
      * @param start    start value of page
@@ -391,4 +404,20 @@ public class WorkflowClient extends ClientBase {
             query};
         return getForEntity("workflow/search", params, searchResultWorkflowSummary);
     }
+
+    /**
+     * Paginated search for workflows based on payload
+     *
+     * @param start    start value of page
+     * @param size     number of workflows to be returned
+     * @param sort     sort order
+     * @param freeText additional free text query
+     * @param query    the search query
+     * @return the {@link SearchResult} containing the {@link Workflow} that match the query
+     */
+    public SearchResult<Workflow> searchV2(Integer start, Integer size, String sort, String freeText, String query) {
+        Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
+        return getForEntity("workflow/search-v2", params, searchResultWorkflow);
+    }
 }
+

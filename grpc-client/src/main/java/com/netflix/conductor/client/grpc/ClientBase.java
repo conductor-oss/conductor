@@ -13,11 +13,13 @@
 package com.netflix.conductor.client.grpc;
 
 import com.netflix.conductor.grpc.ProtoMapper;
+import com.netflix.conductor.grpc.SearchPb;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.TimeUnit;
 
 abstract class ClientBase {
@@ -37,5 +39,22 @@ abstract class ClientBase {
 
     public void shutdown() throws InterruptedException {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    }
+
+    SearchPb.Request createSearchRequest(
+            @Nullable Integer start, @Nullable Integer size,
+            @Nullable String sort, @Nullable String freeText, @Nullable String query) {
+        SearchPb.Request.Builder request = SearchPb.Request.newBuilder();
+        if (start != null)
+            request.setStart(start);
+        if (size != null)
+            request.setSize(size);
+        if (sort != null)
+            request.setSort(sort);
+        if (freeText != null)
+            request.setFreeText(freeText);
+        if (query != null)
+            request.setQuery(query);
+        return request.build();
     }
 }

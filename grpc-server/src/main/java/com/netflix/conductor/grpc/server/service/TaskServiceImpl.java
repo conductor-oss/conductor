@@ -15,7 +15,10 @@ package com.netflix.conductor.grpc.server.service;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.grpc.ProtoMapper;
+import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
@@ -25,6 +28,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,17 +41,18 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private static final ProtoMapper PROTO_MAPPER = ProtoMapper.INSTANCE;
     private static final GRPCHelper GRPC_HELPER = new GRPCHelper(LOGGER);
 
-    private static final int MAX_TASK_COUNT = 100;
     private static final int POLL_TIMEOUT_MS = 100;
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
 
     private final TaskService taskService;
-
+    private final int maxSearchSize;
     private final ExecutionService executionService;
 
-    public TaskServiceImpl(ExecutionService executionService, TaskService taskService) {
+    public TaskServiceImpl(ExecutionService executionService, TaskService taskService,
+                           @Value("${workflow.max.search.size:5000}") int maxSearchSize) {
         this.executionService = executionService;
         this.taskService = taskService;
+        this.maxSearchSize = maxSearchSize;
     }
 
     @Override
@@ -210,5 +215,61 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
         response.onNext(queuesBuilder.build());
         response.onCompleted();
+    }
+
+    @Override
+    public void search(SearchPb.Request req, StreamObserver<TaskServicePb.TaskSummarySearchResult> response) {
+        final int start = req.getStart();
+        final int size = GRPC_HELPER.optionalOr(req.getSize(), maxSearchSize);
+        final String sort = req.getSort();
+        final String freeText = GRPC_HELPER.optionalOr(req.getFreeText(), "*");
+        final String query = req.getQuery();
+        if (size > maxSearchSize) {
+            response.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription("Cannot return more than " + maxSearchSize + " results")
+                            .asRuntimeException()
+            );
+            return;
+        }
+        SearchResult<TaskSummary> searchResult = taskService.search(start, size, sort, freeText, query);
+        response.onNext(
+                TaskServicePb.TaskSummarySearchResult.newBuilder()
+                        .setTotalHits(searchResult.getTotalHits())
+                        .addAllResults(
+                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)::iterator
+                        ).build()
+        );
+        response.onCompleted();
+    }
+
+    @Override
+    public void searchV2(SearchPb.Request req,
+                         StreamObserver<TaskServicePb.TaskSearchResult> response) {
+        final int start = req.getStart();
+        final int size = GRPC_HELPER.optionalOr(req.getSize(), maxSearchSize);
+        final String sort = req.getSort();
+        final String freeText = GRPC_HELPER.optionalOr(req.getFreeText(), "*");
+        final String query = req.getQuery();
+
+        if (size > maxSearchSize) {
+            response.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription("Cannot return more than " + maxSearchSize + " results")
+                            .asRuntimeException()
+            );
+            return;
+        }
+
+        SearchResult<Task> searchResult = taskService.searchV2(start, size, sort, freeText, query);
+        response.onNext(
+                TaskServicePb.TaskSearchResult.newBuilder()
+                        .setTotalHits(searchResult.getTotalHits())
+                        .addAllResults(
+                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)::iterator
+                        ).build()
+        );
+        response.onCompleted();
+
     }
 }

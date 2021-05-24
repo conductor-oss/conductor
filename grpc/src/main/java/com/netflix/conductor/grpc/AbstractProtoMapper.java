@@ -925,6 +925,30 @@ public abstract class AbstractProtoMapper {
         return to.build();
     }
 
+    public TaskSummary fromProto(TaskSummaryPb.TaskSummary from) {
+        TaskSummary to = new TaskSummary();
+        to.setWorkflowId( from.getWorkflowId() );
+        to.setWorkflowType( from.getWorkflowType() );
+        to.setCorrelationId( from.getCorrelationId() );
+        to.setScheduledTime( from.getScheduledTime() );
+        to.setStartTime( from.getStartTime() );
+        to.setUpdateTime( from.getUpdateTime() );
+        to.setEndTime( from.getEndTime() );
+        to.setStatus( fromProto( from.getStatus() ) );
+        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        to.setExecutionTime( from.getExecutionTime() );
+        to.setQueueWaitTime( from.getQueueWaitTime() );
+        to.setTaskDefName( from.getTaskDefName() );
+        to.setTaskType( from.getTaskType() );
+        to.setInput( from.getInput() );
+        to.setOutput( from.getOutput() );
+        to.setTaskId( from.getTaskId() );
+        to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        to.setWorkflowPriority( from.getWorkflowPriority() );
+        return to;
+    }
+
     public WorkflowPb.Workflow toProto(Workflow from) {
         WorkflowPb.Workflow.Builder to = WorkflowPb.Workflow.newBuilder();
         if (from.getStatus() != null) {

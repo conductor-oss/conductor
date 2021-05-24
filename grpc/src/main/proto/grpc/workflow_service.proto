@@ -58,6 +58,10 @@ service WorkflowService {
     // GET /search
     rpc Search(conductor.grpc.search.Request) returns (WorkflowSummarySearchResult);
     rpc SearchByTasks(conductor.grpc.search.Request) returns (WorkflowSummarySearchResult);
+
+    // GET /searchV2
+    rpc SearchV2(conductor.grpc.search.Request) returns (WorkflowSearchResult);
+    rpc SearchByTasksV2(conductor.grpc.search.Request) returns (WorkflowSearchResult);
 }
 
 message StartWorkflowResponse {
@@ -165,4 +169,9 @@ message TerminateWorkflowResponse {}
 message WorkflowSummarySearchResult {
     int64 total_hits = 1;
     repeated conductor.proto.WorkflowSummary results = 2;
+}
+
+message WorkflowSearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.Workflow results = 2;
 }

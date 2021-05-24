@@ -3,7 +3,9 @@ package conductor.grpc.tasks;
 
 import "model/taskexeclog.proto";
 import "model/taskresult.proto";
+import "model/tasksummary.proto";
 import "model/task.proto";
+import "grpc/search.proto";
 
 option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "TaskServicePb";
@@ -36,6 +38,12 @@ service TaskService {
 
     // GET /queue/all/verbose
     rpc GetQueueAllInfo(QueueAllInfoRequest) returns (QueueAllInfoResponse);
+
+    // GET /search
+    rpc Search(conductor.grpc.search.Request) returns (TaskSummarySearchResult);
+
+    // GET /searchV2
+    rpc SearchV2(conductor.grpc.search.Request) returns (TaskSearchResult);
 }
 
 message PollRequest {
@@ -112,4 +120,14 @@ message QueueAllInfoResponse {
         map<string, ShardInfo> shards = 1;
     }
     map<string, QueueInfo> queues = 1;
+}
+
+message TaskSummarySearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.TaskSummary results = 2;
+}
+
+message TaskSearchResult {
+    int64 total_hits = 1;
+    repeated conductor.proto.Task results = 2;
 }

@@ -296,6 +296,39 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         response.onCompleted();
     }
 
+    private void doSearchV2(boolean searchByTask, SearchPb.Request req, StreamObserver<WorkflowServicePb.WorkflowSearchResult> response) {
+        final int start = req.getStart();
+        final int size = GRPC_HELPER.optionalOr(req.getSize(), maxSearchSize);
+        final List<String> sort = convertSort(req.getSort());
+        final String freeText = GRPC_HELPER.optionalOr(req.getFreeText(), "*");
+        final String query = req.getQuery();
+
+        if (size > maxSearchSize) {
+            response.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription("Cannot return more than "+maxSearchSize+" results")
+                            .asRuntimeException()
+            );
+            return;
+        }
+
+        SearchResult<Workflow> search;
+        if (searchByTask) {
+            search = workflowService.searchWorkflowsByTasksV2(start, size, sort, freeText,query);
+        } else {
+            search = workflowService.searchWorkflowsV2(start, size, sort, freeText, query);
+        }
+
+        response.onNext(
+                WorkflowServicePb.WorkflowSearchResult.newBuilder()
+                        .setTotalHits(search.getTotalHits())
+                        .addAllResults(
+                                search.getResults().stream().map(PROTO_MAPPER::toProto)::iterator
+                        ).build()
+        );
+        response.onCompleted();
+    }
+
     private List<String> convertSort(String sortStr) {
         List<String> list = new ArrayList<String>();
         if (sortStr != null && sortStr.length() != 0) {
@@ -314,5 +347,17 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void searchByTasks(SearchPb.Request request,
         StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> responseObserver) {
         doSearch(true, request, responseObserver);
+    }
+
+    @Override
+    public void searchV2(SearchPb.Request request,
+        StreamObserver<WorkflowServicePb.WorkflowSearchResult> responseObserver) {
+        doSearchV2(false, request, responseObserver);
+    }
+
+    @Override
+    public void searchByTasksV2(SearchPb.Request request,
+        StreamObserver<WorkflowServicePb.WorkflowSearchResult> responseObserver) {
+        doSearchV2(true, request, responseObserver);
     }
 }

@@ -57,6 +57,9 @@ public class TaskClient extends ClientBase {
     private static final GenericType<SearchResult<TaskSummary>> searchResultTaskSummary = new GenericType<SearchResult<TaskSummary>>() {
     };
 
+    private static final GenericType<SearchResult<Task>> searchResultTask = new GenericType<SearchResult<Task>>() {
+    };
+
     private static final GenericType<Map<String, Integer>> queueSizeMap = new GenericType<Map<String, Integer>>() {
     };
 
@@ -371,6 +374,16 @@ public class TaskClient extends ClientBase {
     }
 
     /**
+     * Search for tasks based on payload
+     *
+     * @param query the search string
+     * @return returns the {@link SearchResult} containing the {@link Task} matching the query
+     */
+    public SearchResult<Task> searchV2(String query) {
+        return getForEntity("tasks/search-v2", new Object[]{"query", query}, searchResultTask);
+    }
+
+    /**
      * Paginated search for tasks based on payload
      *
      * @param start    start value of page
@@ -384,5 +397,21 @@ public class TaskClient extends ClientBase {
         Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query",
             query};
         return getForEntity("tasks/search", params, searchResultTaskSummary);
+    }
+
+    /**
+     * Paginated search for tasks based on payload
+     *
+     * @param start    start value of page
+     * @param size     number of tasks to be returned
+     * @param sort     sort order
+     * @param freeText additional free text query
+     * @param query    the search query
+     * @return the {@link SearchResult} containing the {@link Task} that match the query
+     */
+    public SearchResult<Task> searchV2(Integer start, Integer size, String sort, String freeText, String query) {
+        Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query",
+            query};
+        return getForEntity("tasks/search-v2", params, searchResultTask);
     }
 }

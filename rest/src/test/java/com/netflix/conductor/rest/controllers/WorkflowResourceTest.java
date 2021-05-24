@@ -78,7 +78,7 @@ public class WorkflowResourceTest {
     public void getWorkflows() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("123");
-        ArrayList<Workflow> listOfWorkflows = new ArrayList<Workflow>() {{
+        ArrayList<Workflow> listOfWorkflows = new ArrayList<>() {{
             add(workflow);
         }};
         when(mockWorkflowService.getWorkflows(anyString(), anyString(), anyBoolean(), anyBoolean()))
@@ -91,11 +91,11 @@ public class WorkflowResourceTest {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
-        List<Workflow> workflowArrayList = new ArrayList<Workflow>() {{
+        List<Workflow> workflowArrayList = new ArrayList<>() {{
             add(workflow);
         }};
 
-        List<String> correlationIdList = new ArrayList<String>() {{
+        List<String> correlationIdList = new ArrayList<>() {{
             add("c123");
         }};
 
@@ -125,7 +125,7 @@ public class WorkflowResourceTest {
 
     @Test
     public void testGetRunningWorkflow() {
-        List<String> listOfWorklfows = new ArrayList<String>() {{
+        List<String> listOfWorklfows = new ArrayList<>() {{
             add("w123");
         }};
         when(mockWorkflowService.getRunningWorkflows(anyString(), anyInt(), anyLong(), anyLong()))
@@ -195,11 +195,28 @@ public class WorkflowResourceTest {
         verify(mockWorkflowService, times(1)).searchWorkflows(anyInt(), anyInt(),
             anyString(), anyString(), anyString());
     }
+    @Test
+    public void testSearchV2() {
+        workflowResource.searchV2(0, 100, "asc", "*", "*");
+        verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "*");
+    }
 
     @Test
     public void testSearchWorkflowsByTasks() {
         workflowResource.searchWorkflowsByTasks(0, 100, "asc", "*", "*");
         verify(mockWorkflowService, times(1)).searchWorkflowsByTasks(anyInt(), anyInt(),
             anyString(), anyString(), anyString());
+    }
+
+    @Test
+    public void testSearchWorkflowsByTasksV2() {
+        workflowResource.searchWorkflowsByTasksV2(0, 100, "asc", "*", "*");
+        verify(mockWorkflowService).searchWorkflowsByTasksV2(0, 100, "asc", "*", "*");
+    }
+
+    @Test
+    public void testGetExternalStorageLocation() {
+        workflowResource.getExternalStorageLocation("path", "operation", "payloadType");
+        verify(mockWorkflowService).getExternalStorageLocation("path", "operation", "payloadType");
     }
 }

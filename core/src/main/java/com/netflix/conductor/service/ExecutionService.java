@@ -351,6 +351,22 @@ public class ExecutionService {
         return new SearchResult<>(totalHits, workflows);
     }
 
+    public SearchResult<Workflow> searchV2(String query, String freeText, int start, int size, List<String> sortOptions) {
+
+        SearchResult<String> result = executionDAOFacade.searchWorkflows(query, freeText, start, size, sortOptions);
+        List<Workflow> workflows = result.getResults().stream().parallel().map(workflowId -> {
+            try {
+                return executionDAOFacade.getWorkflowById(workflowId, false);
+            } catch(Exception e) {
+                LOGGER.error("Error fetching workflow by id: {}", workflowId, e);
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+        int missing = result.getResults().size() - workflows.size();
+        long totalHits = result.getTotalHits() - missing;
+        return new SearchResult<>(totalHits, workflows);
+    }
+
     public SearchResult<WorkflowSummary> searchWorkflowByTasks(String query, String freeText, int start, int size,
         List<String> sortOptions) {
         SearchResult<TaskSummary> taskSummarySearchResult = searchTasks(query, freeText, start, size, sortOptions);
@@ -373,19 +389,38 @@ public class ExecutionService {
         return new SearchResult<>(totalHits, workflowSummaries);
     }
 
+    public SearchResult<Workflow> searchWorkflowByTasksV2(String query, String freeText, int start, int size, List<String> sortOptions) {
+        SearchResult<TaskSummary> taskSummarySearchResult = searchTasks(query, freeText, start, size, sortOptions);
+        List<Workflow> workflows = taskSummarySearchResult.getResults().stream()
+                .parallel()
+                .map(taskSummary -> {
+                    try {
+                        String workflowId = taskSummary.getWorkflowId();
+                        return executionDAOFacade.getWorkflowById(workflowId, false);
+                    } catch (Exception e) {
+                        LOGGER.error("Error fetching workflow by id: {}", taskSummary.getWorkflowId(), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        int missing = taskSummarySearchResult.getResults().size() - workflows.size();
+        long totalHits = taskSummarySearchResult.getTotalHits() - missing;
+        return new SearchResult<>(totalHits, workflows);
+    }
+
     public SearchResult<TaskSummary> searchTasks(String query, String freeText, int start, int size,
         List<String> sortOptions) {
 
         SearchResult<String> result = executionDAOFacade.searchTasks(query, freeText, start, size, sortOptions);
         List<TaskSummary> workflows = result.getResults().stream()
             .parallel()
-            .map(executionDAOFacade::getTaskById)
-            .filter(Objects::nonNull)
             .map(task -> {
                 try {
-                    return new TaskSummary(task);
+                    return new TaskSummary(executionDAOFacade.getTaskById(task));
                 } catch (Exception e) {
-                    LOGGER.error("Error fetching task by id: {}", task.getTaskId(), e);
+                    LOGGER.error("Error fetching task by id: {}", task, e);
                     return null;
                 }
             })
@@ -400,6 +435,27 @@ public class ExecutionService {
         /*@Max(value = MAX_SEARCH_SIZE, message = "Cannot return more than {value} workflows." +
             " Please use pagination.")*/ int size, String sortString) {
         return searchTasks(query, freeText, start, size, Utils.convertStringToList(sortString));
+    }
+
+    public SearchResult<Task> getSearchTasksV2(String query, String freeText, int start,
+        int size, String sortString) {
+        SearchResult<String> result = executionDAOFacade.searchTasks(query, freeText, start, size,
+                Utils.convertStringToList(sortString));
+        List<Task> tasks = result.getResults().stream()
+                .parallel()
+                .map(task -> {
+                    try {
+                        return executionDAOFacade.getTaskById(task);
+                    } catch (Exception e) {
+                        LOGGER.error("Error fetching task by id: {}", task, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        int missing = result.getResults().size() - tasks.size();
+        long totalHits = result.getTotalHits() - missing;
+        return new SearchResult<>(totalHits, tasks);
     }
 
     public List<Task> getPendingTasksForTaskType(String taskType) {

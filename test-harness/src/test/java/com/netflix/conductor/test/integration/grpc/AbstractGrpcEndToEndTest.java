@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -164,6 +165,46 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
         assertNotNull(searchResult);
         assertEquals(1, searchResult.getTotalHits());
+        assertEquals(workflow.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
+
+        SearchResult<Workflow> searchResultV2 = workflowClient.searchV2("workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultV2);
+        assertEquals(1, searchResultV2.getTotalHits());
+        assertEquals(workflow.getWorkflowId(), searchResultV2.getResults().get(0).getWorkflowId());
+
+        SearchResult<WorkflowSummary> searchResultAdvanced = workflowClient.search(0,1,null,null,"workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultAdvanced);
+        assertEquals(1, searchResultAdvanced.getTotalHits());
+        assertEquals(workflow.getWorkflowId(), searchResultAdvanced.getResults().get(0).getWorkflowId());
+
+        SearchResult<Workflow> searchResultV2Advanced = workflowClient.searchV2(0,1,null,null,"workflowType='" + def.getName() + "'");
+        assertNotNull(searchResultV2Advanced);
+        assertEquals(1, searchResultV2Advanced.getTotalHits());
+        assertEquals(workflow.getWorkflowId(), searchResultV2Advanced.getResults().get(0).getWorkflowId());
+
+        SearchResult<TaskSummary> taskSearchResult =
+                taskClient.search("taskType='" + t0.getName() + "'");
+        assertNotNull(taskSearchResult);
+        assertEquals(1, searchResultV2Advanced.getTotalHits());
+        assertEquals(t0.getName(), taskSearchResult.getResults().get(0).getTaskDefName());
+
+        SearchResult<TaskSummary> taskSearchResultAdvanced =
+                taskClient.search(0,1,null,null,"taskType='" + t0.getName() + "'");
+        assertNotNull(taskSearchResultAdvanced);
+        assertEquals(1, taskSearchResultAdvanced.getTotalHits());
+        assertEquals(t0.getName(), taskSearchResultAdvanced.getResults().get(0).getTaskDefName());
+
+        SearchResult<Task> taskSearchResultV2 =
+                taskClient.searchV2("taskType='" + t0.getName() + "'");
+        assertNotNull(taskSearchResultV2);
+        assertEquals(1, searchResultV2Advanced.getTotalHits());
+        assertEquals(t0.getTaskReferenceName(), taskSearchResultV2.getResults().get(0).getReferenceTaskName());
+
+        SearchResult<Task> taskSearchResultV2Advanced =
+                taskClient.searchV2(0,1,null,null,"taskType='" + t0.getName() + "'");
+        assertNotNull(taskSearchResultV2Advanced);
+        assertEquals(1, taskSearchResultV2Advanced.getTotalHits());
+        assertEquals(t0.getTaskReferenceName(), taskSearchResultV2Advanced.getResults().get(0).getReferenceTaskName());
 
         workflowClient.terminateWorkflow(workflowId, "terminate reason");
         workflow = workflowClient.getWorkflow(workflowId, true);

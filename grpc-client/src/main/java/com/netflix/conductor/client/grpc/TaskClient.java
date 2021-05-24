@@ -18,6 +18,9 @@ import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
@@ -174,4 +177,36 @@ public class TaskClient extends ClientBase {
 
         return sizes.getQueueForTaskOrDefault(taskType, 0);
     }
+
+
+    public SearchResult<TaskSummary> search(String query) {
+        return search(null, null, null, null, query);
+    }
+
+    public SearchResult<Task> searchV2(String query) {
+        return searchV2(null, null, null, null, query);
+    }
+
+    public SearchResult<TaskSummary> search(
+            @Nullable Integer start, @Nullable Integer size,
+            @Nullable String sort, @Nullable String freeText, @Nullable String query) {
+        SearchPb.Request searchRequest = createSearchRequest(start, size, sort, freeText, query);
+        TaskServicePb.TaskSummarySearchResult result = stub.search(searchRequest);
+        return new SearchResult<>(
+                result.getTotalHits(),
+                result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+        );
+    }
+
+    public SearchResult<Task> searchV2(
+            @Nullable Integer start, @Nullable Integer size,
+            @Nullable String sort, @Nullable String freeText, @Nullable String query) {
+        SearchPb.Request searchRequest = createSearchRequest(start, size, sort, freeText, query);
+        TaskServicePb.TaskSearchResult result = stub.searchV2(searchRequest);
+        return new SearchResult<>(
+                result.getTotalHits(),
+                result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+        );
+    }
+
 }
