@@ -49,7 +49,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -80,7 +79,6 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
-import static com.netflix.conductor.core.execution.DeciderService.MAX_TASK_LIMIT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -145,7 +143,6 @@ public class TestDeciderService {
 
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private static Registry registry;
-    private Environment environment;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -175,7 +172,6 @@ public class TestDeciderService {
     @Before
     public void setup() {
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
-        environment = mock(Environment.class);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("TestDeciderService");
@@ -186,8 +182,7 @@ public class TestDeciderService {
 
         deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
                 systemTaskRegistry, taskMappers,
-                Duration.ofMinutes(60),
-                environment);
+                Duration.ofMinutes(60));
     }
 
     @Test
@@ -1210,41 +1205,6 @@ public class TestDeciderService {
 
         // then the workflow completion check returns true
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
-    }
-
-    @Test
-    public void testWorkflowTasksLimit() {
-        when(environment.containsProperty(MAX_TASK_LIMIT)).thenReturn(true);
-        // max allowed tasks is 1
-        when(environment.getProperty(MAX_TASK_LIMIT, int.class)).thenReturn(1);
-
-        // this workflow def has two tasks
-        WorkflowDef linearWorkflow = createLinearWorkflow();
-
-        // create a workflow with no tasks
-        Workflow workflow = new Workflow();
-        workflow.setWorkflowDefinition(linearWorkflow);
-
-        DeciderOutcome outcome = deciderService.decide(workflow);
-
-        assertFalse(outcome.isComplete);
-
-        // check if the first task is scheduled
-        assertEquals(1, outcome.tasksToBeScheduled.size());
-        assertEquals(linearWorkflow.getTasks().get(0).getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-
-        Task task = new Task();
-        task.setReferenceTaskName(linearWorkflow.getTasks().get(0).getTaskReferenceName());
-        task.setStatus(Status.COMPLETED);
-
-        workflow.getTasks().add(task);
-
-        try {
-            deciderService.decide(workflow);
-            fail("Expected " + TerminateWorkflowException.class);
-        } catch (TerminateWorkflowException e) {
-            assertEquals(WorkflowStatus.TERMINATED, e.getWorkflowStatus());
-        }
     }
 
     private WorkflowDef createConditionalWF() {

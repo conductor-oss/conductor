@@ -12,13 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -40,6 +33,13 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,13 +51,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
 
 /**
  * Decider evaluates the state of the workflow by inspecting the current state along with the blueprint. The result of
@@ -77,7 +77,6 @@ public class DeciderService {
     private final MetadataDAO metadataDAO;
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
-    private final Environment environment;
 
     private final Map<TaskType, TaskMapper> taskMappers;
 
@@ -92,15 +91,13 @@ public class DeciderService {
         ExternalPayloadStorageUtils externalPayloadStorageUtils,
         SystemTaskRegistry systemTaskRegistry,
         @Qualifier("taskProcessorsMap") Map<TaskType, TaskMapper> taskMappers,
-        @Value("${conductor.app.taskPendingTimeThreshold:60m}") Duration taskPendingTimeThreshold,
-                          Environment environment) {
+        @Value("${conductor.app.taskPendingTimeThreshold:60m}") Duration taskPendingTimeThreshold) {
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
-        this.environment = environment;
     }
 
     public DeciderOutcome decide(Workflow workflow) throws TerminateWorkflowException {
@@ -239,20 +236,6 @@ public class DeciderService {
             && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
             outcome.isComplete = true;
-        }
-
-        // terminate workflows that exceed the threshold
-        if (environment.containsProperty(MAX_TASK_LIMIT)) {
-            //noinspection ConstantConditions
-            int maxTasksThreshold = environment.getProperty(MAX_TASK_LIMIT, int.class);
-            int currentTasks = workflow.getTasks().size();
-            if (currentTasks + tasksToBeScheduled.size() > maxTasksThreshold) {
-                String terminationReason = String.format("Sum of the tasks in the workflow %s " +
-                                "and tasks to be scheduled %s exceed threshold %s", currentTasks,
-                        tasksToBeScheduled.size(), maxTasksThreshold);
-                LOGGER.warn("{}, terminating {}", terminationReason, workflow.toShortString());
-                throw new TerminateWorkflowException(terminationReason, WorkflowStatus.TERMINATED);
-            }
         }
 
         return outcome;

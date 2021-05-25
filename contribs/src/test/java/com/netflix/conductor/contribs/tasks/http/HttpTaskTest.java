@@ -35,7 +35,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.MediaType;
-import org.springframework.core.env.Environment;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -371,11 +370,9 @@ public class HttpTaskTest {
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         SystemTaskRegistry systemTaskRegistry = mock(SystemTaskRegistry.class);
-        Environment environment = mock(Environment.class);
 
         new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry,
                 Collections.emptyMap(),
-                Duration.ofMinutes(60),
-                environment).decide(workflow);
+                Duration.ofMinutes(60)).decide(workflow);
     }
 }

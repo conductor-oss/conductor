@@ -48,7 +48,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -148,7 +147,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry, taskMappers,
-            Duration.ofMinutes(60), mock(Environment.class));
+            Duration.ofMinutes(60));
     }
 
     @Test
