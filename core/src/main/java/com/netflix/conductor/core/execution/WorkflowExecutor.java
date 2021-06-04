@@ -405,7 +405,7 @@ public class WorkflowExecutor {
         workflow.setTaskToDomain(taskToDomain);
         workflow.setVariables(workflowDefinition.getVariables());
 
-        if (workflowInput != null) {
+        if (workflowInput != null && !workflowInput.isEmpty()) {
             workflow.setInput(workflowInput);
             deciderService.externalizeWorkflowData(workflow);
         } else {
