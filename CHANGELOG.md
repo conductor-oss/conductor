@@ -202,7 +202,7 @@ Changes to configurations:
 | conductor.grpc.server.port | conductor.grpc-server.port | 8090 |
 | conductor.grpc.server.reflectionEnabled | conductor.grpc-server.reflectionEnabled | true |
 
-`mysql-persistence` module:
+`mysql-persistence` module (v3.0.0 - v3.0.5):
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -220,7 +220,27 @@ Changes to configurations:
 | conductor.mysql.autocommit | conductor.mysql.autoCommit | false |
 | conductor.taskdef.cache.refresh.time.seconds | conductor.mysql.taskDefCacheRefreshInterval | 60s |
 
-`postgres-persistence` module:
+`mysql-persistence` module (v3.0.5+):
+
+| Old | New |
+| --- | --- |
+| jdbc.url | spring.datasource.url |
+| jdbc.username | spring.datasource.username |
+| jdbc.password | spring.datasource.password |
+| flyway.enabled | spring.flyway.enabled |
+| flyway.table | spring.flyway.table |
+| conductor.mysql.connection.pool.size.max | spring.datasource.hikari.maximum-pool-size |
+| conductor.mysql.connection.pool.idle.min | spring.datasource.hikari.minimum-idle |
+| conductor.mysql.connection.lifetime.max | spring.datasource.hikari.max-lifetime |
+| conductor.mysql.connection.idle.timeout | spring.datasource.hikari.idle-timeout |
+| conductor.mysql.connection.timeout | spring.datasource.hikari.connection-timeout |
+| conductor.mysql.transaction.isolation.level | spring.datasource.hikari.transaction-isolation |
+| conductor.mysql.autocommit | spring.datasource.hikari.auto-commit |
+| conductor.taskdef.cache.refresh.time.seconds | conductor.mysql.taskDefCacheRefreshInterval |
+
+* for more properties and default values: https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#application-properties.data.spring.datasource.hikari
+
+`postgres-persistence` module (v3.0.0 - v3.0.5):
 
 | Old | New | Default |
 | --- | --- | --- |
@@ -237,6 +257,26 @@ Changes to configurations:
 | conductor.postgres.transaction.isolation.level | conductor.postgres.transactionIsolationLevel | "" |
 | conductor.postgres.autocommit | conductor.postgres.autoCommit | false |
 | conductor.taskdef.cache.refresh.time.seconds | conductor.postgres.taskDefCacheRefreshInterval | 60s |
+
+`postgres-persistence` module (v3.0.5+):
+
+| Old | New |
+| --- | --- |
+| jdbc.url | spring.datasource.url | 
+| jdbc.username | spring.datasource.username |
+| jdbc.password | spring.datasource.password |
+| flyway.enabled | spring.flyway.enabled |
+| flyway.table | spring.flyway.table |
+| conductor.postgres.connection.pool.size.max | spring.datasource.hikari.maximum-pool-size |
+| conductor.postgres.connection.pool.idle.min | spring.datasource.hikari.minimum-idle |
+| conductor.postgres.connection.lifetime.max | spring.datasource.hikari.max-lifetime |
+| conductor.postgres.connection.idle.timeout | spring.datasource.hikari.idle-timeout |
+| conductor.postgres.connection.timeout | spring.datasource.hikari.connection-timeout |
+| conductor.postgres.transaction.isolation.level | spring.datasource.hikari.transaction-isolation |
+| conductor.postgres.autocommit | spring.datasource.hikari.auto-commit |
+| conductor.taskdef.cache.refresh.time.seconds | conductor.postgres.taskDefCacheRefreshInterval |
+
+* for more properties and default values: https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#application-properties.data.spring.datasource.hikari
 
 `redis-lock` module:
 
