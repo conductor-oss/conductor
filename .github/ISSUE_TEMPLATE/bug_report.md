@@ -10,6 +10,12 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+**Details**
+Conductor version:
+Workflow definition:
+Task definition:
+Event handler definition:
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
