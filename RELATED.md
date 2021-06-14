@@ -20,6 +20,12 @@
 
 * https://github.com/mohelsaka/conductor-prometheus-metrics - Conductor plugin for exposing Prometheus metrics over path '/metrics'
 
+## OAuth2.0 Security Configuration
+Forked Repository - [Conductor (Secure)](https://github.com/maheshyaddanapudi/conductor/tree/oauth2)
+
+[OAuth2.0 Role Based Security!](https://github.com/maheshyaddanapudi/conductor/blob/oauth2/SECURITY.md) - Spring Security with easy configuration to secure the Conductor server APIs.
+
+Docker image published to [Docker Hub](https://hub.docker.com/repository/docker/conductorboot/server)
 
 ## Conductor Worker utilities
 
@@ -33,3 +39,11 @@
 ## Conductor Web UI
 
 * https://github.com/maheshyaddanapudi/conductor-ng-ui - Angular based - Conductor Workflow Management UI
+
+## Conductor Persistence
+
+### Mongo Persistence
+
+* https://github.com/maheshyaddanapudi/conductor/tree/mongo_persistence - With option to use Mongo Database as persistence unit.
+  * Mongo Persistence / Option to use Mongo Database as persistence unit.
+  * Docker Compose example with MongoDB Container.
