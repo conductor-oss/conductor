@@ -62,6 +62,11 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public Integer getEventSchedulerPollThreadCount() {
+        return null;
+    }
+
+    @Override
     public String getEnvironment() {
         return "test";
     }

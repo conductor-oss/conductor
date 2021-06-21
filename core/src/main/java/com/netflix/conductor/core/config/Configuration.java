@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.config;
 
+import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
 import java.util.List;
 import java.util.Map;
@@ -382,12 +383,13 @@ public interface Configuration {
     }
 
     /**
-     * @return the number of threads to be use in Scheduler used for polling events from multiple event queues.
-     * By default, a thread count equal to the number of CPU cores is chosen.
+     * @return the number of threads to be use in Execution Scheduler used for polling events from multiple event queues.
+     *
+     * By default when not configured, null will be returned and the default computation scheduler(with threads equal to the number CPU cores) will be used.
      */
-    default int getEventSchedulerPollThreadCount()
-    {
-        return getIntProperty(EVENT_QUEUE_POLL_SCHEDULER_THREAD_COUNT_PROPERTY_NAME, Runtime.getRuntime().availableProcessors());
+    default Integer getEventSchedulerPollThreadCount() {
+        String threadCount = getProperty(EVENT_QUEUE_POLL_SCHEDULER_THREAD_COUNT_PROPERTY_NAME, null);
+        return Strings.isNullOrEmpty(threadCount) ? null : Integer.parseInt(threadCount);
     }
 
     /**

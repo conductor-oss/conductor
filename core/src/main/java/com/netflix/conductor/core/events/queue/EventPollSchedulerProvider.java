@@ -37,11 +37,14 @@ public class EventPollSchedulerProvider implements Provider<Scheduler> {
 
     @Override
     public Scheduler get() {
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-queue-poll-scheduler-thread-%d")
-                .build();
-        Executor executorService = Executors.newFixedThreadPool(configuration.getEventSchedulerPollThreadCount(), threadFactory);
-
-        return Schedulers.from(executorService);
+        if (configuration.getEventSchedulerPollThreadCount() != null) {
+            ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat("event-queue-poll-scheduler-thread-%d")
+                    .build();
+            Executor executorService = Executors.newFixedThreadPool(configuration.getEventSchedulerPollThreadCount(), threadFactory);
+            return Schedulers.from(executorService);
+        } else {
+            return Schedulers.computation();
+        }
     }
 }

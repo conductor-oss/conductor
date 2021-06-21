@@ -288,7 +288,7 @@ class TestPostgresConfiguration implements PostgresConfiguration {
     }
 
     @Override
-    public int getEventSchedulerPollThreadCount() {
+    public Integer getEventSchedulerPollThreadCount() {
         return testConfiguration.getEventSchedulerPollThreadCount();
     }
 
