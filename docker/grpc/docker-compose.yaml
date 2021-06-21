@@ -14,6 +14,8 @@ services:
     ports:
       - 8080:8080
       - 8090:8090
+    links:
+      - elasticsearch:es
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -35,12 +37,12 @@ services:
       - conductor-server
 
   mysql:
-    image: mysql:5.6
+    image: mysql:5.7
     environment:
       MYSQL_ROOT_PASSWORD: 12345
       MYSQL_DATABASE: conductor
       MYSQL_USER: conductor
-      MYSQL_PASSWORD: password
+      MYSQL_PASSWORD: conductor
     volumes:
       - type: volume
         source: conductor_mysql
@@ -55,11 +57,10 @@ services:
       timeout: 5s
       retries: 12
 
-  # https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docker.html
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.8
+    image: elasticsearch:6.8.15
     environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
       - transport.host=0.0.0.0
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -73,6 +74,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
 
 volumes:
   conductor_mysql:
