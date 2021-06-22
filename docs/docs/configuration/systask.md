@@ -199,8 +199,8 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 |---|---|---|
 | name | String | Name of the workflow to execute |
 | version | Integer | Version of the workflow to execute |
-| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains. |
-| workflowDefinition | [WorkflowDefinition](configuration/workflowdef/) | Allows starting a subworkflow with a dynamic workflow definition. |
+| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](conductor/configuration/taskdomains/) for instructions to configure taskDomains. |
+| workflowDefinition | [WorkflowDefinition](conductor/configuration/workflowdef/) | Allows starting a subworkflow with a dynamic workflow definition. |
 
 **Outputs:**
 
