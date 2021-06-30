@@ -13,9 +13,6 @@
 package com.netflix.conductor.postgres.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
 import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
 import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
@@ -46,20 +43,20 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MetadataDAO postgresMetadataDAO(ObjectMapper objectMapper, DataSource dataSource,
+    public PostgresMetadataDAO postgresMetadataDAO(ObjectMapper objectMapper, DataSource dataSource,
         PostgresProperties properties) {
         return new PostgresMetadataDAO(objectMapper, dataSource, properties);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public ExecutionDAO postgresExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public PostgresExecutionDAO postgresExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new PostgresExecutionDAO(objectMapper, dataSource);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public QueueDAO postgresQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public PostgresQueueDAO postgresQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new PostgresQueueDAO(objectMapper, dataSource);
     }
 }

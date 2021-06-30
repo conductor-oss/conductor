@@ -29,7 +29,7 @@ dependencies {
     implementation "org.flywaydb:flyway-core"
 
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
-    testImplementation "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
+
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 }

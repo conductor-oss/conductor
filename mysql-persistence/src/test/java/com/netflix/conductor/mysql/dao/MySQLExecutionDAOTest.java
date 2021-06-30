@@ -12,56 +12,43 @@
  */
 package com.netflix.conductor.mysql.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
-import com.netflix.conductor.mysql.util.MySQLDAOTestUtil;
-import org.junit.After;
+import com.netflix.conductor.mysql.config.MySQLConfiguration;
+import org.flywaydb.core.Flyway;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class, MySQLConfiguration.class, FlywayAutoConfiguration.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest
 public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
-    private MySQLDAOTestUtil testUtil;
+    @Autowired
     private MySQLExecutionDAO executionDAO;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    Flyway flyway;
 
-    @Rule
-    public TestName name = new TestName();
-
-    public MySQLContainer<?> mySQLContainer;
-
+    // clean the database between tests.
     @Before
-    public void setup() {
-        mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql")).withDatabaseName(name.getMethodName());
-        mySQLContainer.start();
-        testUtil = new MySQLDAOTestUtil(mySQLContainer, objectMapper);
-        executionDAO = new MySQLExecutionDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
-    }
-
-    @After
-    public void teardown() {
-        testUtil.getDataSource().close();
+    public void before() {
+        flyway.clean();
+        flyway.migrate();
     }
 
     @Test

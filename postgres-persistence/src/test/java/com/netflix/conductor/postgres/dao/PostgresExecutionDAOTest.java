@@ -12,60 +12,44 @@
  */
 package com.netflix.conductor.postgres.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
-import com.netflix.conductor.postgres.util.PostgresDAOTestUtil;
-import org.junit.After;
+import com.netflix.conductor.postgres.config.PostgresConfiguration;
+import org.flywaydb.core.Flyway;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
+@ContextConfiguration(
+        classes = {TestObjectMapperConfiguration.class, PostgresConfiguration.class, FlywayAutoConfiguration.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest
 public class PostgresExecutionDAOTest extends ExecutionDAOTest {
 
-    private PostgresDAOTestUtil testPostgres;
+    @Autowired
     private PostgresExecutionDAO executionDAO;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    Flyway flyway;
 
-    @Rule
-    public TestName name = new TestName();
-
-    public PostgreSQLContainer<?> postgreSQLContainer;
-
+    // clean the database between tests.
     @Before
-    public void setup() {
-        postgreSQLContainer =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres")).withDatabaseName(name.getMethodName().toLowerCase());
-        postgreSQLContainer.start();
-        testPostgres = new PostgresDAOTestUtil(postgreSQLContainer, objectMapper);
-        executionDAO = new PostgresExecutionDAO(
-            testPostgres.getObjectMapper(),
-            testPostgres.getDataSource()
-        );
-    }
-
-    @After
-    public void teardown() {
-        testPostgres.getDataSource().close();
+    public void before() {
+        flyway.clean();
+        flyway.migrate();
     }
 
     @Test

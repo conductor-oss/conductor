@@ -13,9 +13,6 @@
 package com.netflix.conductor.mysql.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
@@ -39,19 +36,19 @@ public class MySQLConfiguration {
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MetadataDAO mySqlMetadataDAO(ObjectMapper objectMapper, DataSource dataSource, MySQLProperties properties) {
+    public MySQLMetadataDAO mySqlMetadataDAO(ObjectMapper objectMapper, DataSource dataSource, MySQLProperties properties) {
         return new MySQLMetadataDAO(objectMapper, dataSource, properties);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public ExecutionDAO mySqlExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public MySQLExecutionDAO mySqlExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new MySQLExecutionDAO(objectMapper, dataSource);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public QueueDAO mySqlQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public MySQLQueueDAO mySqlQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new MySQLQueueDAO(objectMapper, dataSource);
     }
 }
