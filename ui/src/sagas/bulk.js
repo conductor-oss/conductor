@@ -28,7 +28,7 @@ function* sendBulkRequest(action) {
         response = yield call(http.put, url, workflows);
         break;
       case "terminate":
-        response = yield call(http.delete, url, workflows);
+        response = yield call(http.post, url, workflows);
         break;
       default:
         throw "Invalid operation requested.";

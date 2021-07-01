@@ -211,7 +211,7 @@ router.post('/bulk/restart_with_current_definition', async (req, res, next) => {
   }
 })
 
-router.delete('/bulk/terminate', async (req, res, next) => {
+router.post('/bulk/terminate', async (req, res, next) => {
   try {
     const result = await http.delete(baseURL2 + "bulk/terminate", req.body, req.token);
     res.status(200).send(result);

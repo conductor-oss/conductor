@@ -1,30 +1,30 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.rest.controllers;
-
-import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW_BULK;
 
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.service.WorkflowBulkService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.List;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW_BULK;
 
 /**
  * Synchronous Bulk APIs to process the workflows in batches
@@ -96,9 +96,9 @@ public class WorkflowBulkResource {
      * @param reason      - description to be specified for the terminated workflow for future references.
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
-    @DeleteMapping("/terminate")
+    @PostMapping("/terminate")
     @Operation(summary = "Terminate workflows execution")
-    public BulkResponse terminate(@RequestBody List<String> workflowIds, @RequestParam("reason") String reason) {
+    public BulkResponse terminate(@RequestBody List<String> workflowIds, @RequestParam(value = "reason", required = false) String reason) {
         return workflowBulkService.terminate(workflowIds, reason);
     }
 }

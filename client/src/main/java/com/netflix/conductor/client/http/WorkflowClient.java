@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.client.http;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
@@ -227,10 +226,9 @@ public class WorkflowClient extends ClientBase {
      * @param reason      the reason to be logged and displayed
      * @return the {@link BulkResponse} contains bulkErrorResults and bulkSuccessfulResults
      */
-    public BulkResponse terminateWorkflows(List<String> workflowIds, String reason) throws JsonProcessingException {
+    public BulkResponse terminateWorkflows(List<String> workflowIds, String reason) {
         Preconditions.checkArgument(!workflowIds.isEmpty(), "workflow id cannot be blank");
-        return deleteWithRequestBody(new Object[]{"reason", reason}, "workflow/bulk/terminate",
-                objectMapper.writeValueAsString(workflowIds));
+        return postForEntity("workflow/bulk/terminate", workflowIds, new Object[]{"reason", reason}, BulkResponse.class);
     }
 
     /**
