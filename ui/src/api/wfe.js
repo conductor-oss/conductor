@@ -209,11 +209,11 @@ router.post('/bulk/restart_with_current_definition', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-})
+});
 
 router.post('/bulk/terminate', async (req, res, next) => {
   try {
-    const result = await http.delete(baseURL2 + "bulk/terminate", req.body, req.token);
+    const result = await http.post(baseURL2 + "bulk/terminate", req.body, req.token);
     res.status(200).send(result);
   } catch (err) {
     next(err);
@@ -225,7 +225,6 @@ router.delete('/terminate/:workflowId', async (req, res, next) => {
     const result = await http.delete(baseURL2 + req.params.workflowId, {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
-
     next(err);
   }
 });
