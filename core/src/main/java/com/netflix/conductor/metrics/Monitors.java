@@ -25,11 +25,11 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.histogram.PercentileTimer;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 
 public class Monitors {
 
@@ -189,16 +189,15 @@ public class Monitors {
     }
 
     public static void recordQueueDepth(String taskType, long size, String ownerApp) {
-        gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", "" + ownerApp);
+        gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordTaskInProgress(String taskType, long size, String ownerApp) {
-        gauge(classQualifier, "task_in_progress", size, "taskType", taskType, "ownerApp", "" + ownerApp);
+        gauge(classQualifier, "task_in_progress", size, "taskType", taskType, StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordRunningWorkflows(long count, String name, String version, String ownerApp) {
-        gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, "ownerApp",
-            "" + ownerApp);
+        gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordNumTasksInWorkflow(long count, String name, String version) {
@@ -218,12 +217,15 @@ public class Monitors {
     }
 
     public static void recordWorkflowTermination(String workflowType, WorkflowStatus status, String ownerApp) {
-        counter(classQualifier, "workflow_failure", "workflowName", workflowType, "status", status.name(), "ownerApp",
-            "" + ownerApp);
+        counter(classQualifier, "workflow_failure", "workflowName", workflowType, "status", status.name(), StringUtils.defaultIfBlank(ownerApp, "unknown"));
+    }
+
+    public static void recordWorkflowStartSuccess(String workflowType, String version, String ownerApp) {
+        counter(classQualifier, "workflow_start_success", "workflowName", workflowType, "version", version, "ownerApp", StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordWorkflowStartError(String workflowType, String ownerApp) {
-        counter(classQualifier, "workflow_start_error", "workflowName", workflowType, "ownerApp", "" + ownerApp);
+        counter(classQualifier, "workflow_start_error", "workflowName", workflowType, StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordUpdateConflict(String taskType, String workflowType, WorkflowStatus status) {
@@ -245,7 +247,7 @@ public class Monitors {
     }
 
     public static void recordWorkflowCompletion(String workflowType, long duration, String ownerApp) {
-        getTimer(classQualifier, "workflow_execution", "workflowName", workflowType, "ownerApp", "" + ownerApp)
+        getTimer(classQualifier, "workflow_execution", "workflowName", workflowType, StringUtils.defaultIfBlank(ownerApp, "unknown"))
             .record(duration, TimeUnit.MILLISECONDS);
     }
 

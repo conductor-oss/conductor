@@ -7,7 +7,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.3'
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.1.RELEASE'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.12.RELEASE'
     }
 }
 
@@ -89,7 +89,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            mavenBom("org.springframework.boot:spring-boot-dependencies:2.3.1.RELEASE")
+            mavenBom("org.springframework.boot:spring-boot-dependencies:2.3.12.RELEASE")
         }
     }
 
