@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.orchestration;
 
+import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -31,11 +33,6 @@ import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -43,8 +40,10 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
+import javax.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO}, {@link RateLimitingDAO} and
@@ -273,6 +272,11 @@ public class ExecutionDAOFacade {
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR,
                 "Error removing workflow: " + workflowId, e);
+        }
+        try {
+            queueDAO.remove(DECIDER_QUEUE, workflowId);
+        } catch (Exception e) {
+            LOGGER.info("Error removing workflow: {} from decider queue", workflowId, e);
         }
     }
 
