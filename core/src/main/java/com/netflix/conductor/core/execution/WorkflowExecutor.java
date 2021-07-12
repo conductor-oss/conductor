@@ -18,9 +18,8 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WIT
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
@@ -75,7 +74,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -417,6 +415,8 @@ public class WorkflowExecutor {
             LOGGER.debug("A new instance of workflow: {} created with id: {}", workflow.getWorkflowName(), workflowId);
             //then decide to see if anything needs to be done as part of the workflow
             decide(workflowId);
+            Monitors.recordWorkflowStartSuccess(workflow.getWorkflowName(),
+                String.valueOf(workflow.getWorkflowVersion()), workflow.getOwnerApp());
             return workflowId;
         } catch (Exception e) {
             Monitors.recordWorkflowStartError(workflowDefinition.getName(), WorkflowContext.get().getClientApp());
@@ -1160,13 +1160,14 @@ public class WorkflowExecutor {
             executionDAOFacade.updateTask(subWorkflowTask);
 
             // find all terminal and unsuccessful JOIN tasks and set them to IN_PROGRESS
-            if (workflow.getWorkflowDefinition().containsType(TASK_TYPE_JOIN)) {
-                // if we are here, then the SUB_WORKFLOW task is part of a FORK_JOIN
+            if (workflow.getWorkflowDefinition().containsType(TASK_TYPE_JOIN)
+                || workflow.getWorkflowDefinition().containsType(TASK_TYPE_FORK_JOIN_DYNAMIC)) {
+                // if we are here, then the SUB_WORKFLOW task could be part of a FORK_JOIN or FORK_JOIN_DYNAMIC
                 // and the JOIN task(s) needs to be evaluated again, set them to IN_PROGRESS
                 workflow.getTasks().stream()
-                        .filter(UNSUCCESSFUL_JOIN_TASK)
-                        .peek(t -> t.setStatus(Task.Status.IN_PROGRESS))
-                        .forEach(executionDAOFacade::updateTask);
+                    .filter(UNSUCCESSFUL_JOIN_TASK)
+                    .peek(t -> t.setStatus(Task.Status.IN_PROGRESS))
+                    .forEach(executionDAOFacade::updateTask);
             }
         }
     }
@@ -1175,13 +1176,14 @@ public class WorkflowExecutor {
         WorkflowDef workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
                 .orElseGet(() -> metadataDAO.getWorkflowDef(workflow.getWorkflowName(), workflow.getWorkflowVersion())
                         .orElseThrow(() -> new ApplicationException(BACKEND_ERROR, "Workflow Definition is not found")));
-        if (workflowDef.containsType(TASK_TYPE_SUB_WORKFLOW)) {
+        if (workflowDef.containsType(TASK_TYPE_SUB_WORKFLOW) || workflow.getWorkflowDefinition()
+            .containsType(TASK_TYPE_FORK_JOIN_DYNAMIC)) {
             return workflow.getTasks()
-                    .stream()
-                    .filter(t -> t.getTaskType().equals(TASK_TYPE_SUB_WORKFLOW)
-                            && t.isSubworkflowChanged()
-                            && !t.isRetried())
-                    .findFirst();
+                .stream()
+                .filter(t -> t.getTaskType().equals(TASK_TYPE_SUB_WORKFLOW)
+                    && t.isSubworkflowChanged()
+                    && !t.isRetried())
+                .findFirst();
         }
         return Optional.empty();
     }

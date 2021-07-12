@@ -70,7 +70,7 @@ public class HttpTaskTest {
 
     @ClassRule
     public static MockServerContainer mockServer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver"));
+        DockerImageName.parse("mockserver/mockserver"));
 
     @BeforeClass
     public static void init() throws Exception {
@@ -84,58 +84,58 @@ public class HttpTaskTest {
         };
         MockServerClient client = new MockServerClient(mockServer.getHost(), mockServer.getServerPort());
         client.when(
-                request()
-                        .withPath("/post")
-                        .withMethod("POST"))
-                .respond(request -> {
-                    Map<String, Object> reqBody = objectMapper.readValue(request.getBody().toString(), mapOfObj);
-                    Set<String> keys = reqBody.keySet();
-                    Map<String, Object> respBody = new HashMap<>();
-                    keys.forEach(k -> respBody.put(k, k));
-                    return response()
-                            .withContentType(MediaType.APPLICATION_JSON)
-                            .withBody(objectMapper.writeValueAsString(respBody));
-                });
+            request()
+                .withPath("/post")
+                .withMethod("POST"))
+            .respond(request -> {
+                Map<String, Object> reqBody = objectMapper.readValue(request.getBody().toString(), mapOfObj);
+                Set<String> keys = reqBody.keySet();
+                Map<String, Object> respBody = new HashMap<>();
+                keys.forEach(k -> respBody.put(k, k));
+                return response()
+                    .withContentType(MediaType.APPLICATION_JSON)
+                    .withBody(objectMapper.writeValueAsString(respBody));
+            });
         client.when(
-                request()
-                        .withPath("/post2")
-                        .withMethod("POST"))
-                .respond(response()
-                        .withStatusCode(204));
+            request()
+                .withPath("/post2")
+                .withMethod("POST"))
+            .respond(response()
+                .withStatusCode(204));
         client.when(
-                request()
-                        .withPath("/failure")
-                        .withMethod("GET"))
-                .respond(response()
-                        .withStatusCode(500)
-                        .withContentType(MediaType.TEXT_PLAIN)
-                        .withBody(ERROR_RESPONSE));
+            request()
+                .withPath("/failure")
+                .withMethod("GET"))
+            .respond(response()
+                .withStatusCode(500)
+                .withContentType(MediaType.TEXT_PLAIN)
+                .withBody(ERROR_RESPONSE));
         client.when(
-                request()
-                        .withPath("/text")
-                        .withMethod("GET"))
-                .respond(response()
-                        .withBody(TEXT_RESPONSE));
+            request()
+                .withPath("/text")
+                .withMethod("GET"))
+            .respond(response()
+                .withBody(TEXT_RESPONSE));
         client.when(
-                request()
-                        .withPath("/numeric")
-                        .withMethod("GET"))
-                .respond(response()
-                        .withBody(String.valueOf(NUM_RESPONSE)));
+            request()
+                .withPath("/numeric")
+                .withMethod("GET"))
+            .respond(response()
+                .withBody(String.valueOf(NUM_RESPONSE)));
         client.when(
-                request()
-                        .withPath("/json")
-                        .withMethod("GET"))
-                .respond(response()
-                        .withContentType(MediaType.APPLICATION_JSON)
-                        .withBody(JSON_RESPONSE));
+            request()
+                .withPath("/json")
+                .withMethod("GET"))
+            .respond(response()
+                .withContentType(MediaType.APPLICATION_JSON)
+                .withBody(JSON_RESPONSE));
     }
 
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
         DefaultRestTemplateProvider defaultRestTemplateProvider =
-                new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
+            new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
         httpTask = new HttpTask(defaultRestTemplateProvider, objectMapper);
     }
 
@@ -372,7 +372,7 @@ public class HttpTaskTest {
         SystemTaskRegistry systemTaskRegistry = mock(SystemTaskRegistry.class);
 
         new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, systemTaskRegistry,
-                Collections.emptyMap(),
-                Duration.ofMinutes(60)).decide(workflow);
+            Collections.emptyMap(),
+            Duration.ofMinutes(60)).decide(workflow);
     }
 }
