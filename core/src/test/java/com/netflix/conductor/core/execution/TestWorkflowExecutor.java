@@ -1540,6 +1540,8 @@ public class TestWorkflowExecutor {
     public void testStartWorkflow() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
 
         Map<String, Object> workflowInput = new HashMap<>();
         String externalInputPayloadStoragePath = null;
@@ -1549,6 +1551,9 @@ public class TestWorkflowExecutor {
         String parentWorkflowTaskId = null;
         String event = null;
         Map<String, String> taskToDomain = null;
+
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         workflowExecutor.startWorkflow(def,
             workflowInput,
@@ -1561,6 +1566,8 @@ public class TestWorkflowExecutor {
             taskToDomain);
 
         verify(executionDAOFacade, times(1)).createWorkflow(any(Workflow.class));
+        verify(executionLockService, times(2)).acquireLock(anyString());
+        verify(executionDAOFacade, times(1)).getWorkflowById(anyString(), anyBoolean());
     }
 
     @Test
