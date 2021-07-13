@@ -22,12 +22,14 @@ Running the images:
  - `docker run -p 8080:8080 -d -t conductor:server`
  - `docker run -p 5000:5000 -d -t conductor:ui` (requires elasticsearch running locally)
 
-Using compose:
-`docker-compose up`
+Using compose (with Dynomite):
+`docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up`
+
+Using compose (with Postgres):
+`docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up`
 
 ## Exiting Compose
 `ctrl+c` will exit docker compose.
-
 
 To ensure images are stopped do:
  - `docker-compose down`
