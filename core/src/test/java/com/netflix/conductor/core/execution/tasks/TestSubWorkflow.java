@@ -17,6 +17,7 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,6 +93,58 @@ public class TestSubWorkflow {
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
         assertEquals(Task.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void testStartSubWorkflowQueueFailure() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(workflowDef);
+
+        Task task = new Task();
+        task.setOutputData(new HashMap<>());
+        task.setStatus(Task.Status.SCHEDULED);
+
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("subWorkflowName", "UnitWorkFlow");
+        inputData.put("subWorkflowVersion", 3);
+        task.setInputData(inputData);
+
+        when(workflowExecutor
+                .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
+                .thenThrow(new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "QueueDAO failure"));
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+        assertNull("subWorkflowId should be null", task.getSubWorkflowId());
+        assertEquals(Task.Status.SCHEDULED, task.getStatus());
+        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+    }
+
+    @Test
+    public void testStartSubWorkflowStartError() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(workflowDef);
+
+        Task task = new Task();
+        task.setOutputData(new HashMap<>());
+        task.setStatus(Task.Status.SCHEDULED);
+
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("subWorkflowName", "UnitWorkFlow");
+        inputData.put("subWorkflowVersion", 3);
+        task.setInputData(inputData);
+
+        String failureReason = "non transient failure";
+        when(workflowExecutor
+                .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
+                .thenThrow(new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, failureReason));
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+        assertNull("subWorkflowId should be null", task.getSubWorkflowId());
+        assertEquals(Task.Status.FAILED, task.getStatus());
+        assertEquals(failureReason, task.getReasonForIncompletion());
+        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
     }
 
     @Test

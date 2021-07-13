@@ -153,7 +153,7 @@ public class ExecutionService {
                 }
                 task.setCallbackAfterSeconds(0);    // reset callbackAfterSeconds when giving the task to the worker
                 task.setWorkerId(workerId);
-                task.setPollCount(task.getPollCount() + 1);
+                task.incrementPollCount();
                 executionDAOFacade.updateTask(task);
                 tasks.add(task);
             } catch (Exception e) {

@@ -12,22 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WITH_TERMINAL_ERROR;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
@@ -64,6 +48,11 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionLockService;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,10 +65,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WITH_TERMINAL_ERROR;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
 
 /**
  * Workflow services provider interface
@@ -1434,38 +1435,51 @@ public class WorkflowExecutor {
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
             if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
-                task.setPollCount(task.getPollCount() + 1);
+                task.incrementPollCount();
                 executionDAOFacade.updateTask(task);
             }
 
+            // load task data (input/output) from external storage, if necessary
             deciderService.populateTaskData(task);
 
+            if (task.getStatus() == SCHEDULED) {
+                systemTask.start(workflow, task, this);
+            } else if (task.getStatus() == IN_PROGRESS) {
+                systemTask.execute(workflow, task, this);
+            }
+
+            if (task.getOutputData() != null && !task.getOutputData().isEmpty()) {
+                deciderService.externalizeTaskData(task);
+            }
+
+            // Update message in Task queue based on Task status
             // Stop polling for asyncComplete system tasks that are not in SCHEDULED state
             if (systemTask.isAsyncComplete(task) && task.getStatus() != SCHEDULED) {
                 queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
-                return;
             }
-
-            switch (task.getStatus()) {
-                case SCHEDULED:
-                    systemTask.start(workflow, task, this);
-                    break;
-
-                case IN_PROGRESS:
-                    systemTask.execute(workflow, task, this);
-                    break;
-                default:
-                    break;
-            }
-
-            if (!task.getStatus().isTerminal()) {
+            else if(task.getStatus().isTerminal()) {
+                task.setEndTime(System.currentTimeMillis());
+                queueDAO.remove(queueName, task.getTaskId());
+                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, queueName,
+                        task.getStatus());
+            } else {
                 task.setCallbackAfterSeconds(callbackTime);
+                new RetryUtil<>().retryOnException(() -> {
+                    // postpone based on callbackTime
+                    queueDAO.postpone(queueName, task.getTaskId(), task.getWorkflowPriority(), callbackTime);
+                    LOGGER.debug(
+                            "Task: {} postponed in taskQueue: {} since the task status is {} with callbackAfterSeconds: {}",
+                            task, queueName, task.getStatus(), callbackTime);
+                    return null;
+                }, null, null, 2, "Postponing Task message in queue for taskId: " + task.getTaskId(), "postponeTaskMessage");
             }
 
-            updateTask(new TaskResult(task));
-            LOGGER.debug("Done Executing {}/{}-{} output={}", task.getTaskType(), task.getTaskId(), task.getStatus(),
-                task.getOutputData().toString());
+            new RetryUtil<>().retryOnException(() -> {
+                executionDAOFacade.updateTask(task);
+                return null;
+            }, null, null, 2, "Updating Task with taskId: " + task.getTaskId(), "updateTask");
 
+            LOGGER.debug("Finished execution of {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
