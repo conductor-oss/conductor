@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
 
 import javax.inject.Inject;
@@ -26,6 +25,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -186,16 +186,18 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
      * @since 1.11.6
      */
     public void processAllUnacks() {
-
         logger.trace("processAllUnacks started");
 
         getWithRetriedTransactions(tx -> {
-            String LOCK_TASKS = "SELECT message_id FROM queue_message WHERE popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp FOR UPDATE SKIP LOCKED";
+            String LOCK_TASKS = "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp limit 1000 FOR UPDATE SKIP LOCKED";
 
-            List<String> messages = query(tx, LOCK_TASKS, p -> p.executeAndFetch(rs -> {
-                List<String> results = new ArrayList<>();
+            List<QueueMessage> messages = query(tx, LOCK_TASKS, p -> p.executeAndFetch(rs -> {
+            	List<QueueMessage> results = new ArrayList<QueueMessage>();
                 while (rs.next()) {
-                    results.add(rs.getString("message_id"));
+                	QueueMessage qm = new QueueMessage();
+                	qm.queueName = rs.getString("queue_name");
+                	qm.messageId = rs.getString("message_id");
+                    results.add(qm);
                 }
                 return results;
             }));
@@ -203,43 +205,44 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             if (messages.size() == 0) {
                 return 0;
             }
-            String msgIdsString = String.join(",", messages);
 
-            final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE message_id IN (?)";
-            Integer unacked = query(tx, PROCESS_UNACKS, q -> q.addParameter(msgIdsString).executeUpdate());
-            if (unacked > 0) {
-                logger.debug("Unacked {} messages: {} from all queues", unacked, messages);
+            Map<String, List<String>> queueMessageMap = new HashMap<String, List<String>>();
+            for(QueueMessage qm : messages) {
+            	if(!queueMessageMap.containsKey(qm.queueName)) {
+            		queueMessageMap.put(qm.queueName, new ArrayList<String>());
+            	}
+            	queueMessageMap.get(qm.queueName).add(qm.messageId);
             }
-            return unacked;
+            
+			int totalUnacked = 0;
+            for(String queueName : queueMessageMap.keySet()) {
+    			Integer unacked = 0;;
+    			try {
+                	final List<String> msgIds = queueMessageMap.get(queueName);
+    		        final String UPDATE_POPPED = String.format(
+    		        		"UPDATE queue_message SET popped = false WHERE queue_name = ? and message_id IN (%s)",
+    		                Query.generateInBindings(msgIds.size()));
+
+    				unacked = query(tx, UPDATE_POPPED, q -> q.addParameter(queueName)
+        					.addParameters(msgIds).executeUpdate());
+    			} catch(Exception e) {
+    				e.printStackTrace();
+    			}            
+    			totalUnacked += unacked;
+                logger.debug("Unacked {} messages from all queues", unacked);
+            }
+
+			if (totalUnacked > 0) {
+                logger.debug("Unacked {} messages from all queues", totalUnacked);
+            }
+            return totalUnacked;
         });
     }
 
     @Override
     public void processUnacks(String queueName) {
-        getWithRetriedTransactions(tx -> {
-            String LOCK_TASKS = "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp FOR UPDATE SKIP LOCKED";
-
-            List<String> messages = query(tx, LOCK_TASKS, p -> p.addParameter(queueName)
-                    .executeAndFetch(rs -> {
-                        List<String> results = new ArrayList<>();
-                        while (rs.next()) {
-                            results.add(rs.getString("message_id"));
-                        }
-                        return results;
-                    }));
-
-            if (messages.size() == 0) {
-                return 0;
-            }
-            String msgIdsString = String.join(",", messages);
-
-            final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE queue_name = ? AND message_id IN (?)";
-            Integer unacked = query(tx, PROCESS_UNACKS, q -> q.addParameter(queueName).addParameter(msgIdsString).executeUpdate());
-            if (unacked > 0) {
-                logger.debug("Unacked {} messages: {} from queue: {}", unacked, messages, queueName);
-            }
-            return unacked;
-        });
+        final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND (current_timestamp - (60 ||' seconds')::interval)  > deliver_on";
+        executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
     }
 
     @Override
@@ -334,5 +337,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 	        final String CREATE_QUEUE = "INSERT INTO queue (queue_name) VALUES (?) ON CONFLICT (queue_name) DO NOTHING";
 	        execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
         }
+    }
+    
+    private class QueueMessage {
+    	public String queueName;
+    	public String messageId;
     }
 }
