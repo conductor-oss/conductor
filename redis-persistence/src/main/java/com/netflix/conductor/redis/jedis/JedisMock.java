@@ -40,7 +40,7 @@ public class JedisMock extends Jedis {
     }
 
     private Set<Tuple> toTupleSet(Set<ZsetPair> pairs) {
-        Set<Tuple> set = new HashSet<Tuple>();
+        Set<Tuple> set = new HashSet<>();
         for (ZsetPair pair : pairs) {
             set.add(new Tuple(pair.member, pair.score));
         }
@@ -150,7 +150,7 @@ public class JedisMock extends Jedis {
     public List<String> mget(final String... keys) {
         try {
             String[] mget = redis.mget(keys);
-            List<String> lst = new ArrayList<String>(mget.length);
+            List<String> lst = new ArrayList<>(mget.length);
             for (String get : mget) {
                 lst.add(get);
             }
@@ -718,7 +718,7 @@ public class JedisMock extends Jedis {
         try {
             Double score = null;
             String member = null;
-            List<ZsetPair> scoresmembers = new ArrayList<ZsetPair>((scoreMembers.size() - 1) * 2);
+            List<ZsetPair> scoresmembers = new ArrayList<>((scoreMembers.size() - 1) * 2);
             for (String m : scoreMembers.keySet()) {
                 if (m == null) {
                     member = m;

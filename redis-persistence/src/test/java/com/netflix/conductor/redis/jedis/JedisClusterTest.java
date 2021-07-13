@@ -188,7 +188,7 @@ public class JedisClusterTest {
 
     @Test
     public void testHmset() {
-        jedisCluster.hmset("key", new HashMap<String, String>());
+        jedisCluster.hmset("key", new HashMap<>());
     }
 
     @Test

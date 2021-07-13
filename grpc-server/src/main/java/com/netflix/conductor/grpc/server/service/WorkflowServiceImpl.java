@@ -330,7 +330,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     }
 
     private List<String> convertSort(String sortStr) {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if (sortStr != null && sortStr.length() != 0) {
             list = Arrays.asList(sortStr.split("\\|"));
         }

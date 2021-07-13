@@ -51,12 +51,12 @@ public class SummaryUtilTest {
 
     @Before
     public void init() {
-        Map<String, Object> child = new HashMap<String, Object>();
+        Map<String, Object> child = new HashMap<>();
         child.put("testStr", "childTestStr");
 
-        Map<String, Object> obj = new HashMap<String, Object>();
+        Map<String, Object> obj = new HashMap<>();
         obj.put("testStr", "stringValue");
-        obj.put("testArray", new ArrayList<Integer>(Arrays.asList(1, 2, 3)));
+        obj.put("testArray", new ArrayList<>(Arrays.asList(1, 2, 3)));
         obj.put("testObj", child);
         obj.put("testNull", null);
 

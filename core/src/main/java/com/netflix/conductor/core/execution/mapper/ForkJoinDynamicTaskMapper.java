@@ -259,7 +259,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         List<WorkflowTask> dynamicForkWorkflowTasks = objectMapper
             .convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
         if (dynamicForkWorkflowTasks == null) {
-            dynamicForkWorkflowTasks = new ArrayList<WorkflowTask>();
+            dynamicForkWorkflowTasks = new ArrayList<>();
         }
         for (WorkflowTask workflowTask : dynamicForkWorkflowTasks) {
             if ((workflowTask.getTaskDefinition() == null) && StringUtils.isNotBlank(workflowTask.getName())) {

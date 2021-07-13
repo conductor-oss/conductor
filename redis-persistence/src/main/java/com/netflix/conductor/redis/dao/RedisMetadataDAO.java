@@ -190,7 +190,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     public List<WorkflowDef> getAllVersions(String name) {
         Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
-        List<WorkflowDef> workflows = new LinkedList<WorkflowDef>();
+        List<WorkflowDef> workflows = new LinkedList<>();
 
         recordRedisDaoRequests("getAllWorkflowDefsByName");
         Map<String, String> workflowDefs = jedisProxy.hgetAll(nsKey(WORKFLOW_DEF, name));
@@ -252,7 +252,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
-        List<WorkflowDef> workflows = new LinkedList<WorkflowDef>();
+        List<WorkflowDef> workflows = new LinkedList<>();
 
         // Get all from WORKFLOW_DEF_NAMES
         recordRedisDaoRequests("getAllWorkflowDefs");

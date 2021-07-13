@@ -83,7 +83,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     }
 
     private static List<String> dateStrBetweenDates(Long startdatems, Long enddatems) {
-        List<String> dates = new ArrayList<String>();
+        List<String> dates = new ArrayList<>();
         Calendar calendar = new GregorianCalendar();
         Date startdate = new Date(startdatems);
         Date enddate = new Date(enddatems);

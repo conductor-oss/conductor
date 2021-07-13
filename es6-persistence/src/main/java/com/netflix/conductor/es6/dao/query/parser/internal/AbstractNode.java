@@ -22,7 +22,7 @@ public abstract class AbstractNode {
 
     public static final Pattern WHITESPACE = Pattern.compile("\\s");
 
-    protected static Set<Character> comparisonOprs = new HashSet<Character>();
+    protected static Set<Character> comparisonOprs = new HashSet<>();
 
     static {
         comparisonOprs.add('>');

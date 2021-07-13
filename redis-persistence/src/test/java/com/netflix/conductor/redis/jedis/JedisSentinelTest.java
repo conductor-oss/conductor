@@ -190,7 +190,7 @@ public class JedisSentinelTest {
 
     @Test
     public void testHmset() {
-        jedisSentinel.hmset("key", new HashMap<String, String>());
+        jedisSentinel.hmset("key", new HashMap<>());
     }
 
     @Test
