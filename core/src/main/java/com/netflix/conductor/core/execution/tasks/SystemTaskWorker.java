@@ -1,20 +1,20 @@
 /*
- * Copyright 2020 Netflix, Inc.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.SemaphoreUtil;
 import com.netflix.conductor.dao.QueueDAO;
@@ -30,38 +30,33 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Manages the threadpool used by system task workers for execution.
+ * The worker that polls and executes an async system task.
  */
-class SystemTaskExecutor {
+class SystemTaskWorker {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorker.class);
 
-    private final long callbackTime;
     private final QueueDAO queueDAO;
 
     ExecutionConfig defaultExecutionConfig;
-    private final WorkflowExecutor workflowExecutor;
+    private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
     private final int maxPollCount;
     private final ExecutionService executionService;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
-    SystemTaskExecutor(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, ConductorProperties properties,
-        ExecutionService executionService) {
+    SystemTaskWorker(QueueDAO queueDAO, AsyncSystemTaskExecutor asyncSystemTaskExecutor, ConductorProperties properties,
+                     ExecutionService executionService) {
         this.properties = properties;
         int threadCount = properties.getSystemTaskWorkerThreadCount();
-        this.callbackTime = properties.getSystemTaskWorkerCallbackDuration().getSeconds();
-
-        String threadNameFormat = "system-task-worker-%d";
-        this.defaultExecutionConfig = new ExecutionConfig(threadCount, threadNameFormat);
-        this.workflowExecutor = workflowExecutor;
+        this.defaultExecutionConfig = new ExecutionConfig(threadCount, "system-task-worker-%d");
+        this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
         this.maxPollCount = properties.getSystemTaskMaxPollCount();
         this.executionService = executionService;
 
-        LOGGER.info("Initialized the SystemTaskExecutor with {} threads and callback time: {} seconds", threadCount,
-            callbackTime);
+        LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
     }
 
     void pollAndExecute(String queueName) {
@@ -110,7 +105,7 @@ class SystemTaskExecutor {
                         executionService.ackTaskReceived(taskId);
 
                         CompletableFuture<Void> taskCompletableFuture = CompletableFuture.runAsync(() ->
-                            workflowExecutor.executeSystemTask(systemTask, taskId, callbackTime), executorService);
+                            asyncSystemTaskExecutor.execute(systemTask, taskId), executorService);
 
                         // release permit after processing is complete
                         taskCompletableFuture.whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));

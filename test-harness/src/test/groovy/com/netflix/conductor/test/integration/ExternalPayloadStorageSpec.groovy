@@ -178,8 +178,8 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
 
         when: "the system task 'USER_TASK' is started by issuing a system task call"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def taskId = workflow.getTaskByRefName('user_task').getTaskId()
-        workflowExecutor.executeSystemTask(userTask, taskId, 1)
+        def taskId = workflow.getTaskByRefName('user_task').taskId
+        asyncSystemTaskExecutor.execute(userTask, taskId)
 
         then: "verify that the user task is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -423,7 +423,7 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         when: "the subworkflow is started by issuing a system task call"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName('swt').taskId
-        workflowExecutor.executeSystemTask(subWorkflowTask, subWorkflowTaskId, 1)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

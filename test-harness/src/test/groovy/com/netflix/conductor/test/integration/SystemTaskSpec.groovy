@@ -80,7 +80,7 @@ class SystemTaskSpec extends AbstractSpecification {
 
         when: "the system task is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("USER_TASK", 1, 200)
-        workflowExecutor.executeSystemTask(userTask, polledTaskIds.get(0), 30)
+        asyncSystemTaskExecutor.execute(userTask, polledTaskIds[0])
 
         then: "verify that the system task is in IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

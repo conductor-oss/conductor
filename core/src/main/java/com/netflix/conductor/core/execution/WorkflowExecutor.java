@@ -103,7 +103,6 @@ public class WorkflowExecutor {
     private final SystemTaskRegistry systemTaskRegistry;
 
     private long activeWorkerLastPollMs;
-    private final long queueTaskMessagePostponeSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private final ExecutionLockService executionLockService;
@@ -119,7 +118,6 @@ public class WorkflowExecutor {
 
     private static final Predicate<Task> NON_TERMINAL_TASK = task -> !task.getStatus().isTerminal();
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     public WorkflowExecutor(DeciderService deciderService, MetadataDAO metadataDAO, QueueDAO queueDAO,
         MetadataMapperService metadataMapperService, WorkflowStatusListener workflowStatusListener,
         ExecutionDAOFacade executionDAOFacade, ConductorProperties properties,
@@ -133,7 +131,6 @@ public class WorkflowExecutor {
         this.metadataMapperService = metadataMapperService;
         this.executionDAOFacade = executionDAOFacade;
         this.activeWorkerLastPollMs = properties.getActiveWorkerLastPollTimeout().toMillis();
-        this.queueTaskMessagePostponeSecs = properties.getTaskExecutionPostponeDuration().getSeconds();
         this.workflowStatusListener = workflowStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
@@ -1376,114 +1373,6 @@ public class WorkflowExecutor {
         }
         LOGGER.debug("Added task {} with priority {} to queue {} with call back seconds {}", task,
             task.getWorkflowPriority(), taskQueueName, task.getCallbackAfterSeconds());
-    }
-
-    //Executes the async system task
-    public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, long callbackTime) {
-        try {
-            Task task = executionDAOFacade.getTaskById(taskId);
-            if (task == null) {
-                LOGGER.error("TaskId: {} could not be found while executing SystemTask", taskId);
-                return;
-            }
-            LOGGER.debug("Task: {} fetched from execution DAO for taskId: {}", task, taskId);
-            String queueName = QueueUtils.getQueueName(task);
-            if (task.getStatus().isTerminal()) {
-                //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
-                LOGGER.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
-                queueDAO.remove(queueName, task.getTaskId());
-                return;
-            }
-
-            String workflowId = task.getWorkflowInstanceId();
-            Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
-
-            if (task.getStartTime() == 0) {
-                task.setStartTime(System.currentTimeMillis());
-                Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
-            }
-
-            if (workflow.getStatus().isTerminal()) {
-                LOGGER.info("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(),
-                    systemTask.getTaskType(),
-                    task.getTaskId());
-                if (!task.getStatus().isTerminal()) {
-                    task.setStatus(CANCELED);
-                }
-                executionDAOFacade.updateTask(task);
-                queueDAO.remove(queueName, task.getTaskId());
-                return;
-            }
-
-            if (task.getStatus().equals(SCHEDULED)) {
-                if (executionDAOFacade.exceedsInProgressLimit(task)) {
-                    //to do add a metric to record this
-                    LOGGER.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
-                    // Postpone a message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
-                    return;
-                }
-                if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade
-                    .exceedsRateLimitPerFrequency(task, metadataDAO.getTaskDef(task.getTaskDefName()))) {
-                    LOGGER.warn("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
-                        task.getRateLimitPerFrequency());
-                    // Postpone a message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
-                    return;
-                }
-            }
-
-            LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
-            if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
-                task.incrementPollCount();
-                executionDAOFacade.updateTask(task);
-            }
-
-            // load task data (input/output) from external storage, if necessary
-            deciderService.populateTaskData(task);
-
-            if (task.getStatus() == SCHEDULED) {
-                systemTask.start(workflow, task, this);
-            } else if (task.getStatus() == IN_PROGRESS) {
-                systemTask.execute(workflow, task, this);
-            }
-
-            if (task.getOutputData() != null && !task.getOutputData().isEmpty()) {
-                deciderService.externalizeTaskData(task);
-            }
-
-            // Update message in Task queue based on Task status
-            // Stop polling for asyncComplete system tasks that are not in SCHEDULED state
-            if (systemTask.isAsyncComplete(task) && task.getStatus() != SCHEDULED) {
-                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
-            }
-            else if(task.getStatus().isTerminal()) {
-                task.setEndTime(System.currentTimeMillis());
-                queueDAO.remove(queueName, task.getTaskId());
-                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, queueName,
-                        task.getStatus());
-            } else {
-                task.setCallbackAfterSeconds(callbackTime);
-                new RetryUtil<>().retryOnException(() -> {
-                    // postpone based on callbackTime
-                    queueDAO.postpone(queueName, task.getTaskId(), task.getWorkflowPriority(), callbackTime);
-                    LOGGER.debug(
-                            "Task: {} postponed in taskQueue: {} since the task status is {} with callbackAfterSeconds: {}",
-                            task, queueName, task.getStatus(), callbackTime);
-                    return null;
-                }, null, null, 2, "Postponing Task message in queue for taskId: " + task.getTaskId(), "postponeTaskMessage");
-            }
-
-            new RetryUtil<>().retryOnException(() -> {
-                executionDAOFacade.updateTask(task);
-                return null;
-            }, null, null, 2, "Updating Task with taskId: " + task.getTaskId(), "updateTask");
-
-            LOGGER.debug("Finished execution of {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "executeSystemTask");
-            LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
-        }
     }
 
     @VisibleForTesting
