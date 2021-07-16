@@ -148,7 +148,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName("test_terminate_subworkflow").getTaskId()
-        workflowExecutor.executeSystemTask(subWorkflowTask, subWorkflowTaskId, 1)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.getTaskByRefName("test_terminate_subworkflow").subWorkflowId
 

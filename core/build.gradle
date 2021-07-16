@@ -10,6 +10,7 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
+apply plugin: 'groovy'
 
 dependencies {
     implementation project(':conductor-common')
@@ -46,4 +47,14 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation project(':conductor-common').sourceSets.test.output
+
+    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.spockframework:spock-core:${revSpock}"
+    testImplementation "org.spockframework:spock-spring:${revSpock}"
+}
+
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
 }

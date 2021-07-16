@@ -14,7 +14,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import org.junit.After;
@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -41,22 +40,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("UnstableApiUsage")
-public class TestSystemTaskExecutor {
+public class TestSystemTaskWorker {
 
     private static final String TEST_TASK = "system_task";
     private static final String ISOLATED_TASK = "system_task-isolated";
 
-    private WorkflowExecutor workflowExecutor;
+    private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private ExecutionService executionService;
     private QueueDAO queueDAO;
     private ScheduledExecutorService scheduledExecutorService;
     private ConductorProperties properties;
 
-    private SystemTaskExecutor systemTaskExecutor;
+    private SystemTaskWorker systemTaskWorker;
 
     @Before
     public void setUp() {
-        workflowExecutor = mock(WorkflowExecutor.class);
+        asyncSystemTaskExecutor = mock(AsyncSystemTaskExecutor.class);
         executionService = mock(ExecutionService.class);
         queueDAO = mock(QueueDAO.class);
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
@@ -71,43 +70,43 @@ public class TestSystemTaskExecutor {
     @After
     public void tearDown() {
         shutdownExecutorService(scheduledExecutorService);
-        shutdownExecutorService(systemTaskExecutor.defaultExecutionConfig.getExecutorService());
-        systemTaskExecutor.queueExecutionConfigMap.values()
+        shutdownExecutorService(systemTaskWorker.defaultExecutionConfig.getExecutorService());
+        systemTaskWorker.queueExecutionConfigMap.values()
             .forEach(e -> shutdownExecutorService(e.getExecutorService()));
     }
 
     @Test
     public void testGetExecutionConfigForSystemTask() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(5);
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
-        assertEquals(systemTaskExecutor.getExecutionConfig("").getSemaphoreUtil().availableSlots(), 5);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        assertEquals(systemTaskWorker.getExecutionConfig("").getSemaphoreUtil().availableSlots(), 5);
     }
 
     @Test
     public void testGetExecutionConfigForIsolatedSystemTask() {
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(7);
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
-        assertEquals(systemTaskExecutor.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(), 7);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        assertEquals(systemTaskWorker.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(), 7);
     }
 
     @Test
     public void testPollAndExecuteSystemTask() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(1);
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.singletonList("taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        verify(asyncSystemTaskExecutor).execute(any(), anyString());
     }
 
     @Test
@@ -116,40 +115,40 @@ public class TestSystemTaskExecutor {
         when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
 
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.nCopies(2, "taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch latch = new CountDownLatch(10);
         doAnswer(invocation -> {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor, Mockito.times(10)).executeSystemTask(any(), anyString(), anyLong());
+        verify(asyncSystemTaskExecutor, Mockito.times(10)).execute(any(), anyString());
     }
 
     @Test
     public void testPollAndExecuteIsolatedSystemTask() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(1);
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.singletonList("isolated_taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskExecutor.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        verify(asyncSystemTaskExecutor).execute(any(), anyString());
     }
 
     @Test
@@ -158,20 +157,20 @@ public class TestSystemTaskExecutor {
         when(queueDAO.pop(anyString(), anyInt(), anyInt()))
             .thenThrow(RuntimeException.class)
             .thenReturn(Collections.singletonList("taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        verify(asyncSystemTaskExecutor).execute(any(), anyString());
     }
 
     @Test
@@ -181,20 +180,20 @@ public class TestSystemTaskExecutor {
         when(queueDAO.pop(anyString(), anyInt(), anyInt()))
             .thenThrow(RuntimeException.class)
             .thenReturn(Collections.nCopies(2, "taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch latch = new CountDownLatch(2);
         doAnswer(invocation -> {
                 latch.countDown();
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
-        verify(workflowExecutor, Mockito.times(2)).executeSystemTask(any(), anyString(), anyLong());
+        verify(asyncSystemTaskExecutor, Mockito.times(2)).execute(any(), anyString());
     }
 
     @Test
@@ -205,7 +204,7 @@ public class TestSystemTaskExecutor {
         String isolatedTask = "isolatedTaskId";
         when(queueDAO.pop(TEST_TASK, 1, 200)).thenReturn(Collections.singletonList(sysTask));
         when(queueDAO.pop(ISOLATED_TASK, 1, 200)).thenReturn(Collections.singletonList(isolatedTask));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
 
         CountDownLatch sysTaskLatch = new CountDownLatch(1);
         CountDownLatch isolatedTaskLatch = new CountDownLatch(1);
@@ -220,14 +219,14 @@ public class TestSystemTaskExecutor {
                 }
                 return null;
             }
-        ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyLong());
+        ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService
-            .scheduleAtFixedRate(() -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         ScheduledExecutorService isoTaskService = Executors.newSingleThreadScheduledExecutor();
         isoTaskService
-            .scheduleAtFixedRate(() -> systemTaskExecutor.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
+            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(sysTaskLatch);
         Uninterruptibles.awaitUninterruptibly(isolatedTaskLatch);

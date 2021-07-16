@@ -15,7 +15,7 @@ package com.netflix.conductor.core.execution.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -29,7 +29,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,14 +38,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name = "conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
 public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
-    private SystemTaskExecutor systemTaskExecutor;
+    private SystemTaskWorker systemTaskWorker;
     private final ConductorProperties properties;
 
     private final long pollInterval;
@@ -58,21 +56,21 @@ public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
 
     private static final String CLASS_NAME = SystemTaskWorkerCoordinator.class.getName();
 
-    private final List<WorkflowSystemTask> workflowSystemTasks;
+    private final Set<WorkflowSystemTask> workflowSystemTasks;
     private final QueueDAO queueDAO;
-    private final WorkflowExecutor workflowExecutor;
+    private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ExecutionService executionService;
 
-    public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor,
-        ConductorProperties properties,
-        ExecutionService executionService,
-        List<WorkflowSystemTask> workflowSystemTasks) {
+    public SystemTaskWorkerCoordinator(QueueDAO queueDAO, AsyncSystemTaskExecutor asyncSystemTaskExecutor,
+                                       ConductorProperties properties,
+                                       ExecutionService executionService,
+                                       Set<WorkflowSystemTask> workflowSystemTasks) {
         this.properties = properties;
         this.workflowSystemTasks = workflowSystemTasks;
         this.executionNameSpace = properties.getSystemTaskWorkerExecutionNamespace();
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.queueDAO = queueDAO;
-        this.workflowExecutor = workflowExecutor;
+        this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.executionService = executionService;
     }
 
@@ -84,7 +82,7 @@ public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
                 + "task workers, set conductor.system-task-workers.enabled=false.");
         }
         this.workflowSystemTasks.forEach(this::add);
-        this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
+        this.systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties, executionService);
         new Thread(this::listen).start();
         LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
     }
@@ -122,7 +120,7 @@ public class SystemTaskWorkerCoordinator extends LifecycleAwareComponent {
             LOGGER.debug("Component stopped. Not polling for system task in queue : {}", queueName);
             return;
         }
-        systemTaskExecutor.pollAndExecute(queueName);
+        systemTaskWorker.pollAndExecute(queueName);
     }
 
     @VisibleForTesting

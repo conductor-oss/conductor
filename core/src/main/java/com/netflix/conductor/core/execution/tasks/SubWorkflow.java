@@ -42,10 +42,9 @@ public class SubWorkflow extends WorkflowSystemTask {
         this.objectMapper = objectMapper;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     @Override
     public void start(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
-
         Map<String, Object> input = task.getInputData();
         String name = input.get("subWorkflowName").toString();
         int version = (int) input.get("subWorkflowVersion");
@@ -54,13 +53,15 @@ public class SubWorkflow extends WorkflowSystemTask {
         if (input.get("subWorkflowDefinition") != null) {
             // convert the value back to workflow definition object
             workflowDefinition = objectMapper.convertValue(input.get("subWorkflowDefinition"), WorkflowDef.class);
+            name = workflowDefinition.getName();
         }
 
-        Map taskToDomain = workflow.getTaskToDomain();
+        Map<String, String> taskToDomain = workflow.getTaskToDomain();
         if (input.get("subWorkflowTaskToDomain") instanceof Map) {
-            taskToDomain = (Map) input.get("subWorkflowTaskToDomain");
+            taskToDomain = (Map<String, String>) input.get("subWorkflowTaskToDomain");
         }
-        Map<String, Object> wfInput = (Map<String, Object>) input.get("workflowInput");
+
+        var wfInput = (Map<String, Object>) input.get("workflowInput");
         if (wfInput == null || wfInput.isEmpty()) {
             wfInput = input;
         }
@@ -99,6 +100,14 @@ public class SubWorkflow extends WorkflowSystemTask {
             // Set task status based on current sub-workflow status, as the status can change in recursion by the time we update here.
             Workflow subWorkflow = workflowExecutor.getWorkflow(subWorkflowId, false);
             updateTaskStatus(subWorkflow, task);
+        } catch (ApplicationException ae) {
+            if (ae.isRetryable()) {
+                LOGGER.info("A transient backend error happened when task {} tried to start sub workflow.", task.getTaskId());
+            } else {
+                task.setStatus(Status.FAILED);
+                task.setReasonForIncompletion(ae.getMessage());
+                LOGGER.error("Error starting sub workflow: {} from workflow: {}", name, workflow.getWorkflowId(), ae);
+            }
         } catch (Exception e) {
             task.setStatus(Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());

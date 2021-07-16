@@ -98,7 +98,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(subWorkflowTask, polledTaskIds.get(0), 30)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds.get(0))
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         def parentWorkflowInstance = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
@@ -315,7 +315,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(subWorkflowTask, polledTaskIds.get(0), 30)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds.get(0))
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
@@ -431,7 +431,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        workflowExecutor.executeSystemTask(subWorkflowTask, polledTaskIds.get(0), 30)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds.get(0))
 
         then: "verify that SUB_WORKFLOW task in in progress"
         def parentWorkflowInstance = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)

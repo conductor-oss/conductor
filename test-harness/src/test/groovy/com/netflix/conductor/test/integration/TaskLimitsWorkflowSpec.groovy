@@ -56,7 +56,7 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "Execute the user task"
         def scheduledTask1 = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(userTask, scheduledTask1.taskId, 30)
+        asyncSystemTaskExecutor.execute(userTask, scheduledTask1.taskId)
 
         then: "Verify the state of the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -80,7 +80,7 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "Execute the user task on the second workflow"
         def scheduledTask2 = workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(userTask, scheduledTask2.taskId, 30)
+        asyncSystemTaskExecutor.execute(userTask, scheduledTask2.taskId)
 
         then: "Verify the state of the workflow is still in running state"
         with(workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true)) {
