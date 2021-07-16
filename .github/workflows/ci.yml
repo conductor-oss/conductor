@@ -43,7 +43,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }}"
-          ./gradlew build snapshot --scan
+          ./gradlew build -x :conductor-contribs:test snapshot --scan
         env:
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
