@@ -252,7 +252,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         workflowResource.delete(workflowInstanceId, false)
 
         then: "Verify queueDAO is not involved"
-        0 * queueDAO._
+        1 * queueDAO._
 
         when: "We try to get deleted workflow"
         workflowResource.getExecutionStatus(workflowInstanceId, true)

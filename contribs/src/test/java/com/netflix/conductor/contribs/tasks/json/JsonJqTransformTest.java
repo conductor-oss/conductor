@@ -12,30 +12,22 @@
  */
 package com.netflix.conductor.contribs.tasks.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
-@RunWith(SpringRunner.class)
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.Workflow;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.Test;
+
 public class JsonJqTransformTest {
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
     public void dataShouldBeCorrectlySelected() {

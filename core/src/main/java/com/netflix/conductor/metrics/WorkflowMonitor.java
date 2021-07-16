@@ -17,8 +17,11 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.MetadataService;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,18 +29,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(name = "conductor.workflow-monitor.enabled", havingValue = "true", matchIfMissing = true)
 public class WorkflowMonitor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowMonitor.class);
 
-    private final MetadataDAO metadataDAO;
+    private final MetadataService metadataService;
     private final QueueDAO queueDAO;
     private final ExecutionDAOFacade executionDAOFacade;
     private final int metadataRefreshInterval;
@@ -47,10 +45,10 @@ public class WorkflowMonitor {
     private List<WorkflowDef> workflowDefs;
     private int refreshCounter = 0;
 
-    public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade,
+    public WorkflowMonitor(MetadataService metadataService, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade,
                            @Value("${conductor.workflow-monitor.metadata-refresh-interval:10}") int metadataRefreshInterval,
                            SystemTaskRegistry systemTaskRegistry) {
-        this.metadataDAO = metadataDAO;
+        this.metadataService = metadataService;
         this.queueDAO = queueDAO;
         this.executionDAOFacade = executionDAOFacade;
         this.metadataRefreshInterval = metadataRefreshInterval;
@@ -63,8 +61,8 @@ public class WorkflowMonitor {
     public void reportMetrics() {
         try {
             if (refreshCounter <= 0) {
-                workflowDefs = metadataDAO.getAllWorkflowDefs();
-                taskDefs = new ArrayList<>(metadataDAO.getAllTaskDefs());
+                workflowDefs = metadataService.getWorkflowDefs();
+                taskDefs = new ArrayList<>(metadataService.getTaskDefs());
                 refreshCounter = metadataRefreshInterval;
             }
 
