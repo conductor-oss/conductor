@@ -53,3 +53,12 @@ Docker image published to [Docker Hub](https://hub.docker.com/repository/docker/
 * https://github.com/maheshyaddanapudi/conductor/tree/oracle_persistence - With option to use Oracle Database as persistence unit.
   * Oracle Persistence / Option to use Oracle Database as persistence unit : version > 12.2 - Tested well with 19C
   * Docker Compose example with Oracle Container.
+
+## Schedule Conductor Workflow
+* https://github.com/jas34/scheduledwf - It solves the following problem statements:
+	* At times there are use cases in which we need to run some tasks/jobs only at a scheduled time.
+	* In microservice architecture maintaining schedulers in various microservices is a pain.
+	* We should have a central dedicate service that can do scheduling for us and provide a trigger to a microservices at expected time.
+* It offers an additional module `io.github.jas34.scheduledwf.config.ScheduledWfServerModule` built on the existing core 
+of conductor and does not require deployment of any additional service.
+For more details refer: [Schedule Conductor Workflows](https://jas34.github.io/scheduledwf) and [Capability In Conductor To Schedule Workflows](https://github.com/Netflix/conductor/discussions/2256)
