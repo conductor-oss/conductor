@@ -114,6 +114,8 @@ class ConductorWorker:
             task['status'] = resp['status']
             task['outputData'] = resp['output']
             task['logs'] = resp['logs']
+            if 'callbackAfterSeconds' in resp:
+                task['callbackAfterSeconds'] = resp['callbackAfterSeconds']
             if 'reasonForIncompletion' in resp:
                 task['reasonForIncompletion'] = resp['reasonForIncompletion']
             self.taskClient.updateTask(task)
