@@ -341,3 +341,6 @@ Component configuration:
 |  |  |  |
 | - | conductor.metrics-logger.enabled | false |
 | - | conductor.metrics-prometheus.enabled | false |
+| - | conductor.metrics-datadog.enable | false |
+| - | conductor.metrics-datadog.api-key | |
+

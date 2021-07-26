@@ -39,6 +39,8 @@ dependencies {
 
     implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
 
+    runtimeOnly 'io.micrometer:micrometer-registry-datadog'
+
     runtimeOnly 'com.netflix.spectator:spectator-reg-micrometer'
 
     testImplementation project(':conductor-rest')
