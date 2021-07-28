@@ -102,16 +102,16 @@ public class SubWorkflow extends WorkflowSystemTask {
             updateTaskStatus(subWorkflow, task);
         } catch (ApplicationException ae) {
             if (ae.isRetryable()) {
-                LOGGER.info("A transient backend error happened when task {} tried to start sub workflow.", task.getTaskId());
+                LOGGER.info("A transient backend error happened when task {} in {} tried to start sub workflow {}.", task.getTaskId(), workflow.toShortString(), name);
             } else {
                 task.setStatus(Status.FAILED);
                 task.setReasonForIncompletion(ae.getMessage());
-                LOGGER.error("Error starting sub workflow: {} from workflow: {}", name, workflow.getWorkflowId(), ae);
+                LOGGER.error("Error starting sub workflow: {} from workflow: {}", name, workflow.toShortString(), ae);
             }
         } catch (Exception e) {
             task.setStatus(Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
-            LOGGER.error("Error starting sub workflow: {} from workflow: {}", name, workflow.getWorkflowId(), e);
+            LOGGER.error("Error starting sub workflow: {} from workflow: {}", name, workflow.toShortString(), e);
         }
     }
 
