@@ -15,8 +15,6 @@ package com.netflix.conductor.core.execution.tasks;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +27,8 @@ import java.util.stream.Collectors;
  */
 @Component
 public class SystemTaskRegistry {
+
+    public static final String ASYNC_SYSTEM_TASKS_QUALIFIER = "asyncSystemTasks";
 
     private final Map<String, WorkflowSystemTask> registry;
 
@@ -43,9 +43,5 @@ public class SystemTaskRegistry {
 
     public boolean isSystemTask(String taskType) {
         return registry.containsKey(taskType);
-    }
-
-    public Collection<WorkflowSystemTask> all() {
-        return Collections.unmodifiableCollection(registry.values());
     }
 }

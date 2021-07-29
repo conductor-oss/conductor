@@ -59,7 +59,6 @@ public class TestSystemTaskWorker {
         executionService = mock(ExecutionService.class);
         queueDAO = mock(QueueDAO.class);
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        createTaskMapping();
         properties = mock(ConductorProperties.class);
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
         when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
@@ -103,7 +102,7 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(asyncSystemTaskExecutor).execute(any(), anyString());
@@ -125,7 +124,7 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(asyncSystemTaskExecutor, Mockito.times(10)).execute(any(), anyString());
@@ -145,7 +144,7 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskWorker.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(new IsolatedTask(), ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(asyncSystemTaskExecutor).execute(any(), anyString());
@@ -167,7 +166,7 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(asyncSystemTaskExecutor).execute(any(), anyString());
@@ -190,7 +189,7 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService.scheduleAtFixedRate(
-            () -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            () -> systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(asyncSystemTaskExecutor, Mockito.times(2)).execute(any(), anyString());
@@ -222,11 +221,11 @@ public class TestSystemTaskWorker {
         ).when(asyncSystemTaskExecutor).execute(any(), anyString());
 
         scheduledExecutorService
-            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK), 0, 1, TimeUnit.SECONDS);
 
         ScheduledExecutorService isoTaskService = Executors.newSingleThreadScheduledExecutor();
         isoTaskService
-            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
+            .scheduleAtFixedRate(() -> systemTaskWorker.pollAndExecute(new IsolatedTask(), ISOLATED_TASK), 0, 1, TimeUnit.SECONDS);
 
         Uninterruptibles.awaitUninterruptibly(sysTaskLatch);
         Uninterruptibles.awaitUninterruptibly(isolatedTaskLatch);
@@ -246,10 +245,15 @@ public class TestSystemTaskWorker {
         }
     }
 
-    private void createTaskMapping() {
-        WorkflowSystemTask mockWorkflowTask = mock(WorkflowSystemTask.class);
-        when(mockWorkflowTask.getTaskType()).thenReturn(TEST_TASK);
-        when(mockWorkflowTask.isAsync()).thenReturn(true);
-        SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.put(TEST_TASK, mockWorkflowTask);
+    static class TestTask extends WorkflowSystemTask {
+        public TestTask() {
+            super(TEST_TASK);
+        }
+    }
+
+    static class IsolatedTask extends WorkflowSystemTask {
+        public IsolatedTask() {
+            super(ISOLATED_TASK);
+        }
     }
 }
