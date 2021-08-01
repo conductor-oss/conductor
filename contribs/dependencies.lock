@@ -146,7 +146,7 @@
             "locked": "0.122.0"
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.9.0"
+            "locked": "5.13.0"
         },
         "commons-codec:commons-codec": {
             "locked": "1.14",
@@ -580,7 +580,7 @@
             "locked": "0.122.0"
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.9.0"
+            "locked": "5.13.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.3",
@@ -1082,7 +1082,7 @@
             "locked": "0.122.0"
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.9.0"
+            "locked": "5.13.0"
         },
         "com.sun.mail:mailapi": {
             "locked": "1.6.2",
@@ -2220,7 +2220,7 @@
             "locked": "0.122.0"
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.9.0"
+            "locked": "5.13.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.3",

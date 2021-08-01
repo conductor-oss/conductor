@@ -60,7 +60,6 @@ public class AMQPObservableQueue implements ObservableQueue {
     private final int batchSize;
     private final boolean useExchange;
     private int pollTimeInMS;
-    private boolean isConnOpened = false, isChanOpened = false;
 
     private final ConnectionFactory factory;
     private Connection connection;
@@ -95,36 +94,28 @@ public class AMQPObservableQueue implements ObservableQueue {
     }
 
     private void connect() {
-        if (isConnOpened) {
+        if (connection != null) {
             return;
         }
         try {
             connection = factory.newConnection(addresses);
-            isConnOpened = connection.isOpen();
-            if (!isConnOpened) {
+
+            if (connection == null || !connection.isOpen()) {
                 throw new RuntimeException("Failed to open connection");
             }
         } catch (final IOException e) {
-            isConnOpened = false;
+
             final String error = "IO error while connecting to "
-                + Arrays.stream(addresses).map(Address::toString).collect(Collectors.joining(","));
+                    + Arrays.stream(addresses).map(Address::toString).collect(Collectors.joining(","));
             LOGGER.error(error, e);
             throw new RuntimeException(error, e);
         } catch (final TimeoutException e) {
-            isConnOpened = false;
+
             final String error = "Timeout while connecting to "
-                + Arrays.stream(addresses).map(Address::toString).collect(Collectors.joining(","));
+                    + Arrays.stream(addresses).map(Address::toString).collect(Collectors.joining(","));
             LOGGER.error(error, e);
             throw new RuntimeException(error, e);
         }
-    }
-
-    private boolean isClosed() {
-        return !isConnOpened && !isChanOpened;
-    }
-
-    private void open() {
-        connect();
     }
 
     @Override
@@ -356,6 +347,8 @@ public class AMQPObservableQueue implements ObservableQueue {
             if (useNio) {
                 factory.useNio();
             }
+            factory.setAutomaticRecoveryEnabled(true);
+            factory.setTopologyRecoveryEnabled(true);
             return factory;
         }
 
@@ -366,27 +359,23 @@ public class AMQPObservableQueue implements ObservableQueue {
     }
 
     private Channel getOrCreateChannel() {
-        if (!isConnOpened) {
-            open();
-        }
-        // Return the existing channel if it's still opened
-        if (channel != null && isChanOpened) {
+        // Return the existing channel if it was created
+        if (channel != null) {
             return channel;
         }
         // Channel creation is required
         try {
-            channel = null;
+            connect();
             channel = connection.createChannel();
             channel.addShutdownListener(cause -> {
-                isChanOpened = false;
                 LOGGER.error("Channel has been shutdown: {}", cause.getMessage(), cause);
             });
         } catch (final IOException e) {
             throw new RuntimeException("Cannot open channel on "
                 + Arrays.stream(addresses).map(address -> address.toString()).collect(Collectors.joining(",")), e);
         }
-        isChanOpened = channel.isOpen();
-        if (!isChanOpened) {
+
+        if (channel == null) {
             throw new RuntimeException("Fail to open channel");
         }
         return channel;
@@ -405,9 +394,7 @@ public class AMQPObservableQueue implements ObservableQueue {
         if (StringUtils.isEmpty(type)) {
             throw new RuntimeException("Exchange type is undefined");
         }
-        if (!isClosed()) {
-            open();
-        }
+
         AMQP.Exchange.DeclareOk declareOk;
         try {
             declareOk = getOrCreateChannel().exchangeDeclarePassive(name);
@@ -428,9 +415,7 @@ public class AMQPObservableQueue implements ObservableQueue {
         if (StringUtils.isEmpty(name)) {
             throw new RuntimeException("Queue name is undefined");
         }
-        if (!isClosed()) {
-            open();
-        }
+
         AMQP.Queue.DeclareOk declareOk;
         try {
             declareOk = getOrCreateChannel().queueDeclarePassive(name);
@@ -457,7 +442,6 @@ public class AMQPObservableQueue implements ObservableQueue {
                     }
                 }
             } finally {
-                isConnOpened = connection.isOpen();
                 connection = null;
             }
         }

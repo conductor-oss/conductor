@@ -1856,7 +1856,7 @@
             ]
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.9.0",
+            "locked": "5.13.0",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]

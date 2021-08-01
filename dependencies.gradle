@@ -16,7 +16,7 @@
  */
 ext {
     revActivation = '1.1.1'
-    revAmqpClient = '5.9.0'
+    revAmqpClient = '5.13.0'
     revAwaitility = '3.1.6'
     revAwsSdk = '1.11.86'
     revAzureStorageBlobSdk = '12.2.0'
