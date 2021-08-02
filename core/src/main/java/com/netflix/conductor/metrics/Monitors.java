@@ -295,7 +295,7 @@ public class Monitors {
     }
 
     public static void recordDaoEventRequests(String dao, String action, String event) {
-        counter(classQualifier, "dao_requests", "dao", dao, "action", action, "event", event);
+        counter(classQualifier, "dao_event_requests", "dao", dao, "action", action, "event", event);
     }
 
     public static void recordDaoPayloadSize(String dao, String action, int size) {
