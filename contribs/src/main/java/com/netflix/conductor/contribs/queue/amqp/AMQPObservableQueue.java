@@ -395,14 +395,12 @@ public class AMQPObservableQueue implements ObservableQueue {
             throw new RuntimeException("Exchange type is undefined");
         }
 
-        AMQP.Exchange.DeclareOk declareOk;
         try {
-            declareOk = getOrCreateChannel().exchangeDeclarePassive(name);
+            return getOrCreateChannel().exchangeDeclare(name, type, isDurable, autoDelete, arguments);
         } catch (final IOException e) {
-            LOGGER.warn("Exchange {} of type {} might not exists", name, type, e);
-            declareOk = getOrCreateChannel().exchangeDeclare(name, type, isDurable, autoDelete, arguments);
+            LOGGER.warn("Failed to create exchange {} of type {}", name, type, e);
+            throw e;
         }
-        return declareOk;
     }
 
     private AMQP.Queue.DeclareOk getOrCreateQueue() throws IOException {
@@ -416,14 +414,12 @@ public class AMQPObservableQueue implements ObservableQueue {
             throw new RuntimeException("Queue name is undefined");
         }
 
-        AMQP.Queue.DeclareOk declareOk;
         try {
-            declareOk = getOrCreateChannel().queueDeclarePassive(name);
+            return  getOrCreateChannel().queueDeclare(name, isDurable, isExclusive, autoDelete, arguments);
         } catch (final IOException e) {
-            LOGGER.warn("Queue {} might not exists", name, e);
-            declareOk = getOrCreateChannel().queueDeclare(name, isDurable, isExclusive, autoDelete, arguments);
+             LOGGER.warn("Failed to create queue {}", name, e);
+            throw e;
         }
-        return declareOk;
     }
 
     private void closeConnection() {
