@@ -37,6 +37,7 @@ dependencies {
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    testImplementation(group: 'com.rabbitmq', name: 'amqp-client'){ version{require "${revAmqpClient}"}}
 }
 
 test {

@@ -39,6 +39,7 @@ dependencies {
 
     implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
 
+    implementation(group: 'com.rabbitmq', name: 'amqp-client'){ version{require "${revAmqpClient}"}}
     runtimeOnly 'io.micrometer:micrometer-registry-datadog'
 
     runtimeOnly 'com.netflix.spectator:spectator-reg-micrometer'
