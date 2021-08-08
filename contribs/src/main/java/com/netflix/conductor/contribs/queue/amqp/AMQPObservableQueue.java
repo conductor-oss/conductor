@@ -358,10 +358,13 @@ public class AMQPObservableQueue implements ObservableQueue {
         }
     }
 
-    private Channel getOrCreateChannel() {
+    private Channel getOrCreateChannel() throws IOException {
         // Return the existing channel if it was created
         if (channel != null) {
-            return channel;
+            if (channel.isOpen()) {
+                return channel;
+            }
+            throw new IOException("Channel was created but is currently closed");
         }
         // Channel creation is required
         try {
