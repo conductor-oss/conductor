@@ -104,7 +104,7 @@ class SystemTaskWorker extends LifecycleAwareComponent {
             //Since already one slot is acquired, now try if maxSlot-1 is available
             int slotsToAcquire = Math.min(semaphoreUtil.availableSlots(), maxPollCount - 1);
 
-            // Try to acquires remaining permits to achieve maxPollCount
+            // Try to acquire remaining permits to achieve maxPollCount
             if (slotsToAcquire > 0 && semaphoreUtil.acquireSlots(slotsToAcquire)) {
                 acquiredSlots += slotsToAcquire;
             }

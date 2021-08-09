@@ -28,7 +28,6 @@ public class TestSystemTaskWorkerCoordinator {
 
     private static final String TEST_QUEUE = "test";
     private static final String EXECUTION_NAMESPACE_CONSTANT = "@exeNS";
-    private static final String ISOLATION_CONSTANT = "-iso";
 
     private SystemTaskWorker systemTaskWorker;
     private ConductorProperties properties;

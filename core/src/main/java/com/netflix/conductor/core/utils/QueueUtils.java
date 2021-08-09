@@ -18,8 +18,8 @@ import org.apache.commons.lang3.StringUtils;
 public class QueueUtils {
 
     public static final String DOMAIN_SEPARATOR = ":";
-    public static final String ISOLATION_SEPARATOR = "-";
-    public static final String EXECUTION_NAME_SPACE_SEPRATOR = "@";
+    private static final String ISOLATION_SEPARATOR = "-";
+    private static final String EXECUTION_NAME_SPACE_SEPARATOR = "@";
 
     public static String getQueueName(Task task) {
         return getQueueName(task.getTaskType(), task.getDomain(), task.getIsolationGroupId(),
@@ -44,7 +44,7 @@ public class QueueUtils {
         }
 
         if (executionNameSpace != null) {
-            queueName = queueName + EXECUTION_NAME_SPACE_SEPRATOR + executionNameSpace;
+            queueName = queueName + EXECUTION_NAME_SPACE_SEPARATOR + executionNameSpace;
         }
 
         if (isolationGroup != null) {
@@ -59,10 +59,10 @@ public class QueueUtils {
 
     public static String getExecutionNameSpace(String queueName) {
         if (StringUtils.contains(queueName, ISOLATION_SEPARATOR) && StringUtils
-            .contains(queueName, EXECUTION_NAME_SPACE_SEPRATOR)) {
-            return StringUtils.substringBetween(queueName, EXECUTION_NAME_SPACE_SEPRATOR, ISOLATION_SEPARATOR);
-        } else if (StringUtils.contains(queueName, EXECUTION_NAME_SPACE_SEPRATOR)) {
-            return StringUtils.substringAfter(queueName, EXECUTION_NAME_SPACE_SEPRATOR);
+            .contains(queueName, EXECUTION_NAME_SPACE_SEPARATOR)) {
+            return StringUtils.substringBetween(queueName, EXECUTION_NAME_SPACE_SEPARATOR, ISOLATION_SEPARATOR);
+        } else if (StringUtils.contains(queueName, EXECUTION_NAME_SPACE_SEPARATOR)) {
+            return StringUtils.substringAfter(queueName, EXECUTION_NAME_SPACE_SEPARATOR);
         } else {
             return StringUtils.EMPTY;
         }
@@ -89,7 +89,7 @@ public class QueueUtils {
         } else {
             startIndex = domainSeperatorIndex + 1;
         }
-        int endIndex = StringUtils.indexOf(queue, EXECUTION_NAME_SPACE_SEPRATOR);
+        int endIndex = StringUtils.indexOf(queue, EXECUTION_NAME_SPACE_SEPARATOR);
 
         if (endIndex == -1) {
             endIndex = StringUtils.lastIndexOf(queue, ISOLATION_SEPARATOR);
