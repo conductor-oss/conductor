@@ -195,6 +195,29 @@ Changes to configurations:
 | workflow.elasticsearch.auto.index.management.enabled | conductor.elasticsearch.autoIndexManagementEnabled | true |
 | workflow.elasticsearch.document.type.override | conductor.elasticsearch.documentTypeOverride | "" |
 
+`es7-persistence` module:
+
+| Old | New | Default |
+| --- | --- | --- |
+| workflow.elasticsearch.version | conductor.elasticsearch.version | 7 |
+| workflow.elasticsearch.url | conductor.elasticsearch.url | localhost:9300 |
+| workflow.elasticsearch.index.name | conductor.elasticsearch.indexPrefix | conductor |
+| workflow.elasticsearch.tasklog.index.name | _removed_ |  |
+| workflow.elasticsearch.cluster.health.color | conductor.elasticsearch.clusterHealthColor | green |
+| workflow.elasticsearch.archive.search.batchSize | _removed_ |  |
+| workflow.elasticsearch.index.batchSize | conductor.elasticsearch.indexBatchSize | 1 |
+| workflow.elasticsearch.async.dao.worker.queue.size | conductor.elasticsearch.asyncWorkerQueueSize | 100 |
+| workflow.elasticsearch.async.dao.max.pool.size | conductor.elasticsearch.asyncMaxPoolSize | 12 |
+| workflow.elasticsearch.async.buffer.flush.timeout.seconds | conductor.elasticsearch.asyncBufferFlushTimeout | 10s |
+| workflow.elasticsearch.index.shard.count | conductor.elasticsearch.indexShardCount | 5 |
+| workflow.elasticsearch.index.replicas.count | conductor.elasticsearch.indexReplicasCount | 1 |
+| tasklog.elasticsearch.query.size | conductor.elasticsearch.taskLogResultLimit | 10 |
+| workflow.elasticsearch.rest.client.connectionRequestTimeout.milliseconds | conductor.elasticsearch.restClientConnectionRequestTimeout | -1 |
+| workflow.elasticsearch.auto.index.management.enabled | conductor.elasticsearch.autoIndexManagementEnabled | true |
+| workflow.elasticsearch.document.type.override | conductor.elasticsearch.documentTypeOverride | "" |
+| workflow.elasticsearch.basic.auth.username | conductor.elasticsearch.username | "" |
+| workflow.elasticsearch.basic.auth.password | conductor.elasticsearch.password | "" |
+
 `grpc-server` module:
 
 | Old | New | Default |

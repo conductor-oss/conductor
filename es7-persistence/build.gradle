@@ -1,0 +1,62 @@
+/*
+ *  Copyright 2021 Netflix, Inc.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'java'
+}
+
+configurations {
+    // Prevent shaded dependencies from being published, while keeping them available to tests
+    shadow.extendsFrom compileOnly
+    testRuntime.extendsFrom compileOnly
+}
+
+ext['elasticsearch.version'] = revElasticSearch7
+
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "commons-io:commons-io:${revCommonsIo}"
+    implementation "org.apache.commons:commons-lang3"
+    // SBMTODO: remove guava dep
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.elasticsearch.client:elasticsearch-rest-client"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    testImplementation project(':conductor-common').sourceSets.test.output
+}
+
+// Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier = null
+
+    // Service files are not included by default.
+    mergeServiceFiles {
+        include 'META-INF/services/*'
+        include 'META-INF/maven/*'
+    }
+}
+
+jar.enabled = false
+jar.dependsOn shadowJar

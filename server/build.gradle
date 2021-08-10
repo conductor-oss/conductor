@@ -26,6 +26,7 @@ dependencies {
     implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-es6-persistence')
+    implementation(project(path: ':conductor-es7-persistence', configuration: 'shadow'))
     implementation project(':conductor-grpc-server')
 
     implementation 'org.springframework.boot:spring-boot-starter'

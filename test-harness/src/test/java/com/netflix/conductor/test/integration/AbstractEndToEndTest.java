@@ -18,6 +18,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -82,7 +83,7 @@ public abstract class AbstractEndToEndTest {
     @AfterClass
     public static void cleanupEs() throws Exception {
         // deletes all indices
-        Response beforeResponse = restClient.performRequest("GET", "/_cat/indices");
+        Response beforeResponse = restClient.performRequest(new Request("GET", "/_cat/indices"));
         Reader streamReader = new InputStreamReader(beforeResponse.getEntity().getContent());
         BufferedReader bufferedReader = new BufferedReader(streamReader);
 
@@ -91,7 +92,7 @@ public abstract class AbstractEndToEndTest {
             String[] fields = line.split("\\s");
             String endpoint = String.format("/%s", fields[2]);
 
-            restClient.performRequest("DELETE", endpoint);
+            restClient.performRequest(new Request("DELETE", endpoint));
         }
 
         if (restClient != null) {
