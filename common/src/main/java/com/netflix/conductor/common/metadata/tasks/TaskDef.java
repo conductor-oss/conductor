@@ -20,8 +20,10 @@ import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
+import com.netflix.conductor.common.constraints.RetryLogicConstraint;
 import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +41,7 @@ import javax.validation.constraints.NotNull;
  */
 @ProtoMessage
 @TaskTimeoutConstraint
+@RetryLogicConstraint
 @Valid
 public class TaskDef extends Auditable {
 
@@ -46,7 +49,7 @@ public class TaskDef extends Auditable {
 	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
 	@ProtoEnum
-	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
+	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF, CUSTOM, UNSPECIFIED}
 
 	private static final int ONE_HOUR = 60 * 60;
 
@@ -82,6 +85,7 @@ public class TaskDef extends Auditable {
 
 	@ProtoField(id = 9)
 	private int retryDelaySeconds = 60;
+	private boolean isRetryDelaySet = false;
 
 	@ProtoField(id = 10)
 	@Min(value = 1, message = "TaskDef responseTimeoutSeconds: ${validatedValue} should be minimum {value} second")
@@ -269,6 +273,21 @@ public class TaskDef extends Auditable {
 	}
 
 	/**
+	 * @param retryDelaySeconds the retryDelaySeconds to set
+	 */
+	public void setRetryDelaySeconds(int retryDelaySeconds) {
+		this.retryDelaySeconds = retryDelaySeconds;
+		this.isRetryDelaySet = true;
+	}
+
+	/**
+	 * @return if retryDelaySeconds is set
+	 */
+	public boolean isRetryDelaySet() {
+		return isRetryDelaySet;
+	}
+
+	/**
 	 *
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
@@ -282,13 +301,6 @@ public class TaskDef extends Auditable {
 	 */
 	public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
 		this.responseTimeoutSeconds = responseTimeoutSeconds;
-	}
-
-	/**
-	 * @param retryDelaySeconds the retryDelaySeconds to set
-	 */
-	public void setRetryDelaySeconds(int retryDelaySeconds) {
-		this.retryDelaySeconds = retryDelaySeconds;
 	}
 
 	/**

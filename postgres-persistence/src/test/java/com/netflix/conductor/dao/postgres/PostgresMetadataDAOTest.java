@@ -14,6 +14,7 @@ package com.netflix.conductor.dao.postgres;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -188,7 +189,7 @@ public class PostgresMetadataDAOTest {
         def.setOwnerApp("ownerApp");
         def.setRetryCount(3);
         def.setRetryDelaySeconds(100);
-        def.setRetryLogic(TaskDef.RetryLogic.FIXED);
+        def.setRetryLogic(RetryLogic.FIXED);
         def.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
         def.setUpdatedBy("unit_test2");
         def.setUpdateTime(2L);

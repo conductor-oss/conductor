@@ -11,6 +11,8 @@ message TaskDef {
     enum RetryLogic {
         FIXED = 0;
         EXPONENTIAL_BACKOFF = 1;
+        CUSTOM = 2;
+        UNSPECIFIED = 3;
     }
     enum TimeoutPolicy {
         RETRY = 0;

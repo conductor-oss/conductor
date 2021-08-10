@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -44,27 +45,29 @@ public class TaskDefTest {
         this.validator = factory.getValidator();
     }
 
-	@Test
-	public void test() {
-		String name = "test1";
-		String description = "desc";
-		int retryCount = 10;
-		int timeout = 100;
-		TaskDef def = new TaskDef(name, description, retryCount, timeout);
-		assertEquals(36_00, def.getResponseTimeoutSeconds());
-		assertEquals(name, def.getName());
-		assertEquals(description, def.getDescription());
-		assertEquals(retryCount, def.getRetryCount());
-		assertEquals(timeout, def.getTimeoutSeconds());
-	}
+    @Test
+    public void test() {
+        String name = "test1";
+        String description = "desc";
+        int retryCount = 10;
+        int timeout = 100;
+        TaskDef def = new TaskDef(name, description, retryCount, timeout);
+        assertEquals(36_00, def.getResponseTimeoutSeconds());
+        assertEquals(name, def.getName());
+        assertEquals(description, def.getDescription());
+        assertEquals(retryCount, def.getRetryCount());
+        assertEquals(timeout, def.getTimeoutSeconds());
+    }
 
-	@Test
-	public void testTaskDef() {
-	    TaskDef taskDef = new TaskDef();
-	    taskDef.setName("task1");
-	    taskDef.setRetryCount(-1);
-	    taskDef.setTimeoutSeconds(1000);
-	    taskDef.setResponseTimeoutSeconds(1001);
+    @Test
+    public void testTaskDef() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("task1");
+        taskDef.setRetryCount(-1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setResponseTimeoutSeconds(1001);
+        taskDef.setRetryLogic(RetryLogic.FIXED);
+        taskDef.setRetryDelaySeconds(10);
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
         assertEquals(3, result.size());
@@ -75,6 +78,26 @@ public class TaskDefTest {
         assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 must be less than timeoutSeconds: 1000"));
         assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
         assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
+    }
+
+    @Test
+    public void testTaskDefRetryLogic() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("task1");
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setResponseTimeoutSeconds(10);
+        taskDef.setOwnerEmail("test@xyz.com");
+        taskDef.setRetryLogic(RetryLogic.UNSPECIFIED);
+        taskDef.setRetryDelaySeconds(100);
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("TaskDef: task1 retryPolicy can't be UNSPECIFIED as retryDelay is set"));
     }
 
     @Test

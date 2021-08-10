@@ -101,6 +101,7 @@ public class SubWorkflowParamsTest {
             "      \"loopOver\" : [ ],\n" +
             "      \"name\" : \"test_task\",\n" +
             "      \"optional\" : false,\n" +
+            "      \"retryLogic\" : \"UNSPECIFIED\",\n" +
             "      \"startDelay\" : 0,\n" +
             "      \"taskReferenceName\" : \"t1\",\n" +
             "      \"type\" : \"SIMPLE\"\n" +

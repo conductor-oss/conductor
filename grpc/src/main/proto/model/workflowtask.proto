@@ -39,4 +39,5 @@ message WorkflowTask {
     string loop_condition = 24;
     repeated WorkflowTask loop_over = 25;
     int32 retry_count = 26;
+    TaskDef.RetryLogic retry_logic = 27;
 }

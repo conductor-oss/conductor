@@ -65,6 +65,9 @@ public class TaskResult {
     @ProtoField(id = 8)
     private Any outputMessage;
 
+    @ProtoField(id = 9)
+    private int retryDelaySeconds;
+
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
     private String externalOutputPayloadStoragePath;
@@ -80,6 +83,7 @@ public class TaskResult {
         this.outputData = task.getOutputData();
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
         this.subWorkflowId = task.getSubWorkflowId();
+        this.retryDelaySeconds = task.getStartDelayInSeconds();
         switch (task.getStatus()) {
             case CANCELED:
             case COMPLETED_WITH_ERRORS:
@@ -132,14 +136,32 @@ public class TaskResult {
     }
 
     /**
-     * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the worker when polled.
-     * Useful for the long running task, where the task is updated as IN_PROGRESS and should not be polled out of the queue for a specified amount of time.  (delayed queue implementation)
+     * @return the retry delay for the FAILED tasks.
+     */
+    public int getRetryDelaySeconds()  {
+        return retryDelaySeconds;
+    }
+
+    /**
+     * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the
+     * worker when polled. Useful for the long running task, where the task is updated as IN_PROGRESS and should not be
+     * polled out of the queue for a specified amount of time.  (delayed queue implementation)
      *
      * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue before giving it to a polling worker.
      */
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
     }
+
+    /**
+     * Retry delay. It follows following logic to decide on retry interval:
+     * <p>NO retry delay if the worker sends a negative value in the TaskResult</p>
+     * <p>Retry delay from the task definition if the worker sends 0 in the TaskResult</p>
+     * <p>Retry delay from the workflow task if the worker sends a positive value in the TaskResult</p>
+     *
+     * @param retryDelaySeconds
+     */
+    public void setRetryDelaySeconds(int retryDelaySeconds) { this.retryDelaySeconds = retryDelaySeconds; }
 
     public String getWorkerId() {
         return workerId;

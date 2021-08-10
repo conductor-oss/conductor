@@ -740,6 +740,8 @@ public abstract class AbstractProtoMapper {
         switch (from) {
             case FIXED: to = TaskDefPb.TaskDef.RetryLogic.FIXED; break;
             case EXPONENTIAL_BACKOFF: to = TaskDefPb.TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
+            case CUSTOM: to = TaskDefPb.TaskDef.RetryLogic.CUSTOM; break;
+            case UNSPECIFIED: to = TaskDefPb.TaskDef.RetryLogic.UNSPECIFIED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
@@ -750,6 +752,8 @@ public abstract class AbstractProtoMapper {
         switch (from) {
             case FIXED: to = TaskDef.RetryLogic.FIXED; break;
             case EXPONENTIAL_BACKOFF: to = TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
+            case CUSTOM: to = TaskDef.RetryLogic.CUSTOM; break;
+            case UNSPECIFIED: to = TaskDef.RetryLogic.UNSPECIFIED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
@@ -821,6 +825,7 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputMessage() != null) {
             to.setOutputMessage( toProto( from.getOutputMessage() ) );
         }
+        to.setRetryDelaySeconds( from.getRetryDelaySeconds() );
         return to.build();
     }
 
@@ -840,6 +845,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasOutputMessage()) {
             to.setOutputMessage( fromProto( from.getOutputMessage() ) );
         }
+        to.setRetryDelaySeconds( from.getRetryDelaySeconds() );
         return to;
     }
 
@@ -1279,6 +1285,9 @@ public abstract class AbstractProtoMapper {
         if (from.getRetryCount() != null) {
             to.setRetryCount( from.getRetryCount() );
         }
+        if (from.getRetryLogic() != null) {
+            to.setRetryLogic( toProto( from.getRetryLogic() ) );
+        }
         return to.build();
     }
 
@@ -1322,6 +1331,7 @@ public abstract class AbstractProtoMapper {
         to.setLoopCondition( from.getLoopCondition() );
         to.setLoopOver( from.getLoopOverList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setRetryCount( from.getRetryCount() );
+        to.setRetryLogic( fromProto( from.getRetryLogic() ) );
         return to;
     }
 

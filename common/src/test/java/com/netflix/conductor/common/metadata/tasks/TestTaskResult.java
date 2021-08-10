@@ -22,6 +22,7 @@ public class TestTaskResult {
         task.setWorkerId("worker-id");
         task.setOutputData(new HashMap<>());
         task.setExternalOutputPayloadStoragePath("externalOutput");
+        task.setStartDelayInSeconds(10);
     }
 
     @Test
@@ -64,5 +65,6 @@ public class TestTaskResult {
         assertEquals(task.getWorkerId(), taskResult.getWorkerId());
         assertEquals(task.getOutputData(), taskResult.getOutputData());
         assertEquals(task.getExternalOutputPayloadStoragePath(), taskResult.getExternalOutputPayloadStoragePath());
+        assertEquals(task.getStartDelayInSeconds(), taskResult.getRetryDelaySeconds());
     }
 }

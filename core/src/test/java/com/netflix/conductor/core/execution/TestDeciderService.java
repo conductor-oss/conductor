@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
@@ -744,6 +745,74 @@ public class TestDeciderService {
         task4.get().setRetryCount(Integer.MAX_VALUE - 100);
         Optional<Task> task5 = deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
         assertEquals(Integer.MAX_VALUE, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testCustomRetryPolicy() {
+        Workflow workflow = createDefaultWorkflow();
+
+        Task task = new Task();
+        task.setStatus(Status.FAILED);
+        task.setTaskId("t1");
+        task.setStartDelayInSeconds(30);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.CUSTOM);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        // Retry delay from the task
+        Optional<Task> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(30, task2.get().getCallbackAfterSeconds());
+
+        // No retry delay
+        task2.get().setStartDelayInSeconds(-1);
+        Optional<Task> task3 = deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(0, task3.get().getCallbackAfterSeconds());
+
+        // Retry delay from task definition
+        task3.get().setStartDelayInSeconds(0);
+        Optional<Task> task4 = deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(60, task4.get().getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testCustomRetryWithWorkflowTask() {
+        Workflow workflow = createDefaultWorkflow();
+
+        Task task = new Task();
+        task.setStatus(Status.FAILED);
+        task.setTaskId("t1");
+        task.setStartDelayInSeconds(30);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.CUSTOM);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setRetryLogic(RetryLogic.FIXED);
+        workflowTask.setStartDelay(80);
+
+        // Retry delay from the task as tasDef retry policy is CUSTOM,
+        // but workflow task would be preferred which is FIXED (retryDelay will come from workflowTask)
+        Optional<Task> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(80, task2.get().getStartDelayInSeconds());
+
+        // Retry delay from the task as tasDef retry policy is CUSTOM,
+        // but workflow task would be preferred which is CUSTOM (retryDelay will be 0 since task.retryDelay = -1)
+        task2.get().setStartDelayInSeconds(-1);
+        workflowTask.setRetryLogic(RetryLogic.CUSTOM);
+        workflowTask.setStartDelay(90);
+        // Custom retry policy from Workflow,
+        Optional<Task> task3 = deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(0, task3.get().getStartDelayInSeconds());
+
+        // Retry delay from the task as tasDef retry policy is CUSTOM,
+        // workflow task would be preferred which is CUSTOM (retryDelay will come from the workflowTask,
+        // since task.retryDelay = 0)
+        task3.get().setStartDelayInSeconds(0);
+        Optional<Task> task4 = deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(90, task4.get().getCallbackAfterSeconds());
     }
 
     @Test

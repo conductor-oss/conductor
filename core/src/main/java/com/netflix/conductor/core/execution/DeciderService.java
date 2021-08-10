@@ -439,20 +439,21 @@ public class DeciderService {
         }
 
         // retry... - but not immediately - put a delay...
-        int startDelay = taskDefinition.getRetryDelaySeconds();
-        switch (taskDefinition.getRetryLogic()) {
-            case FIXED:
+        int startDelay;
+        // If workflowTask has a retry policy, prefer it over taskDef
+        if (workflowTask.getRetryLogic() != TaskDef.RetryLogic.UNSPECIFIED) {
+            startDelay = getRetryDelayInSeconds(workflowTask.getRetryLogic(), workflowTask.getStartDelay(), task);
+        } else {
+            // TaskDef policy is unspecified
+            if (taskDefinition.getRetryLogic() == TaskDef.RetryLogic.UNSPECIFIED) {
+                // Constant value
                 startDelay = taskDefinition.getRetryDelaySeconds();
-                break;
-            case EXPONENTIAL_BACKOFF:
-                int retryDelaySeconds = taskDefinition.getRetryDelaySeconds() * (int) Math.pow(2, task.getRetryCount());
-                // Reset integer overflow to max value
-                startDelay = retryDelaySeconds < 0 ? Integer.MAX_VALUE : retryDelaySeconds;
-                break;
+            } else {
+                startDelay = getRetryDelayInSeconds(taskDefinition.getRetryLogic(), taskDefinition.getRetryDelaySeconds(), task);
+            }
         }
 
         task.setRetried(true);
-
         Task rescheduled = task.copy();
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
@@ -480,6 +481,47 @@ public class DeciderService {
         externalizeTaskData(rescheduled);
         //for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
+    }
+
+    /**
+     * This function returns the retry delay for the task
+     * Currently only three policies are supported: FIXED, EXPONENTIAL_BACKOFF and CUSTOM
+     * Both workflowTask and taskDef can choose the retry policy.
+
+     * @param retryLogicPolicy
+     * @param retryDelay
+     * @param task
+     * @return the derived value of retry delay in seconds
+     */
+    int getRetryDelayInSeconds(TaskDef.RetryLogic retryLogicPolicy, int retryDelay, Task task) {
+        int startDelayInSeconds;
+        switch (retryLogicPolicy) {
+            case FIXED:
+                startDelayInSeconds = retryDelay;
+                break;
+            case EXPONENTIAL_BACKOFF:
+                int retryDelaySeconds = retryDelay * (int) Math.pow(2, task.getRetryCount());
+                // Reset integer overflow to max value
+                startDelayInSeconds = retryDelaySeconds < 0 ? Integer.MAX_VALUE : retryDelaySeconds;
+                break;
+            case CUSTOM:
+                // Custom strategy
+                int taskStartDelay = task.getStartDelayInSeconds();
+                if (taskStartDelay < 0) {
+                    // NO retry delay if the worker sends a negative value (<0) in the TaskResult
+                    startDelayInSeconds = 0;
+                } else if (taskStartDelay == 0) {
+                    // Retry delay from the task definition or workflowTask if the worker sends 0 in the TaskResult.
+                    startDelayInSeconds = retryDelay;
+                } else {
+                    // Retry delay from the task otherwise
+                    startDelayInSeconds = task.getStartDelayInSeconds();
+                }
+                break;
+            default:
+                throw new TerminateWorkflowException("Unexpected retryLogic state: " + retryLogicPolicy);
+        }
+        return startDelayInSeconds;
     }
 
     /**

@@ -166,6 +166,9 @@ public class WorkflowTask {
 	@ProtoField(id = 26)
 	private Integer retryCount;
 
+	@ProtoField(id = 27)
+	private TaskDef.RetryLogic retryLogic = TaskDef.RetryLogic.UNSPECIFIED;
+
 	/**
 	 * @return the name
 	 */
@@ -527,6 +530,20 @@ public class WorkflowTask {
 
 	public void setDefaultExclusiveJoinTask(List<String> defaultExclusiveJoinTask) {
 		this.defaultExclusiveJoinTask = defaultExclusiveJoinTask;
+	}
+
+	/**
+	 * @return the retryLogic
+	 */
+	public TaskDef.RetryLogic getRetryLogic() {
+		return retryLogic;
+	}
+
+	/**
+	 * @param retryLogic the retryLogic to set
+	 */
+	public void setRetryLogic(TaskDef.RetryLogic retryLogic) {
+		this.retryLogic = retryLogic;
 	}
 
 	private Collection<List<WorkflowTask>> children() {
