@@ -276,6 +276,15 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         jedisProxy.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
     }
 
+    private void removeTaskMappingsWithExpiry(Task task) {
+        String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+
+        jedisProxy.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
+        jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+    }
+
     @Override
     public boolean removeTask(String taskId) {
         Task task = getTask(taskId);
@@ -296,7 +305,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             LOGGER.warn("No such task found by id {}", taskId);
             return false;
         }
-        removeTaskMappings(task);
+        removeTaskMappingsWithExpiry(task);
 
         jedisProxy.expire(nsKey(TASK, task.getTaskId()), ttlSeconds);
         recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
@@ -397,6 +406,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             for (Task task : workflow.getTasks()) {
                 removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
             }
+            jedisProxy.expire(nsKey(WORKFLOW_TO_TASKS, workflowId), ttlSeconds);
+
             return true;
         }
         return false;
