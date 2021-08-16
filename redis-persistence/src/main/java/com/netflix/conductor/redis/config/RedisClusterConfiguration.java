@@ -14,16 +14,16 @@ package com.netflix.conductor.redis.config;
 
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisCluster;
-import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
-import java.util.stream.Collectors;
-import java.util.Set;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.commands.JedisCommands;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
@@ -32,9 +32,9 @@ public class RedisClusterConfiguration extends JedisCommandsConfigurer {
     @Override
     protected JedisCommands createJedisCommands(RedisProperties properties, ConductorProperties conductorProperties,
         HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
-        GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig<?> genericObjectPoolConfig = new GenericObjectPoolConfig<>();
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
-        Set hosts = hostSupplier.getHosts().stream()
+        Set<HostAndPort> hosts = hostSupplier.getHosts().stream()
             .map(h -> new HostAndPort(h.getHostName(), h.getPort()))
             .collect(Collectors.toSet());
         return new JedisCluster(new redis.clients.jedis.JedisCluster(hosts, genericObjectPoolConfig));

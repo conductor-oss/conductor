@@ -17,8 +17,6 @@ import com.netflix.conductor.redis.jedis.JedisSentinel;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +24,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.commands.JedisCommands;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
@@ -36,7 +37,7 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
     @Override
     protected JedisCommands createJedisCommands(RedisProperties properties, ConductorProperties conductorProperties,
         HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
-        GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig<?> genericObjectPoolConfig = new GenericObjectPoolConfig<>();
         genericObjectPoolConfig.setMinIdle(5);
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
         log.info("Starting conductor server using redis_sentinel and cluster " + properties.getClusterName());
