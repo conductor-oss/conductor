@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @ConditionalOnProperty(name = "conductor.system-task-workers.enabled", havingValue = "true", matchIfMissing = true)
-class SystemTaskWorker extends LifecycleAwareComponent {
+public class SystemTaskWorker extends LifecycleAwareComponent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorker.class);
 
@@ -82,7 +82,7 @@ class SystemTaskWorker extends LifecycleAwareComponent {
 
     void pollAndExecute(WorkflowSystemTask systemTask, String queueName) {
         if (!isRunning()) {
-            LOGGER.debug("Component stopped. Not polling for task: {}", systemTask);
+            LOGGER.debug("{} stopped. Not polling for task: {}", getClass().getSimpleName(), systemTask);
             return;
         }
 
