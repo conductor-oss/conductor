@@ -40,7 +40,6 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -1112,7 +1111,6 @@ public class TestDeciderService {
     }
 
     @Test
-    @Ignore
     public void testCheckWorkflowTimeout() {
         Counter counter = registry.counter("workflow_failure", "class", "WorkflowMonitor", "workflowName", "test",
                 "status", "TIMED_OUT", "ownerApp", "junit");
