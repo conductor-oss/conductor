@@ -15,13 +15,15 @@ package com.netflix.conductor.core.events.queue;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.dao.QueueDAO;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import rx.Scheduler;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Default provider for {@link com.netflix.conductor.core.events.queue.ObservableQueue} that listens on the
@@ -54,6 +56,7 @@ public class ConductorEventQueueProvider implements EventQueueProvider {
     }
 
     @Override
+    @NonNull
     public ObservableQueue getQueue(String queueURI) {
         return queues
             .computeIfAbsent(queueURI, q -> new ConductorObservableQueue(queueURI, queueDAO, properties, scheduler));

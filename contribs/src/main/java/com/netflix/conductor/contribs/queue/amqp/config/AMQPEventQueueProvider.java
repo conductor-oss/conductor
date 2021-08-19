@@ -16,10 +16,12 @@ import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue;
 import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Ritu Parathody
@@ -44,6 +46,7 @@ public class AMQPEventQueueProvider implements EventQueueProvider {
     }
 
     @Override
+    @NonNull
     public ObservableQueue getQueue(String queueURI) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Retrieve queue with URI {}", queueURI);

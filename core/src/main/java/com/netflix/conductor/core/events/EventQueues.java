@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -50,11 +51,11 @@ public class EventQueues {
             .collect(Collectors.toList());
     }
 
+    @NonNull
     public ObservableQueue getQueue(String eventType) {
         String event = parametersUtils.replace(eventType).toString();
         int index = event.indexOf(':');
         if (index == -1) {
-            LOGGER.error("Queue cannot be configured for illegal event: {}", event);
             throw new IllegalArgumentException("Illegal event " + event);
         }
 
@@ -64,7 +65,6 @@ public class EventQueues {
         if (provider != null) {
             return provider.getQueue(queueURI);
         } else {
-            LOGGER.error("Queue {} is not configured for event:{}", type, eventType);
             throw new IllegalArgumentException("Unknown queue type " + type);
         }
     }

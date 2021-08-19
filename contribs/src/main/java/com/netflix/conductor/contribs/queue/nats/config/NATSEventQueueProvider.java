@@ -16,13 +16,15 @@ import com.netflix.conductor.contribs.queue.nats.NATSObservableQueue;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.ConnectionFactory;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.NonNull;
 import rx.Scheduler;
+
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Oleksiy Lysak
@@ -65,6 +67,7 @@ public class NATSEventQueueProvider implements EventQueueProvider {
     }
 
     @Override
+    @NonNull
     public ObservableQueue getQueue(String queueURI) {
         NATSObservableQueue queue = queues
             .computeIfAbsent(queueURI, q -> new NATSObservableQueue(factory, queueURI, scheduler));
