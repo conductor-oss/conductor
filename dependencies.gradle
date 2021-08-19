@@ -19,7 +19,7 @@ ext {
     revAmqpClient = '5.13.0'
     revAwaitility = '3.1.6'
     revAwsSdk = '1.11.86'
-    revAzureStorageBlobSdk = '12.2.0'
+    revAzureStorageBlobSdk = '12.7.0'
     revBval = '2.0.5'
     revCassandra = '3.10.2'
     revCassandraUnit = '3.11.2.0'
