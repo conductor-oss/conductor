@@ -32,6 +32,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.internal.stubbing.answers.DoesNothing;
 import org.mockito.internal.stubbing.answers.ReturnsElementsOf;
@@ -100,8 +101,11 @@ public class AMQPObservableQueueTest {
         when(properties.getDeliveryMode()).thenReturn(2);
         when(properties.isUseExchange()).thenReturn(true);
         addresses = new Address[]{new Address("localhost", PROTOCOL.PORT)};
+        AMQPConnection.setAMQPConnection(null);
+        
     }
-
+    
+    
     List<GetResponse> buildQueue(final Random random, final int bound) {
         final LinkedList<GetResponse> queue = new LinkedList();
         for (int i = 0; i < bound; i++) {
@@ -122,10 +126,10 @@ public class AMQPObservableQueueTest {
     Channel mockBaseChannel() throws IOException, TimeoutException {
         Channel channel = mock(Channel.class);
         when(channel.isOpen()).thenReturn(Boolean.TRUE);
-        doAnswer(invocation -> {
-            when(channel.isOpen()).thenReturn(Boolean.FALSE);
-            return DoesNothing.doesNothing();
-        }).when(channel).close();
+		/*
+		 * doAnswer(invocation -> { when(channel.isOpen()).thenReturn(Boolean.FALSE);
+		 * return DoesNothing.doesNothing(); }).when(channel).close();
+		 */
         return channel;
     }
 
@@ -151,7 +155,7 @@ public class AMQPObservableQueueTest {
         // basicGet
         OngoingStubbing<String> getResponseOngoingStubbing = Mockito
             .when(channel.basicConsume(eq(name), anyBoolean(), any(Consumer.class)))
-            .thenAnswer(new ReturnsElementsOf(queue));
+            .thenReturn(name);
         if (!isWorking) {
             getResponseOngoingStubbing.thenThrow(new IOException("Not working"), new RuntimeException("Not working"));
         }
@@ -203,7 +207,7 @@ public class AMQPObservableQueueTest {
 
         OngoingStubbing<String> getResponseOngoingStubbing = Mockito
             .when(channel.basicConsume(eq(queueName), anyBoolean(), any(Consumer.class)))
-            .thenAnswer(new ReturnsElementsOf(queue));
+            .thenReturn(queueName);
 
         if (!isWorking) {
             getResponseOngoingStubbing.thenThrow(new IOException("Not working"), new RuntimeException("Not working"));
@@ -220,27 +224,26 @@ public class AMQPObservableQueueTest {
     }
 
     Connection mockGoodConnection(Channel channel) throws IOException {
-        Connection connection = mock(Connection.class);
+        Connection connection = mock(Connection.class);        
         when(connection.createChannel()).thenReturn(channel);
         when(connection.isOpen()).thenReturn(Boolean.TRUE);
-        doAnswer(invocation -> {
-            when(connection.isOpen()).thenReturn(Boolean.FALSE);
-            return DoesNothing.doesNothing();
-        }).when(connection).close();
-        return connection;
+		/*
+		 * doAnswer(invocation -> { when(connection.isOpen()).thenReturn(Boolean.FALSE);
+		 * return DoesNothing.doesNothing(); }).when(connection).close();
+		 */        return connection;
     }
 
     Connection mockBadConnection() throws IOException {
-        Connection connection = mock(Connection.class);
+        Connection connection = mock(Connection.class);        
         when(connection.createChannel()).thenThrow(new IOException("Can't create channel"));
         when(connection.isOpen()).thenReturn(Boolean.TRUE);
         doThrow(new IOException("Can't close connection")).when(connection).close();
         return connection;
     }
 
-    ConnectionFactory mockConnectionFactory(Connection connection) throws IOException, TimeoutException {
+    ConnectionFactory mockConnectionFactory(Connection connection) throws IOException, TimeoutException {    	
         ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
-        when(connectionFactory.newConnection(eq(addresses))).thenReturn(connection);
+        when(connectionFactory.newConnection(eq(addresses), Mockito.anyString())).thenReturn(connection);
         return connectionFactory;
     }
 
