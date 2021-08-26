@@ -41,4 +41,5 @@ message EventHandler {
     string condition = 3;
     repeated EventHandler.Action actions = 4;
     bool active = 5;
+    string evaluator_type = 6;
 }

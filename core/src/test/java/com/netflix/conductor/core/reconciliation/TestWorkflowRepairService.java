@@ -14,6 +14,7 @@ package com.netflix.conductor.core.reconciliation;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SWITCH;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -34,6 +35,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.Decision;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -136,9 +138,21 @@ public class TestWorkflowRepairService {
         // Return a Decision object to init WorkflowSystemTask registry.
         when(systemTaskRegistry.get(TASK_TYPE_DECISION)).thenReturn(new Decision());
         when(systemTaskRegistry.isSystemTask(TASK_TYPE_DECISION)).thenReturn(true);
+        when(systemTaskRegistry.get(TASK_TYPE_SWITCH)).thenReturn(new Switch());
+        when(systemTaskRegistry.isSystemTask(TASK_TYPE_SWITCH)).thenReturn(true);
 
         Task task = new Task();
         task.setTaskType(TASK_TYPE_DECISION);
+        task.setStatus(Task.Status.SCHEDULED);
+
+        assertFalse(workflowRepairService.verifyAndRepairTask(task));
+        // Verify that queue contains is never checked for sync system tasks
+        verify(queueDAO, never()).containsMessage(anyString(), anyString());
+        // Verify that queue message is never pushed for sync system tasks
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+
+        task = new Task();
+        task.setTaskType(TASK_TYPE_SWITCH);
         task.setStatus(Task.Status.SCHEDULED);
 
         assertFalse(workflowRepairService.verifyAndRepairTask(task));

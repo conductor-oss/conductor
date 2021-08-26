@@ -191,7 +191,7 @@ class Workflow2Graph {
         }
 
 
-    } else if(t1.type == 'DECISION'){
+    } else if(t1.type == 'DECISION' || t1.type == 'SWITCH'){
       let caseExecuted = false;
       for (let k in t1.decisionCases){
           let tasks = t1.decisionCases[k];

@@ -56,9 +56,11 @@ public class WorkflowTask {
     @ProtoField(id = 6)
     private String dynamicTaskNameParam;
 
+    @Deprecated
     @ProtoField(id = 7)
     private String caseValueParam;
 
+    @Deprecated
     @ProtoField(id = 8)
     private String caseExpression;
 
@@ -136,6 +138,12 @@ public class WorkflowTask {
 
     @ProtoField(id = 26)
     private Integer retryCount;
+
+    @ProtoField(id = 27)
+    private String evaluatorType;
+
+    @ProtoField(id = 28)
+    private String expression;
 
     /**
      * @return the name
@@ -296,8 +304,10 @@ public class WorkflowTask {
     }
 
     /**
+     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link WorkflowTask#getExpression()} combination.
      * @return the caseValueParam
      */
+    @Deprecated
     public String getCaseValueParam() {
         return caseValueParam;
     }
@@ -330,7 +340,9 @@ public class WorkflowTask {
 
     /**
      * @param caseValueParam the caseValueParam to set
+     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link WorkflowTask#getExpression()} combination.
      */
+    @Deprecated
     public void setCaseValueParam(String caseValueParam) {
         this.caseValueParam = caseValueParam;
     }
@@ -339,7 +351,9 @@ public class WorkflowTask {
      * @return A javascript expression for decision cases.  The result should be a scalar value that is used to decide
      * the case branches.
      * @see #getDecisionCases()
+     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link WorkflowTask#getExpression()} combination.
      */
+    @Deprecated
     public String getCaseExpression() {
         return caseExpression;
     }
@@ -347,7 +361,9 @@ public class WorkflowTask {
     /**
      * @param caseExpression A javascript expression for decision cases.  The result should be a scalar value that is
      *                       used to decide the case branches.
+     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link WorkflowTask#getExpression()} combination.
      */
+    @Deprecated
     public void setCaseExpression(String caseExpression) {
         this.caseExpression = caseExpression;
     }
@@ -492,11 +508,42 @@ public class WorkflowTask {
         this.defaultExclusiveJoinTask = defaultExclusiveJoinTask;
     }
 
+    /**
+     * @return the evaluatorType
+     */
+    public String getEvaluatorType() {
+        return evaluatorType;
+    }
+
+    /**
+     * @param evaluatorType the evaluatorType to set
+     */
+    public void setEvaluatorType(String evaluatorType) {
+        this.evaluatorType = evaluatorType;
+    }
+
+    /**
+     * @return An evaluation expression for switch cases evaluated by corresponding evaluator. The
+     * result should be a scalar value that is used to decide the case branches.
+     * @see #getDecisionCases()
+     */
+    public String getExpression() {
+        return expression;
+    }
+
+    /**
+     * @param expression the expression to set
+     */
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
     private Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
 
         switch (TaskType.of(type)) {
             case DECISION:
+            case SWITCH:
                 workflowTaskLists.addAll(decisionCases.values());
                 workflowTaskLists.add(defaultCase);
                 break;
@@ -530,6 +577,7 @@ public class WorkflowTask {
         switch (taskType) {
             case DO_WHILE:
             case DECISION:
+            case SWITCH:
                 for (List<WorkflowTask> workflowTasks : children()) {
                     Iterator<WorkflowTask> iterator = workflowTasks.iterator();
                     while (iterator.hasNext()) {
@@ -601,6 +649,7 @@ public class WorkflowTask {
 
         switch (TaskType.of(type)) {
             case DECISION:
+            case SWITCH:
             case DO_WHILE:
             case FORK_JOIN:
                 for (List<WorkflowTask> childx : children()) {
@@ -657,6 +706,8 @@ public class WorkflowTask {
             Objects.equals(getType(), that.getType()) &&
             Objects.equals(getDynamicTaskNameParam(), that.getDynamicTaskNameParam()) &&
             Objects.equals(getCaseValueParam(), that.getCaseValueParam()) &&
+            Objects.equals(getEvaluatorType(), that.getEvaluatorType()) &&
+            Objects.equals(getExpression(), that.getExpression()) &&
             Objects.equals(getCaseExpression(), that.getCaseExpression()) &&
             Objects.equals(getDecisionCases(), that.getDecisionCases()) &&
             Objects.equals(getDynamicForkJoinTasksParam(), that.getDynamicForkJoinTasksParam()) &&
@@ -684,6 +735,8 @@ public class WorkflowTask {
             getDynamicTaskNameParam(),
             getCaseValueParam(),
             getCaseExpression(),
+            getEvaluatorType(),
+            getExpression(),
             getDecisionCases(),
             getDynamicForkJoinTasksParam(),
             getDynamicForkTasksParam(),

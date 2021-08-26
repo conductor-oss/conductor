@@ -12,6 +12,15 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -19,44 +28,33 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
- * @author x-ultra
- *
- * @deprecated {@link com.netflix.conductor.core.execution.tasks.Lambda} is also deprecated.
- * Use {@link com.netflix.conductor.core.execution.tasks.Inline} and so ${@link InlineTaskMapper} will be used as a
- * result.
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#INLINE} to a List
+ * {@link Task} starting with Task of type {@link TaskType#INLINE} which is marked as IN_PROGRESS, followed by
+ * the list of {@link Task} based on the case expression evaluation in the Inline task.
  */
-@Deprecated
 @Component
-public class LambdaTaskMapper implements TaskMapper {
+public class InlineTaskMapper implements TaskMapper {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(LambdaTaskMapper.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(InlineTaskMapper.class);
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
 
-    public LambdaTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+    public InlineTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
     }
 
     @Override
     public TaskType getTaskType() {
-        return TaskType.LAMBDA;
+        return TaskType.INLINE;
     }
 
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
 
-        LOGGER.debug("TaskMapperContext {} in LambdaTaskMapper", taskMapperContext);
+        LOGGER.debug("TaskMapperContext {} in InlineTaskMapper", taskMapperContext);
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
@@ -70,21 +68,21 @@ public class LambdaTaskMapper implements TaskMapper {
             .getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId,
                 taskDefinition);
 
-        Task lambdaTask = new Task();
-        lambdaTask.setTaskType(TaskType.TASK_TYPE_LAMBDA);
-        lambdaTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        lambdaTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
-        lambdaTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        lambdaTask.setWorkflowType(workflowInstance.getWorkflowName());
-        lambdaTask.setCorrelationId(workflowInstance.getCorrelationId());
-        lambdaTask.setStartTime(System.currentTimeMillis());
-        lambdaTask.setScheduledTime(System.currentTimeMillis());
-        lambdaTask.setInputData(taskInput);
-        lambdaTask.setTaskId(taskId);
-        lambdaTask.setStatus(Task.Status.IN_PROGRESS);
-        lambdaTask.setWorkflowTask(taskToSchedule);
-        lambdaTask.setWorkflowPriority(workflowInstance.getPriority());
+        Task inlineTask = new Task();
+        inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
+        inlineTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
+        inlineTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
+        inlineTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
+        inlineTask.setWorkflowType(workflowInstance.getWorkflowName());
+        inlineTask.setCorrelationId(workflowInstance.getCorrelationId());
+        inlineTask.setStartTime(System.currentTimeMillis());
+        inlineTask.setScheduledTime(System.currentTimeMillis());
+        inlineTask.setInputData(taskInput);
+        inlineTask.setTaskId(taskId);
+        inlineTask.setStatus(Task.Status.IN_PROGRESS);
+        inlineTask.setWorkflowTask(taskToSchedule);
+        inlineTask.setWorkflowPriority(workflowInstance.getPriority());
 
-        return Collections.singletonList(lambdaTask);
+        return Collections.singletonList(inlineTask);
     }
 }

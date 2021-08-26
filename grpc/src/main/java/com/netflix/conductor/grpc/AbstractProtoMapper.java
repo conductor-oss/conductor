@@ -183,6 +183,9 @@ public abstract class AbstractProtoMapper {
             to.addActions( toProto(elem) );
         }
         to.setActive( from.isActive() );
+        if (from.getEvaluatorType() != null) {
+            to.setEvaluatorType( from.getEvaluatorType() );
+        }
         return to.build();
     }
 
@@ -193,6 +196,7 @@ public abstract class AbstractProtoMapper {
         to.setCondition( from.getCondition() );
         to.setActions( from.getActionsList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setActive( from.getActive() );
+        to.setEvaluatorType( from.getEvaluatorType() );
         return to;
     }
 
@@ -1297,6 +1301,12 @@ public abstract class AbstractProtoMapper {
         if (from.getRetryCount() != null) {
             to.setRetryCount( from.getRetryCount() );
         }
+        if (from.getEvaluatorType() != null) {
+            to.setEvaluatorType( from.getEvaluatorType() );
+        }
+        if (from.getExpression() != null) {
+            to.setExpression( from.getExpression() );
+        }
         return to.build();
     }
 
@@ -1340,6 +1350,8 @@ public abstract class AbstractProtoMapper {
         to.setLoopCondition( from.getLoopCondition() );
         to.setLoopOver( from.getLoopOverList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setRetryCount( from.getRetryCount() );
+        to.setEvaluatorType( from.getEvaluatorType() );
+        to.setExpression( from.getExpression() );
         return to;
     }
 

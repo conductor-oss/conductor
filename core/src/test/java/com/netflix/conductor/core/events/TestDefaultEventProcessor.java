@@ -27,6 +27,9 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
+import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.service.ExecutionService;
@@ -36,17 +39,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import static java.util.function.Function.identity;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -61,7 +70,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
+@ContextConfiguration(classes = {TestObjectMapperConfiguration.class, TestDefaultEventProcessor.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 public class TestDefaultEventProcessor {
 
@@ -78,7 +87,15 @@ public class TestDefaultEventProcessor {
     private Message message;
 
     @Autowired
+    private Map<String, Evaluator> evaluators;
+
+    @Autowired
     private ObjectMapper objectMapper;
+
+    @Configuration
+    @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans
+    public static class TestConfiguration {
+    }
 
     @Before
     public void setup() {
@@ -163,7 +180,7 @@ public class TestDefaultEventProcessor {
         SimpleActionProcessor actionProcessor = new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         eventProcessor.handle(queue, message);
         assertTrue(started.get());
         assertTrue(completed.get());
@@ -210,7 +227,52 @@ public class TestDefaultEventProcessor {
         SimpleActionProcessor actionProcessor = new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
+        eventProcessor.handle(queue, message);
+        assertTrue(started.get());
+    }
+
+    @Test
+    public void testEventHandlerWithConditionEvaluator() {
+        EventHandler eventHandler = new EventHandler();
+        eventHandler.setName("cms_intermediate_video_ingest_handler");
+        eventHandler.setActive(true);
+        eventHandler.setEvent("sqs:dev_cms_asset_ingest_queue");
+        eventHandler.setEvaluatorType(JavascriptEvaluator.NAME);
+        eventHandler.setCondition("$.Message.testKey1 == 'level1' && $.Message.metadata.testKey2 == 123456");
+
+        Map<String, Object> startWorkflowInput = new LinkedHashMap<>();
+        startWorkflowInput.put("param1", "${Message.metadata.testKey2}");
+        startWorkflowInput.put("param2", "SQS-${MessageId}");
+
+        Action startWorkflowAction = new Action();
+        startWorkflowAction.setAction(Type.start_workflow);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
+        startWorkflowAction.getStart_workflow().setVersion(1);
+        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
+        startWorkflowAction.setExpandInlineJSON(true);
+        eventHandler.getActions().add(startWorkflowAction);
+
+        eventHandler.setEvent(event);
+
+        when(metadataService.getEventHandlersForEvent(event, true)).thenReturn(Collections.singletonList(eventHandler));
+        when(executionService.addEventExecution(any())).thenReturn(true);
+        when(queue.rePublishIfNoAck()).thenReturn(false);
+
+        String id = UUID.randomUUID().toString();
+        AtomicBoolean started = new AtomicBoolean(false);
+        doAnswer((Answer<String>) invocation -> {
+            started.set(true);
+            return id;
+        }).when(workflowExecutor).startWorkflow(eq(startWorkflowAction.getStart_workflow().getName()),
+              eq(startWorkflowAction.getStart_workflow().getVersion()),
+              eq(startWorkflowAction.getStart_workflow().getCorrelationId()), anyMap(), eq(null), eq(event), eq(null));
+
+        SimpleActionProcessor actionProcessor = new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
+
+        DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
+              actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         eventProcessor.handle(queue, message);
         assertTrue(started.get());
     }
@@ -237,7 +299,7 @@ public class TestDefaultEventProcessor {
             .thenThrow(new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "some retriable error"));
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         eventProcessor.handle(queue, message);
         verify(queue, never()).ack(any());
         verify(queue, never()).publish(any());
@@ -265,7 +327,7 @@ public class TestDefaultEventProcessor {
             .thenThrow(new ApplicationException(ApplicationException.Code.INVALID_INPUT, "some non-retriable error"));
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         eventProcessor.handle(queue, message);
         verify(queue, atMost(1)).ack(any());
         verify(queue, never()).publish(any());
@@ -280,7 +342,7 @@ public class TestDefaultEventProcessor {
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setName("handler");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
@@ -303,7 +365,7 @@ public class TestDefaultEventProcessor {
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
@@ -327,7 +389,7 @@ public class TestDefaultEventProcessor {
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
         DefaultEventProcessor eventProcessor = new DefaultEventProcessor(executionService, metadataService,
-            actionProcessor, jsonUtils, properties, objectMapper);
+            actionProcessor, jsonUtils, properties, objectMapper, evaluators);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");

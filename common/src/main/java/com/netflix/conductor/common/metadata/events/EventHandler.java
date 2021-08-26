@@ -51,6 +51,9 @@ public class EventHandler {
     @ProtoField(id = 5)
     private boolean active;
 
+    @ProtoField(id = 6)
+    private String evaluatorType;
+
     public EventHandler() {
 
     }
@@ -125,6 +128,19 @@ public class EventHandler {
         this.active = active;
     }
 
+    /**
+     * @return the evaluator type
+     */
+    public String getEvaluatorType() {
+        return evaluatorType;
+    }
+
+    /**
+     * @param evaluatorType the evaluatorType to set
+     */
+    public void setEvaluatorType(String evaluatorType) {
+        this.evaluatorType = evaluatorType;
+    }
 
     @ProtoMessage
     public static class Action {

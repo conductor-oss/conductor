@@ -394,8 +394,9 @@ public class DeciderService {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
         // Get the following task after the last completed task
-        if (systemTaskRegistry.isSystemTask(task.getTaskType()) && TaskType.TASK_TYPE_DECISION
-            .equals(task.getTaskType())) {
+        if (systemTaskRegistry.isSystemTask(task.getTaskType()) &&
+              (TaskType.TASK_TYPE_DECISION.equals(task.getTaskType()) ||
+                    TaskType.TASK_TYPE_SWITCH.equals(task.getTaskType()))) {
             if (task.getInputData().get("hasChildren") != null) {
                 return Collections.emptyList();
             }

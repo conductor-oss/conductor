@@ -35,7 +35,12 @@ import java.util.Map;
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DECISION} to a List
  * {@link Task} starting with Task of type {@link TaskType#DECISION} which is marked as IN_PROGRESS, followed by
  * the list of {@link Task} based on the case expression evaluation in the Decision task.
+ *
+ * @deprecated {@link com.netflix.conductor.core.execution.tasks.Decision} is also deprecated.
+ * Use {@link com.netflix.conductor.core.execution.tasks.Switch} and so ${@link SwitchTaskMapper} will be used as
+ * a result.
  */
+@Deprecated
 @Component
 public class DecisionTaskMapper implements TaskMapper {
 

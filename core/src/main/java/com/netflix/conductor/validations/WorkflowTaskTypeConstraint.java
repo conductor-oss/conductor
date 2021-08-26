@@ -69,6 +69,9 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_DECISION:
                     valid = isDecisionTaskValid(workflowTask, context);
                     break;
+                case TaskType.TASK_TYPE_SWITCH:
+                    valid = isSwitchTaskValid(workflowTask, context);
+                    break;
                 case TaskType.TASK_TYPE_DYNAMIC:
                     valid = isDynamicTaskValid(workflowTask, context);
                     break;
@@ -131,6 +134,34 @@ public @interface WorkflowTaskTypeConstraint {
                 String message = String
                     .format("decisionCases should have atleast one task for taskType: %s taskName: %s",
                         TaskType.DECISION, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            return valid;
+        }
+
+        private boolean isSwitchTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            boolean valid = true;
+            if (workflowTask.getEvaluatorType() == null) {
+                String message = String
+                      .format(PARAM_REQUIRED_STRING_FORMAT, "evaluatorType", TaskType.SWITCH, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            } else if (workflowTask.getExpression() == null) {
+                String message = String
+                      .format(PARAM_REQUIRED_STRING_FORMAT, "expression", TaskType.SWITCH, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            if (workflowTask.getDecisionCases() == null) {
+                String message = String
+                      .format(PARAM_REQUIRED_STRING_FORMAT, "decisionCases", TaskType.SWITCH, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            } else if (workflowTask.getDecisionCases() != null && workflowTask.getDecisionCases().size() == 0) {
+                String message = String
+                      .format("decisionCases should have atleast one task for taskType: %s taskName: %s",
+                            TaskType.SWITCH, workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }

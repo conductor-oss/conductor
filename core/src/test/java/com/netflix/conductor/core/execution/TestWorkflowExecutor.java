@@ -28,16 +28,21 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
+import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
+import com.netflix.conductor.core.execution.mapper.InlineTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.LambdaTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
@@ -63,6 +68,7 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -89,10 +95,12 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.INLINE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.LAMBDA;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SWITCH;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_LAMBDA;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
@@ -103,6 +111,7 @@ import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.PAUSED;
 import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.RUNNING;
 import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
 import static java.util.Comparator.comparingInt;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
 import static org.junit.Assert.assertEquals;
@@ -138,6 +147,7 @@ public class TestWorkflowExecutor {
     private ExecutionLockService executionLockService;
 
     @Configuration
+    @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans.
     public static class TestConfiguration {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
@@ -185,6 +195,9 @@ public class TestWorkflowExecutor {
     @Autowired
     private DefaultListableBeanFactory beanFactory;
 
+    @Autowired
+    private Map<String, Evaluator> evaluators;
+
     @Before
     public void init() {
         executionDAOFacade = mock(ExecutionDAOFacade.class);
@@ -196,6 +209,7 @@ public class TestWorkflowExecutor {
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
         Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put(DECISION, new DecisionTaskMapper());
+        taskMappers.put(SWITCH, new SwitchTaskMapper(evaluators));
         taskMappers.put(DYNAMIC, new DynamicTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(FORK_JOIN, new ForkJoinTaskMapper());
         taskMappers.put(JOIN, new JoinTaskMapper());
@@ -207,6 +221,7 @@ public class TestWorkflowExecutor {
         taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(LAMBDA, new LambdaTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(INLINE, new InlineTaskMapper(parametersUtils, metadataDAO));
 
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
             systemTaskRegistry, taskMappers, Duration.ofMinutes(60));

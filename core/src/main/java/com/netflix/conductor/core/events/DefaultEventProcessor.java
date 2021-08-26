@@ -23,6 +23,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
@@ -63,15 +64,17 @@ public class DefaultEventProcessor {
     private final ObjectMapper objectMapper;
     private final JsonUtils jsonUtils;
     private final boolean isEventMessageIndexingEnabled;
+    private final Map<String, Evaluator> evaluators;
 
     public DefaultEventProcessor(ExecutionService executionService, MetadataService metadataService,
         ActionProcessor actionProcessor, JsonUtils jsonUtils, ConductorProperties properties,
-        ObjectMapper objectMapper) {
+        ObjectMapper objectMapper, Map<String, Evaluator> evaluators) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
         this.objectMapper = objectMapper;
         this.jsonUtils = jsonUtils;
+        this.evaluators = evaluators;
 
         if (properties.getEventProcessorThreadCount() <= 0) {
             throw new IllegalStateException("Cannot set event processor thread count to <=0. To disable event "
@@ -127,23 +130,30 @@ public class DefaultEventProcessor {
         List<EventExecution> transientFailures = new ArrayList<>();
         for (EventHandler eventHandler : eventHandlerList) {
             String condition = eventHandler.getCondition();
-            if (StringUtils.isNotEmpty(condition)) {
+            String evaluatorType = eventHandler.getEvaluatorType();
+            // Set default to true so that if condition is not specified, it falls through to process the event.
+            Boolean success = true;
+            if (StringUtils.isNotEmpty(condition) && evaluators.get(evaluatorType) != null) {
+                Object result = evaluators.get(evaluatorType).evaluate(condition, jsonUtils.expand(payloadObject));
+                success = ScriptEvaluator.toBoolean(result);
+            } else if (StringUtils.isNotEmpty(condition)) {
                 LOGGER.debug("Checking condition: {} for event: {}", condition, event);
-                Boolean success = ScriptEvaluator.evalBool(condition, jsonUtils.expand(payloadObject));
-                if (!success) {
-                    String id = msg.getId() + "_" + 0;
-                    EventExecution eventExecution = new EventExecution(id, msg.getId());
-                    eventExecution.setCreated(System.currentTimeMillis());
-                    eventExecution.setEvent(eventHandler.getEvent());
-                    eventExecution.setName(eventHandler.getName());
-                    eventExecution.setStatus(Status.SKIPPED);
-                    eventExecution.getOutput().put("msg", msg.getPayload());
-                    eventExecution.getOutput().put("condition", condition);
-                    executionService.addEventExecution(eventExecution);
-                    LOGGER.debug("Condition: {} not successful for event: {} with payload: {}", condition,
-                        eventHandler.getEvent(), msg.getPayload());
-                    continue;
-                }
+                success = ScriptEvaluator.evalBool(condition, jsonUtils.expand(payloadObject));
+            }
+
+            if (!success) {
+                String id = msg.getId() + "_" + 0;
+                EventExecution eventExecution = new EventExecution(id, msg.getId());
+                eventExecution.setCreated(System.currentTimeMillis());
+                eventExecution.setEvent(eventHandler.getEvent());
+                eventExecution.setName(eventHandler.getName());
+                eventExecution.setStatus(Status.SKIPPED);
+                eventExecution.getOutput().put("msg", msg.getPayload());
+                eventExecution.getOutput().put("condition", condition);
+                executionService.addEventExecution(eventExecution);
+                LOGGER.debug("Condition: {} not successful for event: {} with payload: {}", condition,
+                      eventHandler.getEvent(), msg.getPayload());
+                continue;
             }
 
             CompletableFuture<List<EventExecution>> future = executeActionsForEventHandler(eventHandler, msg);

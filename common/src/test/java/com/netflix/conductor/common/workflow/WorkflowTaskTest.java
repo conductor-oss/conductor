@@ -38,6 +38,12 @@ public class WorkflowTaskTest {
 
         assertNotNull(workflowTask.getType());
         assertEquals(TaskType.DECISION.name(), workflowTask.getType());
+
+        workflowTask = new WorkflowTask();
+        workflowTask.setWorkflowTaskType(TaskType.SWITCH);
+
+        assertNotNull(workflowTask.getType());
+        assertEquals(TaskType.SWITCH.name(), workflowTask.getType());
     }
 
     @Test

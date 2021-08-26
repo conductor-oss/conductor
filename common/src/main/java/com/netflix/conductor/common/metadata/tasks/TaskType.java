@@ -25,6 +25,7 @@ public enum TaskType {
     FORK_JOIN,
     FORK_JOIN_DYNAMIC,
     DECISION,
+    SWITCH,
     JOIN,
     DO_WHILE,
     SUB_WORKFLOW,
@@ -33,6 +34,7 @@ public enum TaskType {
     USER_DEFINED,
     HTTP,
     LAMBDA,
+    INLINE,
     EXCLUSIVE_JOIN,
     TERMINATE,
     KAFKA_PUBLISH,
@@ -44,6 +46,7 @@ public enum TaskType {
      * hardcoded/inline strings used in the code.
      */
     public static final String TASK_TYPE_DECISION = "DECISION";
+    public static final String TASK_TYPE_SWITCH = "SWITCH";
     public static final String TASK_TYPE_DYNAMIC = "DYNAMIC";
     public static final String TASK_TYPE_JOIN = "JOIN";
     public static final String TASK_TYPE_DO_WHILE = "DO_WHILE";
@@ -55,6 +58,7 @@ public enum TaskType {
     public static final String TASK_TYPE_SIMPLE = "SIMPLE";
     public static final String TASK_TYPE_HTTP = "HTTP";
     public static final String TASK_TYPE_LAMBDA = "LAMBDA";
+    public static final String TASK_TYPE_INLINE = "INLINE";
     public static final String TASK_TYPE_EXCLUSIVE_JOIN = "EXCLUSIVE_JOIN";
     public static final String TASK_TYPE_TERMINATE = "TERMINATE";
     public static final String TASK_TYPE_KAFKA_PUBLISH = "KAFKA_PUBLISH";
@@ -66,6 +70,7 @@ public enum TaskType {
 
     static {
         BUILT_IN_TASKS.add(TASK_TYPE_DECISION);
+        BUILT_IN_TASKS.add(TASK_TYPE_SWITCH);
         BUILT_IN_TASKS.add(TASK_TYPE_FORK);
         BUILT_IN_TASKS.add(TASK_TYPE_JOIN);
         BUILT_IN_TASKS.add(TASK_TYPE_EXCLUSIVE_JOIN);
