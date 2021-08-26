@@ -1,59 +1,4 @@
 /*
- * Sphinx doesn't have support for section dividers like we do in
- * MkDocs, this styles the section titles in the nav
- *
- * https://github.com/mkdocs/mkdocs/issues/175
- */
-.wy-menu-vertical span {
-    line-height: 18px;
-    padding: 0.4045em 1.618em;
-    display: block;
-    position: relative;
-    font-size: 90%;
-    color: #838383;
-}
-
-.wy-menu-vertical .subnav a {
-    padding: 0.4045em 2.427em;
-}
-
-/*
- * Long navigations run off the bottom of the screen as the nav
- * area doesn't scroll.
- *
- * https://github.com/mkdocs/mkdocs/pull/202
- *
- * Builds upon pull 202 https://github.com/mkdocs/mkdocs/pull/202
- * to make toc scrollbar end before navigations buttons to not be overlapping.
- */
-.wy-nav-side {
-    height: calc(100% - 45px);
-    overflow-y: auto;
-    min-height: 0;
-}
-
-.rst-versions{
-    border-top: 0;
-    height: 45px;
-}
-
-@media screen and (max-width: 768px) {
-    .wy-nav-side {
-        height: 100%;
-    }
-}
-
-/*
- * readthedocs theme hides nav items when the window height is
- * too small to contain them.
- *
- * https://github.com/mkdocs/mkdocs/issues/#348
- */
-.wy-menu-vertical ul {
-  margin-bottom: 2em;
-}
-
-/*
  * Wrap inline code samples otherwise they shoot of the side and
  * can't be read at all.
  *
@@ -61,7 +6,7 @@
  * https://github.com/mkdocs/mkdocs/issues/233
  * https://github.com/mkdocs/mkdocs/issues/834
  */
-code {
+.rst-content code {
     white-space: pre-wrap;
     word-wrap: break-word;
     padding: 2px 5px;
@@ -75,12 +20,26 @@ code {
  * https://github.com/mkdocs/mkdocs/issues/834
  * https://github.com/mkdocs/mkdocs/issues/233
  */
-pre code {
+.rst-content pre code {
   white-space: pre;
   word-wrap: normal;
   display: block;
   padding: 12px;
   font-size: 12px;
+}
+
+/**
+ * Fix code colors
+ *
+ * https://github.com/mkdocs/mkdocs/issues/2027
+ */
+.rst-content code {
+    color: #E74C3C;
+}
+
+.rst-content pre code {
+    color: #000;
+    background: #f8f8f8;
 }
 
 /*
@@ -117,7 +76,7 @@ pre .cs, pre .c {
  *
  * https://github.com/mkdocs/mkdocs/issues/319
  */
-.no-highlight {
+.rst-content .no-highlight {
   display: block;
   padding: 0.5em;
   color: #333;
@@ -148,27 +107,12 @@ form .search-query {
     border-color: #D1D4D5;
 }
 
-.wy-menu-vertical li ul {
-    display: inherit;
-}
-
-.wy-menu-vertical li ul.subnav ul.subnav{
-    padding-left: 1em;
-}
-
-.wy-menu-vertical .subnav li.current > a {
-    padding-left: 2.42em;
-}
-.wy-menu-vertical .subnav li.current > ul li a {
-    padding-left: 3.23em;
-}
-
 /*
  * Improve inline code blocks within admonitions.
  *
  * https://github.com/mkdocs/mkdocs/issues/656
  */
- .admonition code {
+ .rst-content .admonition code {
   color: #404040;
   border: 1px solid #c7c9cb;
   border: 1px solid rgba(0, 0, 0, 0.2);
@@ -195,3 +139,53 @@ td, th {
    border-collapse: collapse;
 }
 
+/*
+ * Without the following amendments, the navigation in the theme will be
+ * slightly cut off. This is due to the fact that the .wy-nav-side has a
+ * padding-bottom of 2em, which must not necessarily align with the font-size of
+ * 90 % on the .rst-current-version container, combined with the padding of 12px
+ * above and below. These amendments fix this in two steps: First, make sure the
+ * .rst-current-version container has a fixed height of 40px, achieved using
+ * line-height, and then applying a padding-bottom of 40px to this container. In
+ * a second step, the items within that container are re-aligned using flexbox.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/2012
+ */
+ .wy-nav-side {
+    padding-bottom: 40px;
+}
+
+/*
+ * The second step of above amendment: Here we make sure the items are aligned
+ * correctly within the .rst-current-version container. Using flexbox, we
+ * achieve it in such a way that it will look like the following:
+ *
+ * [No repo_name]
+ *         Next >>                    // On the first page
+ * << Previous     Next >>            // On all subsequent pages
+ *
+ * [With repo_name]
+ *    <repo_name>        Next >>      // On the first page
+ * <repo_name>  << Previous  Next >>  // On all subsequent pages
+ *
+ * https://github.com/mkdocs/mkdocs/issues/2012
+ */
+.rst-versions .rst-current-version {
+    padding: 0 12px;
+    display: flex;
+    font-size: initial;
+    justify-content: space-between;
+    align-items: center;
+    line-height: 40px;
+}
+
+/*
+ * Please note that this amendment also involves removing certain inline-styles
+ * from the file ./mkdocs/themes/readthedocs/versions.html.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/2012
+ */
+.rst-current-version span {
+    flex: 1;
+    text-align: center;
+}

@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../../img/favicon.ico">
   <title>Kitchensink - Conductor</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -25,9 +26,8 @@
   
   <script src="../../js/jquery-2.1.1.min.js" defer></script>
   <script src="../../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -36,183 +36,105 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../..">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Getting Started</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/client/">Using the Client</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
-                </li>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Kitchensink</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Configuration</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdef/">Task Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/workflowdef/">Workflow Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/systask/">System Tasks</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/eventhandlers/">Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdomains/">Task Domains</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/isolationgroups/">Isolation Groups</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../apispec/">API Specification</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Conductor Metrics</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../metrics/server/">Server Metrics</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../metrics/client/">Client Metrics</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Developer Labs</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../beginner/">Beginner</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../eventhandlers/">Events and Event Handlers</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Kitchensink</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#definition">Definition</a></li>
-    
-
-    <li class="toctree-l3"><a href="#visual-flow">Visual Flow</a></li>
-    
-
-    <li class="toctree-l3"><a href="#running-kitchensink-workflow">Running Kitchensink Workflow</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#start-workflow-execution">Start workflow execution</a></li>
-        
-            <li><a class="toctree-l4" href="#poll-for-the-first-task">Poll for the first task:</a></li>
-        
-            <li><a class="toctree-l4" href="#update-the-task-status">Update the task status</a></li>
-        
-        </ul>
-    
-
-    </ul>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../bestpractices/">Best Practices</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../faq/">FAQ</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../technicaldetails/">Technical Details</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../license/">License</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -244,172 +166,173 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
                 <p>An example kitchensink workflow that demonstrates the usage of all the schema constructs.</p>
 <h3 id="definition">Definition<a class="headerlink" href="#definition" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;kitchensink&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;kitchensink workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.mod}&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.oddEven}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;event_task&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;event_0&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.mod}&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.oddEven}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;EVENT&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;dyntask&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_2&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;taskToExecute&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.task2Name}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DYNAMIC&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;dynamicTaskNameParam&quot;</span><span class="p">:</span> <span class="s2">&quot;taskToExecute&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;oddEvenDecision&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;oddEvenDecision&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_2.output.oddEven}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;oddEven&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;0&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_4&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_4&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-              <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_2.output.mod}&quot;</span><span class="p">,</span>
-              <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_2.output.oddEven}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-          <span class="p">},</span>
-          <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamic_fanout&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;fanout1&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-              <span class="nt">&quot;dynamicTasks&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_4.output.dynamicTasks}&quot;</span><span class="p">,</span>
-              <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_4.output.inputs}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FORK_JOIN_DYNAMIC&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;dynamicForkTasksParam&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamicTasks&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;dynamicForkTasksInputParamName&quot;</span><span class="p">:</span> <span class="s2">&quot;input&quot;</span>
-          <span class="p">},</span>
-          <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamic_join&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;join1&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;JOIN&quot;</span>
-          <span class="p">}</span>
-        <span class="p">],</span>
-        <span class="nt">&quot;1&quot;</span><span class="p">:</span> <span class="p">[</span>
-          <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fork_join&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkx&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FORK_JOIN&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-              <span class="p">[</span>
-                <span class="p">{</span>
-                  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_10&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_10&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-                <span class="p">},</span>
-                <span class="p">{</span>
-                  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_x&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;wf3&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_1.output.mod}&quot;</span><span class="p">,</span>
-                    <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_1.output.oddEven}&quot;</span>
-                  <span class="p">},</span>
-                  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_flow_1&quot;</span><span class="p">,</span>
-                    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span>
-                  <span class="p">}</span>
-                <span class="p">}</span>
-              <span class="p">],</span>
-              <span class="p">[</span>
-                <span class="p">{</span>
-                  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_11&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_11&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-                <span class="p">},</span>
-                <span class="p">{</span>
-                  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_x&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;wf4&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_1.output.mod}&quot;</span><span class="p">,</span>
-                    <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="s2">&quot;${task_1.output.oddEven}&quot;</span>
-                  <span class="p">},</span>
-                  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-                  <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_flow_1&quot;</span><span class="p">,</span>
-                    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span>
-                  <span class="p">}</span>
-                <span class="p">}</span>
-              <span class="p">]</span>
-            <span class="p">]</span>
-          <span class="p">},</span>
-          <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;join&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;join2&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;JOIN&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;joinOn&quot;</span><span class="p">:</span> <span class="p">[</span>
-              <span class="s2">&quot;wf3&quot;</span><span class="p">,</span>
-              <span class="s2">&quot;wf4&quot;</span>
-            <span class="p">]</span>
-          <span class="p">}</span>
-        <span class="p">]</span>
-      <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;search_elasticsearch&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;get_es_1&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:9200/conductor/_search?size=10&quot;</span><span class="p">,</span>
-          <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span>
-        <span class="p">}</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_30&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_30&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;statuses&quot;</span><span class="p">:</span> <span class="s2">&quot;${get_es_1.output..status}&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;workflowIds&quot;</span><span class="p">:</span> <span class="s2">&quot;${get_es_1.output..workflowId}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;statues&quot;</span><span class="p">:</span> <span class="s2">&quot;${get_es_1.output..status}&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;workflowIds&quot;</span><span class="p">:</span> <span class="s2">&quot;${get_es_1.output..workflowId}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;ownerEmail&quot;</span><span class="p">:</span> <span class="s2">&quot;example@email.com&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;kitchensink&quot;,
+  &quot;description&quot;: &quot;kitchensink workflow&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;task_1&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_1&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;mod&quot;: &quot;${workflow.input.mod}&quot;,
+        &quot;oddEven&quot;: &quot;${workflow.input.oddEven}&quot;
+      },
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    },
+    {
+      &quot;name&quot;: &quot;event_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;event_0&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;mod&quot;: &quot;${workflow.input.mod}&quot;,
+        &quot;oddEven&quot;: &quot;${workflow.input.oddEven}&quot;
+      },
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    },
+    {
+      &quot;name&quot;: &quot;dyntask&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_2&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;taskToExecute&quot;: &quot;${workflow.input.task2Name}&quot;
+      },
+      &quot;type&quot;: &quot;DYNAMIC&quot;,
+      &quot;dynamicTaskNameParam&quot;: &quot;taskToExecute&quot;
+    },
+    {
+      &quot;name&quot;: &quot;oddEvenDecision&quot;,
+      &quot;taskReferenceName&quot;: &quot;oddEvenDecision&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
+      },
+      &quot;type&quot;: &quot;DECISION&quot;,
+      &quot;caseValueParam&quot;: &quot;oddEven&quot;,
+      &quot;decisionCases&quot;: {
+        &quot;0&quot;: [
+          {
+            &quot;name&quot;: &quot;task_4&quot;,
+            &quot;taskReferenceName&quot;: &quot;task_4&quot;,
+            &quot;inputParameters&quot;: {
+              &quot;mod&quot;: &quot;${task_2.output.mod}&quot;,
+              &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
+            },
+            &quot;type&quot;: &quot;SIMPLE&quot;
+          },
+          {
+            &quot;name&quot;: &quot;dynamic_fanout&quot;,
+            &quot;taskReferenceName&quot;: &quot;fanout1&quot;,
+            &quot;inputParameters&quot;: {
+              &quot;dynamicTasks&quot;: &quot;${task_4.output.dynamicTasks}&quot;,
+              &quot;input&quot;: &quot;${task_4.output.inputs}&quot;
+            },
+            &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
+            &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
+            &quot;dynamicForkTasksInputParamName&quot;: &quot;input&quot;
+          },
+          {
+            &quot;name&quot;: &quot;dynamic_join&quot;,
+            &quot;taskReferenceName&quot;: &quot;join1&quot;,
+            &quot;type&quot;: &quot;JOIN&quot;
+          }
+        ],
+        &quot;1&quot;: [
+          {
+            &quot;name&quot;: &quot;fork_join&quot;,
+            &quot;taskReferenceName&quot;: &quot;forkx&quot;,
+            &quot;type&quot;: &quot;FORK_JOIN&quot;,
+            &quot;forkTasks&quot;: [
+              [
+                {
+                  &quot;name&quot;: &quot;task_10&quot;,
+                  &quot;taskReferenceName&quot;: &quot;task_10&quot;,
+                  &quot;type&quot;: &quot;SIMPLE&quot;
+                },
+                {
+                  &quot;name&quot;: &quot;sub_workflow_x&quot;,
+                  &quot;taskReferenceName&quot;: &quot;wf3&quot;,
+                  &quot;inputParameters&quot;: {
+                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
+                  },
+                  &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+                  &quot;subWorkflowParam&quot;: {
+                    &quot;name&quot;: &quot;sub_flow_1&quot;,
+                    &quot;version&quot;: 1
+                  }
+                }
+              ],
+              [
+                {
+                  &quot;name&quot;: &quot;task_11&quot;,
+                  &quot;taskReferenceName&quot;: &quot;task_11&quot;,
+                  &quot;type&quot;: &quot;SIMPLE&quot;
+                },
+                {
+                  &quot;name&quot;: &quot;sub_workflow_x&quot;,
+                  &quot;taskReferenceName&quot;: &quot;wf4&quot;,
+                  &quot;inputParameters&quot;: {
+                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
+                  },
+                  &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+                  &quot;subWorkflowParam&quot;: {
+                    &quot;name&quot;: &quot;sub_flow_1&quot;,
+                    &quot;version&quot;: 1
+                  }
+                }
+              ]
+            ]
+          },
+          {
+            &quot;name&quot;: &quot;join&quot;,
+            &quot;taskReferenceName&quot;: &quot;join2&quot;,
+            &quot;type&quot;: &quot;JOIN&quot;,
+            &quot;joinOn&quot;: [
+              &quot;wf3&quot;,
+              &quot;wf4&quot;
+            ]
+          }
+        ]
+      }
+    },
+    {
+      &quot;name&quot;: &quot;search_elasticsearch&quot;,
+      &quot;taskReferenceName&quot;: &quot;get_es_1&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;http_request&quot;: {
+          &quot;uri&quot;: &quot;http://localhost:9200/conductor/_search?size=10&quot;,
+          &quot;method&quot;: &quot;GET&quot;
+        }
+      },
+      &quot;type&quot;: &quot;HTTP&quot;
+    },
+    {
+      &quot;name&quot;: &quot;task_30&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_30&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;statuses&quot;: &quot;${get_es_1.output..status}&quot;,
+        &quot;workflowIds&quot;: &quot;${get_es_1.output..workflowId}&quot;
+      },
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    }
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;statues&quot;: &quot;${get_es_1.output..status}&quot;,
+    &quot;workflowIds&quot;: &quot;${get_es_1.output..workflowId}&quot;
+  },
+  &quot;ownerEmail&quot;: &quot;example@email.com&quot;,
+  &quot;schemaVersion&quot;: 2
+}
+</code></pre>
 
 <h3 id="visual-flow">Visual Flow<a class="headerlink" href="#visual-flow" title="Permanent link">&para;</a></h3>
 <p><img alt="img" src="../../img/kitchensink.png" /></p>
@@ -421,87 +344,83 @@
 </ol>
 <h4 id="start-workflow-execution">Start workflow execution<a class="headerlink" href="#start-workflow-execution" title="Permanent link">&para;</a></h4>
 <p>Start the execution of the kitchensink workflow by posting the following:</p>
-<div class="codehilite"><pre><span></span>curl -X POST --header <span class="s1">&#39;Content-Type: application/json&#39;</span> --header <span class="s1">&#39;Accept: text/plain&#39;</span> <span class="s1">&#39;http://localhost:8080/api/workflow/kitchensink&#39;</span> -d <span class="s1">&#39;</span>
-<span class="s1">{</span>
-<span class="s1">    &quot;task2Name&quot;: &quot;task_5&quot; </span>
-<span class="s1">}</span>
-<span class="s1">&#39;</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-shell">curl -X POST --header 'Content-Type: application/json' --header 'Accept: text/plain' 'http://localhost:8080/api/workflow/kitchensink' -d '
+{
+    &quot;task2Name&quot;: &quot;task_5&quot; 
+}
+'
+</code></pre>
 
 <p>The response is a text string identifying the workflow instance id.</p>
 <h4 id="poll-for-the-first-task">Poll for the first task:<a class="headerlink" href="#poll-for-the-first-task" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span>curl http://localhost:8080/api/tasks/poll/task_1
-</pre></div>
-
+<pre class="codehilite"><code class="language-shell">curl http://localhost:8080/api/tasks/poll/task_1
+</code></pre>
 
 <p>The response should look something like:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;taskType&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;IN_PROGRESS&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;inputData&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
-        <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="kc">null</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;referenceTaskName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;seq&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;pollCount&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;taskDefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;scheduledTime&quot;</span><span class="p">:</span> <span class="mi">1486580932471</span><span class="p">,</span>
-    <span class="nt">&quot;startTime&quot;</span><span class="p">:</span> <span class="mi">1486580933869</span><span class="p">,</span>
-    <span class="nt">&quot;endTime&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;updateTime&quot;</span><span class="p">:</span> <span class="mi">1486580933902</span><span class="p">,</span>
-    <span class="nt">&quot;startDelayInSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;retried&quot;</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-    <span class="nt">&quot;callbackFromWorker&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
-    <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;callbackAfterSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;polledTime&quot;</span><span class="p">:</span> <span class="mi">1486580933902</span><span class="p">,</span>
-    <span class="nt">&quot;queueWaitTime&quot;</span><span class="p">:</span> <span class="mi">1398</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+    &quot;taskType&quot;: &quot;task_1&quot;,
+    &quot;status&quot;: &quot;IN_PROGRESS&quot;,
+    &quot;inputData&quot;: {
+        &quot;mod&quot;: null,
+        &quot;oddEven&quot;: null
+    },
+    &quot;referenceTaskName&quot;: &quot;task_1&quot;,
+    &quot;retryCount&quot;: 0,
+    &quot;seq&quot;: 1,
+    &quot;pollCount&quot;: 1,
+    &quot;taskDefName&quot;: &quot;task_1&quot;,
+    &quot;scheduledTime&quot;: 1486580932471,
+    &quot;startTime&quot;: 1486580933869,
+    &quot;endTime&quot;: 0,
+    &quot;updateTime&quot;: 1486580933902,
+    &quot;startDelayInSeconds&quot;: 0,
+    &quot;retried&quot;: false,
+    &quot;callbackFromWorker&quot;: true,
+    &quot;responseTimeoutSeconds&quot;: 3600,
+    &quot;workflowInstanceId&quot;: &quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;,
+    &quot;taskId&quot;: &quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;polledTime&quot;: 1486580933902,
+    &quot;queueWaitTime&quot;: 1398
+}
+</code></pre>
 
 <h4 id="update-the-task-status">Update the task status<a class="headerlink" href="#update-the-task-status" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Note the values for <code>taskId</code> and <code>workflowInstanceId</code> fields from the poll response</li>
 <li>Update the status of the task as <code>COMPLETED</code> as below:</li>
 </ul>
-<div class="codehilite"><pre><span></span><span class="err">curl</span> <span class="err">-H</span> <span class="err">&#39;Content-Type:application/json&#39;</span> <span class="err">-H</span> <span class="err">&#39;Accept:application/json&#39;</span> <span class="err">-X</span> <span class="err">POST</span> <span class="err">http://localhost:</span><span class="mi">8080</span><span class="err">/api/tasks/</span> <span class="err">-d</span> <span class="err">&#39;</span>
-<span class="p">{</span>
-    <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;COMPLETED&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;outputData&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;mod&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="nt">&quot;taskToExecute&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;oddEven&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="nt">&quot;dynamicTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span>
-                <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
-                <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1_1&quot;</span><span class="p">,</span>
-                <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_4&quot;</span><span class="p">,</span>
-                <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;wf_dyn&quot;</span><span class="p">,</span>
-                <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-                <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_flow_1&quot;</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">],</span>
-        <span class="nt">&quot;inputs&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;task_1_1&quot;</span><span class="p">:</span> <span class="p">{},</span>
-            <span class="nt">&quot;wf_dyn&quot;</span><span class="p">:</span> <span class="p">{}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span><span class="err">&#39;</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST http://localhost:8080/api/tasks/ -d '
+{
+    &quot;taskId&quot;: &quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;,
+    &quot;workflowInstanceId&quot;: &quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;outputData&quot;: {
+        &quot;mod&quot;: 5,
+        &quot;taskToExecute&quot;: &quot;task_1&quot;,
+        &quot;oddEven&quot;: 0,
+        &quot;dynamicTasks&quot;: [
+            {
+                &quot;name&quot;: &quot;task_1&quot;,
+                &quot;taskReferenceName&quot;: &quot;task_1_1&quot;,
+                &quot;type&quot;: &quot;SIMPLE&quot;
+            },
+            {
+                &quot;name&quot;: &quot;sub_workflow_4&quot;,
+                &quot;taskReferenceName&quot;: &quot;wf_dyn&quot;,
+                &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+                &quot;subWorkflowParam&quot;: {
+                    &quot;name&quot;: &quot;sub_flow_1&quot;
+                }
+            }
+        ],
+        &quot;inputs&quot;: {
+            &quot;task_1_1&quot;: {},
+            &quot;wf_dyn&quot;: {}
+        }
+    }
+}'
+</code></pre>
 
 <p>This will mark the task_1 as completed and schedule <code>task_5</code> as the next task.<br />
 Repeat the same process for the subsequently scheduled tasks until the completion.</p>
@@ -527,7 +446,7 @@ Repeat the same process for the subsequently scheduled tasks until the completio
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -537,22 +456,30 @@ Repeat the same process for the subsequently scheduled tasks until the completio
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-        <span><a href="../eventhandlers/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../../bestpractices/" style="color: #fcfcfc">Next &raquo;</a></span>
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../eventhandlers/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../bestpractices/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
 </div>
     <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
     <script src="../../js/theme.js" defer></script>
       <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

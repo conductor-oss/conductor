@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../../img/favicon.ico">
   <title>Events and Event Handlers - Conductor</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -25,9 +26,8 @@
   
   <script src="../../js/jquery-2.1.1.min.js" defer></script>
   <script src="../../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -36,185 +36,105 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../..">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Getting Started</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/client/">Using the Client</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
-                </li>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Events and Event Handlers</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Configuration</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdef/">Task Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/workflowdef/">Workflow Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/systask/">System Tasks</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/eventhandlers/">Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdomains/">Task Domains</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/isolationgroups/">Isolation Groups</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../apispec/">API Specification</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Conductor Metrics</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../metrics/server/">Server Metrics</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../metrics/client/">Client Metrics</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Developer Labs</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../beginner/">Beginner</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Events and Event Handlers</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#about">About</a></li>
-    
-
-    <li class="toctree-l3"><a href="#create-workflow-definitions">Create Workflow Definitions</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#event-tasks-in-workflow">Event Tasks in Workflow</a></li>
-        
-        </ul>
-    
-
-    <li class="toctree-l3"><a href="#events-are-sent-but-theyre-not-handled-yet">Events are sent, but they're not handled (yet)</a></li>
-    
-
-    <li class="toctree-l3"><a href="#create-event-handlers">Create Event Handlers</a></li>
-    
-
-    <li class="toctree-l3"><a href="#final-flow-of-workflow">Final flow of Workflow</a></li>
-    
-
-    </ul>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../kitchensink/">Kitchensink</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../bestpractices/">Best Practices</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../faq/">FAQ</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../technicaldetails/">Technical Details</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../license/">License</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -246,8 +166,10 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
@@ -275,45 +197,43 @@
 <li><code>test_workflow_startedBy_eventHandler</code> which will have an <code>Event</code> task to generate an event to complete <code>WAIT</code> task in the above workflow.</li>
 </ul>
 <p>Send <code>POST</code> requests to <code>/metadata/workflow</code> endpoint with below payloads:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_for_eventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A test workflow to start another workflow with EventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow_with_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;EVENT&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;WAIT&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_workflow_for_eventHandler&quot;,
+  &quot;description&quot;: &quot;A test workflow to start another workflow with EventHandler&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;test_start_workflow_event&quot;,
+      &quot;taskReferenceName&quot;: &quot;start_workflow_with_event&quot;,
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    },
+    {
+      &quot;name&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;,
+      &quot;taskReferenceName&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;,
+      &quot;type&quot;: &quot;WAIT&quot;
+    }
+  ]
+}
+</code></pre>
 
-
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A test workflow which is started by EventHandler, and then goes on to complete task in another workflow.&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_complete_task_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task_with_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.sourceWorkflowId}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;EVENT&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+  &quot;description&quot;: &quot;A test workflow which is started by EventHandler, and then goes on to complete task in another workflow.&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;test_complete_task_event&quot;,
+      &quot;taskReferenceName&quot;: &quot;complete_task_with_event&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;sourceWorkflowId&quot;: &quot;${workflow.input.sourceWorkflowId}&quot;
+      },
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    }
+  ]
+}
+</code></pre>
 
 <h3 id="event-tasks-in-workflow">Event Tasks in Workflow<a class="headerlink" href="#event-tasks-in-workflow" title="Permanent link">&para;</a></h3>
 <p><code>EVENT</code> task is a System task, and we shall define it just like other Tasks in Workflow, with <code>sink</code> parameter. Also, <code>EVENT</code> task doesn't have to be registered before using in Workflow. This is also true for the <code>WAIT</code> task.<br />
@@ -322,86 +242,80 @@ Hence, we will not be registering any tasks for these workflows.</p>
 <p>Once you try to start <code>test_workflow_for_eventHandler</code> workflow, you would notice that the event is sent successfully, but the second worflow <code>test_workflow_startedBy_eventHandler</code> is not started. We have sent the Events, but we also need to define <code>Event Handlers</code> for Conductor to take any <code>actions</code> based on the Event. Let's create <code>Event Handlers</code>.</p>
 <h2 id="create-event-handlers">Create Event Handlers<a class="headerlink" href="#create-event-handlers" title="Permanent link">&para;</a></h2>
 <p>Event Handler definitions are pretty much like Task or Workflow definitions. We start by name:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;
+}
+</code></pre>
 
 <p>Event Handler should know the Queue it has to listen to. This should be defined in <code>event</code> parameter.</p>
 <p>When using Conductor queues, define <code>event</code> with format: </p>
 <p><code>conductor:{workflow_name}:{taskReferenceName}</code></p>
 <p>And when using SQS, define with format: </p>
 <p><code>sqs:{my_sqs_queue_name}</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;
+}
+</code></pre>
 
 <p>Event Handler can perform a list of actions defined in <code>actions</code> array parameter, for this particular <code>event</code> queue.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-      <span class="s2">&quot;&lt;insert-actions-here&gt;&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;,
+  &quot;actions&quot;: [
+      &quot;&lt;insert-actions-here&gt;&quot;
+  ],
+  &quot;active&quot;: true
+}
+</code></pre>
 
 <p>Let's define <code>start_workflow</code> action. We shall pass the name of workflow we would like to start. The <code>start_workflow</code> parameter can use any of the values from the general <a href="../../gettingstarted/startworkflow/">Start Workflow Request</a>. Here we are passing in the workflowId, so that the Complete Task Event Handler can use it.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowInstanceId}&quot;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+    &quot;action&quot;: &quot;start_workflow&quot;,
+    &quot;start_workflow&quot;: {
+        &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+        &quot;input&quot;: {
+            &quot;sourceWorkflowId&quot;: &quot;${workflowInstanceId}&quot;
+        }
+    }
+}
+</code></pre>
 
 <p>Send a <code>POST</code> request to <code>/event</code> endpoint:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowInstanceId}&quot;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;,
+  &quot;actions&quot;: [
+    {
+      &quot;action&quot;: &quot;start_workflow&quot;,
+      &quot;start_workflow&quot;: {
+        &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+        &quot;input&quot;: {
+          &quot;sourceWorkflowId&quot;: &quot;${workflowInstanceId}&quot;
+        }
+      }
+    }
+  ],
+  &quot;active&quot;: true
+}
+</code></pre>
 
 <p>Similarly, create another Event Handler to complete task.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_complete_task_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_startedBy_eventHandler:complete_task_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;complete_task&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${sourceWorkflowId}&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span>
-         <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_complete_task_event&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_startedBy_eventHandler:complete_task_with_event&quot;,
+  &quot;actions&quot;: [
+    {
+        &quot;action&quot;: &quot;complete_task&quot;,
+        &quot;complete_task&quot;: {
+            &quot;workflowId&quot;: &quot;${sourceWorkflowId}&quot;,
+            &quot;taskRefName&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;
+         }
+    }
+  ],
+  &quot;active&quot;: true
+}
+</code></pre>
 
 <h2 id="final-flow-of-workflow">Final flow of Workflow<a class="headerlink" href="#final-flow-of-workflow" title="Permanent link">&para;</a></h2>
 <p>After wiring all of the above, starting the <code>test_workflow_for_eventHandler</code> should:</p>
@@ -433,7 +347,7 @@ Hence, we will not be registering any tasks for these workflows.</p>
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -443,22 +357,30 @@ Hence, we will not be registering any tasks for these workflows.</p>
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-        <span><a href="../beginner/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../kitchensink/" style="color: #fcfcfc">Next &raquo;</a></span>
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../beginner/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../kitchensink/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
 </div>
     <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
     <script src="../../js/theme.js" defer></script>
       <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

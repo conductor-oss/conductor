@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Technical Details - Conductor</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../css/custom.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -25,9 +26,8 @@
   
   <script src="../js/jquery-2.1.1.min.js" defer></script>
   <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -36,197 +36,105 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href=".." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="..">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Getting Started</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/client/">Using the Client</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/startworkflow/">Start a Workflow</a>
-                </li>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../server/">Conductor Server</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Technical Details</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Configuration</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../configuration/taskdef/">Task Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/workflowdef/">Workflow Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/systask/">System Tasks</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/eventhandlers/">Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/taskdomains/">Task Domains</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/isolationgroups/">Isolation Groups</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../apispec/">API Specification</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Conductor Metrics</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../metrics/server/">Server Metrics</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../metrics/client/">Client Metrics</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Developer Labs</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../labs/beginner/">Beginner</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../labs/eventhandlers/">Events and Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../labs/kitchensink/">Kitchensink</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../bestpractices/">Best Practices</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../faq/">FAQ</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
-    <a class="current" href="./">Technical Details</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#grpc-framework">gRPC Framework</a></li>
-    
-
-    <li class="toctree-l2"><a href="#cassandra-persistence">Cassandra Persistence</a></li>
-    
-
-    <li class="toctree-l2"><a href="#external-payload-storage">External Payload Storage</a></li>
-    
-
-    <li class="toctree-l2"><a href="#dynamic-workflow-executions">Dynamic Workflow Executions</a></li>
-    
-
-    <li class="toctree-l2"><a href="#decoupling-elasticsearch-from-persistence">Decoupling Elasticsearch from Persistence</a></li>
-    
-
-    <li class="toctree-l2"><a href="#elasticsearch-56-support">Elasticsearch 5/6 Support</a></li>
-    
-
-    <li class="toctree-l2"><a href="#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens">Maintaining workflow consistency with distributed locking and fencing tokens</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#problem">Problem</a></li>
-        
-            <li><a class="toctree-l3" href="#a-two-part-solution-to-maintain-workflow-consistency">A two-part solution to maintain Workflow Consistency</a></li>
-        
-            <li><a class="toctree-l3" href="#setting-up-desired-level-of-consistency">Setting up desired level of consistency</a></li>
-        
-            <li><a class="toctree-l3" href="#alternative-solution-to-distributed-decide-evaluation">Alternative solution to distributed "decide" evaluation</a></li>
-        
-        </ul>
-    
-
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../license/">License</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -254,8 +162,10 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
@@ -318,30 +228,28 @@ This can create a situation where the first task to be executed is queued for co
 <h5 id="more-on-dyno-queues">More on dyno queues<a class="headerlink" href="#more-on-dyno-queues" title="Permanent link">&para;</a></h5>
 <p>Dyno queues are the default queuing mechanism of conductor.</p>
 <p>Queues are allocated and used for:
-<em> Task execution - each task type gets a queue
-</em> Workflow execution - single queue with all currently executing workflows (deciderQueue)
+* Task execution - each task type gets a queue
+* Workflow execution - single queue with all currently executing workflows (deciderQueue)
   * This queue is used by SweeperService</p>
 <p><strong>Each conductor server instance gets its own set of queues</strong>. Or more precisely a queue shard of its own.
 This means that if you have 2 task types, you end up with 6 queues altogether e.g.</p>
-<div class="codehilite"><pre><span></span>conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>conductor_queues.test.QUEUE._deciderQueue.c
 conductor_queues.test.QUEUE._deciderQueue.d
 conductor_queues.test.QUEUE.HTTP.c
 conductor_queues.test.QUEUE.HTTP.d
 conductor_queues.test.QUEUE.LAMBDA.c
 conductor_queues.test.QUEUE.LAMBDA.d
-</pre></div>
-
+</code></pre>
 
 <blockquote>
 <p>The "c" and "d" suffixes are the shards identifying conductor server instace #1 and instance #2 respectively.</p>
 <p>The shard names are extracted from dynomite rack name such as us-east-1c that is set in "LOCAL_RACK" or "EC2_AVAILABILTY_ZONE"</p>
 </blockquote>
 <p>Considering an execution of a simple workflow with just 2 tasks: [HTTP, LAMBDA], you should end up with queues being filled as follows:</p>
-<div class="codehilite"><pre><span></span>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
 HTTP taks execution   -&gt; conductor_queues.test.QUEUE.HTTP.d
 LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c
-</pre></div>
-
+</code></pre>
 
 <p>Which means that SweeperService in conductor instance #1 is responsible for sweeping the workflow, conductor #2 is responsible for executing HTTP task and conductor #1 again responsible for executing LAMBDA task.</p>
 <p>This illustrates the race condition: If the HTTP task completion in instance #2 happens at the same time as sweep in instance #1 ... you can end up with 2 different updates to a workflow execution: one update timing workflow out while the other completing the task and scheduling next.</p>
@@ -356,16 +264,15 @@ Meaning that a workflow and its task executions are queued only for the conducto
 <p>The downside here is that the workload is not distributed across all conductor servers. Which might be an advantage in active-standby deployments.</p>
 <p>Considering other downsides ...</p>
 <p>Considering a situation where a conductor instance goes down:
-<em> With local-only strategy, the workflow executions from failed conductor instance will not progress until:
+* With local-only strategy, the workflow executions from failed conductor instance will not progress until:
   * The conductor instance is restarted or
   * The executions are manually terminated and restarted from a different node
-</em> With round-robin strategy, there is a chance the tasks will be rescheduled on a different conductor node
+* With round-robin strategy, there is a chance the tasks will be rescheduled on a different conductor node
   * This is nondeterministic though</p>
 <p><strong>Enabling local only queue allocation strategy for dyno queues:</strong></p>
 <p>Just enable following setting the config.properties:</p>
-<div class="codehilite"><pre><span></span>workflow.dyno.queue.sharding.strategy=localOnly
-</pre></div>
-
+<pre class="codehilite"><code>workflow.dyno.queue.sharding.strategy=localOnly
+</code></pre>
 
 <blockquote>
 <p>The default is roundRobin</p>
@@ -392,7 +299,7 @@ Meaning that a workflow and its task executions are queued only for the conducto
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -402,22 +309,30 @@ Meaning that a workflow and its task executions are queued only for the conducto
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-        <span><a href="../faq/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../license/" style="color: #fcfcfc">Next &raquo;</a></span>
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../faq/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../license/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
 </div>
     <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
     <script src="../js/theme.js" defer></script>
       <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>API Specification - Conductor</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../css/custom.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -25,9 +26,8 @@
   
   <script src="../js/jquery-2.1.1.min.js" defer></script>
   <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -36,213 +36,105 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href=".." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="..">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Getting Started</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/client/">Using the Client</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../gettingstarted/startworkflow/">Start a Workflow</a>
-                </li>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../server/">Conductor Server</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">API Specification</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Configuration</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../configuration/taskdef/">Task Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/workflowdef/">Workflow Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/systask/">System Tasks</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/eventhandlers/">Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/taskdomains/">Task Domains</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../configuration/isolationgroups/">Isolation Groups</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
-    <a class="current" href="./">API Specification</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#task-workflow-metadata">Task &amp; Workflow Metadata</a></li>
-    
-
-    <li class="toctree-l2"><a href="#start-a-workflow">Start A Workflow</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#with-input-only">With Input only</a></li>
-        
-            <li><a class="toctree-l3" href="#with-input-and-task-domains">With Input and Task Domains</a></li>
-        
-        </ul>
-    
-
-    <li class="toctree-l2"><a href="#retrieve-workflows">Retrieve Workflows</a></li>
-    
-
-    <li class="toctree-l2"><a href="#search-for-workflows">Search for Workflows</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#output_2">Output</a></li>
-        
-        </ul>
-    
-
-    <li class="toctree-l2"><a href="#manage-workflows">Manage Workflows</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#rerun">Rerun</a></li>
-        
-            <li><a class="toctree-l3" href="#skip-task">Skip Task</a></li>
-        
-        </ul>
-    
-
-    <li class="toctree-l2"><a href="#manage-tasks">Manage Tasks</a></li>
-    
-
-    <li class="toctree-l2"><a href="#polling-ack-and-update-task">Polling, Ack and Update Task</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#schema-for-updating-task-result">Schema for updating Task Result</a></li>
-        
-        </ul>
-    
-
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Conductor Metrics</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../metrics/server/">Server Metrics</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../metrics/client/">Client Metrics</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Developer Labs</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../labs/beginner/">Beginner</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../labs/eventhandlers/">Events and Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../labs/kitchensink/">Kitchensink</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../bestpractices/">Best Practices</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../faq/">FAQ</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../technicaldetails/">Technical Details</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../license/">License</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -270,8 +162,10 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
@@ -348,29 +242,27 @@
 <h4 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h4>
 <p>Id of the workflow (GUID)</p>
 <h3 id="with-input-and-task-domains">With Input and Task Domains<a class="headerlink" href="#with-input-and-task-domains" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="err">POST</span> <span class="err">/workflow</span>
-<span class="p">{</span>
-   <span class="err">//JSON</span> <span class="err">payload</span> <span class="err">for</span> <span class="err">Start</span> <span class="err">workflow</span> <span class="err">request</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code>POST /workflow
+{
+   //JSON payload for Start workflow request
+}
+</code></pre>
 
 <h4 id="start-workflow-request">Start workflow request<a class="headerlink" href="#start-workflow-request" title="Permanent link">&para;</a></h4>
 <p>JSON for start workflow request</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;myWorkflow&quot;</span><span class="p">,</span> <span class="err">//</span> <span class="err">Name</span> <span class="err">of</span> <span class="err">the</span> <span class="err">workflow</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="err">//</span> <span class="err">Version</span>
-  <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;corr1&quot;</span><span class="p">,</span> <span class="err">//</span> <span class="err">correlation</span> <span class="err">Id</span>
-  <span class="nt">&quot;priority&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="err">//</span> <span class="err">Priority</span>
-  <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="err">//</span> <span class="err">Input</span> <span class="err">map.</span> 
-  <span class="p">},</span>
-  <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="err">//</span> <span class="err">Task</span> <span class="err">to</span> <span class="err">domain</span> <span class="err">map</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code>{
+  &quot;name&quot;: &quot;myWorkflow&quot;, // Name of the workflow
+  &quot;version&quot;: 1, // Version
+  “correlationId”: “corr1”, // correlation Id
+  &quot;priority&quot;: 1, // Priority
+  &quot;input&quot;: {
+    // Input map. 
+  },
+  &quot;taskToDomain&quot;: {
+    // Task to domain map
+  }
+}
+</code></pre>
 
 <h4 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">&para;</a></h4>
 <p>Id of the workflow (GUID)</p>
@@ -422,7 +314,7 @@
 </tr>
 <tr>
 <td>sort</td>
-<td>Sorting.  Format is: <code>&lt;fieldname&gt;:ASC</code> or <code>&lt;fieldname&gt;:DESC</code> to sort in ascending or descending order by a field</td>
+<td>Sorting.  Format is: <code>ASC:&lt;fieldname&gt;</code> or <code>DESC:&lt;fieldname&gt;</code> to sort in ascending or descending order by a field</td>
 </tr>
 <tr>
 <td>freeText</td>
@@ -436,28 +328,27 @@
 </table>
 <h3 id="output_2">Output<a class="headerlink" href="#output_2" title="Permanent link">&para;</a></h3>
 <p>Search result as described below:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;totalHits&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-  <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;workflowType&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;startTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;updateTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;endTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;RUNNING&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;reasonForIncompletion&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;executionTime&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-      <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;totalHits&quot;: 0,
+  &quot;results&quot;: [
+    {
+      &quot;workflowType&quot;: &quot;string&quot;,
+      &quot;version&quot;: 0,
+      &quot;workflowId&quot;: &quot;string&quot;,
+      &quot;correlationId&quot;: &quot;string&quot;,
+      &quot;startTime&quot;: &quot;string&quot;,
+      &quot;updateTime&quot;: &quot;string&quot;,
+      &quot;endTime&quot;: &quot;string&quot;,
+      &quot;status&quot;: &quot;RUNNING&quot;,
+      &quot;input&quot;: &quot;string&quot;,
+      &quot;output&quot;: &quot;string&quot;,
+      &quot;reasonForIncompletion&quot;: &quot;string&quot;,
+      &quot;executionTime&quot;: 0,
+      &quot;event&quot;: &quot;string&quot;
+    }
+  ]
+}
+</code></pre>
 
 <h2 id="manage-workflows">Manage Workflows<a class="headerlink" href="#manage-workflows" title="Permanent link">&para;</a></h2>
 <table>
@@ -505,25 +396,23 @@
 <h3 id="rerun">Rerun<a class="headerlink" href="#rerun" title="Permanent link">&para;</a></h3>
 <p>Re-runs a completed workflow from a specific task. </p>
 <p><code>POST /workflow/{workflowId}/rerun</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;reRunFromWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;workflowInput&quot;</span><span class="p">:</span> <span class="p">{},</span>
-  <span class="nt">&quot;reRunFromTaskId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskInput&quot;</span><span class="p">:</span> <span class="p">{}</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;reRunFromWorkflowId&quot;: &quot;string&quot;,
+  &quot;workflowInput&quot;: {},
+  &quot;reRunFromTaskId&quot;: &quot;string&quot;,
+  &quot;taskInput&quot;: {}
+}
+</code></pre>
 
 <h3 id="skip-task">Skip Task<a class="headerlink" href="#skip-task" title="Permanent link">&para;</a></h3>
 <p>Skips a task execution (specified as <code>taskReferenceName</code> parameter) in a running workflow and continues forward.
 Optionally updating task's input and output as specified in the payload.
 <code>PUT /workflow/{workflowId}/skiptask/{taskReferenceName}?workflowId=&amp;taskReferenceName=</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;taskInput&quot;</span><span class="p">:</span> <span class="p">{},</span>
-  <span class="nt">&quot;taskOutput&quot;</span><span class="p">:</span> <span class="p">{}</span>
-<span class="p">}</span>
-</pre></div>
-
+<pre class="codehilite"><code class="language-json">{
+  &quot;taskInput&quot;: {},
+  &quot;taskOutput&quot;: {}
+}
+</code></pre>
 
 <h2 id="manage-tasks">Manage Tasks<a class="headerlink" href="#manage-tasks" title="Permanent link">&para;</a></h2>
 <table>
@@ -585,19 +474,18 @@ Optionally updating task's input and output as specified in the payload.
 </tbody>
 </table>
 <h3 id="schema-for-updating-task-result">Schema for updating Task Result<a class="headerlink" href="#schema-for-updating-task-result" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;Workflow Instance Id&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;ID of the task to be updated&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;reasonForIncompletion&quot;</span> <span class="p">:</span> <span class="s2">&quot;If failed, reason for failure&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;callbackAfterSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;IN_PROGRESS|FAILED|COMPLETED&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;outputData&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="err">//JSON</span> <span class="err">document</span> <span class="err">representing</span> <span class="err">Task</span> <span class="err">execution</span> <span class="err">output</span>     
-    <span class="p">}</span>
+<pre class="codehilite"><code class="language-json">{
+    &quot;workflowInstanceId&quot;: &quot;Workflow Instance Id&quot;,
+    &quot;taskId&quot;: &quot;ID of the task to be updated&quot;,
+    &quot;reasonForIncompletion&quot; : &quot;If failed, reason for failure&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;status&quot;: &quot;IN_PROGRESS|FAILED|COMPLETED&quot;,
+    &quot;outputData&quot;: {
+        //JSON document representing Task execution output     
+    }
 
-<span class="p">}</span>
-</pre></div>
-
+}
+</code></pre>
 
 <div class="admonition info">
 <p class="admonition-title">Acknowledging tasks after poll</p>
@@ -625,7 +513,7 @@ Optionally updating task's input and output as specified in the payload.
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -635,22 +523,30 @@ Optionally updating task's input and output as specified in the payload.
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-        <span><a href="../server/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../metrics/server/" style="color: #fcfcfc">Next &raquo;</a></span>
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../server/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../metrics/server/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
 </div>
     <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
     <script src="../js/theme.js" defer></script>
       <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

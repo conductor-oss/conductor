@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../../img/favicon.ico">
   <title>Server Metrics - Conductor</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
   
   <script>
     // Current page data
@@ -25,9 +26,8 @@
   
   <script src="../../js/jquery-2.1.1.min.js" defer></script>
   <script src="../../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -36,178 +36,105 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../..">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Getting Started</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/client/">Using the Client</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
-                </li>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Server Metrics</a>
+    <ul class="current">
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Configuration</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdef/">Task Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/workflowdef/">Workflow Definition</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/systask/">System Tasks</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/eventhandlers/">Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/taskdomains/">Task Domains</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../configuration/isolationgroups/">Isolation Groups</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../apispec/">API Specification</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Conductor Metrics</span>
-    <ul class="subnav">
-                <li class=" current">
-                    
-    <a class="current" href="./">Server Metrics</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#publishing-metrics">Publishing metrics</a></li>
-    
-
-    <li class="toctree-l3"><a href="#collecting-metrics">Collecting metrics</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#integration-with-logstash-using-a-log-file">Integration with logstash using a log file</a></li>
-        
-            <li><a class="toctree-l4" href="#integration-with-fluentd-using-a-syslog-channel">Integration with fluentd using a syslog channel</a></li>
-        
-        </ul>
-    
-
-    </ul>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../client/">Client Metrics</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Developer Labs</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../../labs/beginner/">Beginner</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../bestpractices/">Best Practices</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../faq/">FAQ</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../technicaldetails/">Technical Details</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../../license/">License</a>
-	    </li>
-          
-        </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -239,8 +166,10 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
@@ -359,20 +288,19 @@
 </tr>
 </tbody>
 </table>
-<h2 id="collecting-metrics">Collecting metrics<a class="headerlink" href="#collecting-metrics" title="Permanent link">&para;</a></h2>
+<h2 id="collecting-metrics-with-log4j">Collecting metrics with Log4j<a class="headerlink" href="#collecting-metrics-with-log4j" title="Permanent link">&para;</a></h2>
 <p>One way of collecting metrics is to push them into the logging framework (log4j).
 Log4j supports various appenders that can print metrics into a console/file or even send them to remote metrics collectors over e.g. syslog channel.</p>
 <p>Conductor provides optional modules that connect metrics registry with the logging framework.
 To enable these modules, configure following additional modules property in config.properties:</p>
-<div class="codehilite"><pre><span></span>conductor.additional.modules=com.netflix.conductor.contribs.metrics.MetricsRegistryModule,com.netflix.conductor.contribs.metrics.LoggingMetricsModule
-com.netflix.conductor.contribs.metrics.LoggingMetricsModule.reportPeriodSeconds=15
-</pre></div>
-
+<pre class="codehilite"><code>conductor.metrics-logger.enabled = true
+conductor.metrics-logger.reportPeriodSeconds = 15
+</code></pre>
 
 <p>This will push all available metrics into log4j every 15 seconds.</p>
 <p>By default, the metrics will be handled as a regular log message (just printed to console with default log4j.properties).
 In order to change that, you can use following log4j configuration that prints metrics into a dedicated file:</p>
-<div class="codehilite"><pre><span></span>log4j.rootLogger=INFO,console,file
+<pre class="codehilite"><code>log4j.rootLogger=INFO,console,file
 
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.layout=org.apache.log4j.PatternLayout
@@ -395,13 +323,11 @@ log4j.appender.fileMetrics.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - 
 
 log4j.logger.ConductorMetrics=INFO,console,fileMetrics
 log4j.additivity.ConductorMetrics=false
-</pre></div>
-
+</code></pre>
 
 <p>This configuration is bundled with conductor-server in file: log4j-file-appender.properties and can be utilized by setting env var:</p>
-<div class="codehilite"><pre><span></span>LOG4J_PROP=log4j-file-appender.properties
-</pre></div>
-
+<pre class="codehilite"><code>LOG4J_PROP=log4j-file-appender.properties
+</code></pre>
 
 <p>This variable is used by <em>startup.sh</em> script.</p>
 <h3 id="integration-with-logstash-using-a-log-file">Integration with logstash using a log file<a class="headerlink" href="#integration-with-logstash-using-a-log-file" title="Permanent link">&para;</a></h3>
@@ -410,51 +336,49 @@ One way of achieving this is to use: log4j file appender -&gt; logstash -&gt; El
 <p>Considering the above setup, you can deploy logstash to consume the contents of /app/logs/metrics.log file, process it and send further to elasticsearch.</p>
 <p>Following configuration needs to be used in logstash to achieve it:</p>
 <p>pipeline.yml:</p>
-<div class="codehilite"><pre><span></span>- pipeline.id: conductor_metrics
+<pre class="codehilite"><code>- pipeline.id: conductor_metrics
   path.config: &quot;/usr/share/logstash/pipeline/logstash_metrics.conf&quot;
   pipeline.workers: 2
-</pre></div>
-
+</code></pre>
 
 <p>logstash_metrics.conf</p>
-<div class="codehilite"><pre><span></span>input {
+<pre class="codehilite"><code>input {
 
  file {
-  path =&amp;gt; [&quot;/conductor-server-logs/metrics.log&quot;]
-  codec =&amp;gt; multiline {
-      pattern =&amp;gt; &quot;^%{TIMESTAMP_ISO8601} &quot;
-      negate =&amp;gt; true
-      what =&amp;gt; previous
+  path =&gt; [&quot;/conductor-server-logs/metrics.log&quot;]
+  codec =&gt; multiline {
+      pattern =&gt; &quot;^%{TIMESTAMP_ISO8601} &quot;
+      negate =&gt; true
+      what =&gt; previous
   }
  }
 }
 
 filter {
     kv {
-        field_split =&amp;gt; &quot;, &quot;
-        include_keys =&amp;gt; [ &quot;name&quot;, &quot;type&quot;, &quot;count&quot;, &quot;value&quot; ]
+        field_split =&gt; &quot;, &quot;
+        include_keys =&gt; [ &quot;name&quot;, &quot;type&quot;, &quot;count&quot;, &quot;value&quot; ]
     }
     mutate {
-        convert =&amp;gt; {
-          &quot;count&quot; =&amp;gt; &quot;integer&quot;
-          &quot;value&quot; =&amp;gt; &quot;float&quot;
+        convert =&gt; {
+          &quot;count&quot; =&gt; &quot;integer&quot;
+          &quot;value&quot; =&gt; &quot;float&quot;
         }
       }
 }
 
 output {
  elasticsearch {
-  hosts =&amp;gt; [&quot;elasticsearch:9200&quot;]
+  hosts =&gt; [&quot;elasticsearch:9200&quot;]
  }
 }
-</pre></div>
-
+</code></pre>
 
 <p>Note: In addition to forwarding the metrics into ElasticSearch, logstash will extract following fields from each metric: name, type, count, value and set proper types</p>
 <h3 id="integration-with-fluentd-using-a-syslog-channel">Integration with fluentd using a syslog channel<a class="headerlink" href="#integration-with-fluentd-using-a-syslog-channel" title="Permanent link">&para;</a></h3>
 <p>Another example of metrics collection uses: log4j syslog appender -&gt; fluentd -&gt; prometheus.</p>
 <p>In this case, a specific log4j properties file needs to be used so that metrics are pushed into a syslog channel:</p>
-<div class="codehilite"><pre><span></span>    log4j.rootLogger=INFO,console,file
+<pre class="codehilite"><code>    log4j.rootLogger=INFO,console,file
 
     log4j.appender.console=org.apache.log4j.ConsoleAppender
     log4j.appender.console.layout=org.apache.log4j.PatternLayout
@@ -476,75 +400,82 @@ output {
 
     log4j.logger.ConductorMetrics=INFO,console,server
     log4j.additivity.ConductorMetrics=false
-</pre></div>
-
+</code></pre>
 
 <p>And on the fluentd side you need following configuration:</p>
-<div class="codehilite"><pre><span></span>    <span class="nt">&lt;source&gt;</span>
+<pre class="codehilite"><code>    &lt;source&gt;
       @type prometheus
-    <span class="nt">&lt;/source&gt;</span>
+    &lt;/source&gt;
 
-    <span class="nt">&lt;source&gt;</span>
+    &lt;source&gt;
       @type syslog
       port 5170
       bind 0.0.0.0
       tag conductor
-        <span class="nt">&lt;parse&gt;</span>
+        &lt;parse&gt;
          ; only allow TIMER metrics of workflow execution and extract tenant ID
           @type regexp
-          expression /^.*type=TIMER, name=workflow_execution.class-WorkflowMonitor.+workflowName-(?<span class="nt">&lt;tenant&gt;</span>.*)_(?<span class="nt">&lt;workflow&gt;</span>.+), count=(?<span class="nt">&lt;count&gt;</span>\d+), min=(?<span class="nt">&lt;min&gt;</span>[\d.]+), max=(?<span class="nt">&lt;max&gt;</span>[\d.]+), mean=(?<span class="nt">&lt;mean&gt;</span>[\d.]+).*$/
+          expression /^.*type=TIMER, name=workflow_execution.class-WorkflowMonitor.+workflowName-(?&lt;tenant&gt;.*)_(?&lt;workflow&gt;.+), count=(?&lt;count&gt;\d+), min=(?&lt;min&gt;[\d.]+), max=(?&lt;max&gt;[\d.]+), mean=(?&lt;mean&gt;[\d.]+).*$/
           types count:integer,min:float,max:float,mean:float
-        <span class="nt">&lt;/parse&gt;</span>
-    <span class="nt">&lt;/source&gt;</span>
+        &lt;/parse&gt;
+    &lt;/source&gt;
 
-    <span class="nt">&lt;filter</span> <span class="err">conductor.local1.info</span><span class="nt">&gt;</span>
+    &lt;filter conductor.local1.info&gt;
         @type prometheus
-        <span class="nt">&lt;metric&gt;</span>
+        &lt;metric&gt;
           name conductor_workflow_count
           type gauge
           desc The total number of executed workflows
           key count
-          <span class="nt">&lt;labels&gt;</span>
-            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
-            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
-            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
-          <span class="nt">&lt;/labels&gt;</span>
-        <span class="nt">&lt;/metric&gt;</span>
-        <span class="nt">&lt;metric&gt;</span>
+          &lt;labels&gt;
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          &lt;/labels&gt;
+        &lt;/metric&gt;
+        &lt;metric&gt;
           name conductor_workflow_max_duration
           type gauge
           desc Max duration in millis for a workflow
           key max
-          <span class="nt">&lt;labels&gt;</span>
-            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
-            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
-            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
-          <span class="nt">&lt;/labels&gt;</span>
-        <span class="nt">&lt;/metric&gt;</span>
-        <span class="nt">&lt;metric&gt;</span>
+          &lt;labels&gt;
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          &lt;/labels&gt;
+        &lt;/metric&gt;
+        &lt;metric&gt;
           name conductor_workflow_mean_duration
           type gauge
           desc Mean duration in millis for a workflow
           key mean
-          <span class="nt">&lt;labels&gt;</span>
-            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
-            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
-            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
-          <span class="nt">&lt;/labels&gt;</span>
-        <span class="nt">&lt;/metric&gt;</span>
-    <span class="nt">&lt;/filter&gt;</span>
+          &lt;labels&gt;
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          &lt;/labels&gt;
+        &lt;/metric&gt;
+    &lt;/filter&gt;
 
-    <span class="nt">&lt;match</span> <span class="err">**</span><span class="nt">&gt;</span>
+    &lt;match **&gt;
       @type stdout
-    <span class="nt">&lt;/match&gt;</span>
-</pre></div>
-
+    &lt;/match&gt;
+</code></pre>
 
 <p>With above configuration, fluentd will:
 - Listen to raw metrics on 0.0.0.0:5170
 - Collect only workflow_execution TIMER metrics
 - Process the raw metrics and expose 3 prometheus specific metrics
 - Expose prometheus metrics on http://fluentd:24231/metrics </p>
+<h2 id="collecting-metrics-with-prometheus">Collecting metrics with Prometheus<a class="headerlink" href="#collecting-metrics-with-prometheus" title="Permanent link">&para;</a></h2>
+<p>Another way to collect metrics is using Prometheus client to push them to Prometheus server.</p>
+<p>Conductor provides optional modules that connect metrics registry with Prometheus.
+To enable these modules, configure following additional module property in config.properties:</p>
+<pre class="codehilite"><code>conductor.metrics-prometheus.enabled = true
+</code></pre>
+
+<p>This will simply push these metrics via Prometheus collector.
+However, you need to configure your own Prometheus collector and expose the metrics via an endpoint.</p>
               
             </div>
           </div>
@@ -567,7 +498,7 @@ output {
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -577,22 +508,30 @@ output {
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-        <span><a href="../../apispec/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../../apispec/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
 </div>
     <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
     <script src="../../js/theme.js" defer></script>
       <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>
