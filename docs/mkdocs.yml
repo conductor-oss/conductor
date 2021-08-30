@@ -1,6 +1,6 @@
 site_name: Conductor
 repo_url: https://github.com/Netflix/conductor
-edit_uri: edit/dev/docs/docs/
+edit_uri: edit/main/docs/docs/
 strict: true
 
 nav:

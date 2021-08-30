@@ -14,7 +14,7 @@ Conductor provides the following java clients to interact with the various APIs
 #### Worker
 Conductor provides an automated framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.
 
-Implement the [Worker](https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/worker/Worker.java) interface to execute the task.
+Implement the [Worker](https://github.com/Netflix/conductor/blob/main/client/src/main/java/com/netflix/conductor/client/worker/Worker.java) interface to execute the task.
 
 #### TaskRunnerConfigurer  
 The TaskRunnerConfigurer can be used to register the worker(s) and initialize the polling loop.  
@@ -57,14 +57,14 @@ Further, these properties can be set either by Worker implementation or by setti
 
 **Examples**
 
-* [Sample Worker Implementation](https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java)
-* [Example](https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/Main.java)
+* [Sample Worker Implementation](https://github.com/Netflix/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java)
+* [Example](https://github.com/Netflix/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/Main.java)
 
 
 ## Python
-[https://github.com/Netflix/conductor/tree/dev/client/python](https://github.com/Netflix/conductor/tree/dev/client/python)
+[https://github.com/Netflix/conductor/tree/main/polyglot-clients/python](https://github.com/Netflix/conductor/tree/main/polyglot-clients/python)
 
-Follow the example as documented in the readme or take a look at [kitchensink_workers.py](https://github.com/Netflix/conductor/blob/dev/client/python/kitchensink_workers.py)
+Follow the example as documented in the readme or take a look at [kitchensink_workers.py](https://github.com/Netflix/conductor/blob/main/polyglot-clients/python/kitchensink_workers.py)
 
 !!!warning
 	Python client is a community contribution. We encourage you to test it out and let us know the feedback. Pull Requests with fixes or enhancements are welcomed!

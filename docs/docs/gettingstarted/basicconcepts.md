@@ -28,7 +28,7 @@ System tasks are executed within the JVM of the Conductor server and managed by 
 See [Systems tasks](../../configuration/systask) for list of available Task types, and instructions for using them.
 
 !!! Note
-	Conductor provides an API to create user defined tasks that are executed in the same JVM as the engine.	See [WorkflowSystemTask](https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java) interface for details.
+	Conductor provides an API to create user defined tasks that are executed in the same JVM as the engine.	See [WorkflowSystemTask](https://github.com/Netflix/conductor/blob/main/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java) interface for details.
 
 ## Worker Tasks
 Worker tasks are implemented by your application(s) and run in a separate environment from Conductor. The worker tasks can be implemented in any language.  These tasks talk to Conductor server via REST/gRPC to poll for tasks and update its status after execution.
