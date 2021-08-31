@@ -161,7 +161,7 @@
     <li>Using the Client</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/dev/docs/docs/gettingstarted/client.md"
+        <a href="https://github.com/Netflix/conductor/edit/main/docs/docs/gettingstarted/client.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -201,7 +201,7 @@
 <h2 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h2>
 <h4 id="worker">Worker<a class="headerlink" href="#worker" title="Permanent link">&para;</a></h4>
 <p>Conductor provides an automated framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.</p>
-<p>Implement the <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/worker/Worker.java">Worker</a> interface to execute the task.</p>
+<p>Implement the <a href="https://github.com/Netflix/conductor/blob/main/client/src/main/java/com/netflix/conductor/client/worker/Worker.java">Worker</a> interface to execute the task.</p>
 <h4 id="taskrunnerconfigurer">TaskRunnerConfigurer<a class="headerlink" href="#taskrunnerconfigurer" title="Permanent link">&para;</a></h4>
 <p>The TaskRunnerConfigurer can be used to register the worker(s) and initialize the polling loop.<br />
 Manages the task workers thread pool and server communication (poll and task update).  </p>
@@ -297,12 +297,12 @@ The worker behavior can be further controlled by using these properties:</p>
 </table>
 <p><strong>Examples</strong></p>
 <ul>
-<li><a href="https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java">Sample Worker Implementation</a></li>
-<li><a href="https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/Main.java">Example</a></li>
+<li><a href="https://github.com/Netflix/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java">Sample Worker Implementation</a></li>
+<li><a href="https://github.com/Netflix/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/Main.java">Example</a></li>
 </ul>
 <h2 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/Netflix/conductor/tree/dev/client/python">https://github.com/Netflix/conductor/tree/dev/client/python</a></p>
-<p>Follow the example as documented in the readme or take a look at <a href="https://github.com/Netflix/conductor/blob/dev/client/python/kitchensink_workers.py">kitchensink_workers.py</a></p>
+<p><a href="https://github.com/Netflix/conductor/tree/main/polyglot-clients/python">https://github.com/Netflix/conductor/tree/main/polyglot-clients/python</a></p>
+<p>Follow the example as documented in the readme or take a look at <a href="https://github.com/Netflix/conductor/blob/main/polyglot-clients/python/kitchensink_workers.py">kitchensink_workers.py</a></p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Python client is a community contribution. We encourage you to test it out and let us know the feedback. Pull Requests with fixes or enhancements are welcomed!</p>
