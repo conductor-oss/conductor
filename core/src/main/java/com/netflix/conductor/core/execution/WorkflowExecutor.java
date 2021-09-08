@@ -404,7 +404,8 @@ public class WorkflowExecutor {
         workflow.setVariables(workflowDefinition.getVariables());
 
         if (workflowInput != null && !workflowInput.isEmpty()) {
-            workflow.setInput(workflowInput);
+            Map<String, Object> parsedInput = parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
+            workflow.setInput(parsedInput);
             deciderService.externalizeWorkflowData(workflow);
         } else {
             workflow.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);

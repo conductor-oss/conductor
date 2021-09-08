@@ -42,6 +42,7 @@ Workflows are defined using a JSON based DSL.
 |version|Numeric field used to identify the version of the schema.  Use incrementing numbers|When starting a workflow execution, if not specified, the definition with highest version is used|
 |tasks|An array of task definitions as described below.||
 |inputParameters|List of input parameters. Used for documenting the required inputs to workflow|optional|
+|inputTemplate|Default input values. See [Using inputTemplate](#using-inputtemplate)|optional|
 |outputParameters|JSON template used to generate the output of the workflow|If not specified, the output is defined as the output of the _last_ executed task|
 |failureWorkflow|String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.|optional|
 |schemaVersion|Current Conductor Schema version. schemaVersion 1 is discontinued.|Must be 2|
@@ -158,6 +159,19 @@ When scheduling the task, Conductor will merge the values from workflow input an
   }
 }
 ```
+
+#### Using inputTemplate
+
+* `inputTemplate` allows to define default values, which can be overridden by values provided in Workflow.
+* Eg: In your Workflow Definition, you can define your inputTemplate as:
+
+```json
+"inputTemplate": {
+    "url": "https://some_url:7004"
+}
+```
+
+And `url` would be `https://some_url:7004 if no `url` was provided as input to your workflow.
 
 ### Workflow notifications
 

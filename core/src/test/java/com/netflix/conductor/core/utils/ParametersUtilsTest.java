@@ -15,6 +15,7 @@ package com.netflix.conductor.core.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -279,5 +280,34 @@ public class ParametersUtilsTest {
         assertEquals("${someString}", inputList.get(0));
         assertEquals("${someNumber}", inputList.get(1));
         assertEquals("${someString} $${someNumber}", inputList.get(2));
+    }
+
+    @Test
+    public void getWorkflowInputHandlesNullInputTemplate () {
+        WorkflowDef workflowDef = new WorkflowDef();
+        Map<String, Object> inputParams = Map.of("key", "value");
+        Map<String, Object> workflowInput = parametersUtils.getWorkflowInput(workflowDef, inputParams);
+        assertEquals("value", workflowInput.get("key"));
+    }
+
+    @Test
+    public void getWorkflowInputFillsInTemplatedFields () {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setInputTemplate(Map.of("other_key", "other_value"));
+        Map<String, Object> inputParams = new HashMap<>(Map.of("key", "value"));
+        Map<String, Object> workflowInput = parametersUtils.getWorkflowInput(workflowDef, inputParams);
+        assertEquals("value", workflowInput.get("key"));
+        assertEquals("other_value", workflowInput.get("other_key"));
+
+    }
+
+    @Test
+    public void getWorkflowInputPreservesExistingFieldsIfPopulated () {
+        WorkflowDef workflowDef = new WorkflowDef();
+        String keyName = "key";
+        workflowDef.setInputTemplate(Map.of(keyName, "templated_value"));
+        Map<String, Object> inputParams = new HashMap<>(Map.of(keyName, "supplied_value"));
+        Map<String, Object> workflowInput = parametersUtils.getWorkflowInput(workflowDef, inputParams);
+        assertEquals("supplied_value", workflowInput.get(keyName));
     }
 }

@@ -1,0 +1,55 @@
+{
+  "name": "integration_test_template_wf",
+  "description": "Test a simple workflow with an input template",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "integration_task_1",
+      "taskReferenceName": "t1",
+      "inputParameters": {
+        "p1": "${workflow.input.param1}",
+        "p2": "${workflow.input.param2}",
+        "p3": "${CPEWF_TASK_ID}",
+        "someNullKey": null
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [
+    "param1",
+    "param2",
+    "param3",
+    "param4"
+  ],
+  "inputTemplate": {
+    "param1": {
+      "nested_object": {
+        "nested_key": "nested_value"
+      }
+    },
+    "param2": ["list", "of", "strings"],
+    "param3": "string"
+  },
+  "outputParameters": {
+    "output": "${t1.output.op}",
+    "param1": "${workflow.input.param1}",
+    "param2": "${workflow.input.param2}",
+    "param3": "${workflow.input.param3}"
+  },
+  "failureWorkflow": "$workflow.input.failureWfName",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

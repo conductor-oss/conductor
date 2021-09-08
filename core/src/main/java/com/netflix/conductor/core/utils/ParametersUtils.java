@@ -21,6 +21,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.EnvUtils;
 import com.netflix.conductor.common.utils.TaskUtils;
@@ -279,5 +280,12 @@ public class ParametersUtils {
             }
         });
         return input;
+    }
+
+    public Map<String, Object> getWorkflowInput (WorkflowDef workflowDef, Map<String, Object> inputParams) {
+        if (workflowDef != null && workflowDef.getInputTemplate() != null) {
+            clone(workflowDef.getInputTemplate()).forEach(inputParams::putIfAbsent);
+        }
+        return inputParams;
     }
 }

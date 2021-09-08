@@ -39,6 +39,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
     def LINEAR_WORKFLOW_T1_T2 = 'integration_test_wf'
 
     @Shared
+    def TEMPLATED_LINEAR_WORKFLOW = 'integration_test_template_wf'
+
+    @Shared
     def WORKFLOW_WITH_OPTIONAL_TASK = 'optional_task_wf'
 
     @Shared
@@ -51,6 +54,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF, WORKFLOW_WITH_OPTIONAL_TASK
         workflowTestUtil.registerWorkflows(
                 'simple_workflow_1_integration_test.json',
+                'simple_workflow_1_input_template_integration_test.json',
                 'simple_workflow_3_integration_test.json',
                 'simple_workflow_with_optional_task_integration_test.json',
                 'simple_wait_task_workflow_integration_test.json')
@@ -125,6 +129,33 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
             tasks.size() == 3
             tasks[2].status == Task.Status.COMPLETED
             tasks[2].taskType == 'integration_task_2'
+        }
+    }
+
+    def "test workflow with input template parsing"() {
+        given: "Input parameters for a workflow with input template"
+        def correlationId = 'integration_test' + UUID.randomUUID().toString()
+        def workflowInput = new HashMap()
+        // leave other params blank on purpose to test input templates
+        workflowInput['param3'] = 'external string'
+
+        when: "Is executed and completes"
+        def workflowInstanceId = workflowExecutor.startWorkflow(TEMPLATED_LINEAR_WORKFLOW, 1,
+                correlationId, workflowInput,
+                null, null, null)
+        workflowExecutor.decide(workflowInstanceId)
+        def pollAndCompleteTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+
+        then: "Verify that input template is processed"
+        verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            output == [
+                    output: "task1.done",
+                    param3: 'external string',
+                    param2: ['list', 'of', 'strings'],
+                    param1: [nested_object: [nested_key: "nested_value"]]
+            ]
         }
     }
 

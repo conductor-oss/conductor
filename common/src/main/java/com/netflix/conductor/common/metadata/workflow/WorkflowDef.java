@@ -93,6 +93,9 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 14)
     private Map<String, Object> variables = new HashMap<>();
 
+    @ProtoField(id = 15)
+    private Map<String, Object> inputTemplate = new HashMap<>();
+
     /**
      * @return the name
      */
@@ -293,6 +296,14 @@ public class WorkflowDef extends Auditable {
      */
     public void setVariables(Map<String, Object> variables) {
         this.variables = variables;
+    }
+
+    public Map<String, Object> getInputTemplate() {
+        return inputTemplate;
+    }
+
+    public void setInputTemplate(Map<String, Object> inputTemplate) {
+        this.inputTemplate = inputTemplate;
     }
 
     public String key() {
