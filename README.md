@@ -27,7 +27,7 @@ The latest version is [![Github release](https://img.shields.io/github/v/release
 
 If Docker is installed, please follow the instructions [here](https://github.com/Netflix/conductor/tree/main/docker). 
 
-If Java 11 or above is installed, Conductor [publishes](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/conductor-server/) an executable jar that can be run using,
+If Java 11 or above is installed, Conductor [publishes](https://mvnrepository.com/artifact/com.netflix.conductor/conductor-server) an executable jar that can be run using,
 
 `java -jar conductor-server-*-boot.jar`
 
@@ -38,7 +38,7 @@ If Java 11 or above is installed, Conductor [publishes](https://artifacts.netfli
 [Getting Started](https://netflix.github.io/conductor/gettingstarted/basicconcepts/) guide.
 
 ## Get Conductor
-Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository.
+Binaries are available from [Netflix OSS Maven](https://mvnrepository.com/artifact/com.netflix.conductor) repository.
 
 Below are the various artifacts published:
 
