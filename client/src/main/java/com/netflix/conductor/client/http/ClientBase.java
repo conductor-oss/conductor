@@ -123,7 +123,6 @@ public abstract class ClientBase {
         URI uri = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            client.resource(uri).delete();
             if (body != null) {
                 return client.resource(uri).type(MediaType.APPLICATION_JSON_TYPE).delete(BulkResponse.class, body);
             } else {
