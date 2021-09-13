@@ -28,7 +28,9 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
-     * Start the task execution
+     * Start the task execution.
+     *
+     * Called only once, and first, when the task status is SCHEDULED.
      *
      * @param workflow         Workflow for which the task is being started
      * @param task             Instance of the Task
@@ -39,6 +41,11 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * "Execute" the task.
+     *
+     * Called after {@link #start(Workflow, Task, WorkflowExecutor)}, if the task status is not terminal.
+     * Can be called more than once.
+     *
      * @param workflow         Workflow for which the task is being started
      * @param task             Instance of the Task
      * @param workflowExecutor Workflow Executor
