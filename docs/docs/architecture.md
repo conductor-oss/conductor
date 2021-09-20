@@ -49,11 +49,14 @@ gulp watch
 If you get an error message `ReferenceError: primordials is not defined`, you need to use an earlier version of Node (pre-12). See [this issue for more details](https://github.com/Netflix/conductor/issues/1232).
 
 #### Or Start all the services using [docker-compose](https://github.com/Netflix/conductor/blob/master/docker/docker-compose.yaml)
-
-```shell
-cd docker
-docker-compose up
-```
+- Using compose (with Dynomite):
+  ```shell
+  docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up
+  ```
+- Using compose (with Postgres):
+  ```shell
+  docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up
+  ```
 
 If you ran it locally, launch UI at [http://localhost:3000/](http://localhost:3000/) OR if you ran it using docker-compose launch the UI at [http://localhost:5000/](http://localhost:5000/)
 

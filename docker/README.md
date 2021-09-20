@@ -32,7 +32,7 @@ Using compose (with Postgres):
 `ctrl+c` will exit docker compose.
 
 To ensure images are stopped do:
- - `docker-compose down`
+ - `docker-compose down --remove-orphans`
 
 ## Running in Interactive Mode
 In interactive mode the default startup script for the container do not run

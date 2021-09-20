@@ -4,7 +4,7 @@
 
 1. **Database**: [Dynomite](https://github.com/Netflix/dynomite)
 2. **Indexing Backend**: [Elasticsearch 5.x](https://www.elastic.co)
-2. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
+3. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
 
 There are 3 ways in which you can install Conductor:
 
@@ -33,11 +33,16 @@ docker-compose build
 ```
 
 After the docker images are built, run the following command to start the containers:
-```shell
-docker-compose up
-```
+- Using compose (with Dynomite):
+  ```shell
+  docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up
+  ```
+- Using compose (with Postgres):
+  ```shell
+  docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up
+  ```
 
-This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:5.6.8](https://hub.docker.com/_/elasticsearch/), and dynomite.
+This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:5.6.8](https://hub.docker.com/_/elasticsearch/), and dynomite or postgres.
 
 To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
 
