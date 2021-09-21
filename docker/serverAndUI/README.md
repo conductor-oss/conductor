@@ -6,5 +6,5 @@ This Dockerfile create the conductor:serverAndUI image
 `docker build -t conductor:serverAndUI .`
 
 ## Running the conductor server
- - Standalone server (interal DB): `docker run -p 8080:8080 -p 5000:5000 -d -t conductor:serverAndUI`
- - Server (external DB required): `docker run -p 8080:8080 -p 5000:5000 -d -t -e "CONFIG_PROP=config.properties" conductor:serverAndUI`
+ - Standalone server (interal DB): `docker run -p 8080:8080 -p 80:5000 -d -t conductor:serverAndUI`
+ - Server (external DB required): `docker run -p 8080:8080 -p 80:5000 -d -t -e "CONFIG_PROP=config.properties" conductor:serverAndUI`

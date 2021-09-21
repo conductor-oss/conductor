@@ -1,44 +1,25 @@
 #
-# conductor:ui - Netflix conductor UI
+# conductor:ui - Netflix Conductor UI
 #
-FROM node:9-alpine
-MAINTAINER Netflix OSS <conductor@netflix.com>
+FROM node:14-alpine
+LABEL maintainer="Netflix OSS <conductor@netflix.com>"
 
 # Install the required packages for the node build
 # to run on alpine
-RUN apk update && apk add \
-  autoconf \
-  automake \
-  libtool \
-  build-base \
-  libstdc++ \
-  gcc \
-  abuild \
-  binutils \
-  nasm \
-  libpng \
-  libpng-dev \
-  libjpeg-turbo \
-  libjpeg-turbo-dev \
-  python
-
-# Make app folders
-RUN mkdir -p /app/ui
-
-# Copy the ui files onto the image
-COPY ./docker/ui/bin /app
-COPY ./ui /app/ui
-
-# Copy the files for the server into the app folders
-RUN chmod +x /app/startup.sh
-
-# Get and install conductor UI
-RUN cd /app/ui \
-  && rm package-lock.json \
-  && npm install \
-  && npm run build --server
-
-EXPOSE 5000
-
-CMD [ "/app/startup.sh" ]
-ENTRYPOINT ["/bin/sh"]
+RUN apk update && apk add python make g++
+ 
+# A directory within the virtualized Docker environment
+# Becomes more relevant when using Docker Compose later
+WORKDIR /usr/src/app
+ 
+# Copies package.json to Docker environment in a separate layer as a performance optimization
+COPY ./ui/package.json ./
+ 
+# Installs all node packages. Cached unless package.json changes
+RUN yarn install
+ 
+# Copies everything else over to Docker environment
+# node_modules excluded in .dockerignore. 
+COPY ./ui .
+ 
+CMD [ "yarn", "start" ]

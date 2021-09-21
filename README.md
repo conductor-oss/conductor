@@ -2,7 +2,7 @@
 
 
 ## Conductor
-Conductor is an _orchestration_ engine that runs in the cloud.
+Conductor is a _workflow orchestration_ engine that runs in the cloud.
 
 
 [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
@@ -10,37 +10,52 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
-## Community
-[Discussion Forum](https://github.com/Netflix/conductor/discussions) Please use the forum for questions and discussing ideas and join the community.
-
-[Access here other Conductor related projects made by the community!](/RELATED.md) - Backup tool, Cron like workflow starter, Docker containers...
-
 ## Builds
+The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases).
 | Branch |                                                     Build                                                     |
 |:------:|:-------------------------------------------------------------------------------------------------------------:|
 | main | [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml) |
 | 2.31 | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=2.31)](https://travis-ci.com/Netflix/conductor) |
 
 
-## Running Conductor
-The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases). Conductor can be started up with an in-memory persistence and queue implementation. It is not recommended for production use but can come in handy for quickly evaluating what Conductor's all about. For actual production use-cases, please use one of the supported persistence and queue implementations.
+## Getting Started - Building & Running Conductor
+### Docker
+The easiest way to get started is with Docker containers. Please follow the instructions [here](https://github.com/Netflix/conductor/tree/main/docker). The server and UI can also be built from source separately.
 
-If Docker is installed, please follow the instructions [here](https://github.com/Netflix/conductor/tree/main/docker). 
+### Conductor Server From Source
+Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. First, ensure that Java JDK 11+ is installed.
 
-If Java 11 or above is installed, Conductor [publishes](https://mvnrepository.com/artifact/com.netflix.conductor/conductor-server) an executable jar that can be run using,
+#### Development
+The server can be started locally by running `./gradlew bootRun` from the project root. This will start up Conductor with an in-memory persistence and queue implementation. It is not recommended for production use but can come in handy for quickly evaluating what Conductor's all about. For actual production use-cases, please use one of the supported persistence and queue implementations.
 
+You can verify the development server is up by navigating to `http://localhost:8080/swagger-ui/index.html` in a browser.
+
+#### Production Build
+Running `./gradlew build` from the project root builds the project into the `/build` directory. Note that Docker is a requirement for tests to run, and thus a requirement to build even if you are building
+outside of a Docker container. If you do not have Docker installed you can run `./gradlew build -x test` to skip tests.
+
+
+#### Pre-built JAR
+A [pre-built](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/conductor-server/) executable jar is available that can be downloaded and run using:
+ 
 `java -jar conductor-server-*-boot.jar`
 
-## Documentation & Getting Started
+### Conductor UI from Source
+
+The UI is a standard `create-react-app` React Single Page Application (SPA). To get started, with Node 14 and `yarn` installed, first run `yarn install` from within the `/ui` directory to retrieve package dependencies.
+
+There is no need to "build" the project unless you require compiled assets to host on a production web server. If the latter is true, the project can be built with the command `yarn build`.
+
+To run the UI on the bundled development server, run `yarn run start`. Navigate your browser to `http://localhost:5000`. The server must already be running on port 8080. 
+
+
+## Documentation
 [Documentation](http://netflix.github.io/conductor/)  
 [Roadmap](https://github.com/Netflix/conductor/wiki/Roadmap)
+[Getting Started Guide](https://netflix.github.io/conductor/gettingstarted/basicconcepts/).
 
-[Getting Started](https://netflix.github.io/conductor/gettingstarted/basicconcepts/) guide.
-
-## Get Conductor
-Binaries are available from [Netflix OSS Maven](https://mvnrepository.com/artifact/com.netflix.conductor) repository.
-
-Below are the various artifacts published:
+## Published Artifacts
+Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository, or the [Maven Central Repository](https://search.maven.org/search?q=g:com.netflix.conductor).
 
 | Artifact | Description |
 | ----------- | --------------- |
@@ -73,6 +88,12 @@ Below are the various artifacts published:
 
 ## Other Requirements
 * JDK 11+
+* UI requires Node 14 to build. Earlier Node versions may work but is untested.
+
+## Community
+[Discussion Forum](https://github.com/Netflix/conductor/discussions) Please use the forum for questions and discussing ideas and join the community.
+
+[Access here other Conductor related projects made by the community!](/RELATED.md) - Backup tool, Cron like workflow starter, Docker containers...
 
 ## Get Support
 Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use github issue tracking for filing issues and [Discussion Forum](https://github.com/Netflix/conductor/discussions) for any other questions, ideas or support requests. 

@@ -1,0 +1,31 @@
+export const workflowStatuses = [
+  "RUNNING",
+  "COMPLETED",
+  "FAILED",
+  "TIMED_OUT",
+  "TERMINATED",
+  "PAUSED",
+];
+
+export const taskTypes = [
+  "ARCHER",
+  "DECISION",
+  "DO_WHILE",
+  "DYNAMIC",
+  "DYNIMO",
+  "EAAS",
+  "EVENT",
+  "EXCLUSIVE_JOIN",
+  "FORK_JOIN",
+  "FORK_JOIN_DYNAMIC",
+  "HTTP",
+  "JOIN",
+  "JSON_JQ_TRANSFORM",
+  "LAMBDA",
+  "SIMPLE",
+  "SUB_WORKFLOW",
+  "TERMINATE",
+  "TITUS",
+  "TITUS_TASK",
+  "WAIT",
+];

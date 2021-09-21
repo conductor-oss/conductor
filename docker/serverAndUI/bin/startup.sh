@@ -13,18 +13,10 @@
 #  specific language governing permissions and limitations under the License.
 #
 
-echo "Starting Conductor server and UI"
-
-# Start the UI
-cd /app/ui/dist
-if [ -z "$WF_SERVER" ];
-  then
-    export WF_SERVER=http://localhost:8080/api/
-  else
-    echo "using Conductor API server from '$WF_SERVER'"
-fi
-
-nohup node server.js 1>&2 > /app/logs/ui.log &
+echo "Starting Conductor Server and UI"
+echo "Running Nginx in background"
+# Start nginx as daemon
+nginx
 
 # Start the server
 cd /app/libs

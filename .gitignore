@@ -1,27 +1,28 @@
-**/node_modules
-**/npm-debug.log
-ui/dist
-ui/package-lock.json
+# Java Build
 .gradle
-.project
-bin
-build
-client/python/conductor.egg-info
-*.pyc
 .classpath
-docs/site
-site
-ui/.settings
-.settings
 dump.rdb
-.idea
-*.iml
-out/
-bin/
-target/
-.DS_Store
-.vscode/
+out
+bin
+target
 buildscan.log
+/docs/site
+
+# Python
+/polyglot-clients/python/conductor.egg-info
+*.pyc
+
+# OS & IDE
+.DS_Store
+.settings
+.vscode
+.idea
+.project
+*.iml
+
+# JS & UI Related
+node_modules
+/ui/build
 
 # publishing secrets
 secrets/signing-key

@@ -1,1 +1,8 @@
+# General
+
+# Backend 
 server/build/libs
+
+# UI
+**/node_modules
+ui/build

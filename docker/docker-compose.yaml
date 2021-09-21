@@ -3,7 +3,7 @@ version: '2.3'
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config.properties
+      - CONFIG_PROP=config-local.properties
     image: conductor:server
     build:
       context: ../
@@ -30,7 +30,7 @@ services:
 
   conductor-ui:
     environment:
-      - WF_SERVER=http://conductor-server:8080/api/
+      - WF_SERVER=http://conductor-server:8080
     image: conductor:ui
     build:
       context: ../
@@ -41,6 +41,7 @@ services:
       - 5000:5000
     links:
       - conductor-server
+    stdin_open: true
 
   elasticsearch:
     image: elasticsearch:6.8.15
