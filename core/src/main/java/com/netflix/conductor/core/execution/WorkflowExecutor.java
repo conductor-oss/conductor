@@ -1562,6 +1562,7 @@ public class WorkflowExecutor {
 
         // Get the workflow
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
+        updateAndPushParents(workflow, "reran");
 
         // If the task Id is null it implies that the entire workflow has to be rerun
         if (taskId == null) {

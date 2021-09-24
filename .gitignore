@@ -26,3 +26,9 @@ node_modules
 
 # publishing secrets
 secrets/signing-key
+
+# local builds
+lib/
+build/
+*/build/
+
