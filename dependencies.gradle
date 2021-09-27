@@ -41,7 +41,7 @@ ext {
     revJedis = '3.3.0'
     revJersey = '1.19.4'
     revJsonPath = '2.4.0'
-    revJq = '0.0.12'
+    revJq = '0.0.13'
     revJsr311Api = '1.1.1'
     revKafka = '2.6.0'
     revMicrometer = '1.6.2'

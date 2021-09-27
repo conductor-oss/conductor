@@ -45,7 +45,7 @@
             "locked": "1.1.1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.10"
@@ -188,7 +188,7 @@
             "locked": "2.3.1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -255,7 +255,7 @@
             "locked": "1.1.1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.10"
@@ -407,7 +407,7 @@
             "locked": "2.3.1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

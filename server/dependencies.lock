@@ -343,7 +343,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -741,7 +741,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -1219,7 +1219,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "0.0.12"
+            "locked": "0.0.13"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
