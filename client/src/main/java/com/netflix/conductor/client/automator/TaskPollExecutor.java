@@ -52,6 +52,7 @@ class TaskPollExecutor {
     private final Map<String/*taskType*/, String/*domain*/> taskToDomain;
 
     private static final String DOMAIN = "domain";
+    private static final String OVERRIDE_DISCOVERY = "pollOutOfDiscovery";
     private static final String ALL_WORKERS = "all";
 
     TaskPollExecutor(EurekaClient eurekaClient, TaskClient taskClient, int threadCount, int updateRetryCount,
@@ -65,15 +66,20 @@ class TaskPollExecutor {
 
         this.executorService = Executors.newFixedThreadPool(threadCount,
             new BasicThreadFactory.Builder()
-                .namingPattern(workerNamePrefix)
-                .uncaughtExceptionHandler(uncaughtExceptionHandler)
-                .build());
+                    .namingPattern(workerNamePrefix)
+                    .uncaughtExceptionHandler(uncaughtExceptionHandler)
+                    .build());
 
         this.pollingSemaphore = new PollingSemaphore(threadCount);
     }
 
     void pollAndExecute(Worker worker) {
-        if (eurekaClient != null && !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
+        Boolean discoveryOverride = Optional.ofNullable(PropertyFactory.getBoolean(worker.getTaskDefName(), OVERRIDE_DISCOVERY, null))
+                .orElseGet(() -> PropertyFactory.getBoolean(ALL_WORKERS, OVERRIDE_DISCOVERY, false));
+
+        if (eurekaClient != null &&
+                !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP) &&
+                !discoveryOverride) {
             LOGGER.debug("Instance is NOT UP in discovery - will not poll");
             return;
         }

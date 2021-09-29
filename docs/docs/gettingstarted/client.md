@@ -29,7 +29,7 @@ Initialize the Builder with the following:
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| withEurekaClient | EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped. If passed null, discovery check is not done. | provided by platform |
+| withEurekaClient | EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped unless `pollOutOfDiscovery` is set to true. If passed null, discovery check is not done. | provided by platform |
 | withThreadCount | Number of threads assigned to the workers. Should be at-least the size of taskWorkers to avoid starvation in a busy system. | Number of registered workers |
 | withSleepWhenRetry | Time in milliseconds, for which the thread should sleep when task update call fails, before retrying the operation. | 500 |
 | withUpdateRetryCount | Number of attempts to be made when updating task status when update status call fails. | 3 |
@@ -47,6 +47,7 @@ The worker behavior can be further controlled by using these properties:
 | --- | --- | --- | --- |
 | paused | boolean | If set to true, the worker stops polling.| false |
 | pollInterval | int | Interval in milliseconds at which the server should be polled for tasks. | 1000 |
+| pollOutOfDiscovery | boolean | If set to true, the instance will poll for tasks regardless of the discovery  <br/> status. This is useful while running on a dev machine. | false |
 
 Further, these properties can be set either by Worker implementation or by setting the following system properties in the JVM:
 
