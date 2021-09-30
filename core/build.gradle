@@ -41,9 +41,11 @@ dependencies {
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
-    implementation "javax.xml.bind:jaxb-api:${revJAXB}"
-    implementation "javax.activation:activation:${revActivation}"
-    implementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"
+    implementation "jakarta.activation:jakarta.activation-api:${revActivation}"
+
+    // Only add it as a test dependency. The actual jaxb runtime provider is provided when building the server.
+    testImplementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation project(':conductor-common').sourceSets.test.output

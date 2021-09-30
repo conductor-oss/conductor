@@ -38,11 +38,11 @@
         "io.reactivex:rxjava": {
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
-            "locked": "1.1.1"
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "2.0.0"
         },
-        "javax.xml.bind:jaxb-api": {
-            "locked": "2.3.0"
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5"
@@ -51,7 +51,7 @@
             "locked": "3.10"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.0"
+            "locked": "2.3.3"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.3.12.RELEASE"
@@ -115,11 +115,11 @@
         "io.reactivex:rxjava": {
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
-            "locked": "1.1.1"
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "2.0.0"
         },
-        "javax.xml.bind:jaxb-api": {
-            "locked": "2.3.0"
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -134,7 +134,7 @@
             "locked": "3.10"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.0"
+            "locked": "2.3.3"
         }
     },
     "testCompileClasspath": {
@@ -171,11 +171,11 @@
         "io.reactivex:rxjava": {
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
-            "locked": "1.1.1"
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "2.0.0"
         },
-        "javax.xml.bind:jaxb-api": {
-            "locked": "2.3.0"
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5"
@@ -187,7 +187,7 @@
             "locked": "2.5.13"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.0"
+            "locked": "2.3.3"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
@@ -260,11 +260,11 @@
         "io.reactivex:rxjava": {
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
-            "locked": "1.1.1"
+        "jakarta.activation:jakarta.activation-api": {
+            "locked": "2.0.0"
         },
-        "javax.xml.bind:jaxb-api": {
-            "locked": "2.3.0"
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -282,7 +282,7 @@
             "locked": "2.5.13"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.0"
+            "locked": "2.3.3"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"

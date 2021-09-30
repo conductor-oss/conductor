@@ -46,6 +46,8 @@ dependencies {
 
     runtimeOnly 'com.netflix.spectator:spectator-reg-micrometer'
 
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')
     testImplementation "io.grpc:grpc-testing:${revGrpc}"
