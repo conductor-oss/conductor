@@ -175,6 +175,8 @@ public class ParametersUtilsTest {
         input.put("k1", "${$.externalId}");
         input.put("k2", "${name}");
         input.put("k3", "${version}");
+        input.put("k4", "${}");
+        input.put("k5", "${    }");
 
         Map<String, String> mapValue = new HashMap<>();
         mapValue.put("name", "${name}");
@@ -195,6 +197,8 @@ public class ParametersUtilsTest {
         assertEquals("{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}", replaced.get("k1"));
         assertEquals("conductor", replaced.get("k2"));
         assertEquals(2, replaced.get("k3"));
+        assertEquals("", replaced.get("k4"));
+        assertEquals("", replaced.get("k5"));
 
         Map replacedMap = (Map) replaced.get("map");
         assertEquals("conductor", replacedMap.get("name"));

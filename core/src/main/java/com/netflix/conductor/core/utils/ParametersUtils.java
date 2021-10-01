@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.EnvUtils;
 import com.netflix.conductor.common.utils.TaskUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -203,12 +204,18 @@ public class ParametersUtils {
     }
 
     private Object replaceVariables(String paramString, DocumentContext documentContext, String taskId) {
-        String[] values = paramString.split("(?=(?<!\\$)\\$\\{)|(?<=\\})");
+        String[] values = paramString.split("(?=(?<!\\$)\\$\\{)|(?<=})");
         Object[] convertedValues = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
             convertedValues[i] = values[i];
             if (values[i].startsWith("${") && values[i].endsWith("}")) {
                 String paramPath = values[i].substring(2, values[i].length() - 1);
+                // if the paramPath is blank, meaning no value in between ${ and }
+                // like ${}, ${  } etc, set the value to empty string
+                if(StringUtils.isBlank(paramPath)) {
+                    convertedValues[i] = "";
+                    continue;
+                }
                 if (EnvUtils.isEnvironmentVariable(paramPath)) {
                     String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
                     if (sysValue != null) {
