@@ -13,6 +13,7 @@
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
+import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.test.base.AbstractSpecification
 import spock.lang.Shared
@@ -54,7 +55,7 @@ class JsonJQTransformSpec extends AbstractSpecification {
             tasks.size() == 1
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'JSON_JQ_TRANSFORM'
-            tasks[0].outputData as String == "[result:[out:[a, b, c, d]], resultList:[[out:[a, b, c, d]]]]"
+            tasks[0].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
         }
     }
 
@@ -81,7 +82,69 @@ class JsonJQTransformSpec extends AbstractSpecification {
             tasks.size() == 1
             tasks[0].status == Task.Status.FAILED
             tasks[0].taskType == 'JSON_JQ_TRANSFORM'
-            tasks[0].reasonForIncompletion as String == "Cannot index string with string \"array\""
+            tasks[0].reasonForIncompletion == 'Cannot index string with string \"array\"'
+        }
+    }
+
+    /**
+     * Given the following invalid input JSON
+     *{*   "in1": "a",
+     *   "in2": "b"
+     *}* using the same query from the success test, jq will try to get in1['array']
+     * and fail since 'in1' is a string.
+     *
+     * Re-run failed system task with the following valid input JSON will fix the workflow
+     *{*   "in1": {*     "array": [ "a", "b" ]
+     *},
+     *   "in2": {*     "array": [ "c", "d" ]
+     *}*}* expect the workflow task to transform to following result:
+     *{*     out: [ "a", "b", "c", "d" ]
+     *}
+     */
+    def "Test rerun workflow with failed json jq transform task"() {
+        given: "workflow input"
+        def invalidInput = new HashMap()
+        invalidInput['in1'] = "a"
+        invalidInput['in2'] = "b"
+
+        def validInput = new HashMap()
+        def input = new HashMap()
+        input['in1'] = new HashMap()
+        input['in1']['array'] = ["a", "b"]
+        input['in2'] = new HashMap()
+        input['in2']['array'] = ["c", "d"]
+        validInput['input'] = input
+        validInput['queryExpression'] = '.input as $_ | { out: ($_.in1.array + $_.in2.array) }'
+
+        when: "workflow which has the json jq transform task started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
+                '', invalidInput, null, null, null)
+
+        then: "verify that the workflow and task failed with expected error"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.FAILED
+            tasks.size() == 1
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[0].reasonForIncompletion == 'Cannot index string with string \"array\"'
+        }
+
+        when: "workflow which has the json jq transform task reran"
+        def reRunWorkflowRequest = new RerunWorkflowRequest()
+        reRunWorkflowRequest.reRunFromWorkflowId = workflowInstanceId
+        def reRunTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).tasks[0].taskId
+        reRunWorkflowRequest.reRunFromTaskId = reRunTaskId
+        reRunWorkflowRequest.taskInput = validInput
+
+        workflowExecutor.rerun(reRunWorkflowRequest)
+
+        then: "verify that the workflow and task are completed with expected output"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 1
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[0].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
         }
     }
 }

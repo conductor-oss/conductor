@@ -101,6 +101,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.LAMBDA;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SWITCH;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JSON_JQ_TRANSFORM;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_LAMBDA;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
@@ -178,6 +179,21 @@ public class TestWorkflowExecutor {
         @Bean("HTTP2")
         public WorkflowSystemTask http2() {
             return new WorkflowSystemTaskStub("HTTP2");
+        }
+
+        @Bean(TASK_TYPE_JSON_JQ_TRANSFORM)
+        public WorkflowSystemTask jsonBean() {
+            return new WorkflowSystemTaskStub("JSON_JQ_TRANSFORM") {
+                @Override
+                public boolean isAsync() {
+                    return false;
+                }
+
+                @Override
+                public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
+                    task.setStatus(Task.Status.COMPLETED);
+                }
+            };
         }
 
         @Bean
@@ -1319,6 +1335,59 @@ public class TestWorkflowExecutor {
         //when:
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
+        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        assertNull(workflow.getReasonForIncompletion());
+        assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
+    }
+
+    @Test
+    public void testRerunWorkflowWithSyncSystemTaskId() {
+        //setup
+        String workflowId = IDGenerator.generate();
+
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.SIMPLE.name());
+        task1.setTaskDefName("task1");
+        task1.setReferenceTaskName("task1_ref");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(IDGenerator.generate());
+        task1.setStatus(Status.COMPLETED);
+        task1.setWorkflowTask(new WorkflowTask());
+        task1.setOutputData(new HashMap<>());
+
+        Task task2 = new Task();
+        task2.setTaskType(TaskType.JSON_JQ_TRANSFORM.name());
+        task2.setReferenceTaskName("task2_ref");
+        task2.setWorkflowInstanceId(workflowId);
+        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setTaskId("system-task-id");
+        task2.setStatus(Status.FAILED);
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setOwnerApp("junit_testRerunWorkflowId");
+        workflow.setStatus(WorkflowStatus.FAILED);
+        workflow.setReasonForIncompletion("task2 failed");
+        workflow.setFailedReferenceTaskNames(new HashSet<String>() {{
+            add("task2_ref");
+        }});
+        workflow.getTasks().addAll(Arrays.asList(task1, task2));
+        //end of setup
+
+        //when:
+        when(executionDAOFacade.getWorkflowById(workflow.getWorkflowId(), true)).thenReturn(workflow);
+        RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
+        rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
+        rerunWorkflowRequest.setReRunFromTaskId(task2.getTaskId());
+        workflowExecutor.rerun(rerunWorkflowRequest);
+
+        //then:
+        assertEquals(Status.COMPLETED, task2.getStatus());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
