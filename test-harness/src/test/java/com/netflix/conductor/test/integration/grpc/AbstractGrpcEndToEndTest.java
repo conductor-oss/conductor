@@ -16,9 +16,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.netflix.conductor.client.grpc.EventClient;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -33,6 +35,8 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.test.integration.AbstractEndToEndTest;
+
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.Test;
@@ -52,6 +56,7 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
     protected static TaskClient taskClient;
     protected static WorkflowClient workflowClient;
     protected static MetadataClient metadataClient;
+    protected static EventClient eventClient;
 
     @Override
     protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
@@ -74,6 +79,21 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
     @Override
     protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
         metadataClient.registerTaskDefs(taskDefinitionList);
+    }
+
+    @Override
+    protected void registerWorkflowDefinition(WorkflowDef workflowDefinition) {
+        metadataClient.registerWorkflowDef(workflowDefinition);
+    }
+
+    @Override
+    protected void registerEventHandler(EventHandler eventHandler) {
+        eventClient.registerEventHandler(eventHandler);
+    }
+
+    @Override
+    protected Iterator<EventHandler> getEventHandlers(String event, boolean activeOnly) {
+        return eventClient.getEventHandlers(event, activeOnly);
     }
 
     @Test

@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.integration;
 
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -24,6 +25,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +37,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 
 @TestPropertySource(properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
 public abstract class AbstractEndToEndTest {
@@ -183,6 +188,28 @@ public abstract class AbstractEndToEndTest {
 
     }
 
+    @Test
+    public void testEventHandler() {
+        String eventName = "conductor:test_workflow:complete_task_with_event";
+        EventHandler eventHandler = new EventHandler();
+        eventHandler.setName("test_complete_task_event");
+        EventHandler.Action completeTaskAction = new EventHandler.Action();
+        completeTaskAction.setAction(EventHandler.Action.Type.complete_task);
+        completeTaskAction.setComplete_task(new EventHandler.TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("test_task");
+        completeTaskAction.getComplete_task().setWorkflowId("test_id");
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
+        eventHandler.getActions().add(completeTaskAction);
+        eventHandler.setEvent(eventName);
+        eventHandler.setActive(true);
+        registerEventHandler(eventHandler);
+
+        Iterator<EventHandler> it = getEventHandlers(eventName, true);
+        EventHandler result = it.next();
+        assertFalse(it.hasNext());
+        assertEquals(eventHandler.getName(), result.getName());
+    }
+
     protected WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName(name);
@@ -238,4 +265,10 @@ public abstract class AbstractEndToEndTest {
     protected abstract TaskDef getTaskDefinition(String taskName);
 
     protected abstract void registerTaskDefinitions(List<TaskDef> taskDefinitionList);
+
+    protected abstract void registerWorkflowDefinition(WorkflowDef workflowDefinition);
+
+    protected abstract void registerEventHandler(EventHandler eventHandler);
+
+    protected abstract Iterator<EventHandler> getEventHandlers(String event, boolean activeOnly);
 }
