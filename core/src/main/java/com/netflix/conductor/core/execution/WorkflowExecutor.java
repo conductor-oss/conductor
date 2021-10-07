@@ -837,7 +837,14 @@ public class WorkflowExecutor {
             if (workflow.getWorkflowDefinition() == null) {
                 workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
             }
-            deciderService.updateWorkflowOutput(workflow, null);
+
+            try {
+                deciderService.updateWorkflowOutput(workflow, null);
+            } catch (Exception e) {
+                // catch any failure in this step and continue the execution of terminating workflow
+                LOGGER.error("Failed to update output data for workflow: {}", workflow.getWorkflowId(), e);
+                Monitors.error(CLASS_NAME, "terminateWorkflow");
+            }
 
             // update the failed reference task names
             workflow.getFailedReferenceTaskNames().addAll(workflow.getTasks().stream()

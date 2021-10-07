@@ -213,6 +213,9 @@ public class Workflow extends Auditable {
      * @param input the input to set
      */
     public void setInput(Map<String, Object> input) {
+        if (input == null) {
+            input = new HashMap<>();
+        }
         this.input = input;
     }
 
@@ -241,6 +244,9 @@ public class Workflow extends Auditable {
      * @param output the output to set
      */
     public void setOutput(Map<String, Object> output) {
+        if (output == null) {
+            output = new HashMap<>();
+        }
         this.output = output;
     }
 

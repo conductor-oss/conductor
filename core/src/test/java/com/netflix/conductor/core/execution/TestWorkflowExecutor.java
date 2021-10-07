@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
@@ -146,6 +147,7 @@ public class TestWorkflowExecutor {
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
     private ExecutionLockService executionLockService;
+    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     @Configuration
     @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans.
@@ -220,7 +222,7 @@ public class TestWorkflowExecutor {
         metadataDAO = mock(MetadataDAO.class);
         queueDAO = mock(QueueDAO.class);
         workflowStatusListener = mock(WorkflowStatusListener.class);
-        ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+        externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         executionLockService = mock(ExecutionLockService.class);
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
         Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
@@ -497,6 +499,51 @@ public class TestWorkflowExecutor {
         workflowExecutor.completeWorkflow(workflow);
         verify(workflowStatusListener, times(1)).onWorkflowCompletedIfEnabled(any(Workflow.class));
         verify(workflowStatusListener, times(1)).onWorkflowFinalizedIfEnabled(any(Workflow.class));
+    }
+
+    @Test
+    public void testUploadOutputFailuresDuringTerminateWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+        def.setWorkflowStatusListenerEnabled(true);
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("1");
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setStartTime(10L);
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+
+        List<Task> tasks = new LinkedList<>();
+
+        Task task = new Task();
+        task.setScheduledTime(1L);
+        task.setSeq(1);
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setReferenceTaskName("t1");
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setTaskDefName("task1");
+        task.setStatus(Status.IN_PROGRESS);
+
+        tasks.add(task);
+        workflow.setTasks(tasks);
+
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+
+        AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            updateWorkflowCalledCounter.incrementAndGet();
+            return null;
+        }).when(executionDAOFacade).updateWorkflow(any());
+
+        doThrow(new RuntimeException("any exception")).when(externalPayloadStorageUtils).verifyAndUpload(workflow, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT);
+
+        workflowExecutor.terminateWorkflow(workflow.getWorkflowId(), "reason");
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, workflow.getStatus());
+        assertEquals(1, updateWorkflowCalledCounter.get());
+        verify(workflowStatusListener, times(1)).onWorkflowTerminatedIfEnabled(any(Workflow.class));
     }
 
     @Test

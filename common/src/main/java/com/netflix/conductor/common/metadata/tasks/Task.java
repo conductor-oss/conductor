@@ -241,6 +241,9 @@ public class Task {
     }
 
     public void setInputData(Map<String, Object> inputData) {
+        if (inputData == null) {
+            inputData = new HashMap<>();
+        }
         this.inputData = inputData;
     }
 
@@ -583,6 +586,9 @@ public class Task {
      * @param outputData the outputData to set
      */
     public void setOutputData(Map<String, Object> outputData) {
+        if (outputData == null) {
+            outputData = new HashMap<>();
+        }
         this.outputData = outputData;
     }
 
