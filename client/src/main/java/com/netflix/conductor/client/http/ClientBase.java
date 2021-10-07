@@ -294,7 +294,7 @@ public abstract class ClientBase {
                 return;
             }
             String errorMessage = clientResponse.getEntity(String.class);
-            LOGGER.error(
+            LOGGER.warn(
                 "Unable to invoke Conductor API with uri: {}, unexpected response from server: statusCode={}, responseBody='{}'.",
                 uri, clientResponse.getStatus(), errorMessage);
             ErrorResponse errorResponse;

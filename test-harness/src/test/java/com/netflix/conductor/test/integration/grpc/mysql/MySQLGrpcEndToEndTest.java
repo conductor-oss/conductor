@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.integration.grpc.mysql;
 
+import com.netflix.conductor.client.grpc.EventClient;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
@@ -38,5 +39,6 @@ public class MySQLGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
         taskClient = new TaskClient("localhost", 8094);
         workflowClient = new WorkflowClient("localhost", 8094);
         metadataClient = new MetadataClient("localhost", 8094);
+        eventClient = new EventClient("localhost", 8094);
     }
 }

@@ -50,9 +50,6 @@
         "org.apache.commons:commons-lang3": {
             "locked": "3.10"
         },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.3"
-        },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.3.12.RELEASE"
         },
@@ -132,9 +129,6 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "3.10"
-        },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.3"
         }
     },
     "testCompileClasspath": {

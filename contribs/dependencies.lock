@@ -172,20 +172,20 @@
             ],
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
+        "jakarta.activation:jakarta.activation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.1.1"
+            "locked": "1.2.2"
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.3.3"
         },
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
-        },
-        "javax.xml.bind:jaxb-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.1"
         },
         "net.thisptr:jackson-jq": {
             "locked": "0.0.13"
@@ -206,12 +206,6 @@
         },
         "org.apache.kafka:kafka-clients": {
             "locked": "2.6.0"
-        },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.4"
         }
     },
     "testCompileClasspath": {
@@ -391,20 +385,20 @@
             ],
             "locked": "1.2.2"
         },
-        "javax.activation:activation": {
+        "jakarta.activation:jakarta.activation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.1.1"
+            "locked": "1.2.2"
+        },
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.3.3"
         },
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
-        },
-        "javax.xml.bind:jaxb-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.1"
         },
         "net.thisptr:jackson-jq": {
             "locked": "0.0.13"
@@ -425,12 +419,6 @@
         },
         "org.apache.kafka:kafka-clients": {
             "locked": "2.6.0"
-        },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.4"
         },
         "org.mock-server:mockserver-client-java": {
             "locked": "5.11.2"
