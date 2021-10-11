@@ -124,17 +124,17 @@
             ],
             "locked": "1.3.8"
         },
-        "javax.activation:activation": {
+        "jakarta.activation:jakarta.activation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.1.1"
+            "locked": "1.2.2"
         },
-        "javax.xml.bind:jaxb-api": {
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.3.1"
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -155,12 +155,6 @@
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "7.6.2"
-        },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.4"
         }
     },
     "shadow": {
@@ -297,17 +291,17 @@
             ],
             "locked": "1.3.8"
         },
-        "javax.activation:activation": {
+        "jakarta.activation:jakarta.activation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.1.1"
+            "locked": "1.2.2"
         },
-        "javax.xml.bind:jaxb-api": {
+        "jakarta.xml.bind:jakarta.xml.bind-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.3.1"
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -331,12 +325,6 @@
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "7.6.2"
-        },
-        "org.glassfish.jaxb:jaxb-runtime": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.3.4"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.3.12.RELEASE"
