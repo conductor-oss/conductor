@@ -137,9 +137,29 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         List<String> joinOnTaskRefs = new LinkedList<>();
         //Add each dynamic task to the mapped tasks and also get the last dynamic task in the list,
         // which indicates that the following task after that needs to be a join task
-        for (WorkflowTask wft : dynForkTasks) {//TODO this is a cyclic dependency, break it out using function composition
+        for (WorkflowTask dynForkTask : dynForkTasks) {//TODO this is a cyclic dependency, break it out using function composition
             List<Task> forkedTasks = taskMapperContext.getDeciderService()
-                .getTasksToBeScheduled(workflowInstance, wft, retryCount);
+                .getTasksToBeScheduled(workflowInstance, dynForkTask, retryCount);
+
+            // It's an error state if no forkedTasks can be decided upon. In the cases where we've seen
+            // this happen is when a dynamic task is attempting to be created here, but a task with the
+            // same reference name has already been created in the Workflow.
+            if (forkedTasks == null || forkedTasks.isEmpty()) {
+                Optional<String> existingTaskRefName = workflowInstance.getTasks().stream()
+                        .filter(runningTask -> runningTask.getStatus().equals(Task.Status.IN_PROGRESS) || runningTask.getStatus().isTerminal())
+                        .map(Task::getReferenceTaskName)
+                        .filter(refTaskName -> refTaskName.equals(dynForkTask.getTaskReferenceName()))
+                        .findAny();
+
+                // Construct an informative error message
+                String terminateMessage = "No dynamic tasks could be created for the Workflow: " +
+                        workflowInstance.toShortString() + ", Dynamic Fork Task: " + dynForkTask;
+                if (existingTaskRefName.isPresent()) {
+                    terminateMessage += "Attempted to create a duplicate task reference name: " + existingTaskRefName.get();
+                }
+                throw new TerminateWorkflowException(terminateMessage);
+            }
+
             for (Task forkedTask : forkedTasks) {
                 Map<String, Object> forkedTaskInput = tasksInput.get(forkedTask.getReferenceTaskName());
                 forkedTask.getInputData().putAll(forkedTaskInput);
