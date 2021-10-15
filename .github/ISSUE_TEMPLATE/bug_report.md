@@ -12,9 +12,13 @@ A clear and concise description of what the bug is.
 
 **Details**
 Conductor version:
+Persistence implementation: Cassandra, Postgres, MySQL, Dynomite etc
+Queue implementation: Postgres, MySQL, Dynoqueues etc
+Lock: Redis or Zookeeper?
 Workflow definition:
 Task definition:
 Event handler definition:
+
 
 **To Reproduce**
 Steps to reproduce the behavior:
