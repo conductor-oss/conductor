@@ -18,11 +18,17 @@ dependencies {
 
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
     implementation "org.apache.commons:commons-lang3"
-
     implementation 'org.apache.logging.log4j:log4j-web'
 
     testImplementation("org.cassandraunit:cassandra-unit:${revCassandraUnit}") {
         exclude group: "com.datastax.cassandra", module: "cassandra-driver-core"
+    }
+
+    // Using higher guava version than the following causes test failure.
+    testImplementation ('com.google.guava:guava') {
+        version {
+            strictly '23.6.1-jre'
+        }
     }
 
     testImplementation project(':conductor-core').sourceSets.test.output

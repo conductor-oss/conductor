@@ -34,7 +34,8 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
-    implementation "com.netflix.servo:servo-core:${revServo}"
+    implementation "com.google.guava:guava:${revGuava}"
+
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
 
     implementation "org.apache.bval:bval-jsr:${revBval}"

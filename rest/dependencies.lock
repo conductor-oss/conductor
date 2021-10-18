@@ -54,6 +54,12 @@
             ],
             "locked": "1.0.0"
         },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
@@ -78,12 +84,6 @@
         },
         "com.netflix.runtime:health-api": {
             "locked": "1.1.4"
-        },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
@@ -198,6 +198,12 @@
             ],
             "locked": "1.0.0"
         },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
@@ -222,12 +228,6 @@
         },
         "com.netflix.runtime:health-api": {
             "locked": "1.1.4"
-        },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [

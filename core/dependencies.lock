@@ -14,6 +14,9 @@
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.11.4"
         },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -22,9 +25,6 @@
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0"
@@ -85,6 +85,9 @@
             ],
             "locked": "1.0.0"
         },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -96,9 +99,6 @@
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0"
@@ -141,6 +141,9 @@
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.11.4"
         },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -149,9 +152,6 @@
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0"
@@ -227,6 +227,9 @@
             ],
             "locked": "1.0.0"
         },
+        "com.google.guava:guava": {
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -238,9 +241,6 @@
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0"

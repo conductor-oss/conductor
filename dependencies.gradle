@@ -56,7 +56,6 @@ ext {
     revRarefiedRedis = '0.0.17'
     revRedisson = '3.13.3'
     revRxJava = '1.2.2'
-    revServo = '0.13.0'
     revSpectator = '0.122.0'
     revSpock = '1.3-groovy-2.5'
     revSpotifyCompletableFutures = '0.3.3'

@@ -124,6 +124,7 @@
         "com.google.guava:guava": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
@@ -221,12 +222,6 @@
                 "com.netflix.conductor:conductor-rest"
             ],
             "locked": "1.1.4"
-        },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
@@ -531,6 +526,7 @@
         "com.google.guava:guava": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
@@ -628,12 +624,6 @@
                 "com.netflix.conductor:conductor-rest"
             ],
             "locked": "1.1.4"
-        },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
@@ -1018,6 +1008,7 @@
         "com.google.guava:guava": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
@@ -1115,12 +1106,6 @@
                 "com.netflix.conductor:conductor-rest"
             ],
             "locked": "1.1.4"
-        },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.13.0"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [

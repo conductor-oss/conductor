@@ -15,8 +15,6 @@ package com.netflix.conductor.metrics;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.servo.monitor.BasicStopwatch;
-import com.netflix.servo.monitor.Stopwatch;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DistributionSummary;
 import com.netflix.spectator.api.Gauge;
@@ -47,18 +45,6 @@ public class Monitors {
     public static final String classQualifier = "WorkflowMonitor";
 
     private Monitors() {
-    }
-
-    /**
-     * @param className  Name of the class
-     * @param methodName Method name
-     */
-    public static void error(String className, String methodName) {
-        getCounter(className, "workflow_server_error", "methodName", methodName).increment();
-    }
-
-    public static Stopwatch start(String className, String name, String... additionalTags) {
-        return start(getTimer(className, name, additionalTags));
     }
 
     /**
@@ -148,18 +134,13 @@ public class Monitors {
         return tags;
     }
 
-    private static Stopwatch start(Timer sm) {
 
-        Stopwatch sw = new BasicStopwatch() {
-            @Override
-            public void stop() {
-                super.stop();
-                long duration = getDuration(TimeUnit.MILLISECONDS);
-                sm.record(duration, TimeUnit.MILLISECONDS);
-            }
-        };
-        sw.start();
-        return sw;
+    /**
+     * @param className  Name of the class
+     * @param methodName Method name
+     */
+    public static void error(String className, String methodName) {
+        getCounter(className, "workflow_server_error", "methodName", methodName).increment();
     }
 
     public static void recordGauge(String name, long count, String... tags) {
