@@ -18,11 +18,7 @@ dependencies {
 
     implementation "redis.clients:jedis:${revJedis}"
     implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
-    constraints {
-        implementation('com.thoughtworks.xstream:xstream:1.4.18') {
-            because 'The version pulled from dyno-queues has security vulnerability'
-        }
-    }
+    implementation('com.thoughtworks.xstream:xstream:1.4.18')
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
