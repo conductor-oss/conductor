@@ -61,6 +61,7 @@ public class ConductorClientException extends RuntimeException {
     public ConductorClientException(int status, ErrorResponse errorResponse) {
         super(errorResponse.getMessage());
         this.status = status;
+        this.retryable = errorResponse.isRetryable();
         this.message = errorResponse.getMessage();
         this.code = errorResponse.getCode();
         this.instance = errorResponse.getInstance();
