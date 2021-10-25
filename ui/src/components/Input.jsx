@@ -26,7 +26,7 @@ export default function ({ label, clearable, onBlur, onChange, ...props }) {
       InputProps={{
         endAdornment: clearable && (
           <InputAdornment position="end" style={{ marginRight: -8 }}>
-            <IconButton size="small" onClick={handleClear}>
+            <IconButton size="small" onClick={handleClear} disabled={props.disabled}>
               <ClearIcon />
             </IconButton>
           </InputAdornment>

@@ -14,7 +14,6 @@ class Examples extends Component {
   }
 
   click = () => {
-    console.log(this);
     this.setState((prevState) =>
       update(prevState, {
         negcount: {

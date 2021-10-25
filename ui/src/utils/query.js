@@ -54,7 +54,7 @@ export function useWorkflowSearch(searchObj) {
   );
 }
 
-export function useTaskSearch(searchObj) {
+export function useTaskSearch({searchReady, ...searchObj}) {
   const fetchContext = useFetchContext();
   const queryClient = useQueryClient();
 
@@ -67,7 +67,7 @@ export function useTaskSearch(searchObj) {
       ({ pageParam = 0 }) => {
         const { rowsPerPage, sort, freeText, query } = searchObj;
 
-        if (query === "") {
+        if (!searchReady) {
           console.log("blank query - returning empty result.");
           return Promise.resolve({ results: [] });
         }

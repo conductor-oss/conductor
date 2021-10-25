@@ -29,7 +29,6 @@ export default function TimelineComponent({
   }
 
   const { items, groups } = useMemo(() => {
-    console.log("contructing timeline data");
     const groupMap = new Map();
     for (const task of tasks) {
       groupMap.set(task.referenceTaskName, {

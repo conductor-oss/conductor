@@ -3,8 +3,11 @@ import { makeStyles } from "@material-ui/core/styles";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
-import { timestampRenderer, durationRenderer } from "../utils/helpers";
 import _ from "lodash";
+
+import { useEnv } from "../plugins/env";
+import { timestampRenderer, durationRenderer } from "../utils/helpers";
+import { customTypeRenderers } from "../plugins/customTypeRenderers";
 
 const useStyles = makeStyles((theme) => ({
   value: {
@@ -21,25 +24,32 @@ const useStyles = makeStyles((theme) => ({
 
 export default function KeyValueTable({ data }) {
   const classes = useStyles();
+  const env = useEnv();
   return (
     <List>
       {data.map((item, index) => {
-        let value;
-        switch (item.type) {
-          case "date":
-            value =
-              !isNaN(item.value) && item.value > 0
-                ? timestampRenderer(item.value)
-                : "N/A";
-            break;
-          case "duration":
-            value =
-              !isNaN(item.value) && item.value > 0
-                ? durationRenderer(item.value)
-                : "N/A";
-            break;
-          default:
-            value = !_.isNil(item.value) ? item.value : "N/A";
+        let displayValue;
+        const renderer = item.type ? customTypeRenderers[item.type] : null;
+        if(renderer){
+          displayValue = renderer(item.value, env)
+        }
+        else {
+          switch (item.type) {
+            case "date":
+              displayValue =
+                !isNaN(item.value) && item.value > 0
+                  ? timestampRenderer(item.value)
+                  : "N/A";
+              break;
+            case "duration":
+              displayValue =
+                !isNaN(item.value) && item.value > 0
+                  ? durationRenderer(item.value)
+                  : "N/A";
+              break;
+            default:
+              displayValue = !_.isNil(item.value) ? item.value : "N/A";
+          }
         }
 
         return (

@@ -5,9 +5,11 @@ import { PrimaryButton, DropdownButton } from "../../components";
 
 import StopIcon from "@material-ui/icons/Stop";
 import PauseIcon from "@material-ui/icons/Pause";
-import RewindIcon from "@material-ui/icons/FastRewind";
+import RestartIcon from "@material-ui/icons/SettingsBackupRestore";
 import ReplayIcon from "@material-ui/icons/Replay";
 import ResumeIcon from "@material-ui/icons/PlayArrow";
+import FlareIcon from "@material-ui/icons/Flare";
+
 import { useAction } from "../../utils/query";
 
 const useStyles = makeStyles({
@@ -22,6 +24,11 @@ export default function ActionModule({ execution, triggerReload }) {
 
   const restartAction = useAction(
     `/workflow/${workflowId}/restart`,
+    "post",
+    onSuccess
+  );
+  const restartLatestAction = useAction(
+    `/workflow/${workflowId}/restart?useLatestDefinitions=true`,
     "post",
     onSuccess
   );
@@ -54,20 +61,37 @@ export default function ActionModule({ execution, triggerReload }) {
   const { restartable } = workflowDefinition;
 
   function onSuccess(data, variables, context) {
-    console.log(data, variables, context);
     triggerReload();
   }
 
   if (execution.status === "COMPLETED") {
-    return (
-      <PrimaryButton
-        onClick={() => restartAction.mutate()}
-        className={classes.menuIcon}
-      >
-        <RewindIcon fontSize="small" /> Restart
-      </PrimaryButton>
-    );
-  } else if (execution.status === "RUNNING") {
+
+    const options = [];
+    if (restartable) {
+      options.push({
+        label: (
+          <>
+            <RestartIcon className={classes.menuIcon} fontSize="small" />
+            Restart with Current Definitions
+          </>
+        ),
+        handler: () => restartAction.mutate(),
+      });
+
+      options.push({
+        label: (
+          <>
+            <FlareIcon className={classes.menuIcon} fontSize="small" />
+            Restart with Latest Definitions
+          </>
+        ),
+        handler: () => restartLatestAction.mutate(),
+      });
+    }
+
+    return <DropdownButton options={options}>Actions</DropdownButton>;
+  } 
+  else if (execution.status === "RUNNING") {
     return (
       <DropdownButton
         options={[
@@ -112,11 +136,21 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <RewindIcon className={classes.menuIcon} fontSize="small" />
-            Restart workflow
+            <RestartIcon className={classes.menuIcon} fontSize="small" />
+            Restart with Current Definitions
           </>
         ),
         handler: () => restartAction.mutate(),
+      });
+
+      options.push({
+        label: (
+          <>
+            <FlareIcon className={classes.menuIcon} fontSize="small" />
+            Restart with Latest Definitions
+          </>
+        ),
+        handler: () => restartLatestAction.mutate(),
       });
     }
 

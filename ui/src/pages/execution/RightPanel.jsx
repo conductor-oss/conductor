@@ -74,7 +74,6 @@ export default function RightPanel({
             label="Retried Task - Select an instance"
             disableClearable
             onChange={(e, v) => {
-              console.log(v);
               onTaskChange({
                 ref: taskResult.referenceTaskName,
                 taskId: v.taskId,

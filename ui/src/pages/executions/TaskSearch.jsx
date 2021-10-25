@@ -32,6 +32,8 @@ const useStyles = makeStyles({
 });
 
 const DEFAULT_SORT = "startTime:DESC";
+const MS_IN_DAY = 86400000;
+
 export default function TaskSearchPanel() {
   const classes = useStyles();
 
@@ -41,19 +43,27 @@ export default function TaskSearchPanel() {
   const [startFrom, setStartFrom] = useQueryState("startFrom", "");
   const [startTo, setStartTo] = useQueryState("startTo", "");
   const [freeText, setFreeText] = useQueryState("taskText", "");
-
+  const [lookback, setLookback] = useQueryState("lookback", "");
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [queryFT, setQueryFT] = useState(buildQuery);
 
   // For dropdowns
   const workflowNames = useWorkflowNames();
   const taskNames = useTaskNames();
+  
+  const searchReady = !(
+    _.isEmpty(workflowType) &&
+    _.isEmpty(tasks) &&
+    _.isEmpty(taskId) &&
+    _.isEmpty(freeText)
+  );
 
   const { data, isFetching, fetchNextPage, refetch } = useTaskSearch({
     sort,
     query: queryFT.query,
     freeText: queryFT.freeText,
     rowsPerPage: DEFAULT_ROWS_PER_PAGE,
+    searchReady
   });
   const results = useMemo(
     () =>
@@ -66,14 +76,7 @@ export default function TaskSearchPanel() {
     [data]
   );
 
-  const hasSearchParams = !(
-    _.isEmpty(workflowType) &&
-    _.isEmpty(tasks) &&
-    _.isEmpty(taskId) &&
-    _.isEmpty(startFrom) &&
-    _.isEmpty(startTo) &&
-    _.isEmpty(freeText)
-  );
+
 
   function buildQuery() {
     const clauses = [];
@@ -85,6 +88,9 @@ export default function TaskSearchPanel() {
     }
     if (!_.isEmpty(tasks)) {
       clauses.push(`taskType IN (${tasks.join(",")})`);
+    }
+    if(!_.isEmpty(lookback)){
+      clauses.push(`startTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
     }
     if (!_.isEmpty(startFrom)) {
       clauses.push(`startTime>${new Date(startFrom).getTime()}`);
@@ -116,6 +122,22 @@ export default function TaskSearchPanel() {
 
   function handleSort(changedColumn, direction) {
     setSort(`${changedColumn}:${direction.toUpperCase()}`);
+  }
+
+  const handleLookback = (val) => {
+    setStartFrom("");
+    setStartTo("");
+    setLookback(val);
+  }
+
+  const handleStartFrom = (val) => {
+    setLookback("");
+    setStartFrom(val);
+  }
+
+  const handleStartTo = (val) => {
+    setLookback("");
+    setStartTo(val);
   }
 
   return (
@@ -158,16 +180,27 @@ export default function TaskSearchPanel() {
               value={tasks}
             />
           </Grid>
-          <Grid item xs={5}>
+          <Grid item xs={4}>
             <DateRangePicker
+              disabled={!_.isEmpty(lookback)}
               label="Start Time"
               from={startFrom}
               to={startTo}
-              onFromChange={setStartFrom}
-              onToChange={setStartTo}
+              onFromChange={handleStartFrom}
+              onToChange={handleStartTo}
             />
           </Grid>
-
+          <Grid item xs={1}>
+          <Input
+              fullWidth
+              label="Lookback (days)"
+              defaultValue={lookback}
+              onBlur={handleLookback}
+              type="number"
+              clearable
+              disabled={!_.isEmpty(startFrom) || !_.isEmpty(startTo)}
+            />
+          </Grid>
           <Grid item xs={6}>
             <Input
               label="Free Text in Tasks"
@@ -181,7 +214,7 @@ export default function TaskSearchPanel() {
           <Grid item xs={1}>
             <FormControl>
               <InputLabel>&nbsp;</InputLabel>
-              <PrimaryButton onClick={handleSearch} disabled={!hasSearchParams}>
+              <PrimaryButton onClick={handleSearch}>
                 Search
               </PrimaryButton>
             </FormControl>

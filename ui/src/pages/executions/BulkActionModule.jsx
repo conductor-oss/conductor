@@ -46,7 +46,7 @@ export default function BulkActionModule({ selectedRows }) {
   const { mutate: restartCurrentAction, isLoading: restartCurrentLoading } =
     useAction(`/workflow/bulk/restart`, "post", { onSuccess });
   const { mutate: restartLatestAction, isLoading: restartLatestLoading } =
-    useAction(`/workflow/bulk/restart?useLatestDefinition=true`, "post", {
+    useAction(`/workflow/bulk/restart?useLatestDefinitions=true`, "post", {
       onSuccess,
     });
   const { mutate: retryAction, isLoading: retryLoading } = useAction(

@@ -28,6 +28,7 @@ const useStyles = makeStyles({
 });
 
 const DEFAULT_SORT = "startTime:DESC";
+const MS_IN_DAY = 86400000;
 
 export default function WorkflowPanel() {
   const classes = useStyles();
@@ -38,6 +39,7 @@ export default function WorkflowPanel() {
   const [workflowId, setWorkflowId] = useQueryState("workflowId", "");
   const [startFrom, setStartFrom] = useQueryState("startFrom", "");
   const [startTo, setStartTo] = useQueryState("startTo", "");
+  const [lookback, setLookback] = useQueryState("lookback", "");
 
   const [page, setPage] = useQueryState("page", 1);
   const [rowsPerPage, setRowsPerPage] = useQueryState(
@@ -73,6 +75,9 @@ export default function WorkflowPanel() {
     }
     if (!_.isEmpty(status)) {
       clauses.push(`status IN (${status.join(",")})`);
+    }
+    if(!_.isEmpty(lookback)){
+      clauses.push(`startTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
     }
     if (!_.isEmpty(startFrom)) {
       clauses.push(`startTime>${new Date(startFrom).getTime()}`);
@@ -114,6 +119,23 @@ export default function WorkflowPanel() {
     setRowsPerPage(rowsPerPage);
   };
 
+  const handleLookback = (val) => {
+    setStartFrom("");
+    setStartTo("");
+    setLookback(val);
+  }
+
+  const handleStartFrom = (val) => {
+    setLookback("");
+    setStartFrom(val);
+  }
+
+  const handleStartTo = (val) => {
+    setLookback("");
+    setStartTo(val);
+  }
+
+
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
       <Heading level={3} className={classes.heading}>
@@ -152,13 +174,25 @@ export default function WorkflowPanel() {
               value={status}
             />
           </Grid>
-          <Grid item xs={5}>
+          <Grid item xs={4}>
             <DateRangePicker
+              disabled={!_.isEmpty(lookback)}
               label="Start Time"
               from={startFrom}
               to={startTo}
-              onFromChange={setStartFrom}
-              onToChange={setStartTo}
+              onFromChange={handleStartFrom}
+              onToChange={handleStartTo}
+            />
+          </Grid>
+          <Grid item xs={1}>
+          <Input
+              fullWidth
+              label="Lookback (days)"
+              defaultValue={lookback}
+              onBlur={handleLookback}
+              type="number"
+              clearable
+              disabled={!_.isEmpty(startFrom) || !_.isEmpty(startTo)}
             />
           </Grid>
 

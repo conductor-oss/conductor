@@ -14,9 +14,14 @@ export default function TaskSummary({ taskResult }) {
     },
   ];
 
+  if (taskResult.domain) {
+    data.push({ label: "Domain", value: taskResult.domain });
+  }
+
   if (taskResult.taskId) {
     data.push({ label: "Task Execution ID", value: taskResult.taskId });
   }
+
   if (_.isFinite(taskResult.retryCount)) {
     data.push({ label: "Retry Count", value: taskResult.retryCount });
   }

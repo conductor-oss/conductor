@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useQueryState } from "react-router-use-location-state";
 import { Drawer, Divider } from "@material-ui/core";
 
 import {
@@ -118,8 +119,29 @@ export default function Execution() {
 
   const { data: execution, isFetching, refetch: refresh } = useFetch(url);
 
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
   const [selectedTask, setSelectedTask] = useState(null);  
+  
+  const handleSelectedTask = (task) => {
+    if(task){
+      const { taskToDomain } = execution;
+      let domain;
+      if(taskToDomain['*']){
+        domain = taskToDomain['*'];
+      }
+      else if(task.taskType){
+        domain = taskToDomain[task.taskType];
+      }
+      
+      setSelectedTask({
+        ...task,
+        domain: domain
+      });
+    }
+    else {
+      setSelectedTask(null);
+    }
+  }
 
   const dag = useMemo(
     () => (execution ? new WorkflowDAG(execution) : null),
@@ -178,7 +200,7 @@ export default function Execution() {
                 <TaskDetails
                   dag={dag}
                   execution={execution}
-                  setSelectedTask={setSelectedTask}
+                  setSelectedTask={handleSelectedTask}
                   selectedTask={selectedTask}
                 />
               )}
@@ -200,7 +222,7 @@ export default function Execution() {
         }}
       >
         <div className={classes.drawerHeader}>
-          <IconButton onClick={() => setSelectedTask(null)}>
+          <IconButton onClick={() => handleSelectedTask(null)}>
             <CloseIcon />
           </IconButton>
         </div>
@@ -209,7 +231,7 @@ export default function Execution() {
           className={classes.drawerContent}
           selectedTask={selectedTask}
           dag={dag}
-          onTaskChange={setSelectedTask}
+          onTaskChange={handleSelectedTask}
         />
       </Drawer>
     </div>

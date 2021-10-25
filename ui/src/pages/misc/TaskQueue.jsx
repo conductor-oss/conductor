@@ -1,10 +1,12 @@
 import React from "react";
-import { useRouteMatch, useHistory } from "react-router-dom";
+import { useRouteMatch } from "react-router-dom";
 import sharedStyles from "../styles";
 import { useTaskQueueInfo } from "../../utils/query";
 import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
 import { useTaskNames } from "../../utils/query";
+import { usePushHistory } from "../../components/NavLink";
+
 import {
   Paper,
   DataTable,
@@ -18,10 +20,9 @@ const useStyles = makeStyles(sharedStyles);
 
 export default function TaskDefinition() {
   const taskNames = useTaskNames();
-
+  const pushHistory = usePushHistory();
   const classes = useStyles();
   const match = useRouteMatch();
-  const history = useHistory();
   const taskName = match.params.name || "";
 
   const { data, isFetching } = useTaskQueueInfo(taskName);
@@ -33,7 +34,7 @@ export default function TaskDefinition() {
     if (name === null) {
       name = "";
     }
-    history.push(`/taskQueue/${name}`);
+    pushHistory(`/taskQueue/${name}`);
   }
 
   return (
@@ -63,7 +64,7 @@ export default function TaskDefinition() {
       <div className={classes.tabContent}>
         {!_.isUndefined(size) && !_.isUndefined(pollData) && (
           <Paper>
-            <Heading level={2} style={{ paddingLeft: 16, paddingTop: 30 }}>
+            <Heading level={0} style={{ paddingLeft: 16, paddingTop: 30 }}>
               Queue Size: {size}{" "}
             </Heading>
             <DataTable

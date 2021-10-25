@@ -1,8 +1,6 @@
 import React from "react";
-import { FormControl, InputLabel } from "@material-ui/core";
-import { Input, ButtonGroup } from "./";
+import { Input } from "./";
 import { makeStyles } from "@material-ui/styles";
-import { subHours, format } from "date-fns";
 
 const useStyles = makeStyles({
   wrapper: {
@@ -23,15 +21,9 @@ export default function DateRangePicker({
   onToChange,
   to,
   label,
+  disabled
 }) {
   const classes = useStyles();
-  const quickRange = (hours) => {
-    const to = new Date();
-    const from = subHours(to, hours);
-
-    onFromChange(format(from, "yyyy-MM-dd'T'HH:mm"));
-    onToChange("");
-  };
 
   return (
     <div className={classes.wrapper}>
@@ -43,6 +35,7 @@ export default function DateRangePicker({
         type="datetime-local"
         fullWidth
         clearable
+        disabled={disabled}
       />
       <Input
         className={classes.input}
@@ -52,17 +45,8 @@ export default function DateRangePicker({
         type="datetime-local"
         fullWidth
         clearable
+        disabled={disabled}
       />
-      <FormControl className={classes.quick}>
-        <InputLabel>Quick Range</InputLabel>
-        <ButtonGroup
-          options={[
-            { label: "3H", onClick: () => quickRange(3) },
-            { label: "1D", onClick: () => quickRange(24) },
-            { label: "7D", onClick: () => quickRange(168) },
-          ]}
-        />
-      </FormControl>
     </div>
   );
 }

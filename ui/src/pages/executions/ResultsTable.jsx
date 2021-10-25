@@ -116,7 +116,6 @@ export default function ResultsTable({
           keyField="workflowId"
           paginationServer
           paginationTotalRows={totalHits}
-          pagination
           paginationDefaultPage={page}
           paginationPerPage={rowsPerPage}
           onChangeRowsPerPage={(rowsPerPage) => setRowsPerPage(rowsPerPage)}
