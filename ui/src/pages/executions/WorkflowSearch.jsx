@@ -93,10 +93,10 @@ export default function WorkflowPanel() {
     const newQueryFT = buildQuery();
     setQueryFT(newQueryFT);
 
-    if (oldQueryFT === newQueryFT) {
+    // Only force refetch if query didn't change. Else let react-query detect difference and refetch automatically
+    if (_.isEqual(oldQueryFT, newQueryFT)) {
       refetch();
     }
-    // Only force refetch if query didn't change. Else let react-query detect difference and refetch automatically
   }
 
   const handlePage = (page) => {
