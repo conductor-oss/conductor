@@ -25,37 +25,37 @@ export default function ActionModule({ execution, triggerReload }) {
   const restartAction = useAction(
     `/workflow/${workflowId}/restart`,
     "post",
-    onSuccess
+    { onSuccess }
   );
   const restartLatestAction = useAction(
     `/workflow/${workflowId}/restart?useLatestDefinitions=true`,
     "post",
-    onSuccess
+    { onSuccess }
   );
   const retryAction = useAction(
     `/workflow/${workflowId}/retry?resumeSubworkflowTasks=false`,
     "post",
-    onSuccess
+    { onSuccess }
   );
   const retryResumeSubworkflowTasksAction = useAction(
     `/workflow/${workflowId}/retry?resumeSubworkflowTasks=true`,
     "post",
-    onSuccess
+    { onSuccess }
   );
   const terminateAction = useAction(
     `/workflow/${workflowId}`,
     "delete",
-    onSuccess
+    { onSuccess }
   );
   const resumeAction = useAction(
     `/workflow/${workflowId}/resume`,
     "put",
-    onSuccess
+    { onSuccess }
   );
   const pauseAction = useAction(
     `/workflow/${workflowId}/pause`,
     "put",
-    onSuccess
+    { onSuccess }
   );
 
   const { restartable } = workflowDefinition;
