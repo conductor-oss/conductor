@@ -31,7 +31,7 @@ export default function KeyValueTable({ data }) {
         let displayValue;
         const renderer = item.type ? customTypeRenderers[item.type] : null;
         if(renderer){
-          displayValue = renderer(item.value, env)
+          displayValue = renderer(item.value, data, env)
         }
         else {
           switch (item.type) {
