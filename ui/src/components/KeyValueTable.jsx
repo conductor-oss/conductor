@@ -59,7 +59,7 @@ export default function KeyValueTable({ data }) {
               classes={{ primary: classes.labelText }}
               primary={item.label}
             />
-            <ListItemText className={classes.value} primary={value} />
+            <ListItemText className={classes.value} primary={displayValue} />
           </ListItem>
         );
       })}
