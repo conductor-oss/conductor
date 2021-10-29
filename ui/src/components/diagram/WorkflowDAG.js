@@ -91,13 +91,15 @@ export default class WorkflowDAG {
     }
   }
 
-  isTakenDecisionBranch(caseValue, decisionTaskRef) {
+  switchBranchTaken(caseValue, decisionTaskRef, type) {
     if (!this.taskResults.has(decisionTaskRef)) return false;
 
-    const decisionTaskResult = this.getLastTaskResult(decisionTaskRef);
-    const cases = Object.keys(decisionTaskResult.workflowTask.decisionCases);
+    const switchTaskResult = this.getLastTaskResult(decisionTaskRef);
+    const cases = Object.keys(switchTaskResult.workflowTask.decisionCases);
 
-    const actualValue = _.get(decisionTaskResult, "outputData.caseOutput[0]");
+    // Required until DECISION is fully removed
+    let resultField = type === "SWITCH" ? "evaluationResult" : "caseOutput";
+    const actualValue = _.get(switchTaskResult, `outputData.${resultField}[0]`);
     if (actualValue === undefined) return false;
 
     if (caseValue) {
@@ -138,19 +140,20 @@ export default class WorkflowDAG {
       );
       const edgeParams = {};
 
-      // Special case - When the antecedent of an executed node is a DECISION, the edge may not necessarily be highlighted.
+      // Special case - When the antecedent of an executed node is a SWITCH, the edge may not necessarily be highlighted.
       // E.g. the default edge not taken.
-
-      if (antecedent.type === "DECISION") {
+      // SWITCH is the newer version of DECISION and DECISION is deprecated
+      if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
         edgeParams.caseValue = getCaseValue(
           taskConfig.taskReferenceName,
           antecedent
         );
 
         // Highlight edge as executed only after thorough test
-        const branchTaken = this.isTakenDecisionBranch(
+        const branchTaken = this.switchBranchTaken(
           edgeParams.caseValue,
-          antecedent.taskReferenceName
+          antecedent.taskReferenceName,
+          antecedent.type
         );
         if (branchTaken) {
           edgeParams.executed = true;
@@ -183,7 +186,7 @@ export default class WorkflowDAG {
   }
 
   // Nodes are connected to previous
-  processDecisionTask(decisionTask, antecedents) {
+  processSwitchTask(decisionTask, antecedents) {
     console.assert(Array.isArray(antecedents));
     const retval = [];
 
@@ -268,8 +271,9 @@ export default class WorkflowDAG {
         return this.processForkJoinDynamic(task, antecedents);
       }
 
-      case "DECISION": {
-        return this.processDecisionTask(task, antecedents);
+      case "DECISION": // DECISION is deprecated and will be removed in a future release
+      case "SWITCH": {
+        return this.processSwitchTask(task, antecedents);
       }
 
       case "TERMINATE": {

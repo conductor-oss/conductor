@@ -3,9 +3,8 @@ A switch task is similar to ```case...switch``` statement in a programming langu
 The `switch` expression, however, is simply an input parameter (`value-param` evaluator) or a complex javascript 
 expression (`javascript` evaluator). Only two evaluators are supported by default in conductor. 
 
-**For Developers** Any type of custom evaluator can be implemented without having to touch the way `switch` task works.
-
-The task takes 2 parameters and even with growing number of evaluators, it always takes 2 parameters:
+**For Conductor Developers**: Custom evaluators can be implemented without having to change the way `SWITCH` task works.
+To implement and use the custom evaluators we can use the params `evaluatorType` and `expression`. 
 
 **Parameters:**
 
@@ -75,6 +74,16 @@ The task takes 2 parameters and even with growing number of evaluators, it alway
   }
 }
 ```
+
+### Decision (Deprecated)
+
+`DECISION` task type has been **deprecated** and replaced with the `SWITCH` task type. Switch task type is identical to how Decision tasks works except for the following differences:
+
+`DECISION` task type used to take two parameters 
+1. `caseExpression` : If present, this takes precedence and will be evaluated as a Javascript expression
+2. `caseValueParam` : If `caseExpression` param is null or empty, case value param will be used to determine the decision branch
+
+`SWITCH` works with the `evaluatorType` and `expression` params as a replacement to the above. For details refer to the `SWITCH` task documentation
 
 ## Event
 Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS.  Event tasks are useful for creating event based dependencies for workflows and tasks.

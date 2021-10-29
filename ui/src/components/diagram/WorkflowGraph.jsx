@@ -391,6 +391,7 @@ class WorkflowGraph extends React.PureComponent {
         this.barNodes.push(v.ref);
         break;
       case "DECISION":
+      case "SWITCH":
         retval.label = v.ref;
         retval.shape = "diamond";
         retval.height = 40;
