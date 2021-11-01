@@ -84,6 +84,8 @@ import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -904,6 +906,24 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
         }
 
         return workflowIds.getResults();
+    }
+
+    @Override
+    public long getWorkflowCount(String query, String freeText) {
+        try {
+            return getObjectCounts(query, freeText, WORKFLOW_DOC_TYPE);
+        } catch (Exception e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private long getObjectCounts(String structuredQuery, String freeTextQuery, String docType) throws ParserException, IOException {
+        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
+
+        String indexName = getIndexName(docType);
+        CountRequest countRequest = new CountRequest(new String[]{indexName}, queryBuilder);
+        CountResponse countResponse = elasticSearchClient.count(countRequest, RequestOptions.DEFAULT);
+        return countResponse.getCount();
     }
 
     public List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {

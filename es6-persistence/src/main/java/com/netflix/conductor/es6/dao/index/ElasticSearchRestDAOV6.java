@@ -54,11 +54,14 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -886,6 +889,26 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         }
 
         return workflowIds.getResults();
+    }
+
+    @Override
+    public long getWorkflowCount(String query, String freeText) {
+        try {
+            return getObjectCounts(query, freeText, WORKFLOW_DOC_TYPE);
+        } catch (Exception e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private long getObjectCounts(String structuredQuery, String freeTextQuery, String docType) throws ParserException, IOException {
+        QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(queryBuilder);
+
+        String indexName = getIndexName(docType);
+        CountRequest countRequest = new CountRequest(new String[]{indexName}, sourceBuilder);
+        CountResponse countResponse = elasticSearchClient.count(countRequest, RequestOptions.DEFAULT);
+        return countResponse.getCount();
     }
 
     private void indexObject(final String index, final String docType, final Object doc) {

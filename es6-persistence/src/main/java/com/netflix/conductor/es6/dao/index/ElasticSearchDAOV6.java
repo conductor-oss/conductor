@@ -612,6 +612,11 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
+    public long getWorkflowCount(String query, String freeText) {
+        return count(query, freeText, WORKFLOW_DOC_TYPE);
+    }
+
+    @Override
     public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
         return search(query, start, count, sort, freeText, TASK_DOC_TYPE);
     }
@@ -688,6 +693,23 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
         LOGGER.debug("Unable to find Workflow: {} in ElasticSearch index: {}.", workflowInstanceId, workflowIndexName);
         return null;
+    }
+
+    private long count(String structuredQuery, String freeTextQuery, String docType) {
+        try {
+            docType = StringUtils.isBlank(docTypeOverride) ? docType : docTypeOverride;
+            BoolQueryBuilder fq = boolQueryBuilder(structuredQuery, freeTextQuery);
+            // The count api has been removed from the Java api, use the search api instead and set size to 0.
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(getIndexName(docType))
+                    .setQuery(fq)
+                    .setTypes(docType)
+                    .storedFields("_id")
+                    .setSize(0);
+            SearchResponse response = srb.get();
+            return response.getHits().getTotalHits();
+        } catch (ParserException e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+        }
     }
 
     private SearchResult<String> search(String structuredQuery, int start, int size, List<String> sortOptions,
