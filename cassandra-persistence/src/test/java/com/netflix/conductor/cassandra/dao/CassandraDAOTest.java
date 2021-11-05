@@ -455,36 +455,36 @@ public class CassandraDAOTest {
         newTask.setStatus(Task.Status.SCHEDULED);
 
         // no tasks are IN_PROGRESS
-        executionDAO.updateTaskDefLimit(task, false);
-        assertFalse(executionDAO.exceedsInProgressLimit(task));
+        executionDAO.addTaskToLimit(task);
+        assertFalse(executionDAO.exceedsLimit(task));
 
         // set a task to IN_PROGRESS
         task.setStatus(Status.IN_PROGRESS);
-        executionDAO.updateTaskDefLimit(task, false);
+        executionDAO.addTaskToLimit(task);
 
         // when same task is checked
-        assertFalse(executionDAO.exceedsInProgressLimit(task));
+        assertFalse(executionDAO.exceedsLimit(task));
 
         // check if new task can be added
-        assertTrue(executionDAO.exceedsInProgressLimit(newTask));
+        assertTrue(executionDAO.exceedsLimit(newTask));
 
         // set IN_PROGRESS task to COMPLETED
         task.setStatus(Status.COMPLETED);
-        executionDAO.updateTaskDefLimit(task, false);
+        executionDAO.removeTaskFromLimit(task);
 
         // check new task again
-        assertFalse(executionDAO.exceedsInProgressLimit(newTask));
+        assertFalse(executionDAO.exceedsLimit(newTask));
 
         // set new task to IN_PROGRESS
         newTask.setStatus(Status.IN_PROGRESS);
-        executionDAO.updateTaskDefLimit(newTask, false);
+        executionDAO.addTaskToLimit(newTask);
 
         // check new task again
-        assertFalse(executionDAO.exceedsInProgressLimit(newTask));
+        assertFalse(executionDAO.exceedsLimit(newTask));
 
         // force remove from task def limit
-        executionDAO.updateTaskDefLimit(newTask, true);
-        assertFalse(executionDAO.exceedsInProgressLimit(task));
+        executionDAO.removeTaskFromLimit(newTask);
+        assertFalse(executionDAO.exceedsLimit(task));
     }
 
     @Test

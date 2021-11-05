@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.postgres.dao;
 
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -24,11 +22,14 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.util.Query;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -39,9 +40,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 
-public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDAO, RateLimitingDAO, PollDataDAO {
+import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
+
+public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDAO, RateLimitingDAO, PollDataDAO, ConcurrentExecutionLimitDAO {
 
     private static final String ARCHIVED_FIELD = "archived";
     private static final String RAW_JSON_FIELD = "rawJSON";
@@ -149,7 +151,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     }
 
     @Override
-    public boolean exceedsInProgressLimit(Task task) {
+    public boolean exceedsLimit(Task task) {
 
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (!taskDefinition.isPresent()) {

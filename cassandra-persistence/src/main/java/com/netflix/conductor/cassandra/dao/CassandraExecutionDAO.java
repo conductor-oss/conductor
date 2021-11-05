@@ -30,6 +30,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 
 @Trace
-public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO {
+public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO, ConcurrentExecutionLimitDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
@@ -89,67 +90,67 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     private final int eventExecutionsTTL;
 
     public CassandraExecutionDAO(Session session, ObjectMapper objectMapper, CassandraProperties properties,
-        Statements statements) {
+                                 Statements statements) {
         super(session, objectMapper, properties);
 
         eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTtl().getSeconds();
 
         this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.insertEventExecutionStatement = session.prepare(statements.getInsertEventExecutionStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
         this.selectTotalStatement = session.prepare(statements.getSelectTotalStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectTaskStatement = session.prepare(statements.getSelectTaskStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectWorkflowStatement = session.prepare(statements.getSelectWorkflowStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectWorkflowWithTasksStatement = session.prepare(statements.getSelectWorkflowWithTasksStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectTaskLookupStatement = session.prepare(statements.getSelectTaskFromLookupTableStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectTasksFromTaskDefLimitStatement = session
-            .prepare(statements.getSelectTasksFromTaskDefLimitStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .prepare(statements.getSelectTasksFromTaskDefLimitStatement())
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectEventExecutionsStatement = session
-            .prepare(statements.getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+                .prepare(statements.getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
+                .setConsistencyLevel(properties.getReadConsistencyLevel());
 
         this.updateWorkflowStatement = session.prepare(statements.getUpdateWorkflowStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateTotalTasksStatement = session.prepare(statements.getUpdateTotalTasksStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateTotalPartitionsStatement = session.prepare(statements.getUpdateTotalPartitionsStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateTaskLookupStatement = session.prepare(statements.getUpdateTaskLookupStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateTaskDefLimitStatement = session.prepare(statements.getUpdateTaskDefLimitStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateEventExecutionStatement = session.prepare(statements.getUpdateEventExecutionStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
         this.deleteWorkflowStatement = session.prepare(statements.getDeleteWorkflowStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteTaskStatement = session.prepare(statements.getDeleteTaskStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteTaskLookupStatement = session.prepare(statements.getDeleteTaskLookupStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteTaskDefLimitStatement = session.prepare(statements.getDeleteTaskDefLimitStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.deleteEventExecutionStatement = session.prepare(statements.getDeleteEventExecutionsStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+                .setConsistencyLevel(properties.getWriteConsistencyLevel());
     }
 
     @Override
     public List<Task> getPendingTasksByWorkflow(String taskName, String workflowId) {
         List<Task> tasks = getTasksForWorkflow(workflowId);
         return tasks.stream()
-            .filter(task -> taskName.equals(task.getTaskType()))
-            .filter(task -> IN_PROGRESS.equals(task.getStatus()))
-            .collect(Collectors.toList());
+                .filter(task -> taskName.equals(task.getTaskType()))
+                .filter(task -> IN_PROGRESS.equals(task.getStatus()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -158,7 +159,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<Task> getTasks(String taskType, String startKey, int count) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -182,7 +183,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             tasks.forEach(task -> {
                 task.setScheduledTime(System.currentTimeMillis());
                 session.execute(
-                    updateTaskLookupStatement.bind(UUID.fromString(workflowId), UUID.fromString(task.getTaskId())));
+                        updateTaskLookupStatement.bind(UUID.fromString(workflowId), UUID.fromString(task.getTaskId())));
             });
 
             // update all the tasks in the workflow using batch
@@ -190,18 +191,18 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             tasks.forEach(task -> {
                 String taskPayload = toJson(task);
                 batchStatement.add(insertTaskStatement
-                    .bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID, task.getTaskId(), taskPayload));
+                        .bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID, task.getTaskId(), taskPayload));
                 recordCassandraDaoRequests("createTask", task.getTaskType(), task.getWorkflowType());
                 recordCassandraDaoPayloadSize("createTask", taskPayload.length(), task.getTaskType(),
-                    task.getWorkflowType());
+                        task.getWorkflowType());
             });
             batchStatement
-                .add(updateTotalTasksStatement.bind(totalTasks, UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                    .add(updateTotalTasksStatement.bind(totalTasks, UUID.fromString(workflowId), DEFAULT_SHARD_ID));
             session.execute(batchStatement);
 
             // update the total tasks and partitions for the workflow
             session.execute(
-                updateTotalPartitionsStatement.bind(DEFAULT_TOTAL_PARTITIONS, totalTasks, UUID.fromString(workflowId)));
+                    updateTotalPartitionsStatement.bind(DEFAULT_TOTAL_PARTITIONS, totalTasks, UUID.fromString(workflowId)));
 
             return tasks;
         } catch (ApplicationException e) {
@@ -221,16 +222,20 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             String taskPayload = toJson(task);
             recordCassandraDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
             recordCassandraDaoPayloadSize("updateTask", taskPayload.length(), task.getTaskType(),
-                task.getWorkflowType());
+                    task.getWorkflowType());
             session.execute(insertTaskStatement
-                .bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId(), taskPayload));
+                    .bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId(), taskPayload));
             if (task.getTaskDefinition().isPresent() && task.getTaskDefinition().get().concurrencyLimit() > 0) {
-                updateTaskDefLimit(task, false);
+                if(task.getStatus().isTerminal()) {
+                    removeTaskFromLimit(task);
+                } else {
+                    addTaskToLimit(task);
+                }
             }
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "updateTask");
             String errorMsg = String
-                .format("Error updating task: %s in workflow: %s", task.getTaskId(), task.getWorkflowInstanceId());
+                    .format("Error updating task: %s in workflow: %s", task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
         }
@@ -240,9 +245,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
      * This is a dummy implementation and this feature is not implemented for Cassandra backed Conductor
      */
     @Override
-    public boolean exceedsInProgressLimit(Task task) {
+    public boolean exceedsLimit(Task task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
-        if (!taskDefinition.isPresent()) {
+        if (taskDefinition.isEmpty()) {
             return false;
         }
         int limit = taskDefinition.get().concurrencyLimit();
@@ -294,16 +299,16 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             // TODO: implement for query against multiple shards
 
             ResultSet resultSet = session
-                .execute(selectTaskStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID, taskId));
+                    .execute(selectTaskStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID, taskId));
             return Optional.ofNullable(resultSet.one())
-                .map(row -> {
-                    Task task = readValue(row.getString(PAYLOAD_KEY), Task.class);
-                    recordCassandraDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
-                    recordCassandraDaoPayloadSize("getTask", toJson(task).length(), task.getTaskType(),
-                        task.getWorkflowType());
-                    return task;
-                })
-                .orElse(null);
+                    .map(row -> {
+                        Task task = readValue(row.getString(PAYLOAD_KEY), Task.class);
+                        recordCassandraDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
+                        recordCassandraDaoPayloadSize("getTask", toJson(task).length(), task.getTaskType(),
+                                task.getWorkflowType());
+                        return task;
+                    })
+                    .orElse(null);
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
@@ -323,8 +328,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             return null;
         }
         return getWorkflow(workflowId, true).getTasks().stream()
-            .filter(task -> taskIds.contains(task.getTaskId()))
-            .collect(Collectors.toList());
+                .filter(task -> taskIds.contains(task.getTaskId()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -333,7 +338,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<Task> getPendingTasksForTaskType(String taskType) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     @Override
@@ -351,7 +356,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             recordCassandraDaoRequests("createWorkflow", "n/a", workflow.getWorkflowName());
             recordCassandraDaoPayloadSize("createWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
             session
-                .execute(insertWorkflowStatement.bind(UUID.fromString(workflow.getWorkflowId()), 1, "", payload, 0, 1));
+                    .execute(insertWorkflowStatement.bind(UUID.fromString(workflow.getWorkflowId()), 1, "", payload, 0, 1));
 
             workflow.setTasks(tasks);
             return workflow.getWorkflowId();
@@ -391,7 +396,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             try {
                 recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
                 ResultSet resultSet = session
-                    .execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                        .execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
                 removed = resultSet.wasApplied();
             } catch (Exception e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
@@ -410,7 +415,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds) {
         throw new UnsupportedOperationException(
-            "This method is not currently implemented in CassandraExecutionDAO. Please use RedisDAO mode instead now for using TTLs.");
+                "This method is not currently implemented in CassandraExecutionDAO. Please use RedisDAO mode instead now for using TTLs.");
     }
 
     /**
@@ -419,7 +424,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public void removeFromPendingWorkflow(String workflowType, String workflowId) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     @Override
@@ -434,7 +439,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             ResultSet resultSet;
             if (includeTasks) {
                 resultSet = session
-                    .execute(selectWorkflowWithTasksStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                        .execute(selectWorkflowWithTasksStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
                 List<Task> tasks = new ArrayList<>();
 
                 List<Row> rows = resultSet.all();
@@ -451,8 +456,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                         tasks.add(task);
                     } else {
                         throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, String
-                            .format("Invalid row with entityKey: %s found in datastore for workflow: %s", entityKey,
-                                workflowId));
+                                .format("Invalid row with entityKey: %s found in datastore for workflow: %s", entityKey,
+                                        workflowId));
                     }
                 }
 
@@ -464,12 +469,12 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             } else {
                 resultSet = session.execute(selectWorkflowStatement.bind(UUID.fromString(workflowId)));
                 workflow = Optional.ofNullable(resultSet.one())
-                    .map(row -> {
-                        Workflow wf = readValue(row.getString(PAYLOAD_KEY), Workflow.class);
-                        recordCassandraDaoRequests("getWorkflow", "n/a", wf.getWorkflowName());
-                        return wf;
-                    })
-                    .orElse(null);
+                        .map(row -> {
+                            Workflow wf = readValue(row.getString(PAYLOAD_KEY), Workflow.class);
+                            recordCassandraDaoRequests("getWorkflow", "n/a", wf.getWorkflowName());
+                            return wf;
+                        })
+                        .orElse(null);
             }
             return workflow;
         } catch (ApplicationException e) {
@@ -493,7 +498,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<String> getRunningWorkflowIds(String workflowName, int version) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -502,7 +507,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<Workflow> getPendingWorkflowsByType(String workflowName, int version) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -511,7 +516,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public long getPendingWorkflowCount(String workflowName) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -520,7 +525,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public long getInProgressTaskCount(String taskDefName) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -529,7 +534,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<Workflow> getWorkflowsByType(String workflowName, Long startTime, Long endTime) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     /**
@@ -538,7 +543,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
         throw new UnsupportedOperationException(
-            "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
     @Override
@@ -553,12 +558,12 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             recordCassandraDaoEventRequests("addEventExecution", eventExecution.getEvent());
             recordCassandraDaoPayloadSize("addEventExecution", jsonPayload.length(), eventExecution.getEvent(), "n/a");
             return session.execute(insertEventExecutionStatement
-                .bind(eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId(), jsonPayload))
-                .wasApplied();
+                            .bind(eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId(), jsonPayload))
+                    .wasApplied();
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "addEventExecution");
             String errorMsg = String.format("Failed to add event execution for event: %s, handler: %s",
-                eventExecution.getEvent(), eventExecution.getName());
+                    eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
         }
@@ -570,13 +575,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             String jsonPayload = toJson(eventExecution);
             recordCassandraDaoEventRequests("updateEventExecution", eventExecution.getEvent());
             recordCassandraDaoPayloadSize("updateEventExecution", jsonPayload.length(), eventExecution.getEvent(),
-                "n/a");
+                    "n/a");
             session.execute(updateEventExecutionStatement.bind(eventExecutionsTTL, jsonPayload,
-                eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId()));
+                    eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId()));
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "updateEventExecution");
             String errorMsg = String.format("Failed to update event execution for event: %s, handler: %s",
-                eventExecution.getEvent(), eventExecution.getName());
+                    eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
         }
@@ -587,11 +592,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         try {
             recordCassandraDaoEventRequests("removeEventExecution", eventExecution.getEvent());
             session.execute(deleteEventExecutionStatement
-                .bind(eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId()));
+                    .bind(eventExecution.getMessageId(), eventExecution.getName(), eventExecution.getId()));
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeEventExecution");
             String errorMsg = String.format("Failed to remove event execution for event: %s, handler: %s",
-                eventExecution.getEvent(), eventExecution.getName());
+                    eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
         }
@@ -601,15 +606,65 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId) {
         try {
             return session.execute(selectEventExecutionsStatement.bind(messageId, eventHandlerName)).all().stream()
-                .filter(row -> !row.isNull(PAYLOAD_KEY))
-                .map(row -> readValue(row.getString(PAYLOAD_KEY), EventExecution.class))
-                .collect(Collectors.toList());
+                    .filter(row -> !row.isNull(PAYLOAD_KEY))
+                    .map(row -> readValue(row.getString(PAYLOAD_KEY), EventExecution.class))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             String errorMsg = String
-                .format("Failed to fetch event executions for event: %s, handler: %s", eventName, eventHandlerName);
+                    .format("Failed to fetch event executions for event: %s, handler: %s", eventName, eventHandlerName);
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
         }
+    }
+
+    @Override
+    public void addTaskToLimit(Task task) {
+        try {
+            recordCassandraDaoRequests("addTaskToLimit", task.getTaskType(), task.getWorkflowType());
+            new RetryUtil<>().retryOnException(
+                    () -> session.execute(updateTaskDefLimitStatement
+                            .bind(UUID.fromString(task.getWorkflowInstanceId()), task.getTaskDefName(),
+                                    UUID.fromString(task.getTaskId()))),
+                    null,
+                    null,
+                    3,
+                    "Adding taskDefLimit",
+                    "addTaskToLimit"
+            );
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "addTaskToLimit");
+            String errorMsg = String
+                    .format("Error updating taskDefLimit for task - %s:%s in workflow: %s", task.getTaskDefName(),
+                            task.getTaskId(), task.getWorkflowInstanceId());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+        }
+    }
+
+    @Override
+    public void removeTaskFromLimit(Task task) {
+        try {
+            recordCassandraDaoRequests("removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());
+            session.execute(
+                    deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId())));
+            new RetryUtil<>().retryOnException(
+                    () -> session.execute(
+                            deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId()))),
+                    null,
+                    null,
+                    3,
+                    "Deleting taskDefLimit",
+                    "removeTaskFromLimit"
+            );
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "removeTaskFromLimit");
+            String errorMsg = String
+                    .format("Error updating taskDefLimit for task - %s:%s in workflow: %s", task.getTaskDefName(),
+                            task.getTaskId(), task.getWorkflowInstanceId());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+        }
+
     }
 
     private boolean removeTask(Task task) {
@@ -626,12 +681,12 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             // delete task from workflows table and decrement total tasks by 1
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(deleteTaskStatement
-                .bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId()));
+                    .bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId()));
             batchStatement.add(updateTotalTasksStatement
-                .bind(totalTasks - 1, UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID));
+                    .bind(totalTasks - 1, UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID));
             ResultSet resultSet = session.execute(batchStatement);
             if (task.getTaskDefinition().isPresent() && task.getTaskDefinition().get().concurrencyLimit() > 0) {
-                updateTaskDefLimit(task, true);
+                removeTaskFromLimit(task);
             }
             return resultSet.wasApplied();
         } catch (Exception e) {
@@ -646,7 +701,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         try {
             recordCassandraDaoRequests("removeTaskLookup", task.getTaskType(), task.getWorkflowType());
             if (task.getTaskDefinition().isPresent() && task.getTaskDefinition().get().concurrencyLimit() > 0) {
-                updateTaskDefLimit(task, true);
+                removeTaskFromLimit(task);
             }
             session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
         } catch (ApplicationException ae) {
@@ -672,11 +727,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
 
         String workflowId = tasks.get(0).getWorkflowInstanceId();
         Optional<Task> optionalTask = tasks.stream()
-            .filter(task -> !workflowId.equals(task.getWorkflowInstanceId()))
-            .findAny();
+                .filter(task -> !workflowId.equals(task.getWorkflowInstanceId()))
+                .findAny();
         if (optionalTask.isPresent()) {
             throw new ApplicationException(Code.INTERNAL_ERROR,
-                "Tasks of multiple workflows cannot be created/updated simultaneously");
+                    "Tasks of multiple workflows cannot be created/updated simultaneously");
         }
     }
 
@@ -685,13 +740,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         ResultSet resultSet = session.execute(selectTotalStatement.bind(UUID.fromString(workflowId)));
         recordCassandraDaoRequests("getWorkflowMetadata");
         return Optional.ofNullable(resultSet.one())
-            .map(row -> {
-                WorkflowMetadata workflowMetadata = new WorkflowMetadata();
-                workflowMetadata.setTotalTasks(row.getInt(TOTAL_TASKS_KEY));
-                workflowMetadata.setTotalPartitions(row.getInt(TOTAL_PARTITIONS_KEY));
-                return workflowMetadata;
-            }).orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
-                String.format("Workflow with id: %s not found in data store", workflowId)));
+                .map(row -> {
+                    WorkflowMetadata workflowMetadata = new WorkflowMetadata();
+                    workflowMetadata.setTotalTasks(row.getInt(TOTAL_TASKS_KEY));
+                    workflowMetadata.setTotalPartitions(row.getInt(TOTAL_PARTITIONS_KEY));
+                    return workflowMetadata;
+                }).orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
+                        String.format("Workflow with id: %s not found in data store", workflowId)));
     }
 
     @VisibleForTesting
@@ -699,8 +754,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         try {
             ResultSet resultSet = session.execute(selectTaskLookupStatement.bind(UUID.fromString(taskId)));
             return Optional.ofNullable(resultSet.one())
-                .map(row -> row.getUUID(WORKFLOW_ID_KEY).toString())
-                .orElse(null);
+                    .map(row -> row.getUUID(WORKFLOW_ID_KEY).toString())
+                    .orElse(null);
         } catch (IllegalArgumentException iae) {
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Invalid task id: %s", taskId);
@@ -709,45 +764,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Failed to lookup workflowId from taskId: %s", taskId);
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
-        }
-    }
-
-    @VisibleForTesting
-    void updateTaskDefLimit(Task task, boolean forceRemove) {
-        try {
-            if (task.getStatus().isTerminal() || forceRemove) {
-                recordCassandraDaoRequests("removeTaskDefLimit", task.getTaskType(), task.getWorkflowType());
-                session.execute(
-                    deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId())));
-                new RetryUtil<>().retryOnException(
-                    () -> session.execute(
-                        deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId()))),
-                    null,
-                    null,
-                    3,
-                    "Deleting taskDefLimit",
-                    "removeTaskDefLimit"
-                );
-            } else if (task.getStatus().equals(IN_PROGRESS)) {
-                recordCassandraDaoRequests("addTaskDefLimit", task.getTaskType(), task.getWorkflowType());
-                new RetryUtil<>().retryOnException(
-                    () -> session.execute(updateTaskDefLimitStatement
-                        .bind(UUID.fromString(task.getWorkflowInstanceId()), task.getTaskDefName(),
-                            UUID.fromString(task.getTaskId()))),
-                    null,
-                    null,
-                    3,
-                    "Adding taskDefLimit",
-                    "addTaskDefLimit"
-                );
-            }
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "updateTaskDefLimit");
-            String errorMsg = String
-                .format("Error updating taskDefLimit for task - %s:%s in workflow: %s", task.getTaskDefName(),
-                    task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
         }

@@ -23,11 +23,17 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.AnyRedisCondition;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -40,14 +46,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(AnyRedisCondition.class)
-public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
+public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO, ConcurrentExecutionLimitDAO {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RedisExecutionDAO.class);
 
@@ -227,9 +229,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     }
 
     @Override
-    public boolean exceedsInProgressLimit(Task task) {
+    public boolean exceedsLimit(Task task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
-        if (!taskDefinition.isPresent()) {
+        if (taskDefinition.isEmpty()) {
             return false;
         }
         int limit = taskDefinition.get().concurrencyLimit();

@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.core.orchestration;
 
-import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -27,12 +25,18 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -40,10 +44,8 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+
+import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
 
 /**
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO}, {@link RateLimitingDAO} and
@@ -62,6 +64,7 @@ public class ExecutionDAOFacade {
     private final QueueDAO queueDAO;
     private final IndexDAO indexDAO;
     private final RateLimitingDAO rateLimitingDao;
+    private final ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO;
     private final PollDataDAO pollDataDAO;
     private final ObjectMapper objectMapper;
     private final ConductorProperties properties;
@@ -69,12 +72,13 @@ public class ExecutionDAOFacade {
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     public ExecutionDAOFacade(ExecutionDAO executionDAO, QueueDAO queueDAO, IndexDAO indexDAO,
-        RateLimitingDAO rateLimitingDao, PollDataDAO pollDataDAO, ObjectMapper objectMapper,
-        ConductorProperties properties) {
+                              RateLimitingDAO rateLimitingDao, ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO, PollDataDAO pollDataDAO, ObjectMapper objectMapper,
+                              ConductorProperties properties) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.indexDAO = indexDAO;
         this.rateLimitingDao = rateLimitingDao;
+        this.concurrentExecutionLimitDAO = concurrentExecutionLimitDAO;
         this.pollDataDAO = pollDataDAO;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -474,7 +478,7 @@ public class ExecutionDAOFacade {
     }
 
     public boolean exceedsInProgressLimit(Task task) {
-        return executionDAO.exceedsInProgressLimit(task);
+        return concurrentExecutionLimitDAO.exceedsLimit(task);
     }
 
     public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {

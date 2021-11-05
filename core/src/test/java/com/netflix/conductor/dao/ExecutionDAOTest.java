@@ -42,6 +42,10 @@ public abstract class ExecutionDAOTest {
 
     abstract protected ExecutionDAO getExecutionDAO();
 
+    protected ConcurrentExecutionLimitDAO getConcurrentExecutionLimitDAO() {
+        return (ConcurrentExecutionLimitDAO) getExecutionDAO();
+    }
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -71,12 +75,12 @@ public abstract class ExecutionDAOTest {
         }
 
         getExecutionDAO().createTasks(tasks);
-        assertFalse(getExecutionDAO().exceedsInProgressLimit(tasks.get(0)));
+        assertFalse(getConcurrentExecutionLimitDAO().exceedsLimit(tasks.get(0)));
         tasks.get(0).setStatus(Task.Status.IN_PROGRESS);
         getExecutionDAO().updateTask(tasks.get(0));
 
         for (Task task : tasks) {
-            assertTrue(getExecutionDAO().exceedsInProgressLimit(task));
+            assertTrue(getConcurrentExecutionLimitDAO().exceedsLimit(task));
         }
     }
 
