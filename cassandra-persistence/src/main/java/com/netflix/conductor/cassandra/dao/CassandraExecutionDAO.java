@@ -228,7 +228,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             if (task.getTaskDefinition().isPresent() && task.getTaskDefinition().get().concurrencyLimit() > 0) {
                 if(task.getStatus().isTerminal()) {
                     removeTaskFromLimit(task);
-                } else {
+                } else if(task.getStatus() == IN_PROGRESS) {
                     addTaskToLimit(task);
                 }
             }

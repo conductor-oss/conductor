@@ -382,9 +382,6 @@
             "locked": "2.5.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-cassandra-persistence"
-            ],
             "locked": "2.13.3"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
@@ -790,9 +787,6 @@
             "locked": "2.5.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-cassandra-persistence"
-            ],
             "locked": "2.13.3"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
@@ -1281,9 +1275,6 @@
             "locked": "2.5.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-cassandra-persistence"
-            ],
             "locked": "2.13.3"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {

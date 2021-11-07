@@ -507,7 +507,6 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
             "locked": "2.13.3"
