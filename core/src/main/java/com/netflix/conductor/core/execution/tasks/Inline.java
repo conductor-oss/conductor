@@ -94,7 +94,7 @@ public class Inline extends WorkflowSystemTask {
     }
 
     private void checkEvaluatorType(String evaluatorType) {
-        if (StringUtils.isNotBlank(evaluatorType)) {
+        if (StringUtils.isBlank(evaluatorType)) {
             LOGGER.error("Empty {} in Inline task. ", QUERY_EVALUATOR_TYPE);
             throw new TerminateWorkflowException("Empty '" + QUERY_EVALUATOR_TYPE
                   + "' in Inline task's input parameters. A non-empty String value must be provided.");
@@ -106,7 +106,7 @@ public class Inline extends WorkflowSystemTask {
     }
 
     private void checkExpression(String expression) {
-        if (StringUtils.isNotBlank(expression)) {
+        if (StringUtils.isBlank(expression)) {
             LOGGER.error("Empty {} in Inline task. ", QUERY_EXPRESSION_PARAMETER);
             throw new TerminateWorkflowException("Empty '" + QUERY_EXPRESSION_PARAMETER
                   + "' in Inline task's input parameters. A non-empty String value must be provided.");
