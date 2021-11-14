@@ -47,6 +47,10 @@
         {
           "value": "redis_sentinel",
           "description": "Use Redis Sentinel configuration as the database implementation."
+        },
+        {
+          "value": "redis_standalone",
+          "description": "Use Redis Standalone configuration as the database implementation."
         }
       ]
     }

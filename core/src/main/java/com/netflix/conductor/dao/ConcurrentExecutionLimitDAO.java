@@ -19,7 +19,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 /**
  * A contract to support concurrency limits of tasks.
  *
- * @since Since 3.3.5.
+ * @since v3.3.5.
  */
 public interface ConcurrentExecutionLimitDAO {
 

@@ -49,6 +49,8 @@ include 'zookeeper-lock'
 
 include 'azureblob-storage'
 
+include 'redis-concurrency-limit'
+
 include 'rest'
 include 'grpc'
 include 'grpc-server'
