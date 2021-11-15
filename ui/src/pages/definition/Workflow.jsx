@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useRouteMatch, useHistory } from "react-router-dom";
+import { useRouteMatch } from "react-router-dom";
 import { Grid, MenuItem } from "@material-ui/core";
 import sharedStyles from "../styles";
 import { useFetch, useWorkflowNamesAndVersions } from "../../utils/query";
@@ -8,13 +8,15 @@ import WorkflowDAG from "../../components/diagram/WorkflowDAG";
 import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import { Helmet } from "react-helmet";
 import { ReactJson, LinearProgress, Heading, Select } from "../../components";
+import { usePushHistory } from "../../components/NavLink";
+
 import _ from "lodash";
 
 const useStyles = makeStyles(sharedStyles);
 
 export default function WorkflowDefinition() {
   const classes = useStyles();
-  const history = useHistory();
+  const pushHistory = usePushHistory();
   const match = useRouteMatch();
   const workflowName = _.get(match, "params.name");
   const version = _.get(match, "params.version");
@@ -31,6 +33,11 @@ export default function WorkflowDefinition() {
   const namesAndVersions = useWorkflowNamesAndVersions();
   let versions = namesAndVersions.get(workflowName) || [];
 
+  const setVersion = (newVersion) => {
+      const versionStr = newVersion === ""? "" : `/${newVersion}`;
+      pushHistory(`/workflowDef/${workflowName}${versionStr}`);
+  }
+
   return (
     <div className={classes.wrapper}>
       <Helmet>
@@ -46,13 +53,7 @@ export default function WorkflowDefinition() {
           value={_.isUndefined(version) ? "" : version}
           displayEmpty
           renderValue={(v) => (v === "" ? "Latest Version" : v)}
-          onChange={(evt) =>
-            history.push(
-              `/workflowDef/${workflowName}${
-                evt.target.value === "" ? "" : "/"
-              }${evt.target.value}`
-            )
-          }
+          onChange={(evt) => setVersion(evt.target.value)}
         >
           <MenuItem value="">Latest Version</MenuItem>
           {versions.map((ver) => (
