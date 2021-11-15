@@ -6,7 +6,7 @@ LABEL maintainer="Netflix OSS <conductor@netflix.com>"
 
 # Install the required packages for the node build
 # to run on alpine
-RUN apk update && apk add python make g++
+RUN apk update && apk add --no-cache python3 py3-pip make g++
  
 # A directory within the virtualized Docker environment
 # Becomes more relevant when using Docker Compose later
