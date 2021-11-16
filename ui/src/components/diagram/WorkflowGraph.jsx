@@ -55,6 +55,7 @@ class WorkflowGraph extends React.PureComponent {
       if (resolvedRef) {
         inner.select(`g[id='${resolvedRef}']`).classed("selected", true);
       }
+      this.zoomHome();
     } else if (prevProps.width !== this.props.width) {
       if (prevProps.width > 0 && this.props.width > 0) {
         console.log(
