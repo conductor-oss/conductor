@@ -29,6 +29,9 @@ gradleEnterprise {
 
 rootProject.name = 'conductor'
 
+include 'annotations'
+include 'annotations-processor'
+
 include 'server'
 include 'common'
 include 'core'

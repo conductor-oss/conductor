@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.common.metadata.events;
 
-import com.github.vmg.protogen.annotations.ProtoEnum;
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
 

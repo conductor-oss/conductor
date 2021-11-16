@@ -118,7 +118,7 @@ allprojects {
 }
 
 // all client and their related modules are published with Java 8 compatibility
-["common", "client", "client-spring", "grpc", "grpc-client"].each {
+["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
             options.release = 8

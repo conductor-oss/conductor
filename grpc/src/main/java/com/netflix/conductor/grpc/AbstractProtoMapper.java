@@ -49,7 +49,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Generated;
 
-@Generated("com.github.vmg.protogen.ProtoGen")
+@Generated("com.netflix.conductor.annotationsprocessor.protogen")
 public abstract class AbstractProtoMapper {
     public DynamicForkJoinTaskPb.DynamicForkJoinTask toProto(DynamicForkJoinTask from) {
         DynamicForkJoinTaskPb.DynamicForkJoinTask.Builder to = DynamicForkJoinTaskPb.DynamicForkJoinTask.newBuilder();
@@ -741,26 +741,6 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
-    public TaskDefPb.TaskDef.RetryLogic toProto(TaskDef.RetryLogic from) {
-        TaskDefPb.TaskDef.RetryLogic to;
-        switch (from) {
-            case FIXED: to = TaskDefPb.TaskDef.RetryLogic.FIXED; break;
-            case EXPONENTIAL_BACKOFF: to = TaskDefPb.TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
-    public TaskDef.RetryLogic fromProto(TaskDefPb.TaskDef.RetryLogic from) {
-        TaskDef.RetryLogic to;
-        switch (from) {
-            case FIXED: to = TaskDef.RetryLogic.FIXED; break;
-            case EXPONENTIAL_BACKOFF: to = TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
     public TaskDefPb.TaskDef.TimeoutPolicy toProto(TaskDef.TimeoutPolicy from) {
         TaskDefPb.TaskDef.TimeoutPolicy to;
         switch (from) {
@@ -778,6 +758,26 @@ public abstract class AbstractProtoMapper {
             case RETRY: to = TaskDef.TimeoutPolicy.RETRY; break;
             case TIME_OUT_WF: to = TaskDef.TimeoutPolicy.TIME_OUT_WF; break;
             case ALERT_ONLY: to = TaskDef.TimeoutPolicy.ALERT_ONLY; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public TaskDefPb.TaskDef.RetryLogic toProto(TaskDef.RetryLogic from) {
+        TaskDefPb.TaskDef.RetryLogic to;
+        switch (from) {
+            case FIXED: to = TaskDefPb.TaskDef.RetryLogic.FIXED; break;
+            case EXPONENTIAL_BACKOFF: to = TaskDefPb.TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public TaskDef.RetryLogic fromProto(TaskDefPb.TaskDef.RetryLogic from) {
+        TaskDef.RetryLogic to;
+        switch (from) {
+            case FIXED: to = TaskDef.RetryLogic.FIXED; break;
+            case EXPONENTIAL_BACKOFF: to = TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;

@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
-import com.github.vmg.protogen.annotations.ProtoEnum;
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.google.protobuf.Any;
 import org.apache.commons.lang3.StringUtils;
 

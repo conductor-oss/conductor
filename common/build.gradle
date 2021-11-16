@@ -1,17 +1,11 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "com.github.vmg.protogen:protogen-codegen:${revProtogenCodegen}"
-        classpath "javax.annotation:javax.annotation-api:1.3.2"
-    }
+configurations {
+    annotationsProcessorCodegen
 }
 
 dependencies {
+    implementation project(':conductor-annotations')
+    annotationsProcessorCodegen project(':conductor-annotations-processor')
+
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
@@ -24,7 +18,6 @@ dependencies {
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
-    implementation "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.core:jackson-core"
@@ -45,19 +38,18 @@ dependencies {
  *  specific language governing permissions and limitations under the License.
  */
 
-import com.github.vmg.protogen.ProtoGenTask
-
-task protogen(dependsOn: jar, type: ProtoGenTask) {
-    protoPackage = "conductor.proto"
-    javaPackage = "com.netflix.conductor.proto"
-    goPackage = "github.com/netflix/conductor/client/gogrpc/conductor/model"
-
-    protosDir = new File("${rootDir}/grpc/src/main/proto")
-    mapperDir = new File("${rootDir}/grpc/src/main/java/com/netflix/conductor/grpc")
-    mapperPackage = "com.netflix.conductor.grpc";
-
-    sourceJar = jar.archivePath
-    sourcePackage = "com.netflix.conductor.common"
-    outputs.dir protosDir
-    outputs.dir mapperDir
+task protogen(dependsOn: jar, type: JavaExec) {
+    classpath configurations.annotationsProcessorCodegen
+    main = 'com.netflix.conductor.annotationsprocessor.protogen.ProtoGenTask'
+    args(
+            "conductor.proto",
+            "com.netflix.conductor.proto",
+            "github.com/netflix/conductor/client/gogrpc/conductor/model",
+            "${rootDir}/grpc/src/main/proto",
+            "${rootDir}/grpc/src/main/java/com/netflix/conductor/grpc",
+            "com.netflix.conductor.grpc",
+            jar.archivePath,
+            "com.netflix.conductor.common",
+    )
 }
+

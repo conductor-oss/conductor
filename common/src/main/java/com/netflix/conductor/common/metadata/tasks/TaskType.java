@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
-import com.github.vmg.protogen.annotations.ProtoEnum;
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
 
 import java.util.HashSet;
 import java.util.Set;

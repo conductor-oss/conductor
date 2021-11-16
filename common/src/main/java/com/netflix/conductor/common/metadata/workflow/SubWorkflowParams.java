@@ -14,8 +14,8 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.google.common.base.Preconditions;
 
 import javax.validation.constraints.NotEmpty;
