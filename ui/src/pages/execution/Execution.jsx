@@ -223,22 +223,7 @@ export default function Execution() {
   };
 
   const handleSelectedTask = (task) => {
-    if (task) {
-      const { taskToDomain } = execution;
-      let domain;
-      if (taskToDomain["*"]) {
-        domain = taskToDomain["*"];
-      } else if (task.taskType) {
-        domain = taskToDomain[task.taskType];
-      }
-
-      setSelectedTask({
-        ...task,
-        domain: domain,
-      });
-    } else {
-      setSelectedTask(null);
-    }
+    setSelectedTask(task);
   };
 
   useEffect(() => {
