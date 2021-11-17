@@ -59,7 +59,7 @@ export default class WorkflowDAG {
   }
 
   defToGraph(workflowDef) {
-    const definedTasks = workflowDef.tasks;
+    const definedTasks = [...workflowDef.tasks];
 
     definedTasks.unshift({
       type: "TERMINAL",
