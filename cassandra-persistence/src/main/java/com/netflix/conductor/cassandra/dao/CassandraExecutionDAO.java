@@ -270,7 +270,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                 return true;
             }
         } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "exceedsInProgressLimit");
+            Monitors.error(CLASS_NAME, "exceedsLimit");
             String errorMsg = String.format("Failed to get in progress limit - %s:%s in workflow :%s",
                 task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);

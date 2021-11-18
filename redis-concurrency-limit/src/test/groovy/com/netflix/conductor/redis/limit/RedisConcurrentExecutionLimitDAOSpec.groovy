@@ -16,7 +16,7 @@ package com.netflix.conductor.redis.limit
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
-import com.netflix.conductor.core.config.ConductorProperties
+import com.netflix.conductor.redis.limit.config.RedisConcurrentExecutionLimitProperties
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
 import org.springframework.data.redis.core.StringRedisTemplate
@@ -37,10 +37,10 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
 
     StringRedisTemplate redisTemplate
 
-    ConductorProperties properties
+    RedisConcurrentExecutionLimitProperties properties
 
     def setup() {
-        properties = new ConductorProperties(appId: 'conductor', stack: this.getClass().simpleName)
+        properties = new RedisConcurrentExecutionLimitProperties(namespace: 'conductor')
         redisTemplate = new StringRedisTemplate(new JedisConnectionFactory(new RedisStandaloneConfiguration(redis.host, redis.firstMappedPort)))
         dao = new RedisConcurrentExecutionLimitDAO(redisTemplate, properties)
     }
@@ -49,7 +49,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         given:
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
-        def keyName = "${properties.appId}.${properties.stack}.$taskDefName" as String
+        def keyName = "${properties.namespace}:$taskDefName" as String
 
         Task task = new Task(taskId: taskId, taskDefName: taskDefName)
 
@@ -66,7 +66,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         given:
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
-        def keyName = "${properties.appId}.${properties.stack}.$taskDefName" as String
+        def keyName = "${properties.namespace}:$taskDefName" as String
 
         redisTemplate.opsForSet().add(keyName, taskId)
 
@@ -102,7 +102,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         given:
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
-        def keyName = "${properties.appId}.${properties.stack}.$taskDefName" as String
+        def keyName = "${properties.namespace}:$taskDefName" as String
 
         Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
@@ -119,7 +119,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         given:
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
-        def keyName = "${properties.appId}.${properties.stack}.$taskDefName" as String
+        def keyName = "${properties.namespace}:$taskDefName" as String
 
         Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
@@ -137,7 +137,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         given:
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
-        def keyName = "${properties.appId}.${properties.stack}.$taskDefName" as String
+        def keyName = "${properties.namespace}:$taskDefName" as String
 
         Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
@@ -152,7 +152,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         retVal
     }
 
-    def "verify createKeyName ignores appId and stack if they are not present"() {
+    def "verify createKeyName ignores namespace if its not present"() {
         given:
         def dao = new RedisConcurrentExecutionLimitDAO(null, conductorProperties)
 
@@ -163,7 +163,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         keyName == expectedKeyName
 
         where:
-        conductorProperties << [new ConductorProperties(stack: null, appId: null), new ConductorProperties(appId: 'conductor', stack: 'stack'), new ConductorProperties(appId: null, stack: 'stack'), new ConductorProperties(appId: 'conductor', stack: null)]
-        expectedKeyName << ['taskdefname', 'conductor.stack.taskdefname', 'stack.taskdefname', 'conductor.taskdefname']
+        conductorProperties << [new RedisConcurrentExecutionLimitProperties(), new RedisConcurrentExecutionLimitProperties(namespace: null), new RedisConcurrentExecutionLimitProperties(namespace: 'test')]
+        expectedKeyName << ['conductor:taskdefname', 'taskdefname', 'test:taskdefname']
     }
 }

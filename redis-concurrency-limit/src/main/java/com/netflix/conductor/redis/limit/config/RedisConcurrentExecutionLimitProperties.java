@@ -34,6 +34,8 @@ public class RedisConcurrentExecutionLimitProperties {
 
     private String clientName;
 
+    private String namespace = "conductor";
+
     public RedisType getType() {
         return type;
     }
@@ -80,5 +82,13 @@ public class RedisConcurrentExecutionLimitProperties {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 }
