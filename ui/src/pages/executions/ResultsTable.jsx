@@ -72,11 +72,16 @@ export default function ResultsTable({
   showMore,
 }) {
   const classes = useStyles();
-  const totalHits = resultObj
-    ? resultObj.totalHits === undefined
-      ? resultObj.results.length
-      : resultObj.totalHits
-    : 0;
+  let totalHits = 0;
+  if (resultObj){
+    if(resultObj.totalHits){
+      totalHits = resultObj.totalHits
+    }else{
+      if(resultObj.results){
+        totalHits = resultObj.results.length
+      }
+    }
+  }
   const [selectedRows, setSelectedRows] = useState([]);
   const [toggleCleared, setToggleCleared] = useState(false);
   const tableRef = useRef(null);
