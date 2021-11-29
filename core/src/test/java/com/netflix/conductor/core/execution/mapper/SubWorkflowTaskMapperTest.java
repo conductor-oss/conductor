@@ -67,6 +67,7 @@ public class SubWorkflowTaskMapperTest {
         subWorkflowParams.setName("Foo");
         subWorkflowParams.setVersion(2);
         taskToSchedule.setSubWorkflowParam(subWorkflowParams);
+        taskToSchedule.setStartDelay(30);
         Map<String, Object> taskInput = new HashMap<>();
         Map<String, String> taskToDomain = new HashMap<String, String>() {{
             put("*", "unittest");
@@ -99,6 +100,7 @@ public class SubWorkflowTaskMapperTest {
         Task subWorkFlowTask = mappedTasks.get(0);
         assertEquals(Task.Status.SCHEDULED, subWorkFlowTask.getStatus());
         assertEquals(TASK_TYPE_SUB_WORKFLOW, subWorkFlowTask.getTaskType());
+        assertEquals(30, subWorkFlowTask.getCallbackAfterSeconds());
         assertEquals(taskToDomain, subWorkFlowTask.getInputData().get("subWorkflowTaskToDomain"));
     }
 
