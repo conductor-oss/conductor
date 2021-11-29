@@ -21,10 +21,12 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
   "timeoutPolicy": "TIME_OUT_WF",
   "retryLogic": "FIXED",
   "retryDelaySeconds": 600,
-  "responseTimeoutSeconds": 3600,
+  "responseTimeoutSeconds": 1200,
   "concurrentExecLimit": 100,
   "rateLimitFrequencyInSeconds": 60,
-  "rateLimitPerFrequency": 50
+  "rateLimitPerFrequency": 50,
+  "ownerEmail": "foo@bar.com",
+  "description": "Sample Encoding task"
 }
 ```
 

@@ -28,7 +28,7 @@ Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) proj
 #### Development
 The server can be started locally by running `./gradlew bootRun` from the project root. This will start up Conductor with an in-memory persistence and queue implementation. It is not recommended for production use but can come in handy for quickly evaluating what Conductor's all about. For actual production use-cases, please use one of the supported persistence and queue implementations.
 
-You can verify the development server is up by navigating to `http://localhost:8080/swagger-ui/index.html` in a browser.
+You can verify the development server is up by navigating to `http://localhost:8080` in a browser.
 
 #### Production Build
 Running `./gradlew build` from the project root builds the project into the `/build` directory. Note that Docker is a requirement for tests to run, and thus a requirement to build even if you are building
@@ -51,7 +51,7 @@ To run the UI on the bundled development server, run `yarn run start`. Navigate 
 
 ## Documentation
 [Documentation](http://netflix.github.io/conductor/)  
-[Roadmap](https://github.com/Netflix/conductor/wiki/Roadmap)
+[Roadmap](https://github.com/Netflix/conductor/wiki/Roadmap)  
 [Getting Started Guide](https://netflix.github.io/conductor/gettingstarted/basicconcepts/).
 
 ## Published Artifacts

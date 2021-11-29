@@ -31,7 +31,8 @@ Workflows are defined using a JSON based DSL.
   "failureWorkflow": "cleanup_encode_resources",
   "restartable": true,
   "workflowStatusListenerEnabled": true,
-  "schemaVersion": 2
+  "schemaVersion": 2, 
+  "ownerEmail": "foo@bar.com"
 }
 ```
 

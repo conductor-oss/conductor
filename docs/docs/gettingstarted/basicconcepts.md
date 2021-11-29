@@ -12,7 +12,9 @@ Tasks can be categorized into two types:
 A Workflow is the container of your process flow. It could include several different types of Tasks, Sub-Workflows, inputs and outputs connected to each other, to effectively achieve the desired result.
 
 ## Workflow Definition
-Workflows are defined using a JSON based DSL and includes a set of tasks that are executed as part of the workflows.  The tasks are either control tasks (fork, conditional etc) or application tasks (e.g. encode a file) that are executed on a remote machine. [Detailed description](../../configuration/workflowdef)
+Workflows are defined using a JSON based DSL and includes a set of tasks that are executed as part of the workflows.  The tasks are either control tasks (fork, conditional etc) or application tasks (e.g. encode a file) that are executed on a remote machine.
+
+[Detailed description](../../configuration/workflowdef)
 
 ## Task Definition
 Task definitions help define Task level parameters like inputs and outputs, timeouts, retries etc.

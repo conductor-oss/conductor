@@ -23,27 +23,26 @@ git clone git@github.com:Netflix/conductor.git
 
 #### Start Local Server
 
-The server is in the directory `conductor/server`.
+The server is in the directory `conductor/server`. To start it execute the following command in the root of the project.
 
 ```shell
-cd server
-../gradlew server
+./gradlew bootRun
 # wait for the server to come online
 ```
-Swagger APIs can be accessed at [http://localhost:8080/](http://localhost:8080/)
+Swagger APIs can be accessed at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 #### Start UI Server
 
 The UI Server is in the directory `conductor/ui`.
 
-To run it, you need [Node.js](https://nodejs.org) installed and gulp installed with `npm i -g gulp`.
+To run it you need to have [Node](https://nodejs.org) 14 (or greater) and [Yarn](https://yarnpkg.com/) installed.
 
 In a terminal other than the one running the Conductor server: 
 
 ```shell
 cd ui
-npm i
-gulp watch
+yarn install
+yarn run start
 ```
 
 If you get an error message `ReferenceError: primordials is not defined`, you need to use an earlier version of Node (pre-12). See [this issue for more details](https://github.com/Netflix/conductor/issues/1232).
