@@ -38,7 +38,7 @@ abstract class ElasticSearchBaseDAO implements IndexDAO {
         String pattern = "\"template\": \"\\*(.*)\\*\"";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(text);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (m.find()) {
             m.appendReplacement(sb, m.group(0).replaceFirst(Pattern.quote(m.group(1)), indexPrefix + "_" + m.group(1)));
         }

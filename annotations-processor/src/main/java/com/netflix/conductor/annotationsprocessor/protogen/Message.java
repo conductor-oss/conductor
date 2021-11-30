@@ -101,7 +101,7 @@ public class Message extends AbstractMessage {
         private static Pattern CAMEL_CASE_RE = Pattern.compile("(?<=[a-z])[A-Z]");
         private static String toUnderscoreCase(String input) {
             Matcher m = CAMEL_CASE_RE.matcher(input);
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             while (m.find()) {
                 m.appendReplacement(sb, "_" + m.group());
             }

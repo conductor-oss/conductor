@@ -46,7 +46,7 @@ abstract class ElasticSearchBaseDAO implements IndexDAO {
                 ArrayList<String> patternsWithPrefix = new ArrayList<>();
                 indexPatternsNodeValue.forEach(v -> {
                     String patternText = v.asText();
-                    StringBuffer sb = new StringBuffer();
+                    StringBuilder sb = new StringBuilder();
                     if (patternText.startsWith("*")) {
                         sb.append("*").append(indexPrefix).append("_").append(patternText.substring(1));
                     } else {
