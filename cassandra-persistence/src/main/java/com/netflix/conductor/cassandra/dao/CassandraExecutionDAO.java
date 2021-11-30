@@ -628,7 +628,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                     null,
                     null,
                     3,
-                    "Adding taskDefLimit",
+                    "Adding to task_def_limit",
                     "addTaskToLimit"
             );
         } catch (Exception e) {
@@ -645,15 +645,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     public void removeTaskFromLimit(Task task) {
         try {
             recordCassandraDaoRequests("removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());
-            session.execute(
-                    deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId())));
             new RetryUtil<>().retryOnException(
                     () -> session.execute(
                             deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId()))),
                     null,
                     null,
                     3,
-                    "Deleting taskDefLimit",
+                    "Deleting from task_def_limit",
                     "removeTaskFromLimit"
             );
         } catch (Exception e) {
