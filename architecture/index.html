@@ -186,28 +186,31 @@
 </code></pre>
 
 <h4 id="start-local-server">Start Local Server<a class="headerlink" href="#start-local-server" title="Permanent link">&para;</a></h4>
-<p>The server is in the directory <code>conductor/server</code>.</p>
-<pre class="codehilite"><code class="language-shell">cd server
-../gradlew server
+<p>The server is in the directory <code>conductor/server</code>. To start it execute the following command in the root of the project.</p>
+<pre class="codehilite"><code class="language-shell">./gradlew bootRun
 # wait for the server to come online
 </code></pre>
 
-<p>Swagger APIs can be accessed at <a href="http://localhost:8080/">http://localhost:8080/</a></p>
+<p>Swagger APIs can be accessed at <a href="http://localhost:8080/swagger-ui.html">http://localhost:8080/swagger-ui.html</a></p>
 <h4 id="start-ui-server">Start UI Server<a class="headerlink" href="#start-ui-server" title="Permanent link">&para;</a></h4>
 <p>The UI Server is in the directory <code>conductor/ui</code>.</p>
-<p>To run it, you need <a href="https://nodejs.org">Node.js</a> installed and gulp installed with <code>npm i -g gulp</code>.</p>
+<p>To run it you need to have <a href="https://nodejs.org">Node</a> 14 (or greater) and <a href="https://yarnpkg.com/">Yarn</a> installed.</p>
 <p>In a terminal other than the one running the Conductor server: </p>
 <pre class="codehilite"><code class="language-shell">cd ui
-npm i
-gulp watch
+yarn install
+yarn run start
 </code></pre>
 
 <p>If you get an error message <code>ReferenceError: primordials is not defined</code>, you need to use an earlier version of Node (pre-12). See <a href="https://github.com/Netflix/conductor/issues/1232">this issue for more details</a>.</p>
 <h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="https://github.com/Netflix/conductor/blob/master/docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-shell">cd docker
-docker-compose up
-</code></pre>
-
+<ul>
+<li>Using compose (with Dynomite):
+  <code>shell
+  docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up</code></li>
+<li>Using compose (with Postgres):
+  <code>shell
+  docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up</code></li>
+</ul>
 <p>If you ran it locally, launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a> OR if you ran it using docker-compose launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

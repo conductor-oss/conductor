@@ -73,6 +73,10 @@
     <li class="toctree-l2"><a class="reference internal" href="#tasks-within-workflow">Tasks within Workflow</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#wiring-inputs-and-outputs">Wiring Inputs and Outputs</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-inputtemplate">Using inputTemplate</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#workflow-notifications">Workflow notifications</a>
     </li>
@@ -210,7 +214,8 @@
   &quot;failureWorkflow&quot;: &quot;cleanup_encode_resources&quot;,
   &quot;restartable&quot;: true,
   &quot;workflowStatusListenerEnabled&quot;: true,
-  &quot;schemaVersion&quot;: 2
+  &quot;schemaVersion&quot;: 2, 
+  &quot;ownerEmail&quot;: &quot;foo@bar.com&quot;
 }
 </code></pre>
 
@@ -246,6 +251,11 @@
 <tr>
 <td align="left">inputParameters</td>
 <td align="left">List of input parameters. Used for documenting the required inputs to workflow</td>
+<td align="left">optional</td>
+</tr>
+<tr>
+<td align="left">inputTemplate</td>
+<td align="left">Default input values. See <a href="#using-inputtemplate">Using inputTemplate</a></td>
 <td align="left">optional</td>
 </tr>
 <tr>
@@ -424,6 +434,17 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
 }
 </code></pre>
 
+<h4 id="using-inputtemplate">Using inputTemplate<a class="headerlink" href="#using-inputtemplate" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>inputTemplate</code> allows to define default values, which can be overridden by values provided in Workflow.</li>
+<li>Eg: In your Workflow Definition, you can define your inputTemplate as:</li>
+</ul>
+<pre class="codehilite"><code class="language-json">&quot;inputTemplate&quot;: {
+    &quot;url&quot;: &quot;https://some_url:7004&quot;
+}
+</code></pre>
+
+<p>And <code>url</code> would be <code>https://some_url:7004 if no</code>url` was provided as input to your workflow.</p>
 <h3 id="workflow-notifications">Workflow notifications<a class="headerlink" href="#workflow-notifications" title="Permanent link">&para;</a></h3>
 <p>Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See <a href="../../extend/#workflow-status-listener">extending conductor</a> for details.</p>
               

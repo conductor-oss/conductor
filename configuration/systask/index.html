@@ -72,6 +72,8 @@
                     </li>
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">System Tasks</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#decision-deprecated">Decision (Deprecated)</a>
+    </li>
     </ul>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../eventhandlers/">Event Handlers</a>
@@ -177,8 +179,8 @@
 <p>A switch task is similar to <code>case...switch</code> statement in a programming language. 
 The <code>switch</code> expression, however, is simply an input parameter (<code>value-param</code> evaluator) or a complex javascript 
 expression (<code>javascript</code> evaluator). Only two evaluators are supported by default in conductor. </p>
-<p><strong>For Developers</strong> Any type of custom evaluator can be implemented without having to touch the way <code>switch</code> task works.</p>
-<p>The task takes 2 parameters and even with growing number of evaluators, it always takes 2 parameters:</p>
+<p><strong>For Conductor Developers</strong>: Custom evaluators can be implemented without having to change the way <code>SWITCH</code> task works.
+To implement and use the custom evaluators we can use the params <code>evaluatorType</code> and <code>expression</code>. </p>
 <p><strong>Parameters:</strong></p>
 <table>
 <thead>
@@ -279,6 +281,12 @@ expression (<code>javascript</code> evaluator). Only two evaluators are supporte
 }
 </code></pre>
 
+<h3 id="decision-deprecated">Decision (Deprecated)<a class="headerlink" href="#decision-deprecated" title="Permanent link">&para;</a></h3>
+<p><code>DECISION</code> task type has been <strong>deprecated</strong> and replaced with the <code>SWITCH</code> task type. Switch task type is identical to how Decision tasks works except for the following differences:</p>
+<p><code>DECISION</code> task type used to take two parameters 
+1. <code>caseExpression</code> : If present, this takes precedence and will be evaluated as a Javascript expression
+2. <code>caseValueParam</code> : If <code>caseExpression</code> param is null or empty, case value param will be used to determine the decision branch</p>
+<p><code>SWITCH</code> works with the <code>evaluatorType</code> and <code>expression</code> params as a replacement to the above. For details refer to the <code>SWITCH</code> task documentation</p>
 <h2 id="event">Event<a class="headerlink" href="#event" title="Permanent link">&para;</a></h2>
 <p>Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS.  Event tasks are useful for creating event based dependencies for workflows and tasks.</p>
 <p><strong>Parameters:</strong></p>

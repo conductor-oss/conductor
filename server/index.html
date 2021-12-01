@@ -217,11 +217,14 @@
 docker-compose build
 </code></pre>
 
-<p>After the docker images are built, run the following command to start the containers:</p>
-<pre class="codehilite"><code class="language-shell">docker-compose up
-</code></pre>
-
-<p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:5.6.8</a>, and dynomite.</p>
+<p>After the docker images are built, run the following command to start the containers:
+- Using compose (with Dynomite):
+  <code>shell
+  docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up</code>
+- Using compose (with Postgres):
+  <code>shell
+  docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up</code></p>
+<p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:5.6.8</a>, and dynomite or postgres.</p>
 <p>To view the UI, navigate to <a href="http://localhost:5000/">localhost:5000</a>, to view the Swagger docs, navigate to <a href="http://localhost:8080/">localhost:8080</a>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.</p>

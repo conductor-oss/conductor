@@ -220,7 +220,7 @@ Manages the task workers thread pool and server communication (poll and task upd
 <tbody>
 <tr>
 <td>withEurekaClient</td>
-<td>EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped. If passed null, discovery check is not done.</td>
+<td>EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped unless <code>pollOutOfDiscovery</code> is set to true. If passed null, discovery check is not done.</td>
 <td>provided by platform</td>
 </tr>
 <tr>
@@ -273,6 +273,12 @@ The worker behavior can be further controlled by using these properties:</p>
 <td>int</td>
 <td>Interval in milliseconds at which the server should be polled for tasks.</td>
 <td>1000</td>
+</tr>
+<tr>
+<td>pollOutOfDiscovery</td>
+<td>boolean</td>
+<td>If set to true, the instance will poll for tasks regardless of the discovery  <br/> status. This is useful while running on a dev machine.</td>
+<td>false</td>
 </tr>
 </tbody>
 </table>
