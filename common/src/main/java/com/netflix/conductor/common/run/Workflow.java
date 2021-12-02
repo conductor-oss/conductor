@@ -532,6 +532,16 @@ public class Workflow extends Auditable{
         return getWorkflowName() + "." + getWorkflowVersion() + "/" + workflowId + "." + status;
 	}
 
+	/**
+	 * A string representation of all relevant fields that identify this workflow.
+	 * Intended for use in log and other system generated messages.
+	 */
+	public String toShortString() {
+		String name = workflowDefinition != null ? getWorkflowName() : null;
+		Integer version = workflowDefinition != null ? getWorkflowVersion() : null;
+		return String.format("%s.%s/%s", name, version, workflowId);
+	}
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
