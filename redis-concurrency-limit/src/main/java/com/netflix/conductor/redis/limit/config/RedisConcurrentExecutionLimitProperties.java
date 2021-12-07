@@ -22,18 +22,39 @@ public class RedisConcurrentExecutionLimitProperties {
         STANDALONE, CLUSTER
     }
 
+    /**
+     * The redis server configuration to be used.
+     */
     private RedisType type;
 
-    private String host;
+    /**
+     * The host address of the redis server.
+     */
+    private String host = "127.0.0.1";
 
-    private int port;
+    /**
+     * The port number of the redis server.
+     */
+    private int port = 6379;
 
+    /**
+     * The password for redis authentication.
+     */
     private String password;
 
-    private int maxConnectionsPerHost;
+    /**
+     * The maximum number of connections from a client to Redis.
+     */
+    private int maxConnectionsPerHost = 10;
 
+    /**
+     * The client name to be set in a Redis connection.
+     */
     private String clientName;
 
+    /**
+     * The namespace to prepend Redis keys.
+     */
     private String namespace = "conductor";
 
     public RedisType getType() {

@@ -30,7 +30,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
-import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
@@ -57,7 +56,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 
 @Trace
-public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO, ConcurrentExecutionLimitDAO {
+public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
@@ -245,7 +244,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
      * This is a dummy implementation and this feature is not implemented for Cassandra backed Conductor
      */
     @Override
-    public boolean exceedsLimit(Task task) {
+    public boolean exceedsInProgressLimit(Task task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (taskDefinition.isEmpty()) {
             return false;
@@ -617,7 +616,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         }
     }
 
-    @Override
     public void addTaskToLimit(Task task) {
         try {
             recordCassandraDaoRequests("addTaskToLimit", task.getTaskType(), task.getWorkflowType());
@@ -641,7 +639,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         }
     }
 
-    @Override
     public void removeTaskFromLimit(Task task) {
         try {
             recordCassandraDaoRequests("removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());

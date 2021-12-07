@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -72,13 +73,13 @@ public class ExecutionDAOFacade {
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     public ExecutionDAOFacade(ExecutionDAO executionDAO, QueueDAO queueDAO, IndexDAO indexDAO,
-                              RateLimitingDAO rateLimitingDao, ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO, PollDataDAO pollDataDAO, ObjectMapper objectMapper,
+                              RateLimitingDAO rateLimitingDao, Optional<ConcurrentExecutionLimitDAO> concurrentExecutionLimitDAO, PollDataDAO pollDataDAO, ObjectMapper objectMapper,
                               ConductorProperties properties) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.indexDAO = indexDAO;
         this.rateLimitingDao = rateLimitingDao;
-        this.concurrentExecutionLimitDAO = concurrentExecutionLimitDAO;
+        this.concurrentExecutionLimitDAO = concurrentExecutionLimitDAO.orElse(null);
         this.pollDataDAO = pollDataDAO;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -388,7 +389,18 @@ public class ExecutionDAOFacade {
                     task.setEndTime(System.currentTimeMillis());
                 }
             }
+
             executionDAO.updateTask(task);
+
+            if (task.getStatus().isTerminal() && concurrentExecutionLimitDAO != null) {
+                try {
+                    concurrentExecutionLimitDAO.removeTaskFromLimit(task);
+                } catch (Exception e) {
+                    // print a descriptive log here
+                }
+            }
+
+
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
              * is enabled and tasks are stored in memory until a block has completed, we would lose a lot
@@ -478,7 +490,7 @@ public class ExecutionDAOFacade {
     }
 
     public boolean exceedsInProgressLimit(Task task) {
-        return concurrentExecutionLimitDAO.exceedsLimit(task);
+        return executionDAO.exceedsInProgressLimit(task);
     }
 
     public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {

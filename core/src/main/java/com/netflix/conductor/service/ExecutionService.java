@@ -36,6 +36,7 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
@@ -62,6 +63,7 @@ public class ExecutionService {
 
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionDAOFacade executionDAOFacade;
+    private final ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO;
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
@@ -74,12 +76,13 @@ public class ExecutionService {
 
     public ExecutionService(WorkflowExecutor workflowExecutor, ExecutionDAOFacade executionDAOFacade,
                             QueueDAO queueDAO, ConductorProperties properties,
-                            ExternalPayloadStorage externalPayloadStorage, SystemTaskRegistry systemTaskRegistry) {
+                            ExternalPayloadStorage externalPayloadStorage, SystemTaskRegistry systemTaskRegistry,
+                            Optional<ConcurrentExecutionLimitDAO> concurrentExecutionLimitDAO) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
-
+        this.concurrentExecutionLimitDAO = concurrentExecutionLimitDAO.orElse(null);
         this.queueTaskMessagePostponeSecs = properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
     }
@@ -129,20 +132,21 @@ public class ExecutionService {
                     continue;
                 }
 
-                if (executionDAOFacade.exceedsInProgressLimit(task)) {
+                TaskDef taskDef = task.getTaskDefinition().isPresent() ? task.getTaskDefinition().get() : null;
+                if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade
+                        .exceedsRateLimitPerFrequency(task, taskDef)) {
+                    // Postpone this message, so that it would be available for poll again.
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
+                    LOGGER.debug("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
+                            task.getRateLimitPerFrequency());
+                    continue;
+                }
+
+                if (concurrentExecutionLimitDAO != null ? concurrentExecutionLimitDAO.addIfBelowConcurrentLimit(task) : executionDAOFacade.exceedsInProgressLimit(task)) {
                     // Postpone this message, so that it would be available for poll again.
                     queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
                     LOGGER.debug("Postponed task: {} in queue: {} by {} seconds", taskId, queueName,
                         queueTaskMessagePostponeSecs);
-                    continue;
-                }
-                TaskDef taskDef = task.getTaskDefinition().isPresent() ? task.getTaskDefinition().get() : null;
-                if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade
-                    .exceedsRateLimitPerFrequency(task, taskDef)) {
-                    // Postpone this message, so that it would be available for poll again.
-                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSecs);
-                    LOGGER.debug("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
-                        task.getRateLimitPerFrequency());
                     continue;
                 }
 

@@ -22,7 +22,6 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
@@ -43,7 +42,7 @@ import java.util.stream.Collectors;
 
 import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
 
-public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, RateLimitingDAO, PollDataDAO, ConcurrentExecutionLimitDAO {
+public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, RateLimitingDAO, PollDataDAO {
 
     private static final String ARCHIVED_FIELD = "archived";
     private static final String RAW_JSON_FIELD = "rawJSON";
@@ -151,10 +150,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     }
 
     @Override
-    public boolean exceedsLimit(Task task) {
+    public boolean exceedsInProgressLimit(Task task) {
 
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
-        if (!taskDefinition.isPresent()) {
+        if (taskDefinition.isEmpty()) {
             return false;
         }
 

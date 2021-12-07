@@ -62,12 +62,8 @@ public interface ExecutionDAO {
      * @param task The task to be executed.  Limit is set in the Task's definition
      * @return true if by executing this task, the limit is breached.  false otherwise.
      * @see TaskDef#concurrencyLimit()
-     * @deprecated Since v3.3.5. Use {@link ConcurrentExecutionLimitDAO#exceedsLimit(Task)}.
      */
-    @Deprecated
-    default boolean exceedsInProgressLimit(Task task) {
-        throw new UnsupportedOperationException(getClass() + "does not support exceedsInProgressLimit");
-    }
+    boolean exceedsInProgressLimit(Task task);
 
     /**
      * @param taskId id of the task to be removed.

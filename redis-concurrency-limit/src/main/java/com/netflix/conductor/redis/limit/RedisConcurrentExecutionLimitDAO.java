@@ -28,8 +28,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Trace
 @Component
 @ConditionalOnProperty(value = "conductor.redis-concurrent-execution-limit.enabled", havingValue = "true")
@@ -47,32 +45,6 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
     }
 
     /**
-     * Adds the {@link Task} identifier to a Redis Set for the {@link TaskDef}'s name.
-     *
-     * @param task The {@link Task} object.
-     */
-    @Override
-    public void addTaskToLimit(Task task) {
-        try {
-            Monitors.recordDaoRequests(CLASS_NAME, "addTaskToLimit", task.getTaskType(), task.getWorkflowType());
-            String taskId = task.getTaskId();
-            String taskDefName = task.getTaskDefName();
-            String keyName = createKeyName(taskDefName);
-
-            stringRedisTemplate.opsForSet().add(keyName, taskId);
-
-            LOGGER.debug("Added taskId: {} to key: {}", taskId, keyName);
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "addTaskToLimit");
-            String errorMsg = String
-                    .format("Error updating taskDefLimit for task - %s:%s in workflow: %s", task.getTaskDefName(),
-                            task.getTaskId(), task.getWorkflowInstanceId());
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
-        }
-    }
-
-    /**
      * Remove the {@link Task} identifier from the Redis Set for the {@link TaskDef}'s name.
      *
      * @param task The {@link Task} object.
@@ -86,9 +58,9 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
 
             String keyName = createKeyName(taskDefName);
 
-            stringRedisTemplate.opsForSet().remove(keyName, taskId);
+            long removed = ObjectUtils.defaultIfNull(stringRedisTemplate.opsForSet().remove(keyName, taskId), 0L);
 
-            LOGGER.debug("Removed taskId: {} from key: {}", taskId, keyName);
+            LOGGER.debug("taskId: {} {} set:{}", taskId, removed > 0 ? "removed from" : "not present in", keyName);
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeTaskFromLimit");
             String errorMsg = String
@@ -99,42 +71,10 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
         }
     }
 
-    /**
-     * Checks if the {@link Task} identifier is in the Redis Set and size of the set is more than the {@link TaskDef#concurrencyLimit()}.
-     *
-     * @param task The {@link Task} object.
-     * @return true if the task id is not in the set and size of the set is more than the {@link TaskDef#concurrencyLimit()}.
-     */
     @Override
-    public boolean exceedsLimit(Task task) {
-        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
-        if (taskDefinition.isEmpty()) {
-            return false;
-        }
-        int limit = taskDefinition.get().concurrencyLimit();
-        if (limit <= 0) {
-            return false;
-        }
-
-        try {
-            Monitors.recordDaoRequests(CLASS_NAME, "exceedsLimit", task.getTaskType(), task.getWorkflowType());
-            String taskId = task.getTaskId();
-            String taskDefName = task.getTaskDefName();
-            String keyName = createKeyName(taskDefName);
-
-            boolean isMember = ObjectUtils.defaultIfNull(stringRedisTemplate.opsForSet().isMember(keyName, taskId), false);
-            long size = ObjectUtils.defaultIfNull(stringRedisTemplate.opsForSet().size(keyName), -1L);
-
-            LOGGER.debug("Task: {} is {} of {}, size: {} and limit: {}", taskId, isMember ? "a member" : "not a member", keyName, size, limit);
-
-            return !isMember && size >= limit;
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "exceedsLimit");
-            String errorMsg = String.format("Failed to get in progress limit - %s:%s in workflow :%s",
-                    task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
-        }
+    public boolean addIfBelowConcurrentLimit(Task task) {
+        // TODO: use Lua script to atomically check and add the task to the limit
+        return false;
     }
 
     private String createKeyName(String taskDefName) {

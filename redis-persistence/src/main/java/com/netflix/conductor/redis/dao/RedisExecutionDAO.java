@@ -23,7 +23,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
-import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.AnyRedisCondition;
@@ -49,7 +48,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Conditional(AnyRedisCondition.class)
-public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO, ConcurrentExecutionLimitDAO {
+public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RedisExecutionDAO.class);
 
@@ -229,7 +228,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO, Conc
     }
 
     @Override
-    public boolean exceedsLimit(Task task) {
+    public boolean exceedsInProgressLimit(Task task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (taskDefinition.isEmpty()) {
             return false;

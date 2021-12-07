@@ -13,22 +13,25 @@
 
 package com.netflix.conductor.core.execution;
 
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 
 @Component
 public class AsyncSystemTaskExecutor {
@@ -40,15 +43,18 @@ public class AsyncSystemTaskExecutor {
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
     private final DeciderService deciderService;
+    private final ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
-    public AsyncSystemTaskExecutor(ExecutionDAOFacade executionDAOFacade, QueueDAO queueDAO, MetadataDAO metadataDAO, ConductorProperties conductorProperties, WorkflowExecutor workflowExecutor, DeciderService deciderService) {
+    public AsyncSystemTaskExecutor(ExecutionDAOFacade executionDAOFacade, QueueDAO queueDAO, MetadataDAO metadataDAO, ConductorProperties conductorProperties, WorkflowExecutor workflowExecutor,
+                                   DeciderService deciderService, Optional<ConcurrentExecutionLimitDAO> concurrentExecutionLimitDAO) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
         this.workflowExecutor = workflowExecutor;
         this.deciderService = deciderService;
+        this.concurrentExecutionLimitDAO = concurrentExecutionLimitDAO.orElse(null);
         this.systemTaskCallbackTime = conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs = conductorProperties.getTaskExecutionPostponeDuration().getSeconds();
     }
@@ -76,15 +82,15 @@ public class AsyncSystemTaskExecutor {
         }
 
         if (task.getStatus().equals(SCHEDULED)) {
-            if (executionDAOFacade.exceedsInProgressLimit(task)) {
-                //TODO: add a metric to record this
-                LOGGER.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
-                postponeQuietly(queueName, task);
-                return;
-            }
             if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade.exceedsRateLimitPerFrequency(task, metadataDAO.getTaskDef(task.getTaskDefName()))) {
                 LOGGER.warn("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(),
                         task.getRateLimitPerFrequency());
+                postponeQuietly(queueName, task);
+                return;
+            }
+            if (concurrentExecutionLimitDAO != null ? concurrentExecutionLimitDAO.addIfBelowConcurrentLimit(task) : executionDAOFacade.exceedsInProgressLimit(task)) {
+                //TODO: add a metric to record this
+                LOGGER.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
                 postponeQuietly(queueName, task);
                 return;
             }
