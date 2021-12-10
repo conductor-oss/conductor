@@ -95,6 +95,31 @@ allprojects {
     }
 
     dependencies {
+        implementation('org.apache.logging.log4j:log4j-core') {
+            version {
+                strictly '2.15.0'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-api') {
+            version {
+                strictly '2.15.0'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-slf4j-impl') {
+            version {
+                strictly '2.15.0'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-jul') {
+            version {
+                strictly '2.15.0'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-web') {
+            version {
+                strictly '2.15.0'
+            }
+        }
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
@@ -145,3 +170,4 @@ sonarqube {
         property "sonar.host.url", "https://sonarcloud.io"
     }
 }
+
