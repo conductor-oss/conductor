@@ -4,7 +4,7 @@ import { DataTable, Text, LinearProgress } from "../../components";
 
 export default function TaskLogs({ task }) {
   const { taskId } = task;
-  const { data: log, isFetching } = useFetch(`/api/tasks/${taskId}/log`);
+  const { data: log, isFetching } = useFetch(`/tasks/${taskId}/log`);
 
   if (isFetching) {
     return <LinearProgress />;
