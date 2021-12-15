@@ -213,14 +213,6 @@ class TaskClient(BaseClient):
             print('Error while polling ' + str(err))
             return None
 
-    def ackTask(self, taskId, workerid):
-        url = self.makeUrl('{}/ack', taskId)
-        params = {}
-        params['workerid'] = workerid
-        headers = {'Accept': 'application/json'}
-        value = self.post(url, params, None, headers)
-        return value in ['true', True]
-
     def getTasksInQueue(self, taskName):
         url = self.makeUrl('queue/{}', taskName)
         return self.get(url)

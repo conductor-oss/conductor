@@ -129,7 +129,6 @@ class ConductorWorker:
             time.sleep(float(self.polling_interval))
             polled = self.taskClient.pollForTask(taskType, self.worker_id, domain)
             if polled is not None:
-                self.taskClient.ackTask(polled['taskId'], self.worker_id)
                 self.execute(polled, exec_function)
 
     def start(self, taskType, exec_function, wait, domain=None):
