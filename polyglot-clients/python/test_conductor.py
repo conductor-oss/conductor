@@ -31,16 +31,6 @@ def test_pollForBatch(requests_get):
 
 
 @mock.patch('requests.post')
-def test_ackTask(requests_post):
-    task_client = TaskClient('base')
-    task_client.ackTask('42', 'myWorker')
-    requests_post.assert_called_with(
-        'base/tasks/42/ack',
-        headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
-        params={'workerid': 'myWorker'})
-
-
-@mock.patch('requests.post')
 def test_updateTask(post):
     task_client = TaskClient('base')
     task_obj = {'task_id': '123', 'result': 'fail'}
