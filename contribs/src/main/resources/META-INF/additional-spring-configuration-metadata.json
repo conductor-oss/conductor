@@ -104,6 +104,10 @@
         {
           "value": "amqp",
           "description": "Use RabbitMQ as the event queue to listen on for the WAIT task."
+        },
+        {
+          "value": "nats_stream",
+          "description": "Use NATS Stream as the event queue to listen on for the WAIT task."
         }
       ]
     },

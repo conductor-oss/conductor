@@ -33,6 +33,11 @@ public class NATSStreamProperties {
      */
     private String url = Nats.DEFAULT_URL;
 
+    /**
+     * The prefix to be used for the default listener queues
+     */
+    private String listenerQueuePrefix = "";
+
     public String getClusterId() {
         return clusterId;
     }
@@ -55,5 +60,13 @@ public class NATSStreamProperties {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getListenerQueuePrefix() {
+        return listenerQueuePrefix;
+    }
+
+    public void setListenerQueuePrefix(String listenerQueuePrefix) {
+        this.listenerQueuePrefix = listenerQueuePrefix;
     }
 }
