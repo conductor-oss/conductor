@@ -1,1 +1,1 @@
-export const customTypeRenderers={};
+export const customTypeRenderers = {};

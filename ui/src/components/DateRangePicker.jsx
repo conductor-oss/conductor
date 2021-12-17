@@ -21,7 +21,7 @@ export default function DateRangePicker({
   onToChange,
   to,
   label,
-  disabled
+  disabled,
 }) {
   const classes = useStyles();
 

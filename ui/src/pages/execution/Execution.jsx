@@ -210,7 +210,7 @@ export default function Execution() {
       const offsetRight =
         document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
       const minWidth = 0;
-      const maxWidth = maxWindowWidth-100;
+      const maxWidth = maxWindowWidth - 100;
       if (offsetRight > minWidth && offsetRight < maxWidth) {
         dispatch({ type: actions.MOUSE_MOVE, offsetRight });
       }

@@ -66,7 +66,7 @@ export default function TaskDefinitions() {
               "ownerEmail",
               "timeoutPolicy",
               "retryCount",
-              "executions_link"
+              "executions_link",
             ]}
             keyField="name"
             default

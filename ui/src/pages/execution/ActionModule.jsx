@@ -22,11 +22,9 @@ export default function ActionModule({ execution, triggerReload }) {
   const classes = useStyles();
   const { workflowId, workflowDefinition } = execution;
 
-  const restartAction = useAction(
-    `/workflow/${workflowId}/restart`,
-    "post",
-    { onSuccess }
-  );
+  const restartAction = useAction(`/workflow/${workflowId}/restart`, "post", {
+    onSuccess,
+  });
   const restartLatestAction = useAction(
     `/workflow/${workflowId}/restart?useLatestDefinitions=true`,
     "post",
@@ -42,21 +40,15 @@ export default function ActionModule({ execution, triggerReload }) {
     "post",
     { onSuccess }
   );
-  const terminateAction = useAction(
-    `/workflow/${workflowId}`,
-    "delete",
-    { onSuccess }
-  );
-  const resumeAction = useAction(
-    `/workflow/${workflowId}/resume`,
-    "put",
-    { onSuccess }
-  );
-  const pauseAction = useAction(
-    `/workflow/${workflowId}/pause`,
-    "put",
-    { onSuccess }
-  );
+  const terminateAction = useAction(`/workflow/${workflowId}`, "delete", {
+    onSuccess,
+  });
+  const resumeAction = useAction(`/workflow/${workflowId}/resume`, "put", {
+    onSuccess,
+  });
+  const pauseAction = useAction(`/workflow/${workflowId}/pause`, "put", {
+    onSuccess,
+  });
 
   const { restartable } = workflowDefinition;
 
@@ -65,7 +57,6 @@ export default function ActionModule({ execution, triggerReload }) {
   }
 
   if (execution.status === "COMPLETED") {
-
     const options = [];
     if (restartable) {
       options.push({
@@ -90,8 +81,7 @@ export default function ActionModule({ execution, triggerReload }) {
     }
 
     return <DropdownButton options={options}>Actions</DropdownButton>;
-  } 
-  else if (execution.status === "RUNNING") {
+  } else if (execution.status === "RUNNING") {
     return (
       <DropdownButton
         options={[

@@ -99,7 +99,7 @@ export default function DataTable(props) {
       }
 
       if (renderer) {
-        internalOptions.format = row => renderer(_.get(row, name), row);
+        internalOptions.format = (row) => renderer(_.get(row, name), row);
       }
 
       return {

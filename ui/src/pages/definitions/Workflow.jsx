@@ -115,7 +115,15 @@ export default function WorkflowDefinitions() {
           <DataTable
             title={`${workflows.length} results`}
             localStorageKey="definitionsTable"
-            defaultShowColumns={["name", "description", "version", "createTime", "ownerEmail",  "task_count", "executions_link"]}
+            defaultShowColumns={[
+              "name",
+              "description",
+              "version",
+              "createTime",
+              "ownerEmail",
+              "task_count",
+              "executions_link",
+            ]}
             keyField="name"
             onFilterChange={handleFilterChange}
             initialFilterObj={filterObj}

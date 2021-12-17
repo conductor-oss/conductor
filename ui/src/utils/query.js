@@ -54,7 +54,7 @@ export function useWorkflowSearch(searchObj) {
   );
 }
 
-export function useTaskSearch({searchReady, ...searchObj}) {
+export function useTaskSearch({ searchReady, ...searchObj }) {
   const fetchContext = useFetchContext();
   const queryClient = useQueryClient();
 

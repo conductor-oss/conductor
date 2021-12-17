@@ -73,12 +73,12 @@ export default function ResultsTable({
 }) {
   const classes = useStyles();
   let totalHits = 0;
-  if (resultObj){
-    if(resultObj.totalHits){
-      totalHits = resultObj.totalHits
-    }else{
-      if(resultObj.results){
-        totalHits = resultObj.results.length
+  if (resultObj) {
+    if (resultObj.totalHits) {
+      totalHits = resultObj.totalHits;
+    } else {
+      if (resultObj.results) {
+        totalHits = resultObj.results.length;
       }
     }
   }

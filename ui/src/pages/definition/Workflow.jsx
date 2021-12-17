@@ -34,9 +34,9 @@ export default function WorkflowDefinition() {
   let versions = namesAndVersions.get(workflowName) || [];
 
   const setVersion = (newVersion) => {
-      const versionStr = newVersion === ""? "" : `/${newVersion}`;
-      pushHistory(`/workflowDef/${workflowName}${versionStr}`);
-  }
+    const versionStr = newVersion === "" ? "" : `/${newVersion}`;
+    pushHistory(`/workflowDef/${workflowName}${versionStr}`);
+  };
 
   return (
     <div className={classes.wrapper}>

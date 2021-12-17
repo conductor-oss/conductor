@@ -13,13 +13,13 @@ export function fetchWithContext(path, context, fetchParams) {
   const newPath = `/api/${path}`;
   const cleanPath = newPath.replace(/([^:]\/)\/+/g, "$1"); // Cleanup duplicated slashes
 
-  return fetch(cleanPath, newParams).then(res => res.text())
-    .then(text => {
-      if(!text || text.length === 0){
+  return fetch(cleanPath, newParams)
+    .then((res) => res.text())
+    .then((text) => {
+      if (!text || text.length === 0) {
         return null;
-      }
-      else {
+      } else {
         return JSON.parse(text);
       }
-    })
+    });
 }

@@ -331,9 +331,9 @@ const overrides = {
       input: {
         "&[type=number]::-webkit-inner-spin-button ": {
           appearance: "none",
-          margin: 0
-        }
-      }
+          margin: 0,
+        },
+      },
     },
     MuiOutlinedInput: {
       notchedOutline: {

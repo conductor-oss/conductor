@@ -50,7 +50,7 @@ export default function TaskSearchPanel() {
   // For dropdowns
   const workflowNames = useWorkflowNames();
   const taskNames = useTaskNames();
-  
+
   const searchReady = !(
     _.isEmpty(workflowType) &&
     _.isEmpty(tasks) &&
@@ -63,7 +63,7 @@ export default function TaskSearchPanel() {
     query: queryFT.query,
     freeText: queryFT.freeText,
     rowsPerPage: DEFAULT_ROWS_PER_PAGE,
-    searchReady
+    searchReady,
   });
   const results = useMemo(
     () =>
@@ -76,8 +76,6 @@ export default function TaskSearchPanel() {
     [data]
   );
 
-
-
   function buildQuery() {
     const clauses = [];
     if (!_.isEmpty(workflowType)) {
@@ -89,7 +87,7 @@ export default function TaskSearchPanel() {
     if (!_.isEmpty(tasks)) {
       clauses.push(`taskType IN (${tasks.join(",")})`);
     }
-    if(!_.isEmpty(lookback)){
+    if (!_.isEmpty(lookback)) {
       clauses.push(`startTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
     }
     if (!_.isEmpty(startFrom)) {
@@ -128,17 +126,17 @@ export default function TaskSearchPanel() {
     setStartFrom("");
     setStartTo("");
     setLookback(val);
-  }
+  };
 
   const handleStartFrom = (val) => {
     setLookback("");
     setStartFrom(val);
-  }
+  };
 
   const handleStartTo = (val) => {
     setLookback("");
     setStartTo(val);
-  }
+  };
 
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
@@ -191,7 +189,7 @@ export default function TaskSearchPanel() {
             />
           </Grid>
           <Grid item xs={1}>
-          <Input
+            <Input
               fullWidth
               label="Lookback (days)"
               defaultValue={lookback}
@@ -214,9 +212,7 @@ export default function TaskSearchPanel() {
           <Grid item xs={1}>
             <FormControl>
               <InputLabel>&nbsp;</InputLabel>
-              <PrimaryButton onClick={handleSearch}>
-                Search
-              </PrimaryButton>
+              <PrimaryButton onClick={handleSearch}>Search</PrimaryButton>
             </FormControl>
           </Grid>
         </Grid>

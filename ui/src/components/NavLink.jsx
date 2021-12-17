@@ -16,7 +16,7 @@ export default React.forwardRef((props, ref) => {
   if (stack !== defaultStack) {
     url.query.stack = stack;
   }
-  
+
   if (!newTab) {
     return (
       <Link ref={ref} component={RouterLink} to={url.toString()} {...rest}>
@@ -34,7 +34,7 @@ export default React.forwardRef((props, ref) => {
   }
 });
 
-export function usePushHistory(){
+export function usePushHistory() {
   const history = useHistory();
   const { stack, defaultStack } = useEnv();
 
@@ -45,5 +45,5 @@ export function usePushHistory(){
     }
 
     history.push(url.toString());
-  }
+  };
 }

@@ -76,7 +76,7 @@ export default function WorkflowPanel() {
     if (!_.isEmpty(status)) {
       clauses.push(`status IN (${status.join(",")})`);
     }
-    if(!_.isEmpty(lookback)){
+    if (!_.isEmpty(lookback)) {
       clauses.push(`startTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
     }
     if (!_.isEmpty(startFrom)) {
@@ -123,18 +123,17 @@ export default function WorkflowPanel() {
     setStartFrom("");
     setStartTo("");
     setLookback(val);
-  }
+  };
 
   const handleStartFrom = (val) => {
     setLookback("");
     setStartFrom(val);
-  }
+  };
 
   const handleStartTo = (val) => {
     setLookback("");
     setStartTo(val);
-  }
-
+  };
 
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
@@ -185,7 +184,7 @@ export default function WorkflowPanel() {
             />
           </Grid>
           <Grid item xs={1}>
-          <Input
+            <Input
               fullWidth
               label="Lookback (days)"
               defaultValue={lookback}
