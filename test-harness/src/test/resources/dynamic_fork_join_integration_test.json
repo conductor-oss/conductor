@@ -18,7 +18,6 @@
       "joinOn": [],
       "optional": false,
       "taskDefinition": {
-        "createTime": 1590000191803,
         "createdBy": "integration_app",
         "name": "integration_task_1",
         "description": "integration_task_1",
@@ -85,7 +84,6 @@
       "joinOn": [],
       "optional": false,
       "taskDefinition": {
-        "createTime": 1590000191806,
         "createdBy": "integration_app",
         "name": "integration_task_4",
         "description": "integration_task_4",
