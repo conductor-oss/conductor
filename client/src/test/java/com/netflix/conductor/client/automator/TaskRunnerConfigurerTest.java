@@ -53,11 +53,13 @@ public class TaskRunnerConfigurerTest {
         assertEquals(3, configurer.getThreadCount());
         assertEquals(500, configurer.getSleepWhenRetry());
         assertEquals(3, configurer.getUpdateRetryCount());
+        assertEquals(10, configurer.getShutdownGracePeriodSeconds());
 
         configurer = new TaskRunnerConfigurer.Builder(new TaskClient(), Collections.singletonList(worker))
             .withThreadCount(100)
             .withSleepWhenRetry(100)
             .withUpdateRetryCount(10)
+            .withShutdownGracePeriodSeconds(15)
             .withWorkerNamePrefix("test-worker-")
             .build();
         assertEquals(100, configurer.getThreadCount());
@@ -65,6 +67,7 @@ public class TaskRunnerConfigurerTest {
         assertEquals(100, configurer.getThreadCount());
         assertEquals(100, configurer.getSleepWhenRetry());
         assertEquals(10, configurer.getUpdateRetryCount());
+        assertEquals(15, configurer.getShutdownGracePeriodSeconds());
         assertEquals("test-worker-", configurer.getWorkerNamePrefix());
     }
 

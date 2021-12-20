@@ -38,6 +38,7 @@ public class TaskRunnerConfigurer {
     private final int sleepWhenRetry;
     private final int updateRetryCount;
     private final int threadCount;
+    private final int shutdownGracePeriodSeconds;
     private final String workerNamePrefix;
     private final Map<String/*taskType*/, String/*domain*/> taskToDomain;
 
@@ -56,6 +57,7 @@ public class TaskRunnerConfigurer {
         this.taskToDomain = builder.taskToDomain;
         builder.workers.forEach(workers::add);
         this.threadCount = (builder.threadCount == -1) ? workers.size() : builder.threadCount;
+        this.shutdownGracePeriodSeconds = builder.shutdownGracePeriodSeconds;
     }
 
     /**
@@ -67,6 +69,7 @@ public class TaskRunnerConfigurer {
         private int sleepWhenRetry = 500;
         private int updateRetryCount = 3;
         private int threadCount = -1;
+        private int shutdownGracePeriodSeconds = 10;
         private final Iterable<Worker> workers;
         private EurekaClient eurekaClient;
         private final TaskClient taskClient;
@@ -122,6 +125,18 @@ public class TaskRunnerConfigurer {
         }
 
         /**
+         * @param shutdownGracePeriodSeconds waiting seconds before forcing shutdown of your worker
+         * @return Builder instance
+         */
+        public Builder withShutdownGracePeriodSeconds(int shutdownGracePeriodSeconds) {
+            if (shutdownGracePeriodSeconds < 1) {
+                throw new IllegalArgumentException("Seconds of shutdownGracePeriod cannot be less than 1");
+            }
+            this.shutdownGracePeriodSeconds = shutdownGracePeriodSeconds;
+            return this;
+        }
+
+        /**
          * @param eurekaClient Eureka client - used to identify if the server is in discovery or not.  When the server
          *                     goes out of discovery, the polling is terminated. If passed null, discovery check is not
          *                     done.
@@ -154,6 +169,13 @@ public class TaskRunnerConfigurer {
      */
     public int getThreadCount() {
         return threadCount;
+    }
+
+    /**
+     * @return seconds before forcing shutdown of worker
+     */
+    public int getShutdownGracePeriodSeconds() {
+        return shutdownGracePeriodSeconds;
     }
 
     /**
@@ -195,6 +217,6 @@ public class TaskRunnerConfigurer {
      * worker, during process termination.
      */
     public void shutdown() {
-        taskPollExecutor.shutdownExecutorService(scheduledExecutorService);
+        taskPollExecutor.shutdownExecutorService(scheduledExecutorService, shutdownGracePeriodSeconds);
     }
 }

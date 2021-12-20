@@ -58,6 +58,7 @@ public class ConductorClientAutoConfiguration {
                 .withSleepWhenRetry((int)clientProperties.getSleepWhenRetryDuration().toMillis())
                 .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
                 .withTaskToDomain(clientProperties.getTaskToDomain())
+                .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())
                 .withEurekaClient(eurekaClient)
                 .build();
     }

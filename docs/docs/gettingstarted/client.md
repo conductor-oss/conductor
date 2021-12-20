@@ -34,6 +34,7 @@ Initialize the Builder with the following:
 | withSleepWhenRetry | Time in milliseconds, for which the thread should sleep when task update call fails, before retrying the operation. | 500 |
 | withUpdateRetryCount | Number of attempts to be made when updating task status when update status call fails. | 3 |
 | withWorkerNamePrefix | String prefix that will be used for all the workers. | workflow-worker- |
+| withShutdownGracePeriodSeconds | Waiting seconds before forcing shutdown of your worker | 10 |
 
 Once an instance is created, call `init()` method to initialize the TaskPollExecutor and begin the polling and execution of tasks.
 

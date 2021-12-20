@@ -33,6 +33,8 @@ public class ClientProperties {
 
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    private int shutdownGracePeriodSeconds = 10;
+
     public String getRootUri() {
         return rootUri;
     }
@@ -79,5 +81,13 @@ public class ClientProperties {
 
     public void setTaskToDomain(Map<String, String> taskToDomain) {
         this.taskToDomain = taskToDomain;
+    }
+
+    public int getShutdownGracePeriodSeconds() {
+        return shutdownGracePeriodSeconds;
+    }
+
+    public void setShutdownGracePeriodSeconds(int shutdownGracePeriodSeconds) {
+        this.shutdownGracePeriodSeconds = shutdownGracePeriodSeconds;
     }
 }
