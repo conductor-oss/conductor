@@ -4,6 +4,40 @@
             "locked": "2.3.12.RELEASE"
         }
     },
+    "compileClasspath": {
+        "org.apache.logging.log4j:log4j-api": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-web": {
+            "locked": "2.17.0"
+        }
+    },
+    "runtimeClasspath": {
+        "org.apache.logging.log4j:log4j-api": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-web": {
+            "locked": "2.17.0"
+        }
+    },
     "testCompileClasspath": {
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.11.4"
@@ -64,6 +98,21 @@
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.10"
+        },
+        "org.apache.logging.log4j:log4j-api": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-web": {
+            "locked": "2.17.0"
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
@@ -169,12 +218,6 @@
             ],
             "locked": "2.0.0"
         },
-        "com.github.vmg.protogen:protogen-annotations": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.0.0"
-        },
         "com.google.guava:guava": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
@@ -201,6 +244,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "2.4.0"
+        },
+        "com.netflix.conductor:conductor-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-cassandra-persistence": {
             "firstLevelTransitive": [
@@ -505,11 +554,110 @@
             ],
             "locked": "2.5.1"
         },
-        "org.apache.logging.log4j:log4j-web": {
+        "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-cassandra-persistence",
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
+                "com.netflix.conductor:conductor-redis-lock",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-rest",
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "2.13.3"
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-cassandra-persistence",
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
+                "com.netflix.conductor:conductor-redis-lock",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-rest",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-jul": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-cassandra-persistence",
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
+                "com.netflix.conductor:conductor-redis-lock",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-rest",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-cassandra-persistence",
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
+                "com.netflix.conductor:conductor-redis-lock",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-rest",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "2.17.0"
+        },
+        "org.apache.logging.log4j:log4j-web": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-cassandra-persistence",
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
+                "com.netflix.conductor:conductor-redis-lock",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-rest",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "2.17.0"
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
