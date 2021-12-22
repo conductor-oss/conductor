@@ -14,7 +14,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.12.129"
+            "locked": "1.12.130"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -26,7 +26,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.12.129"
+            "locked": "1.12.130"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -474,14 +474,14 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-es6-persistence"
             ],
-            "locked": "2.11.1"
+            "locked": "2.17.0"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-es6-persistence"
             ],
-            "locked": "2.11.1"
+            "locked": "2.17.0"
         },
         "org.awaitility:awaitility": {
             "locked": "3.1.2"
@@ -590,7 +590,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.12.129"
+            "locked": "1.12.130"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -602,7 +602,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.12.129"
+            "locked": "1.12.130"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -1050,14 +1050,14 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-es6-persistence"
             ],
-            "locked": "2.11.1"
+            "locked": "2.17.0"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-es6-persistence"
             ],
-            "locked": "2.11.1"
+            "locked": "2.17.0"
         },
         "org.awaitility:awaitility": {
             "locked": "3.1.2"
