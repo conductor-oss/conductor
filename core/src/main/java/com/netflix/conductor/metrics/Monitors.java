@@ -33,6 +33,8 @@ public class Monitors {
 
     private static final Registry registry = Spectator.globalRegistry();
 
+    public static final String NO_DOMAIN = "NO_DOMAIN";
+
     private static final Map<String, Map<Map<String, String>, Counter>> counters = new ConcurrentHashMap<>();
 
     private static final Map<String, Map<Map<String, String>, PercentileTimer>> timers = new ConcurrentHashMap<>();
@@ -143,8 +145,8 @@ public class Monitors {
         getCounter(className, "workflow_server_error", "methodName", methodName).increment();
     }
 
-    public static void recordGauge(String name, long count, String... tags) {
-        gauge(classQualifier, name, count, tags);
+    public static void recordGauge(String name, long count) {
+        gauge(classQualifier, name, count);
     }
 
     public static void recordQueueWaitTime(String taskType, long queueWaitTime) {
@@ -157,12 +159,20 @@ public class Monitors {
             "status", status.name()).record(duration, TimeUnit.MILLISECONDS);
     }
 
+    public static void recordTaskPollError(String taskType, String exception) {
+        recordTaskPollError(taskType, NO_DOMAIN, exception);
+    }
+
     public static void recordTaskPollError(String taskType, String domain, String exception) {
         counter(classQualifier, "task_poll_error", "taskType", taskType, "domain", domain, "exception", exception);
     }
 
     public static void recordTaskPoll(String taskType) {
         counter(classQualifier, "task_poll", "taskType", taskType);
+    }
+
+    public static void recordTaskPollCount(String taskType, int count) {
+        recordTaskPollCount(taskType, NO_DOMAIN, count);
     }
 
     public static void recordTaskPollCount(String taskType, String domain, int count) {
@@ -271,21 +281,25 @@ public class Monitors {
     }
 
     public static void recordDaoRequests(String dao, String action, String taskType, String workflowType) {
-        counter(classQualifier, "dao_requests", "dao", dao, "action", action, "taskType", taskType, "workflowType",
-            workflowType);
+        counter(classQualifier, "dao_requests",
+                "dao", dao,
+                "action", action,
+                "taskType", StringUtils.defaultIfBlank(taskType, "unknown"),
+                "workflowType", StringUtils.defaultIfBlank(workflowType, "unknown")
+        );
     }
 
     public static void recordDaoEventRequests(String dao, String action, String event) {
         counter(classQualifier, "dao_event_requests", "dao", dao, "action", action, "event", event);
     }
 
-    public static void recordDaoPayloadSize(String dao, String action, int size) {
-        gauge(classQualifier, "dao_payload_size", size, "dao", dao, "action", action);
-    }
-
     public static void recordDaoPayloadSize(String dao, String action, String taskType, String workflowType, int size) {
-        gauge(classQualifier, "dao_payload_size", size, "dao", dao, "action", action, "taskType", taskType,
-            "workflowType", workflowType);
+        gauge(classQualifier, "dao_payload_size", size,
+                "dao", dao,
+                "action", action,
+                "taskType", StringUtils.defaultIfBlank(taskType, "unknown"),
+                "workflowType", StringUtils.defaultIfBlank(workflowType, "unknown")
+        );
     }
 
     public static void recordExternalPayloadStorageUsage(String name, String operation, String payloadType) {

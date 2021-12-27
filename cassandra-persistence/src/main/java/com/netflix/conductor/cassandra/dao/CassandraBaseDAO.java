@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.metrics.Monitors;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,8 +239,7 @@ public abstract class CassandraBaseDAO {
     }
 
     void recordCassandraDaoPayloadSize(String action, int size, String taskType, String workflowType) {
-        Monitors.recordDaoPayloadSize(DAO_NAME, action, StringUtils.defaultIfBlank(taskType, ""),
-            StringUtils.defaultIfBlank(workflowType, ""), size);
+        Monitors.recordDaoPayloadSize(DAO_NAME, action, taskType, workflowType, size);
     }
 
     static class WorkflowMetadata {

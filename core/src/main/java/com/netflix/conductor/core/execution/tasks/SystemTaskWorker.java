@@ -124,7 +124,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                 for (String taskId : polledTaskIds) {
                     if (StringUtils.isNotBlank(taskId)) {
                         LOGGER.debug("Task: {} from queue: {} being sent to the workflow executor", taskId, queueName);
-                        Monitors.recordTaskPollCount(queueName, "", 1);
+                        Monitors.recordTaskPollCount(queueName, 1);
 
                         executionService.ackTaskReceived(taskId);
 
@@ -144,7 +144,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         } catch (Exception e) {
             // release the permit if exception is thrown during polling, because the thread would not be busy
             semaphoreUtil.completeProcessing(acquiredSlots);
-            Monitors.recordTaskPollError(taskName, "", e.getClass().getSimpleName());
+            Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
         }
     }
