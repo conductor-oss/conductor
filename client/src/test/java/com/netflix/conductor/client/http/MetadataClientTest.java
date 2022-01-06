@@ -12,18 +12,20 @@
  */
 package com.netflix.conductor.client.http;
 
-import com.netflix.conductor.client.exception.ConductorClientException;
-import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import com.sun.jersey.api.client.config.ClientConfig;
+import java.net.URI;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.net.URI;
+import com.netflix.conductor.client.exception.ConductorClientException;
+
+import com.sun.jersey.api.client.ClientHandler;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
+import com.sun.jersey.api.client.config.ClientConfig;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,11 +35,9 @@ import static org.mockito.Mockito.*;
 @RunWith(SpringRunner.class)
 public class MetadataClientTest {
 
-    @Mock
-    private ClientHandler clientHandler;
+    @Mock private ClientHandler clientHandler;
 
-    @Mock
-    private ClientConfig clientConfig;
+    @Mock private ClientConfig clientConfig;
 
     private MetadataClient metadataClient;
 
@@ -49,8 +49,13 @@ public class MetadataClientTest {
 
     @Test
     public void testWorkflowDelete() {
-        when(clientHandler.handle(argThat(argument ->
-                argument.getURI().equals(URI.create("http://myuri:8080/metadata/workflow/test/1")))))
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/metadata/workflow/test/1")))))
                 .thenReturn(mock(ClientResponse.class));
         metadataClient.unregisterWorkflowDef("test", 1);
         verify(clientHandler).handle(any());
@@ -60,34 +65,47 @@ public class MetadataClientTest {
     public void testWorkflowDeleteThrowException() {
         ClientResponse clientResponse = mock(ClientResponse.class);
         when(clientResponse.getStatus()).thenReturn(404);
-        when(clientResponse.getEntity(String.class)).thenReturn("{\n" +
-                "  \"status\": 404,\n" +
-                "  \"message\": \"No such workflow definition: test version: 1\",\n" +
-                "  \"instance\": \"conductor-server\",\n" +
-                "  \"retryable\": false\n" +
-                "}");
+        when(clientResponse.getEntity(String.class))
+                .thenReturn(
+                        "{\n"
+                                + "  \"status\": 404,\n"
+                                + "  \"message\": \"No such workflow definition: test version: 1\",\n"
+                                + "  \"instance\": \"conductor-server\",\n"
+                                + "  \"retryable\": false\n"
+                                + "}");
         UniformInterfaceException uniformInterfaceException = mock(UniformInterfaceException.class);
         when(uniformInterfaceException.getResponse()).thenReturn(clientResponse);
-        when(clientHandler.handle(argThat(argument ->
-                argument.getURI().equals(URI.create("http://myuri:8080/metadata/workflow/test/1")))))
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/metadata/workflow/test/1")))))
                 .thenThrow(uniformInterfaceException);
         ConductorClientException exception =
-                assertThrows(ConductorClientException.class, () -> metadataClient.unregisterWorkflowDef("test", 1));
+                assertThrows(
+                        ConductorClientException.class,
+                        () -> metadataClient.unregisterWorkflowDef("test", 1));
         assertEquals("No such workflow definition: test version: 1", exception.getMessage());
         assertEquals(404, exception.getStatus());
     }
 
     @Test
     public void testWorkflowDeleteVersionMissing() {
-        NullPointerException exception = assertThrows(NullPointerException.class,
-                () -> metadataClient.unregisterWorkflowDef("test", null));
+        NullPointerException exception =
+                assertThrows(
+                        NullPointerException.class,
+                        () -> metadataClient.unregisterWorkflowDef("test", null));
         assertEquals("Version cannot be null", exception.getMessage());
     }
 
     @Test
     public void testWorkflowDeleteNameMissing() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> metadataClient.unregisterWorkflowDef(null, 1));
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> metadataClient.unregisterWorkflowDef(null, 1));
         assertEquals("Workflow name cannot be blank", exception.getMessage());
     }
 }

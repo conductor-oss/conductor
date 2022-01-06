@@ -12,10 +12,11 @@
  */
 package com.netflix.conductor.es6.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.es6.dao.index.ElasticSearchDAOV6;
-import com.netflix.conductor.es6.dao.index.ElasticSearchRestDAOV6;
+import java.net.InetAddress;
+import java.net.URL;
+import java.util.List;
+import java.util.Optional;
+
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
@@ -31,10 +32,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
-import java.net.InetAddress;
-import java.net.URL;
-import java.util.List;
-import java.util.Optional;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.es6.dao.index.ElasticSearchDAOV6;
+import com.netflix.conductor.es6.dao.index.ElasticSearchRestDAOV6;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ElasticSearchProperties.class)
@@ -45,10 +47,11 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public Client client(ElasticSearchProperties properties) {
-        Settings settings = Settings.builder()
-                .put("client.transport.ignore_cluster_name", true)
-                .put("client.transport.sniff", true)
-                .build();
+        Settings settings =
+                Settings.builder()
+                        .put("client.transport.ignore_cluster_name", true)
+                        .put("client.transport.sniff", true)
+                        .build();
 
         TransportClient transportClient = new PreBuiltTransportClient(settings);
 
@@ -60,8 +63,8 @@ public class ElasticSearchV6Configuration {
         for (URL hostAddress : clusterAddresses) {
             int port = Optional.ofNullable(hostAddress.getPort()).orElse(9200);
             try {
-                transportClient
-                        .addTransportAddress(new TransportAddress(InetAddress.getByName(hostAddress.getHost()), port));
+                transportClient.addTransportAddress(
+                        new TransportAddress(InetAddress.getByName(hostAddress.getHost()), port));
             } catch (Exception e) {
                 throw new RuntimeException("Invalid host" + hostAddress.getHost(), e);
             }
@@ -71,10 +74,13 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+        RestClientBuilder restClientBuilder =
+                RestClient.builder(convertToHttpHosts(properties.toURLs()));
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
-            restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                    .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeout()));
+            restClientBuilder.setRequestConfigCallback(
+                    requestConfigBuilder ->
+                            requestConfigBuilder.setConnectionRequestTimeout(
+                                    properties.getRestClientConnectionRequestTimeout()));
         }
         return restClientBuilder.build();
     }
@@ -85,8 +91,11 @@ public class ElasticSearchV6Configuration {
     }
 
     @Bean
-    public IndexDAO es6IndexDAO(RestClientBuilder restClientBuilder, Client client, ElasticSearchProperties properties,
-        ObjectMapper objectMapper) {
+    public IndexDAO es6IndexDAO(
+            RestClientBuilder restClientBuilder,
+            Client client,
+            ElasticSearchProperties properties,
+            ObjectMapper objectMapper) {
         String url = properties.getUrl();
         if (url.startsWith("http") || url.startsWith("https")) {
             return new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
@@ -97,6 +106,7 @@ public class ElasticSearchV6Configuration {
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
-                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol())).toArray(HttpHost[]::new);
+                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol()))
+                .toArray(HttpHost[]::new);
     }
 }

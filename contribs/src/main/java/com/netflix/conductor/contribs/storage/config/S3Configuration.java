@@ -12,12 +12,13 @@
  */
 package com.netflix.conductor.contribs.storage.config;
 
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.contribs.storage.S3PayloadStorage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.contribs.storage.S3PayloadStorage;
 
 @Configuration
 @EnableConfigurationProperties(S3Properties.class)

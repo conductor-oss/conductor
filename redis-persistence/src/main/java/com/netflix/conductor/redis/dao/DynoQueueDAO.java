@@ -12,20 +12,21 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.redis.config.AnyRedisCondition;
-import com.netflix.dyno.queues.DynoQueue;
-import com.netflix.dyno.queues.Message;
-import com.netflix.dyno.queues.redis.RedisQueues;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.redis.config.AnyRedisCondition;
+import com.netflix.dyno.queues.DynoQueue;
+import com.netflix.dyno.queues.Message;
+import com.netflix.dyno.queues.redis.RedisQueues;
 
 @Component
 @Conditional(AnyRedisCondition.class)
@@ -53,16 +54,19 @@ public class DynoQueueDAO implements QueueDAO {
     }
 
     @Override
-    public void push(String queueName, List<com.netflix.conductor.core.events.queue.Message> messages) {
-        List<Message> msgs = messages.stream()
-            .map(msg -> {
-                Message m = new Message(msg.getId(), msg.getPayload());
-                if (msg.getPriority() > 0) {
-                    m.setPriority(msg.getPriority());
-                }
-                return m;
-            })
-            .collect(Collectors.toList());
+    public void push(
+            String queueName, List<com.netflix.conductor.core.events.queue.Message> messages) {
+        List<Message> msgs =
+                messages.stream()
+                        .map(
+                                msg -> {
+                                    Message m = new Message(msg.getId(), msg.getPayload());
+                                    if (msg.getPriority() > 0) {
+                                        m.setPriority(msg.getPriority());
+                                    }
+                                    return m;
+                                })
+                        .collect(Collectors.toList());
         queues.get(queueName).push(msgs);
     }
 
@@ -72,7 +76,8 @@ public class DynoQueueDAO implements QueueDAO {
     }
 
     @Override
-    public boolean pushIfNotExists(String queueName, String id, int priority, long offsetTimeInSecond) {
+    public boolean pushIfNotExists(
+            String queueName, String id, int priority, long offsetTimeInSecond) {
         DynoQueue queue = queues.get(queueName);
         if (queue.get(id) != null) {
             return false;
@@ -89,19 +94,19 @@ public class DynoQueueDAO implements QueueDAO {
     @Override
     public List<String> pop(String queueName, int count, int timeout) {
         List<Message> msg = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
-        return msg.stream()
-            .map(Message::getId)
-            .collect(Collectors.toList());
+        return msg.stream().map(Message::getId).collect(Collectors.toList());
     }
 
     @Override
-    public List<com.netflix.conductor.core.events.queue.Message> pollMessages(String queueName, int count,
-        int timeout) {
+    public List<com.netflix.conductor.core.events.queue.Message> pollMessages(
+            String queueName, int count, int timeout) {
         List<Message> msgs = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
         return msgs.stream()
-            .map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null,
-                msg.getPriority()))
-            .collect(Collectors.toList());
+                .map(
+                        msg ->
+                                new com.netflix.conductor.core.events.queue.Message(
+                                        msg.getId(), msg.getPayload(), null, msg.getPriority()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -117,7 +122,6 @@ public class DynoQueueDAO implements QueueDAO {
     @Override
     public boolean ack(String queueName, String messageId) {
         return queues.get(queueName).ack(messageId);
-
     }
 
     @Override
@@ -136,13 +140,13 @@ public class DynoQueueDAO implements QueueDAO {
     @Override
     public Map<String, Long> queuesDetail() {
         return queues.queues().stream()
-            .collect(Collectors.toMap(DynoQueue::getName, DynoQueue::size));
+                .collect(Collectors.toMap(DynoQueue::getName, DynoQueue::size));
     }
 
     @Override
     public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose() {
         return queues.queues().stream()
-            .collect(Collectors.toMap(DynoQueue::getName, DynoQueue::shardSizes));
+                .collect(Collectors.toMap(DynoQueue::getName, DynoQueue::shardSizes));
     }
 
     public void processUnacks(String queueName) {

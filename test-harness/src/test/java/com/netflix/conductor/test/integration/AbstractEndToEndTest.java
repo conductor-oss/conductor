@@ -12,27 +12,6 @@
  */
 package com.netflix.conductor.test.integration;
 
-import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.utility.DockerImageName;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -43,11 +22,33 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertFalse;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
-@TestPropertySource(properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
+import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
+@TestPropertySource(
+        properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
 public abstract class AbstractEndToEndTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractEndToEndTest.class);
@@ -58,9 +59,10 @@ public abstract class AbstractEndToEndTest {
     private static final String DEFAULT_NULL_VALUE = "null";
     protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
-    private static final ElasticsearchContainer container = new ElasticsearchContainer(DockerImageName
-            .parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
-            .withTag("6.8.12")); // this should match the client version
+    private static final ElasticsearchContainer container =
+            new ElasticsearchContainer(
+                    DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
+                            .withTag("6.8.12")); // this should match the client version
 
     private static RestClient restClient;
 
@@ -157,7 +159,8 @@ public abstract class AbstractEndToEndTest {
     public void testEphemeralWorkflowsWithEphemeralAndStoredTasks() {
         createAndRegisterTaskDefinitions("storedTask", 1);
 
-        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
+        WorkflowDef workflowDefinition =
+                createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
 
         WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
         TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
@@ -185,7 +188,6 @@ public abstract class AbstractEndToEndTest {
         TaskDef currentStoredTaskDefinition = tasks.get(1).getTaskDefinition();
         assertNotNull(currentStoredTaskDefinition);
         assertEquals(storedTaskDefinition, currentStoredTaskDefinition);
-
     }
 
     @Test
@@ -242,11 +244,19 @@ public abstract class AbstractEndToEndTest {
         return workflowDefinition;
     }
 
-    protected List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
+    protected List<TaskDef> createAndRegisterTaskDefinitions(
+            String prefixTaskDefinition, int numberOfTaskDefinitions) {
         String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
         List<TaskDef> definitions = new LinkedList<>();
         for (int i = 0; i < numberOfTaskDefinitions; i++) {
-            TaskDef def = new TaskDef(prefix + i, "task " + i + DEFAULT_DESCRIPTION, DEFAULT_EMAIL_ADDRESS, 3, 60, 60);
+            TaskDef def =
+                    new TaskDef(
+                            prefix + i,
+                            "task " + i + DEFAULT_DESCRIPTION,
+                            DEFAULT_EMAIL_ADDRESS,
+                            3,
+                            60,
+                            60);
             def.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
             definitions.add(def);
         }
@@ -258,7 +268,8 @@ public abstract class AbstractEndToEndTest {
         return nameResource + " " + DEFAULT_DESCRIPTION;
     }
 
-    protected abstract String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition);
+    protected abstract String startWorkflow(
+            String workflowExecutionName, WorkflowDef workflowDefinition);
 
     protected abstract Workflow getWorkflow(String workflowId, boolean includeTasks);
 

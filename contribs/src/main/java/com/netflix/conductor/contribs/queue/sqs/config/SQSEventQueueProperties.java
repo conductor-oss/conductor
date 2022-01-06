@@ -14,36 +14,27 @@ package com.netflix.conductor.contribs.queue.sqs.config;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.event-queues.sqs")
 public class SQSEventQueueProperties {
 
-    /**
-     * The maximum number of messages to be fetched from the queue in a single request
-     */
+    /** The maximum number of messages to be fetched from the queue in a single request */
     private int batchSize = 1;
 
-    /**
-     * The polling interval (in milliseconds)
-     */
+    /** The polling interval (in milliseconds) */
     private Duration pollTimeDuration = Duration.ofMillis(100);
 
-    /**
-     * The visibility timeout (in seconds) for the message on the queue
-     */
+    /** The visibility timeout (in seconds) for the message on the queue */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration visibilityTimeout = Duration.ofSeconds(60);
 
-    /**
-     * The prefix to be used for the default listener queues
-     */
+    /** The prefix to be used for the default listener queues */
     private String listenerQueuePrefix = "";
 
-    /**
-     * The AWS account Ids authorized to send messages to the queues
-     */
+    /** The AWS account Ids authorized to send messages to the queues */
     private String authorizedAccounts = "";
 
     public int getBatchSize() {

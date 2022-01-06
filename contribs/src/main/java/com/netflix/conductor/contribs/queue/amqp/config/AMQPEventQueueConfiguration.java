@@ -12,19 +12,21 @@
  */
 package com.netflix.conductor.contribs.queue.amqp.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(AMQPEventQueueProperties.class)
@@ -32,7 +34,8 @@ import org.springframework.context.annotation.Configuration;
 public class AMQPEventQueueConfiguration {
 
     private enum QUEUE_TYPE {
-        AMQP_QUEUE("amqp_queue"), AMQP_EXCHANGE("amqp_exchange");
+        AMQP_QUEUE("amqp_queue"),
+        AMQP_EXCHANGE("amqp_exchange");
 
         private final String type;
 
@@ -57,20 +60,21 @@ public class AMQPEventQueueConfiguration {
 
     @ConditionalOnProperty(name = "conductor.default-event-queue.type", havingValue = "amqp")
     @Bean
-    public Map<Status, ObservableQueue> getQueues(ConductorProperties conductorProperties,
-        AMQPEventQueueProperties properties) {
+    public Map<Status, ObservableQueue> getQueues(
+            ConductorProperties conductorProperties, AMQPEventQueueProperties properties) {
         String stack = "";
         if (conductorProperties.getStack() != null && conductorProperties.getStack().length() > 0) {
             stack = conductorProperties.getStack() + "_";
         }
         final boolean useExchange = properties.isUseExchange();
 
-        Status[] statuses = new Task.Status[]{Status.COMPLETED, Status.FAILED};
+        Status[] statuses = new Task.Status[] {Status.COMPLETED, Status.FAILED};
         Map<Status, ObservableQueue> queues = new HashMap<>();
         for (Status status : statuses) {
-            String queuePrefix = StringUtils.isBlank(properties.getListenerQueuePrefix())
-                ? conductorProperties.getAppId() + "_amqp_notify_" + stack
-                : properties.getListenerQueuePrefix();
+            String queuePrefix =
+                    StringUtils.isBlank(properties.getListenerQueuePrefix())
+                            ? conductorProperties.getAppId() + "_amqp_notify_" + stack
+                            : properties.getListenerQueuePrefix();
 
             String queueName = queuePrefix + status.name();
 

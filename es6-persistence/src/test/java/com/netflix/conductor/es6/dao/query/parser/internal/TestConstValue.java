@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.es6.dao.query.parser.internal;
 
-import org.junit.Test;
-
 import java.util.List;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -25,7 +25,9 @@ public class TestConstValue extends TestAbstractParser {
     @Test
     public void testStringConst() throws Exception {
         String test = "'string value'";
-        String expected = test.replaceAll("'", "\"");        //Quotes are removed but then the result is double quoted.
+        String expected =
+                test.replaceAll(
+                        "'", "\""); // Quotes are removed but then the result is double quoted.
         ConstValue constValue = new ConstValue(getInputStream(test));
         assertNotNull(constValue.getValue());
         assertEquals(expected, constValue.getValue());
@@ -64,7 +66,10 @@ public class TestConstValue extends TestAbstractParser {
         ConstValue cv = new ConstValue(getInputStream(test));
         assertNotNull(cv.getValue());
         assertTrue(
-            cv.getValue() instanceof String);        //Numeric values are stored as string as we are just passing thru them to ES
+                cv.getValue()
+                        instanceof
+                        String); // Numeric values are stored as string as we are just passing thru
+        // them to ES
         assertEquals(test, cv.getValue());
     }
 
@@ -89,6 +94,6 @@ public class TestConstValue extends TestAbstractParser {
         List<Object> list = listConst.getList();
         assertEquals(4, list.size());
         assertTrue(list.contains("1"));
-        assertEquals("'value2'", list.get(3));        //Values are preserved as it is...
+        assertEquals("'value2'", list.get(3)); // Values are preserved as it is...
     }
 }

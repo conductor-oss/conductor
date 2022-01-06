@@ -12,18 +12,13 @@
  */
 package com.netflix.conductor.service;
 
-import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
 import javax.validation.ConstraintViolationException;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +26,15 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -51,11 +55,9 @@ public class WorkflowBulkServiceTest {
         }
     }
 
-    @Autowired
-    private WorkflowExecutor workflowExecutor;
+    @Autowired private WorkflowExecutor workflowExecutor;
 
-    @Autowired
-    private WorkflowBulkService workflowBulkService;
+    @Autowired private WorkflowBulkService workflowBulkService;
 
     @Test(expected = ConstraintViolationException.class)
     public void testPauseWorkflowNull() {
@@ -80,7 +82,9 @@ public class WorkflowBulkServiceTest {
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("Cannot process more than 1000 workflows. Please use multiple requests."));
+            assertTrue(
+                    messages.contains(
+                            "Cannot process more than 1000 workflows. Please use multiple requests."));
             throw ex;
         }
     }
@@ -123,9 +127,9 @@ public class WorkflowBulkServiceTest {
 
     @Test
     public void testRetryWorkflowSuccessful() {
-        //When
+        // When
         workflowBulkService.retry(Collections.singletonList("anyId"));
-        //Then
+        // Then
         verify(workflowExecutor).retry("anyId", false);
     }
 

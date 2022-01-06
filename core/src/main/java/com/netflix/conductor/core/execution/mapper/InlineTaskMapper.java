@@ -1,14 +1,14 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.mapper;
 
@@ -30,9 +30,10 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#INLINE} to a List
- * {@link Task} starting with Task of type {@link TaskType#INLINE} which is marked as IN_PROGRESS, followed by
- * the list of {@link Task} based on the case expression evaluation in the Inline task.
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
+ * TaskType#INLINE} to a List {@link Task} starting with Task of type {@link TaskType#INLINE} which
+ * is marked as IN_PROGRESS, followed by the list of {@link Task} based on the case expression
+ * evaluation in the Inline task.
  */
 @Component
 public class InlineTaskMapper implements TaskMapper {
@@ -60,18 +61,27 @@ public class InlineTaskMapper implements TaskMapper {
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
 
-        TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
-            .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                .orElse(null));
+        TaskDef taskDefinition =
+                Optional.ofNullable(taskMapperContext.getTaskDefinition())
+                        .orElseGet(
+                                () ->
+                                        Optional.ofNullable(
+                                                        metadataDAO.getTaskDef(
+                                                                taskToSchedule.getName()))
+                                                .orElse(null));
 
-        Map<String, Object> taskInput = parametersUtils
-            .getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId,
-                taskDefinition);
+        Map<String, Object> taskInput =
+                parametersUtils.getTaskInputV2(
+                        taskMapperContext.getTaskToSchedule().getInputParameters(),
+                        workflowInstance,
+                        taskId,
+                        taskDefinition);
 
         Task inlineTask = new Task();
         inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
         inlineTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        inlineTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
+        inlineTask.setReferenceTaskName(
+                taskMapperContext.getTaskToSchedule().getTaskReferenceName());
         inlineTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         inlineTask.setWorkflowType(workflowInstance.getWorkflowName());
         inlineTask.setCorrelationId(workflowInstance.getCorrelationId());

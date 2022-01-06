@@ -12,18 +12,20 @@
  */
 package com.netflix.conductor.common.tasks;
 
-import com.google.protobuf.Any;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.junit.Test;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.google.protobuf.Any;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,9 +41,10 @@ public class TaskTest {
         task.setStatus(Status.FAILED);
         assertEquals(Status.FAILED, task.getStatus());
 
-        Set<String> resultStatues = Arrays.stream(TaskResult.Status.values())
-            .map(Enum::name)
-            .collect(Collectors.toSet());
+        Set<String> resultStatues =
+                Arrays.stream(TaskResult.Status.values())
+                        .map(Enum::name)
+                        .collect(Collectors.toSet());
 
         for (Status status : Status.values()) {
             if (resultStatues.contains(status.name())) {
@@ -51,7 +54,6 @@ public class TaskTest {
                 task = new Task();
                 task.setStatus(status);
                 assertEquals(status, task.getStatus());
-
             }
         }
     }
@@ -94,7 +96,8 @@ public class TaskTest {
     @Test
     public void testDeepCopyTask() {
         final Task task = new Task();
-        // In order to avoid forgetting putting inside the copy method the newly added fields check the number of declared fields.
+        // In order to avoid forgetting putting inside the copy method the newly added fields check
+        // the number of declared fields.
         final int expectedTaskFieldsNumber = 40;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 

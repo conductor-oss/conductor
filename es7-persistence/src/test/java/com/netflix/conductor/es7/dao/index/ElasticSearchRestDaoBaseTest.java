@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.es7.dao.index;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -19,11 +24,6 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
 

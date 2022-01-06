@@ -12,8 +12,15 @@
  */
 package com.netflix.conductor.redis.jedis;
 
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.junit.Test;
 import org.mockito.Mockito;
+
 import redis.clients.jedis.GeoUnit;
 import redis.clients.jedis.ListPosition;
 import redis.clients.jedis.ScanParams;
@@ -24,19 +31,14 @@ import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class JedisClusterTest {
 
-    private final redis.clients.jedis.JedisCluster mockCluster = mock(redis.clients.jedis.JedisCluster.class);
+    private final redis.clients.jedis.JedisCluster mockCluster =
+            mock(redis.clients.jedis.JedisCluster.class);
     private final JedisCluster jedisCluster = new JedisCluster(mockCluster);
 
     @Test
@@ -407,7 +409,6 @@ public class JedisClusterTest {
         jedisCluster.zrangeByScore("key", 1337, 1338, 1339, 1340);
     }
 
-
     @Test
     public void testZrevrangeByScore() {
         jedisCluster.zrevrangeByScore("key", "max", "min");
@@ -520,12 +521,18 @@ public class JedisClusterTest {
     public void testHscan() {
         jedisCluster.hscan("key", "cursor");
 
-        ScanResult<Entry<byte[], byte[]>> scanResult = new ScanResult<>("cursor".getBytes(), Arrays
-            .asList(new AbstractMap.SimpleEntry<>("key1".getBytes(), "val1".getBytes()),
-                new AbstractMap.SimpleEntry<>("key2".getBytes(), "val2".getBytes())));
+        ScanResult<Entry<byte[], byte[]>> scanResult =
+                new ScanResult<>(
+                        "cursor".getBytes(),
+                        Arrays.asList(
+                                new AbstractMap.SimpleEntry<>("key1".getBytes(), "val1".getBytes()),
+                                new AbstractMap.SimpleEntry<>(
+                                        "key2".getBytes(), "val2".getBytes())));
 
-        when(mockCluster.hscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class))).thenReturn(scanResult);
-        ScanResult<Map.Entry<String, String>> result = jedisCluster.hscan("key", "cursor", new ScanParams());
+        when(mockCluster.hscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class)))
+                .thenReturn(scanResult);
+        ScanResult<Map.Entry<String, String>> result =
+                jedisCluster.hscan("key", "cursor", new ScanParams());
 
         assertEquals("cursor", result.getCursor());
         assertEquals(2, result.getResult().size());
@@ -536,10 +543,12 @@ public class JedisClusterTest {
     public void testSscan() {
         jedisCluster.sscan("key", "cursor");
 
-        ScanResult<byte[]> scanResult = new ScanResult<>("sscursor".getBytes(),
-            Arrays.asList("val1".getBytes(), "val2".getBytes()));
+        ScanResult<byte[]> scanResult =
+                new ScanResult<>(
+                        "sscursor".getBytes(), Arrays.asList("val1".getBytes(), "val2".getBytes()));
 
-        when(mockCluster.sscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class))).thenReturn(scanResult);
+        when(mockCluster.sscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class)))
+                .thenReturn(scanResult);
 
         ScanResult<String> result = jedisCluster.sscan("key", "cursor", new ScanParams());
         assertEquals("sscursor", result.getCursor());
@@ -594,7 +603,8 @@ public class JedisClusterTest {
     @Test
     public void testGeoradiusByMember() {
         jedisCluster.georadiusByMember("key", "member", 1337, GeoUnit.KM);
-        jedisCluster.georadiusByMember("key", "member", 1337, GeoUnit.KM, GeoRadiusParam.geoRadiusParam());
+        jedisCluster.georadiusByMember(
+                "key", "member", 1337, GeoUnit.KM, GeoRadiusParam.geoRadiusParam());
     }
 
     @Test

@@ -12,13 +12,14 @@
  */
 package com.netflix.conductor.client.automator;
 
+import java.util.concurrent.Semaphore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Semaphore;
-
 /**
- * A class wrapping a semaphore which holds the number of permits available for polling and executing tasks.
+ * A class wrapping a semaphore which holds the number of permits available for polling and
+ * executing tasks.
  */
 class PollingSemaphore {
 
@@ -41,9 +42,7 @@ class PollingSemaphore {
         return acquired;
     }
 
-    /**
-     * Signals that processing is complete and the permit can be released.
-     */
+    /** Signals that processing is complete and the permit can be released. */
     void complete() {
         LOGGER.debug("Completed execution; releasing permit");
         semaphore.release();

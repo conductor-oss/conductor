@@ -12,21 +12,23 @@
  */
 package com.netflix.conductor.common.constraints;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
- * This constraint checks for a given task responseTimeoutSeconds should be less than timeoutSeconds.
+ * This constraint checks for a given task responseTimeoutSeconds should be less than
+ * timeoutSeconds.
  */
 @Documented
 @Constraint(validatedBy = TaskTimeoutConstraint.TaskTimeoutValidator.class)
@@ -43,8 +45,7 @@ public @interface TaskTimeoutConstraint {
     class TaskTimeoutValidator implements ConstraintValidator<TaskTimeoutConstraint, TaskDef> {
 
         @Override
-        public void initialize(TaskTimeoutConstraint constraintAnnotation) {
-        }
+        public void initialize(TaskTimeoutConstraint constraintAnnotation) {}
 
         @Override
         public boolean isValid(TaskDef taskDef, ConstraintValidatorContext context) {
@@ -55,9 +56,12 @@ public @interface TaskTimeoutConstraint {
             if (taskDef.getTimeoutSeconds() > 0) {
                 if (taskDef.getResponseTimeoutSeconds() > taskDef.getTimeoutSeconds()) {
                     valid = false;
-                    String message = String
-                        .format("TaskDef: %s responseTimeoutSeconds: %d must be less than timeoutSeconds: %d",
-                            taskDef.getName(), taskDef.getResponseTimeoutSeconds(), taskDef.getTimeoutSeconds());
+                    String message =
+                            String.format(
+                                    "TaskDef: %s responseTimeoutSeconds: %d must be less than timeoutSeconds: %d",
+                                    taskDef.getName(),
+                                    taskDef.getResponseTimeoutSeconds(),
+                                    taskDef.getTimeoutSeconds());
                     context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 }
             }

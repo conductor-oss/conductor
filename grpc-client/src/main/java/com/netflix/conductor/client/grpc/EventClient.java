@@ -1,14 +1,28 @@
+/*
+ * Copyright 2022 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.client.grpc;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
+import java.util.Iterator;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.grpc.EventServiceGrpc;
 import com.netflix.conductor.grpc.EventServicePb;
 import com.netflix.conductor.proto.EventHandlerPb;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.Iterator;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
 
 public class EventClient extends ClientBase {
 
@@ -29,8 +43,7 @@ public class EventClient extends ClientBase {
         stub.addEventHandler(
                 EventServicePb.AddEventHandlerRequest.newBuilder()
                         .setHandler(protoMapper.toProto(eventHandler))
-                        .build()
-        );
+                        .build());
     }
 
     /**
@@ -43,8 +56,7 @@ public class EventClient extends ClientBase {
         stub.updateEventHandler(
                 EventServicePb.UpdateEventHandlerRequest.newBuilder()
                         .setHandler(protoMapper.toProto(eventHandler))
-                        .build()
-        );
+                        .build());
     }
 
     /**
@@ -70,9 +82,7 @@ public class EventClient extends ClientBase {
      */
     public void unregisterEventHandler(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be blank");
-        stub.removeEventHandler(EventServicePb.RemoveEventHandlerRequest.newBuilder()
-                .setName(name)
-                .build()
-        );
+        stub.removeEventHandler(
+                EventServicePb.RemoveEventHandlerRequest.newBuilder().setName(name).build());
     }
 }

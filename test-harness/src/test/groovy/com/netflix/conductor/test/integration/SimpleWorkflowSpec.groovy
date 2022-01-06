@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.test.integration
 
+import org.apache.commons.lang3.StringUtils
+import org.springframework.beans.factory.annotation.Autowired
+
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -22,8 +25,7 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
-import org.apache.commons.lang3.StringUtils
-import org.springframework.beans.factory.annotation.Autowired
+
 import spock.lang.Shared
 
 import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT

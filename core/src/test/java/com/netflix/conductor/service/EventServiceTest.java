@@ -12,15 +12,10 @@
  */
 package com.netflix.conductor.service;
 
-import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
-import com.netflix.conductor.core.events.EventQueues;
 import java.util.Set;
+
 import javax.validation.ConstraintViolationException;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +23,15 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import com.netflix.conductor.core.events.EventQueues;
+
+import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -45,8 +49,7 @@ public class EventServiceTest {
         }
     }
 
-    @Autowired
-    private EventService eventService;
+    @Autowired private EventService eventService;
 
     @Test(expected = ConstraintViolationException.class)
     public void testAddEventHandler() {

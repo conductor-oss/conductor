@@ -14,9 +14,7 @@ package com.netflix.conductor.es6.dao.query.parser.internal;
 
 import java.io.InputStream;
 
-/**
- * Represents the name of the field to be searched against.
- */
+/** Represents the name of the field to be searched against. */
 public class Name extends AbstractNode {
 
     private String value;

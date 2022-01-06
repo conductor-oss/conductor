@@ -12,16 +12,17 @@
  */
 package com.netflix.conductor.redis.dynoqueue;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ConfigurationHostSupplier implements HostSupplier {
 
@@ -42,7 +43,8 @@ public class ConfigurationHostSupplier implements HostSupplier {
         String hosts = properties.getHosts();
         if (hosts == null) {
             // FIXME This type of validation probably doesn't belong here.
-            String message = "Missing dynomite/redis hosts. Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.";
+            String message =
+                    "Missing dynomite/redis hosts. Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.";
             log.error(message);
             throw new RuntimeException(message);
         }
@@ -52,28 +54,31 @@ public class ConfigurationHostSupplier implements HostSupplier {
     private List<Host> parseHostsFrom(String hostConfig) {
         List<String> hostConfigs = Arrays.asList(hostConfig.split(";"));
 
-        return hostConfigs.stream().map(hc -> {
-            String[] hostConfigValues = hc.split(":");
-            String host = hostConfigValues[0];
-            int port = Integer.parseInt(hostConfigValues[1]);
-            String rack = hostConfigValues[2];
+        return hostConfigs.stream()
+                .map(
+                        hc -> {
+                            String[] hostConfigValues = hc.split(":");
+                            String host = hostConfigValues[0];
+                            int port = Integer.parseInt(hostConfigValues[1]);
+                            String rack = hostConfigValues[2];
 
-            if (hostConfigValues.length >= 4) {
-                String password = hostConfigValues[3];
-                return new HostBuilder()
-                    .setHostname(host)
-                    .setPort(port)
-                    .setRack(rack)
-                    .setStatus(Host.Status.Up)
-                    .setPassword(password)
-                    .createHost();
-            }
-            return new HostBuilder()
-                .setHostname(host)
-                .setPort(port)
-                .setRack(rack)
-                .setStatus(Host.Status.Up)
-                .createHost();
-        }).collect(Collectors.toList());
+                            if (hostConfigValues.length >= 4) {
+                                String password = hostConfigValues[3];
+                                return new HostBuilder()
+                                        .setHostname(host)
+                                        .setPort(port)
+                                        .setRack(rack)
+                                        .setStatus(Host.Status.Up)
+                                        .setPassword(password)
+                                        .createHost();
+                            }
+                            return new HostBuilder()
+                                    .setHostname(host)
+                                    .setPort(port)
+                                    .setRack(rack)
+                                    .setStatus(Host.Status.Up)
+                                    .createHost();
+                        })
+                .collect(Collectors.toList());
     }
 }

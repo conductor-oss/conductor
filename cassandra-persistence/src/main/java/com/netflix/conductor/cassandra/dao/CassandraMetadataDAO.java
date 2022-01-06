@@ -12,24 +12,6 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
-import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.cassandra.config.CassandraProperties;
-import com.netflix.conductor.cassandra.util.Statements;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +23,26 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.cassandra.config.CassandraProperties;
+import com.netflix.conductor.cassandra.util.Statements;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.metrics.Monitors;
+
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 
 import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
@@ -73,43 +75,57 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     private final PreparedStatement deleteWorkflowDefIndexStatement;
     private final PreparedStatement deleteTaskDefStatement;
 
-    public CassandraMetadataDAO(Session session, ObjectMapper objectMapper, CassandraProperties properties,
-        Statements statements) {
+    public CassandraMetadataDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            Statements statements) {
         super(session, objectMapper, properties);
 
-        this.insertWorkflowDefStatement = session.prepare(statements.getInsertWorkflowDefStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
-        this.insertWorkflowDefVersionIndexStatement = session
-            .prepare(statements.getInsertWorkflowDefVersionIndexStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
-        this.insertTaskDefStatement = session.prepare(statements.getInsertTaskDefStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.insertWorkflowDefStatement =
+                session.prepare(statements.getInsertWorkflowDefStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.insertWorkflowDefVersionIndexStatement =
+                session.prepare(statements.getInsertWorkflowDefVersionIndexStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.insertTaskDefStatement =
+                session.prepare(statements.getInsertTaskDefStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        this.selectWorkflowDefStatement = session.prepare(statements.getSelectWorkflowDefStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
-        this.selectAllWorkflowDefVersionsByNameStatement = session
-            .prepare(statements.getSelectAllWorkflowDefVersionsByNameStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
-        this.selectAllWorkflowDefsStatement = session.prepare(statements.getSelectAllWorkflowDefsStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
-        this.selectTaskDefStatement = session.prepare(statements.getSelectTaskDefStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
-        this.selectAllTaskDefsStatement = session.prepare(statements.getSelectAllTaskDefsStatement())
-            .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectWorkflowDefStatement =
+                session.prepare(statements.getSelectWorkflowDefStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectAllWorkflowDefVersionsByNameStatement =
+                session.prepare(statements.getSelectAllWorkflowDefVersionsByNameStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectAllWorkflowDefsStatement =
+                session.prepare(statements.getSelectAllWorkflowDefsStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectTaskDefStatement =
+                session.prepare(statements.getSelectTaskDefStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectAllTaskDefsStatement =
+                session.prepare(statements.getSelectAllTaskDefsStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
 
-        this.updateWorkflowDefStatement = session.prepare(statements.getUpdateWorkflowDefStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.updateWorkflowDefStatement =
+                session.prepare(statements.getUpdateWorkflowDefStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        this.deleteWorkflowDefStatement = session.prepare(statements.getDeleteWorkflowDefStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
-        this.deleteWorkflowDefIndexStatement = session.prepare(statements.getDeleteWorkflowDefIndexStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
-        this.deleteTaskDefStatement = session.prepare(statements.getDeleteTaskDefStatement())
-            .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteWorkflowDefStatement =
+                session.prepare(statements.getDeleteWorkflowDefStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteWorkflowDefIndexStatement =
+                session.prepare(statements.getDeleteWorkflowDefIndexStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.deleteTaskDefStatement =
+                session.prepare(statements.getDeleteTaskDefStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
         long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
         Executors.newSingleThreadScheduledExecutor()
-            .scheduleWithFixedDelay(this::refreshTaskDefsCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
+                .scheduleWithFixedDelay(
+                        this::refreshTaskDefsCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }
 
     @Override
@@ -124,8 +140,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     @Override
     public TaskDef getTaskDef(String name) {
-        return Optional.ofNullable(taskDefCache.get(name))
-            .orElseGet(() -> getTaskDefFromDB(name));
+        return Optional.ofNullable(taskDefCache.get(name)).orElseGet(() -> getTaskDefFromDB(name));
     }
 
     @Override
@@ -154,22 +169,34 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     public void createWorkflowDef(WorkflowDef workflowDef) {
         try {
             String workflowDefinition = toJson(workflowDef);
-            if (!session.execute(insertWorkflowDefStatement.bind(workflowDef.getName(), workflowDef.getVersion(),
-                workflowDefinition)).wasApplied()) {
-                throw new ApplicationException(Code.CONFLICT, String.format("Workflow: %s, version: %s already exists!",
-                    workflowDef.getName(), workflowDef.getVersion()));
+            if (!session.execute(
+                            insertWorkflowDefStatement.bind(
+                                    workflowDef.getName(),
+                                    workflowDef.getVersion(),
+                                    workflowDefinition))
+                    .wasApplied()) {
+                throw new ApplicationException(
+                        Code.CONFLICT,
+                        String.format(
+                                "Workflow: %s, version: %s already exists!",
+                                workflowDef.getName(), workflowDef.getVersion()));
             }
-            String workflowDefIndex = getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
-            session.execute(insertWorkflowDefVersionIndexStatement.bind(workflowDefIndex, workflowDefIndex));
+            String workflowDefIndex =
+                    getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
+            session.execute(
+                    insertWorkflowDefVersionIndexStatement.bind(
+                            workflowDefIndex, workflowDefIndex));
             recordCassandraDaoRequests("createWorkflowDef");
-            recordCassandraDaoPayloadSize("createWorkflowDef", workflowDefinition.length(), "n/a",
-                workflowDef.getName());
+            recordCassandraDaoPayloadSize(
+                    "createWorkflowDef", workflowDefinition.length(), "n/a", workflowDef.getName());
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "createWorkflowDef");
-            String errorMsg = String.format("Error creating workflow definition: %s/%d", workflowDef.getName(),
-                workflowDef.getVersion());
+            String errorMsg =
+                    String.format(
+                            "Error creating workflow definition: %s/%d",
+                            workflowDef.getName(), workflowDef.getVersion());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
         }
@@ -179,17 +206,23 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         try {
             String workflowDefinition = toJson(workflowDef);
-            session.execute(updateWorkflowDefStatement.bind(workflowDefinition, workflowDef.getName(),
-                workflowDef.getVersion()));
-            String workflowDefIndex = getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
-            session.execute(insertWorkflowDefVersionIndexStatement.bind(workflowDefIndex, workflowDefIndex));
+            session.execute(
+                    updateWorkflowDefStatement.bind(
+                            workflowDefinition, workflowDef.getName(), workflowDef.getVersion()));
+            String workflowDefIndex =
+                    getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
+            session.execute(
+                    insertWorkflowDefVersionIndexStatement.bind(
+                            workflowDefIndex, workflowDefIndex));
             recordCassandraDaoRequests("updateWorkflowDef");
-            recordCassandraDaoPayloadSize("updateWorkflowDef", workflowDefinition.length(), "n/a",
-                workflowDef.getName());
+            recordCassandraDaoPayloadSize(
+                    "updateWorkflowDef", workflowDefinition.length(), "n/a", workflowDef.getName());
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "updateWorkflowDef");
-            String errorMsg = String.format("Error updating workflow definition: %s/%d", workflowDef.getName(),
-                workflowDef.getVersion());
+            String errorMsg =
+                    String.format(
+                            "Error updating workflow definition: %s/%d",
+                            workflowDef.getName(), workflowDef.getVersion());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
         }
@@ -210,9 +243,14 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         try {
             recordCassandraDaoRequests("getWorkflowDef");
             ResultSet resultSet = session.execute(selectWorkflowDefStatement.bind(name, version));
-            WorkflowDef workflowDef = Optional.ofNullable(resultSet.one())
-                .map(row -> readValue(row.getString(WORKFLOW_DEFINITION_KEY), WorkflowDef.class))
-                .orElse(null);
+            WorkflowDef workflowDef =
+                    Optional.ofNullable(resultSet.one())
+                            .map(
+                                    row ->
+                                            readValue(
+                                                    row.getString(WORKFLOW_DEFINITION_KEY),
+                                                    WorkflowDef.class))
+                            .orElse(null);
             return Optional.ofNullable(workflowDef);
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getTaskDef");
@@ -226,11 +264,13 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     public void removeWorkflowDef(String name, Integer version) {
         try {
             session.execute(deleteWorkflowDefStatement.bind(name, version));
-            session.execute(deleteWorkflowDefIndexStatement.bind(WORKFLOW_DEF_INDEX_KEY,
-                getWorkflowDefIndexValue(name, version)));
+            session.execute(
+                    deleteWorkflowDefIndexStatement.bind(
+                            WORKFLOW_DEF_INDEX_KEY, getWorkflowDefIndexValue(name, version)));
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeWorkflowDef");
-            String errorMsg = String.format("Failed to remove workflow definition: %s/%d", name, version);
+            String errorMsg =
+                    String.format("Failed to remove workflow definition: %s/%d", name, version);
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
         }
@@ -240,20 +280,24 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
         try {
-            ResultSet resultSet = session.execute(selectAllWorkflowDefsStatement.bind(WORKFLOW_DEF_INDEX_KEY));
+            ResultSet resultSet =
+                    session.execute(selectAllWorkflowDefsStatement.bind(WORKFLOW_DEF_INDEX_KEY));
             List<Row> rows = resultSet.all();
             if (rows.size() == 0) {
                 LOGGER.info("No workflow definitions were found.");
                 return Collections.EMPTY_LIST;
             }
             return rows.stream()
-                .map(row -> {
-                    String defNameVersion = row.getString(WORKFLOW_DEF_NAME_VERSION_KEY);
-                    String[] tokens = defNameVersion.split(INDEX_DELIMITER);
-                    return getWorkflowDef(tokens[0], Integer.parseInt(tokens[1])).orElse(null);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                    .map(
+                            row -> {
+                                String defNameVersion =
+                                        row.getString(WORKFLOW_DEF_NAME_VERSION_KEY);
+                                String[] tokens = defNameVersion.split(INDEX_DELIMITER);
+                                return getWorkflowDef(tokens[0], Integer.parseInt(tokens[1]))
+                                        .orElse(null);
+                            })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefs");
             String errorMsg = "Error retrieving all workflow defs";
@@ -283,8 +327,8 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             ResultSet resultSet = session.execute(selectTaskDefStatement.bind(name));
             recordCassandraDaoRequests("getTaskDef");
             return Optional.ofNullable(resultSet.one())
-                .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
-                .orElse(null);
+                    .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
+                    .orElse(null);
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getTaskDef");
             String errorMsg = String.format("Failed to get task def: %s", name);
@@ -303,8 +347,8 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                 return Collections.EMPTY_LIST;
             }
             return rows.stream()
-                .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
-                .collect(Collectors.toList());
+                    .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getAllTaskDefs");
             String errorMsg = "Failed to get all task defs";
@@ -315,7 +359,8 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     private List<WorkflowDef> getAllWorkflowDefVersions(String name) {
         try {
-            ResultSet resultSet = session.execute(selectAllWorkflowDefVersionsByNameStatement.bind(name));
+            ResultSet resultSet =
+                    session.execute(selectAllWorkflowDefVersionsByNameStatement.bind(name));
             recordCassandraDaoRequests("getAllWorkflowDefVersions", "n/a", name);
             List<Row> rows = resultSet.all();
             if (rows.size() == 0) {
@@ -323,8 +368,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                 return null;
             }
             return rows.stream()
-                .map(row -> readValue(row.getString(WORKFLOW_DEFINITION_KEY), WorkflowDef.class))
-                .collect(Collectors.toList());
+                    .map(
+                            row ->
+                                    readValue(
+                                            row.getString(WORKFLOW_DEFINITION_KEY),
+                                            WorkflowDef.class))
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefVersions");
             String errorMsg = String.format("Failed to get workflows defs for : %s", name);
@@ -338,10 +387,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             String taskDefinition = toJson(taskDef);
             session.execute(insertTaskDefStatement.bind(taskDef.getName(), taskDefinition));
             recordCassandraDaoRequests("storeTaskDef");
-            recordCassandraDaoPayloadSize("storeTaskDef", taskDefinition.length(), taskDef.getName(), "n/a");
+            recordCassandraDaoPayloadSize(
+                    "storeTaskDef", taskDefinition.length(), taskDef.getName(), "n/a");
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "insertOrUpdateTaskDef");
-            String errorMsg = String.format("Error creating/updating task definition: %s", taskDef.getName());
+            String errorMsg =
+                    String.format("Error creating/updating task definition: %s", taskDef.getName());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
         }

@@ -9,6 +9,7 @@ buildscript {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.3'
         // revElasticSearch7 in dependencies.gradle needs to be updated when spring is upgraded
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.12.RELEASE'
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:5.+'
     }
 }
 
@@ -171,3 +172,15 @@ sonarqube {
     }
 }
 
+configure(allprojects - project(':conductor-grpc')) {
+    apply plugin: 'com.diffplug.spotless'
+
+    spotless {
+        java {
+            googleJavaFormat().aosp()
+            removeUnusedImports()
+            importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
+            licenseHeaderFile("$rootDir/licenseheader.txt")
+        }
+    }
+}

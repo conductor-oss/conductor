@@ -21,8 +21,7 @@ public class Message {
     private String receipt;
     private int priority;
 
-    public Message() {
-    }
+    public Message() {}
 
     public Message(String id, String payload, String receipt) {
         this.payload = payload;
@@ -37,44 +36,32 @@ public class Message {
         this.priority = priority;
     }
 
-    /**
-     * @return the payload
-     */
+    /** @return the payload */
     public String getPayload() {
         return payload;
     }
 
-    /**
-     * @param payload the payload to set
-     */
+    /** @param payload the payload to set */
     public void setPayload(String payload) {
         this.payload = payload;
     }
 
-    /**
-     * @return the id
-     */
+    /** @return the id */
     public String getId() {
         return id;
     }
 
-    /**
-     * @param id the id to set
-     */
+    /** @param id the id to set */
     public void setId(String id) {
         this.id = id;
     }
 
-    /**
-     * @return Receipt attached to the message
-     */
+    /** @return Receipt attached to the message */
     public String getReceipt() {
         return receipt;
     }
 
-    /**
-     * @param receipt Receipt attached to the message
-     */
+    /** @param receipt Receipt attached to the message */
     public void setReceipt(String receipt) {
         this.receipt = receipt;
     }
@@ -89,7 +76,8 @@ public class Message {
     }
 
     /**
-     * Sets the message priority (between 0 and 99). Higher priority message is retrieved ahead of lower priority ones.
+     * Sets the message priority (between 0 and 99). Higher priority message is retrieved ahead of
+     * lower priority ones.
      *
      * @param priority the priority of message (between 0 and 99)
      */
@@ -111,10 +99,10 @@ public class Message {
             return false;
         }
         Message message = (Message) o;
-        return Objects.equals(payload, message.payload) &&
-            Objects.equals(id, message.id) &&
-            Objects.equals(priority, message.priority) &&
-            Objects.equals(receipt, message.receipt);
+        return Objects.equals(payload, message.payload)
+                && Objects.equals(id, message.id)
+                && Objects.equals(priority, message.priority)
+                && Objects.equals(receipt, message.receipt);
     }
 
     @Override

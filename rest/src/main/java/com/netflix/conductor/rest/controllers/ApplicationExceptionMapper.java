@@ -12,13 +12,8 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.netflix.conductor.common.validation.ErrorResponse;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.utils.Utils;
-import com.netflix.conductor.metrics.Monitors;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -26,6 +21,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.netflix.conductor.common.validation.ErrorResponse;
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.metrics.Monitors;
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
 import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
@@ -39,19 +41,24 @@ public class ApplicationExceptionMapper {
     private final String host = Utils.getServerId();
 
     @ExceptionHandler(ApplicationException.class)
-    public ResponseEntity<ErrorResponse> handleApplicationException(HttpServletRequest request, ApplicationException ex) {
+    public ResponseEntity<ErrorResponse> handleApplicationException(
+            HttpServletRequest request, ApplicationException ex) {
         logException(request, ex);
 
         Monitors.error("error", String.valueOf(ex.getHttpStatusCode()));
 
-        return new ResponseEntity<>(toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
+        return new ResponseEntity<>(
+                toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
     }
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
 
-        ApplicationException.Code code = (th instanceof IllegalArgumentException || th instanceof InvalidFormatException) ? INVALID_INPUT : INTERNAL_ERROR;
+        ApplicationException.Code code =
+                (th instanceof IllegalArgumentException || th instanceof InvalidFormatException)
+                        ? INVALID_INPUT
+                        : INTERNAL_ERROR;
 
         ApplicationException ex = new ApplicationException(code, th.getMessage(), th);
 
@@ -59,8 +66,11 @@ public class ApplicationExceptionMapper {
     }
 
     private void logException(HttpServletRequest request, Throwable exception) {
-        LOGGER.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
-                request.getRequestURI()), exception);
+        LOGGER.error(
+                String.format(
+                        "Error %s url: '%s'",
+                        exception.getClass().getSimpleName(), request.getRequestURI()),
+                exception);
     }
 
     private ErrorResponse toErrorResponse(ApplicationException ex) {

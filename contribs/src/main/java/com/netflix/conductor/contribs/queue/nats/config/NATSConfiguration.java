@@ -12,11 +12,13 @@
  */
 package com.netflix.conductor.contribs.queue.nats.config;
 
-import com.netflix.conductor.core.events.EventQueueProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+
+import com.netflix.conductor.core.events.EventQueueProvider;
+
 import rx.Scheduler;
 
 @Configuration

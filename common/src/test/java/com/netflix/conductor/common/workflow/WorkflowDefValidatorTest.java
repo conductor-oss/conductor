@@ -12,21 +12,23 @@
  */
 package com.netflix.conductor.common.workflow;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Before;
-import org.junit.Test;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class WorkflowDefValidatorTest {
 
     @Before
-    public void before(){
+    public void before() {
         System.setProperty("NETFLIX_STACK", "test");
         System.setProperty("NETFLIX_ENVIRONMENT", "test");
         System.setProperty("TEST_ENV", "test");
@@ -42,7 +44,7 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowDefConstraints() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
 
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -56,7 +58,7 @@ public class WorkflowDefValidatorTest {
         assertTrue(validationErrors.contains("WorkflowDef name cannot be null or empty"));
         assertTrue(validationErrors.contains("WorkflowTask list cannot be empty"));
         assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
-        //assertTrue(validationErrors.contains("workflowDef schemaVersion: 1 should be >= 2"));
+        // assertTrue(validationErrors.contains("workflowDef schemaVersion: 1 should be >= 2"));
     }
 
     @Test
@@ -73,7 +75,9 @@ public class WorkflowDefValidatorTest {
 
         Map<String, Object> inputParam = new HashMap<>();
         inputParam.put("taskId", "${CPEWF_TASK_ID}");
-        inputParam.put("entryPoint", "${NETFLIX_ENVIRONMENT} ${NETFLIX_STACK} ${CPEWF_TASK_ID} ${workflow.input.status}");
+        inputParam.put(
+                "entryPoint",
+                "${NETFLIX_ENVIRONMENT} ${NETFLIX_STACK} ${CPEWF_TASK_ID} ${workflow.input.status}");
 
         workflowTask_1.setInputParameters(inputParam);
 
@@ -101,7 +105,7 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowDefConstraintsSingleEnvVariable() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
@@ -129,7 +133,7 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowDefConstraintsDualEnvVariable() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
@@ -144,7 +148,6 @@ public class WorkflowDefValidatorTest {
 
         workflowTask_1.setInputParameters(inputParam);
 
-
         List<WorkflowTask> tasks = new ArrayList<>();
         tasks.add(workflowTask_1);
 
@@ -156,10 +159,9 @@ public class WorkflowDefValidatorTest {
         assertEquals(0, result.size());
     }
 
-
     @Test
     public void testWorkflowDefConstraintsWithMapAsInputParam() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
@@ -194,12 +196,12 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowTaskInputParamInvalid() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
 
-        WorkflowTask workflowTask = new WorkflowTask();//name is null
+        WorkflowTask workflowTask = new WorkflowTask(); // name is null
         workflowTask.setName("t1");
         workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
         workflowTask.setTaskReferenceName("t1");
@@ -218,18 +220,19 @@ public class WorkflowDefValidatorTest {
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("key: blabla input parameter value: workflow.input.Space Value is not valid"));
+        assertTrue(
+                validationErrors.contains(
+                        "key: blabla input parameter value: workflow.input.Space Value is not valid"));
     }
-
 
     @Test
     public void testWorkflowTaskEmptyStringInputParamValue() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
 
-        WorkflowTask workflowTask = new WorkflowTask();//name is null
+        WorkflowTask workflowTask = new WorkflowTask(); // name is null
 
         workflowTask.setName("t1");
         workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
@@ -249,12 +252,12 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowTasklistInputParamWithEmptyString() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");
 
-        WorkflowTask workflowTask = new WorkflowTask();//name is null
+        WorkflowTask workflowTask = new WorkflowTask(); // name is null
 
         workflowTask.setName("t1");
         workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
@@ -262,7 +265,7 @@ public class WorkflowDefValidatorTest {
 
         Map<String, Object> map = new HashMap<>();
         map.put("blabla", "");
-        map.put("foo", new String[]{""});
+        map.put("foo", new String[] {""});
         workflowTask.setInputParameters(map);
 
         workflowDef.getTasks().add(workflowTask);
@@ -275,7 +278,7 @@ public class WorkflowDefValidatorTest {
 
     @Test
     public void testWorkflowSchemaVersion1() {
-        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        WorkflowDef workflowDef = new WorkflowDef(); // name is null
         workflowDef.setSchemaVersion(3);
         workflowDef.setName("test_env");
         workflowDef.setOwnerEmail("owner@test.com");

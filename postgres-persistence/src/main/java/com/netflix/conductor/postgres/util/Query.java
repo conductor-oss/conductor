@@ -12,14 +12,6 @@
  */
 package com.netflix.conductor.postgres.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -32,11 +24,21 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ApplicationException.Code;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Represents a {@link PreparedStatement} that is wrapped with convenience methods and utilities.
- * <p>
- * This class simulates a parameter building pattern and all {@literal addParameter(*)} methods must be called in the
- * proper order of their expected binding sequence.
+ *
+ * <p>This class simulates a parameter building pattern and all {@literal addParameter(*)} methods
+ * must be called in the proper order of their expected binding sequence.
  *
  * @author mustafa
  */
@@ -44,25 +46,19 @@ public class Query implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /**
-     * The {@link ObjectMapper} instance to use for serializing/deserializing JSON.
-     */
+    /** The {@link ObjectMapper} instance to use for serializing/deserializing JSON. */
     protected final ObjectMapper objectMapper;
 
-    /**
-     * The initial supplied query String that was used to prepare {@link #statement}.
-     */
+    /** The initial supplied query String that was used to prepare {@link #statement}. */
     private final String rawQuery;
 
     /**
-     * Parameter index for the {@code ResultSet#set*(*)} methods, gets incremented every time a parameter is added to
-     * the {@code PreparedStatement} {@link #statement}.
+     * Parameter index for the {@code ResultSet#set*(*)} methods, gets incremented every time a
+     * parameter is added to the {@code PreparedStatement} {@link #statement}.
      */
     private final AtomicInteger index = new AtomicInteger(1);
 
-    /**
-     * The {@link PreparedStatement} that will be managed and executed by this class.
-     */
+    /** The {@link PreparedStatement} that will be managed and executed by this class. */
     private final PreparedStatement statement;
 
     public Query(ObjectMapper objectMapper, Connection connection, String query) {
@@ -72,13 +68,16 @@ public class Query implements AutoCloseable {
         try {
             this.statement = connection.prepareStatement(query);
         } catch (SQLException ex) {
-            throw new ApplicationException(Code.BACKEND_ERROR,
-                "Cannot prepare statement for query: " + ex.getMessage(), ex);
+            throw new ApplicationException(
+                    Code.BACKEND_ERROR,
+                    "Cannot prepare statement for query: " + ex.getMessage(),
+                    ex);
         }
     }
 
     /**
-     * Generate a String with {@literal count} number of '?' placeholders for {@link PreparedStatement} queries.
+     * Generate a String with {@literal count} number of '?' placeholders for {@link
+     * PreparedStatement} queries.
      *
      * @param count The number of '?' chars to generate.
      * @return a comma delimited string of {@literal count} '?' binding placeholders.
@@ -165,7 +164,8 @@ public class Query implements AutoCloseable {
      *
      * @param values The values to bind to the prepared statement.
      * @return {@literal this}
-     * @throws IllegalArgumentException If a non-primitive/unsupported type is encountered in the collection.
+     * @throws IllegalArgumentException If a non-primitive/unsupported type is encountered in the
+     *     collection.
      * @see #addParameters(Object...)
      */
     public Query addParameters(Collection values) {
@@ -197,7 +197,9 @@ public class Query implements AutoCloseable {
                 addParameter((Timestamp) v);
             } else {
                 throw new IllegalArgumentException(
-                    "Type " + v.getClass().getName() + " is not supported by automatic property assignment");
+                        "Type "
+                                + v.getClass().getName()
+                                + " is not supported by automatic property assignment");
             }
         }
 
@@ -205,13 +207,15 @@ public class Query implements AutoCloseable {
     }
 
     /**
-     * Utility method for evaluating the prepared statement as a query to check the existence of a record using a
-     * numeric count or boolean return value.
-     * <p>
-     * The {@link #rawQuery} provided must result in a {@link Number} or {@link Boolean} result.
+     * Utility method for evaluating the prepared statement as a query to check the existence of a
+     * record using a numeric count or boolean return value.
      *
-     * @return {@literal true} If a count query returned more than 0 or an exists query returns {@literal true}.
-     * @throws ApplicationException If an unexpected return type cannot be evaluated to a {@code Boolean} result.
+     * <p>The {@link #rawQuery} provided must result in a {@link Number} or {@link Boolean} result.
+     *
+     * @return {@literal true} If a count query returned more than 0 or an exists query returns
+     *     {@literal true}.
+     * @throws ApplicationException If an unexpected return type cannot be evaluated to a {@code
+     *     Boolean} result.
      */
     public boolean exists() {
         Object val = executeScalar();
@@ -231,9 +235,10 @@ public class Query implements AutoCloseable {
             return convertBoolean(val);
         }
 
-        throw new ApplicationException(Code.BACKEND_ERROR,
-            "Expected a Numeric or Boolean scalar return value from the query, received " +
-                val.getClass().getName());
+        throw new ApplicationException(
+                Code.BACKEND_ERROR,
+                "Expected a Numeric or Boolean scalar return value from the query, received "
+                        + val.getClass().getName());
     }
 
     /**
@@ -252,8 +257,8 @@ public class Query implements AutoCloseable {
     }
 
     /**
-     * Convenience method for executing statements that return a single numeric value, typically {@literal SELECT
-     * COUNT...} style queries.
+     * Convenience method for executing statements that return a single numeric value, typically
+     * {@literal SELECT COUNT...} style queries.
      *
      * @return The result of the query as a {@literal long}.
      */
@@ -261,9 +266,7 @@ public class Query implements AutoCloseable {
         return executeScalar(Long.class);
     }
 
-    /**
-     * @return The result of {@link PreparedStatement#executeUpdate()}
-     */
+    /** @return The result of {@link PreparedStatement#executeUpdate()} */
     public int executeUpdate() {
         try {
 
@@ -287,9 +290,8 @@ public class Query implements AutoCloseable {
 
     /**
      * Execute a query from the PreparedStatement and return the ResultSet.
-     * <p>
      *
-     * <em>NOTE:</em> The returned ResultSet must be closed/managed by the calling methods.
+     * <p><em>NOTE:</em> The returned ResultSet must be closed/managed by the calling methods.
      *
      * @return {@link PreparedStatement#executeQuery()}
      * @throws ApplicationException If any SQL errors occur.
@@ -312,9 +314,7 @@ public class Query implements AutoCloseable {
         }
     }
 
-    /**
-     * @return The single result of the query as an Object.
-     */
+    /** @return The single result of the query as an Object. */
     public Object executeScalar() {
         try (ResultSet rs = executeQuery()) {
             if (!rs.next()) {
@@ -330,10 +330,11 @@ public class Query implements AutoCloseable {
      * Execute the PreparedStatement and return a single 'primitive' value from the ResultSet.
      *
      * @param returnType The type to return.
-     * @param <V>        The type parameter to return a List of.
-     * @return A single result from the execution of the statement, as a type of {@literal returnType}.
-     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the result, or any SQL
-     *                              errors occur.
+     * @param <V> The type parameter to return a List of.
+     * @return A single result from the execution of the statement, as a type of {@literal
+     *     returnType}.
+     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the
+     *     result, or any SQL errors occur.
      */
     public <V> V executeScalar(Class<V> returnType) {
         try (ResultSet rs = executeQuery()) {
@@ -359,10 +360,10 @@ public class Query implements AutoCloseable {
      * Execute the PreparedStatement and return a List of 'primitive' values from the ResultSet.
      *
      * @param returnType The type Class return a List of.
-     * @param <V>        The type parameter to return a List of.
+     * @param <V> The type parameter to return a List of.
      * @return A {@code List<returnType>}.
-     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the result, or any SQL
-     *                              errors occur.
+     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the
+     *     result, or any SQL errors occur.
      */
     public <V> List<V> executeScalarList(Class<V> returnType) {
         try (ResultSet rs = executeQuery()) {
@@ -380,7 +381,7 @@ public class Query implements AutoCloseable {
      * Execute the statement and return only the first record from the result set.
      *
      * @param returnType The Class to return.
-     * @param <V>        The type parameter.
+     * @param <V> The type parameter.
      * @return An instance of {@literal <V>} from the result set.
      */
     public <V> V executeAndFetchFirst(Class<V> returnType) {
@@ -392,13 +393,14 @@ public class Query implements AutoCloseable {
     }
 
     /**
-     * Execute the PreparedStatement and return a List of {@literal returnType} values from the ResultSet.
+     * Execute the PreparedStatement and return a List of {@literal returnType} values from the
+     * ResultSet.
      *
      * @param returnType The type Class return a List of.
-     * @param <V>        The type parameter to return a List of.
+     * @param <V> The type parameter to return a List of.
      * @return A {@code List<returnType>}.
-     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the result, or any SQL
-     *                              errors occur.
+     * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the
+     *     result, or any SQL errors occur.
      */
     public <V> List<V> executeAndFetch(Class<V> returnType) {
         try (ResultSet rs = executeQuery()) {
@@ -416,7 +418,7 @@ public class Query implements AutoCloseable {
      * Execute the query and pass the {@link ResultSet} to the given handler.
      *
      * @param handler The {@link ResultSetHandler} to execute.
-     * @param <V>     The return type of this method.
+     * @param <V> The return type of this method.
      * @return The results of {@link ResultSetHandler#apply(ResultSet)}.
      */
     public <V> V executeAndFetch(ResultSetHandler<V> handler) {
@@ -444,7 +446,8 @@ public class Query implements AutoCloseable {
             setter.apply(this.statement, index);
             return this;
         } catch (SQLException ex) {
-            throw new ApplicationException(Code.BACKEND_ERROR, "Could not apply bind parameter at index " + index, ex);
+            throw new ApplicationException(
+                    Code.BACKEND_ERROR, "Could not apply bind parameter at index " + index, ex);
         }
     }
 
@@ -470,7 +473,8 @@ public class Query implements AutoCloseable {
         }
 
         if (null == value) {
-            throw new NullPointerException("Cannot get value from ResultSet of type " + returnType.getName());
+            throw new NullPointerException(
+                    "Cannot get value from ResultSet of type " + returnType.getName());
         }
 
         return returnType.cast(value);
@@ -493,7 +497,8 @@ public class Query implements AutoCloseable {
 
         final String vName = value.getClass().getName();
         final String rName = returnType.getName();
-        throw new ApplicationException(Code.BACKEND_ERROR, "Cannot convert type " + vName + " to " + rName);
+        throw new ApplicationException(
+                Code.BACKEND_ERROR, "Cannot convert type " + vName + " to " + rName);
     }
 
     protected Integer convertInt(Object value) {
@@ -569,10 +574,12 @@ public class Query implements AutoCloseable {
         }
 
         String text = value.toString().trim();
-        return "Y".equalsIgnoreCase(text) || "YES".equalsIgnoreCase(text) || "TRUE".equalsIgnoreCase(text) ||
-            "T".equalsIgnoreCase(text) || "1".equalsIgnoreCase(text);
+        return "Y".equalsIgnoreCase(text)
+                || "YES".equalsIgnoreCase(text)
+                || "TRUE".equalsIgnoreCase(text)
+                || "T".equalsIgnoreCase(text)
+                || "1".equalsIgnoreCase(text);
     }
-
 
     protected String toJson(Object value) {
         if (null == value) {
@@ -594,8 +601,10 @@ public class Query implements AutoCloseable {
         try {
             return objectMapper.readValue(value, returnType);
         } catch (IOException ex) {
-            throw new ApplicationException(Code.BACKEND_ERROR,
-                "Could not convert JSON '" + value + "' to " + returnType.getName(), ex);
+            throw new ApplicationException(
+                    Code.BACKEND_ERROR,
+                    "Could not convert JSON '" + value + "' to " + returnType.getName(),
+                    ex);
         }
     }
 

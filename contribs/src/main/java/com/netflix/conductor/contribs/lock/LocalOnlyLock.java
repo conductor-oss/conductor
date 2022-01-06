@@ -12,34 +12,40 @@
  */
 package com.netflix.conductor.contribs.lock;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.netflix.conductor.core.sync.Lock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.sync.Lock;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 public class LocalOnlyLock implements Lock {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalOnlyLock.class);
 
-    private static final CacheLoader<String, Semaphore> LOADER = new CacheLoader<String, Semaphore>() {
-        @Override
-        public Semaphore load(String key) {
-            return new Semaphore(1, true);
-        }
-    };
-    private static final LoadingCache<String, Semaphore> CACHE = CacheBuilder.newBuilder().build(LOADER);
+    private static final CacheLoader<String, Semaphore> LOADER =
+            new CacheLoader<String, Semaphore>() {
+                @Override
+                public Semaphore load(String key) {
+                    return new Semaphore(1, true);
+                }
+            };
+    private static final LoadingCache<String, Semaphore> CACHE =
+            CacheBuilder.newBuilder().build(LOADER);
     private static final ThreadGroup THREAD_GROUP = new ThreadGroup("LocalOnlyLock-scheduler");
-    private static final ThreadFactory THREAD_FACTORY = runnable -> new Thread(THREAD_GROUP, runnable);
-    private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1, THREAD_FACTORY);
+    private static final ThreadFactory THREAD_FACTORY =
+            runnable -> new Thread(THREAD_GROUP, runnable);
+    private static final ScheduledExecutorService SCHEDULER =
+            Executors.newScheduledThreadPool(1, THREAD_FACTORY);
 
     @Override
     public void acquireLock(String lockId) {
@@ -60,7 +66,13 @@ public class LocalOnlyLock implements Lock {
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
-        LOGGER.trace("Locking {} with timeout {} {} for {} {}", lockId, timeToTry, unit, leaseTime, unit);
+        LOGGER.trace(
+                "Locking {} with timeout {} {} for {} {}",
+                lockId,
+                timeToTry,
+                unit,
+                leaseTime,
+                unit);
         if (acquireLock(lockId, timeToTry, unit)) {
             LOGGER.trace("Releasing {} automatically after {} {}", lockId, leaseTime, unit);
             SCHEDULER.schedule(() -> releaseLock(lockId), leaseTime, unit);

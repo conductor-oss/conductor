@@ -12,37 +12,45 @@
  */
 package com.netflix.conductor.contribs.listener.archive;
 
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PreDestroy;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.metrics.Monitors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArchivingWithTTLWorkflowStatusListener.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(ArchivingWithTTLWorkflowStatusListener.class);
 
     private final ExecutionDAOFacade executionDAOFacade;
     private final int archiveTTLSeconds;
     private final int delayArchiveSeconds;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    public ArchivingWithTTLWorkflowStatusListener(ExecutionDAOFacade executionDAOFacade,
-        ArchivingWorkflowListenerProperties properties) {
+    public ArchivingWithTTLWorkflowStatusListener(
+            ExecutionDAOFacade executionDAOFacade, ArchivingWorkflowListenerProperties properties) {
         this.executionDAOFacade = executionDAOFacade;
         this.archiveTTLSeconds = (int) properties.getTtlDuration().getSeconds();
         this.delayArchiveSeconds = properties.getWorkflowArchivalDelay();
 
-        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
-            properties.getDelayQueueWorkerThreadCount(),
-            (runnable, executor) -> {
-                LOGGER.warn("Request {} to delay archiving index dropped in executor {}", runnable, executor);
-                Monitors.recordDiscardedArchivalCount();
-            });
+        this.scheduledThreadPoolExecutor =
+                new ScheduledThreadPoolExecutor(
+                        properties.getDelayQueueWorkerThreadCount(),
+                        (runnable, executor) -> {
+                            LOGGER.warn(
+                                    "Request {} to delay archiving index dropped in executor {}",
+                                    runnable,
+                                    executor);
+                            Monitors.recordDiscardedArchivalCount();
+                        });
         this.scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     }
 
@@ -51,14 +59,16 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
         try {
             LOGGER.info("Gracefully shutdown executor service");
             scheduledThreadPoolExecutor.shutdown();
-            if (scheduledThreadPoolExecutor.awaitTermination(delayArchiveSeconds, TimeUnit.SECONDS)) {
+            if (scheduledThreadPoolExecutor.awaitTermination(
+                    delayArchiveSeconds, TimeUnit.SECONDS)) {
                 LOGGER.debug("tasks completed, shutting down");
             } else {
                 LOGGER.warn("Forcing shutdown after waiting for {} seconds", delayArchiveSeconds);
                 scheduledThreadPoolExecutor.shutdownNow();
             }
         } catch (InterruptedException ie) {
-            LOGGER.warn("Shutdown interrupted, invoking shutdownNow on scheduledThreadPoolExecutor for delay queue");
+            LOGGER.warn(
+                    "Shutdown interrupted, invoking shutdownNow on scheduledThreadPoolExecutor for delay queue");
             scheduledThreadPoolExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
@@ -68,11 +78,13 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     public void onWorkflowCompleted(Workflow workflow) {
         LOGGER.info("Archiving workflow {} on completion ", workflow.getWorkflowId());
         if (delayArchiveSeconds > 0) {
-            scheduledThreadPoolExecutor
-                .schedule(new DelayArchiveWorkflow(workflow, executionDAOFacade), delayArchiveSeconds,
+            scheduledThreadPoolExecutor.schedule(
+                    new DelayArchiveWorkflow(workflow, executionDAOFacade),
+                    delayArchiveSeconds,
                     TimeUnit.SECONDS);
         } else {
-            this.executionDAOFacade.removeWorkflowWithExpiry(workflow.getWorkflowId(), true, archiveTTLSeconds);
+            this.executionDAOFacade.removeWorkflowWithExpiry(
+                    workflow.getWorkflowId(), true, archiveTTLSeconds);
             Monitors.recordWorkflowArchived(workflow.getWorkflowName(), workflow.getStatus());
         }
     }
@@ -81,11 +93,13 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     public void onWorkflowTerminated(Workflow workflow) {
         LOGGER.info("Archiving workflow {} on termination", workflow.getWorkflowId());
         if (delayArchiveSeconds > 0) {
-            scheduledThreadPoolExecutor
-                .schedule(new DelayArchiveWorkflow(workflow, executionDAOFacade), delayArchiveSeconds,
+            scheduledThreadPoolExecutor.schedule(
+                    new DelayArchiveWorkflow(workflow, executionDAOFacade),
+                    delayArchiveSeconds,
                     TimeUnit.SECONDS);
         } else {
-            this.executionDAOFacade.removeWorkflowWithExpiry(workflow.getWorkflowId(), true, archiveTTLSeconds);
+            this.executionDAOFacade.removeWorkflowWithExpiry(
+                    workflow.getWorkflowId(), true, archiveTTLSeconds);
             Monitors.recordWorkflowArchived(workflow.getWorkflowName(), workflow.getStatus());
         }
     }
@@ -107,10 +121,12 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
         @Override
         public void run() {
             try {
-                this.executionDAOFacade.removeWorkflowWithExpiry(workflowId, true, archiveTTLSeconds);
+                this.executionDAOFacade.removeWorkflowWithExpiry(
+                        workflowId, true, archiveTTLSeconds);
                 LOGGER.info("Archived workflow {}", workflowId);
                 Monitors.recordWorkflowArchived(workflowName, status);
-                Monitors.recordArchivalDelayQueueSize(scheduledThreadPoolExecutor.getQueue().size());
+                Monitors.recordArchivalDelayQueueSize(
+                        scheduledThreadPoolExecutor.getQueue().size());
             } catch (Exception e) {
                 LOGGER.error("Unable to archive workflow: {}", workflowId, e);
             }

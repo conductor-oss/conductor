@@ -12,10 +12,11 @@
  */
 package com.netflix.conductor.contribs.tasks.http;
 
-import com.netflix.conductor.contribs.tasks.http.HttpTask.Input;
 import java.time.Duration;
 import java.util.Optional;
+
 import javax.annotation.Nonnull;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -23,9 +24,11 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.netflix.conductor.contribs.tasks.http.HttpTask.Input;
+
 /**
- * Provider for a customized RestTemplateBuilder. This class provides a default {@link RestTemplateBuilder} which can be
- * configured or extended as needed.
+ * Provider for a customized RestTemplateBuilder. This class provides a default {@link
+ * RestTemplateBuilder} which can be configured or extended as needed.
  */
 @Component
 public class DefaultRestTemplateProvider implements RestTemplateProvider {
@@ -36,21 +39,23 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
     private final int defaultConnectTimeout;
 
     @Autowired
-    public DefaultRestTemplateProvider(@Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
-        @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
+    public DefaultRestTemplateProvider(
+            @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
+            @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
         this.threadLocalRestTemplate = ThreadLocal.withInitial(RestTemplate::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
     }
 
     @Override
-    public @Nonnull
-    RestTemplate getRestTemplate(@Nonnull Input input) {
+    public @Nonnull RestTemplate getRestTemplate(@Nonnull Input input) {
         RestTemplate restTemplate = threadLocalRestTemplate.get();
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        requestFactory
-            .setConnectTimeout(Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
-        requestFactory.setReadTimeout(Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
+        HttpComponentsClientHttpRequestFactory requestFactory =
+                new HttpComponentsClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(
+                Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
+        requestFactory.setReadTimeout(
+                Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
         restTemplate.setRequestFactory(requestFactory);
         return restTemplate;
     }

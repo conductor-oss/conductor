@@ -12,16 +12,18 @@
  */
 package com.netflix.conductor.client.worker;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Before;
-import org.junit.Test;
 
-import java.io.InputStream;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

@@ -12,13 +12,15 @@
  */
 package com.netflix.conductor.core.events;
 
-import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+
 import rx.Observable;
 
 public class MockObservableQueue implements ObservableQueue {
@@ -65,8 +67,7 @@ public class MockObservableQueue implements ObservableQueue {
     }
 
     @Override
-    public void setUnackTimeout(Message message, long unackTimeout) {
-    }
+    public void setUnackTimeout(Message message, long unackTimeout) {}
 
     @Override
     public long size() {
@@ -79,14 +80,10 @@ public class MockObservableQueue implements ObservableQueue {
     }
 
     @Override
-    public void start() {
-
-    }
+    public void start() {}
 
     @Override
-    public void stop() {
-
-    }
+    public void stop() {}
 
     @Override
     public boolean isRunning() {

@@ -12,12 +12,13 @@
  */
 package com.netflix.conductor.common.tasks;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import java.util.HashMap;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import static org.junit.Assert.assertEquals;
 
@@ -77,6 +78,8 @@ public class TaskResultTest {
         assertEquals(task.getCallbackAfterSeconds(), taskResult.getCallbackAfterSeconds());
         assertEquals(task.getWorkerId(), taskResult.getWorkerId());
         assertEquals(task.getOutputData(), taskResult.getOutputData());
-        assertEquals(task.getExternalOutputPayloadStoragePath(), taskResult.getExternalOutputPayloadStoragePath());
+        assertEquals(
+                task.getExternalOutputPayloadStoragePath(),
+                taskResult.getExternalOutputPayloadStoragePath());
     }
 }

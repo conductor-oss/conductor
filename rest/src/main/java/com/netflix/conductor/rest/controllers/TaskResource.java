@@ -12,17 +12,11 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.service.TaskService;
-import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,11 +25,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.service.TaskService;
+
+import io.swagger.v3.oas.annotations.Operation;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
+
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
@@ -50,9 +52,10 @@ public class TaskResource {
 
     @GetMapping("/poll/{tasktype}")
     @Operation(summary = "Poll for a task of a certain type")
-    public ResponseEntity<Task> poll(@PathVariable("tasktype") String taskType,
-                                     @RequestParam(value = "workerid", required = false) String workerId,
-                                     @RequestParam(value = "domain", required = false) String domain) {
+    public ResponseEntity<Task> poll(
+            @PathVariable("tasktype") String taskType,
+            @RequestParam(value = "workerid", required = false) String workerId,
+            @RequestParam(value = "domain", required = false) String domain) {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.poll(taskType, workerId, domain))
                 .map(ResponseEntity::ok)
@@ -61,13 +64,15 @@ public class TaskResource {
 
     @GetMapping("/poll/batch/{tasktype}")
     @Operation(summary = "Batch poll for a task of a certain type")
-    public ResponseEntity<List<Task>> batchPoll(@PathVariable("tasktype") String taskType,
-                                                @RequestParam(value = "workerid", required = false) String workerId,
-                                                @RequestParam(value = "domain", required = false) String domain,
-                                                @RequestParam(value = "count", defaultValue = "1") int count,
-                                                @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
+    public ResponseEntity<List<Task>> batchPoll(
+            @PathVariable("tasktype") String taskType,
+            @RequestParam(value = "workerid", required = false) String workerId,
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "count", defaultValue = "1") int count,
+            @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
-        return Optional.ofNullable(taskService.batchPoll(taskType, workerId, domain, count, timeout))
+        return Optional.ofNullable(
+                        taskService.batchPoll(taskType, workerId, domain, count, timeout))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
@@ -94,12 +99,15 @@ public class TaskResource {
     @Operation(summary = "Get task by Id")
     public ResponseEntity<Task> getTask(@PathVariable("taskId") String taskId) {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
-        return Optional.ofNullable(taskService.getTask(taskId)).map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
+        return Optional.ofNullable(taskService.getTask(taskId))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/queue/sizes")
     @Operation(summary = "Get Task type queue sizes")
-    public Map<String, Integer> size(@RequestParam(value = "taskType", required = false) List<String> taskTypes) {
+    public Map<String, Integer> size(
+            @RequestParam(value = "taskType", required = false) List<String> taskTypes) {
         return taskService.getTaskQueueSizes(taskTypes);
     }
 
@@ -133,9 +141,11 @@ public class TaskResource {
         return taskService.requeuePendingTask(taskType);
     }
 
-    @Operation(summary = "Search for tasks based in payload and other parameters",
-            description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
-                    " If order is not specified, defaults to ASC")
+    @Operation(
+            summary = "Search for tasks based in payload and other parameters",
+            description =
+                    "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC."
+                            + " If order is not specified, defaults to ASC")
     @GetMapping(value = "/search")
     public SearchResult<TaskSummary> search(
             @RequestParam(value = "start", defaultValue = "0", required = false) int start,
@@ -146,9 +156,11 @@ public class TaskResource {
         return taskService.search(start, size, sort, freeText, query);
     }
 
-    @Operation(summary = "Search for tasks based in payload and other parameters",
-            description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
-                    " If order is not specified, defaults to ASC")
+    @Operation(
+            summary = "Search for tasks based in payload and other parameters",
+            description =
+                    "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC."
+                            + " If order is not specified, defaults to ASC")
     @GetMapping(value = "/search-v2")
     public SearchResult<Task> searchV2(
             @RequestParam(value = "start", defaultValue = "0", required = false) int start,
@@ -161,8 +173,10 @@ public class TaskResource {
 
     @Operation(summary = "Get the external uri where the task payload is to be stored")
     @GetMapping("/externalstoragelocation")
-    public ExternalStorageLocation getExternalStorageLocation(@RequestParam("path") String path,
-                                                              @RequestParam("operation") String operation, @RequestParam("payloadType") String payloadType) {
+    public ExternalStorageLocation getExternalStorageLocation(
+            @RequestParam("path") String path,
+            @RequestParam("operation") String operation,
+            @RequestParam("payloadType") String payloadType) {
         return taskService.getExternalStorageLocation(path, operation, payloadType);
     }
 }

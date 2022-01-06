@@ -1,23 +1,26 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.postgres.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.postgres.config.PostgresConfiguration;
-import com.netflix.conductor.postgres.util.Query;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,13 +36,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.postgres.config.PostgresConfiguration;
+import com.netflix.conductor.postgres.util.Query;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,29 +51,28 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @ContextConfiguration(
-        classes = {TestObjectMapperConfiguration.class, PostgresConfiguration.class, FlywayAutoConfiguration.class})
+        classes = {
+            TestObjectMapperConfiguration.class,
+            PostgresConfiguration.class,
+            FlywayAutoConfiguration.class
+        })
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class PostgresQueueDAOTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresQueueDAOTest.class);
 
-    @Autowired
-    private PostgresQueueDAO queueDAO;
+    @Autowired private PostgresQueueDAO queueDAO;
 
     @Qualifier("dataSource")
     @Autowired
     private DataSource dataSource;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
-    @Rule
-    public TestName name = new TestName();
+    @Rule public TestName name = new TestName();
 
-
-    @Autowired
-    Flyway flyway;
+    @Autowired Flyway flyway;
 
     // clean the database between tests.
     @Before
@@ -191,12 +193,16 @@ public class PostgresQueueDAOTest {
         assertEquals("Second poll size mismatch", secondPollSize, secondPoll.size());
 
         // Assert that the total queue size hasn't changed
-        assertEquals("Total queue size should have remained the same", totalSize, queueDAO.getSize(queueName));
+        assertEquals(
+                "Total queue size should have remained the same",
+                totalSize,
+                queueDAO.getSize(queueName));
 
         // Assert that our un-popped messages match our expected size
         final long expectedSize = totalSize - firstPollSize - secondPollSize;
         try (Connection c = dataSource.getConnection()) {
-            String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
+            String UNPOPPED =
+                    "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
             try (Query q = new Query(objectMapper, c, UNPOPPED)) {
                 long count = q.addParameter(queueName).executeCount();
                 assertEquals("Remaining queue size mismatch", expectedSize, count);
@@ -206,10 +212,7 @@ public class PostgresQueueDAOTest {
         }
     }
 
-
-    /**
-     * Test fix for https://github.com/Netflix/conductor/issues/1892
-     */
+    /** Test fix for https://github.com/Netflix/conductor/issues/1892 */
     @Test
     public void containsMessageTest() {
         String queueName = "TestQueue";
@@ -253,7 +256,8 @@ public class PostgresQueueDAOTest {
                 // Set id:6 and id:7 for a 2s delay to be picked up in the second polling batch
                 offset = 5;
             } else {
-                // Set all other queue messages to have enough of a delay that they won't accidentally
+                // Set all other queue messages to have enough of a delay that they won't
+                // accidentally
                 // be picked up.
                 offset = 10_000 + i;
             }
@@ -273,8 +277,11 @@ public class PostgresQueueDAOTest {
         assertFalse("First poll was empty", firstPoll.isEmpty());
         assertEquals("First poll size mismatch", firstPollSize, firstPoll.size());
 
-        List<String> firstPollMessageIds = messages.stream().map(Message::getId).collect(Collectors.toList())
-            .subList(0, firstPollSize + 1);
+        List<String> firstPollMessageIds =
+                messages.stream()
+                        .map(Message::getId)
+                        .collect(Collectors.toList())
+                        .subList(0, firstPollSize + 1);
 
         for (int i = 0; i < firstPollSize; i++) {
             String actual = firstPoll.get(i).getId();
@@ -300,12 +307,16 @@ public class PostgresQueueDAOTest {
         }
 
         // Assert that the total queue size hasn't changed
-        assertEquals("Total queue size should have remained the same", totalSize, queueDAO.getSize(queueName));
+        assertEquals(
+                "Total queue size should have remained the same",
+                totalSize,
+                queueDAO.getSize(queueName));
 
         // Assert that our un-popped messages match our expected size
         final long expectedSize = totalSize - firstPollSize - secondPollSize;
         try (Connection c = dataSource.getConnection()) {
-            String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
+            String UNPOPPED =
+                    "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
             try (Query q = new Query(objectMapper, c, UNPOPPED)) {
                 long count = q.addParameter(queueName).executeCount();
                 assertEquals("Remaining queue size mismatch", expectedSize, count);
@@ -317,18 +328,22 @@ public class PostgresQueueDAOTest {
 
     @Test
     public void processUnacksTest() {
-        processUnacks(() -> {
-            // Process unacks
-            queueDAO.processUnacks("process_unacks_test");
-        }, "process_unacks_test");
+        processUnacks(
+                () -> {
+                    // Process unacks
+                    queueDAO.processUnacks("process_unacks_test");
+                },
+                "process_unacks_test");
     }
 
     @Test
     public void processAllUnacksTest() {
-        processUnacks(() -> {
-            // Process all unacks
-            queueDAO.processAllUnacks();
-        }, "process_unacks_test");
+        processUnacks(
+                () -> {
+                    // Process all unacks
+                    queueDAO.processAllUnacks();
+                },
+                "process_unacks_test");
     }
 
     private void processUnacks(Runnable unack, String queueName) {
@@ -377,11 +392,15 @@ public class PostgresQueueDAOTest {
         Map<String, Map<String, Map<String, Long>>> details = queueDAO.queuesDetailVerbose();
         uacked = details.get(queueName).get("a").get("uacked");
         assertNotNull(uacked);
-        assertEquals("The messages that were polled should be unacked still", uacked.longValue(), unackedCount - 1);
+        assertEquals(
+                "The messages that were polled should be unacked still",
+                uacked.longValue(),
+                unackedCount - 1);
 
         Long otherUacked = details.get(otherQueueName).get("a").get("uacked");
         assertNotNull(otherUacked);
-        assertEquals("Other queue should have all unacked messages", otherUacked.longValue(), count);
+        assertEquals(
+                "Other queue should have all unacked messages", otherUacked.longValue(), count);
 
         Long size = queueDAO.queuesDetail().get(queueName);
         assertNotNull(size);

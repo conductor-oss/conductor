@@ -12,18 +12,20 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.cassandra.config.CassandraProperties;
+import com.netflix.conductor.metrics.Monitors;
+
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.conductor.cassandra.config.CassandraProperties;
-import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 import static com.netflix.conductor.cassandra.util.Constants.DAO_NAME;
 import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
@@ -58,31 +60,36 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
 
 /**
  * Creates the keyspace and tables.
- * <p>
- * CREATE KEYSPACE IF NOT EXISTS conductor WITH replication = { 'class' : 'NetworkTopologyStrategy', 'us-east': '3'};
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.workflows ( workflow_id uuid, shard_id int, task_id text, entity text, payload
- * text, total_tasks int STATIC, total_partitions int STATIC, PRIMARY KEY((workflow_id, shard_id), entity, task_id) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.task_lookup( task_id uuid, workflow_id uuid, PRIMARY KEY (task_id) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid, workflow_id uuid, PRIMARY KEY
- * ((task_def_name), task_id_key) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.workflow_definitions( workflow_def_name text, version int, workflow_definition
- * text, PRIMARY KEY ((workflow_def_name), version) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.workflow_defs_index( workflow_def_version_index text, workflow_def_name_version
- * text, workflow_def_index_value text,PRIMARY KEY ((workflow_def_version_index), workflow_def_name_version) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.task_definitions( task_defs text, task_def_name text, task_definition text,
- * PRIMARY KEY ((task_defs), task_def_name) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.event_handlers( handlers text, event_handler_name text, event_handler text,
- * PRIMARY KEY ((handlers), event_handler_name) );
- * <p>
- * CREATE TABLE IF NOT EXISTS conductor.event_executions( message_id text, event_handler_name text, event_execution_id
- * text, payload text, PRIMARY KEY ((message_id, event_handler_name), event_execution_id) );
+ *
+ * <p>CREATE KEYSPACE IF NOT EXISTS conductor WITH replication = { 'class' :
+ * 'NetworkTopologyStrategy', 'us-east': '3'};
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.workflows ( workflow_id uuid, shard_id int, task_id text,
+ * entity text, payload text, total_tasks int STATIC, total_partitions int STATIC, PRIMARY
+ * KEY((workflow_id, shard_id), entity, task_id) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_lookup( task_id uuid, workflow_id uuid, PRIMARY KEY
+ * (task_id) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid,
+ * workflow_id uuid, PRIMARY KEY ((task_def_name), task_id_key) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_definitions( workflow_def_name text, version
+ * int, workflow_definition text, PRIMARY KEY ((workflow_def_name), version) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_defs_index( workflow_def_version_index text,
+ * workflow_def_name_version text, workflow_def_index_value text,PRIMARY KEY
+ * ((workflow_def_version_index), workflow_def_name_version) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_definitions( task_defs text, task_def_name text,
+ * task_definition text, PRIMARY KEY ((task_defs), task_def_name) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.event_handlers( handlers text, event_handler_name text,
+ * event_handler text, PRIMARY KEY ((handlers), event_handler_name) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.event_executions( message_id text, event_handler_name
+ * text, event_execution_id text, payload text, PRIMARY KEY ((message_id, event_handler_name),
+ * event_execution_id) );
  */
 public abstract class CassandraBaseDAO {
 
@@ -94,7 +101,8 @@ public abstract class CassandraBaseDAO {
 
     private boolean initialized = false;
 
-    public CassandraBaseDAO(Session session, ObjectMapper objectMapper, CassandraProperties properties) {
+    public CassandraBaseDAO(
+            Session session, ObjectMapper objectMapper, CassandraProperties properties) {
         this.session = session;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -114,7 +122,8 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateTaskDefsTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
                 session.execute(getCreateEventExecutionsTableStatement());
-                LOGGER.info("{} initialization complete! Tables created!",  getClass().getSimpleName());
+                LOGGER.info(
+                        "{} initialization complete! Tables created!", getClass().getSimpleName());
                 initialized = true;
             }
         } catch (Exception e) {
@@ -125,89 +134,92 @@ public abstract class CassandraBaseDAO {
 
     private String getCreateKeyspaceStatement() {
         return SchemaBuilder.createKeyspace(properties.getKeyspace())
-            .ifNotExists()
-            .with()
-            .replication(
-                ImmutableMap.of("class", properties.getReplicationStrategy(), properties.getReplicationFactorKey(),
-                    properties.getReplicationFactorValue()))
-            .durableWrites(true)
-            .getQueryString();
+                .ifNotExists()
+                .with()
+                .replication(
+                        ImmutableMap.of(
+                                "class",
+                                properties.getReplicationStrategy(),
+                                properties.getReplicationFactorKey(),
+                                properties.getReplicationFactorValue()))
+                .durableWrites(true)
+                .getQueryString();
     }
 
     private String getCreateWorkflowsTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOWS)
-            .ifNotExists()
-            .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
-            .addPartitionKey(SHARD_ID_KEY, DataType.cint())
-            .addClusteringColumn(ENTITY_KEY, DataType.text())
-            .addClusteringColumn(TASK_ID_KEY, DataType.text())
-            .addColumn(PAYLOAD_KEY, DataType.text())
-            .addStaticColumn(TOTAL_TASKS_KEY, DataType.cint())
-            .addStaticColumn(TOTAL_PARTITIONS_KEY, DataType.cint())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
+                .addPartitionKey(SHARD_ID_KEY, DataType.cint())
+                .addClusteringColumn(ENTITY_KEY, DataType.text())
+                .addClusteringColumn(TASK_ID_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
+                .addStaticColumn(TOTAL_TASKS_KEY, DataType.cint())
+                .addStaticColumn(TOTAL_PARTITIONS_KEY, DataType.cint())
+                .getQueryString();
     }
 
     private String getCreateTaskLookupTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_LOOKUP)
-            .ifNotExists()
-            .addPartitionKey(TASK_ID_KEY, DataType.uuid())
-            .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(TASK_ID_KEY, DataType.uuid())
+                .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .getQueryString();
     }
 
     private String getCreateTaskDefLimitTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_DEF_LIMIT)
-            .ifNotExists()
-            .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
-            .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
-            .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
+                .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
+                .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .getQueryString();
     }
 
     private String getCreateWorkflowDefsTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DEFS)
-            .ifNotExists()
-            .addPartitionKey(WORKFLOW_DEF_NAME_KEY, DataType.text())
-            .addClusteringColumn(WORKFLOW_VERSION_KEY, DataType.cint())
-            .addColumn(WORKFLOW_DEFINITION_KEY, DataType.text())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_DEF_NAME_KEY, DataType.text())
+                .addClusteringColumn(WORKFLOW_VERSION_KEY, DataType.cint())
+                .addColumn(WORKFLOW_DEFINITION_KEY, DataType.text())
+                .getQueryString();
     }
 
     private String getCreateWorkflowDefsIndexTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DEFS_INDEX)
-            .ifNotExists()
-            .addPartitionKey(WORKFLOW_DEF_INDEX_KEY, DataType.text())
-            .addClusteringColumn(WORKFLOW_DEF_NAME_VERSION_KEY, DataType.text())
-            .addColumn(WORKFLOW_DEF_INDEX_VALUE, DataType.text())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_DEF_INDEX_KEY, DataType.text())
+                .addClusteringColumn(WORKFLOW_DEF_NAME_VERSION_KEY, DataType.text())
+                .addColumn(WORKFLOW_DEF_INDEX_VALUE, DataType.text())
+                .getQueryString();
     }
 
     private String getCreateTaskDefsTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_DEFS)
-            .ifNotExists()
-            .addPartitionKey(TASK_DEFS_KEY, DataType.text())
-            .addClusteringColumn(TASK_DEF_NAME_KEY, DataType.text())
-            .addColumn(TASK_DEFINITION_KEY, DataType.text())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(TASK_DEFS_KEY, DataType.text())
+                .addClusteringColumn(TASK_DEF_NAME_KEY, DataType.text())
+                .addColumn(TASK_DEFINITION_KEY, DataType.text())
+                .getQueryString();
     }
 
     private String getCreateEventHandlersTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_EVENT_HANDLERS)
-            .ifNotExists()
-            .addPartitionKey(HANDLERS_KEY, DataType.text())
-            .addClusteringColumn(EVENT_HANDLER_NAME_KEY, DataType.text())
-            .addColumn(EVENT_HANDLER_KEY, DataType.text())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(HANDLERS_KEY, DataType.text())
+                .addClusteringColumn(EVENT_HANDLER_NAME_KEY, DataType.text())
+                .addColumn(EVENT_HANDLER_KEY, DataType.text())
+                .getQueryString();
     }
 
     private String getCreateEventExecutionsTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_EVENT_EXECUTIONS)
-            .ifNotExists()
-            .addPartitionKey(MESSAGE_ID_KEY, DataType.text())
-            .addPartitionKey(EVENT_HANDLER_NAME_KEY, DataType.text())
-            .addClusteringColumn(EVENT_EXECUTION_ID_KEY, DataType.text())
-            .addColumn(PAYLOAD_KEY, DataType.text())
-            .getQueryString();
+                .ifNotExists()
+                .addPartitionKey(MESSAGE_ID_KEY, DataType.text())
+                .addPartitionKey(EVENT_HANDLER_NAME_KEY, DataType.text())
+                .addClusteringColumn(EVENT_EXECUTION_ID_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
+                .getQueryString();
     }
 
     String toJson(Object value) {
@@ -238,7 +250,8 @@ public abstract class CassandraBaseDAO {
         Monitors.recordDaoEventRequests(DAO_NAME, action, event);
     }
 
-    void recordCassandraDaoPayloadSize(String action, int size, String taskType, String workflowType) {
+    void recordCassandraDaoPayloadSize(
+            String action, int size, String taskType, String workflowType) {
         Monitors.recordDaoPayloadSize(DAO_NAME, action, taskType, workflowType, size);
     }
 

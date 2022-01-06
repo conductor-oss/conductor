@@ -12,20 +12,19 @@
  */
 package com.netflix.conductor.contribs.queue.nats;
 
+import java.util.UUID;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.nats.streaming.StreamingConnection;
 import io.nats.streaming.StreamingConnectionFactory;
 import io.nats.streaming.Subscription;
 import io.nats.streaming.SubscriptionOptions;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 
-import java.util.UUID;
-
-/**
- * @author Oleksiy Lysak
- */
+/** @author Oleksiy Lysak */
 public class NATSStreamObservableQueue extends NATSAbstractQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSStreamObservableQueue.class);
@@ -34,8 +33,12 @@ public class NATSStreamObservableQueue extends NATSAbstractQueue {
     private Subscription subs;
     private final String durableName;
 
-    public NATSStreamObservableQueue(String clusterId, String natsUrl, String durableName, String queueURI,
-        Scheduler scheduler) {
+    public NATSStreamObservableQueue(
+            String clusterId,
+            String natsUrl,
+            String durableName,
+            String queueURI,
+            Scheduler scheduler) {
         super(queueURI, "nats_stream", scheduler);
         this.fact = new StreamingConnectionFactory();
         this.fact.setClusterId(clusterId);
@@ -47,7 +50,9 @@ public class NATSStreamObservableQueue extends NATSAbstractQueue {
 
     @Override
     public boolean isConnected() {
-        return (conn != null && conn.getNatsConnection() != null && conn.getNatsConnection().isConnected());
+        return (conn != null
+                && conn.getNatsConnection() != null
+                && conn.getNatsConnection().isConnected());
     }
 
     @Override
@@ -56,9 +61,12 @@ public class NATSStreamObservableQueue extends NATSAbstractQueue {
             StreamingConnection temp = fact.createConnection();
             LOGGER.info("Successfully connected for " + queueURI);
             temp.getNatsConnection()
-                .setReconnectedCallback((event) -> LOGGER.warn("onReconnect. Reconnected back for " + queueURI));
+                    .setReconnectedCallback(
+                            (event) ->
+                                    LOGGER.warn("onReconnect. Reconnected back for " + queueURI));
             temp.getNatsConnection()
-                .setDisconnectedCallback((event -> LOGGER.warn("onDisconnect. Disconnected for " + queueURI)));
+                    .setDisconnectedCallback(
+                            (event -> LOGGER.warn("onDisconnect. Disconnected for " + queueURI)));
             conn = temp;
         } catch (Exception e) {
             LOGGER.error("Unable to establish nats streaming connection for " + queueURI, e);
@@ -75,20 +83,33 @@ public class NATSStreamObservableQueue extends NATSAbstractQueue {
 
         try {
             ensureConnected();
-            SubscriptionOptions subscriptionOptions = new SubscriptionOptions.Builder()
-                .durableName(durableName)
-                .build();
+            SubscriptionOptions subscriptionOptions =
+                    new SubscriptionOptions.Builder().durableName(durableName).build();
             // Create subject/queue subscription if the queue has been provided
             if (StringUtils.isNotEmpty(queue)) {
-                LOGGER.info("No subscription. Creating a queue subscription. subject={}, queue={}", subject, queue);
-                subs = conn
-                    .subscribe(subject, queue, msg -> onMessage(msg.getSubject(), msg.getData()), subscriptionOptions);
+                LOGGER.info(
+                        "No subscription. Creating a queue subscription. subject={}, queue={}",
+                        subject,
+                        queue);
+                subs =
+                        conn.subscribe(
+                                subject,
+                                queue,
+                                msg -> onMessage(msg.getSubject(), msg.getData()),
+                                subscriptionOptions);
             } else {
-                LOGGER.info("No subscription. Creating a pub/sub subscription. subject={}", subject);
-                subs = conn.subscribe(subject, msg -> onMessage(msg.getSubject(), msg.getData()), subscriptionOptions);
+                LOGGER.info(
+                        "No subscription. Creating a pub/sub subscription. subject={}", subject);
+                subs =
+                        conn.subscribe(
+                                subject,
+                                msg -> onMessage(msg.getSubject(), msg.getData()),
+                                subscriptionOptions);
             }
         } catch (Exception ex) {
-            LOGGER.error("Subscription failed with " + ex.getMessage() + " for queueURI " + queueURI, ex);
+            LOGGER.error(
+                    "Subscription failed with " + ex.getMessage() + " for queueURI " + queueURI,
+                    ex);
         }
     }
 

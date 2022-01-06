@@ -1,17 +1,14 @@
 /*
  * Copyright 2016 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.es7.dao.query.parser.internal;
 
@@ -21,163 +18,159 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * @author Viren
- *
- */
+/** @author Viren */
 public abstract class AbstractNode {
 
-	public static final Pattern WHITESPACE = Pattern.compile("\\s");
+    public static final Pattern WHITESPACE = Pattern.compile("\\s");
 
-	protected static Set<Character> comparisonOprs = new HashSet<Character>();
+    protected static Set<Character> comparisonOprs = new HashSet<Character>();
 
-	static {
-		comparisonOprs.add('>');
-		comparisonOprs.add('<');
-		comparisonOprs.add('=');
-	}
+    static {
+        comparisonOprs.add('>');
+        comparisonOprs.add('<');
+        comparisonOprs.add('=');
+    }
 
-	protected InputStream is;
+    protected InputStream is;
 
+    protected AbstractNode(InputStream is) throws ParserException {
+        this.is = is;
+        this.parse();
+    }
 
+    protected boolean isNumber(String test) {
+        try {
+            // If you can convert to a big decimal value, then it is a number.
+            new BigDecimal(test);
+            return true;
 
-	protected AbstractNode(InputStream is) throws ParserException {
-		this.is = is;
-		this.parse();
-	}
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
+        return false;
+    }
 
-	protected boolean isNumber(String test){
-		try{
-			//If you can convert to a big decimal value, then it is a number.
-			new BigDecimal(test);
-			return true;
+    protected boolean isBoolOpr(byte[] buffer) {
+        if (buffer.length > 1 && buffer[0] == 'O' && buffer[1] == 'R') {
+            return true;
+        } else if (buffer.length > 2 && buffer[0] == 'A' && buffer[1] == 'N' && buffer[2] == 'D') {
+            return true;
+        }
+        return false;
+    }
 
-		}catch(NumberFormatException e){
-			//Ignore
-		}
-		return false;
-	}
+    protected boolean isComparisonOpr(byte[] buffer) {
+        if (buffer[0] == 'I' && buffer[1] == 'N') {
+            return true;
+        } else if (buffer[0] == '!' && buffer[1] == '=') {
+            return true;
+        } else {
+            return comparisonOprs.contains((char) buffer[0]);
+        }
+    }
 
-	protected boolean isBoolOpr(byte[] buffer){
-		if(buffer.length > 1 && buffer[0] == 'O' && buffer[1] == 'R'){
-			return true;
-		}else if(buffer.length > 2 && buffer[0] == 'A' && buffer[1] == 'N' && buffer[2] == 'D'){
-			return true;
-		}
-		return false;
-	}
+    protected byte[] peek(int length) throws Exception {
+        return read(length, true);
+    }
 
-	protected boolean isComparisonOpr(byte[] buffer){
-		if(buffer[0] == 'I' && buffer[1] == 'N'){
-			return true;
-		}else if(buffer[0] == '!' && buffer[1] == '='){
-			return true;
-		}else{
-			return comparisonOprs.contains((char)buffer[0]);
-		}
+    protected byte[] read(int length) throws Exception {
+        return read(length, false);
+    }
 
-	}
+    protected String readToken() throws Exception {
+        skipWhitespace();
+        StringBuilder sb = new StringBuilder();
+        while (is.available() > 0) {
+            char c = (char) peek(1)[0];
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                is.skip(1);
+                break;
+            } else if (c == '=' || c == '>' || c == '<' || c == '!') {
+                // do not skip
+                break;
+            }
+            sb.append(c);
+            is.skip(1);
+        }
+        return sb.toString().trim();
+    }
 
-	protected byte[] peek(int length) throws Exception {
-		return read(length, true);
-	}
+    protected boolean isNumeric(char c) {
+        if (c == '-' || c == 'e' || (c >= '0' && c <= '9') || c == '.') {
+            return true;
+        }
+        return false;
+    }
 
-	protected byte[] read(int length) throws Exception {
-		return read(length, false);
-	}
+    protected void assertExpected(byte[] found, String expected) throws ParserException {
+        assertExpected(new String(found), expected);
+    }
 
-	protected String readToken() throws Exception {
-		skipWhitespace();
-		StringBuilder sb = new StringBuilder();
-		while(is.available() > 0){
-			char c = (char) peek(1)[0];
-			if(c == ' ' || c == '\t' || c == '\n' || c == '\r'){
-				is.skip(1);
-				break;
-			}else if(c == '=' || c == '>' || c == '<' || c == '!'){
-				//do not skip
-				break;
-			}
-			sb.append(c);
-			is.skip(1);
-		}
-		return sb.toString().trim();
-	}
+    protected void assertExpected(String found, String expected) throws ParserException {
+        if (!found.equals(expected)) {
+            throw new ParserException("Expected " + expected + ", found " + found);
+        }
+    }
 
-	protected boolean isNumeric(char c) {
-		if (c == '-' || c == 'e' || (c >= '0' && c <= '9') || c == '.'){
-			return true;
-		}
-		return false;
-	}
+    protected void assertExpected(char found, char expected) throws ParserException {
+        if (found != expected) {
+            throw new ParserException("Expected " + expected + ", found " + found);
+        }
+    }
 
-	protected void assertExpected(byte[] found, String expected) throws ParserException {
-		assertExpected(new String(found), expected);
-	}
+    protected static void efor(int length, FunctionThrowingException<Integer> consumer)
+            throws Exception {
+        for (int i = 0; i < length; i++) {
+            consumer.accept(i);
+        }
+    }
 
-	protected void assertExpected(String found, String expected) throws ParserException {
-		if(!found.equals(expected)){
-			throw new ParserException("Expected " + expected + ", found " + found);
-		}
-	}
-	protected void assertExpected(char found, char expected) throws ParserException {
-		if(found != expected){
-			throw new ParserException("Expected " + expected + ", found " + found);
-		}
-	}
+    protected abstract void _parse() throws Exception;
 
-	protected static void efor(int length, FunctionThrowingException<Integer> consumer) throws Exception {
-		for(int i = 0; i < length; i++){
-			consumer.accept(i);
-		}
-	}
+    // Public stuff here
+    private void parse() throws ParserException {
+        // skip white spaces
+        skipWhitespace();
+        try {
+            _parse();
+        } catch (Exception e) {
+            System.out.println("\t" + this.getClass().getSimpleName() + "->" + this.toString());
+            if (!(e instanceof ParserException)) {
+                throw new ParserException("Error parsing", e);
+            } else {
+                throw (ParserException) e;
+            }
+        }
+        skipWhitespace();
+    }
 
-	protected abstract void _parse() throws Exception;
+    // Private methods
 
-	//Public stuff here
-	private void parse() throws ParserException {
-		//skip white spaces
-		skipWhitespace();
-		try{
-			_parse();
-		}catch(Exception e){
-			System.out.println("\t" + this.getClass().getSimpleName() + "->" + this.toString());
-			if(!(e instanceof ParserException)){
-				throw new ParserException("Error parsing", e);
-			}else{
-				throw (ParserException)e;
-			}
-		}
-		skipWhitespace();
-	}
+    private byte[] read(int length, boolean peekOnly) throws Exception {
+        byte[] buf = new byte[length];
+        if (peekOnly) {
+            is.mark(length);
+        }
+        efor(length, (Integer c) -> buf[c] = (byte) is.read());
+        if (peekOnly) {
+            is.reset();
+        }
+        return buf;
+    }
 
-	//Private methods
-
-	private byte[] read(int length, boolean peekOnly) throws Exception {
-		byte[] buf = new byte[length];
-		if(peekOnly){
-			is.mark(length);
-		}
-		efor(length, (Integer c)-> buf[c] = (byte) is.read());
-		if(peekOnly){
-			is.reset();
-		}
-		return buf;
-	}
-
-	protected void skipWhitespace() throws ParserException {
-		try{
-			while(is.available() > 0){
-				byte c = peek(1)[0];
-				if(c == ' ' || c == '\t' || c == '\n' || c == '\r'){
-					//skip
-					read(1);
-				}else{
-					break;
-				}
-			}
-		}catch(Exception e){
-			throw new ParserException(e.getMessage(), e);
-		}
-	}
+    protected void skipWhitespace() throws ParserException {
+        try {
+            while (is.available() > 0) {
+                byte c = peek(1)[0];
+                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                    // skip
+                    read(1);
+                } else {
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            throw new ParserException(e.getMessage(), e);
+        }
+    }
 }

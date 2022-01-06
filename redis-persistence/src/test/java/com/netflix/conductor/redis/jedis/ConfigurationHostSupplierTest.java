@@ -12,13 +12,14 @@
  */
 package com.netflix.conductor.redis.jedis;
 
-import com.netflix.conductor.redis.config.RedisProperties;
-import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
-import com.netflix.dyno.connectionpool.Host;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
+import com.netflix.dyno.connectionpool.Host;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

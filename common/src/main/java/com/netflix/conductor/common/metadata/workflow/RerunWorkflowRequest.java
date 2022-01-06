@@ -12,10 +12,10 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import java.util.Map;
+
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
-
-import java.util.Map;
 
 @ProtoMessage
 public class RerunWorkflowRequest {

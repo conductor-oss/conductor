@@ -47,18 +47,18 @@ Many features in Conductor have come from ideas from the community. If you think
 
 Once we have decided on a direction, it's time to summarize the idea by creating a new issue.
 
+## Code Style
+We use [spotless](https://github.com/diffplug/spotless) to enforce consistent code style for the project, so make sure to run `gradlew spotlessApply` to fix any violations after code changes.
 
 ## License
 
 By contributing your code, you agree to license your contribution under the terms of the APLv2: https://github.com/Netflix/conductor/blob/master/LICENSE
 
-All files are released with the Apache 2.0 license.
-
-If you are adding a new file it should have a header like this:
+All files are released with the Apache 2.0 license, and the following license header will be automatically added to your new file if none present:
 
 ```
 /**
- * Copyright 2021 Netflix, Inc.
+ * Copyright $YEAR Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at

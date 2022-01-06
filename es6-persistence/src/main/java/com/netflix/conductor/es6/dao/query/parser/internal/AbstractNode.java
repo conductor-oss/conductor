@@ -32,7 +32,6 @@ public abstract class AbstractNode {
 
     protected InputStream is;
 
-
     protected AbstractNode(InputStream is) throws ParserException {
         this.is = is;
         this.parse();
@@ -40,12 +39,12 @@ public abstract class AbstractNode {
 
     protected boolean isNumber(String test) {
         try {
-            //If you can convert to a big decimal value, then it is a number.
+            // If you can convert to a big decimal value, then it is a number.
             new BigDecimal(test);
             return true;
 
         } catch (NumberFormatException e) {
-            //Ignore
+            // Ignore
         }
         return false;
     }
@@ -66,7 +65,6 @@ public abstract class AbstractNode {
         } else {
             return comparisonOprs.contains((char) buffer[0]);
         }
-
     }
 
     protected byte[] peek(int length) throws Exception {
@@ -86,7 +84,7 @@ public abstract class AbstractNode {
                 is.skip(1);
                 break;
             } else if (c == '=' || c == '>' || c == '<' || c == '!') {
-                //do not skip
+                // do not skip
                 break;
             }
             sb.append(c);
@@ -115,7 +113,8 @@ public abstract class AbstractNode {
         }
     }
 
-    protected static void efor(int length, FunctionThrowingException<Integer> consumer) throws Exception {
+    protected static void efor(int length, FunctionThrowingException<Integer> consumer)
+            throws Exception {
         for (int i = 0; i < length; i++) {
             consumer.accept(i);
         }
@@ -123,9 +122,9 @@ public abstract class AbstractNode {
 
     protected abstract void _parse() throws Exception;
 
-    //Public stuff here
+    // Public stuff here
     private void parse() throws ParserException {
-        //skip white spaces
+        // skip white spaces
         skipWhitespace();
         try {
             _parse();
@@ -139,7 +138,7 @@ public abstract class AbstractNode {
         skipWhitespace();
     }
 
-    //Private methods
+    // Private methods
 
     private byte[] read(int length, boolean peekOnly) throws Exception {
         byte[] buf = new byte[length];
@@ -158,7 +157,7 @@ public abstract class AbstractNode {
             while (is.available() > 0) {
                 byte c = peek(1)[0];
                 if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-                    //skip
+                    // skip
                     read(1);
                 } else {
                     break;

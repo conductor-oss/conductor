@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.redis.jedis;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import redis.clients.jedis.BitPosParams;
 import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.GeoRadiusResponse;
@@ -34,11 +39,6 @@ import redis.clients.jedis.params.GeoRadiusParam;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 public class JedisSentinel implements JedisCommands {
 
@@ -735,7 +735,8 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max, int offset, int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            String key, double min, double max, int offset, int count) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.zrangeByScoreWithScores(key, min, max, offset, count);
         }
@@ -763,21 +764,24 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(String key, String min, String max, int offset, int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            String key, String min, String max, int offset, int count) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.zrangeByScoreWithScores(key, min, max, offset, count);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(String key, double max, double min, int offset, int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            String key, double max, double min, int offset, int count) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.zrevrangeByScoreWithScores(key, max, min, offset, count);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(String key, String max, String min, int offset, int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            String key, String max, String min, int offset, int count) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.zrevrangeByScoreWithScores(key, max, min, offset, count);
         }
@@ -1036,62 +1040,74 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius,
-        GeoUnit unit) {
+    public List<GeoRadiusResponse> georadius(
+            String key, double longitude, double latitude, double radius, GeoUnit unit) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadius(key, longitude, latitude, radius, unit);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusReadonly(
+            String key, double longitude, double latitude, double radius, GeoUnit unit) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusReadonly(key, longitude, latitude, radius, unit);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadius(
+            String key,
+            double longitude,
+            double latitude,
+            double radius,
+            GeoUnit unit,
+            GeoRadiusParam param) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadius(key, longitude, latitude, radius, unit, param);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit, GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusReadonly(
+            String key,
+            double longitude,
+            double latitude,
+            double radius,
+            GeoUnit unit,
+            GeoRadiusParam param) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusReadonly(key, longitude, latitude, radius, unit, param);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusByMember(
+            String key, String member, double radius, GeoUnit unit) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusByMember(key, member, radius, unit);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusByMemberReadonly(
+            String key, String member, double radius, GeoUnit unit) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusByMemberReadonly(key, member, radius, unit);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusByMember(
+            String key, String member, double radius, GeoUnit unit, GeoRadiusParam param) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusByMember(key, member, radius, unit, param);
         }
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusByMemberReadonly(
+            String key, String member, double radius, GeoUnit unit, GeoRadiusParam param) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.georadiusByMemberReadonly(key, member, radius, unit, param);
         }
@@ -1126,8 +1142,12 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public StreamEntryID xadd(String key, StreamEntryID id, Map<String, String> hash, long maxLen,
-        boolean approximateLength) {
+    public StreamEntryID xadd(
+            String key,
+            StreamEntryID id,
+            Map<String, String> hash,
+            long maxLen,
+            boolean approximateLength) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.xadd(key, id, hash, maxLen, approximateLength);
         }
@@ -1148,7 +1168,8 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public List<StreamEntry> xrevrange(String key, StreamEntryID end, StreamEntryID start, int count) {
+    public List<StreamEntry> xrevrange(
+            String key, StreamEntryID end, StreamEntryID start, int count) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.xrevrange(key, end, start, count);
         }
@@ -1190,8 +1211,13 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public List<StreamPendingEntry> xpending(String key, String groupname, StreamEntryID start, StreamEntryID end,
-        int count, String consumername) {
+    public List<StreamPendingEntry> xpending(
+            String key,
+            String groupname,
+            StreamEntryID start,
+            StreamEntryID end,
+            int count,
+            String consumername) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.xpending(key, groupname, start, end, count, consumername);
         }
@@ -1212,10 +1238,18 @@ public class JedisSentinel implements JedisCommands {
     }
 
     @Override
-    public List<StreamEntry> xclaim(String key, String group, String consumername, long minIdleTime, long newIdleTime,
-        int retries, boolean force, StreamEntryID... ids) {
+    public List<StreamEntry> xclaim(
+            String key,
+            String group,
+            String consumername,
+            long minIdleTime,
+            long newIdleTime,
+            int retries,
+            boolean force,
+            StreamEntryID... ids) {
         try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.xclaim(key, group, consumername, minIdleTime, newIdleTime, retries, force, ids);
+            return jedis.xclaim(
+                    key, group, consumername, minIdleTime, newIdleTime, retries, force, ids);
         }
     }
 

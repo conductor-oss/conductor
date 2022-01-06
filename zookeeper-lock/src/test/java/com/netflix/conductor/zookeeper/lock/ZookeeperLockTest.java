@@ -12,17 +12,10 @@
  */
 package com.netflix.conductor.zookeeper.lock;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.service.ExecutionLockService;
-import com.netflix.conductor.zookeeper.config.ZookeeperProperties;
 import java.time.Duration;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
@@ -30,6 +23,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.zookeeper.config.ZookeeperProperties;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ZookeeperLockTest {
 
@@ -44,9 +46,12 @@ public class ZookeeperLockTest {
         properties = mock(ZookeeperProperties.class);
         when(properties.getConnectionString()).thenReturn("localhost:2181");
         when(properties.getSessionTimeout())
-            .thenReturn(Duration.ofMillis(CuratorFrameworkFactory.builder().getSessionTimeoutMs()));
+                .thenReturn(
+                        Duration.ofMillis(CuratorFrameworkFactory.builder().getSessionTimeoutMs()));
         when(properties.getConnectionTimeout())
-            .thenReturn(Duration.ofMillis(CuratorFrameworkFactory.builder().getConnectionTimeoutMs()));
+                .thenReturn(
+                        Duration.ofMillis(
+                                CuratorFrameworkFactory.builder().getConnectionTimeoutMs()));
         when(properties.getNamespace()).thenReturn("");
     }
 

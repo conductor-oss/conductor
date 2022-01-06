@@ -12,13 +12,14 @@
  */
 package com.netflix.conductor.es6.dao.query.parser;
 
-import com.netflix.conductor.es6.dao.query.parser.internal.ConstValue;
-import com.netflix.conductor.es6.dao.query.parser.internal.TestAbstractParser;
-import org.junit.Test;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+
+import org.junit.Test;
+
+import com.netflix.conductor.es6.dao.query.parser.internal.ConstValue;
+import com.netflix.conductor.es6.dao.query.parser.internal.TestAbstractParser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,8 +31,10 @@ public class TestExpression extends TestAbstractParser {
 
     @Test
     public void test() throws Exception {
-        String test = "type='IMAGE' AND subType	='sdp' AND (metadata.width > 50 OR metadata.height > 50)";
-        InputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(test.getBytes()));
+        String test =
+                "type='IMAGE' AND subType	='sdp' AND (metadata.width > 50 OR metadata.height > 50)";
+        InputStream inputStream =
+                new BufferedInputStream(new ByteArrayInputStream(test.getBytes()));
         Expression expression = new Expression(inputStream);
 
         assertTrue(expression.isBinaryExpr());
@@ -48,7 +51,7 @@ public class TestExpression extends TestAbstractParser {
         assertTrue(rightHandSide.isBinaryExpr());
 
         nameValue = rightHandSide.getNameValue();
-        assertNotNull(nameValue);    //subType = sdp
+        assertNotNull(nameValue); // subType = sdp
         assertNull(rightHandSide.getGroupedExpression());
         assertEquals("subType", nameValue.getName().getName());
         assertEquals("=", nameValue.getOp().getOperator());
@@ -85,7 +88,8 @@ public class TestExpression extends TestAbstractParser {
     @Test
     public void testWithSysConstants() throws Exception {
         String test = "type='IMAGE' AND subType	='sdp' AND description IS null";
-        InputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(test.getBytes()));
+        InputStream inputStream =
+                new BufferedInputStream(new ByteArrayInputStream(test.getBytes()));
         Expression expression = new Expression(inputStream);
 
         assertTrue(expression.isBinaryExpr());
@@ -102,7 +106,7 @@ public class TestExpression extends TestAbstractParser {
         assertTrue(rightHandSide.isBinaryExpr());
 
         nameValue = rightHandSide.getNameValue();
-        assertNotNull(nameValue);    //subType = sdp
+        assertNotNull(nameValue); // subType = sdp
         assertNull(rightHandSide.getGroupedExpression());
         assertEquals("subType", nameValue.getName().getName());
         assertEquals("=", nameValue.getOp().getOperator());

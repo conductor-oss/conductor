@@ -12,10 +12,12 @@
  */
 package com.netflix.conductor.contribs.queue.amqp.config;
 
+import java.time.Duration;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import com.rabbitmq.client.AMQP.PROTOCOL;
 import com.rabbitmq.client.ConnectionFactory;
-import java.time.Duration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("conductor.event-queues.amqp")
 public class AMQPEventQueueProperties {
@@ -34,7 +36,8 @@ public class AMQPEventQueueProperties {
 
     private int port = PROTOCOL.PORT;
 
-    private Duration connectionTimeout = Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
+    private Duration connectionTimeout =
+            Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
 
     private boolean useNio = false;
 

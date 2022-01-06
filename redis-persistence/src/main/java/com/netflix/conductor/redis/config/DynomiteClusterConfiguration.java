@@ -12,38 +12,43 @@
  */
 package com.netflix.conductor.redis.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Configuration;
+
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.dyno.jedis.DynoJedisClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
+
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "dynomite")
 public class DynomiteClusterConfiguration extends JedisCommandsConfigurer {
 
-    protected JedisCommands createJedisCommands(RedisProperties properties, ConductorProperties conductorProperties,
-        HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
+    protected JedisCommands createJedisCommands(
+            RedisProperties properties,
+            ConductorProperties conductorProperties,
+            HostSupplier hostSupplier,
+            TokenMapSupplier tokenMapSupplier) {
         ConnectionPoolConfigurationImpl connectionPoolConfiguration =
-            new ConnectionPoolConfigurationImpl(properties.getClusterName())
-                .withTokenSupplier(tokenMapSupplier)
-                .setLocalRack(properties.getAvailabilityZone())
-                .setLocalDataCenter(properties.getDataCenterRegion())
-                .setSocketTimeout(0)
-                .setConnectTimeout(0)
-                .setMaxConnsPerHost(
-                    properties.getMaxConnectionsPerHost())
-                .setMaxTimeoutWhenExhausted((int)properties.getMaxTimeoutWhenExhausted().toMillis())
-                .setRetryPolicyFactory(properties.getConnectionRetryPolicy());
+                new ConnectionPoolConfigurationImpl(properties.getClusterName())
+                        .withTokenSupplier(tokenMapSupplier)
+                        .setLocalRack(properties.getAvailabilityZone())
+                        .setLocalDataCenter(properties.getDataCenterRegion())
+                        .setSocketTimeout(0)
+                        .setConnectTimeout(0)
+                        .setMaxConnsPerHost(properties.getMaxConnectionsPerHost())
+                        .setMaxTimeoutWhenExhausted(
+                                (int) properties.getMaxTimeoutWhenExhausted().toMillis())
+                        .setRetryPolicyFactory(properties.getConnectionRetryPolicy());
 
         return new DynoJedisClient.Builder()
-            .withHostSupplier(hostSupplier)
-            .withApplicationName(conductorProperties.getAppId())
-            .withDynomiteClusterName(properties.getClusterName())
-            .withCPConfig(connectionPoolConfiguration)
-            .build();
+                .withHostSupplier(hostSupplier)
+                .withApplicationName(conductorProperties.getAppId())
+                .withDynomiteClusterName(properties.getClusterName())
+                .withCPConfig(connectionPoolConfiguration)
+                .build();
     }
 }

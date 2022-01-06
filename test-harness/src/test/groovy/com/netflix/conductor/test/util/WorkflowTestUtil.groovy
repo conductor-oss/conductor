@@ -12,7 +12,12 @@
  */
 package com.netflix.conductor.test.util
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import javax.annotation.PostConstruct
+
+import org.apache.commons.lang3.StringUtils
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
+
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
@@ -23,11 +28,8 @@ import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
-import org.apache.commons.lang3.StringUtils
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 
-import javax.annotation.PostConstruct
+import com.fasterxml.jackson.databind.ObjectMapper
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED
 

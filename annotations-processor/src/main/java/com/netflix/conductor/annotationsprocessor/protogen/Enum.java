@@ -1,11 +1,24 @@
+/*
+ * Copyright 2022 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.annotationsprocessor.protogen;
 
+import javax.lang.model.element.Modifier;
+
 import com.netflix.conductor.annotationsprocessor.protogen.types.MessageType;
+
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-
-import javax.lang.model.element.Modifier;
 
 public class Enum extends AbstractMessage {
     public enum MapType {
@@ -13,6 +26,7 @@ public class Enum extends AbstractMessage {
         TO_PROTO("toProto");
 
         private final String methodName;
+
         MapType(String m) {
             methodName = m;
         }
@@ -27,8 +41,7 @@ public class Enum extends AbstractMessage {
 
         int protoIndex = 0;
         for (java.lang.reflect.Field field : cls.getDeclaredFields()) {
-            if (field.isEnumConstant())
-                fields.add(new EnumField(protoIndex++, field));
+            if (field.isEnumConstant()) fields.add(new EnumField(protoIndex++, field));
         }
     }
 
@@ -52,7 +65,8 @@ public class Enum extends AbstractMessage {
             method.addStatement("case $L: to = $T.$L; break", fromName, to, toName);
         }
 
-        method.addStatement("default: throw new $T(\"Unexpected enum constant: \" + from)",
+        method.addStatement(
+                "default: throw new $T(\"Unexpected enum constant: \" + from)",
                 IllegalArgumentException.class);
         method.endControlFlow();
         method.addStatement("return to");
@@ -61,12 +75,17 @@ public class Enum extends AbstractMessage {
 
     @Override
     protected void javaMapFromProto(TypeSpec.Builder type) {
-        type.addMethod(javaMap(MapType.FROM_PROTO, this.type.getJavaProtoType(), TypeName.get(this.clazz)));
+        type.addMethod(
+                javaMap(
+                        MapType.FROM_PROTO,
+                        this.type.getJavaProtoType(),
+                        TypeName.get(this.clazz)));
     }
 
     @Override
     protected void javaMapToProto(TypeSpec.Builder type) {
-        type.addMethod(javaMap(MapType.TO_PROTO, TypeName.get(this.clazz), this.type.getJavaProtoType()));
+        type.addMethod(
+                javaMap(MapType.TO_PROTO, TypeName.get(this.clazz), this.type.getJavaProtoType()));
     }
 
     public class EnumField extends Field {

@@ -12,16 +12,6 @@
  */
 package com.netflix.conductor.redis.jedis;
 
-import org.rarefiedredis.redis.IRedisClient;
-import org.rarefiedredis.redis.IRedisSortedSet.ZsetPair;
-import org.rarefiedredis.redis.RedisMock;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
-import redis.clients.jedis.exceptions.JedisException;
-import redis.clients.jedis.params.ZAddParams;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -29,6 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import org.rarefiedredis.redis.IRedisClient;
+import org.rarefiedredis.redis.IRedisSortedSet.ZsetPair;
+import org.rarefiedredis.redis.RedisMock;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
+import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.jedis.params.ZAddParams;
 
 public class JedisMock extends Jedis {
 
@@ -712,7 +713,6 @@ public class JedisMock extends Jedis {
         }
     }
 
-
     @Override
     public Long zadd(final String key, final Map<String, Double> scoreMembers) {
         try {
@@ -727,7 +727,8 @@ public class JedisMock extends Jedis {
                 }
                 scoresmembers.add(new ZsetPair(m, scoreMembers.get(m)));
             }
-            return redis.zadd(key, new ZsetPair(member, score), (ZsetPair[]) scoresmembers.toArray());
+            return redis.zadd(
+                    key, new ZsetPair(member, score), (ZsetPair[]) scoresmembers.toArray());
         } catch (Exception e) {
             throw new JedisException(e);
         }
@@ -861,7 +862,8 @@ public class JedisMock extends Jedis {
     @Override
     public Set<String> zrangeByScore(final String key, final double min, final double max) {
         try {
-            return ZsetPair.members(redis.zrangebyscore(key, String.valueOf(min), String.valueOf(max)));
+            return ZsetPair.members(
+                    redis.zrangebyscore(key, String.valueOf(min), String.valueOf(max)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
@@ -877,39 +879,57 @@ public class JedisMock extends Jedis {
     }
 
     @Override
-    public Set<String> zrangeByScore(final String key, final double min, final double max,
-        final int offset, final int count) {
+    public Set<String> zrangeByScore(
+            final String key,
+            final double min,
+            final double max,
+            final int offset,
+            final int count) {
         try {
-            return ZsetPair.members(redis
-                .zrangebyscore(key, String.valueOf(min), String.valueOf(max), "limit", String.valueOf(offset),
-                    String.valueOf(count)));
+            return ZsetPair.members(
+                    redis.zrangebyscore(
+                            key,
+                            String.valueOf(min),
+                            String.valueOf(max),
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<String> zrangeByScore(final String key, final String min, final String max,
-        final int offset, final int count) {
+    public Set<String> zrangeByScore(
+            final String key,
+            final String min,
+            final String max,
+            final int offset,
+            final int count) {
         try {
-            return ZsetPair
-                .members(redis.zrangebyscore(key, min, max, "limit", String.valueOf(offset), String.valueOf(count)));
+            return ZsetPair.members(
+                    redis.zrangebyscore(
+                            key, min, max, "limit", String.valueOf(offset), String.valueOf(count)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(final String key, final double min, final double max) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            final String key, final double min, final double max) {
         try {
-            return toTupleSet(redis.zrangebyscore(key, String.valueOf(min), String.valueOf(max), "withscores"));
+            return toTupleSet(
+                    redis.zrangebyscore(
+                            key, String.valueOf(min), String.valueOf(max), "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(final String key, final String min, final String max) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            final String key, final String min, final String max) {
         try {
             return toTupleSet(redis.zrangebyscore(key, min, max, "withscores"));
         } catch (Exception e) {
@@ -918,23 +938,44 @@ public class JedisMock extends Jedis {
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(final String key, final double min, final double max,
-        final int offset, final int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            final String key,
+            final double min,
+            final double max,
+            final int offset,
+            final int count) {
         try {
-            return toTupleSet(redis
-                .zrangebyscore(key, String.valueOf(min), String.valueOf(max), "limit", String.valueOf(offset),
-                    String.valueOf(count), "withscores"));
+            return toTupleSet(
+                    redis.zrangebyscore(
+                            key,
+                            String.valueOf(min),
+                            String.valueOf(max),
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count),
+                            "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(final String key, final String min, final String max,
-        final int offset, final int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            final String key,
+            final String min,
+            final String max,
+            final int offset,
+            final int count) {
         try {
-            return toTupleSet(redis
-                .zrangebyscore(key, min, max, "limit", String.valueOf(offset), String.valueOf(count), "withscores"));
+            return toTupleSet(
+                    redis.zrangebyscore(
+                            key,
+                            min,
+                            max,
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count),
+                            "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
@@ -943,7 +984,8 @@ public class JedisMock extends Jedis {
     @Override
     public Set<String> zrevrangeByScore(final String key, final double max, final double min) {
         try {
-            return ZsetPair.members(redis.zrevrangebyscore(key, String.valueOf(max), String.valueOf(min)));
+            return ZsetPair.members(
+                    redis.zrevrangebyscore(key, String.valueOf(max), String.valueOf(min)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
@@ -959,62 +1001,101 @@ public class JedisMock extends Jedis {
     }
 
     @Override
-    public Set<String> zrevrangeByScore(final String key, final double max, final double min,
-        final int offset, final int count) {
+    public Set<String> zrevrangeByScore(
+            final String key,
+            final double max,
+            final double min,
+            final int offset,
+            final int count) {
         try {
-            return ZsetPair.members(redis
-                .zrevrangebyscore(key, String.valueOf(max), String.valueOf(min), "limit", String.valueOf(offset),
-                    String.valueOf(count)));
+            return ZsetPair.members(
+                    redis.zrevrangebyscore(
+                            key,
+                            String.valueOf(max),
+                            String.valueOf(min),
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(final String key, final double max, final double min) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            final String key, final double max, final double min) {
         try {
-            return toTupleSet(redis.zrevrangebyscore(key, String.valueOf(max), String.valueOf(min), "withscores"));
+            return toTupleSet(
+                    redis.zrevrangebyscore(
+                            key, String.valueOf(max), String.valueOf(min), "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(final String key, final double max,
-        final double min, final int offset, final int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            final String key,
+            final double max,
+            final double min,
+            final int offset,
+            final int count) {
         try {
-            return toTupleSet(redis
-                .zrevrangebyscore(key, String.valueOf(max), String.valueOf(min), "limit", String.valueOf(offset),
-                    String.valueOf(count), "withscores"));
+            return toTupleSet(
+                    redis.zrevrangebyscore(
+                            key,
+                            String.valueOf(max),
+                            String.valueOf(min),
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count),
+                            "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(final String key, final String max,
-        final String min, final int offset, final int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            final String key,
+            final String max,
+            final String min,
+            final int offset,
+            final int count) {
         try {
-            return toTupleSet(redis
-                .zrevrangebyscore(key, max, min, "limit", String.valueOf(offset), String.valueOf(count), "withscores"));
+            return toTupleSet(
+                    redis.zrevrangebyscore(
+                            key,
+                            max,
+                            min,
+                            "limit",
+                            String.valueOf(offset),
+                            String.valueOf(count),
+                            "withscores"));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<String> zrevrangeByScore(final String key, final String max, final String min,
-        final int offset, final int count) {
+    public Set<String> zrevrangeByScore(
+            final String key,
+            final String max,
+            final String min,
+            final int offset,
+            final int count) {
         try {
-            return ZsetPair
-                .members(redis.zrevrangebyscore(key, max, min, "limit", String.valueOf(offset), String.valueOf(count)));
+            return ZsetPair.members(
+                    redis.zrevrangebyscore(
+                            key, max, min, "limit", String.valueOf(offset), String.valueOf(count)));
         } catch (Exception e) {
             throw new JedisException(e);
         }
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(final String key, final String max, final String min) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            final String key, final String max, final String min) {
         try {
             return toTupleSet(redis.zrevrangebyscore(key, max, min, "withscores"));
         } catch (Exception e) {
@@ -1061,8 +1142,8 @@ public class JedisMock extends Jedis {
     @Override
     public ScanResult<String> sscan(String key, String cursor, ScanParams params) {
         try {
-            org.rarefiedredis.redis.ScanResult<Set<String>> sr = redis
-                .sscan(key, Long.parseLong(cursor), "count", "1000000");
+            org.rarefiedredis.redis.ScanResult<Set<String>> sr =
+                    redis.sscan(key, Long.parseLong(cursor), "count", "1000000");
             List<String> list = new ArrayList<>(sr.results);
             return new ScanResult<>("0", list);
         } catch (Exception e) {
@@ -1072,8 +1153,8 @@ public class JedisMock extends Jedis {
 
     public ScanResult<Entry<String, String>> hscan(final String key, final String cursor) {
         try {
-            org.rarefiedredis.redis.ScanResult<Map<String, String>> mockr = redis
-                .hscan(key, Long.parseLong(cursor), "count", "1000000");
+            org.rarefiedredis.redis.ScanResult<Map<String, String>> mockr =
+                    redis.hscan(key, Long.parseLong(cursor), "count", "1000000");
             Map<String, String> results = mockr.results;
             List<Entry<String, String>> list = new ArrayList<>(results.entrySet());
             return new ScanResult<>("0", list);
@@ -1084,8 +1165,8 @@ public class JedisMock extends Jedis {
 
     public ScanResult<Tuple> zscan(final String key, final String cursor) {
         try {
-            org.rarefiedredis.redis.ScanResult<Set<ZsetPair>> sr = redis
-                .zscan(key, Long.parseLong(cursor), "count", "1000000");
+            org.rarefiedredis.redis.ScanResult<Set<ZsetPair>> sr =
+                    redis.zscan(key, Long.parseLong(cursor), "count", "1000000");
             List<ZsetPair> list = new ArrayList<>(sr.results);
             List<Tuple> tl = new LinkedList<>();
             list.forEach(p -> tl.add(new Tuple(p.member, p.score)));

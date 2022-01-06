@@ -1,27 +1,29 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.client.worker;
-
-import com.amazonaws.util.EC2MetadataUtils;
-import com.netflix.conductor.client.config.PropertyFactory;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.client.config.PropertyFactory;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+
+import com.amazonaws.util.EC2MetadataUtils;
 
 public interface Worker {
 
@@ -36,19 +38,18 @@ public interface Worker {
      * Executes a task and returns the updated task.
      *
      * @param task Task to be executed.
-     * @return the {@link TaskResult} object If the task is not completed yet, return with the status as IN_PROGRESS.
+     * @return the {@link TaskResult} object If the task is not completed yet, return with the
+     *     status as IN_PROGRESS.
      */
     TaskResult execute(Task task);
 
     /**
-     * Called when the task coordinator fails to update the task to the server. Client should store the task id (in a
-     * database) and retry the update later
+     * Called when the task coordinator fails to update the task to the server. Client should store
+     * the task id (in a database) and retry the update later
      *
      * @param task Task which cannot be updated back to the server.
      */
-    default void onErrorUpdate(Task task) {
-
-    }
+    default void onErrorUpdate(Task task) {}
 
     /**
      * Override this method to pause the worker from polling.
@@ -72,8 +73,10 @@ public interface Worker {
             serverId = System.getenv("HOSTNAME");
         }
         if (serverId == null) {
-            serverId = (EC2MetadataUtils.getInstanceId() == null) ? System.getProperty("user.name")
-                : EC2MetadataUtils.getInstanceId();
+            serverId =
+                    (EC2MetadataUtils.getInstanceId() == null)
+                            ? System.getProperty("user.name")
+                            : EC2MetadataUtils.getInstanceId();
         }
         LoggerHolder.logger.debug("Setting worker id to {}", serverId);
         return serverId;

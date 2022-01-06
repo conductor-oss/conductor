@@ -12,17 +12,19 @@
  */
 package com.netflix.conductor.common.tasks;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +34,7 @@ public class TaskDefTest {
     private Validator validator;
 
     @Before
-    public void setup(){
+    public void setup() {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         this.validator = factory.getValidator();
     }
@@ -65,7 +67,9 @@ public class TaskDefTest {
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 must be less than timeoutSeconds: 1000"));
+        assertTrue(
+                validationErrors.contains(
+                        "TaskDef: task1 responseTimeoutSeconds: 1001 must be less than timeoutSeconds: 1000"));
         assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
         assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
     }

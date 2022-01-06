@@ -12,11 +12,8 @@
  */
 package com.netflix.conductor.postgres.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
-import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
-import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
 import javax.sql.DataSource;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -25,6 +22,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+
+import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
+import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
+import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -43,14 +46,15 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public PostgresMetadataDAO postgresMetadataDAO(ObjectMapper objectMapper, DataSource dataSource,
-        PostgresProperties properties) {
+    public PostgresMetadataDAO postgresMetadataDAO(
+            ObjectMapper objectMapper, DataSource dataSource, PostgresProperties properties) {
         return new PostgresMetadataDAO(objectMapper, dataSource, properties);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public PostgresExecutionDAO postgresExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public PostgresExecutionDAO postgresExecutionDAO(
+            ObjectMapper objectMapper, DataSource dataSource) {
         return new PostgresExecutionDAO(objectMapper, dataSource);
     }
 

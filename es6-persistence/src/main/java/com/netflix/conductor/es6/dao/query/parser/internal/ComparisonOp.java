@@ -17,7 +17,13 @@ import java.io.InputStream;
 public class ComparisonOp extends AbstractNode {
 
     public enum Operators {
-        BETWEEN("BETWEEN"), EQUALS("="), LESS_THAN("<"), GREATER_THAN(">"), IN("IN"), NOT_EQUALS("!="), IS("IS"),
+        BETWEEN("BETWEEN"),
+        EQUALS("="),
+        LESS_THAN("<"),
+        GREATER_THAN(">"),
+        IN("IN"),
+        NOT_EQUALS("!="),
+        IS("IS"),
         STARTS_WITH("STARTS_WITH");
 
         private final String value;
@@ -61,15 +67,22 @@ public class ComparisonOp extends AbstractNode {
             this.value = "IS";
         } else if (peeked[0] == '!' && peeked[1] == '=') {
             this.value = "!=";
-        } else if (peeked.length >= betweenLen && peeked[0] == 'B' && peeked[1] == 'E' && peeked[2] == 'T'
-            && peeked[3] == 'W' && peeked[4] == 'E' && peeked[5] == 'E' && peeked[6] == 'N') {
+        } else if (peeked.length >= betweenLen
+                && peeked[0] == 'B'
+                && peeked[1] == 'E'
+                && peeked[2] == 'T'
+                && peeked[3] == 'W'
+                && peeked[4] == 'E'
+                && peeked[5] == 'E'
+                && peeked[6] == 'N') {
             this.value = Operators.BETWEEN.value();
-        } else if (peeked.length == startsWithLen && new String(peeked).equals(Operators.STARTS_WITH.value())) {
+        } else if (peeked.length == startsWithLen
+                && new String(peeked).equals(Operators.STARTS_WITH.value())) {
             this.value = Operators.STARTS_WITH.value();
         } else {
             throw new ParserException(
-                "Expecting an operator (=, >, <, !=, BETWEEN, IN, STARTS_WITH), but found none.  Peeked=>" + new String(
-                    peeked));
+                    "Expecting an operator (=, >, <, !=, BETWEEN, IN, STARTS_WITH), but found none.  Peeked=>"
+                            + new String(peeked));
         }
 
         read(this.value.length());

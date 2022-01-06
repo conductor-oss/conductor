@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.es6.dao.query.parser;
 
+import java.io.InputStream;
+
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+
 import com.netflix.conductor.es6.dao.query.parser.internal.AbstractNode;
 import com.netflix.conductor.es6.dao.query.parser.internal.ComparisonOp;
 import com.netflix.conductor.es6.dao.query.parser.internal.ComparisonOp.Operators;
@@ -20,12 +25,10 @@ import com.netflix.conductor.es6.dao.query.parser.internal.ListConst;
 import com.netflix.conductor.es6.dao.query.parser.internal.Name;
 import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.es6.dao.query.parser.internal.Range;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-
-import java.io.InputStream;
 
 /**
+ *
+ *
  * <pre>
  * Represents an expression of the form as below:
  * key OPR value
@@ -69,23 +72,17 @@ public class NameValue extends AbstractNode implements FilterProvider {
         return "" + name + op + value;
     }
 
-    /**
-     * @return the name
-     */
+    /** @return the name */
     public Name getName() {
         return name;
     }
 
-    /**
-     * @return the op
-     */
+    /** @return the op */
     public ComparisonOp getOp() {
         return op;
     }
 
-    /**
-     * @return the value
-     */
+    /** @return the value */
     public ConstValue getValue() {
         return value;
     }
@@ -93,27 +90,41 @@ public class NameValue extends AbstractNode implements FilterProvider {
     @Override
     public QueryBuilder getFilterBuilder() {
         if (op.getOperator().equals(Operators.EQUALS.value())) {
-            return QueryBuilders.queryStringQuery(name.getName() + ":" + value.getValue().toString());
+            return QueryBuilders.queryStringQuery(
+                    name.getName() + ":" + value.getValue().toString());
         } else if (op.getOperator().equals(Operators.BETWEEN.value())) {
-            return QueryBuilders.rangeQuery(name.getName()).from(range.getLow()).to(range.getHigh());
+            return QueryBuilders.rangeQuery(name.getName())
+                    .from(range.getLow())
+                    .to(range.getHigh());
         } else if (op.getOperator().equals(Operators.IN.value())) {
             return QueryBuilders.termsQuery(name.getName(), valueList.getList());
         } else if (op.getOperator().equals(Operators.NOT_EQUALS.value())) {
-            return QueryBuilders.queryStringQuery("NOT " + name.getName() + ":" + value.getValue().toString());
+            return QueryBuilders.queryStringQuery(
+                    "NOT " + name.getName() + ":" + value.getValue().toString());
         } else if (op.getOperator().equals(Operators.GREATER_THAN.value())) {
-            return QueryBuilders.rangeQuery(name.getName()).from(value.getValue()).includeLower(false)
-                .includeUpper(false);
+            return QueryBuilders.rangeQuery(name.getName())
+                    .from(value.getValue())
+                    .includeLower(false)
+                    .includeUpper(false);
         } else if (op.getOperator().equals(Operators.IS.value())) {
             if (value.getSysConstant().equals(ConstValue.SystemConsts.NULL)) {
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery())
-                    .mustNot(QueryBuilders.existsQuery(name.getName())));
+                return QueryBuilders.boolQuery()
+                        .mustNot(
+                                QueryBuilders.boolQuery()
+                                        .must(QueryBuilders.matchAllQuery())
+                                        .mustNot(QueryBuilders.existsQuery(name.getName())));
             } else if (value.getSysConstant().equals(ConstValue.SystemConsts.NOT_NULL)) {
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery())
-                    .must(QueryBuilders.existsQuery(name.getName())));
+                return QueryBuilders.boolQuery()
+                        .mustNot(
+                                QueryBuilders.boolQuery()
+                                        .must(QueryBuilders.matchAllQuery())
+                                        .must(QueryBuilders.existsQuery(name.getName())));
             }
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
-            return QueryBuilders.rangeQuery(name.getName()).to(value.getValue()).includeLower(false)
-                .includeUpper(false);
+            return QueryBuilders.rangeQuery(name.getName())
+                    .to(value.getValue())
+                    .includeLower(false)
+                    .includeUpper(false);
         } else if (op.getOperator().equals(Operators.STARTS_WITH.value())) {
             return QueryBuilders.prefixQuery(name.getName(), value.getUnquotedValue());
         }

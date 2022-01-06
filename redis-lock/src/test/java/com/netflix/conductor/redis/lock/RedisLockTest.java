@@ -12,9 +12,8 @@
  */
 package com.netflix.conductor.redis.lock;
 
-import com.netflix.conductor.redislock.config.RedisLockProperties;
-import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
-import com.netflix.conductor.redislock.lock.RedisLock;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,9 +21,12 @@ import org.redisson.Redisson;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import redis.embedded.RedisServer;
 
-import java.util.concurrent.TimeUnit;
+import com.netflix.conductor.redislock.config.RedisLockProperties;
+import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
+import com.netflix.conductor.redislock.lock.RedisLock;
+
+import redis.embedded.RedisServer;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -105,7 +107,6 @@ public class RedisLockTest {
         RLock lock = redisson.getLock(lockId);
         assertTrue(isLocked);
     }
-
 
     @Test
     public void testReleaseLock() {

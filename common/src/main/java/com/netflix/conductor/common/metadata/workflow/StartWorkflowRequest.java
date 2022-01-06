@@ -12,15 +12,16 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.netflix.conductor.annotations.protogen.ProtoField;
-import com.netflix.conductor.annotations.protogen.ProtoMessage;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import java.util.HashMap;
-import java.util.Map;
+
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
 @ProtoMessage
 public class StartWorkflowRequest {
@@ -100,7 +101,8 @@ public class StartWorkflowRequest {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
     }
 
-    public StartWorkflowRequest withExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+    public StartWorkflowRequest withExternalInputPayloadStoragePath(
+            String externalInputPayloadStoragePath) {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
         return this;
     }

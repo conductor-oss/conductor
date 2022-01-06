@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.dao.QueueDAO;
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolationException;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +25,14 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.validation.ConstraintViolationException;
-import java.util.List;
-import java.util.Set;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.dao.QueueDAO;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,11 +57,9 @@ public class TaskServiceTest {
         }
     }
 
-    @Autowired
-    private TaskService taskService;
+    @Autowired private TaskService taskService;
 
-    @Autowired
-    private ExecutionService executionService;
+    @Autowired private ExecutionService executionService;
 
     @Test(expected = ConstraintViolationException.class)
     public void testPoll() {
@@ -134,7 +135,6 @@ public class TaskServiceTest {
             throw ex;
         }
     }
-
 
     @Test(expected = ConstraintViolationException.class)
     public void testAckTaskReceived() {
@@ -229,19 +229,18 @@ public class TaskServiceTest {
 
     @Test
     public void testSearch() {
-        SearchResult<TaskSummary> searchResult = new SearchResult<>(2,
-                List.of(mock(TaskSummary.class), mock(TaskSummary.class)));
-        when(executionService.getSearchTasks("query", "*", 0, 2,"Sort"))
-                .thenReturn(searchResult);
-        assertEquals(searchResult, taskService.search(0, 2, "Sort", "*", "query" ));
+        SearchResult<TaskSummary> searchResult =
+                new SearchResult<>(2, List.of(mock(TaskSummary.class), mock(TaskSummary.class)));
+        when(executionService.getSearchTasks("query", "*", 0, 2, "Sort")).thenReturn(searchResult);
+        assertEquals(searchResult, taskService.search(0, 2, "Sort", "*", "query"));
     }
 
     @Test
     public void testSearchV2() {
-        SearchResult<Task> searchResult = new SearchResult<>(2,
-                List.of(mock(Task.class), mock(Task.class)));
-        when(executionService.getSearchTasksV2("query", "*", 0, 2,"Sort"))
+        SearchResult<Task> searchResult =
+                new SearchResult<>(2, List.of(mock(Task.class), mock(Task.class)));
+        when(executionService.getSearchTasksV2("query", "*", 0, 2, "Sort"))
                 .thenReturn(searchResult);
-        assertEquals(searchResult, taskService.searchV2(0, 2, "Sort", "*", "query" ));
+        assertEquals(searchResult, taskService.searchV2(0, 2, "Sort", "*", "query"));
     }
 }

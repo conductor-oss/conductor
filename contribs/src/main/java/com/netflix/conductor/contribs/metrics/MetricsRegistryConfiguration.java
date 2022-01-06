@@ -12,20 +12,23 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.netflix.spectator.api.Clock;
-import com.netflix.spectator.api.Spectator;
-import com.netflix.spectator.metrics3.MetricsRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.netflix.spectator.api.Clock;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.metrics3.MetricsRegistry;
+
+import com.codahale.metrics.MetricRegistry;
 
 @ConditionalOnProperty(value = "conductor.metrics-logger.enabled", havingValue = "true")
 @Configuration
 public class MetricsRegistryConfiguration {
 
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
-    public static final MetricsRegistry METRICS_REGISTRY = new MetricsRegistry(Clock.SYSTEM, METRIC_REGISTRY);
+    public static final MetricsRegistry METRICS_REGISTRY =
+            new MetricsRegistry(Clock.SYSTEM, METRIC_REGISTRY);
 
     static {
         Spectator.globalRegistry().add(METRICS_REGISTRY);
@@ -41,4 +44,3 @@ public class MetricsRegistryConfiguration {
         return METRICS_REGISTRY;
     }
 }
-

@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.client.spring;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("conductor.client")
 public class ClientProperties {

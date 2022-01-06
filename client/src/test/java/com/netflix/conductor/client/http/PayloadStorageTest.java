@@ -12,13 +12,6 @@
  */
 package com.netflix.conductor.client.http;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
-
-import com.netflix.conductor.client.exception.ConductorClientException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +20,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,20 +31,23 @@ import org.mockito.Mock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.netflix.conductor.client.exception.ConductorClientException;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({PayloadStorage.class})
 public class PayloadStorageTest {
 
-    @InjectMocks
-    PayloadStorage payloadStorage;
+    @InjectMocks PayloadStorage payloadStorage;
 
-    @Mock
-    ClientBase clientBase;
+    @Mock ClientBase clientBase;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
+    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void testUploadSuccessfully2xx() throws Exception {
@@ -110,7 +107,6 @@ public class PayloadStorageTest {
 
         payloadStorage.upload("http://invalidUrl/^", null, 0);
     }
-
 
     @Test
     public void testUploadIOException() throws Exception {

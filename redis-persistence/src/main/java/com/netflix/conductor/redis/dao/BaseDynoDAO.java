@@ -12,14 +12,17 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
-import java.io.IOException;
-import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class BaseDynoDAO {
 
@@ -31,8 +34,11 @@ public class BaseDynoDAO {
     protected JedisProxy jedisProxy;
     protected ObjectMapper objectMapper;
 
-    protected BaseDynoDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
-        ConductorProperties conductorProperties, RedisProperties properties) {
+    protected BaseDynoDAO(
+            JedisProxy jedisProxy,
+            ObjectMapper objectMapper,
+            ConductorProperties conductorProperties,
+            RedisProperties properties) {
         this.jedisProxy = jedisProxy;
         this.objectMapper = objectMapper;
         this.conductorProperties = conductorProperties;
@@ -92,7 +98,11 @@ public class BaseDynoDAO {
     }
 
     void recordRedisDaoPayloadSize(String action, int size, String taskType, String workflowType) {
-        Monitors.recordDaoPayloadSize(DAO_NAME, action, StringUtils.defaultIfBlank(taskType, ""),
-            StringUtils.defaultIfBlank(workflowType, ""), size);
+        Monitors.recordDaoPayloadSize(
+                DAO_NAME,
+                action,
+                StringUtils.defaultIfBlank(taskType, ""),
+                StringUtils.defaultIfBlank(workflowType, ""),
+                size);
     }
 }

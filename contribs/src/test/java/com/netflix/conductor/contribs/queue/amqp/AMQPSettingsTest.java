@@ -12,13 +12,16 @@
  */
 package com.netflix.conductor.contribs.queue.amqp;
 
-import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
-import com.netflix.conductor.contribs.queue.amqp.util.AMQPSettings;
-import com.rabbitmq.client.AMQP.PROTOCOL;
-import com.rabbitmq.client.ConnectionFactory;
 import java.time.Duration;
+
 import org.junit.Before;
 import org.junit.Test;
+
+import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
+import com.netflix.conductor.contribs.queue.amqp.util.AMQPSettings;
+
+import com.rabbitmq.client.AMQP.PROTOCOL;
+import com.rabbitmq.client.ConnectionFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,7 +43,8 @@ public class AMQPSettingsTest {
         when(properties.getPassword()).thenReturn(ConnectionFactory.DEFAULT_PASS);
         when(properties.getVirtualHost()).thenReturn(ConnectionFactory.DEFAULT_VHOST);
         when(properties.getPort()).thenReturn(PROTOCOL.PORT);
-        when(properties.getConnectionTimeout()).thenReturn(Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT));
+        when(properties.getConnectionTimeout())
+                .thenReturn(Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT));
         when(properties.isUseNio()).thenReturn(false);
         when(properties.isDurable()).thenReturn(true);
         when(properties.isExclusive()).thenReturn(false);
@@ -54,7 +58,8 @@ public class AMQPSettingsTest {
 
     @Test
     public void testAMQPSettings_exchange_fromuri_defaultconfig() {
-        String exchangestring = "amqp_exchange:myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=2";
+        String exchangestring =
+                "amqp_exchange:myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=2";
         AMQPSettings settings = new AMQPSettings(properties);
         settings.fromURI(exchangestring);
         assertEquals("topic", settings.getExchangeType());
@@ -64,7 +69,8 @@ public class AMQPSettingsTest {
 
     @Test
     public void testAMQPSettings_queue_fromuri_defaultconfig() {
-        String exchangestring = "amqp_queue:myQueueName?deliveryMode=2&durable=false&autoDelete=true&exclusive=true";
+        String exchangestring =
+                "amqp_queue:myQueueName?deliveryMode=2&durable=false&autoDelete=true&exclusive=true";
         AMQPSettings settings = new AMQPSettings(properties);
         settings.fromURI(exchangestring);
         assertFalse(settings.isDurable());
@@ -76,7 +82,8 @@ public class AMQPSettingsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testAMQPSettings_exchange_fromuri_wrongdeliverymode() {
-        String exchangestring = "amqp_exchange:myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=3";
+        String exchangestring =
+                "amqp_exchange:myExchangeName?exchangeType=topic&routingKey=test&deliveryMode=3";
         AMQPSettings settings = new AMQPSettings(properties);
         settings.fromURI(exchangestring);
     }

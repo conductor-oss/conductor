@@ -12,26 +12,29 @@
  */
 package com.netflix.conductor.redis.dynoqueue;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.sharding.RoundRobinStrategy;
 import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class RedisQueuesShardingStrategyProvider {
 
     public static final String LOCAL_ONLY_STRATEGY = "localOnly";
     public static final String ROUND_ROBIN_STRATEGY = "roundRobin";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RedisQueuesShardingStrategyProvider.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(RedisQueuesShardingStrategyProvider.class);
     private final ShardSupplier shardSupplier;
     private final RedisProperties properties;
 
-    public RedisQueuesShardingStrategyProvider(ShardSupplier shardSupplier, RedisProperties properties) {
+    public RedisQueuesShardingStrategyProvider(
+            ShardSupplier shardSupplier, RedisProperties properties) {
         this.shardSupplier = shardSupplier;
         this.properties = properties;
     }
@@ -39,10 +42,14 @@ public class RedisQueuesShardingStrategyProvider {
     public ShardingStrategy get() {
         String shardingStrat = properties.getQueueShardingStrategy();
         if (shardingStrat.equals(LOCAL_ONLY_STRATEGY)) {
-            LOGGER.info("Using {} sharding strategy for queues", LocalOnlyStrategy.class.getSimpleName());
+            LOGGER.info(
+                    "Using {} sharding strategy for queues",
+                    LocalOnlyStrategy.class.getSimpleName());
             return new LocalOnlyStrategy(shardSupplier);
         } else {
-            LOGGER.info("Using {} sharding strategy for queues", RoundRobinStrategy.class.getSimpleName());
+            LOGGER.info(
+                    "Using {} sharding strategy for queues",
+                    RoundRobinStrategy.class.getSimpleName());
             return new RoundRobinStrategy();
         }
     }
@@ -59,7 +66,8 @@ public class RedisQueuesShardingStrategyProvider {
 
         @Override
         public String getNextShard(List<String> allShards, Message message) {
-            LOGGER.debug("Always using {} shard out of {}", shardSupplier.getCurrentShard(), allShards);
+            LOGGER.debug(
+                    "Always using {} shard out of {}", shardSupplier.getCurrentShard(), allShards);
             return shardSupplier.getCurrentShard();
         }
     }

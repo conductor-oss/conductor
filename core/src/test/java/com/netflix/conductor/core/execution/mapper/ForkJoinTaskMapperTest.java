@@ -1,16 +1,28 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.mapper;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -20,19 +32,9 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.utils.IDGenerator;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
+
 import static org.junit.Assert.assertEquals;
 
 public class ForkJoinTaskMapperTest {
@@ -40,8 +42,7 @@ public class ForkJoinTaskMapperTest {
     private DeciderService deciderService;
     private ForkJoinTaskMapper forkJoinTaskMapper;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -109,20 +110,21 @@ public class ForkJoinTaskMapperTest {
         Task task3 = new Task();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
-        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0)).thenReturn(
-            Collections.singletonList(task1));
-        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2, 0)).thenReturn(
-            Collections.singletonList(task3));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0))
+                .thenReturn(Collections.singletonList(task1));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2, 0))
+                .thenReturn(Collections.singletonList(task3));
 
         String taskId = IDGenerator.generate();
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-            .withWorkflowDefinition(def)
-            .withWorkflowInstance(workflow)
-            .withTaskToSchedule(forkTask)
-            .withRetryCount(0)
-            .withTaskId(taskId)
-            .withDeciderService(deciderService)
-            .build();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowDefinition(def)
+                        .withWorkflowInstance(workflow)
+                        .withTaskToSchedule(forkTask)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .withDeciderService(deciderService)
+                        .build();
 
         List<Task> mappedTasks = forkJoinTaskMapper.getMappedTasks(taskMapperContext);
 
@@ -189,24 +191,26 @@ public class ForkJoinTaskMapperTest {
         Task task3 = new Task();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
-        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0)).thenReturn(
-            Collections.singletonList(task1));
-        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2, 0)).thenReturn(
-            Collections.singletonList(task3));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0))
+                .thenReturn(Collections.singletonList(task1));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2, 0))
+                .thenReturn(Collections.singletonList(task3));
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-            .withWorkflowDefinition(def)
-            .withWorkflowInstance(workflow)
-            .withTaskToSchedule(forkTask)
-            .withRetryCount(0)
-            .withTaskId(taskId)
-            .withDeciderService(deciderService)
-            .build();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowDefinition(def)
+                        .withWorkflowInstance(workflow)
+                        .withTaskToSchedule(forkTask)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .withDeciderService(deciderService)
+                        .build();
 
         expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage("Fork task definition is not followed by a join task.  Check the blueprint");
+        expectedException.expectMessage(
+                "Fork task definition is not followed by a join task.  Check the blueprint");
         forkJoinTaskMapper.getMappedTasks(taskMapperContext);
     }
 }

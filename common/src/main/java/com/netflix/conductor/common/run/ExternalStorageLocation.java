@@ -15,12 +15,11 @@ package com.netflix.conductor.common.run;
 /**
  * Describes the location where the JSON payload is stored in external storage.
  *
- * <p>
- * The location is described using the following fields:
+ * <p>The location is described using the following fields:
  *
  * <ul>
- * <li> uri: The uri of the json file in external storage.
- * <li> path: The relative path of the file in external storage.
+ *   <li>uri: The uri of the json file in external storage.
+ *   <li>path: The relative path of the file in external storage.
  * </ul>
  */
 public class ExternalStorageLocation {
@@ -46,9 +45,6 @@ public class ExternalStorageLocation {
 
     @Override
     public String toString() {
-        return "ExternalStorageLocation{" +
-            "uri='" + uri + '\'' +
-            ", path='" + path + '\'' +
-            '}';
+        return "ExternalStorageLocation{" + "uri='" + uri + '\'' + ", path='" + path + '\'' + '}';
     }
 }

@@ -12,24 +12,25 @@
  */
 package com.netflix.conductor.core.storage;
 
+import java.io.InputStream;
+
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
-import java.io.InputStream;
-
 /**
- * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is configured
+ * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is
+ * configured
  */
 public class DummyPayloadStorage implements ExternalPayloadStorage {
 
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
+    public ExternalStorageLocation getLocation(
+            Operation operation, PayloadType payloadType, String path) {
         return null;
     }
 
     @Override
-    public void upload(String path, InputStream payload, long payloadSize) {
-    }
+    public void upload(String path, InputStream payload, long payloadSize) {}
 
     @Override
     public InputStream download(String path) {

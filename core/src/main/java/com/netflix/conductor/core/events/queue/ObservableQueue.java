@@ -13,29 +13,23 @@
 package com.netflix.conductor.core.events.queue;
 
 import java.util.List;
+
 import org.springframework.context.Lifecycle;
+
 import rx.Observable;
 
 public interface ObservableQueue extends Lifecycle {
 
-    /**
-     * @return An observable for the given queue
-     */
+    /** @return An observable for the given queue */
     Observable<Message> observe();
 
-    /**
-     * @return Type of the queue
-     */
+    /** @return Type of the queue */
     String getType();
 
-    /**
-     * @return Name of the queue
-     */
+    /** @return Name of the queue */
     String getName();
 
-    /**
-     * @return URI identifier for the queue.
-     */
+    /** @return URI identifier for the queue. */
     String getURI();
 
     /**
@@ -44,17 +38,16 @@ public interface ObservableQueue extends Lifecycle {
      */
     List<String> ack(List<Message> messages);
 
-    /**
-     * @param messages Messages to be published
-     */
+    /** @param messages Messages to be published */
     void publish(List<Message> messages);
 
     /**
-     * Used to determine if the queue supports unack/visibility timeout such that the messages will re-appear on the
-     * queue after a specific period and are available to be picked up again and retried.
+     * Used to determine if the queue supports unack/visibility timeout such that the messages will
+     * re-appear on the queue after a specific period and are available to be picked up again and
+     * retried.
      *
-     * @return - false if the queue message need not be re-published to the queue for retriability - true if the message
-     * must be re-published to the queue for retriability
+     * @return - false if the queue message need not be re-published to the queue for retriability -
+     *     true if the message must be re-published to the queue for retriability
      */
     default boolean rePublishIfNoAck() {
         return false;
@@ -63,21 +56,18 @@ public interface ObservableQueue extends Lifecycle {
     /**
      * Extend the lease of the unacknowledged message for longer period.
      *
-     * @param message      Message for which the timeout has to be changed
-     * @param unackTimeout timeout in milliseconds for which the unack lease should be extended. (replaces the current
-     *                     value with this value)
+     * @param message Message for which the timeout has to be changed
+     * @param unackTimeout timeout in milliseconds for which the unack lease should be extended.
+     *     (replaces the current value with this value)
      */
     void setUnackTimeout(Message message, long unackTimeout);
 
     /**
-     * @return Size of the queue - no. messages pending.  Note: Depending upon the implementation, this can be an
-     * approximation
+     * @return Size of the queue - no. messages pending. Note: Depending upon the implementation,
+     *     this can be an approximation
      */
     long size();
 
-    /**
-     * Used to close queue instance prior to remove from queues
-     */
-    default void close() {
-    }
+    /** Used to close queue instance prior to remove from queues */
+    default void close() {}
 }

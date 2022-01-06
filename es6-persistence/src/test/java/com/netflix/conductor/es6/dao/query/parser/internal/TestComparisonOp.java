@@ -21,7 +21,7 @@ public class TestComparisonOp extends TestAbstractParser {
 
     @Test
     public void test() throws Exception {
-        String[] tests = new String[]{"<", ">", "=", "!=", "IN", "BETWEEN", "STARTS_WITH"};
+        String[] tests = new String[] {"<", ">", "=", "!=", "IN", "BETWEEN", "STARTS_WITH"};
         for (String test : tests) {
             ComparisonOp name = new ComparisonOp(getInputStream(test));
             String nameVal = name.getOperator();

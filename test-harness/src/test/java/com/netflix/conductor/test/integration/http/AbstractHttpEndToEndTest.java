@@ -12,10 +12,19 @@
  */
 package com.netflix.conductor.test.integration.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.EventClient;
@@ -38,26 +47,18 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.test.integration.AbstractEndToEndTest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
-    @LocalServerPort
-    protected int port;
+    @LocalServerPort protected int port;
 
     protected static String apiRoot;
 
@@ -68,9 +69,10 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
     @Override
     protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
-        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
-            .withName(workflowExecutionName)
-            .withWorkflowDef(workflowDefinition);
+        StartWorkflowRequest workflowRequest =
+                new StartWorkflowRequest()
+                        .withName(workflowExecutionName)
+                        .withWorkflowDef(workflowDefinition);
 
         return workflowClient.startWorkflow(workflowRequest);
     }
@@ -126,16 +128,18 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         def.getTasks().add(t1);
 
         metadataClient.registerWorkflowDef(def);
-        WorkflowDef workflowDefinitionFromSystem = metadataClient.getWorkflowDef(def.getName(), null);
+        WorkflowDef workflowDefinitionFromSystem =
+                metadataClient.getWorkflowDef(def.getName(), null);
         assertNotNull(workflowDefinitionFromSystem);
         assertEquals(def, workflowDefinitionFromSystem);
 
         String correlationId = "test_corr_id";
-        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest()
-            .withName(def.getName())
-            .withCorrelationId(correlationId)
-            .withPriority(50)
-            .withInput(new HashMap<>());
+        StartWorkflowRequest startWorkflowRequest =
+                new StartWorkflowRequest()
+                        .withName(def.getName())
+                        .withCorrelationId(correlationId)
+                        .withPriority(50)
+                        .withInput(new HashMap<>());
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         assertNotNull(workflowId);
 
@@ -153,12 +157,14 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         int queueSize = taskClient.getQueueSizeForTask(workflow.getTasks().get(0).getTaskType());
         assertEquals(1, queueSize);
 
-        List<String> runningIds = workflowClient.getRunningWorkflow(def.getName(), def.getVersion());
+        List<String> runningIds =
+                workflowClient.getRunningWorkflow(def.getName(), def.getVersion());
         assertNotNull(runningIds);
         assertEquals(1, runningIds.size());
         assertEquals(workflowId, runningIds.get(0));
 
-        List<Task> polled = taskClient.batchPollTasksByTaskType("non existing task", "test", 1, 100);
+        List<Task> polled =
+                taskClient.batchPollTasksByTaskType("non existing task", "test", 1, 100);
         assertNotNull(polled);
         assertEquals(0, polled.size());
 
@@ -193,25 +199,32 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         assertEquals(1, queueSize);
 
         Thread.sleep(1000);
-        SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
+        SearchResult<WorkflowSummary> searchResult =
+                workflowClient.search("workflowType='" + def.getName() + "'");
         assertNotNull(searchResult);
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(workflow.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
 
-        SearchResult<Workflow> searchResultV2 = workflowClient.searchV2("workflowType='" + def.getName() + "'");
+        SearchResult<Workflow> searchResultV2 =
+                workflowClient.searchV2("workflowType='" + def.getName() + "'");
         assertNotNull(searchResultV2);
         assertEquals(1, searchResultV2.getTotalHits());
         assertEquals(workflow.getWorkflowId(), searchResultV2.getResults().get(0).getWorkflowId());
 
-        SearchResult<WorkflowSummary> searchResultAdvanced = workflowClient.search(0,1,null,null,"workflowType='" + def.getName() + "'");
+        SearchResult<WorkflowSummary> searchResultAdvanced =
+                workflowClient.search(0, 1, null, null, "workflowType='" + def.getName() + "'");
         assertNotNull(searchResultAdvanced);
         assertEquals(1, searchResultAdvanced.getTotalHits());
-        assertEquals(workflow.getWorkflowId(), searchResultAdvanced.getResults().get(0).getWorkflowId());
+        assertEquals(
+                workflow.getWorkflowId(), searchResultAdvanced.getResults().get(0).getWorkflowId());
 
-        SearchResult<Workflow> searchResultV2Advanced = workflowClient.searchV2(0,1,null,null,"workflowType='" + def.getName() + "'");
+        SearchResult<Workflow> searchResultV2Advanced =
+                workflowClient.searchV2(0, 1, null, null, "workflowType='" + def.getName() + "'");
         assertNotNull(searchResultV2Advanced);
         assertEquals(1, searchResultV2Advanced.getTotalHits());
-        assertEquals(workflow.getWorkflowId(), searchResultV2Advanced.getResults().get(0).getWorkflowId());
+        assertEquals(
+                workflow.getWorkflowId(),
+                searchResultV2Advanced.getResults().get(0).getWorkflowId());
 
         SearchResult<TaskSummary> taskSearchResult =
                 taskClient.search("taskType='" + t0.getName() + "'");
@@ -220,7 +233,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         assertEquals(t0.getName(), taskSearchResult.getResults().get(0).getTaskDefName());
 
         SearchResult<TaskSummary> taskSearchResultAdvanced =
-                taskClient.search(0,1,null,null,"taskType='" + t0.getName() + "'");
+                taskClient.search(0, 1, null, null, "taskType='" + t0.getName() + "'");
         assertNotNull(taskSearchResultAdvanced);
         assertEquals(1, taskSearchResultAdvanced.getTotalHits());
         assertEquals(t0.getName(), taskSearchResultAdvanced.getResults().get(0).getTaskDefName());
@@ -229,13 +242,17 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                 taskClient.searchV2("taskType='" + t0.getName() + "'");
         assertNotNull(taskSearchResultV2);
         assertEquals(1, searchResultV2Advanced.getTotalHits());
-        assertEquals(t0.getTaskReferenceName(), taskSearchResultV2.getResults().get(0).getReferenceTaskName());
+        assertEquals(
+                t0.getTaskReferenceName(),
+                taskSearchResultV2.getResults().get(0).getReferenceTaskName());
 
         SearchResult<Task> taskSearchResultV2Advanced =
-                taskClient.searchV2(0,1,null,null,"taskType='" + t0.getName() + "'");
+                taskClient.searchV2(0, 1, null, null, "taskType='" + t0.getName() + "'");
         assertNotNull(taskSearchResultV2Advanced);
         assertEquals(1, taskSearchResultV2Advanced.getTotalHits());
-        assertEquals(t0.getTaskReferenceName(), taskSearchResultV2Advanced.getResults().get(0).getReferenceTaskName());
+        assertEquals(
+                t0.getTaskReferenceName(),
+                taskSearchResultV2Advanced.getResults().get(0).getReferenceTaskName());
 
         workflowClient.terminateWorkflow(workflowId, "terminate reason");
         workflow = workflowClient.getWorkflow(workflowId, true);
@@ -278,7 +295,9 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             String errorMessage = e.getMessage();
             boolean retryable = e.isRetryable();
             assertEquals(404, statusCode);
-            assertEquals("No such workflow found by name: testWorkflowDefMetadata, version: 1", errorMessage);
+            assertEquals(
+                    "No such workflow found by name: testWorkflowDefMetadata, version: 1",
+                    errorMessage);
             assertFalse(retryable);
             throw e;
         }
@@ -359,9 +378,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertEquals(2, errors.size());
             assertTrue(errorMessages.contains("Workflow Id cannot be null or empty"));
             throw e;
@@ -390,9 +408,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             throw e;
@@ -411,9 +428,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertEquals(3, errors.size());
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
@@ -450,9 +466,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
@@ -471,9 +486,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertTrue(errorMessages.contains("TaskDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
             throw e;
@@ -498,9 +512,8 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
-            List<String> errorMessages = errors.stream()
-                .map(ValidationError::getMessage)
-                .collect(Collectors.toList());
+            List<String> errorMessages =
+                    errors.stream().map(ValidationError::getMessage).collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("ownerEmail cannot be empty"));

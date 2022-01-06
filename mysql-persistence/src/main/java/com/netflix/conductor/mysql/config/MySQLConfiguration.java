@@ -12,11 +12,8 @@
  */
 package com.netflix.conductor.mysql.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
-import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
-import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
 import javax.sql.DataSource;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,6 +21,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+
+import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
+import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
+import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -36,7 +39,8 @@ public class MySQLConfiguration {
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MySQLMetadataDAO mySqlMetadataDAO(ObjectMapper objectMapper, DataSource dataSource, MySQLProperties properties) {
+    public MySQLMetadataDAO mySqlMetadataDAO(
+            ObjectMapper objectMapper, DataSource dataSource, MySQLProperties properties) {
         return new MySQLMetadataDAO(objectMapper, dataSource, properties);
     }
 

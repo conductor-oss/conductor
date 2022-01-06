@@ -14,9 +14,7 @@ package com.netflix.conductor.core.listener;
 
 import com.netflix.conductor.common.run.Workflow;
 
-/**
- * Listener for the completed and terminated workflows
- */
+/** Listener for the completed and terminated workflows */
 public interface WorkflowStatusListener {
 
     default void onWorkflowCompletedIfEnabled(Workflow workflow) {
@@ -41,7 +39,5 @@ public interface WorkflowStatusListener {
 
     void onWorkflowTerminated(Workflow workflow);
 
-    default void onWorkflowFinalized(Workflow workflow) {
-
-    }
+    default void onWorkflowFinalized(Workflow workflow) {}
 }

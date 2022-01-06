@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.es7.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
+import java.net.URL;
+import java.util.List;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -29,8 +29,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
-import java.net.URL;
-import java.util.List;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ElasticSearchProperties.class)
@@ -41,10 +43,13 @@ public class ElasticSearchV7Configuration {
 
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+        RestClientBuilder restClientBuilder =
+                RestClient.builder(convertToHttpHosts(properties.toURLs()));
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
-            restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                    .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeout()));
+            restClientBuilder.setRequestConfigCallback(
+                    requestConfigBuilder ->
+                            requestConfigBuilder.setConnectionRequestTimeout(
+                                    properties.getRestClientConnectionRequestTimeout()));
         }
         return restClientBuilder.build();
     }
@@ -54,11 +59,17 @@ public class ElasticSearchV7Configuration {
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
-            log.info("Configure ElasticSearch with BASIC authentication. User:{}",properties.getUsername());
+            log.info(
+                    "Configure ElasticSearch with BASIC authentication. User:{}",
+                    properties.getUsername());
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY,
-                    new UsernamePasswordCredentials(properties.getUsername(), properties.getPassword()));
-            builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+            credentialsProvider.setCredentials(
+                    AuthScope.ANY,
+                    new UsernamePasswordCredentials(
+                            properties.getUsername(), properties.getPassword()));
+            builder.setHttpClientConfigCallback(
+                    httpClientBuilder ->
+                            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         } else {
             log.info("Configure ElasticSearch with no authentication.");
         }
@@ -66,14 +77,17 @@ public class ElasticSearchV7Configuration {
     }
 
     @Bean
-    public IndexDAO es7IndexDAO(RestClientBuilder restClientBuilder, ElasticSearchProperties properties,
-        ObjectMapper objectMapper) {
+    public IndexDAO es7IndexDAO(
+            RestClientBuilder restClientBuilder,
+            ElasticSearchProperties properties,
+            ObjectMapper objectMapper) {
         String url = properties.getUrl();
         return new ElasticSearchRestDAOV7(restClientBuilder, properties, objectMapper);
     }
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
-                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol())).toArray(HttpHost[]::new);
+                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol()))
+                .toArray(HttpHost[]::new);
     }
 }

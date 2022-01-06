@@ -12,12 +12,20 @@
  */
 package com.netflix.conductor.validations;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.execution.tasks.Terminate;
-import com.netflix.conductor.dao.MetadataDAO;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import javax.validation.executable.ExecutableValidator;
+
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -26,18 +34,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import javax.validation.executable.ExecutableValidator;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.Terminate;
+import com.netflix.conductor.dao.MetadataDAO;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,9 +54,10 @@ public class WorkflowTaskTypeConstraintTest {
 
     @BeforeClass
     public static void init() {
-        validatorFactory = Validation.byProvider(ApacheValidationProvider.class)
-            .configure()
-            .buildValidatorFactory();
+        validatorFactory =
+                Validation.byProvider(ApacheValidationProvider.class)
+                        .configure()
+                        .buildValidatorFactory();
         validator = validatorFactory.getValidator();
     }
 
@@ -79,8 +82,9 @@ public class WorkflowTaskTypeConstraintTest {
         Set<ConstraintViolation<Object>> result = validator.validate(workflowTask);
         assertEquals(1, result.size());
 
-        assertEquals(result.iterator().next().getMessage(),
-            "WorkflowTask taskReferenceName name cannot be empty or null");
+        assertEquals(
+                result.iterator().next().getMessage(),
+                "WorkflowTask taskReferenceName name cannot be empty or null");
     }
 
     @Test
@@ -92,11 +96,12 @@ public class WorkflowTaskTypeConstraintTest {
 
         ExecutableValidator executableValidator = validator.forExecutables();
 
-        Set<ConstraintViolation<Object>> result = executableValidator
-            .validateParameters(workflowTask, method, parameterValues);
+        Set<ConstraintViolation<Object>> result =
+                executableValidator.validateParameters(workflowTask, method, parameterValues);
 
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(), "WorkTask type cannot be null or empty");
+        assertEquals(
+                result.iterator().next().getMessage(), "WorkTask type cannot be null or empty");
     }
 
     @Test
@@ -108,10 +113,10 @@ public class WorkflowTaskTypeConstraintTest {
 
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(),
-            "sink field is required for taskType: EVENT taskName: encode");
+        assertEquals(
+                result.iterator().next().getMessage(),
+                "sink field is required for taskType: EVENT taskName: encode");
     }
-
 
     @Test
     public void testWorkflowTaskTypeDynamic() {
@@ -122,8 +127,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(),
-            "dynamicTaskNameParam field is required for taskType: DYNAMIC taskName: encode");
+        assertEquals(
+                result.iterator().next().getMessage(),
+                "dynamicTaskNameParam field is required for taskType: DYNAMIC taskName: encode");
     }
 
     @Test
@@ -140,10 +146,12 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("decisionCases should have atleast one task for taskType: DECISION taskName: encode"));
-        assertTrue(validationErrors
-            .contains("caseValueParam or caseExpression field is required for taskType: DECISION taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "decisionCases should have atleast one task for taskType: DECISION taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "caseValueParam or caseExpression field is required for taskType: DECISION taskName: encode"));
     }
 
     @Test
@@ -161,8 +169,11 @@ public class WorkflowTaskTypeConstraintTest {
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
         assertTrue(
-            validationErrors.contains("loopExpression field is required for taskType: DO_WHILE taskName: encode"));
-        assertTrue(validationErrors.contains("loopover field is required for taskType: DO_WHILE taskName: encode"));
+                validationErrors.contains(
+                        "loopExpression field is required for taskType: DO_WHILE taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "loopover field is required for taskType: DO_WHILE taskName: encode"));
     }
 
     @Test
@@ -183,7 +194,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("SUB_WORKFLOW task inside loopover task: encode is not supported."));
+        assertTrue(
+                validationErrors.contains(
+                        "SUB_WORKFLOW task inside loopover task: encode is not supported."));
     }
 
     @Test
@@ -201,8 +214,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("decisionCases should have atleast one task for taskType: DECISION taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "decisionCases should have atleast one task for taskType: DECISION taskName: encode"));
     }
 
     @Test
@@ -219,10 +233,12 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains(
-            "dynamicForkTasksInputParamName field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
-        assertTrue(validationErrors
-            .contains("dynamicForkTasksParam field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "dynamicForkTasksInputParamName field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "dynamicForkTasksParam field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
     }
 
     @Test
@@ -253,8 +269,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains(
-            "dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
     }
 
     @Test
@@ -287,8 +304,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains(
-            "dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
     }
 
     @Test
@@ -317,8 +335,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("inputParameters.http_request field is required for taskType: HTTP taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "inputParameters.http_request field is required for taskType: HTTP taskName: encode"));
     }
 
     @Test
@@ -335,7 +354,6 @@ public class WorkflowTaskTypeConstraintTest {
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         assertEquals(0, result.size());
     }
-
 
     @Test
     public void testWorkflowTaskTypeHTTPWithHttpParamInTaskDefAndWorkflowTask() {
@@ -367,8 +385,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("forkTasks should have atleast one task for taskType: FORK_JOIN taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "forkTasks should have atleast one task for taskType: FORK_JOIN taskName: encode"));
     }
 
     @Test
@@ -383,8 +402,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("subWorkflowParam field is required for taskType: SUB_WORKFLOW taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "subWorkflowParam field is required for taskType: SUB_WORKFLOW taskName: encode"));
     }
 
     @Test
@@ -412,14 +432,15 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask
-            .setInputParameters(Collections.singletonMap(Terminate.getTerminationWorkflowOutputParameter(), "blah"));
+        workflowTask.setInputParameters(
+                Collections.singletonMap(
+                        Terminate.getTerminationWorkflowOutputParameter(), "blah"));
         List<String> validationErrors = getErrorMessages(workflowTask);
 
         Assert.assertEquals(1, validationErrors.size());
         Assert.assertEquals(
-            "terminate task must have an terminationStatus parameter and must be set to COMPLETED or FAILED, taskName: terminate_task",
-            validationErrors.get(0));
+                "terminate task must have an terminationStatus parameter and must be set to COMPLETED or FAILED, taskName: terminate_task",
+                validationErrors.get(0));
     }
 
     @Test
@@ -428,14 +449,15 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask.setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "blah"));
+        workflowTask.setInputParameters(
+                Collections.singletonMap(Terminate.getTerminationStatusParameter(), "blah"));
 
         List<String> validationErrors = getErrorMessages(workflowTask);
 
         Assert.assertEquals(1, validationErrors.size());
         Assert.assertEquals(
-            "terminate task must have an terminationStatus parameter and must be set to COMPLETED or FAILED, taskName: terminate_task",
-            validationErrors.get(0));
+                "terminate task must have an terminationStatus parameter and must be set to COMPLETED or FAILED, taskName: terminate_task",
+                validationErrors.get(0));
     }
 
     @Test
@@ -444,14 +466,16 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask
-            .setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
+        workflowTask.setInputParameters(
+                Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
         workflowTask.setOptional(true);
 
         List<String> validationErrors = getErrorMessages(workflowTask);
 
         Assert.assertEquals(1, validationErrors.size());
-        Assert.assertEquals("terminate task cannot be optional, taskName: terminate_task", validationErrors.get(0));
+        Assert.assertEquals(
+                "terminate task cannot be optional, taskName: terminate_task",
+                validationErrors.get(0));
     }
 
     @Test
@@ -460,8 +484,8 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask
-            .setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
+        workflowTask.setInputParameters(
+                Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
 
         List<String> validationErrors = getErrorMessages(workflowTask);
 
@@ -494,8 +518,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors
-            .contains("inputParameters.kafka_request field is required for taskType: KAFKA_PUBLISH taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "inputParameters.kafka_request field is required for taskType: KAFKA_PUBLISH taskName: encode"));
     }
 
     @Test
@@ -512,7 +537,6 @@ public class WorkflowTaskTypeConstraintTest {
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         assertEquals(0, result.size());
     }
-
 
     @Test
     public void testWorkflowTaskTypeKafkaPublishWithRequestParamInTaskDefAndWorkflowTask() {
@@ -556,8 +580,9 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains(
-            "inputParameters.queryExpression field is required for taskType: JSON_JQ_TRANSFORM taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "inputParameters.queryExpression field is required for taskType: JSON_JQ_TRANSFORM taskName: encode"));
     }
 
     @Test

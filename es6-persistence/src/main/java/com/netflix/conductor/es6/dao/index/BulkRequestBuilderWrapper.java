@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Medallia, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.es6.dao.index;
 
+import java.util.Objects;
+
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -19,11 +21,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.springframework.lang.NonNull;
 
-import java.util.Objects;
-
-/**
- * Thread-safe wrapper for {@link BulkRequestBuilder}.
- */
+/** Thread-safe wrapper for {@link BulkRequestBuilder}. */
 public class BulkRequestBuilderWrapper {
 
     private final BulkRequestBuilder bulkRequestBuilder;

@@ -21,7 +21,7 @@ public class TestBooleanOp extends TestAbstractParser {
 
     @Test
     public void test() throws Exception {
-        String[] tests = new String[]{"AND", "OR"};
+        String[] tests = new String[] {"AND", "OR"};
         for (String test : tests) {
             BooleanOp name = new BooleanOp(getInputStream(test));
             String nameVal = name.getOperator();

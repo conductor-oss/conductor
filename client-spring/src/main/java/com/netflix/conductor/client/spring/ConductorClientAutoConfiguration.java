@@ -12,19 +12,19 @@
  */
 package com.netflix.conductor.client.spring;
 
-import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
-import com.netflix.conductor.client.http.TaskClient;
-import com.netflix.conductor.client.worker.Worker;
-import com.netflix.discovery.EurekaClient;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
+import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.worker.Worker;
+import com.netflix.discovery.EurekaClient;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ClientProperties.class)
@@ -45,17 +45,12 @@ public class ConductorClientAutoConfiguration {
     }
 
     @ConditionalOnMissingBean
-    @Bean(
-            initMethod = "init",
-            destroyMethod = "shutdown"
-    )
+    @Bean(initMethod = "init", destroyMethod = "shutdown")
     public TaskRunnerConfigurer taskRunnerConfigurer(
-            TaskClient taskClient,
-            ClientProperties clientProperties
-    ) {
+            TaskClient taskClient, ClientProperties clientProperties) {
         return new TaskRunnerConfigurer.Builder(taskClient, workers)
                 .withThreadCount(clientProperties.getThreadCount())
-                .withSleepWhenRetry((int)clientProperties.getSleepWhenRetryDuration().toMillis())
+                .withSleepWhenRetry((int) clientProperties.getSleepWhenRetryDuration().toMillis())
                 .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
                 .withTaskToDomain(clientProperties.getTaskToDomain())
                 .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())

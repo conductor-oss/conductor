@@ -12,81 +12,59 @@
  */
 package com.netflix.conductor.cassandra.config;
 
-import com.datastax.driver.core.ConsistencyLevel;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
+
+import com.datastax.driver.core.ConsistencyLevel;
 
 @ConfigurationProperties("conductor.cassandra")
 public class CassandraProperties {
 
-    /**
-     * The address for the cassandra database host
-     */
+    /** The address for the cassandra database host */
     private String hostAddress = "127.0.0.1";
 
-    /**
-     * The port to be used to connect to the cassandra database instance
-     */
+    /** The port to be used to connect to the cassandra database instance */
     private int port = 9142;
 
-    /**
-     * The name of the cassandra cluster
-     */
+    /** The name of the cassandra cluster */
     private String cluster = "";
 
-    /**
-     * The keyspace to be used in the cassandra datastore
-     */
+    /** The keyspace to be used in the cassandra datastore */
     private String keyspace = "conductor";
 
     /**
-     * The number of tasks to be stored in a single partition which will be used for sharding workflows in the
-     * datastore
+     * The number of tasks to be stored in a single partition which will be used for sharding
+     * workflows in the datastore
      */
     private int shardSize = 100;
 
-    /**
-     * The replication strategy with which to configure the keyspace
-     */
+    /** The replication strategy with which to configure the keyspace */
     private String replicationStrategy = "SimpleStrategy";
 
-    /**
-     * The key to be used while configuring the replication factor
-     */
+    /** The key to be used while configuring the replication factor */
     private String replicationFactorKey = "replication_factor";
 
-    /**
-     * The replication factor value with which the keyspace is configured
-     */
+    /** The replication factor value with which the keyspace is configured */
     private int replicationFactorValue = 3;
 
-    /**
-     * The consistency level to be used for read operations
-     */
+    /** The consistency level to be used for read operations */
     private ConsistencyLevel readConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM;
 
-    /**
-     * The consistency level to be used for write operations
-     */
+    /** The consistency level to be used for write operations */
     private ConsistencyLevel writeConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM;
 
-    /**
-     * The time in seconds after which the in-memory task definitions cache will be refreshed
-     */
+    /** The time in seconds after which the in-memory task definitions cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
-    /**
-     * The time in seconds after which the in-memory event handler cache will be refreshed
-     */
+    /** The time in seconds after which the in-memory event handler cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration eventHandlerCacheRefreshInterval = Duration.ofSeconds(60);
 
-    /**
-     * The time to live in seconds for which the event execution will be persisted
-     */
+    /** The time to live in seconds for which the event execution will be persisted */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration eventExecutionPersistenceTtl = Duration.ZERO;
 
