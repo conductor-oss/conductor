@@ -1,0 +1,37 @@
+{
+  "name": "test_task_failed_parent_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "test_lambda_task1",
+      "taskReferenceName": "lambdaTask1",
+      "inputParameters": {
+        "lambdaValue": "${workflow.input.lambdaValue}",
+        "scriptExpression": "var i = 10; if ($.lambdaValue == 1){ return {testvalue: 'Lambda value was 1', iValue: i} } else { return {testvalue: 'Lambda value was NOT 1', iValue: i + 3} }"
+      },
+      "type": "LAMBDA"
+    },
+    {
+      "name": "test_task_failed_sub_wf",
+      "taskReferenceName": "test_task_failed_sub_wf",
+      "inputParameters": {
+      },
+      "type": "SUB_WORKFLOW",
+      "subWorkflowParam": {
+        "name": "test_task_failed_sub_wf"
+      }
+    },
+    {
+      "name": "test_lambda_task2",
+      "taskReferenceName": "lambdaTask2",
+      "inputParameters": {
+        "lambdaValue": "${workflow.input.lambdaValue}",
+        "scriptExpression": "var i = 10; if ($.lambdaValue == 1){ return {testvalue: 'Lambda value was 1', iValue: i} } else { return {testvalue: 'Lambda value was NOT 1', iValue: i + 3} }"
+      },
+      "type": "LAMBDA"
+    }
+  ],
+  "schemaVersion": 2,
+  "ownerEmail": "test@harness.com",
+  "failureWorkflow": "failure_workflow"
+}

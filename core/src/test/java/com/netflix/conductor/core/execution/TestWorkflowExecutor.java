@@ -2024,6 +2024,59 @@ public class TestWorkflowExecutor {
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyInt(), anyLong());
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTerminateWorkflowWithFailureWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setFailureWorkflow("failure_workflow");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("1");
+        workflow.setCorrelationId("testid");
+        workflow.setWorkflowDefinition(new WorkflowDef());
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        TaskModel successTask = new TaskModel();
+        successTask.setTaskId("taskid1");
+        successTask.setReferenceTaskName("success");
+        successTask.setStatus(TaskModel.Status.COMPLETED);
+
+        TaskModel failedTask = new TaskModel();
+        failedTask.setTaskId("taskid2");
+        failedTask.setReferenceTaskName("failed");
+        failedTask.setStatus(TaskModel.Status.FAILED);
+        workflow.getTasks().addAll(Arrays.asList(successTask, failedTask));
+
+        WorkflowDef failureWorkflowDef = new WorkflowDef();
+        failureWorkflowDef.setName("failure_workflow");
+        when(metadataDAO.getLatestWorkflowDef(failureWorkflowDef.getName()))
+                .thenReturn(Optional.of(failureWorkflowDef));
+
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
+        ArgumentCaptor<WorkflowModel> argumentCaptor = ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, times(1)).createWorkflow(argumentCaptor.capture());
+        assertEquals(
+                workflow.getCorrelationId(),
+                argumentCaptor.getAllValues().get(0).getCorrelationId());
+        assertEquals(
+                workflow.getWorkflowId(),
+                argumentCaptor.getAllValues().get(0).getInput().get("workflowId"));
+        assertEquals(
+                failedTask.getTaskId(),
+                argumentCaptor.getAllValues().get(0).getInput().get("failureTaskId"));
+    }
+
     private WorkflowModel generateSampleWorkflow() {
         // setup
         WorkflowModel workflow = new WorkflowModel();

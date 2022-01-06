@@ -98,6 +98,9 @@ public class WorkflowModel {
 
     private String updatedBy;
 
+    // Capture the failed taskId if the workflow execution failed because of task failure
+    private String failedTaskId;
+
     public Status getStatus() {
         return status;
     }
@@ -305,6 +308,14 @@ public class WorkflowModel {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public String getFailedTaskId() {
+        return failedTaskId;
+    }
+
+    public void setFailedTaskId(String failedTaskId) {
+        this.failedTaskId = failedTaskId;
     }
 
     /**

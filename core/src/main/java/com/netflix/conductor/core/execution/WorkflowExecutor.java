@@ -568,6 +568,7 @@ public class WorkflowExecutor {
 
         workflow.getTasks().clear();
         workflow.setReasonForIncompletion(null);
+        workflow.setFailedTaskId(null);
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setEndTime(0);
         workflow.setLastRetriedTime(0);
@@ -809,7 +810,11 @@ public class WorkflowExecutor {
                             terminationStatus, terminateTask.get().getTaskId());
             if (WorkflowModel.Status.FAILED.name().equals(terminationStatus)) {
                 workflow.setStatus(WorkflowModel.Status.FAILED);
-                workflow = terminate(workflow, new TerminateWorkflowException(reason));
+                workflow =
+                        terminate(
+                                workflow,
+                                new TerminateWorkflowException(
+                                        reason, workflow.getStatus(), terminateTask.get()));
             } else {
                 workflow.setReasonForIncompletion(reason);
                 workflow = completeWorkflow(workflow);
@@ -855,6 +860,7 @@ public class WorkflowExecutor {
         workflow.setTasks(workflow.getTasks());
         workflow.setOutput(workflow.getOutput());
         workflow.setReasonForIncompletion(workflow.getReasonForIncompletion());
+        workflow.setFailedTaskId(workflow.getFailedTaskId());
         workflow.setExternalOutputPayloadStoragePath(
                 workflow.getExternalOutputPayloadStoragePath());
 
@@ -980,6 +986,9 @@ public class WorkflowExecutor {
                 input.put("workflowId", workflowId);
                 input.put("reason", reason);
                 input.put("failureStatus", workflow.getStatus().toString());
+                if (workflow.getFailedTaskId() != null) {
+                    input.put("failureTaskId", workflow.getFailedTaskId());
+                }
 
                 try {
                     WorkflowDef latestFailureWorkflow =
@@ -996,7 +1005,7 @@ public class WorkflowExecutor {
                                     latestFailureWorkflow,
                                     input,
                                     null,
-                                    workflowId,
+                                    workflow.getCorrelationId(),
                                     null,
                                     workflow.getTaskToDomain());
 
@@ -1784,6 +1793,10 @@ public class WorkflowExecutor {
             workflow.setStatus(terminateWorkflowException.getWorkflowStatus());
         }
 
+        if (terminateWorkflowException.getTask() != null && workflow.getFailedTaskId() == null) {
+            workflow.setFailedTaskId(terminateWorkflowException.getTask().getTaskId());
+        }
+
         String failureWorkflow = workflow.getWorkflowDefinition().getFailureWorkflow();
         if (failureWorkflow != null) {
             if (failureWorkflow.startsWith("$")) {
@@ -1818,6 +1831,7 @@ public class WorkflowExecutor {
             workflow.setStatus(WorkflowModel.Status.RUNNING);
             // Reset failure reason from previous run to default
             workflow.setReasonForIncompletion(null);
+            workflow.setFailedTaskId(null);
             workflow.setFailedReferenceTaskNames(new HashSet<>());
             if (correlationId != null) {
                 workflow.setCorrelationId(correlationId);
@@ -1864,6 +1878,7 @@ public class WorkflowExecutor {
             workflow.setStatus(WorkflowModel.Status.RUNNING);
             // Reset failure reason from previous run to default
             workflow.setReasonForIncompletion(null);
+            workflow.setFailedTaskId(null);
             workflow.setFailedReferenceTaskNames(new HashSet<>());
             if (correlationId != null) {
                 workflow.setCorrelationId(correlationId);
