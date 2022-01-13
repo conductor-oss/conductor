@@ -14,6 +14,7 @@ package com.netflix.conductor.client.automator;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -51,7 +52,7 @@ class TaskPollExecutor {
     private final TaskClient taskClient;
     private final int updateRetryCount;
     private final ExecutorService executorService;
-    private final PollingSemaphore pollingSemaphore;
+    private final Map<String, PollingSemaphore> pollingSemaphoreMap;
     private final Map<String /*taskType*/, String /*domain*/> taskToDomain;
 
     private static final String DOMAIN = "domain";
@@ -64,23 +65,36 @@ class TaskPollExecutor {
             int threadCount,
             int updateRetryCount,
             Map<String, String> taskToDomain,
-            String workerNamePrefix) {
+            String workerNamePrefix,
+            Map<String, Integer> taskThreadCount) {
         this.eurekaClient = eurekaClient;
         this.taskClient = taskClient;
         this.updateRetryCount = updateRetryCount;
         this.taskToDomain = taskToDomain;
 
-        LOGGER.info("Initialized the TaskPollExecutor with {} threads", threadCount);
+        this.pollingSemaphoreMap = new HashMap<>();
+        int totalThreadCount = 0;
+        if (!taskThreadCount.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : taskThreadCount.entrySet()) {
+                String taskType = entry.getKey();
+                int count = entry.getValue();
+                totalThreadCount += count;
+                pollingSemaphoreMap.put(taskType, new PollingSemaphore(count));
+            }
+        } else {
+            totalThreadCount = threadCount;
+            // shared poll for all workers
+            pollingSemaphoreMap.put(ALL_WORKERS, new PollingSemaphore(threadCount));
+        }
 
+        LOGGER.info("Initialized the TaskPollExecutor with {} threads", totalThreadCount);
         this.executorService =
                 Executors.newFixedThreadPool(
-                        threadCount,
+                        totalThreadCount,
                         new BasicThreadFactory.Builder()
                                 .namingPattern(workerNamePrefix)
                                 .uncaughtExceptionHandler(uncaughtExceptionHandler)
                                 .build());
-
-        this.pollingSemaphore = new PollingSemaphore(threadCount);
     }
 
     void pollAndExecute(Worker worker) {
@@ -106,13 +120,15 @@ class TaskPollExecutor {
             return;
         }
 
+        String taskType = worker.getTaskDefName();
+        PollingSemaphore pollingSemaphore = getPollingSemaphore(taskType);
+
         Task task;
         try {
             if (!pollingSemaphore.canPoll()) {
                 return;
             }
 
-            String taskType = worker.getTaskDefName();
             String domain =
                     Optional.ofNullable(PropertyFactory.getString(taskType, DOMAIN, null))
                             .orElseGet(
@@ -141,7 +157,7 @@ class TaskPollExecutor {
 
                 CompletableFuture<Task> taskCompletableFuture =
                         CompletableFuture.supplyAsync(
-                                () -> processTask(task, worker), executorService);
+                                () -> processTask(task, worker, pollingSemaphore), executorService);
 
                 taskCompletableFuture.whenComplete(this::finalizeTask);
             } else {
@@ -181,7 +197,7 @@ class TaskPollExecutor {
                 LOGGER.error("Uncaught exception. Thread {} will exit now", thread, error);
             };
 
-    private Task processTask(Task task, Worker worker) {
+    private Task processTask(Task task, Worker worker, PollingSemaphore pollingSemaphore) {
         LOGGER.debug(
                 "Executing task: {} of type: {} in worker: {} at {}",
                 task.getTaskId(),
@@ -316,5 +332,13 @@ class TaskPollExecutor {
         result.log(stringWriter.toString());
 
         updateWithRetry(updateRetryCount, task, result, worker);
+    }
+
+    private PollingSemaphore getPollingSemaphore(String taskType) {
+        if (pollingSemaphoreMap.containsKey(taskType)) {
+            return pollingSemaphoreMap.get(taskType);
+        } else {
+            return pollingSemaphoreMap.get(ALL_WORKERS);
+        }
     }
 }

@@ -14,6 +14,8 @@ package com.netflix.conductor.client.automator;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -32,6 +35,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.COMPLETED;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -46,8 +50,49 @@ public class TaskRunnerConfigurerTest {
         new TaskRunnerConfigurer.Builder(null, null).build();
     }
 
+    @Test(expected = ConductorClientException.class)
+    public void testInvalidThreadConfig() {
+        Worker worker1 = Worker.create("task1", TaskResult::new);
+        Worker worker2 = Worker.create("task2", TaskResult::new);
+        Map<String, Integer> taskThreadCount = new HashMap<>();
+        taskThreadCount.put(worker1.getTaskDefName(), 2);
+        taskThreadCount.put(worker2.getTaskDefName(), 3);
+        new TaskRunnerConfigurer.Builder(new TaskClient(), Arrays.asList(worker1, worker2))
+                .withThreadCount(10)
+                .withTaskThreadCount(taskThreadCount)
+                .build();
+    }
+
+    @Test(expected = ConductorClientException.class)
+    public void testMissingTaskThreadConfig() {
+        Worker worker1 = Worker.create("task1", TaskResult::new);
+        Worker worker2 = Worker.create("task2", TaskResult::new);
+        Map<String, Integer> taskThreadCount = new HashMap<>();
+        taskThreadCount.put(worker1.getTaskDefName(), 2);
+        new TaskRunnerConfigurer.Builder(new TaskClient(), Arrays.asList(worker1, worker2))
+                .withTaskThreadCount(taskThreadCount)
+                .build();
+    }
+
     @Test
-    public void testThreadPool() {
+    public void testPerTaskThreadPool() {
+        Worker worker1 = Worker.create("task1", TaskResult::new);
+        Worker worker2 = Worker.create("task2", TaskResult::new);
+        Map<String, Integer> taskThreadCount = new HashMap<>();
+        taskThreadCount.put(worker1.getTaskDefName(), 2);
+        taskThreadCount.put(worker2.getTaskDefName(), 3);
+        TaskRunnerConfigurer configurer =
+                new TaskRunnerConfigurer.Builder(new TaskClient(), Arrays.asList(worker1, worker2))
+                        .withTaskThreadCount(taskThreadCount)
+                        .build();
+        configurer.init();
+        assertEquals(-1, configurer.getThreadCount());
+        assertEquals(2, configurer.getTaskThreadCount().get("task1").intValue());
+        assertEquals(3, configurer.getTaskThreadCount().get("task2").intValue());
+    }
+
+    @Test
+    public void testSharedThreadPool() {
         Worker worker = Worker.create(TEST_TASK_DEF_NAME, TaskResult::new);
         TaskRunnerConfigurer configurer =
                 new TaskRunnerConfigurer.Builder(
@@ -58,6 +103,7 @@ public class TaskRunnerConfigurerTest {
         assertEquals(500, configurer.getSleepWhenRetry());
         assertEquals(3, configurer.getUpdateRetryCount());
         assertEquals(10, configurer.getShutdownGracePeriodSeconds());
+        assertTrue(configurer.getTaskThreadCount().isEmpty());
 
         configurer =
                 new TaskRunnerConfigurer.Builder(
@@ -75,6 +121,7 @@ public class TaskRunnerConfigurerTest {
         assertEquals(10, configurer.getUpdateRetryCount());
         assertEquals(15, configurer.getShutdownGracePeriodSeconds());
         assertEquals("test-worker-", configurer.getWorkerNamePrefix());
+        assertTrue(configurer.getTaskThreadCount().isEmpty());
     }
 
     @Test

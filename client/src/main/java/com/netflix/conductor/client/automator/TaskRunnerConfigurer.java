@@ -20,6 +20,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.discovery.EurekaClient;
@@ -28,6 +32,11 @@ import com.google.common.base.Preconditions;
 
 /** Configures automated polling of tasks and execution via the registered {@link Worker}s. */
 public class TaskRunnerConfigurer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskRunnerConfigurer.class);
+    private static final String INVALID_THREAD_COUNT =
+            "Invalid worker thread count specified, use either shared thread pool or config thread count per task";
+    private static final String MISSING_TASK_THREAD_COUNT =
+            "Missing task thread count config for %s";
 
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -40,6 +49,7 @@ public class TaskRunnerConfigurer {
     private final int shutdownGracePeriodSeconds;
     private final String workerNamePrefix;
     private final Map<String /*taskType*/, String /*domain*/> taskToDomain;
+    private final Map<String /*taskType*/, Integer /*threadCount*/> taskThreadCount;
 
     private TaskPollExecutor taskPollExecutor;
 
@@ -48,14 +58,34 @@ public class TaskRunnerConfigurer {
      * @see TaskRunnerConfigurer#init()
      */
     private TaskRunnerConfigurer(Builder builder) {
+        // only allow either shared thread pool or per task thread pool
+        if (builder.threadCount != -1 && !builder.taskThreadCount.isEmpty()) {
+            LOGGER.error(INVALID_THREAD_COUNT);
+            throw new ConductorClientException(INVALID_THREAD_COUNT);
+        } else if (!builder.taskThreadCount.isEmpty()) {
+            for (Worker worker : builder.workers) {
+                if (!builder.taskThreadCount.containsKey(worker.getTaskDefName())) {
+                    String message =
+                            String.format(MISSING_TASK_THREAD_COUNT, worker.getTaskDefName());
+                    LOGGER.error(message);
+                    throw new ConductorClientException(message);
+                }
+                workers.add(worker);
+            }
+            this.taskThreadCount = builder.taskThreadCount;
+            this.threadCount = -1;
+        } else {
+            builder.workers.forEach(workers::add);
+            this.taskThreadCount = builder.taskThreadCount;
+            this.threadCount = (builder.threadCount == -1) ? workers.size() : builder.threadCount;
+        }
+
         this.eurekaClient = builder.eurekaClient;
         this.taskClient = builder.taskClient;
         this.sleepWhenRetry = builder.sleepWhenRetry;
         this.updateRetryCount = builder.updateRetryCount;
         this.workerNamePrefix = builder.workerNamePrefix;
         this.taskToDomain = builder.taskToDomain;
-        builder.workers.forEach(workers::add);
-        this.threadCount = (builder.threadCount == -1) ? workers.size() : builder.threadCount;
         this.shutdownGracePeriodSeconds = builder.shutdownGracePeriodSeconds;
     }
 
@@ -71,6 +101,7 @@ public class TaskRunnerConfigurer {
         private EurekaClient eurekaClient;
         private final TaskClient taskClient;
         private Map<String /*taskType*/, String /*domain*/> taskToDomain = new HashMap<>();
+        private Map<String /*taskType*/, Integer /*threadCount*/> taskThreadCount = new HashMap<>();
 
         public Builder(TaskClient taskClient, Iterable<Worker> workers) {
             Preconditions.checkNotNull(taskClient, "TaskClient cannot be null");
@@ -151,6 +182,11 @@ public class TaskRunnerConfigurer {
             return this;
         }
 
+        public Builder withTaskThreadCount(Map<String, Integer> taskThreadCount) {
+            this.taskThreadCount = taskThreadCount;
+            return this;
+        }
+
         /**
          * Builds an instance of the TaskRunnerConfigurer.
          *
@@ -162,9 +198,14 @@ public class TaskRunnerConfigurer {
         }
     }
 
-    /** @return Thread Count for the executor pool */
+    /** @return Thread Count for the shared executor pool */
     public int getThreadCount() {
         return threadCount;
+    }
+
+    /** @return Thread Count for individual task type */
+    public Map<String, Integer> getTaskThreadCount() {
+        return taskThreadCount;
     }
 
     /** @return seconds before forcing shutdown of worker */
@@ -204,7 +245,8 @@ public class TaskRunnerConfigurer {
                         threadCount,
                         updateRetryCount,
                         taskToDomain,
-                        workerNamePrefix);
+                        workerNamePrefix,
+                        taskThreadCount);
 
         this.scheduledExecutorService = Executors.newScheduledThreadPool(workers.size());
         workers.forEach(

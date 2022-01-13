@@ -33,6 +33,8 @@ public class ClientProperties {
 
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    private Map<String, Integer> taskThreadCount = new HashMap<>();
+
     private int shutdownGracePeriodSeconds = 10;
 
     public String getRootUri() {
@@ -89,5 +91,13 @@ public class ClientProperties {
 
     public void setShutdownGracePeriodSeconds(int shutdownGracePeriodSeconds) {
         this.shutdownGracePeriodSeconds = shutdownGracePeriodSeconds;
+    }
+
+    public Map<String, Integer> getTaskThreadCount() {
+        return taskThreadCount;
+    }
+
+    public void setTaskThreadCount(Map<String, Integer> taskThreadCount) {
+        this.taskThreadCount = taskThreadCount;
     }
 }

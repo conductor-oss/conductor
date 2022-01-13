@@ -49,6 +49,7 @@ public class ConductorClientAutoConfiguration {
     public TaskRunnerConfigurer taskRunnerConfigurer(
             TaskClient taskClient, ClientProperties clientProperties) {
         return new TaskRunnerConfigurer.Builder(taskClient, workers)
+                .withTaskThreadCount(clientProperties.getTaskThreadCount())
                 .withThreadCount(clientProperties.getThreadCount())
                 .withSleepWhenRetry((int) clientProperties.getSleepWhenRetryDuration().toMillis())
                 .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
