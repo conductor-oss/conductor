@@ -43,7 +43,7 @@ export default function TaskDefinition() {
         <title>Conductor UI - Task Queue</title>
       </Helmet>
       <div className={classes.header} style={{ paddingBottom: 20 }}>
-        <Heading level={4} style={{ marginBottom: 30 }}>
+        <Heading level={3} style={{ marginBottom: 30 }}>
           Task Queue Info
         </Heading>
         <Dropdown

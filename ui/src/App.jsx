@@ -19,7 +19,6 @@ import EventHandlerDefinition from "./pages/definition/EventHandler";
 import TaskQueue from "./pages/misc/TaskQueue";
 import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
-import Examples from "./pages/kitchensink/Examples";
 import Gantt from "./pages/kitchensink/Gantt";
 
 import AppBarModules from "./plugins/AppBarModules";
@@ -102,9 +101,6 @@ export default function App() {
           </Route>
           <Route exact path="/kitchen/diagram">
             <DiagramTest />
-          </Route>
-          <Route exact path="/kitchen/examples">
-            <Examples />
           </Route>
           <Route exact path="/kitchen/gantt">
             <Gantt />

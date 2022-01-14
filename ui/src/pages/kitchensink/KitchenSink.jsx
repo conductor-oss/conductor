@@ -26,22 +26,24 @@ import {
   Select,
 } from "../../components";
 
-import Wrapper from "../../components/Wrapper";
 import EnhancedTable from "./EnhancedTable";
 import DataTableDemo from "./DataTableDemo";
 import { useAction } from "../../utils/query";
 import top100Films from "./sampleMovieData";
 import Dropdown from "../../components/Dropdown";
+import sharedStyles from "../styles";
+import { makeStyles } from "@material-ui/core/styles";
+import clsx from "clsx";
+
+const useStyles = makeStyles(sharedStyles);
 
 export default function KitchenSink() {
+  const classes = useStyles();
   return (
-    <Wrapper>
+    <div className={clsx([classes.wrapper, classes.padded])}>
       <Grid container spacing={5}>
         <Grid item xs={12}>
           <p>This is a Hawkins-like theme based on vanilla Material-UI.</p>
-        </Grid>
-        <Grid item xs={12}>
-          <NavLink path="/kitchen/examples">Workflow Examples</NavLink>
         </Grid>
         <Grid item xs={12}>
           <NavLink path="/kitchen/gantt">Gantt</NavLink>
@@ -77,7 +79,7 @@ export default function KitchenSink() {
           <MutationTest />
         </Grid>
       </Grid>
-    </Wrapper>
+    </div>
   );
 }
 

@@ -24,11 +24,11 @@ import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
 import executionsStyles from "./executionsStyles";
-import commonStyles from "../styles";
+import sharedStyles from "../styles";
 
 const useStyles = makeStyles({
   ...executionsStyles,
-  ...commonStyles,
+  ...sharedStyles,
 });
 
 const DEFAULT_SORT = "startTime:DESC";

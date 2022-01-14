@@ -28,7 +28,7 @@ export default function EventHandlerDefinition() {
         </title>
       </Helmet>
       <div className={classes.header} style={{ paddingBottom: 20 }}>
-        <Heading level={3}>Event Handler Definition</Heading>
+        <Heading level={1}>Event Handler Definition</Heading>
         <Heading level={4}>{match.params.name}</Heading>
       </div>
       {isFetching && <LinearProgress />}
