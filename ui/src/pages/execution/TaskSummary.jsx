@@ -61,7 +61,11 @@ export default function TaskSummary({ taskResult }) {
     });
   }
   if (taskResult.workerId) {
-    data.push({ label: "Worker", value: taskResult.workerId });
+    data.push({
+      label: "Worker",
+      value: taskResult.workerId,
+      type: "workerId",
+    });
   }
   if (taskResult.taskType === "DECISION") {
     data.push({
@@ -95,5 +99,13 @@ export default function TaskSummary({ taskResult }) {
       });
     }
   }
+
+  if (taskResult.externalOutputPayloadStoragePath) {
+    data.push({
+      label: "External Output",
+      value: taskResult.externalOutputPayloadStoragePath,
+    });
+  }
+
   return <KeyValueTable data={data} />;
 }

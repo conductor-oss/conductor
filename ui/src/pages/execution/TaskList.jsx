@@ -9,7 +9,6 @@ export default function TaskList({ selectedTask, tasks, dag, onClick }) {
     {
       name: "taskId",
       renderer: (taskId, row, idx) => {
-        console.log(row);
         return (
           <Link href="#" onClick={() => handleClick(row)}>
             {taskId}

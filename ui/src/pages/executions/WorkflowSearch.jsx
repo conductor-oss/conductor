@@ -198,7 +198,7 @@ export default function WorkflowPanel() {
           <Grid item xs={6}>
             <Input
               fullWidth
-              label="Free Text Query"
+              label="Lucene-syntax Query (Double-quote strings for Free Text Search)"
               defaultValue={freeText}
               onBlur={setFreeText}
               clearable

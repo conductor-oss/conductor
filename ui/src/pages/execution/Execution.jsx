@@ -1,5 +1,6 @@
 import React, { useMemo, useReducer, useEffect, useCallback } from "react";
 import { useQueryState } from "react-router-use-location-state";
+import Alert from "@material-ui/lab/Alert";
 
 import {
   Tabs,
@@ -16,7 +17,6 @@ import TaskDetails from "./TaskDetails";
 import ExecutionSummary from "./ExecutionSummary";
 import ExecutionJson from "./ExecutionJson";
 import InputOutput from "./ExecutionInputOutput";
-import { colors } from "../../theme/variables";
 import clsx from "clsx";
 import ActionModule from "./ActionModule";
 import IconButton from "@material-ui/core/IconButton";
@@ -278,6 +278,13 @@ export default function Execution() {
               <Heading level={0} className={classes.headerSubtitle}>
                 {execution.workflowId}
               </Heading>
+
+              {execution.reasonForIncompletion && (
+                <Alert severity="error">
+                  {execution.reasonForIncompletion}
+                </Alert>
+              )}
+
               <Tabs value={tabIndex} style={{ marginBottom: 0 }}>
                 <Tab label="Tasks" onClick={() => setTabIndex(0)} />
                 <Tab label="Summary" onClick={() => setTabIndex(1)} />

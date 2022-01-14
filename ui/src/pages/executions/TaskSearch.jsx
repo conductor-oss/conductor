@@ -201,7 +201,7 @@ export default function TaskSearchPanel() {
           </Grid>
           <Grid item xs={6}>
             <Input
-              label="Free Text in Tasks"
+              label="Lucene-syntax Query (Double-quote strings for Free Text Search)"
               defaultValue={freeText}
               fullWidth
               onBlur={setFreeText}
