@@ -57,6 +57,7 @@ const useStyles = makeStyles({
     flexShrink: 0,
     boxShadow: "0 4px 8px 0 rgb(0 0 0 / 10%), 0 0 2px 0 rgb(0 0 0 / 10%)",
     zIndex: 1,
+    backgroundColor: "#fff",
   },
   dragger: {
     display: (state) => (state.isFullWidth ? "none" : "block"),
@@ -69,7 +70,7 @@ const useStyles = makeStyles({
     backgroundColor: "#f4f7f9",
   },
   drawerMain: {
-    paddingLeft: 4,
+    paddingLeft: (state) => (state.isFullWidth ? 0 : 4),
     height: "100%",
     display: "flex",
     flexDirection: "column",
