@@ -243,6 +243,9 @@ const overrides = {
           backgroundColor: baseTheme.palette.grey.A100,
         },
       },
+      textSizeSmall: {
+        fontSize: "0.8125rem",
+      },
       outlined: {
         paddingTop: baseTheme.spacing("space1"),
         paddingBottom: baseTheme.spacing("space1"),

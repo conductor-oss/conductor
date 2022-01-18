@@ -1,3 +1,3 @@
-export default function Examples(){
+export default function Examples() {
   return null;
 }

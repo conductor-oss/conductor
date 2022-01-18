@@ -1,7 +1,7 @@
 import React, { useMemo, useReducer, useEffect, useCallback } from "react";
 import { useQueryState } from "react-router-use-location-state";
 import Alert from "@material-ui/lab/Alert";
-
+import update from "immutability-helper";
 import {
   Tabs,
   Tab,
@@ -127,42 +127,47 @@ const initialDrawerState = {
 function drawerReducer(state, action) {
   switch (action.type) {
     case actions.EXPAND_FULL:
-      return {
-        ...state,
-        isFullWidth: true,
-      };
+      return update(state, {
+        isFullWidth: {
+          $set: true,
+        },
+      });
     case actions.RESET_EXPAND_FULL:
-      return {
-        ...state,
-        isFullWidth: false,
-      };
+      return update(state, {
+        isFullWidth: {
+          $set: false,
+        },
+      });
     case actions.MOUSE_DOWN:
-      return {
-        ...state,
-        isResizing: true,
-        lastDownX: action.clientX,
-      };
+      return update(state, {
+        isResizing: {
+          $set: true,
+        },
+      });
     case actions.MOUSE_UP:
-      return {
-        ...state,
-        isResizing: false,
-      };
+      return update(state, {
+        isResizing: {
+          $set: false,
+        },
+      });
     case actions.MOUSE_MOVE:
-      return {
-        ...state,
-        drawerWidth: action.offsetRight,
-      };
+      return update(state, {
+        drawerWidth: {
+          $set: action.offsetRight,
+        },
+      });
     case actions.CLOSE:
-      return {
-        ...state,
-        selectedTask: null,
-      };
+      return update(state, {
+        selectedTask: {
+          $set: null,
+        },
+      });
     case actions.SELECT_TASK:
-      return {
-        ...state,
-        selectedTask: action.selectedTask,
-      };
-
+      return update(state, {
+        selectedTask: {
+          $set: action.selectedTask,
+        },
+      });
     default:
       return state;
   }
