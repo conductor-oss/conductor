@@ -18,6 +18,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
 import com.google.protobuf.Any;
+import io.swagger.v3.oas.annotations.Hidden;
 
 @ProtoMessage(toProto = false)
 public class SkipTaskRequest {
@@ -29,9 +30,11 @@ public class SkipTaskRequest {
     private Map<String, Object> taskOutput;
 
     @ProtoField(id = 3)
+    @Hidden
     private Any taskInputMessage;
 
     @ProtoField(id = 4)
+    @Hidden
     private Any taskOutputMessage;
 
     public Map<String, Object> getTaskInput() {
