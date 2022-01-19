@@ -5,6 +5,7 @@ Pull Request type
 - [ ] Feature
 - [ ] Refactoring (no functional changes, no api changes)
 - [ ] Build related changes (Please run `./gradlew generateLock saveLock` to refresh dependencies)
+- [ ] WHOSUSING.md
 - [ ] Other (please describe):
 
 Changes in this PR
