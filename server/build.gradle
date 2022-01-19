@@ -29,6 +29,7 @@ dependencies {
     implementation(project(path: ':conductor-es7-persistence', configuration: 'shadow'))
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-redis-lock')
+    implementation project(':conductor-postgres-external-storage')
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

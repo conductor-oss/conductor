@@ -84,3 +84,29 @@ Set the following properties to the desired values in the JVM system properties:
 | workflow.external.payload.storage.azure_blob.task_output_path | Path prefix where tasks output will be stored with an random UUID filename | task/output/ |
 
 The payloads will be stored as done in [Amazon S3](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167).
+
+### PostgreSQL Storage
+
+Frinx provides an implementation of [PostgreSQL Storage](https://www.postgresql.org/) used to externalize large payload storage.
+
+!!!note
+This implementation assumes that you have an [PostgreSQL database server with all required credentials](https://jdbc.postgresql.org/documentation/94/connect.html).
+
+Set the following properties to your application.properties:
+
+| Property                                                    | Description                                                                                                                                                                              | default value                         |
+|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| conductor.external-payload-storage.postgres.conductor-url   | URL, that can be used to pull the json configurations, that will be downloaded from PostgreSQL to the conductor server. For example: for local development it is `http://localhost:8080` | `""`                                  |
+| conductor.external-payload-storage.postgres.url             | PostgreSQL database connection URL. Required to connect to database.                                                                                                                     |                                       |
+| conductor.external-payload-storage.postgres.username        | Username for connecting to PostgreSQL database. Required to connect to database.                                                                                                         |                                       |
+| conductor.external-payload-storage.postgres.password        | Password for connecting to PostgreSQL database. Required to connect to database.                                                                                                         |                                       |
+| conductor.external-payload-storage.postgres.table-name      | The PostgreSQL schema and table name where the payloads will be stored                                                                                                                   | `external.external_payload`           |
+| conductor.external-payload-storage.postgres.max-data-rows   | Maximum count of data rows in PostgreSQL database. After overcoming this limit, the oldest data will be deleted.                                                                         | Long.MAX_VALUE (9223372036854775807L) |
+| conductor.external-payload-storage.postgres.max-data-days   | Maximum count of days of data age in PostgreSQL database. After overcoming limit, the oldest data will be deleted.                                                                       | 0                                     |
+| conductor.external-payload-storage.postgres.max-data-months | Maximum count of months of data age in PostgreSQL database. After overcoming limit, the oldest data will be deleted.                                                                     | 0                                     |
+| conductor.external-payload-storage.postgres.max-data-years  | Maximum count of years of data age in PostgreSQL database. After overcoming limit, the oldest data will be deleted.                                                                      | 1                                     |
+
+The maximum date age for fields in the database will be: `years + months + days`  
+The payloads will be stored in PostgreSQL database with key (externalPayloadPath) `UUID.json` and you can generate
+URI for this data using `external-postgres-payload-resource` rest controller.   
+To make this URI work correctly, you must correctly set the conductor-url property.
