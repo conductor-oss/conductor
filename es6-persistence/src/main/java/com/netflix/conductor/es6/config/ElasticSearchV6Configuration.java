@@ -13,9 +13,12 @@
 package com.netflix.conductor.es6.config;
 
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Client;
@@ -42,10 +45,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableConfigurationProperties(ElasticSearchProperties.class)
 @Conditional(ElasticSearchConditions.ElasticSearchV6Enabled.class)
 public class ElasticSearchV6Configuration {
-
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchV6Configuration.class);
 
     @Bean
+    @Conditional(IsTcpProtocol.class)
     public Client client(ElasticSearchProperties properties) {
         Settings settings =
                 Settings.builder()
@@ -55,12 +58,12 @@ public class ElasticSearchV6Configuration {
 
         TransportClient transportClient = new PreBuiltTransportClient(settings);
 
-        List<URL> clusterAddresses = properties.toURLs();
+        List<URI> clusterAddresses = getURIs(properties);
 
         if (clusterAddresses.isEmpty()) {
             log.warn("workflow.elasticsearch.url is not set.  Indexing will remain DISABLED.");
         }
-        for (URL hostAddress : clusterAddresses) {
+        for (URI hostAddress : clusterAddresses) {
             int port = Optional.ofNullable(hostAddress.getPort()).orElse(9200);
             try {
                 transportClient.addTransportAddress(
@@ -73,6 +76,7 @@ public class ElasticSearchV6Configuration {
     }
 
     @Bean
+    @Conditional(IsHttpProtocol.class)
     public RestClient restClient(ElasticSearchProperties properties) {
         RestClientBuilder restClientBuilder =
                 RestClient.builder(convertToHttpHosts(properties.toURLs()));
@@ -86,27 +90,45 @@ public class ElasticSearchV6Configuration {
     }
 
     @Bean
+    @Conditional(IsHttpProtocol.class)
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
         return RestClient.builder(convertToHttpHosts(properties.toURLs()));
     }
 
     @Bean
-    public IndexDAO es6IndexDAO(
+    @Conditional(IsHttpProtocol.class)
+    public IndexDAO es6IndexRestDAO(
             RestClientBuilder restClientBuilder,
-            Client client,
             ElasticSearchProperties properties,
             ObjectMapper objectMapper) {
-        String url = properties.getUrl();
-        if (url.startsWith("http") || url.startsWith("https")) {
-            return new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
-        } else {
-            return new ElasticSearchDAOV6(client, properties, objectMapper);
-        }
+        return new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
+    }
+
+    @Bean
+    @Conditional(IsTcpProtocol.class)
+    public IndexDAO es6IndexDAO(
+            Client client, ElasticSearchProperties properties, ObjectMapper objectMapper) {
+        return new ElasticSearchDAOV6(client, properties, objectMapper);
     }
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
                 .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol()))
                 .toArray(HttpHost[]::new);
+    }
+
+    public List<URI> getURIs(ElasticSearchProperties properties) {
+        String clusterAddress = properties.getUrl();
+        String[] hosts = clusterAddress.split(",");
+
+        return Arrays.stream(hosts)
+                .map(
+                        host ->
+                                (host.startsWith("http://")
+                                                || host.startsWith("https://")
+                                                || host.startsWith("tcp://"))
+                                        ? URI.create(host)
+                                        : URI.create("tcp://" + host))
+                .collect(Collectors.toList());
     }
 }
