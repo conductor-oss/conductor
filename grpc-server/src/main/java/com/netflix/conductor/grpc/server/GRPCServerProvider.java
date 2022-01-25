@@ -18,7 +18,6 @@ import io.grpc.protobuf.services.ProtoReflectionService;
 public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
 
     private final GRPCServerConfiguration configuration;
-    private final BindableService healthServiceImpl;
     private final BindableService eventServiceImpl;
     private final BindableService metadataServiceImpl;
     private final BindableService taskServiceImpl;
@@ -27,14 +26,12 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
     @Inject
     public GRPCServerProvider(
             GRPCServerConfiguration grpcServerConfiguration,
-            HealthGrpc.HealthImplBase healthServiceImpl,
             EventServiceGrpc.EventServiceImplBase eventServiceImpl,
             MetadataServiceGrpc.MetadataServiceImplBase metadataServiceImpl,
             TaskServiceGrpc.TaskServiceImplBase taskServiceImpl,
             WorkflowServiceGrpc.WorkflowServiceImplBase workflowServiceImpl
     ) {
         this.configuration = grpcServerConfiguration;
-        this.healthServiceImpl = healthServiceImpl;
 
         this.eventServiceImpl = eventServiceImpl;
         this.metadataServiceImpl = metadataServiceImpl;
@@ -51,7 +48,6 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
 
     private GRPCServer buildGRPCServer(GRPCServerConfiguration grpcServerConfiguration) {
         ImmutableList.Builder<BindableService> services = ImmutableList.<BindableService>builder().add(
-                healthServiceImpl,
                 eventServiceImpl,
                 metadataServiceImpl,
                 taskServiceImpl,
