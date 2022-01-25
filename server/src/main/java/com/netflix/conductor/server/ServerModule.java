@@ -28,7 +28,6 @@ import com.netflix.conductor.grpc.server.GRPCModule;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
 import com.netflix.conductor.jetty.server.JettyModule;
 import com.netflix.conductor.service.WorkflowMonitor;
-import com.netflix.runtime.health.guice.HealthModule;
 
 import javax.validation.Validator;
 import java.util.concurrent.ExecutorService;
@@ -43,7 +42,6 @@ public class ServerModule extends AbstractModule {
         install(new CoreModule());
         install(new ValidationModule());
         install(new ArchaiusModule());
-        install(new HealthModule());
         install(new JettyModule());
         install(new GRPCModule());
         install(new EventModule());

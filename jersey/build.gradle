@@ -3,8 +3,6 @@ dependencies {
     compile project(':conductor-common')
     compile project(':conductor-core')
 
-    compile "com.netflix.runtime:health-api:${revHealth}"
-
     compile "javax.ws.rs:jsr311-api:${revJsr311Api}"
     compile "io.swagger:swagger-jaxrs:${revSwagger}"
     compile "com.sun.jersey:jersey-bundle:${revJerseyBundle}"

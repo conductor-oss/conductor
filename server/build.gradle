@@ -37,8 +37,6 @@ dependencies {
     compile project(':conductor-zookeeper-lock')
     compile project(':conductor-redis-lock')
 
-    compile "com.netflix.runtime:health-guice:${revHealth}"
-
     //Jetty
     compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
     compile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
@@ -51,6 +49,8 @@ dependencies {
 
     //Swagger
     compile "io.swagger:swagger-jersey-jaxrs:${revSwagger}"
+
+    compile "com.netflix.archaius:archaius2-guice:2.1.10"
 }
 
 shadowJar {

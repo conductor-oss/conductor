@@ -7,7 +7,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.12.130"
+            "locked": "1.12.146"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -184,7 +184,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.12.130"
+            "locked": "1.12.146"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -348,7 +348,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.12.130"
+            "locked": "1.12.146"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -527,7 +527,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.12.130"
+            "locked": "1.12.146"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [

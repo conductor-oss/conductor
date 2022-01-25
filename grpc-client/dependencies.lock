@@ -78,12 +78,6 @@
         "com.netflix.conductor:conductor-grpc": {
             "project": true
         },
-        "com.netflix.runtime:health-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
-            ],
-            "locked": "1.1.4"
-        },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -262,12 +256,6 @@
         "com.netflix.conductor:conductor-grpc": {
             "project": true
         },
-        "com.netflix.runtime:health-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
-            ],
-            "locked": "1.1.4"
-        },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -435,12 +423,6 @@
         },
         "com.netflix.conductor:conductor-grpc": {
             "project": true
-        },
-        "com.netflix.runtime:health-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
-            ],
-            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -615,12 +597,6 @@
         },
         "com.netflix.conductor:conductor-grpc": {
             "project": true
-        },
-        "com.netflix.runtime:health-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
-            ],
-            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
