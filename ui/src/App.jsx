@@ -11,9 +11,9 @@ import TaskSearch from "./pages/executions/TaskSearch";
 
 import Execution from "./pages/execution/Execution";
 import WorkflowDefinitions from "./pages/definitions/Workflow";
-import WorkflowDefinition from "./pages/definition/Workflow";
+import WorkflowDefinition from "./pages/definition/WorkflowDefinition";
 import TaskDefinitions from "./pages/definitions/Task";
-import TaskDefinition from "./pages/definition/Task";
+import TaskDefinition from "./pages/definition/TaskDefinition";
 import EventHandlerDefinitions from "./pages/definitions/EventHandler";
 import EventHandlerDefinition from "./pages/definition/EventHandler";
 import TaskQueue from "./pages/misc/TaskQueue";
@@ -59,6 +59,12 @@ export default function App() {
           <Button component={NavLink} path="/taskQueue">
             Task Queues
           </Button>
+          <Button component={NavLink} path="/newWorkflowDef">
+            Define Workflow
+          </Button>
+          <Button component={NavLink} path="/newTaskDef">
+            Define Task
+          </Button>
 
           <div className={classes.toolbarRight}>
             <AppBarModules />
@@ -82,10 +88,16 @@ export default function App() {
           <Route exact path="/workflowDef/:name/:version?">
             <WorkflowDefinition />
           </Route>
+          <Route exact path="/newWorkflowDef">
+            <WorkflowDefinition />
+          </Route>
           <Route exact path="/taskDef">
             <TaskDefinitions />
           </Route>
           <Route exact path="/taskDef/:name">
+            <TaskDefinition />
+          </Route>
+          <Route exact path="/newTaskDef">
             <TaskDefinition />
           </Route>
           <Route exact path="/eventHandlerDef">

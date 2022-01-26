@@ -6,6 +6,7 @@
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.57",
     "@material-ui/styles": "^4.10.0",
+    "@monaco-editor/react": "^4.3.1",
     "clsx": "^1.1.1",
     "d3": "^6.2.0",
     "dagre-d3": "^0.6.4",
