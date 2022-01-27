@@ -46,7 +46,8 @@ public class TaskDef extends Auditable {
     @ProtoEnum
     public enum RetryLogic {
         FIXED,
-        EXPONENTIAL_BACKOFF
+        EXPONENTIAL_BACKOFF,
+        LINEAR_BACKOFF
     }
 
     private static final int ONE_HOUR = 60 * 60;
@@ -119,6 +120,10 @@ public class TaskDef extends Auditable {
     @ProtoField(id = 19)
     @Min(value = 0, message = "TaskDef pollTimeoutSeconds: {value} must be >= 0")
     private Integer pollTimeoutSeconds;
+
+    @ProtoField(id = 20)
+    @Min(value = 1, message = "Backoff scale factor. Applicable for LINEAR_BACKOFF")
+    private Integer backoffScaleFactor = 1;
 
     public TaskDef() {}
 
@@ -355,6 +360,16 @@ public class TaskDef extends Auditable {
         return pollTimeoutSeconds;
     }
 
+    /** @param backoffScaleFactor the backoff rate to set */
+    public void setBackoffScaleFactor(Integer backoffScaleFactor) {
+        this.backoffScaleFactor = backoffScaleFactor;
+    }
+
+    /** @return the backoff rate of this task definition */
+    public Integer getBackoffScaleFactor() {
+        return backoffScaleFactor;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -372,6 +387,7 @@ public class TaskDef extends Auditable {
         return getRetryCount() == taskDef.getRetryCount()
                 && getTimeoutSeconds() == taskDef.getTimeoutSeconds()
                 && getRetryDelaySeconds() == taskDef.getRetryDelaySeconds()
+                && getBackoffScaleFactor() == taskDef.getBackoffScaleFactor()
                 && getResponseTimeoutSeconds() == taskDef.getResponseTimeoutSeconds()
                 && Objects.equals(getName(), taskDef.getName())
                 && Objects.equals(getDescription(), taskDef.getDescription())
@@ -400,6 +416,7 @@ public class TaskDef extends Auditable {
                 getTimeoutPolicy(),
                 getRetryLogic(),
                 getRetryDelaySeconds(),
+                getBackoffScaleFactor(),
                 getResponseTimeoutSeconds(),
                 getConcurrentExecLimit(),
                 getRateLimitPerFrequency(),

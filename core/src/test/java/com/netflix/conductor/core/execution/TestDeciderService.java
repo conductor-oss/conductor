@@ -788,6 +788,36 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testLinearBackoff() {
+        Workflow workflow = createDefaultWorkflow();
+
+        Task task = new Task();
+        task.setStatus(Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.LINEAR_BACKOFF);
+        taskDef.setBackoffScaleFactor(2);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<Task> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(120, task2.get().getCallbackAfterSeconds()); // 60*2*1
+
+        Optional<Task> task3 = deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(240, task3.get().getCallbackAfterSeconds()); // 60*2*2
+
+        Optional<Task> task4 = deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        // // 60*2*3
+        assertEquals(360, task4.get().getCallbackAfterSeconds()); // 60*2*3
+
+        taskDef.setRetryCount(Integer.MAX_VALUE);
+        task4.get().setRetryCount(Integer.MAX_VALUE - 100);
+        Optional<Task> task5 = deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(Integer.MAX_VALUE, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
     public void testExponentialBackoff() {
         Workflow workflow = createDefaultWorkflow();
 

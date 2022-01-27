@@ -549,12 +549,24 @@ public class DeciderService {
             case FIXED:
                 startDelay = taskDefinition.getRetryDelaySeconds();
                 break;
+            case LINEAR_BACKOFF:
+                int linearRetryDelaySeconds =
+                        taskDefinition.getRetryDelaySeconds()
+                                * taskDefinition.getBackoffScaleFactor()
+                                * (task.getRetryCount() + 1);
+                // Reset integer overflow to max value
+                startDelay =
+                        linearRetryDelaySeconds < 0 ? Integer.MAX_VALUE : linearRetryDelaySeconds;
+                break;
             case EXPONENTIAL_BACKOFF:
-                int retryDelaySeconds =
+                int exponentialRetryDelaySeconds =
                         taskDefinition.getRetryDelaySeconds()
                                 * (int) Math.pow(2, task.getRetryCount());
                 // Reset integer overflow to max value
-                startDelay = retryDelaySeconds < 0 ? Integer.MAX_VALUE : retryDelaySeconds;
+                startDelay =
+                        exponentialRetryDelaySeconds < 0
+                                ? Integer.MAX_VALUE
+                                : exponentialRetryDelaySeconds;
                 break;
         }
 
