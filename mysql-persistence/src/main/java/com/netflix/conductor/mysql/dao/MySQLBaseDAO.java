@@ -12,21 +12,6 @@
  */
 package com.netflix.conductor.mysql.dao;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.netflix.conductor.common.utils.RetryUtil;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.mysql.util.ExecuteFunction;
-import com.netflix.conductor.mysql.util.LazyToString;
-import com.netflix.conductor.mysql.util.Query;
-import com.netflix.conductor.mysql.util.QueryFunction;
-import com.netflix.conductor.mysql.util.TransactionalFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -36,22 +21,40 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
+import javax.sql.DataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.common.utils.RetryUtil;
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.mysql.util.ExecuteFunction;
+import com.netflix.conductor.mysql.util.LazyToString;
+import com.netflix.conductor.mysql.util.Query;
+import com.netflix.conductor.mysql.util.QueryFunction;
+import com.netflix.conductor.mysql.util.TransactionalFunction;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+
 import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
 import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
+
+import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 
 public abstract class MySQLBaseDAO {
 
-    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME = "conductor.mysql.deadlock.retry.max";
+    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME =
+            "conductor.mysql.deadlock.retry.max";
     private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
     private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
-    private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of(
-        MySQLBaseDAO.class.getName(),
-        Thread.class.getName()
-    );
+    private static final List<String> EXCLUDED_STACKTRACE_CLASS =
+            ImmutableList.of(MySQLBaseDAO.class.getName(), Thread.class.getName());
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final ObjectMapper objectMapper;
@@ -63,11 +66,16 @@ public abstract class MySQLBaseDAO {
     }
 
     protected final LazyToString getCallingMethod() {
-        return new LazyToString(() -> Arrays.stream(Thread.currentThread().getStackTrace())
-            .filter(ste -> !EXCLUDED_STACKTRACE_CLASS.contains(ste.getClassName()))
-            .findFirst()
-            .map(StackTraceElement::getMethodName)
-            .orElseThrow(() -> new NullPointerException("Cannot find Caller")));
+        return new LazyToString(
+                () ->
+                        Arrays.stream(Thread.currentThread().getStackTrace())
+                                .filter(
+                                        ste ->
+                                                !EXCLUDED_STACKTRACE_CLASS.contains(
+                                                        ste.getClassName()))
+                                .findFirst()
+                                .map(StackTraceElement::getMethodName)
+                                .orElseThrow(() -> new NullPointerException("Cannot find Caller")));
     }
 
     protected String toJson(Object value) {
@@ -95,19 +103,22 @@ public abstract class MySQLBaseDAO {
     }
 
     /**
-     * Initialize a new transactional {@link Connection} from {@link #dataSource} and pass it to {@literal function}.
-     * <p>
-     * Successful executions of {@literal function} will result in a commit and return of {@link
+     * Initialize a new transactional {@link Connection} from {@link #dataSource} and pass it to
+     * {@literal function}.
+     *
+     * <p>Successful executions of {@literal function} will result in a commit and return of {@link
      * TransactionalFunction#apply(Connection)}.
-     * <p>
-     * If any {@link Throwable} thrown from {@code TransactionalFunction#apply(Connection)} will result in a rollback of
-     * the transaction and will be wrapped in an {@link ApplicationException} if it is not already one.
-     * <p>
-     * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or {@link
-     * #query(Connection, String, QueryFunction)} invocations that produce some expected return value.
+     *
+     * <p>If any {@link Throwable} thrown from {@code TransactionalFunction#apply(Connection)} will
+     * result in a rollback of the transaction and will be wrapped in an {@link
+     * ApplicationException} if it is not already one.
+     *
+     * <p>Generally this is used to wrap multiple {@link #execute(Connection, String,
+     * ExecuteFunction)} or {@link #query(Connection, String, QueryFunction)} invocations that
+     * produce some expected return value.
      *
      * @param function The function to apply with a new transactional {@link Connection}
-     * @param <R>      The return type.
+     * @param <R> The return type.
      * @return The result of {@code TransactionalFunction#apply(Connection)}
      * @throws ApplicationException If any errors occur.
      */
@@ -135,20 +146,23 @@ public abstract class MySQLBaseDAO {
         } catch (SQLException ex) {
             throw new ApplicationException(BACKEND_ERROR, ex.getMessage(), ex);
         } finally {
-            logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
+            logger.trace(
+                    "{} : took {}ms",
+                    callingMethod,
+                    Duration.between(start, Instant.now()).toMillis());
         }
     }
 
     <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
-            return new RetryUtil<R>().retryOnException(
-                () -> getWithTransaction(function),
-                this::isDeadLockError,
-                null,
-                MAX_RETRY_ON_DEADLOCK,
-                "retry on deadlock",
-                "transactional"
-            );
+            return new RetryUtil<R>()
+                    .retryOnException(
+                            () -> getWithTransaction(function),
+                            this::isDeadLockError,
+                            null,
+                            MAX_RETRY_ON_DEADLOCK,
+                            "retry on deadlock",
+                            "transactional");
         } catch (RuntimeException e) {
             throw (ApplicationException) e.getCause();
         }
@@ -176,35 +190,39 @@ public abstract class MySQLBaseDAO {
         } catch (SQLException ex) {
             throw new ApplicationException(BACKEND_ERROR, ex.getMessage(), ex);
         } finally {
-            logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
+            logger.trace(
+                    "{} : took {}ms",
+                    callingMethod,
+                    Duration.between(start, Instant.now()).toMillis());
         }
     }
 
-
     /**
      * Wraps {@link #getWithRetriedTransactions(TransactionalFunction)} with no return value.
-     * <p>
-     * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or {@link
-     * #query(Connection, String, QueryFunction)} invocations that produce no expected return value.
+     *
+     * <p>Generally this is used to wrap multiple {@link #execute(Connection, String,
+     * ExecuteFunction)} or {@link #query(Connection, String, QueryFunction)} invocations that
+     * produce no expected return value.
      *
      * @param consumer The {@link Consumer} callback to pass a transactional {@link Connection} to.
      * @throws ApplicationException If any errors occur.
      * @see #getWithRetriedTransactions(TransactionalFunction)
      */
     protected void withTransaction(Consumer<Connection> consumer) {
-        getWithRetriedTransactions(connection -> {
-            consumer.accept(connection);
-            return null;
-        });
+        getWithRetriedTransactions(
+                connection -> {
+                    consumer.accept(connection);
+                    return null;
+                });
     }
 
     /**
-     * Initiate a new transaction and execute a {@link Query} within that context, then return the results of {@literal
-     * function}.
+     * Initiate a new transaction and execute a {@link Query} within that context, then return the
+     * results of {@literal function}.
      *
-     * @param query    The query string to prepare.
+     * @param query The query string to prepare.
      * @param function The functional callback to pass a {@link Query} to.
-     * @param <R>      The expected return type of {@literal function}.
+     * @param <R> The expected return type of {@literal function}.
      * @return The results of applying {@literal function}.
      */
     protected <R> R queryWithTransaction(String query, QueryFunction<R> function) {
@@ -212,12 +230,13 @@ public abstract class MySQLBaseDAO {
     }
 
     /**
-     * Execute a {@link Query} within the context of a given transaction and return the results of {@literal function}.
+     * Execute a {@link Query} within the context of a given transaction and return the results of
+     * {@literal function}.
      *
-     * @param tx       The transactional {@link Connection} to use.
-     * @param query    The query string to prepare.
+     * @param tx The transactional {@link Connection} to use.
+     * @param query The query string to prepare.
      * @param function The functional callback to pass a {@link Query} to.
-     * @param <R>      The expected return type of {@literal function}.
+     * @param <R> The expected return type of {@literal function}.
      * @return The results of applying {@literal function}.
      */
     protected <R> R query(Connection tx, String query, QueryFunction<R> function) {
@@ -231,8 +250,8 @@ public abstract class MySQLBaseDAO {
     /**
      * Execute a statement with no expected return value within a given transaction.
      *
-     * @param tx       The transactional {@link Connection} to use.
-     * @param query    The query string to prepare.
+     * @param tx The transactional {@link Connection} to use.
+     * @param query The query string to prepare.
      * @param function The functional callback to pass a {@link Query} to.
      */
     protected void execute(Connection tx, String query, ExecuteFunction function) {
@@ -244,9 +263,10 @@ public abstract class MySQLBaseDAO {
     }
 
     /**
-     * Instantiates a new transactional connection and invokes {@link #execute(Connection, String, ExecuteFunction)}
+     * Instantiates a new transactional connection and invokes {@link #execute(Connection, String,
+     * ExecuteFunction)}
      *
-     * @param query    The query string to prepare.
+     * @param query The query string to prepare.
      * @param function The functional callback to pass a {@link Query} to.
      */
     protected void executeWithTransaction(String query, ExecuteFunction function) {
@@ -272,7 +292,9 @@ public abstract class MySQLBaseDAO {
     private static int getMaxRetriesOnDeadLock() {
         try {
             return parseInt(
-                getProperty(MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME, MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE));
+                    getProperty(
+                            MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME,
+                            MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE));
         } catch (Exception e) {
             return parseInt(MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE);
         }

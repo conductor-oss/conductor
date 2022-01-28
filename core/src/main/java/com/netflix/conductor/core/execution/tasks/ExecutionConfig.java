@@ -12,11 +12,12 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.conductor.core.utils.SemaphoreUtil;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.netflix.conductor.core.utils.SemaphoreUtil;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 class ExecutionConfig {
 
@@ -25,8 +26,10 @@ class ExecutionConfig {
 
     ExecutionConfig(int threadCount, String threadNameFormat) {
 
-        this.executorService = Executors.newFixedThreadPool(threadCount,
-            new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
+        this.executorService =
+                Executors.newFixedThreadPool(
+                        threadCount,
+                        new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
 
         this.semaphoreUtil = new SemaphoreUtil(threadCount);
     }

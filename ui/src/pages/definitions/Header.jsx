@@ -12,16 +12,16 @@ export default function Header({ tabIndex, loading }) {
     <div>
       {loading && <LinearProgress />}
       <div className={classes.header}>
-        <Heading level={4} gutterBottom>
+        <Heading level={3} gutterBottom>
           Definitions
         </Heading>
         <Tabs value={tabIndex}>
-          <Tab label="Workflows" component={NavLink} to="/workflowDef" />
-          <Tab label="Tasks" component={NavLink} to="/taskDef" />
+          <Tab label="Workflows" component={NavLink} path="/workflowDef" />
+          <Tab label="Tasks" component={NavLink} path="/taskDef" />
           <Tab
             label="Event Handlers"
             component={NavLink}
-            to="/eventHandlerDef"
+            path="/eventHandlerDef"
           />
         </Tabs>
       </div>

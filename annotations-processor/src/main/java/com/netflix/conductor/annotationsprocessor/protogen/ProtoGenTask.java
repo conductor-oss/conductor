@@ -1,3 +1,15 @@
+/*
+ * Copyright 2022 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.annotationsprocessor.protogen;
 
 import java.io.File;
@@ -91,8 +103,9 @@ public class ProtoGenTask {
     }
 
     public static void main(String[] args) {
-        if(args == null || args.length < 8) {
-            throw new RuntimeException("protogen configuration incomplete, please provide all required (8) inputs");
+        if (args == null || args.length < 8) {
+            throw new RuntimeException(
+                    "protogen configuration incomplete, please provide all required (8) inputs");
         }
         ProtoGenTask task = new ProtoGenTask();
         int argsId = 0;
@@ -111,15 +124,28 @@ public class ProtoGenTask {
 
     @Override
     public String toString() {
-        return "ProtoGenTask{" +
-                "protoPackage='" + protoPackage + '\'' +
-                ", javaPackage='" + javaPackage + '\'' +
-                ", goPackage='" + goPackage + '\'' +
-                ", protosDir=" + protosDir +
-                ", mapperDir=" + mapperDir +
-                ", mapperPackage='" + mapperPackage + '\'' +
-                ", sourceJar=" + sourceJar +
-                ", sourcePackage='" + sourcePackage + '\'' +
-                '}';
+        return "ProtoGenTask{"
+                + "protoPackage='"
+                + protoPackage
+                + '\''
+                + ", javaPackage='"
+                + javaPackage
+                + '\''
+                + ", goPackage='"
+                + goPackage
+                + '\''
+                + ", protosDir="
+                + protosDir
+                + ", mapperDir="
+                + mapperDir
+                + ", mapperPackage='"
+                + mapperPackage
+                + '\''
+                + ", sourceJar="
+                + sourceJar
+                + ", sourcePackage='"
+                + sourcePackage
+                + '\''
+                + '}';
     }
 }

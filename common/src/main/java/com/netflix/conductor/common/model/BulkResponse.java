@@ -19,15 +19,14 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Response object to return a list of succeeded entities and a map of failed ones, including error message, for the
- * bulk request.
+ * Response object to return a list of succeeded entities and a map of failed ones, including error
+ * message, for the bulk request.
  */
 public class BulkResponse {
 
-    /**
-     * Key - entityId Value - error message processing this entity
-     */
+    /** Key - entityId Value - error message processing this entity */
     private final Map<String, String> bulkErrorResults;
+
     private final List<String> bulkSuccessfulResults;
     private final String message = "Bulk Request has been processed.";
 
@@ -61,8 +60,8 @@ public class BulkResponse {
             return false;
         }
         BulkResponse that = (BulkResponse) o;
-        return Objects.equals(bulkSuccessfulResults, that.bulkSuccessfulResults) && Objects
-            .equals(bulkErrorResults, that.bulkErrorResults);
+        return Objects.equals(bulkSuccessfulResults, that.bulkSuccessfulResults)
+                && Objects.equals(bulkErrorResults, that.bulkErrorResults);
     }
 
     @Override
@@ -72,10 +71,14 @@ public class BulkResponse {
 
     @Override
     public String toString() {
-        return "BulkResponse{" +
-            "bulkSuccessfulResults=" + bulkSuccessfulResults +
-            ", bulkErrorResults=" + bulkErrorResults +
-            ", message='" + message + '\'' +
-            '}';
+        return "BulkResponse{"
+                + "bulkSuccessfulResults="
+                + bulkSuccessfulResults
+                + ", bulkErrorResults="
+                + bulkErrorResults
+                + ", message='"
+                + message
+                + '\''
+                + '}';
     }
 }

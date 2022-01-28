@@ -35,7 +35,7 @@ public class SampleWorker implements Worker {
         TaskResult result = new TaskResult(task);
         result.setStatus(Status.COMPLETED);
 
-        //Register the output of the task
+        // Register the output of the task
         result.getOutputData().put("outputKey1", "value");
         result.getOutputData().put("oddEven", 1);
         result.getOutputData().put("mod", 4);

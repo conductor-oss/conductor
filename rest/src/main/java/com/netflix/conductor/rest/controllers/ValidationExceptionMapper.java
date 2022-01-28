@@ -12,17 +12,15 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import com.netflix.conductor.common.validation.ErrorResponse;
-import com.netflix.conductor.common.validation.ValidationError;
-import com.netflix.conductor.core.utils.Utils;
-import com.netflix.conductor.metrics.Monitors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.ValidationException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -32,9 +30,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * This class converts Hibernate {@link ValidationException} into http response.
- */
+import com.netflix.conductor.common.validation.ErrorResponse;
+import com.netflix.conductor.common.validation.ValidationError;
+import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.metrics.Monitors;
+
+/** This class converts Hibernate {@link ValidationException} into http response. */
 @RestControllerAdvice
 @Order(ValidationExceptionMapper.ORDER)
 public class ValidationExceptionMapper {
@@ -46,7 +47,8 @@ public class ValidationExceptionMapper {
     private final String host = Utils.getServerId();
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorResponse> toResponse(HttpServletRequest request, ValidationException exception) {
+    public ResponseEntity<ErrorResponse> toResponse(
+            HttpServletRequest request, ValidationException exception) {
         logException(request, exception);
 
         HttpStatus httpStatus;
@@ -73,16 +75,23 @@ public class ValidationExceptionMapper {
         }
     }
 
-    private ErrorResponse constraintViolationExceptionToErrorResponse(ConstraintViolationException exception) {
+    private ErrorResponse constraintViolationExceptionToErrorResponse(
+            ConstraintViolationException exception) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
         errorResponse.setMessage("Validation failed, check below errors for detail.");
 
         List<ValidationError> validationErrors = new ArrayList<>();
 
-        exception.getConstraintViolations().forEach(e ->
-            validationErrors.add(new ValidationError(getViolationPath(e), e.getMessage(),
-                getViolationInvalidValue(e.getInvalidValue()))));
+        exception
+                .getConstraintViolations()
+                .forEach(
+                        e ->
+                                validationErrors.add(
+                                        new ValidationError(
+                                                getViolationPath(e),
+                                                e.getMessage(),
+                                                getViolationInvalidValue(e.getInvalidValue()))));
 
         errorResponse.setValidationErrors(validationErrors);
         return errorResponse;
@@ -130,7 +139,10 @@ public class ValidationExceptionMapper {
     }
 
     private void logException(HttpServletRequest request, ValidationException exception) {
-        LOGGER.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
-            request.getRequestURI()), exception);
+        LOGGER.error(
+                String.format(
+                        "Error %s url: '%s'",
+                        exception.getClass().getSimpleName(), request.getRequestURI()),
+                exception);
     }
 }

@@ -12,10 +12,8 @@
  */
 package com.netflix.conductor.redislock.config;
 
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
-import com.netflix.conductor.redislock.lock.RedisLock;
 import java.util.Arrays;
+
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
@@ -24,6 +22,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
+import com.netflix.conductor.redislock.lock.RedisLock;
 
 @Configuration
 @EnableConfigurationProperties(RedisLockProperties.class)
@@ -38,8 +40,11 @@ public class RedisLockConfiguration {
         try {
             redisServerType = properties.getServerType();
         } catch (IllegalArgumentException ie) {
-            final String message = "Invalid Redis server type: " + properties.getServerType()
-                + ", supported values are: " + Arrays.toString(REDIS_SERVER_TYPE.values());
+            final String message =
+                    "Invalid Redis server type: "
+                            + properties.getServerType()
+                            + ", supported values are: "
+                            + Arrays.toString(REDIS_SERVER_TYPE.values());
             LOGGER.error(message);
             throw new RuntimeException(message, ie);
         }
@@ -52,25 +57,28 @@ public class RedisLockConfiguration {
         int connectionTimeout = 10000;
         switch (redisServerType) {
             case SINGLE:
-                redisConfig.useSingleServer()
-                    .setAddress(redisServerAddress)
-                    .setPassword(redisServerPassword)
-                    .setTimeout(connectionTimeout);
+                redisConfig
+                        .useSingleServer()
+                        .setAddress(redisServerAddress)
+                        .setPassword(redisServerPassword)
+                        .setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
-                redisConfig.useClusterServers()
-                    .setScanInterval(2000) // cluster state scan interval in milliseconds
-                    .addNodeAddress(redisServerAddress.split(","))
-                    .setPassword(redisServerPassword)
-                    .setTimeout(connectionTimeout);
+                redisConfig
+                        .useClusterServers()
+                        .setScanInterval(2000) // cluster state scan interval in milliseconds
+                        .addNodeAddress(redisServerAddress.split(","))
+                        .setPassword(redisServerPassword)
+                        .setTimeout(connectionTimeout);
                 break;
             case SENTINEL:
-                redisConfig.useSentinelServers()
-                    .setScanInterval(2000)
-                    .setMasterName(masterName)
-                    .addSentinelAddress(redisServerAddress)
-                    .setPassword(redisServerPassword)
-                    .setTimeout(connectionTimeout);
+                redisConfig
+                        .useSentinelServers()
+                        .setScanInterval(2000)
+                        .setMasterName(masterName)
+                        .addSentinelAddress(redisServerAddress)
+                        .setPassword(redisServerPassword)
+                        .setTimeout(connectionTimeout);
                 break;
         }
 

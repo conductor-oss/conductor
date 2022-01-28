@@ -12,27 +12,32 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
-import com.netflix.conductor.annotations.protogen.ProtoEnum;
-import com.netflix.conductor.annotations.protogen.ProtoField;
-import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.google.protobuf.Any;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.validation.constraints.NotEmpty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Result of the task execution.
- */
+import javax.validation.constraints.NotEmpty;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
+import com.google.protobuf.Any;
+import io.swagger.v3.oas.annotations.Hidden;
+
+/** Result of the task execution. */
 @ProtoMessage
 public class TaskResult {
 
     @ProtoEnum
     public enum Status {
-        IN_PROGRESS, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED
+        IN_PROGRESS,
+        FAILED,
+        FAILED_WITH_TERMINAL_ERROR,
+        COMPLETED
     }
 
     @NotEmpty(message = "Workflow Id cannot be null or empty")
@@ -59,6 +64,7 @@ public class TaskResult {
     private Map<String, Object> outputData = new HashMap<>();
 
     @ProtoField(id = 8)
+    @Hidden
     private Any outputMessage;
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
@@ -92,13 +98,9 @@ public class TaskResult {
         }
     }
 
-    public TaskResult() {
+    public TaskResult() {}
 
-    }
-
-    /**
-     * @return Workflow instance id for which the task result is produced
-     */
+    /** @return Workflow instance id for which the task result is produced */
     public String getWorkflowInstanceId() {
         return workflowInstanceId;
     }
@@ -128,12 +130,13 @@ public class TaskResult {
     }
 
     /**
-     * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the
-     * worker when polled. Useful for the long running task, where the task is updated as IN_PROGRESS and should not be
-     * polled out of the queue for a specified amount of time.  (delayed queue implementation)
+     * When set to non-zero values, the task remains in the queue for the specified seconds before
+     * sent back to the worker when polled. Useful for the long running task, where the task is
+     * updated as IN_PROGRESS and should not be polled out of the queue for a specified amount of
+     * time. (delayed queue implementation)
      *
-     * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue before giving it to a
-     *                             polling worker.
+     * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue
+     *     before giving it to a polling worker.
      */
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
@@ -144,31 +147,26 @@ public class TaskResult {
     }
 
     /**
-     * @param workerId a free form string identifying the worker host. Could be hostname, IP Address or any other
-     *                 meaningful identifier that can help identify the host/process which executed the task, in case of
-     *                 troubleshooting.
+     * @param workerId a free form string identifying the worker host. Could be hostname, IP Address
+     *     or any other meaningful identifier that can help identify the host/process which executed
+     *     the task, in case of troubleshooting.
      */
     public void setWorkerId(String workerId) {
         this.workerId = workerId;
     }
 
-    /**
-     * @return the status
-     */
+    /** @return the status */
     public Status getStatus() {
         return status;
     }
 
     /**
      * @param status Status of the task
-     *               <p>
-     *               <b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in progress and
-     *               should be checked again at a later time. e.g. the worker checks the status of the job in the DB,
-     *               while the job is being executed by another process.
-     *               </p><p>
-     *               <b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED</b>: Terminal statuses for the task. Use
-     *               FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
-     *               </p>
+     *     <p><b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in
+     *     progress and should be checked again at a later time. e.g. the worker checks the status
+     *     of the job in the DB, while the job is being executed by another process.
+     *     <p><b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED</b>: Terminal statuses for the task.
+     *     Use FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
      * @see #setCallbackAfterSeconds(long)
      */
     public void setStatus(Status status) {
@@ -179,9 +177,7 @@ public class TaskResult {
         return outputData;
     }
 
-    /**
-     * @param outputData output data to be set for the task execution result
-     */
+    /** @param outputData output data to be set for the task execution result */
     public void setOutputData(Map<String, Object> outputData) {
         this.outputData = outputData;
     }
@@ -189,7 +185,7 @@ public class TaskResult {
     /**
      * Adds output
      *
-     * @param key   output field
+     * @param key output field
      * @param value value
      * @return current instance
      */
@@ -206,20 +202,15 @@ public class TaskResult {
         this.outputMessage = outputMessage;
     }
 
-    /**
-     * @return Task execution logs
-     */
+    /** @return Task execution logs */
     public List<TaskExecLog> getLogs() {
         return logs;
     }
 
-    /**
-     * @param logs Task execution logs
-     */
+    /** @param logs Task execution logs */
     public void setLogs(List<TaskExecLog> logs) {
         this.logs = logs;
     }
-
 
     /**
      * @param log Log line to be added
@@ -230,15 +221,14 @@ public class TaskResult {
         return this;
     }
 
-    /**
-     * @return the path where the task output is stored in external storage
-     */
+    /** @return the path where the task output is stored in external storage */
     public String getExternalOutputPayloadStoragePath() {
         return externalOutputPayloadStoragePath;
     }
 
     /**
-     * @param externalOutputPayloadStoragePath path in the external storage where the task output is stored
+     * @param externalOutputPayloadStoragePath path in the external storage where the task output is
+     *     stored
      */
     public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
@@ -254,19 +244,36 @@ public class TaskResult {
 
     @Override
     public String toString() {
-        return "TaskResult{" +
-            "workflowInstanceId='" + workflowInstanceId + '\'' +
-            ", taskId='" + taskId + '\'' +
-            ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
-            ", callbackAfterSeconds=" + callbackAfterSeconds +
-            ", workerId='" + workerId + '\'' +
-            ", status=" + status +
-            ", outputData=" + outputData +
-            ", outputMessage=" + outputMessage +
-            ", logs=" + logs +
-            ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
-            ", subWorkflowId='" + subWorkflowId + '\'' +
-            '}';
+        return "TaskResult{"
+                + "workflowInstanceId='"
+                + workflowInstanceId
+                + '\''
+                + ", taskId='"
+                + taskId
+                + '\''
+                + ", reasonForIncompletion='"
+                + reasonForIncompletion
+                + '\''
+                + ", callbackAfterSeconds="
+                + callbackAfterSeconds
+                + ", workerId='"
+                + workerId
+                + '\''
+                + ", status="
+                + status
+                + ", outputData="
+                + outputData
+                + ", outputMessage="
+                + outputMessage
+                + ", logs="
+                + logs
+                + ", externalOutputPayloadStoragePath='"
+                + externalOutputPayloadStoragePath
+                + '\''
+                + ", subWorkflowId='"
+                + subWorkflowId
+                + '\''
+                + '}';
     }
 
     public static TaskResult complete() {
@@ -296,7 +303,8 @@ public class TaskResult {
     /**
      * Copy the given task result object
      *
-     * @return a deep copy of the task result object except the externalOutputPayloadStoragePath field
+     * @return a deep copy of the task result object except the externalOutputPayloadStoragePath
+     *     field
      */
     public TaskResult copy() {
         TaskResult taskResult = new TaskResult();

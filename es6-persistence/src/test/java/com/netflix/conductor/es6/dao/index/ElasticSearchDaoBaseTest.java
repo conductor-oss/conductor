@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.es6.dao.index;
 
+import java.net.InetAddress;
+import java.util.concurrent.ExecutionException;
+
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
@@ -23,9 +26,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 
-import java.net.InetAddress;
-import java.util.concurrent.ExecutionException;
-
 abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
 
     protected TransportClient elasticSearchClient;
@@ -36,12 +36,14 @@ abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
         int mappedPort = container.getMappedPort(9300);
         properties.setUrl("tcp://localhost:" + mappedPort);
 
-        Settings settings = Settings.builder()
-                .put("client.transport.ignore_cluster_name", true)
-                .build();
+        Settings settings =
+                Settings.builder().put("client.transport.ignore_cluster_name", true).build();
 
-        elasticSearchClient = new PreBuiltTransportClient(settings)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName("localhost"), mappedPort));
+        elasticSearchClient =
+                new PreBuiltTransportClient(settings)
+                        .addTransportAddress(
+                                new TransportAddress(
+                                        InetAddress.getByName("localhost"), mappedPort));
 
         indexDAO = new ElasticSearchDAOV6(elasticSearchClient, properties, objectMapper);
         indexDAO.setup();
@@ -62,18 +64,26 @@ abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
     }
 
     private void deleteAllIndices() {
-        ImmutableOpenMap<String, IndexMetaData> indices = elasticSearchClient.admin().cluster()
-                .prepareState().get().getState()
-                .getMetaData().getIndices();
-        indices.forEach(cursor -> {
-            try {
-                elasticSearchClient.admin()
-                        .indices()
-                        .delete(new DeleteIndexRequest(cursor.value.getIndex().getName()))
-                        .get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        ImmutableOpenMap<String, IndexMetaData> indices =
+                elasticSearchClient
+                        .admin()
+                        .cluster()
+                        .prepareState()
+                        .get()
+                        .getState()
+                        .getMetaData()
+                        .getIndices();
+        indices.forEach(
+                cursor -> {
+                    try {
+                        elasticSearchClient
+                                .admin()
+                                .indices()
+                                .delete(new DeleteIndexRequest(cursor.value.getIndex().getName()))
+                                .get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 }

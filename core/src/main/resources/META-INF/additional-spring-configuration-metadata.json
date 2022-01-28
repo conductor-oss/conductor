@@ -107,6 +107,10 @@
         {
           "value": "s3",
           "description": "Use AWS S3 as the external payload storage."
+        },
+        {
+          "value": "postgres",
+          "description": "Use PostgreSQL as the external payload storage."
         }
       ]
     }

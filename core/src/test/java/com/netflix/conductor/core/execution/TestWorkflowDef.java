@@ -12,11 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +19,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
+
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,12 +47,25 @@ public class TestWorkflowDef {
         def.getTasks().add(task3);
         task3.setType(TaskType.DECISION.name());
         task3.getDecisionCases()
-                .put("Case1", Arrays.asList(createWorkflowTask("case_1_task_1"), createWorkflowTask("case_1_task_2")));
+                .put(
+                        "Case1",
+                        Arrays.asList(
+                                createWorkflowTask("case_1_task_1"),
+                                createWorkflowTask("case_1_task_2")));
         task3.getDecisionCases()
-                .put("Case2", Arrays.asList(createWorkflowTask("case_2_task_1"), createWorkflowTask("case_2_task_2")));
-        task3.getDecisionCases().put("Case3", Collections.singletonList(
-                deciderTask("decision_task_2", toMap("Case31", "case31_task_1", "case_31_task_2"),
-                        Collections.singletonList("case3_def_task"))));
+                .put(
+                        "Case2",
+                        Arrays.asList(
+                                createWorkflowTask("case_2_task_1"),
+                                createWorkflowTask("case_2_task_2")));
+        task3.getDecisionCases()
+                .put(
+                        "Case3",
+                        Collections.singletonList(
+                                deciderTask(
+                                        "decision_task_2",
+                                        toMap("Case31", "case31_task_1", "case_31_task_2"),
+                                        Collections.singletonList("case3_def_task"))));
         def.getTasks().add(createWorkflowTask("simple_task_3"));
 
         assertTrue(def.containsType(TaskType.SIMPLE.name()));
@@ -72,15 +86,28 @@ public class TestWorkflowDef {
         def.getTasks().add(task3);
         task3.setType(TaskType.DECISION.name());
         task3.getDecisionCases()
-            .put("Case1", Arrays.asList(createWorkflowTask("case_1_task_1"), createWorkflowTask("case_1_task_2")));
+                .put(
+                        "Case1",
+                        Arrays.asList(
+                                createWorkflowTask("case_1_task_1"),
+                                createWorkflowTask("case_1_task_2")));
         task3.getDecisionCases()
-            .put("Case2", Arrays.asList(createWorkflowTask("case_2_task_1"), createWorkflowTask("case_2_task_2")));
-        task3.getDecisionCases().put("Case3", Collections.singletonList(
-            deciderTask("decision_task_2", toMap("Case31", "case31_task_1", "case_31_task_2"),
-                Collections.singletonList("case3_def_task"))));
+                .put(
+                        "Case2",
+                        Arrays.asList(
+                                createWorkflowTask("case_2_task_1"),
+                                createWorkflowTask("case_2_task_2")));
+        task3.getDecisionCases()
+                .put(
+                        "Case3",
+                        Collections.singletonList(
+                                deciderTask(
+                                        "decision_task_2",
+                                        toMap("Case31", "case31_task_1", "case_31_task_2"),
+                                        Collections.singletonList("case3_def_task"))));
         def.getTasks().add(createWorkflowTask("simple_task_3"));
 
-        //Assertions
+        // Assertions
         WorkflowTask next = def.getNextTask("simple_task_1");
         assertNotNull(next);
         assertEquals("simple_task_2", next.getTaskReferenceName());
@@ -167,14 +194,16 @@ public class TestWorkflowDef {
         return task;
     }
 
-    private WorkflowTask deciderTask(String name, Map<String, List<String>> decisions, List<String> defaultTasks) {
+    private WorkflowTask deciderTask(
+            String name, Map<String, List<String>> decisions, List<String> defaultTasks) {
         WorkflowTask task = createWorkflowTask(name);
         task.setType(TaskType.DECISION.name());
-        decisions.forEach((key, value) -> {
-            List<WorkflowTask> tasks = new LinkedList<>();
-            value.forEach(taskName -> tasks.add(createWorkflowTask(taskName)));
-            task.getDecisionCases().put(key, tasks);
-        });
+        decisions.forEach(
+                (key, value) -> {
+                    List<WorkflowTask> tasks = new LinkedList<>();
+                    value.forEach(taskName -> tasks.add(createWorkflowTask(taskName)));
+                    task.getDecisionCases().put(key, tasks);
+                });
         List<WorkflowTask> tasks = new LinkedList<>();
         defaultTasks.forEach(defaultTask -> tasks.add(createWorkflowTask(defaultTask)));
         task.setDefaultCase(tasks);

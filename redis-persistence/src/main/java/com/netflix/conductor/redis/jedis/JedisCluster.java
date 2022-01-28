@@ -12,6 +12,13 @@
  */
 package com.netflix.conductor.redis.jedis;
 
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import redis.clients.jedis.BitPosParams;
 import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.GeoRadiusResponse;
@@ -32,13 +39,6 @@ import redis.clients.jedis.params.GeoRadiusParam;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JedisCluster implements JedisCommands {
 
@@ -539,7 +539,8 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max, int offset, int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            String key, double min, double max, int offset, int count) {
         return jedisCluster.zrangeByScoreWithScores(key, min, max, offset, count);
     }
 
@@ -559,17 +560,20 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public Set<Tuple> zrangeByScoreWithScores(String key, String min, String max, int offset, int count) {
+    public Set<Tuple> zrangeByScoreWithScores(
+            String key, String min, String max, int offset, int count) {
         return jedisCluster.zrangeByScoreWithScores(key, min, max, offset, count);
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(String key, double max, double min, int offset, int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            String key, double max, double min, int offset, int count) {
         return jedisCluster.zrevrangeByScoreWithScores(key, max, min, offset, count);
     }
 
     @Override
-    public Set<Tuple> zrevrangeByScoreWithScores(String key, String max, String min, int offset, int count) {
+    public Set<Tuple> zrevrangeByScoreWithScores(
+            String key, String max, String min, int offset, int count) {
         return jedisCluster.zrevrangeByScoreWithScores(key, max, min, offset, count);
     }
 
@@ -689,14 +693,18 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public ScanResult<Map.Entry<String, String>> hscan(String key, String cursor, ScanParams params) {
-        ScanResult<Map.Entry<byte[], byte[]>> scanResult = jedisCluster
-            .hscan(key.getBytes(), cursor.getBytes(), params);
-        List<Map.Entry<String, String>> results = scanResult.getResult()
-            .stream()
-            .map(entry -> new AbstractMap.SimpleEntry<>(new String(entry.getKey()),
-                new String(entry.getValue())))
-            .collect(Collectors.toList());
+    public ScanResult<Map.Entry<String, String>> hscan(
+            String key, String cursor, ScanParams params) {
+        ScanResult<Map.Entry<byte[], byte[]>> scanResult =
+                jedisCluster.hscan(key.getBytes(), cursor.getBytes(), params);
+        List<Map.Entry<String, String>> results =
+                scanResult.getResult().stream()
+                        .map(
+                                entry ->
+                                        new AbstractMap.SimpleEntry<>(
+                                                new String(entry.getKey()),
+                                                new String(entry.getValue())))
+                        .collect(Collectors.toList());
         return new ScanResult<>(scanResult.getCursorAsBytes(), results);
     }
 
@@ -707,8 +715,10 @@ public class JedisCluster implements JedisCommands {
 
     @Override
     public ScanResult<String> sscan(String key, String cursor, ScanParams params) {
-        ScanResult<byte[]> scanResult = jedisCluster.sscan(key.getBytes(), cursor.getBytes(), params);
-        List<String> results = scanResult.getResult().stream().map(String::new).collect(Collectors.toList());
+        ScanResult<byte[]> scanResult =
+                jedisCluster.sscan(key.getBytes(), cursor.getBytes(), params);
+        List<String> results =
+                scanResult.getResult().stream().map(String::new).collect(Collectors.toList());
         return new ScanResult<>(scanResult.getCursorAsBytes(), results);
     }
 
@@ -763,48 +773,60 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius,
-        GeoUnit unit) {
+    public List<GeoRadiusResponse> georadius(
+            String key, double longitude, double latitude, double radius, GeoUnit unit) {
         return jedisCluster.georadius(key, longitude, latitude, radius, unit);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusReadonly(
+            String key, double longitude, double latitude, double radius, GeoUnit unit) {
         return jedisCluster.georadiusReadonly(key, longitude, latitude, radius, unit);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadius(
+            String key,
+            double longitude,
+            double latitude,
+            double radius,
+            GeoUnit unit,
+            GeoRadiusParam param) {
         return jedisCluster.georadius(key, longitude, latitude, radius, unit, param);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit, GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusReadonly(
+            String key,
+            double longitude,
+            double latitude,
+            double radius,
+            GeoUnit unit,
+            GeoRadiusParam param) {
         return jedisCluster.georadiusReadonly(key, longitude, latitude, radius, unit, param);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusByMember(
+            String key, String member, double radius, GeoUnit unit) {
         return jedisCluster.georadiusByMember(key, member, radius, unit);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit) {
+    public List<GeoRadiusResponse> georadiusByMemberReadonly(
+            String key, String member, double radius, GeoUnit unit) {
         return jedisCluster.georadiusByMemberReadonly(key, member, radius, unit);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusByMember(
+            String key, String member, double radius, GeoUnit unit, GeoRadiusParam param) {
         return jedisCluster.georadiusByMember(key, member, radius, unit, param);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
+    public List<GeoRadiusResponse> georadiusByMemberReadonly(
+            String key, String member, double radius, GeoUnit unit, GeoRadiusParam param) {
         return jedisCluster.georadiusByMemberReadonly(key, member, radius, unit, param);
     }
 
@@ -829,8 +851,12 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public StreamEntryID xadd(String key, StreamEntryID id, Map<String, String> hash, long maxLen,
-        boolean approximateLength) {
+    public StreamEntryID xadd(
+            String key,
+            StreamEntryID id,
+            Map<String, String> hash,
+            long maxLen,
+            boolean approximateLength) {
         return jedisCluster.xadd(key, id, hash, maxLen, approximateLength);
     }
 
@@ -845,7 +871,8 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public List<StreamEntry> xrevrange(String key, StreamEntryID end, StreamEntryID start, int count) {
+    public List<StreamEntry> xrevrange(
+            String key, StreamEntryID end, StreamEntryID start, int count) {
         return jedisCluster.xrevrange(key, end, start, count);
     }
 
@@ -875,8 +902,13 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public List<StreamPendingEntry> xpending(String key, String groupname, StreamEntryID start, StreamEntryID end,
-        int count, String consumername) {
+    public List<StreamPendingEntry> xpending(
+            String key,
+            String groupname,
+            StreamEntryID start,
+            StreamEntryID end,
+            int count,
+            String consumername) {
         return jedisCluster.xpending(key, groupname, start, end, count, consumername);
     }
 
@@ -891,9 +923,17 @@ public class JedisCluster implements JedisCommands {
     }
 
     @Override
-    public List<StreamEntry> xclaim(String key, String group, String consumername, long minIdleTime, long newIdleTime,
-        int retries, boolean force, StreamEntryID... ids) {
-        return jedisCluster.xclaim(key, group, consumername, minIdleTime, newIdleTime, retries, force, ids);
+    public List<StreamEntry> xclaim(
+            String key,
+            String group,
+            String consumername,
+            long minIdleTime,
+            long newIdleTime,
+            int retries,
+            boolean force,
+            StreamEntryID... ids) {
+        return jedisCluster.xclaim(
+                key, group, consumername, minIdleTime, newIdleTime, retries, force, ids);
     }
 
     @Override

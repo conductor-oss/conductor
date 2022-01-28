@@ -1,13 +1,7 @@
-import React, {
-  useState,
-  useMemo,
-  useReducer,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { useMemo, useReducer, useEffect, useCallback } from "react";
 import { useQueryState } from "react-router-use-location-state";
-import { Drawer, Divider } from "@material-ui/core";
-
+import Alert from "@material-ui/lab/Alert";
+import update from "immutability-helper";
 import {
   Tabs,
   Tab,
@@ -16,118 +10,100 @@ import {
   LinearProgress,
   Heading,
 } from "../../components";
-
+import { Tooltip } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 import { useRouteMatch } from "react-router-dom";
 import TaskDetails from "./TaskDetails";
 import ExecutionSummary from "./ExecutionSummary";
 import ExecutionJson from "./ExecutionJson";
 import InputOutput from "./ExecutionInputOutput";
-import { colors } from "../../theme/variables";
 import clsx from "clsx";
 import ActionModule from "./ActionModule";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
-import SettingsOverscanIcon from "@material-ui/icons/SettingsOverscan";
+import FullscreenIcon from "@material-ui/icons/Fullscreen";
+import FullscreenExitIcon from "@material-ui/icons/FullscreenExit";
 import RightPanel from "./RightPanel";
 import WorkflowDAG from "../../components/diagram/WorkflowDAG";
 import StatusBadge from "../../components/StatusBadge";
 import { useFetch } from "../../utils/query";
 import { Helmet } from "react-helmet";
+import sharedStyles from "../styles";
 
 const maxWindowWidth = window.innerWidth;
-const drawerWidth = maxWindowWidth > 1000 ? maxWindowWidth / 2 : 450;
+const INIT_DRAWER_WIDTH = 650;
 
 const useStyles = makeStyles({
+  header: sharedStyles.header,
+  tabContent: sharedStyles.tabContent,
+
   wrapper: {
     height: "100%",
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
   },
   drawer: {
-    width: (state) => state.drawerWidth,
-  },
-  drawerPaper: {
-    height: "100vh",
-    width: (state) => state.drawerWidth,
-    overflowY: "hidden",
+    zIndex: 999,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: (state) => (state.isFullWidth ? "100%" : state.drawerWidth),
   },
   drawerHeader: {
     display: "flex",
     alignItems: "center",
     padding: 10,
-    // necessary for content to be below app bar
-    //...theme.mixins.toolbar,
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
+    height: 80,
+    flexShrink: 0,
+    boxShadow: "0 4px 8px 0 rgb(0 0 0 / 10%), 0 0 2px 0 rgb(0 0 0 / 10%)",
+    zIndex: 1,
+    backgroundColor: "#fff",
+  },
+  dragger: {
+    display: (state) => (state.isFullWidth ? "none" : "block"),
+    width: "5px",
+    cursor: "ew-resize",
+    padding: "4px 0 0",
+    position: "absolute",
+    height: "100%",
+    zIndex: "100",
+    backgroundColor: "#f4f7f9",
+  },
+  drawerMain: {
+    paddingLeft: (state) => (state.isFullWidth ? 0 : 4),
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
   },
   drawerContent: {
+    flex: "1 1 auto",
     overflowY: "scroll",
-    flexGrow: 1,
+    backgroundColor: "#fff",
+    position: "relative",
   },
   content: {
-    flexGrow: (state) => (state.isResizing ? 0.8 : 1),
-    paddingBottom: 50,
-    /*transition: theme.transitions.create("margin", {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    */
-    marginRight: -drawerWidth,
     overflowY: "scroll",
+    height: "100%",
   },
   contentShift: {
-    /*
-    transition: theme.transitions.create("margin", {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    */
-    marginRight: 0,
-  },
-
-  header: {
-    backgroundColor: colors.gray14,
-    paddingLeft: 50,
-    paddingTop: 20,
-    "@media (min-width: 1920px)": {
-      paddingLeft: 200,
-    },
+    marginRight: (state) => state.drawerWidth,
   },
   headerSubtitle: {
     marginBottom: 20,
   },
-  tabContent: {
-    paddingTop: 20,
-    paddingRight: 50,
-    paddingLeft: 50,
-    "@media (min-width: 1920px)": {
-      paddingLeft: 200,
-    },
-  },
+
   fr: {
     display: "flex",
     position: "relative",
     float: "right",
     marginRight: 50,
     marginTop: 10,
+    zIndex: 1,
   },
   frItem: {
     display: "flex",
     alignItems: "center",
     marginRight: 15,
-  },
-  dragger: {
-    width: "5px",
-    cursor: "ew-resize",
-    padding: "4px 0 0",
-    borderTop: "1px solid #ddd",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    zIndex: "100",
-    backgroundColor: "#f4f7f9",
   },
 });
 
@@ -137,64 +113,77 @@ const actions = {
   MOUSE_DOWN: 3,
   MOUSE_UP: 4,
   MOUSE_MOVE: 5,
+  CLOSE: 6,
+  SELECT_TASK: 7,
 };
 
-const initialState = {
-  drawerWidth: drawerWidth,
-  isDrawerFullScreen: false,
+const initialDrawerState = {
+  drawerWidth: INIT_DRAWER_WIDTH,
+  isFullWidth: false,
   isResizing: false,
-  lastDownX: 0,
-  newWidth: {},
-  drawerVarient: "persistent",
+  selectedTask: null,
 };
 
-function reducer(state, action) {
+function drawerReducer(state, action) {
   switch (action.type) {
     case actions.EXPAND_FULL:
-      return { ...state, isDrawerFullScreen: true, drawerWidth: "100vw" };
+      return update(state, {
+        isFullWidth: {
+          $set: true,
+        },
+      });
     case actions.RESET_EXPAND_FULL:
-      return {
-        ...state,
-        isDrawerFullScreen: false,
-        drawerWidth: drawerWidth,
-        drawerVarient: "persistent",
-      };
+      return update(state, {
+        isFullWidth: {
+          $set: false,
+        },
+      });
     case actions.MOUSE_DOWN:
-      return {
-        ...state,
-        isResizing: true,
-        lastDownX: action.clientX,
-        drawerVarient: "temporary",
-      };
+      return update(state, {
+        isResizing: {
+          $set: true,
+        },
+      });
     case actions.MOUSE_UP:
-      return {
-        ...state,
-        isResizing: false,
-        drawerVarient:
-          state.drawerWidth > maxWindowWidth / 2 ? "temporary" : "persistent",
-      };
+      return update(state, {
+        isResizing: {
+          $set: false,
+        },
+      });
     case actions.MOUSE_MOVE:
-      return {
-        ...state,
-        isDrawerFullScreen: false,
-        drawerWidth: action.offsetRight,
-      };
+      return update(state, {
+        drawerWidth: {
+          $set: action.offsetRight,
+        },
+      });
+    case actions.CLOSE:
+      return update(state, {
+        selectedTask: {
+          $set: null,
+        },
+      });
+    case actions.SELECT_TASK:
+      return update(state, {
+        selectedTask: {
+          $set: action.selectedTask,
+        },
+      });
     default:
       return state;
   }
 }
 
 export default function Execution() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [drawerState, dispatch] = useReducer(drawerReducer, initialDrawerState);
+  const selectedTask = drawerState.selectedTask;
 
-  const classes = useStyles(state);
+  const classes = useStyles(drawerState);
   const match = useRouteMatch();
   const url = `/workflow/${match.params.id}`;
 
   const { data: execution, isFetching, refetch: refresh } = useFetch(url);
 
   const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
-  const [selectedTask, setSelectedTask] = useState(null);
 
   const handleMousedown = (e) => {
     dispatch({ type: actions.MOUSE_DOWN, clientX: e.clientX });
@@ -203,10 +192,12 @@ export default function Execution() {
   const handleMousemove = useCallback(
     (e) => {
       // we don't want to do anything if we aren't resizing.
-      if (!state.isResizing) {
+      if (!drawerState.isResizing) {
         return;
       }
 
+      // Stop highlighting
+      e.preventDefault();
       const offsetRight =
         document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
       const minWidth = 0;
@@ -215,15 +206,27 @@ export default function Execution() {
         dispatch({ type: actions.MOUSE_MOVE, offsetRight });
       }
     },
-    [state.isResizing]
+    [drawerState.isResizing]
   );
 
   const handleMouseup = (e) => {
     dispatch({ type: actions.MOUSE_UP });
   };
 
-  const handleSelectedTask = (task) => {
-    setSelectedTask(task);
+  const handleSelectTask = (task) => {
+    dispatch({ type: actions.SELECT_TASK, selectedTask: task });
+  };
+
+  const handleClose = () => {
+    dispatch({ type: actions.CLOSE });
+  };
+
+  const handleFullScreen = () => {
+    dispatch({ type: actions.EXPAND_FULL });
+  };
+
+  const handleFullScreenExit = () => {
+    dispatch({ type: actions.RESET_EXPAND_FULL });
   };
 
   useEffect(() => {
@@ -238,11 +241,6 @@ export default function Execution() {
       document.removeEventListener("mouseup", mouseUp);
     };
   }, [handleMousemove]);
-
-  const handleDrawerMaximize = () => {
-    if (state.isDrawerFullScreen) dispatch({ type: actions.RESET_EXPAND_FULL });
-    else dispatch({ type: actions.EXPAND_FULL });
-  };
 
   const dag = useMemo(
     () => (execution ? new WorkflowDAG(execution) : null),
@@ -286,6 +284,13 @@ export default function Execution() {
               <Heading level={0} className={classes.headerSubtitle}>
                 {execution.workflowId}
               </Heading>
+
+              {execution.reasonForIncompletion && (
+                <Alert severity="error">
+                  {execution.reasonForIncompletion}
+                </Alert>
+              )}
+
               <Tabs value={tabIndex} style={{ marginBottom: 0 }}>
                 <Tab label="Tasks" onClick={() => setTabIndex(0)} />
                 <Tab label="Summary" onClick={() => setTabIndex(1)} />
@@ -301,7 +306,7 @@ export default function Execution() {
                 <TaskDetails
                   dag={dag}
                   execution={execution}
-                  setSelectedTask={handleSelectedTask}
+                  setSelectedTask={handleSelectTask}
                   selectedTask={selectedTask}
                 />
               )}
@@ -312,40 +317,44 @@ export default function Execution() {
           </>
         )}
       </div>
-      <Drawer
-        className={classes.drawer}
-        variant={state.drawerVarient}
-        anchor="right"
-        open={!!selectedTask}
-        transitionDuration={0}
-        classes={{
-          root: classes.drawer,
-          paper: classes.drawerPaper,
-        }}
-      >
-        <div
-          id="dragger"
-          onMouseDown={(event) => handleMousedown(event)}
-          className={classes.dragger}
-        />
-        <>
-          <div className={classes.drawerHeader}>
-            <IconButton onClick={() => handleDrawerMaximize()}>
-              <SettingsOverscanIcon />
-            </IconButton>
-            <IconButton onClick={() => handleSelectedTask(null)}>
-              <CloseIcon />
-            </IconButton>
-          </div>
-          <Divider />
-          <RightPanel
-            className={classes.drawerContent}
-            selectedTask={selectedTask}
-            dag={dag}
-            onTaskChange={handleSelectedTask}
+      {selectedTask && (
+        <div className={classes.drawer}>
+          <div
+            id="dragger"
+            onMouseDown={(event) => handleMousedown(event)}
+            className={classes.dragger}
           />
-        </>
-      </Drawer>
+          <div className={classes.drawerMain}>
+            <div className={classes.drawerHeader}>
+              {drawerState.isFullWidth ? (
+                <Tooltip title="Restore sidebar">
+                  <IconButton onClick={() => handleFullScreenExit()}>
+                    <FullscreenExitIcon />
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                <Tooltip title="Maximize sidebar">
+                  <IconButton onClick={() => handleFullScreen()}>
+                    <FullscreenIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip title="Close sidebar">
+                <IconButton onClick={() => handleClose()}>
+                  <CloseIcon />
+                </IconButton>
+              </Tooltip>
+            </div>
+            <div className={classes.drawerContent}>
+              <RightPanel
+                selectedTask={selectedTask}
+                dag={dag}
+                onTaskChange={handleSelectTask}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

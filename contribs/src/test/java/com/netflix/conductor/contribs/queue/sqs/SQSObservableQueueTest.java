@@ -12,26 +12,27 @@
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
+
+import com.netflix.conductor.core.events.queue.Message;
+
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.ListQueuesRequest;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.netflix.conductor.core.events.queue.Message;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 import rx.Observable;
-
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +42,8 @@ public class SQSObservableQueueTest {
     public void test() {
 
         List<Message> messages = new LinkedList<>();
-        Observable.range(0, 10).forEach((Integer x) -> messages.add(new Message("" + x, "payload: " + x, null)));
+        Observable.range(0, 10)
+                .forEach((Integer x) -> messages.add(new Message("" + x, "payload: " + x, null)));
         assertEquals(10, messages.size());
 
         SQSObservableQueue queue = mock(SQSObservableQueue.class);
@@ -65,23 +67,23 @@ public class SQSObservableQueueTest {
 
     @Test
     public void testException() {
-        com.amazonaws.services.sqs.model.Message message = new com.amazonaws.services.sqs.model.Message()
-            .withMessageId("test")
-            .withBody("")
-            .withReceiptHandle("receiptHandle");
+        com.amazonaws.services.sqs.model.Message message =
+                new com.amazonaws.services.sqs.model.Message()
+                        .withMessageId("test")
+                        .withBody("")
+                        .withReceiptHandle("receiptHandle");
         Answer<?> answer = (Answer<ReceiveMessageResult>) invocation -> new ReceiveMessageResult();
 
         AmazonSQSClient client = mock(AmazonSQSClient.class);
         when(client.listQueues(any(ListQueuesRequest.class)))
-            .thenReturn(new ListQueuesResult().withQueueUrls("junit_queue_url"));
+                .thenReturn(new ListQueuesResult().withQueueUrls("junit_queue_url"));
         when(client.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenThrow(new RuntimeException("Error in SQS communication"))
-            .thenReturn(new ReceiveMessageResult().withMessages(message))
-            .thenAnswer(answer);
+                .thenThrow(new RuntimeException("Error in SQS communication"))
+                .thenReturn(new ReceiveMessageResult().withMessages(message))
+                .thenAnswer(answer);
 
-        SQSObservableQueue queue = new SQSObservableQueue.Builder()
-            .withQueueName("junit")
-            .withClient(client).build();
+        SQSObservableQueue queue =
+                new SQSObservableQueue.Builder().withQueueName("junit").withClient(client).build();
         queue.start();
 
         List<Message> found = new LinkedList<>();

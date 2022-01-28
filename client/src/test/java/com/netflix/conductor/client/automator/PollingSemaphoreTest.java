@@ -12,14 +12,14 @@
  */
 package com.netflix.conductor.client.automator;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,11 +34,16 @@ public class PollingSemaphoreTest {
         PollingSemaphore pollingSemaphore = new PollingSemaphore(threads);
 
         List<CompletableFuture<Void>> futuresList = new ArrayList<>();
-        IntStream.range(0, threads).forEach(
-            t -> futuresList.add(CompletableFuture.runAsync(pollingSemaphore::canPoll, executorService)));
+        IntStream.range(0, threads)
+                .forEach(
+                        t ->
+                                futuresList.add(
+                                        CompletableFuture.runAsync(
+                                                pollingSemaphore::canPoll, executorService)));
 
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-            futuresList.toArray(new CompletableFuture[futuresList.size()]));
+        CompletableFuture<Void> allFutures =
+                CompletableFuture.allOf(
+                        futuresList.toArray(new CompletableFuture[futuresList.size()]));
 
         allFutures.get();
 
@@ -55,11 +60,16 @@ public class PollingSemaphoreTest {
         PollingSemaphore pollingSemaphore = new PollingSemaphore(threads);
 
         List<CompletableFuture<Void>> futuresList = new ArrayList<>();
-        IntStream.range(0, threads).forEach(
-            t -> futuresList.add(CompletableFuture.runAsync(pollingSemaphore::canPoll, executorService)));
+        IntStream.range(0, threads)
+                .forEach(
+                        t ->
+                                futuresList.add(
+                                        CompletableFuture.runAsync(
+                                                pollingSemaphore::canPoll, executorService)));
 
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-            futuresList.toArray(new CompletableFuture[futuresList.size()]));
+        CompletableFuture<Void> allFutures =
+                CompletableFuture.allOf(
+                        futuresList.toArray(new CompletableFuture[futuresList.size()]));
         allFutures.get();
 
         assertEquals(0, pollingSemaphore.availableThreads());

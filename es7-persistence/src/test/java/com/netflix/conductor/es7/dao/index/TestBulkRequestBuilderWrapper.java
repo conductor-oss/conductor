@@ -20,7 +20,7 @@ import org.mockito.Mockito;
 
 public class TestBulkRequestBuilderWrapper {
     BulkRequestBuilder builder = Mockito.mock(BulkRequestBuilder.class);
-    BulkRequestBuilderWrapper wrapper =new BulkRequestBuilderWrapper(builder);
+    BulkRequestBuilderWrapper wrapper = new BulkRequestBuilderWrapper(builder);
 
     @Test(expected = Exception.class)
     public void testAddNullUpdateRequest() {
@@ -47,5 +47,4 @@ public class TestBulkRequestBuilderWrapper {
         Mockito.verify(builder, Mockito.times(1)).numberOfActions();
         Mockito.verify(builder, Mockito.times(1)).execute();
     }
-
 }

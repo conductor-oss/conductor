@@ -21,7 +21,7 @@ export default function TaskDefinition() {
         <title>Conductor UI - Task Definition - ${match.params.name}</title>
       </Helmet>
       <div className={classes.header} style={{ paddingBottom: 20 }}>
-        <Heading level={3}>Task Definition</Heading>
+        <Heading level={1}>Task Definition</Heading>
         <Heading level={4}>{match.params.name}</Heading>
       </div>
       {isFetching && <LinearProgress />}

@@ -12,10 +12,13 @@
  */
 package com.netflix.conductor.cassandra.config;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.cassandra.dao.CassandraExecutionDAO;
 import com.netflix.conductor.cassandra.dao.CassandraMetadataDAO;
@@ -24,12 +27,11 @@ import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CassandraProperties.class)
@@ -45,15 +47,18 @@ public class CassandraConfiguration {
 
         LOGGER.info("Connecting to cassandra cluster with host:{}, port:{}", host, port);
 
-        Cluster cluster = Cluster.builder()
-            .addContactPoint(host)
-            .withPort(port)
-            .build();
+        Cluster cluster = Cluster.builder().addContactPoint(host).withPort(port).build();
 
         Metadata metadata = cluster.getMetadata();
         LOGGER.info("Connected to cluster: {}", metadata.getClusterName());
-        metadata.getAllHosts().forEach(h -> LOGGER.info("Datacenter:{}, host:{}, rack: {}", h.getDatacenter(),
-            h.getEndPoint().resolve().getHostName(), h.getRack()));
+        metadata.getAllHosts()
+                .forEach(
+                        h ->
+                                LOGGER.info(
+                                        "Datacenter:{}, host:{}, rack: {}",
+                                        h.getDatacenter(),
+                                        h.getEndPoint().resolve().getHostName(),
+                                        h.getRack()));
         return cluster;
     }
 
@@ -64,20 +69,29 @@ public class CassandraConfiguration {
     }
 
     @Bean
-    public MetadataDAO cassandraMetadataDAO(Session session, ObjectMapper objectMapper, CassandraProperties properties,
-        Statements statements) {
+    public MetadataDAO cassandraMetadataDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            Statements statements) {
         return new CassandraMetadataDAO(session, objectMapper, properties, statements);
     }
 
     @Bean
-    public ExecutionDAO cassandraExecutionDAO(Session session, ObjectMapper objectMapper,
-        CassandraProperties properties, Statements statements) {
+    public ExecutionDAO cassandraExecutionDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            Statements statements) {
         return new CassandraExecutionDAO(session, objectMapper, properties, statements);
     }
 
     @Bean
-    public EventHandlerDAO cassandraEventHandlerDAO(Session session, ObjectMapper objectMapper,
-        CassandraProperties properties, Statements statements) {
+    public EventHandlerDAO cassandraEventHandlerDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            Statements statements) {
         return new CassandraEventHandlerDAO(session, objectMapper, properties, statements);
     }
 

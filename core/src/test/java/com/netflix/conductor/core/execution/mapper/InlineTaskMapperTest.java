@@ -12,10 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-
 import java.util.List;
 
 import org.junit.Before;
@@ -31,6 +27,10 @@ import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 public class InlineTaskMapperTest {
 
@@ -51,9 +51,9 @@ public class InlineTaskMapperTest {
         taskToSchedule.setType(TaskType.INLINE.name());
         taskToSchedule.setTaskDefinition(new TaskDef("inline_task"));
         taskToSchedule.setEvaluatorType(JavascriptEvaluator.NAME);
-        taskToSchedule
-            .setExpression("function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
-                  + "{testValue: false} }}; scriptFun();");
+        taskToSchedule.setExpression(
+                "function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
+                        + "{testValue: false} }}; scriptFun();");
 
         String taskId = IDGenerator.generate();
 
@@ -61,16 +61,19 @@ public class InlineTaskMapperTest {
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(workflowDef);
 
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-            .withWorkflowDefinition(workflowDef)
-            .withWorkflowInstance(workflow)
-            .withTaskDefinition(new TaskDef())
-            .withTaskToSchedule(taskToSchedule)
-            .withRetryCount(0)
-            .withTaskId(taskId)
-            .build();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowDefinition(workflowDef)
+                        .withWorkflowInstance(workflow)
+                        .withTaskDefinition(new TaskDef())
+                        .withTaskToSchedule(taskToSchedule)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .build();
 
-        List<Task> mappedTasks = new InlineTaskMapper(parametersUtils, metadataDAO).getMappedTasks(taskMapperContext);
+        List<Task> mappedTasks =
+                new InlineTaskMapper(parametersUtils, metadataDAO)
+                        .getMappedTasks(taskMapperContext);
 
         assertEquals(1, mappedTasks.size());
         assertNotNull(mappedTasks);
@@ -83,8 +86,9 @@ public class InlineTaskMapperTest {
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setType(TaskType.INLINE.name());
         taskToSchedule.setEvaluatorType(JavascriptEvaluator.NAME);
-        taskToSchedule.setExpression("function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
-              + "{testValue: false} }}; scriptFun();");
+        taskToSchedule.setExpression(
+                "function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
+                        + "{testValue: false} }}; scriptFun();");
 
         String taskId = IDGenerator.generate();
 
@@ -92,16 +96,19 @@ public class InlineTaskMapperTest {
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(workflowDef);
 
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-            .withWorkflowDefinition(workflowDef)
-            .withWorkflowInstance(workflow)
-            .withTaskDefinition(null)
-            .withTaskToSchedule(taskToSchedule)
-            .withRetryCount(0)
-            .withTaskId(taskId)
-            .build();
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowDefinition(workflowDef)
+                        .withWorkflowInstance(workflow)
+                        .withTaskDefinition(null)
+                        .withTaskToSchedule(taskToSchedule)
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .build();
 
-        List<Task> mappedTasks = new InlineTaskMapper(parametersUtils, metadataDAO).getMappedTasks(taskMapperContext);
+        List<Task> mappedTasks =
+                new InlineTaskMapper(parametersUtils, metadataDAO)
+                        .getMappedTasks(taskMapperContext);
 
         assertEquals(1, mappedTasks.size());
         assertNotNull(mappedTasks);

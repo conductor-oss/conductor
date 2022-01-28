@@ -12,14 +12,12 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.Objects;
+
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
-import java.util.Objects;
-
-/**
- * Model that represents the task's execution log.
- */
+/** Model that represents the task's execution log. */
 @ProtoMessage
 public class TaskExecLog {
 
@@ -32,52 +30,39 @@ public class TaskExecLog {
     @ProtoField(id = 3)
     private long createdTime;
 
-    public TaskExecLog() {
-    }
+    public TaskExecLog() {}
 
     public TaskExecLog(String log) {
         this.log = log;
         this.createdTime = System.currentTimeMillis();
     }
 
-    /**
-     * @return Task Exec Log
-     */
+    /** @return Task Exec Log */
     public String getLog() {
         return log;
     }
 
-    /**
-     * @param log The Log
-     */
+    /** @param log The Log */
     public void setLog(String log) {
         this.log = log;
     }
 
-    /**
-     * @return the taskId
-     */
+    /** @return the taskId */
     public String getTaskId() {
         return taskId;
     }
 
-    /**
-     * @param taskId the taskId to set
-     */
+    /** @param taskId the taskId to set */
     public void setTaskId(String taskId) {
         this.taskId = taskId;
     }
 
-    /**
-     * @return the createdTime
-     */
+    /** @return the createdTime */
     public long getCreatedTime() {
         return createdTime;
     }
 
-    /**
-     * @param createdTime the createdTime to set
-     */
+    /** @param createdTime the createdTime to set */
     public void setCreatedTime(long createdTime) {
         this.createdTime = createdTime;
     }
@@ -91,9 +76,9 @@ public class TaskExecLog {
             return false;
         }
         TaskExecLog that = (TaskExecLog) o;
-        return createdTime == that.createdTime &&
-            Objects.equals(log, that.log) &&
-            Objects.equals(taskId, that.taskId);
+        return createdTime == that.createdTime
+                && Objects.equals(log, that.log)
+                && Objects.equals(taskId, that.taskId);
     }
 
     @Override

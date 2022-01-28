@@ -12,15 +12,6 @@
  */
 package com.netflix.conductor.test.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +20,17 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ConditionalOnProperty(name = "conductor.external-payload-storage.type", havingValue = "mock")
 @Component
@@ -53,7 +55,8 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     }
 
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
+    public ExternalStorageLocation getLocation(
+            Operation operation, PayloadType payloadType, String path) {
         ExternalStorageLocation location = new ExternalStorageLocation();
         location.setUri("http://some/uri");
         switch (payloadType) {
@@ -85,7 +88,8 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                 outputStream.flush();
             }
         } catch (Exception e) {
-            // just handle this exception here and return empty map so that test will fail in case this exception is thrown
+            // just handle this exception here and return empty map so that test will fail in case
+            // this exception is thrown
         } finally {
             try {
                 if (payload != null) {
@@ -119,15 +123,18 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                     stringObjectMap.put("case", "two");
                     return stringObjectMap;
                 case TASK_OUTPUT_PATH:
-                    InputStream opStream = MockExternalPayloadStorage.class.getResourceAsStream("/output.json");
+                    InputStream opStream =
+                            MockExternalPayloadStorage.class.getResourceAsStream("/output.json");
                     return objectMapper.readValue(opStream, Map.class);
                 case INPUT_PAYLOAD_PATH:
                 case WORKFLOW_OUTPUT_PATH:
-                    InputStream ipStream = MockExternalPayloadStorage.class.getResourceAsStream(TEMP_FILE_PATH);
+                    InputStream ipStream =
+                            MockExternalPayloadStorage.class.getResourceAsStream(TEMP_FILE_PATH);
                     return objectMapper.readValue(ipStream, Map.class);
             }
         } catch (IOException e) {
-            // just handle this exception here and return empty map so that test will fail in case this exception is thrown
+            // just handle this exception here and return empty map so that test will fail in case
+            // this exception is thrown
         }
         return stringObjectMap;
     }

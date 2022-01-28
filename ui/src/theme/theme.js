@@ -243,6 +243,9 @@ const overrides = {
           backgroundColor: baseTheme.palette.grey.A100,
         },
       },
+      textSizeSmall: {
+        fontSize: "0.8125rem",
+      },
       outlined: {
         paddingTop: baseTheme.spacing("space1"),
         paddingBottom: baseTheme.spacing("space1"),
@@ -573,9 +576,11 @@ const overrides = {
         color: colors.gray00,
       },
       root: {
+        zIndex: 0,
         paddingLeft: 20,
         paddingRight: 20,
-        boxShadow: "none !important",
+        boxShadow: "0 4px 8px 0 rgb(0 0 0 / 10%), 0 0 2px 0 rgb(0 0 0 / 10%)",
+
         "& .MuiButton-label": {
           color: colors.black,
         },

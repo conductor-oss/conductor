@@ -12,48 +12,46 @@
  */
 package com.netflix.conductor.client.http;
 
-import com.google.common.base.Preconditions;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+
+import com.google.common.base.Preconditions;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.commons.lang.StringUtils;
-
-import java.util.List;
 
 public class MetadataClient extends ClientBase {
 
-    /**
-     * Creates a default metadata client
-     */
+    /** Creates a default metadata client */
     public MetadataClient() {
         this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
-    /**
-     * @param clientConfig REST Client configuration
-     */
+    /** @param clientConfig REST Client configuration */
     public MetadataClient(ClientConfig clientConfig) {
         this(clientConfig, new DefaultConductorClientConfiguration(), null);
     }
 
     /**
-     * @param clientConfig  REST Client configuration
-     * @param clientHandler Jersey client handler. Useful when plugging in various http client interaction modules (e.g.
-     *                      ribbon)
+     * @param clientConfig REST Client configuration
+     * @param clientHandler Jersey client handler. Useful when plugging in various http client
+     *     interaction modules (e.g. ribbon)
      */
     public MetadataClient(ClientConfig clientConfig, ClientHandler clientHandler) {
         this(clientConfig, new DefaultConductorClientConfiguration(), clientHandler);
     }
 
     /**
-     * @param config  config REST Client configuration
-     * @param handler handler Jersey client handler. Useful when plugging in various http client interaction modules
-     *                (e.g. ribbon)
+     * @param config config REST Client configuration
+     * @param handler handler Jersey client handler. Useful when plugging in various http client
+     *     interaction modules (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
     public MetadataClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
@@ -61,14 +59,18 @@ public class MetadataClient extends ClientBase {
     }
 
     /**
-     * @param config              REST Client configuration
-     * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
-     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules
-     *                            (e.g. ribbon)
-     * @param filters             Chain of client side filters to be applied per request
+     * @param config REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link
+     *     ConductorClientConfiguration}
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
      */
-    public MetadataClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler,
-        ClientFilter... filters) {
+    public MetadataClient(
+            ClientConfig config,
+            ConductorClientConfiguration clientConfiguration,
+            ClientHandler handler,
+            ClientFilter... filters) {
         super(config, clientConfiguration, handler);
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
@@ -100,20 +102,24 @@ public class MetadataClient extends ClientBase {
     /**
      * Retrieve the workflow definition
      *
-     * @param name    the name of the workflow
+     * @param name the name of the workflow
      * @param version the version of the workflow def
      * @return Workflow definition for the given workflow and version
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-        return getForEntity("metadata/workflow/{name}", new Object[]{"version", version}, WorkflowDef.class, name);
+        return getForEntity(
+                "metadata/workflow/{name}",
+                new Object[] {"version", version},
+                WorkflowDef.class,
+                name);
     }
 
     /**
-     * Removes the workflow definition of a workflow from the conductor server. It does not remove associated workflows.
-     * Use with caution.
+     * Removes the workflow definition of a workflow from the conductor server. It does not remove
+     * associated workflows. Use with caution.
      *
-     * @param name    Name of the workflow to be unregistered.
+     * @param name Name of the workflow to be unregistered.
      * @param version Version of the workflow definition to be unregistered.
      */
     public void unregisterWorkflowDef(String name, Integer version) {

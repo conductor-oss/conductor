@@ -12,15 +12,20 @@
  */
 package com.netflix.conductor.service;
 
-import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolationException;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -30,18 +35,17 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import javax.validation.ConstraintViolationException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit4.SpringRunner;
+
+import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -64,17 +68,16 @@ public class MetadataServiceTest {
         }
 
         @Bean
-        public MetadataService metadataService(MetadataDAO metadataDAO, ConductorProperties properties) {
+        public MetadataService metadataService(
+                MetadataDAO metadataDAO, ConductorProperties properties) {
             EventHandlerDAO eventHandlerDAO = mock(EventHandlerDAO.class);
             return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
         }
     }
 
-    @Autowired
-    private MetadataDAO metadataDAO;
+    @Autowired private MetadataDAO metadataDAO;
 
-    @Autowired
-    private MetadataService metadataService;
+    @Autowired private MetadataService metadataService;
 
     @Test(expected = ConstraintViolationException.class)
     public void testRegisterTaskDefNoName() {
@@ -115,7 +118,9 @@ public class MetadataServiceTest {
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("TaskDef responseTimeoutSeconds: 0 should be minimum 1 second"));
+            assertTrue(
+                    messages.contains(
+                            "TaskDef responseTimeoutSeconds: 0 should be minimum 1 second"));
             throw ex;
         }
         fail("metadataService.registerTaskDef did not throw ConstraintViolationException !");
@@ -283,7 +288,9 @@ public class MetadataServiceTest {
             assertEquals(3, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
-            assertTrue(messages.contains("Workflow name cannot contain the following set of characters: ':'"));
+            assertTrue(
+                    messages.contains(
+                            "Workflow name cannot contain the following set of characters: ':'"));
             assertTrue(messages.contains("ownerEmail should be valid email address"));
             throw ex;
         }
@@ -351,7 +358,8 @@ public class MetadataServiceTest {
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("Missing event handler name"));
             assertTrue(messages.contains("Missing event location"));
-            assertTrue(messages.contains("No actions specified. Please specify at-least one action"));
+            assertTrue(
+                    messages.contains("No actions specified. Please specify at-least one action"));
             throw ex;
         }
         fail("metadataService.addEventHandler did not throw ConstraintViolationException !");

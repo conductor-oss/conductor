@@ -12,20 +12,19 @@
  */
 package com.netflix.conductor.contribs.queue.amqp.config;
 
-import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue;
-import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue;
+import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 
-/**
- * @author Ritu Parathody
- */
+/** @author Ritu Parathody */
 public class AMQPEventQueueProvider implements EventQueueProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQPEventQueueProvider.class);
@@ -34,7 +33,8 @@ public class AMQPEventQueueProvider implements EventQueueProvider {
     private final AMQPEventQueueProperties properties;
     private final String queueType;
 
-    public AMQPEventQueueProvider(AMQPEventQueueProperties properties, String queueType, boolean useExchange) {
+    public AMQPEventQueueProvider(
+            AMQPEventQueueProperties properties, String queueType, boolean useExchange) {
         this.properties = properties;
         this.queueType = queueType;
         this.useExchange = useExchange;

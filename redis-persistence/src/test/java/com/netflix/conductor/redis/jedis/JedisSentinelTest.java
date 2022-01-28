@@ -12,8 +12,11 @@
  */
 package com.netflix.conductor.redis.jedis;
 
+import java.util.HashMap;
+
 import org.junit.Before;
 import org.junit.Test;
+
 import redis.clients.jedis.GeoUnit;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
@@ -24,8 +27,6 @@ import redis.clients.jedis.params.GeoRadiusParam;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
-
-import java.util.HashMap;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -409,7 +410,6 @@ public class JedisSentinelTest {
         jedisSentinel.zrangeByScore("key", 1337, 1338, 1339, 1340);
     }
 
-
     @Test
     public void testZrevrangeByScore() {
         jedisSentinel.zrevrangeByScore("key", "max", "min");
@@ -577,7 +577,8 @@ public class JedisSentinelTest {
     @Test
     public void testGeoradiusByMember() {
         jedisSentinel.georadiusByMember("key", "member", 1337, GeoUnit.KM);
-        jedisSentinel.georadiusByMember("key", "member", 1337, GeoUnit.KM, GeoRadiusParam.geoRadiusParam());
+        jedisSentinel.georadiusByMember(
+                "key", "member", 1337, GeoUnit.KM, GeoRadiusParam.geoRadiusParam());
     }
 
     @Test

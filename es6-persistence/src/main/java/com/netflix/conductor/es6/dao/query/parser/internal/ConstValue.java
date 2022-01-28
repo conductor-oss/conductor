@@ -16,17 +16,19 @@ import java.io.InputStream;
 
 /**
  * Constant value can be:
+ *
  * <ol>
- * <li>List of values (a,b,c)
- * <li>Range of values (m AND n)
- * <li>A value (x)
- * <li>A value is either a string or a number
+ *   <li>List of values (a,b,c)
+ *   <li>Range of values (m AND n)
+ *   <li>A value (x)
+ *   <li>A value is either a string or a number
  * </ol>
  */
 public class ConstValue extends AbstractNode {
 
     public enum SystemConsts {
-        NULL("null"), NOT_NULL("not null");
+        NULL("null"),
+        NOT_NULL("not null");
         private final String value;
 
         SystemConsts(String value) {
@@ -52,7 +54,7 @@ public class ConstValue extends AbstractNode {
     protected void _parse() throws Exception {
         byte[] peeked = peek(4);
         String sp = new String(peeked).trim();
-        //Read a constant value (number or a string)
+        // Read a constant value (number or a string)
         if (peeked[0] == '"' || peeked[0] == '\'') {
             this.value = readString(is);
         } else if (sp.toLowerCase().startsWith("not")) {
@@ -106,7 +108,8 @@ public class ConstValue extends AbstractNode {
             }
         }
         if (!valid) {
-            throw new ParserException("String constant is not quoted with <" + delim + "> : " + sb.toString());
+            throw new ParserException(
+                    "String constant is not quoted with <" + delim + "> : " + sb.toString());
         }
         return QUOTE + sb.toString() + QUOTE;
     }

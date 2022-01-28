@@ -43,6 +43,13 @@ export default function ExecutionSummary({ execution }) {
     });
   }
 
+  if (execution.reasonForIncompletion) {
+    data.push({
+      label: "Reason for Incompletion",
+      value: execution.reasonForIncompletion,
+    });
+  }
+
   return (
     <Paper className={classes.paper}>
       <KeyValueTable data={data} />

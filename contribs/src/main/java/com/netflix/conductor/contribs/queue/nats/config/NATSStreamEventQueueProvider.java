@@ -12,23 +12,24 @@
  */
 package com.netflix.conductor.contribs.queue.nats.config;
 
-import com.netflix.conductor.contribs.queue.nats.NATSStreamObservableQueue;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import rx.Scheduler;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author Oleksiy Lysak
- */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+
+import com.netflix.conductor.contribs.queue.nats.NATSStreamObservableQueue;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+
+import rx.Scheduler;
+
+/** @author Oleksiy Lysak */
 public class NATSStreamEventQueueProvider implements EventQueueProvider {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
     protected final Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
     private final String durableName;
     private final String clusterId;
@@ -44,8 +45,13 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
         durableName = properties.getDurableName();
         natsUrl = properties.getUrl();
 
-        LOGGER.info("NATS Streaming clusterId=" + clusterId +
-            ", natsUrl=" + natsUrl + ", durableName=" + durableName);
+        LOGGER.info(
+                "NATS Streaming clusterId="
+                        + clusterId
+                        + ", natsUrl="
+                        + natsUrl
+                        + ", durableName="
+                        + durableName);
         LOGGER.info("NATS Stream Event Queue Provider initialized...");
     }
 
@@ -57,8 +63,12 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
     @Override
     @NonNull
     public ObservableQueue getQueue(String queueURI) {
-        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI,
-            q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI, scheduler));
+        NATSStreamObservableQueue queue =
+                queues.computeIfAbsent(
+                        queueURI,
+                        q ->
+                                new NATSStreamObservableQueue(
+                                        clusterId, natsUrl, durableName, queueURI, scheduler));
         if (queue.isClosed()) {
             queue.open();
         }

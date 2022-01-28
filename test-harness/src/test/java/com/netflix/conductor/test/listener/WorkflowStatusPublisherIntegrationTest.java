@@ -12,10 +12,23 @@
  */
 package com.netflix.conductor.test.listener;
 
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
-import static org.junit.Assert.assertEquals;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -27,29 +40,21 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = {
-    "conductor.workflow-status-listener.type=queue_publisher",
-    "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
-    "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
-    "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final"
-})
+@SpringBootTest(
+        properties = {
+            "conductor.workflow-status-listener.type=queue_publisher",
+            "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
+            "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
+            "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final"
+        })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class WorkflowStatusPublisherIntegrationTest {
 
@@ -60,20 +65,15 @@ public class WorkflowStatusPublisherIntegrationTest {
     private static final String INCOMPLETION_REASON = "test reason";
     private static final String DEFAULT_OWNER_EMAIL = "test@harness.com";
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
-    @Autowired
-    QueueDAO queueDAO;
+    @Autowired QueueDAO queueDAO;
 
-    @Autowired
-    protected MetadataService metadataService;
+    @Autowired protected MetadataService metadataService;
 
-    @Autowired
-    protected ExecutionService workflowExecutionService;
+    @Autowired protected ExecutionService workflowExecutionService;
 
-    @Autowired
-    protected WorkflowExecutor workflowExecutor;
+    @Autowired protected WorkflowExecutor workflowExecutor;
 
     @Before
     public void setUp() {
@@ -88,11 +88,13 @@ public class WorkflowStatusPublisherIntegrationTest {
 
     @After
     public void cleanUp() {
-        List<String> workflows = metadataService.getWorkflowDefs().stream()
-            .map(WorkflowDef::getName)
-            .collect(Collectors.toList());
+        List<String> workflows =
+                metadataService.getWorkflowDefs().stream()
+                        .map(WorkflowDef::getName)
+                        .collect(Collectors.toList());
         for (String wfName : workflows) {
-            List<String> running = workflowExecutionService.getRunningWorkflows(wfName, WORKFLOW_VERSION);
+            List<String> running =
+                    workflowExecutionService.getRunningWorkflows(wfName, WORKFLOW_VERSION);
             for (String wfid : running) {
                 workflowExecutor.terminateWorkflow(wfid, "cleanup");
             }
@@ -102,14 +104,19 @@ public class WorkflowStatusPublisherIntegrationTest {
 
     @Test
     public void testListenerOnTerminatedWorkflow() throws IOException {
-        String id = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, "testWorkflowTerminatedListener",
-            new HashMap<>());
+        String id =
+                startOrLoadWorkflowExecution(
+                        LINEAR_WORKFLOW_T1_T2,
+                        1,
+                        "testWorkflowTerminatedListener",
+                        new HashMap<>());
         workflowExecutor.terminateWorkflow(id, INCOMPLETION_REASON);
 
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
-        WorkflowSummary payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        WorkflowSummary payload =
+                objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
@@ -120,7 +127,8 @@ public class WorkflowStatusPublisherIntegrationTest {
         callbackMessages = queueDAO.pollMessages(FINALIZED_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
-        payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        payload =
+                objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
@@ -148,8 +156,9 @@ public class WorkflowStatusPublisherIntegrationTest {
 
         metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
 
-        String id = startOrLoadWorkflowExecution(workflowDef.getName(), 1, "testWorkflowCompletedListener",
-            new HashMap<>());
+        String id =
+                startOrLoadWorkflowExecution(
+                        workflowDef.getName(), 1, "testWorkflowCompletedListener", new HashMap<>());
 
         List<Task> tasks = workflowExecutionService.getTasks("junit_task_1", null, 1);
         tasks.get(0).setStatus(COMPLETED);
@@ -160,7 +169,8 @@ public class WorkflowStatusPublisherIntegrationTest {
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
-        WorkflowSummary payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        WorkflowSummary payload =
+                objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());
@@ -170,7 +180,8 @@ public class WorkflowStatusPublisherIntegrationTest {
         callbackMessages = queueDAO.pollMessages(FINALIZED_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
 
-        payload = objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
+        payload =
+                objectMapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
         assertEquals(id, callbackMessages.get(0).getId());
         assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());
@@ -180,7 +191,8 @@ public class WorkflowStatusPublisherIntegrationTest {
     @SuppressWarnings("BusyWait")
     private void checkIfWorkflowIsCompleted(String id) throws InterruptedException {
         int statusRetrieveAttempts = 0;
-        while (workflowExecutor.getWorkflow(id, false).getStatus() != Workflow.WorkflowStatus.COMPLETED) {
+        while (workflowExecutor.getWorkflow(id, false).getStatus()
+                != Workflow.WorkflowStatus.COMPLETED) {
             if (statusRetrieveAttempts > 5) {
                 break;
             }
@@ -189,8 +201,8 @@ public class WorkflowStatusPublisherIntegrationTest {
         }
     }
 
-    private String startOrLoadWorkflowExecution(String workflowName, int version, String correlationId,
-        Map<String, Object> input) {
+    private String startOrLoadWorkflowExecution(
+            String workflowName, int version, String correlationId, Map<String, Object> input) {
         return workflowExecutor.startWorkflow(workflowName, version, correlationId, input, null);
     }
 }

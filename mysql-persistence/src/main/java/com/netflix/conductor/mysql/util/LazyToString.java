@@ -14,16 +14,12 @@ package com.netflix.conductor.mysql.util;
 
 import java.util.function.Supplier;
 
-/**
- * Functional class to support the lazy execution of a String result.
- */
+/** Functional class to support the lazy execution of a String result. */
 public class LazyToString {
 
     private final Supplier<String> supplier;
 
-    /**
-     * @param supplier Supplier to execute when {@link #toString()} is called.
-     */
+    /** @param supplier Supplier to execute when {@link #toString()} is called. */
     public LazyToString(Supplier<String> supplier) {
         this.supplier = supplier;
     }

@@ -12,30 +12,35 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.dao.PollDataDAO;
-import com.netflix.conductor.redis.jedis.JedisProxy;
-import com.netflix.conductor.redis.config.RedisProperties;
-import com.netflix.conductor.redis.config.AnyRedisCondition;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.dao.PollDataDAO;
+import com.netflix.conductor.redis.config.AnyRedisCondition;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.jedis.JedisProxy;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 
 @Component
 @Conditional(AnyRedisCondition.class)
 public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
-    private final static String POLL_DATA = "POLL_DATA";
+    private static final String POLL_DATA = "POLL_DATA";
 
-    public RedisPollDataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
-        ConductorProperties conductorProperties, RedisProperties properties) {
+    public RedisPollDataDAO(
+            JedisProxy jedisProxy,
+            ObjectMapper objectMapper,
+            ConductorProperties conductorProperties,
+            RedisProperties properties) {
         super(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
@@ -62,7 +67,8 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
         String pollDataJsonString = jedisProxy.hget(key, field);
         recordRedisDaoRequests("getPollData");
-        recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
+        recordRedisDaoPayloadSize(
+                "getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
 
         PollData pollData = null;
         if (StringUtils.isNotBlank(pollDataJsonString)) {
@@ -80,11 +86,14 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
         Map<String, String> pMapdata = jedisProxy.hgetAll(key);
         List<PollData> pollData = new ArrayList<>();
         if (pMapdata != null) {
-            pMapdata.values().forEach(pollDataJsonString -> {
-                pollData.add(readValue(pollDataJsonString, PollData.class));
-                recordRedisDaoRequests("getPollData");
-                recordRedisDaoPayloadSize("getPollData", pollDataJsonString.length(), "n/a", "n/a");
-            });
+            pMapdata.values()
+                    .forEach(
+                            pollDataJsonString -> {
+                                pollData.add(readValue(pollDataJsonString, PollData.class));
+                                recordRedisDaoRequests("getPollData");
+                                recordRedisDaoPayloadSize(
+                                        "getPollData", pollDataJsonString.length(), "n/a", "n/a");
+                            });
         }
         return pollData;
     }

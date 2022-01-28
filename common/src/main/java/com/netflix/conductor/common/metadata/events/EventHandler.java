@@ -12,23 +12,23 @@
  */
 package com.netflix.conductor.common.metadata.events;
 
-import com.netflix.conductor.annotations.protogen.ProtoEnum;
-import com.netflix.conductor.annotations.protogen.ProtoField;
-import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.google.protobuf.Any;
-import io.swagger.v3.oas.annotations.Hidden;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Defines an event handler
- */
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
+import com.google.protobuf.Any;
+import io.swagger.v3.oas.annotations.Hidden;
+
+/** Defines an event handler */
 @ProtoMessage
 public class EventHandler {
 
@@ -54,90 +54,64 @@ public class EventHandler {
     @ProtoField(id = 6)
     private String evaluatorType;
 
-    public EventHandler() {
+    public EventHandler() {}
 
-    }
-
-    /**
-     * @return the name MUST be unique within a conductor instance
-     */
+    /** @return the name MUST be unique within a conductor instance */
     public String getName() {
         return name;
     }
 
-    /**
-     * @param name the name to set
-     */
+    /** @param name the name to set */
     public void setName(String name) {
         this.name = name;
     }
 
-    /**
-     * @return the event
-     */
+    /** @return the event */
     public String getEvent() {
         return event;
     }
 
-    /**
-     * @param event the event to set
-     */
+    /** @param event the event to set */
     public void setEvent(String event) {
         this.event = event;
     }
 
-    /**
-     * @return the condition
-     */
+    /** @return the condition */
     public String getCondition() {
         return condition;
     }
 
-    /**
-     * @param condition the condition to set
-     */
+    /** @param condition the condition to set */
     public void setCondition(String condition) {
         this.condition = condition;
     }
 
-    /**
-     * @return the actions
-     */
+    /** @return the actions */
     public List<Action> getActions() {
         return actions;
     }
 
-    /**
-     * @param actions the actions to set
-     */
+    /** @param actions the actions to set */
     public void setActions(List<Action> actions) {
         this.actions = actions;
     }
 
-    /**
-     * @return the active
-     */
+    /** @return the active */
     public boolean isActive() {
         return active;
     }
 
-    /**
-     * @param active if set to false, the event handler is deactivated
-     */
+    /** @param active if set to false, the event handler is deactivated */
     public void setActive(boolean active) {
         this.active = active;
     }
 
-    /**
-     * @return the evaluator type
-     */
+    /** @return the evaluator type */
     public String getEvaluatorType() {
         return evaluatorType;
     }
 
-    /**
-     * @param evaluatorType the evaluatorType to set
-     */
+    /** @param evaluatorType the evaluatorType to set */
     public void setEvaluatorType(String evaluatorType) {
         this.evaluatorType = evaluatorType;
     }
@@ -147,7 +121,9 @@ public class EventHandler {
 
         @ProtoEnum
         public enum Type {
-            start_workflow, complete_task, fail_task
+            start_workflow,
+            complete_task,
+            fail_task
         }
 
         @ProtoField(id = 1)
@@ -165,72 +141,55 @@ public class EventHandler {
         @ProtoField(id = 5)
         private boolean expandInlineJSON;
 
-        /**
-         * @return the action
-         */
+        /** @return the action */
         public Type getAction() {
             return action;
         }
 
-        /**
-         * @param action the action to set
-         */
+        /** @param action the action to set */
         public void setAction(Type action) {
             this.action = action;
         }
 
-        /**
-         * @return the start_workflow
-         */
+        /** @return the start_workflow */
         public StartWorkflow getStart_workflow() {
             return start_workflow;
         }
 
-        /**
-         * @param start_workflow the start_workflow to set
-         */
+        /** @param start_workflow the start_workflow to set */
         public void setStart_workflow(StartWorkflow start_workflow) {
             this.start_workflow = start_workflow;
         }
 
-        /**
-         * @return the complete_task
-         */
+        /** @return the complete_task */
         public TaskDetails getComplete_task() {
             return complete_task;
         }
 
-        /**
-         * @param complete_task the complete_task to set
-         */
+        /** @param complete_task the complete_task to set */
         public void setComplete_task(TaskDetails complete_task) {
             this.complete_task = complete_task;
         }
 
-        /**
-         * @return the fail_task
-         */
+        /** @return the fail_task */
         public TaskDetails getFail_task() {
             return fail_task;
         }
 
-        /**
-         * @param fail_task the fail_task to set
-         */
+        /** @param fail_task the fail_task to set */
         public void setFail_task(TaskDetails fail_task) {
             this.fail_task = fail_task;
         }
 
         /**
-         * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document
+         * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a
+         *     full json document
          */
         public void setExpandInlineJSON(boolean expandInlineJSON) {
             this.expandInlineJSON = expandInlineJSON;
         }
 
-        /**
-         * @return true if the json strings within the payload should be expanded.
-         */
+        /** @return true if the json strings within the payload should be expanded. */
         public boolean isExpandInlineJSON() {
             return expandInlineJSON;
         }
@@ -255,44 +214,32 @@ public class EventHandler {
         @ProtoField(id = 5)
         private String taskId;
 
-        /**
-         * @return the workflowId
-         */
+        /** @return the workflowId */
         public String getWorkflowId() {
             return workflowId;
         }
 
-        /**
-         * @param workflowId the workflowId to set
-         */
+        /** @param workflowId the workflowId to set */
         public void setWorkflowId(String workflowId) {
             this.workflowId = workflowId;
         }
 
-        /**
-         * @return the taskRefName
-         */
+        /** @return the taskRefName */
         public String getTaskRefName() {
             return taskRefName;
         }
 
-        /**
-         * @param taskRefName the taskRefName to set
-         */
+        /** @param taskRefName the taskRefName to set */
         public void setTaskRefName(String taskRefName) {
             this.taskRefName = taskRefName;
         }
 
-        /**
-         * @return the output
-         */
+        /** @return the output */
         public Map<String, Object> getOutput() {
             return output;
         }
 
-        /**
-         * @param output the output to set
-         */
+        /** @param output the output to set */
         public void setOutput(Map<String, Object> output) {
             this.output = output;
         }
@@ -305,16 +252,12 @@ public class EventHandler {
             this.outputMessage = outputMessage;
         }
 
-        /**
-         * @return the taskId
-         */
+        /** @return the taskId */
         public String getTaskId() {
             return taskId;
         }
 
-        /**
-         * @param taskId the taskId to set
-         */
+        /** @param taskId the taskId to set */
         public void setTaskId(String taskId) {
             this.taskId = taskId;
         }
@@ -342,59 +285,42 @@ public class EventHandler {
         @ProtoField(id = 6)
         private Map<String, String> taskToDomain;
 
-        /**
-         * @return the name
-         */
+        /** @return the name */
         public String getName() {
             return name;
         }
 
-        /**
-         * @param name the name to set
-         */
+        /** @param name the name to set */
         public void setName(String name) {
             this.name = name;
         }
 
-        /**
-         * @return the version
-         */
+        /** @return the version */
         public Integer getVersion() {
             return version;
         }
 
-        /**
-         * @param version the version to set
-         */
+        /** @param version the version to set */
         public void setVersion(Integer version) {
             this.version = version;
         }
 
-
-        /**
-         * @return the correlationId
-         */
+        /** @return the correlationId */
         public String getCorrelationId() {
             return correlationId;
         }
 
-        /**
-         * @param correlationId the correlationId to set
-         */
+        /** @param correlationId the correlationId to set */
         public void setCorrelationId(String correlationId) {
             this.correlationId = correlationId;
         }
 
-        /**
-         * @return the input
-         */
+        /** @return the input */
         public Map<String, Object> getInput() {
             return input;
         }
 
-        /**
-         * @param input the input to set
-         */
+        /** @param input the input to set */
         public void setInput(Map<String, Object> input) {
             this.input = input;
         }

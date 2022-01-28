@@ -12,6 +12,16 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+
+import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.service.EventService;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -21,20 +31,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.service.EventService;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-
 public class EventResourceTest {
 
     private EventResource eventResource;
 
-    @Mock
-    private EventService mockEventService;
+    @Mock private EventService mockEventService;
 
     @Before
     public void setUp() {
@@ -68,7 +69,8 @@ public class EventResourceTest {
         eventResource.addEventHandler(eventHandler);
         List<EventHandler> listOfEventHandler = new ArrayList<>();
         listOfEventHandler.add(eventHandler);
-        when(mockEventService.getEventHandlersForEvent(anyString(), anyBoolean())).thenReturn(listOfEventHandler);
+        when(mockEventService.getEventHandlersForEvent(anyString(), anyBoolean()))
+                .thenReturn(listOfEventHandler);
         assertEquals(listOfEventHandler, eventResource.getEventHandlersForEvent("testEvent", true));
     }
 

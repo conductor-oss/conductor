@@ -12,10 +12,10 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.Objects;
+
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
-
-import java.util.Objects;
 
 @ProtoMessage
 public class PollData {
@@ -85,10 +85,10 @@ public class PollData {
             return false;
         }
         PollData pollData = (PollData) o;
-        return getLastPollTime() == pollData.getLastPollTime() &&
-            Objects.equals(getQueueName(), pollData.getQueueName()) &&
-            Objects.equals(getDomain(), pollData.getDomain()) &&
-            Objects.equals(getWorkerId(), pollData.getWorkerId());
+        return getLastPollTime() == pollData.getLastPollTime()
+                && Objects.equals(getQueueName(), pollData.getQueueName())
+                && Objects.equals(getDomain(), pollData.getDomain())
+                && Objects.equals(getWorkerId(), pollData.getWorkerId());
     }
 
     @Override
@@ -98,11 +98,18 @@ public class PollData {
 
     @Override
     public String toString() {
-        return "PollData{" +
-            "queueName='" + queueName + '\'' +
-            ", domain='" + domain + '\'' +
-            ", workerId='" + workerId + '\'' +
-            ", lastPollTime=" + lastPollTime +
-            '}';
+        return "PollData{"
+                + "queueName='"
+                + queueName
+                + '\''
+                + ", domain='"
+                + domain
+                + '\''
+                + ", workerId='"
+                + workerId
+                + '\''
+                + ", lastPollTime="
+                + lastPollTime
+                + '}';
     }
 }

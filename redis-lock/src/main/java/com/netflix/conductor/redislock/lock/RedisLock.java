@@ -12,9 +12,8 @@
  */
 package com.netflix.conductor.redislock.lock;
 
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.redislock.config.RedisLockProperties;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
@@ -22,7 +21,9 @@ import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.redislock.config.RedisLockProperties;
 
 public class RedisLock implements Lock {
 
@@ -55,11 +56,11 @@ public class RedisLock implements Lock {
     }
 
     /**
-     * @param lockId    resource to lock on
+     * @param lockId resource to lock on
      * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
-     * @param leaseTime Lock lease expiration duration. Redisson default is -1, meaning it holds the lock until
-     *                  explicitly unlocked.
-     * @param unit      time unit
+     * @param leaseTime Lock lease expiration duration. Redisson default is -1, meaning it holds the
+     *     lock until explicitly unlocked.
+     * @param unit time unit
      * @return
      */
     @Override
@@ -98,8 +99,10 @@ public class RedisLock implements Lock {
         LOGGER.error("Failed to acquireLock for lockId: {}", lockId, e);
         Monitors.recordAcquireLockFailure(e.getClass().getName());
         // A Valid failure to acquire lock when another thread has acquired it returns false.
-        // However, when an exception is thrown while acquiring lock, due to connection or others issues,
-        // we can optionally continue without a "lock" to not block executions until Locking service is available.
+        // However, when an exception is thrown while acquiring lock, due to connection or others
+        // issues,
+        // we can optionally continue without a "lock" to not block executions until Locking service
+        // is available.
         return properties.isIgnoreLockingExceptions();
     }
 }

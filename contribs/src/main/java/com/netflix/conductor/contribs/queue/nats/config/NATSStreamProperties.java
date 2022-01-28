@@ -12,30 +12,23 @@
  */
 package com.netflix.conductor.contribs.queue.nats.config;
 
-import io.nats.client.Nats;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import io.nats.client.Nats;
 
 @ConfigurationProperties("conductor.event-queues.nats-stream")
 public class NATSStreamProperties {
 
-    /**
-     * The cluster id of the STAN session
-     */
+    /** The cluster id of the STAN session */
     private String clusterId = "test-cluster";
 
-    /**
-     * The durable subscriber name for the subscription
-     */
+    /** The durable subscriber name for the subscription */
     private String durableName = null;
 
-    /**
-     * The NATS connection url
-     */
+    /** The NATS connection url */
     private String url = Nats.DEFAULT_URL;
 
-    /**
-     * The prefix to be used for the default listener queues
-     */
+    /** The prefix to be used for the default listener queues */
     private String listenerQueuePrefix = "";
 
     public String getClusterId() {

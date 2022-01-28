@@ -12,6 +12,14 @@
  */
 package com.netflix.conductor.grpc.server.service;
 
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -24,15 +32,9 @@ import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.TaskService;
+
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
 
 @Service("grpcTaskService")
 public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
@@ -48,24 +50,29 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private final int maxSearchSize;
     private final ExecutionService executionService;
 
-    public TaskServiceImpl(ExecutionService executionService, TaskService taskService,
-                           @Value("${workflow.max.search.size:5000}") int maxSearchSize) {
+    public TaskServiceImpl(
+            ExecutionService executionService,
+            TaskService taskService,
+            @Value("${workflow.max.search.size:5000}") int maxSearchSize) {
         this.executionService = executionService;
         this.taskService = taskService;
         this.maxSearchSize = maxSearchSize;
     }
 
     @Override
-    public void poll(TaskServicePb.PollRequest req, StreamObserver<TaskServicePb.PollResponse> response) {
+    public void poll(
+            TaskServicePb.PollRequest req, StreamObserver<TaskServicePb.PollResponse> response) {
         try {
-            List<Task> tasks = executionService.poll(req.getTaskType(), req.getWorkerId(),
-                GRPC_HELPER.optional(req.getDomain()), 1, POLL_TIMEOUT_MS);
+            List<Task> tasks =
+                    executionService.poll(
+                            req.getTaskType(),
+                            req.getWorkerId(),
+                            GRPC_HELPER.optional(req.getDomain()),
+                            1,
+                            POLL_TIMEOUT_MS);
             if (!tasks.isEmpty()) {
                 TaskPb.Task t = PROTO_MAPPER.toProto(tasks.get(0));
-                response.onNext(TaskServicePb.PollResponse.newBuilder()
-                    .setTask(t)
-                    .build()
-                );
+                response.onNext(TaskServicePb.PollResponse.newBuilder().setTask(t).build());
             }
             response.onCompleted();
         } catch (Exception e) {
@@ -74,21 +81,30 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void batchPoll(TaskServicePb.BatchPollRequest req, StreamObserver<TaskPb.Task> response) {
+    public void batchPoll(
+            TaskServicePb.BatchPollRequest req, StreamObserver<TaskPb.Task> response) {
         final int count = GRPC_HELPER.optionalOr(req.getCount(), 1);
         final int timeout = GRPC_HELPER.optionalOr(req.getTimeout(), POLL_TIMEOUT_MS);
 
         if (timeout > MAX_POLL_TIMEOUT_MS) {
-            response.onError(Status.INVALID_ARGUMENT
-                .withDescription("longpoll timeout cannot be longer than " + MAX_POLL_TIMEOUT_MS + "ms")
-                .asRuntimeException()
-            );
+            response.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription(
+                                    "longpoll timeout cannot be longer than "
+                                            + MAX_POLL_TIMEOUT_MS
+                                            + "ms")
+                            .asRuntimeException());
             return;
         }
 
         try {
-            List<Task> polledTasks = taskService.batchPoll(req.getTaskType(), req.getWorkerId(),
-                GRPC_HELPER.optional(req.getDomain()), count, timeout);
+            List<Task> polledTasks =
+                    taskService.batchPoll(
+                            req.getTaskType(),
+                            req.getWorkerId(),
+                            GRPC_HELPER.optional(req.getDomain()),
+                            count,
+                            timeout);
             LOGGER.info("polled tasks: " + polledTasks);
             polledTasks.stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
             response.onCompleted();
@@ -98,17 +114,17 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void updateTask(TaskServicePb.UpdateTaskRequest req,
-        StreamObserver<TaskServicePb.UpdateTaskResponse> response) {
+    public void updateTask(
+            TaskServicePb.UpdateTaskRequest req,
+            StreamObserver<TaskServicePb.UpdateTaskResponse> response) {
         try {
             TaskResult task = PROTO_MAPPER.fromProto(req.getResult());
             taskService.updateTask(task);
 
             response.onNext(
-                TaskServicePb.UpdateTaskResponse.newBuilder()
-                    .setTaskId(task.getTaskId())
-                    .build()
-            );
+                    TaskServicePb.UpdateTaskResponse.newBuilder()
+                            .setTaskId(task.getTaskId())
+                            .build());
             response.onCompleted();
         } catch (Exception e) {
             GRPC_HELPER.onError(response, e);
@@ -116,83 +132,84 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void addLog(TaskServicePb.AddLogRequest req, StreamObserver<TaskServicePb.AddLogResponse> response) {
+    public void addLog(
+            TaskServicePb.AddLogRequest req,
+            StreamObserver<TaskServicePb.AddLogResponse> response) {
         taskService.log(req.getTaskId(), req.getLog());
         response.onNext(TaskServicePb.AddLogResponse.getDefaultInstance());
         response.onCompleted();
     }
 
     @Override
-    public void getTaskLogs(TaskServicePb.GetTaskLogsRequest req,
-        StreamObserver<TaskServicePb.GetTaskLogsResponse> response) {
+    public void getTaskLogs(
+            TaskServicePb.GetTaskLogsRequest req,
+            StreamObserver<TaskServicePb.GetTaskLogsResponse> response) {
         List<TaskExecLog> logs = taskService.getTaskLogs(req.getTaskId());
-        response.onNext(TaskServicePb.GetTaskLogsResponse.newBuilder()
-            .addAllLogs(logs.stream().map(PROTO_MAPPER::toProto)::iterator)
-            .build()
-        );
+        response.onNext(
+                TaskServicePb.GetTaskLogsResponse.newBuilder()
+                        .addAllLogs(logs.stream().map(PROTO_MAPPER::toProto)::iterator)
+                        .build());
         response.onCompleted();
     }
 
     @Override
-    public void getTask(TaskServicePb.GetTaskRequest req, StreamObserver<TaskServicePb.GetTaskResponse> response) {
+    public void getTask(
+            TaskServicePb.GetTaskRequest req,
+            StreamObserver<TaskServicePb.GetTaskResponse> response) {
         try {
             Task task = taskService.getTask(req.getTaskId());
             if (task == null) {
-                response.onError(Status.NOT_FOUND
-                    .withDescription("No such task found by id=" + req.getTaskId())
-                    .asRuntimeException()
-                );
+                response.onError(
+                        Status.NOT_FOUND
+                                .withDescription("No such task found by id=" + req.getTaskId())
+                                .asRuntimeException());
             } else {
                 response.onNext(
-                    TaskServicePb.GetTaskResponse.newBuilder()
-                        .setTask(PROTO_MAPPER.toProto(task))
-                        .build()
-                );
+                        TaskServicePb.GetTaskResponse.newBuilder()
+                                .setTask(PROTO_MAPPER.toProto(task))
+                                .build());
                 response.onCompleted();
             }
         } catch (Exception e) {
             GRPC_HELPER.onError(response, e);
         }
-
     }
 
     @Override
-    public void getQueueSizesForTasks(TaskServicePb.QueueSizesRequest req,
-        StreamObserver<TaskServicePb.QueueSizesResponse> response) {
+    public void getQueueSizesForTasks(
+            TaskServicePb.QueueSizesRequest req,
+            StreamObserver<TaskServicePb.QueueSizesResponse> response) {
         Map<String, Integer> sizes = taskService.getTaskQueueSizes(req.getTaskTypesList());
         response.onNext(
-            TaskServicePb.QueueSizesResponse.newBuilder()
-                .putAllQueueForTask(sizes)
-                .build()
-        );
+                TaskServicePb.QueueSizesResponse.newBuilder().putAllQueueForTask(sizes).build());
         response.onCompleted();
     }
 
     @Override
-    public void getQueueInfo(TaskServicePb.QueueInfoRequest req,
-        StreamObserver<TaskServicePb.QueueInfoResponse> response) {
+    public void getQueueInfo(
+            TaskServicePb.QueueInfoRequest req,
+            StreamObserver<TaskServicePb.QueueInfoResponse> response) {
         Map<String, Long> queueInfo = taskService.getAllQueueDetails();
 
         response.onNext(
-            TaskServicePb.QueueInfoResponse.newBuilder()
-                .putAllQueues(queueInfo)
-                .build()
-        );
+                TaskServicePb.QueueInfoResponse.newBuilder().putAllQueues(queueInfo).build());
         response.onCompleted();
     }
 
     @Override
-    public void getQueueAllInfo(TaskServicePb.QueueAllInfoRequest req,
-        StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
+    public void getQueueAllInfo(
+            TaskServicePb.QueueAllInfoRequest req,
+            StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
         Map<String, Map<String, Map<String, Long>>> info = taskService.allVerbose();
-        TaskServicePb.QueueAllInfoResponse.Builder queuesBuilder = TaskServicePb.QueueAllInfoResponse.newBuilder();
+        TaskServicePb.QueueAllInfoResponse.Builder queuesBuilder =
+                TaskServicePb.QueueAllInfoResponse.newBuilder();
 
         for (Map.Entry<String, Map<String, Map<String, Long>>> queue : info.entrySet()) {
             final String queueName = queue.getKey();
             final Map<String, Map<String, Long>> queueShards = queue.getValue();
 
             TaskServicePb.QueueAllInfoResponse.QueueInfo.Builder queueInfoBuilder =
-                TaskServicePb.QueueAllInfoResponse.QueueInfo.newBuilder();
+                    TaskServicePb.QueueAllInfoResponse.QueueInfo.newBuilder();
 
             for (Map.Entry<String, Map<String, Long>> shard : queueShards.entrySet()) {
                 final String shardName = shard.getKey();
@@ -202,12 +219,12 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                 // shardInfo is an immutable map with predefined keys, so we can always
                 // access 'size' and 'uacked'. It would be better if shardInfo
                 // were actually a POJO.
-                queueInfoBuilder.putShards(shardName,
-                    TaskServicePb.QueueAllInfoResponse.ShardInfo.newBuilder()
-                        .setSize(shardInfo.get("size"))
-                        .setUacked(shardInfo.get("uacked"))
-                        .build()
-                );
+                queueInfoBuilder.putShards(
+                        shardName,
+                        TaskServicePb.QueueAllInfoResponse.ShardInfo.newBuilder()
+                                .setSize(shardInfo.get("size"))
+                                .setUacked(shardInfo.get("uacked"))
+                                .build());
             }
 
             queuesBuilder.putQueues(queueName, queueInfoBuilder.build());
@@ -218,7 +235,8 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void search(SearchPb.Request req, StreamObserver<TaskServicePb.TaskSummarySearchResult> response) {
+    public void search(
+            SearchPb.Request req, StreamObserver<TaskServicePb.TaskSummarySearchResult> response) {
         final int start = req.getStart();
         final int size = GRPC_HELPER.optionalOr(req.getSize(), maxSearchSize);
         final String sort = req.getSort();
@@ -227,25 +245,26 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         if (size > maxSearchSize) {
             response.onError(
                     Status.INVALID_ARGUMENT
-                            .withDescription("Cannot return more than " + maxSearchSize + " results")
-                            .asRuntimeException()
-            );
+                            .withDescription(
+                                    "Cannot return more than " + maxSearchSize + " results")
+                            .asRuntimeException());
             return;
         }
-        SearchResult<TaskSummary> searchResult = taskService.search(start, size, sort, freeText, query);
+        SearchResult<TaskSummary> searchResult =
+                taskService.search(start, size, sort, freeText, query);
         response.onNext(
                 TaskServicePb.TaskSummarySearchResult.newBuilder()
                         .setTotalHits(searchResult.getTotalHits())
                         .addAllResults(
-                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)::iterator
-                        ).build()
-        );
+                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)
+                                        ::iterator)
+                        .build());
         response.onCompleted();
     }
 
     @Override
-    public void searchV2(SearchPb.Request req,
-                         StreamObserver<TaskServicePb.TaskSearchResult> response) {
+    public void searchV2(
+            SearchPb.Request req, StreamObserver<TaskServicePb.TaskSearchResult> response) {
         final int start = req.getStart();
         final int size = GRPC_HELPER.optionalOr(req.getSize(), maxSearchSize);
         final String sort = req.getSort();
@@ -255,9 +274,9 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         if (size > maxSearchSize) {
             response.onError(
                     Status.INVALID_ARGUMENT
-                            .withDescription("Cannot return more than " + maxSearchSize + " results")
-                            .asRuntimeException()
-            );
+                            .withDescription(
+                                    "Cannot return more than " + maxSearchSize + " results")
+                            .asRuntimeException());
             return;
         }
 
@@ -266,10 +285,9 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                 TaskServicePb.TaskSearchResult.newBuilder()
                         .setTotalHits(searchResult.getTotalHits())
                         .addAllResults(
-                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)::iterator
-                        ).build()
-        );
+                                searchResult.getResults().stream().map(PROTO_MAPPER::toProto)
+                                        ::iterator)
+                        .build());
         response.onCompleted();
-
     }
 }

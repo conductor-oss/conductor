@@ -12,13 +12,11 @@
  */
 package com.netflix.conductor.core;
 
-/**
- * Store the authentication context, app or user name or both
- */
+/** Store the authentication context, app or user name or both */
 public class WorkflowContext {
 
-    public static final ThreadLocal<WorkflowContext> THREAD_LOCAL = InheritableThreadLocal
-        .withInitial(() -> new WorkflowContext("", ""));
+    public static final ThreadLocal<WorkflowContext> THREAD_LOCAL =
+            InheritableThreadLocal.withInitial(() -> new WorkflowContext("", ""));
 
     private final String clientApp;
 
@@ -46,16 +44,12 @@ public class WorkflowContext {
         THREAD_LOCAL.remove();
     }
 
-    /**
-     * @return the clientApp
-     */
+    /** @return the clientApp */
     public String getClientApp() {
         return clientApp;
     }
 
-    /**
-     * @return the username
-     */
+    /** @return the username */
     public String getUserName() {
         return userName;
     }

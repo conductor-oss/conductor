@@ -9,20 +9,17 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- */package com.netflix.conductor.postgres.util;
+ */
+package com.netflix.conductor.postgres.util;
 
 import java.util.function.Supplier;
 
-/**
- * Functional class to support the lazy execution of a String result.
- */
+/** Functional class to support the lazy execution of a String result. */
 public class LazyToString {
 
     private final Supplier<String> supplier;
 
-    /**
-     * @param supplier Supplier to execute when {@link #toString()} is called.
-     */
+    /** @param supplier Supplier to execute when {@link #toString()} is called. */
     public LazyToString(Supplier<String> supplier) {
         this.supplier = supplier;
     }

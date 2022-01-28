@@ -14,17 +14,14 @@ package com.netflix.conductor.common.validation;
 
 import java.util.StringJoiner;
 
-/**
- * Captures a validation error that can be returned in {@link ErrorResponse}.
- */
+/** Captures a validation error that can be returned in {@link ErrorResponse}. */
 public class ValidationError {
 
     private String path;
     private String message;
     private String invalidValue;
 
-    public ValidationError() {
-    }
+    public ValidationError() {}
 
     public ValidationError(String path, String message, String invalidValue) {
         this.path = path;
@@ -59,9 +56,9 @@ public class ValidationError {
     @Override
     public String toString() {
         return new StringJoiner(", ", ValidationError.class.getSimpleName() + "[", "]")
-            .add("path='" + path + "'")
-            .add("message='" + message + "'")
-            .add("invalidValue='" + invalidValue + "'")
-            .toString();
+                .add("path='" + path + "'")
+                .add("message='" + message + "'")
+                .add("invalidValue='" + invalidValue + "'")
+                .toString();
     }
 }

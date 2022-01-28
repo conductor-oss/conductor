@@ -12,11 +12,12 @@
  */
 package com.netflix.conductor.es6.dao.query.parser;
 
-import com.netflix.conductor.es6.dao.query.parser.internal.AbstractNode;
-import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
+import java.io.InputStream;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
-import java.io.InputStream;
+import com.netflix.conductor.es6.dao.query.parser.internal.AbstractNode;
+import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
 
 public class GroupedExpression extends AbstractNode implements FilterProvider {
 
@@ -42,9 +43,7 @@ public class GroupedExpression extends AbstractNode implements FilterProvider {
         return "(" + expression + ")";
     }
 
-    /**
-     * @return the expression
-     */
+    /** @return the expression */
     public Expression getExpression() {
         return expression;
     }

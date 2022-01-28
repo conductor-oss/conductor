@@ -21,7 +21,8 @@ public class QueueUtilsTest {
     public void queueNameWithTypeAndIsolationGroup() {
         String queueNameGenerated = QueueUtils.getQueueName("tType", null, "isolationGroup", null);
         String queueNameGeneratedOnlyType = QueueUtils.getQueueName("tType", null, null, null);
-        String queueNameGeneratedWithAllValues = QueueUtils.getQueueName("tType", "domain", "iso", "eN");
+        String queueNameGeneratedWithAllValues =
+                QueueUtils.getQueueName("tType", "domain", "iso", "eN");
 
         Assert.assertEquals("tType-isolationGroup", queueNameGenerated);
         Assert.assertEquals("tType", queueNameGeneratedOnlyType);
@@ -47,14 +48,16 @@ public class QueueUtilsTest {
 
     @Test
     public void testGetQueueExecutionNameSpaceWithIsolationGroup() {
-        Assert.assertEquals(QueueUtils.getExecutionNameSpace("domain:test@executionNameSpace-isolated"),
-            "executionNameSpace");
+        Assert.assertEquals(
+                QueueUtils.getExecutionNameSpace("domain:test@executionNameSpace-isolated"),
+                "executionNameSpace");
     }
 
     @Test
     public void testGetQueueName() {
-        Assert.assertEquals("domain:taskType@eN-isolated",
-            QueueUtils.getQueueName("taskType", "domain", "isolated", "eN"));
+        Assert.assertEquals(
+                "domain:taskType@eN-isolated",
+                QueueUtils.getQueueName("taskType", "domain", "isolated", "eN"));
     }
 
     @Test

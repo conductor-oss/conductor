@@ -1,24 +1,25 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.contribs.tasks.kafka;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.utils.Utils;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -33,13 +34,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.Utils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_KAFKA_PUBLISH;
 
@@ -50,11 +52,14 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
     static final String REQUEST_PARAMETER_NAME = "kafka_request";
     private static final String MISSING_REQUEST =
-        "Missing Kafka request. Task input MUST have a '" + REQUEST_PARAMETER_NAME
-            + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
+            "Missing Kafka request. Task input MUST have a '"
+                    + REQUEST_PARAMETER_NAME
+                    + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
     private static final String MISSING_BOOT_STRAP_SERVERS = "No boot strap servers specified";
-    private static final String MISSING_KAFKA_TOPIC = "Missing Kafka topic. See documentation for KafkaTask for required input parameters";
-    private static final String MISSING_KAFKA_VALUE = "Missing Kafka value.  See documentation for KafkaTask for required input parameters";
+    private static final String MISSING_KAFKA_TOPIC =
+            "Missing Kafka topic. See documentation for KafkaTask for required input parameters";
+    private static final String MISSING_KAFKA_VALUE =
+            "Missing Kafka value.  See documentation for KafkaTask for required input parameters";
     private static final String FAILED_TO_INVOKE = "Failed to invoke kafka task due to: ";
 
     private final ObjectMapper objectMapper;
@@ -112,11 +117,18 @@ public class KafkaPublishTask extends WorkflowSystemTask {
                 LOGGER.debug("Published message {}, Time taken {}", input, timeTakenToCompleteTask);
 
             } catch (ExecutionException ec) {
-                LOGGER.error("Failed to invoke kafka task: {} - execution exception ", task.getTaskId(), ec);
+                LOGGER.error(
+                        "Failed to invoke kafka task: {} - execution exception ",
+                        task.getTaskId(),
+                        ec);
                 markTaskAsFailed(task, FAILED_TO_INVOKE + ec.getMessage());
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to invoke kafka task:{} for input {} - unknown exception", task.getTaskId(), input, e);
+            LOGGER.error(
+                    "Failed to invoke kafka task:{} for input {} - unknown exception",
+                    task.getTaskId(),
+                    input,
+                    e);
             markTaskAsFailed(task, FAILED_TO_INVOKE + e.getMessage());
         }
     }
@@ -143,11 +155,22 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
         Object key = getKey(input);
 
-        Iterable<Header> headers = input.getHeaders().entrySet().stream()
-            .map(header -> new RecordHeader(header.getKey(), String.valueOf(header.getValue()).getBytes()))
-            .collect(Collectors.toList());
-        ProducerRecord rec = new ProducerRecord(input.getTopic(), null,
-            null, key, objectMapper.writeValueAsString(input.getValue()), headers);
+        Iterable<Header> headers =
+                input.getHeaders().entrySet().stream()
+                        .map(
+                                header ->
+                                        new RecordHeader(
+                                                header.getKey(),
+                                                String.valueOf(header.getValue()).getBytes()))
+                        .collect(Collectors.toList());
+        ProducerRecord rec =
+                new ProducerRecord(
+                        input.getTopic(),
+                        null,
+                        null,
+                        key,
+                        objectMapper.writeValueAsString(input.getValue()),
+                        headers);
 
         Future send = producer.send(rec);
 
@@ -185,7 +208,6 @@ public class KafkaPublishTask extends WorkflowSystemTask {
     public boolean isAsync() {
         return true;
     }
-
 
     public static class Input {
 
@@ -265,16 +287,27 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
         @Override
         public String toString() {
-            return "Input{" +
-                "headers=" + headers +
-                ", bootStrapServers='" + bootStrapServers + '\'' +
-                ", key=" + key +
-                ", value=" + value +
-                ", requestTimeoutMs=" + requestTimeoutMs +
-                ", maxBlockMs=" + maxBlockMs +
-                ", topic='" + topic + '\'' +
-                ", keySerializer='" + keySerializer + '\'' +
-                '}';
+            return "Input{"
+                    + "headers="
+                    + headers
+                    + ", bootStrapServers='"
+                    + bootStrapServers
+                    + '\''
+                    + ", key="
+                    + key
+                    + ", value="
+                    + value
+                    + ", requestTimeoutMs="
+                    + requestTimeoutMs
+                    + ", maxBlockMs="
+                    + maxBlockMs
+                    + ", topic='"
+                    + topic
+                    + '\''
+                    + ", keySerializer='"
+                    + keySerializer
+                    + '\''
+                    + '}';
         }
     }
 }

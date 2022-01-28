@@ -12,17 +12,18 @@
  */
 package com.netflix.conductor.redis.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
+
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
 import com.netflix.dyno.connectionpool.RetryPolicy.RetryPolicyFactory;
 import com.netflix.dyno.connectionpool.impl.RetryNTimes;
 import com.netflix.dyno.connectionpool.impl.RunOnce;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.convert.DurationUnit;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 @ConfigurationProperties("conductor.redis")
 public class RedisProperties {
@@ -35,75 +36,61 @@ public class RedisProperties {
     }
 
     /**
-     * Data center region. If hosting on Amazon the value is something like us-east-1, us-west-2 etc.
+     * Data center region. If hosting on Amazon the value is something like us-east-1, us-west-2
+     * etc.
      */
     private String dataCenterRegion = "us-east-1";
 
     /**
-     * Local rack / availability zone. For AWS deployments, the value is something like us-east-1a, etc.
+     * Local rack / availability zone. For AWS deployments, the value is something like us-east-1a,
+     * etc.
      */
     private String availabilityZone = "us-east-1c";
 
-    /**
-     * The name of the redis / dynomite cluster
-     */
+    /** The name of the redis / dynomite cluster */
     private String clusterName = "";
 
-    /**
-     * Dynomite Cluster details. Format is host:port:rack separated by semicolon
-     */
+    /** Dynomite Cluster details. Format is host:port:rack separated by semicolon */
     private String hosts = null;
 
-    /**
-     * The prefix used to prepend workflow data in redis
-     */
+    /** The prefix used to prepend workflow data in redis */
     private String workflowNamespacePrefix = null;
 
-    /**
-     * The prefix used to prepend keys for queues in redis
-     */
+    /** The prefix used to prepend keys for queues in redis */
     private String queueNamespacePrefix = null;
 
     /**
-     * The domain name to be used in the key prefix for logical separation of workflow data and queues in a shared redis
-     * setup
+     * The domain name to be used in the key prefix for logical separation of workflow data and
+     * queues in a shared redis setup
      */
     private String keyspaceDomain = null;
 
     /**
-     * The maximum number of connections that can be managed by the connection pool on a given instance
+     * The maximum number of connections that can be managed by the connection pool on a given
+     * instance
      */
     private int maxConnectionsPerHost = 10;
 
     /**
-     * The maximum amount of time to wait for a connection to become available from the connection pool
+     * The maximum amount of time to wait for a connection to become available from the connection
+     * pool
      */
     private Duration maxTimeoutWhenExhausted = Duration.ofMillis(800);
 
-    /**
-     * The maximum retry attempts to use with this connection pool
-     */
+    /** The maximum retry attempts to use with this connection pool */
     private int maxRetryAttempts = 0;
 
-    /**
-     * The read connection port to be used for connecting to dyno-queues
-     */
+    /** The read connection port to be used for connecting to dyno-queues */
     private int queuesNonQuorumPort = 22122;
 
-    /**
-     * The sharding strategy to be used for the dyno queue configuration
-     */
+    /** The sharding strategy to be used for the dyno queue configuration */
     private String queueShardingStrategy = RedisQueuesShardingStrategyProvider.ROUND_ROBIN_STRATEGY;
 
-    /**
-     * The time in seconds after which the in-memory task definitions cache will be refreshed
-     */
+    /** The time in seconds after which the in-memory task definitions cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
-    /**
-     * The time to live in seconds for which the event execution will be persisted
-     */
+    /** The time to live in seconds for which the event execution will be persisted */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration eventExecutionPersistenceTTL = Duration.ofSeconds(60);
 

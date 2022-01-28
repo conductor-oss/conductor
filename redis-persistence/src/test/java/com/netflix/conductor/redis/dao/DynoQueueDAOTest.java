@@ -12,6 +12,17 @@
  */
 package com.netflix.conductor.redis.dao;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
@@ -20,19 +31,11 @@ import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
 import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
 import redis.clients.jedis.commands.JedisCommands;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider.LOCAL_ONLY_STRATEGY;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -47,31 +50,33 @@ public class DynoQueueDAOTest {
         RedisProperties properties = mock(RedisProperties.class);
         when(properties.getQueueShardingStrategy()).thenReturn(LOCAL_ONLY_STRATEGY);
         JedisCommands jedisMock = new JedisMock();
-        ShardSupplier shardSupplier = new ShardSupplier() {
+        ShardSupplier shardSupplier =
+                new ShardSupplier() {
 
-            @Override
-            public Set<String> getQueueShards() {
-                return new HashSet<>(Collections.singletonList("a"));
-            }
+                    @Override
+                    public Set<String> getQueueShards() {
+                        return new HashSet<>(Collections.singletonList("a"));
+                    }
 
-            @Override
-            public String getCurrentShard() {
-                return "a";
-            }
+                    @Override
+                    public String getCurrentShard() {
+                        return "a";
+                    }
 
-            @Override
-            public String getShardForHost(Host host) {
-                return "a";
-            }
-        };
-        ShardingStrategy shardingStrategy = new RedisQueuesShardingStrategyProvider(shardSupplier, properties).get();
-        RedisQueues redisQueues = new RedisQueues(jedisMock, jedisMock, "", shardSupplier, 60_000, 60_000,
-            shardingStrategy);
+                    @Override
+                    public String getShardForHost(Host host) {
+                        return "a";
+                    }
+                };
+        ShardingStrategy shardingStrategy =
+                new RedisQueuesShardingStrategyProvider(shardSupplier, properties).get();
+        RedisQueues redisQueues =
+                new RedisQueues(
+                        jedisMock, jedisMock, "", shardSupplier, 60_000, 60_000, shardingStrategy);
         queueDAO = new DynoQueueDAO(redisQueues);
     }
 
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
+    @Rule public ExpectedException expected = ExpectedException.none();
 
     @Test
     public void test() {

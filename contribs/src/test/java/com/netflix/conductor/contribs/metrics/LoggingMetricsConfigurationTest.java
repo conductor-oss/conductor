@@ -12,15 +12,8 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-
-import com.codahale.metrics.MetricRegistry;
-import com.netflix.conductor.contribs.metrics.LoggingMetricsConfiguration.Slf4jReporterProvider;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -29,19 +22,29 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.netflix.conductor.contribs.metrics.LoggingMetricsConfiguration.Slf4jReporterProvider;
+
+import com.codahale.metrics.MetricRegistry;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+
 @RunWith(SpringRunner.class)
 @Import({LoggingMetricsConfiguration.class, MetricsRegistryConfiguration.class})
 @TestPropertySource(properties = {"conductor.metrics-logger.enabled=true"})
 public class LoggingMetricsConfigurationTest {
 
-    @Autowired
-    MetricRegistry metricRegistry;
+    @Autowired MetricRegistry metricRegistry;
 
     @Test
     public void testCollector() {
         Logger logger = spy(Logger.class);
         doReturn(true).when(logger).isInfoEnabled(any());
-        Slf4jReporterProvider reporterProvider = new Slf4jReporterProvider(metricRegistry, logger, 1);
+        Slf4jReporterProvider reporterProvider =
+                new Slf4jReporterProvider(metricRegistry, logger, 1);
         metricRegistry.counter("test").inc();
 
         reporterProvider.getReporter();

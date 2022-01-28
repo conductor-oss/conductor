@@ -12,17 +12,18 @@
  */
 package com.netflix.conductor.contribs.queue.amqp.util;
 
-import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties;
 
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_AUTO_DELETE;
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_DELIVERY_MODE;
@@ -32,13 +33,13 @@ import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_MAX_PRIORITY;
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_ROUTING_KEY;
 
-/**
- * @author Ritu Parathody
- */
+/** @author Ritu Parathody */
 public class AMQPSettings {
 
-    private static final Pattern URI_PATTERN = Pattern
-        .compile("^(?:amqp\\_(queue|exchange))?\\:?(?<name>[^\\?]+)\\??(?<params>.*)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern URI_PATTERN =
+            Pattern.compile(
+                    "^(?:amqp\\_(queue|exchange))?\\:?(?<name>[^\\?]+)\\??(?<params>.*)$",
+                    Pattern.CASE_INSENSITIVE);
 
     private String queueOrExchangeName;
     private String eventName;
@@ -132,7 +133,7 @@ public class AMQPSettings {
     /**
      * Complete settings from the queue URI.
      *
-     * <u>Example for queue:</u>
+     * <p><u>Example for queue:</u>
      *
      * <pre>
      * amqp-queue:myQueue?deliveryMode=1&autoDelete=true&exclusive=true
@@ -161,40 +162,51 @@ public class AMQPSettings {
             final String queryParams = matcher.group("params");
             if (StringUtils.isNotEmpty(queryParams)) {
                 // Handle parameters
-                Arrays.stream(queryParams.split("\\s*\\&\\s*")).forEach(param -> {
-                    final String[] kv = param.split("\\s*=\\s*");
-                    if (kv.length == 2) {
-                        if (kv[0].equalsIgnoreCase(String.valueOf(PARAM_EXCHANGE_TYPE))) {
-                            String value = kv[1];
-                            if (StringUtils.isEmpty(value)) {
-                                throw new IllegalArgumentException("The provided exchange type is empty");
-                            }
-                            exchangeType = value;
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_ROUTING_KEY)))) {
-                            String value = kv[1];
-                            if (StringUtils.isEmpty(value)) {
-                                throw new IllegalArgumentException("The provided routing key is empty");
-                            }
-                            routingKey = value;
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_DURABLE)))) {
-                            durable = Boolean.parseBoolean(kv[1]);
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_EXCLUSIVE)))) {
-                            exclusive = Boolean.parseBoolean(kv[1]);
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_AUTO_DELETE)))) {
-                            autoDelete = Boolean.parseBoolean(kv[1]);
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_DELIVERY_MODE)))) {
-                            setDeliveryMode(Integer.parseInt(kv[1]));
-                        }
-                        if (kv[0].equalsIgnoreCase((String.valueOf(PARAM_MAX_PRIORITY)))) {
-                            arguments.put("x-max-priority", Integer.valueOf(kv[1]));
-                        }
-                    }
-                });
+                Arrays.stream(queryParams.split("\\s*\\&\\s*"))
+                        .forEach(
+                                param -> {
+                                    final String[] kv = param.split("\\s*=\\s*");
+                                    if (kv.length == 2) {
+                                        if (kv[0].equalsIgnoreCase(
+                                                String.valueOf(PARAM_EXCHANGE_TYPE))) {
+                                            String value = kv[1];
+                                            if (StringUtils.isEmpty(value)) {
+                                                throw new IllegalArgumentException(
+                                                        "The provided exchange type is empty");
+                                            }
+                                            exchangeType = value;
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_ROUTING_KEY)))) {
+                                            String value = kv[1];
+                                            if (StringUtils.isEmpty(value)) {
+                                                throw new IllegalArgumentException(
+                                                        "The provided routing key is empty");
+                                            }
+                                            routingKey = value;
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_DURABLE)))) {
+                                            durable = Boolean.parseBoolean(kv[1]);
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_EXCLUSIVE)))) {
+                                            exclusive = Boolean.parseBoolean(kv[1]);
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_AUTO_DELETE)))) {
+                                            autoDelete = Boolean.parseBoolean(kv[1]);
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_DELIVERY_MODE)))) {
+                                            setDeliveryMode(Integer.parseInt(kv[1]));
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_MAX_PRIORITY)))) {
+                                            arguments.put("x-max-priority", Integer.valueOf(kv[1]));
+                                        }
+                                    }
+                                });
             }
         }
         return this;
@@ -209,29 +221,66 @@ public class AMQPSettings {
             return false;
         }
         AMQPSettings that = (AMQPSettings) o;
-        return isDurable() == that.isDurable() && isExclusive() == that.isExclusive() && autoDelete == that.autoDelete
-            && getDeliveryMode() == that.getDeliveryMode()
-            && Objects.equals(getQueueOrExchangeName(), that.getQueueOrExchangeName())
-            && Objects.equals(getExchangeType(), that.getExchangeType())
-            && Objects.equals(getRoutingKey(), that.getRoutingKey())
-            && Objects.equals(getContentType(), that.getContentType())
-            && Objects.equals(getContentEncoding(), that.getContentEncoding())
-            && Objects.equals(getArguments(), that.getArguments());
+        return isDurable() == that.isDurable()
+                && isExclusive() == that.isExclusive()
+                && autoDelete == that.autoDelete
+                && getDeliveryMode() == that.getDeliveryMode()
+                && Objects.equals(getQueueOrExchangeName(), that.getQueueOrExchangeName())
+                && Objects.equals(getExchangeType(), that.getExchangeType())
+                && Objects.equals(getRoutingKey(), that.getRoutingKey())
+                && Objects.equals(getContentType(), that.getContentType())
+                && Objects.equals(getContentEncoding(), that.getContentEncoding())
+                && Objects.equals(getArguments(), that.getArguments());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getQueueOrExchangeName(), getExchangeType(), getRoutingKey(), getContentType(), isDurable(),
-            isExclusive(), autoDelete, getDeliveryMode(), getContentEncoding(), getArguments());
+        return Objects.hash(
+                getQueueOrExchangeName(),
+                getExchangeType(),
+                getRoutingKey(),
+                getContentType(),
+                isDurable(),
+                isExclusive(),
+                autoDelete,
+                getDeliveryMode(),
+                getContentEncoding(),
+                getArguments());
     }
 
     @Override
     public String toString() {
-        return "AMQSettings{" + "queueOrExchangeName='" + queueOrExchangeName + '\'' + ", exchangeType='" + exchangeType
-            + '\'' + ", routingKey='" + routingKey + '\'' + ", contentType='" + contentType + '\'' + ", durable="
-            + durable + ", exclusive=" + exclusive + ", autoDelete=" + autoDelete + ", deliveryMode=" + deliveryMode
-            + ", contentEncoding='" + contentEncoding + '\'' + ", arguments=" + arguments + ", durable="
-            + isDurable() + ", exclusive=" + isExclusive() + '}';
+        return "AMQSettings{"
+                + "queueOrExchangeName='"
+                + queueOrExchangeName
+                + '\''
+                + ", exchangeType='"
+                + exchangeType
+                + '\''
+                + ", routingKey='"
+                + routingKey
+                + '\''
+                + ", contentType='"
+                + contentType
+                + '\''
+                + ", durable="
+                + durable
+                + ", exclusive="
+                + exclusive
+                + ", autoDelete="
+                + autoDelete
+                + ", deliveryMode="
+                + deliveryMode
+                + ", contentEncoding='"
+                + contentEncoding
+                + '\''
+                + ", arguments="
+                + arguments
+                + ", durable="
+                + isDurable()
+                + ", exclusive="
+                + isExclusive()
+                + '}';
     }
 
     public String getEventName() {

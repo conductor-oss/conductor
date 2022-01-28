@@ -12,7 +12,18 @@
  */
 package com.netflix.conductor.redis.config;
 
-import com.google.inject.ProvisionException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+
 import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -23,16 +34,8 @@ import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
 import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
 import com.netflix.dyno.queues.shard.DynoShardSupplier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
+
+import com.google.inject.ProvisionException;
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
@@ -49,11 +52,11 @@ public class RedisCommonConfiguration {
     public ShardSupplier shardSupplier(HostSupplier hostSupplier, RedisProperties properties) {
         if (properties.getAvailabilityZone() == null) {
             throw new ProvisionException(
-                "Availability zone is not defined.  Ensure Configuration.getAvailabilityZone() returns a non-null " +
-                    "and non-empty value."
-            );
+                    "Availability zone is not defined.  Ensure Configuration.getAvailabilityZone() returns a non-null "
+                            + "and non-empty value.");
         }
-        String localDC = properties.getAvailabilityZone().replaceAll(properties.getDataCenterRegion(), "");
+        String localDC =
+                properties.getAvailabilityZone().replaceAll(properties.getDataCenterRegion(), "");
         return new DynoShardSupplier(hostSupplier, properties.getDataCenterRegion(), localDC);
     }
 
@@ -74,23 +77,34 @@ public class RedisCommonConfiguration {
 
             @Override
             public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
-                return CollectionUtils.find(hostTokens, token -> token.getHost().compareTo(host) == 0);
+                return CollectionUtils.find(
+                        hostTokens, token -> token.getHost().compareTo(host) == 0);
             }
         };
     }
 
     @Bean
-    public ShardingStrategy shardingStrategy(ShardSupplier shardSupplier, RedisProperties properties) {
+    public ShardingStrategy shardingStrategy(
+            ShardSupplier shardSupplier, RedisProperties properties) {
         return new RedisQueuesShardingStrategyProvider(shardSupplier, properties).get();
     }
 
     @Bean
-    public RedisQueues redisQueues(@Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands jedisCommands,
-        @Qualifier(READ_CLIENT_INJECTION_NAME) JedisCommands jedisCommandsRead,
-        ShardSupplier shardSupplier, RedisProperties properties, ShardingStrategy shardingStrategy) {
-        RedisQueues queues = new RedisQueues(jedisCommands, jedisCommandsRead, properties.getQueuePrefix(),
-            shardSupplier,
-            60_000, 60_000, shardingStrategy);
+    public RedisQueues redisQueues(
+            @Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands jedisCommands,
+            @Qualifier(READ_CLIENT_INJECTION_NAME) JedisCommands jedisCommandsRead,
+            ShardSupplier shardSupplier,
+            RedisProperties properties,
+            ShardingStrategy shardingStrategy) {
+        RedisQueues queues =
+                new RedisQueues(
+                        jedisCommands,
+                        jedisCommandsRead,
+                        properties.getQueuePrefix(),
+                        shardSupplier,
+                        60_000,
+                        60_000,
+                        shardingStrategy);
         LOGGER.info("DynoQueueDAO initialized with prefix " + properties.getQueuePrefix() + "!");
         return queues;
     }

@@ -12,15 +12,19 @@
  */
 package com.netflix.conductor.common.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import java.util.Map;
+
 import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class SummaryUtil {
@@ -39,8 +43,8 @@ public class SummaryUtil {
     }
 
     /**
-     * Serializes the Workflow or Task's Input/Output object by Java's toString (default), or by a Json ObjectMapper
-     * (@see Configuration.isSummaryInputOutputJsonSerializationEnabled)
+     * Serializes the Workflow or Task's Input/Output object by Java's toString (default), or by a
+     * Json ObjectMapper (@see Configuration.isSummaryInputOutputJsonSerializationEnabled)
      *
      * @param object the Input or Output Object to serialize
      * @return the serialized string of the Input or Output object
@@ -53,7 +57,10 @@ public class SummaryUtil {
         try {
             return objectMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            logger.error("The provided value ({}) could not be serialized as Json", object.toString(), e);
+            logger.error(
+                    "The provided value ({}) could not be serialized as Json",
+                    object.toString(),
+                    e);
             throw new RuntimeException(e);
         }
     }

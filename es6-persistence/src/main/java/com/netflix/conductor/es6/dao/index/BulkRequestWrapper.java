@@ -12,16 +12,14 @@
  */
 package com.netflix.conductor.es6.dao.index;
 
+import java.util.Objects;
+
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.springframework.lang.NonNull;
 
-import java.util.Objects;
-
-/**
- * Thread-safe wrapper for {@link BulkRequest}.
- */
+/** Thread-safe wrapper for {@link BulkRequest}. */
 class BulkRequestWrapper {
 
     private final BulkRequest bulkRequest;

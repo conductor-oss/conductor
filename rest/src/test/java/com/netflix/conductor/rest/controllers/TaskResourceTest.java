@@ -12,6 +12,25 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.http.ResponseEntity;
+
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.service.TaskService;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,23 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.service.TaskService;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.http.ResponseEntity;
 
 public class TaskResourceTest {
 
@@ -73,9 +75,10 @@ public class TaskResourceTest {
         listOfTasks.add(task);
 
         when(mockTaskService.batchPoll(anyString(), anyString(), anyString(), anyInt(), anyInt()))
-            .thenReturn(listOfTasks);
-        assertEquals(ResponseEntity.ok(listOfTasks), taskResource.batchPoll("SIMPLE", "123",
-            "test", 1, 100));
+                .thenReturn(listOfTasks);
+        assertEquals(
+                ResponseEntity.ok(listOfTasks),
+                taskResource.batchPoll("SIMPLE", "123", "test", 1, 100));
     }
 
     @Test
@@ -191,8 +194,7 @@ public class TaskResourceTest {
         List<TaskSummary> listOfTaskSummary = Collections.singletonList(taskSummary);
         SearchResult<TaskSummary> searchResult = new SearchResult<>(100, listOfTaskSummary);
 
-        when(mockTaskService.search(0, 100, "asc", "*", "*"))
-            .thenReturn(searchResult);
+        when(mockTaskService.search(0, 100, "asc", "*", "*")).thenReturn(searchResult);
         assertEquals(searchResult, taskResource.search(0, 100, "asc", "*", "*"));
     }
 
@@ -206,8 +208,7 @@ public class TaskResourceTest {
         List<Task> listOfTasks = Collections.singletonList(task);
         SearchResult<Task> searchResult = new SearchResult<>(100, listOfTasks);
 
-        when(mockTaskService.searchV2(0, 100, "asc", "*", "*"))
-            .thenReturn(searchResult);
+        when(mockTaskService.searchV2(0, 100, "asc", "*", "*")).thenReturn(searchResult);
         assertEquals(searchResult, taskResource.searchV2(0, 100, "asc", "*", "*"));
     }
 
@@ -215,8 +216,9 @@ public class TaskResourceTest {
     public void testGetExternalStorageLocation() {
         ExternalStorageLocation externalStorageLocation = mock(ExternalStorageLocation.class);
         when(mockTaskService.getExternalStorageLocation("path", "operation", "payloadType"))
-            .thenReturn(externalStorageLocation);
-        assertEquals(externalStorageLocation,
+                .thenReturn(externalStorageLocation);
+        assertEquals(
+                externalStorageLocation,
                 taskResource.getExternalStorageLocation("path", "operation", "payloadType"));
     }
 }

@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.contribs.tasks.http;
 
-import org.springframework.web.client.RestTemplate;
-
 import javax.annotation.Nonnull;
+
+import org.springframework.web.client.RestTemplate;
 
 @FunctionalInterface
 public interface RestTemplateProvider {

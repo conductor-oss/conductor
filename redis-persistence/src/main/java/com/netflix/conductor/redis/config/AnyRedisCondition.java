@@ -22,27 +22,17 @@ public class AnyRedisCondition extends AnyNestedCondition {
     }
 
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "dynomite")
-    static class DynomiteClusterCondition {
-
-    }
+    static class DynomiteClusterCondition {}
 
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
-    static class InMemoryRedisCondition {
-
-    }
+    static class InMemoryRedisCondition {}
 
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
-    static class RedisClusterConfiguration {
-
-    }
+    static class RedisClusterConfiguration {}
 
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
-    static class RedisSentinelConfiguration {
-
-    }
+    static class RedisSentinelConfiguration {}
 
     @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_standalone")
-    static class RedisStandaloneConfiguration {
-
-    }
+    static class RedisStandaloneConfiguration {}
 }

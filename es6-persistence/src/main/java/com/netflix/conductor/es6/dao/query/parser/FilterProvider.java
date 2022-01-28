@@ -16,8 +16,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 public interface FilterProvider {
 
-    /**
-     * @return FilterBuilder for elasticsearch
-     */
+    /** @return FilterBuilder for elasticsearch */
     public QueryBuilder getFilterBuilder();
 }

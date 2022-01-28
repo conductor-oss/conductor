@@ -12,11 +12,13 @@
  */
 package com.netflix.conductor.contribs.tasks.kafka;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
 import java.time.Duration;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -26,11 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
 
 @SuppressWarnings("rawtypes")
 @Component
@@ -42,24 +43,30 @@ public class KafkaProducerManager {
     private final Cache<Properties, Producer> kafkaProducerCache;
     private final String maxBlockMsConfig;
 
-    private static final String STRING_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";
-    private static final RemovalListener<Properties, Producer> LISTENER = notification -> {
-        if (notification.getValue() != null) {
-            notification.getValue().close();
-            LOGGER.info("Closed producer for {}", notification.getKey());
-        }
-    };
+    private static final String STRING_SERIALIZER =
+            "org.apache.kafka.common.serialization.StringSerializer";
+    private static final RemovalListener<Properties, Producer> LISTENER =
+            notification -> {
+                if (notification.getValue() != null) {
+                    notification.getValue().close();
+                    LOGGER.info("Closed producer for {}", notification.getKey());
+                }
+            };
 
     @Autowired
-    public KafkaProducerManager(@Value("${conductor.tasks.kafka-publish.requestTimeout:100ms}") Duration requestTimeout,
-        @Value("${conductor.tasks.kafka-publish.maxBlock:500ms}") Duration maxBlock,
-        @Value("${conductor.tasks.kafka-publish.cacheSize:10}") int cacheSize,
-        @Value("${conductor.tasks.kafka-publish.cacheTime:120000ms}") Duration cacheTime) {
+    public KafkaProducerManager(
+            @Value("${conductor.tasks.kafka-publish.requestTimeout:100ms}") Duration requestTimeout,
+            @Value("${conductor.tasks.kafka-publish.maxBlock:500ms}") Duration maxBlock,
+            @Value("${conductor.tasks.kafka-publish.cacheSize:10}") int cacheSize,
+            @Value("${conductor.tasks.kafka-publish.cacheTime:120000ms}") Duration cacheTime) {
         this.requestTimeoutConfig = String.valueOf(requestTimeout.toMillis());
         this.maxBlockMsConfig = String.valueOf(maxBlock.toMillis());
-        this.kafkaProducerCache = CacheBuilder.newBuilder().removalListener(LISTENER)
-            .maximumSize(cacheSize).expireAfterAccess(cacheTime.toMillis(), TimeUnit.MILLISECONDS)
-            .build();
+        this.kafkaProducerCache =
+                CacheBuilder.newBuilder()
+                        .removalListener(LISTENER)
+                        .maximumSize(cacheSize)
+                        .expireAfterAccess(cacheTime.toMillis(), TimeUnit.MILLISECONDS)
+                        .build();
     }
 
     public Producer getProducer(KafkaPublishTask.Input input) {

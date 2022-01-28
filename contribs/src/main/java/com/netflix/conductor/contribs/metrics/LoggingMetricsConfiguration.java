@@ -12,25 +12,25 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.convert.DurationUnit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
+
 /**
  * Metrics logging reporter, dumping all metrics into an Slf4J logger.
- * <p>
- * Enable in config: conductor.metrics-logger.enabled=true
- * <p>
- * additional config: conductor.metrics-logger.reportInterval=15s
+ *
+ * <p>Enable in config: conductor.metrics-logger.enabled=true
+ *
+ * <p>additional config: conductor.metrics-logger.reportInterval=15s
  */
 @ConditionalOnProperty(value = "conductor.metrics-logger.enabled", havingValue = "true")
 @Configuration
@@ -60,21 +60,25 @@ public class LoggingMetricsConfiguration {
             this(metricRegistry, METRICS_LOGGER, reportInterval);
         }
 
-        Slf4jReporterProvider(MetricRegistry metricRegistry, Logger outputLogger, long metricsReportInterval) {
+        Slf4jReporterProvider(
+                MetricRegistry metricRegistry, Logger outputLogger, long metricsReportInterval) {
             this.metrics3Registry = metricRegistry;
             this.logger = outputLogger;
             this.metricsReportInterval = metricsReportInterval;
         }
 
         public Slf4jReporter getReporter() {
-            final Slf4jReporter reporter = Slf4jReporter.forRegistry(metrics3Registry)
-                .outputTo(logger)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
+            final Slf4jReporter reporter =
+                    Slf4jReporter.forRegistry(metrics3Registry)
+                            .outputTo(logger)
+                            .convertRatesTo(TimeUnit.SECONDS)
+                            .convertDurationsTo(TimeUnit.MILLISECONDS)
+                            .build();
 
             reporter.start(metricsReportInterval, TimeUnit.SECONDS);
-            LOGGER.info("Logging metrics reporter started, reporting every {} seconds", metricsReportInterval);
+            LOGGER.info(
+                    "Logging metrics reporter started, reporting every {} seconds",
+                    metricsReportInterval);
             return reporter;
         }
     }

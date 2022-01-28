@@ -12,18 +12,6 @@
  */
 package com.netflix.conductor.redis.jedis;
 
-import com.netflix.conductor.redis.config.AnyRedisCondition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
-import redis.clients.jedis.commands.JedisCommands;
-import redis.clients.jedis.params.ZAddParams;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,11 +20,23 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.redis.config.AnyRedisCondition;
+
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
+import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.params.ZAddParams;
+
 import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
 
-/**
- * Proxy for the {@link JedisCommands} object.
- */
+/** Proxy for the {@link JedisCommands} object. */
 @Component
 @Conditional(AnyRedisCondition.class)
 public class JedisProxy {

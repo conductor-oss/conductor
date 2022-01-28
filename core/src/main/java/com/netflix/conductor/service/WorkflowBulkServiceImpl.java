@@ -12,15 +12,16 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.annotations.Audit;
-import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.common.model.BulkResponse;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 @Audit
 @Trace
@@ -37,8 +38,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Pause the list of workflows.
      *
-     * @param workflowIds - list of workflow Ids  to perform pause operation on
-     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @param workflowIds - list of workflow Ids to perform pause operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
      */
     public BulkResponse pauseWorkflow(List<String> workflowIds) {
 
@@ -48,8 +50,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowExecutor.pauseWorkflow(workflowId);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
-                LOGGER
-                    .error("bulk pauseWorkflow exception, workflowId {}, message: {} ", workflowId, e.getMessage(), e);
+                LOGGER.error(
+                        "bulk pauseWorkflow exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }
@@ -60,8 +65,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Resume the list of workflows.
      *
-     * @param workflowIds - list of workflow Ids  to perform resume operation on
-     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @param workflowIds - list of workflow Ids to perform resume operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
      */
     public BulkResponse resumeWorkflow(List<String> workflowIds) {
         BulkResponse bulkResponse = new BulkResponse();
@@ -70,8 +76,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowExecutor.resumeWorkflow(workflowId);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
-                LOGGER
-                    .error("bulk resumeWorkflow exception, workflowId {}, message: {} ", workflowId, e.getMessage(), e);
+                LOGGER.error(
+                        "bulk resumeWorkflow exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }
@@ -81,9 +90,10 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Restart the list of workflows.
      *
-     * @param workflowIds          - list of workflow Ids  to perform restart operation on
+     * @param workflowIds - list of workflow Ids to perform restart operation on
      * @param useLatestDefinitions if true, use latest workflow and task definitions upon restart
-     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
      */
     public BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions) {
         BulkResponse bulkResponse = new BulkResponse();
@@ -92,7 +102,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowExecutor.restart(workflowId, useLatestDefinitions);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
-                LOGGER.error("bulk restart exception, workflowId {}, message: {} ", workflowId, e.getMessage(), e);
+                LOGGER.error(
+                        "bulk restart exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }
@@ -102,8 +116,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Retry the last failed task for each workflow from the list.
      *
-     * @param workflowIds - list of workflow Ids  to perform retry operation on
-     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @param workflowIds - list of workflow Ids to perform retry operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
      */
     public BulkResponse retry(List<String> workflowIds) {
         BulkResponse bulkResponse = new BulkResponse();
@@ -112,7 +127,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowExecutor.retry(workflowId, false);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
-                LOGGER.error("bulk retry exception, workflowId {}, message: {} ", workflowId, e.getMessage(), e);
+                LOGGER.error(
+                        "bulk retry exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }
@@ -122,9 +141,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Terminate workflows execution.
      *
-     * @param workflowIds - list of workflow Ids  to perform terminate operation on
-     * @param reason      - description to be specified for the terminated workflow for future references.
-     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @param workflowIds - list of workflow Ids to perform terminate operation on
+     * @param reason - description to be specified for the terminated workflow for future
+     *     references.
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
      */
     public BulkResponse terminate(List<String> workflowIds, String reason) {
         BulkResponse bulkResponse = new BulkResponse();
@@ -133,7 +154,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowExecutor.terminateWorkflow(workflowId, reason);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
-                LOGGER.error("bulk terminate exception, workflowId {}, message: {} ", workflowId, e.getMessage(), e);
+                LOGGER.error(
+                        "bulk terminate exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
                 bulkResponse.appendFailedResponse(workflowId, e.getMessage());
             }
         }

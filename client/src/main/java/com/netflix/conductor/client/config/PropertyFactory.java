@@ -12,13 +12,11 @@
  */
 package com.netflix.conductor.client.config;
 
-import com.netflix.config.DynamicProperty;
-
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Used to configure the Conductor workers using properties.
- */
+import com.netflix.config.DynamicProperty;
+
+/** Used to configure the Conductor workers using properties. */
 public class PropertyFactory {
 
     private final DynamicProperty global;
@@ -26,7 +24,8 @@ public class PropertyFactory {
 
     private static final String PROPERTY_PREFIX = "conductor.worker";
 
-    private static final ConcurrentHashMap<String, PropertyFactory> PROPERTY_FACTORY_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, PropertyFactory> PROPERTY_FACTORY_MAP =
+            new ConcurrentHashMap<>();
 
     private PropertyFactory(String prefix, String propName, String workerName) {
         this.global = DynamicProperty.getInstance(prefix + "." + propName);
@@ -35,8 +34,8 @@ public class PropertyFactory {
 
     /**
      * @param defaultValue Default Value
-     * @return Returns the value as integer.  If not value is set (either global or worker specific), then returns the
-     * default value.
+     * @return Returns the value as integer. If not value is set (either global or worker specific),
+     *     then returns the default value.
      */
     public Integer getInteger(int defaultValue) {
         Integer value = local.getInteger();
@@ -48,8 +47,8 @@ public class PropertyFactory {
 
     /**
      * @param defaultValue Default Value
-     * @return Returns the value as String.  If not value is set (either global or worker specific), then returns the
-     * default value.
+     * @return Returns the value as String. If not value is set (either global or worker specific),
+     *     then returns the default value.
      */
     public String getString(String defaultValue) {
         String value = local.getString();
@@ -61,8 +60,8 @@ public class PropertyFactory {
 
     /**
      * @param defaultValue Default Value
-     * @return Returns the value as Boolean.  If not value is set (either global or worker specific), then returns the
-     * default value.
+     * @return Returns the value as Boolean. If not value is set (either global or worker specific),
+     *     then returns the default value.
      */
     public Boolean getBoolean(Boolean defaultValue) {
         Boolean value = local.getBoolean();
@@ -86,7 +85,7 @@ public class PropertyFactory {
 
     private static PropertyFactory getPropertyFactory(String workerName, String property) {
         String key = property + "." + workerName;
-        return PROPERTY_FACTORY_MAP
-            .computeIfAbsent(key, t -> new PropertyFactory(PROPERTY_PREFIX, property, workerName));
+        return PROPERTY_FACTORY_MAP.computeIfAbsent(
+                key, t -> new PropertyFactory(PROPERTY_PREFIX, property, workerName));
     }
 }

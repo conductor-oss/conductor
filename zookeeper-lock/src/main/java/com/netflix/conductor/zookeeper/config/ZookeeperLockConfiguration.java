@@ -12,12 +12,13 @@
  */
 package com.netflix.conductor.zookeeper.config;
 
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.zookeeper.lock.ZookeeperLock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.zookeeper.lock.ZookeeperLock;
 
 @Configuration
 @EnableConfigurationProperties(ZookeeperProperties.class)

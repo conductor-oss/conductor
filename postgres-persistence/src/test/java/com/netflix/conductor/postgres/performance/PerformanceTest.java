@@ -14,8 +14,8 @@ package com.netflix.conductor.postgres.performance;
 
 // SBMTODO: this test needs to be migrated
 // reference - https://github.com/Netflix/conductor/pull/1940
-//@Ignore("This test cannot be automated")
-//public class PerformanceTest {
+// @Ignore("This test cannot be automated")
+// public class PerformanceTest {
 //
 //    public static final int MSGS = 1000;
 //    public static final int PRODUCER_BATCH = 10; // make sure MSGS % PRODUCER_BATCH == 0
@@ -33,14 +33,16 @@ package com.netflix.conductor.postgres.performance;
 //    private QueueDAO Q;
 //    private ExecutionDAO E;
 //
-//    private final ExecutorService threadPool = Executors.newFixedThreadPool(PRODUCERS + WORKERS + OBSERVERS + UNACK_RUNNERS);
+//    private final ExecutorService threadPool = Executors.newFixedThreadPool(PRODUCERS + WORKERS +
+// OBSERVERS + UNACK_RUNNERS);
 //    private static final Logger LOGGER = LoggerFactory.getLogger(PerformanceTest.class);
 //
 //    @Before
 //    public void setUp() {
 //        TestConfiguration testConfiguration = new TestConfiguration();
 //        configuration = new TestPostgresConfiguration(testConfiguration,
-//            "jdbc:postgresql://localhost:54320/conductor?charset=utf8&parseTime=true&interpolateParams=true",
+//
+// "jdbc:postgresql://localhost:54320/conductor?charset=utf8&parseTime=true&interpolateParams=true",
 //            10, 2);
 //        PostgresDataSourceProvider dataSource = new PostgresDataSourceProvider(configuration);
 //        this.dataSource = dataSource.get();
@@ -81,7 +83,8 @@ package com.netflix.conductor.postgres.performance;
 //                            throw new RuntimeException(e);
 //                        }
 //                    } else {
-//                        LOGGER.info("Popped {}", pop.stream().map(Message::getId).collect(Collectors.toList()));
+//                        LOGGER.info("Popped {}",
+// pop.stream().map(Message::getId).collect(Collectors.toList()));
 //                    }
 //
 //                    pop.forEach(popped -> {
@@ -111,7 +114,8 @@ package com.netflix.conductor.postgres.performance;
 //                        List<Message> randomMessages = getRandomMessages(PRODUCER_BATCH);
 //                        Q.push(QUEUE, randomMessages);
 //                        LOGGER.info("Pushed {} messages", PRODUCER_BATCH);
-//                        LOGGER.info("Pushed {}", randomMessages.stream().map(Message::getId).collect(Collectors.toList()));
+//                        LOGGER.info("Pushed {}",
+// randomMessages.stream().map(Message::getId).collect(Collectors.toList()));
 //                    }
 //                    LOGGER.info("Pushed ALL");
 //                } catch (Exception e) {
@@ -175,7 +179,8 @@ package com.netflix.conductor.postgres.performance;
 //            int size = Q.getSize(QUEUE);
 //            LOGGER.info("MONITOR SIZE : {}", size);
 //
-//            if (size == 0 && producers.stream().map(Future::isDone).reduce(true, (b1, b2) -> b1 && b2)) {
+//            if (size == 0 && producers.stream().map(Future::isDone).reduce(true, (b1, b2) -> b1 &&
+// b2)) {
 //                elapsed = start.elapsed(TimeUnit.MILLISECONDS);
 //                stop.set(true);
 //                break;
@@ -196,7 +201,8 @@ package com.netflix.conductor.postgres.performance;
 //
 //                LOGGER.error("Found duplicate pops: " + duplicates);
 //            }
-//            throw new RuntimeException("Popped " + poppedCoutner.get() + " != produced: " + MSGS * PRODUCERS);
+//            throw new RuntimeException("Popped " + poppedCoutner.get() + " != produced: " + MSGS *
+// PRODUCERS);
 //        }
 //    }
 //
@@ -234,7 +240,8 @@ package com.netflix.conductor.postgres.performance;
 //                    }
 //
 //                    LOGGER.info("Popped {} messages", popped.size());
-//                    LOGGER.info("Popped {}", popped.stream().map(Task::getTaskId).collect(Collectors.toList()));
+//                    LOGGER.info("Popped {}",
+// popped.stream().map(Task::getTaskId).collect(Collectors.toList()));
 //
 //                    // Polling
 //                    popped.stream()
@@ -304,7 +311,8 @@ package com.netflix.conductor.postgres.performance;
 //                        }
 //                    });
 //                    LOGGER.info("Pushed {} messages", PRODUCER_BATCH);
-//                    List<String> collect = randomTasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+//                    List<String> collect =
+// randomTasks.stream().map(Task::getTaskId).collect(Collectors.toList());
 //                    synchronized (pushedTasks) {
 //                        pushedTasks.addAll(collect);
 //                    }
@@ -327,10 +335,14 @@ package com.netflix.conductor.postgres.performance;
 //                        synchronized (allPopped) {
 //                            LOGGER.info("All pp {} messages", allPopped.size());
 //                        }
-//                        LOGGER.info("Workflows by correlation id size: {}", E.getWorkflowsByCorrelationId("abcd", "1", true).size());
-//                        LOGGER.info("Workflows by correlation id size: {}", E.getWorkflowsByCorrelationId("abcd", "2", true).size());
-//                        LOGGER.info("Workflows running ids: {}", E.getRunningWorkflowIds("abcd", 1));
-//                        LOGGER.info("Workflows pending count: {}", E.getPendingWorkflowCount("abcd"));
+//                        LOGGER.info("Workflows by correlation id size: {}",
+// E.getWorkflowsByCorrelationId("abcd", "1", true).size());
+//                        LOGGER.info("Workflows by correlation id size: {}",
+// E.getWorkflowsByCorrelationId("abcd", "2", true).size());
+//                        LOGGER.info("Workflows running ids: {}", E.getRunningWorkflowIds("abcd",
+// 1));
+//                        LOGGER.info("Workflows pending count: {}",
+// E.getPendingWorkflowCount("abcd"));
 //                    } catch (Exception e) {
 //                        LOGGER.warn("Observer failed ", e);
 //                    }
@@ -360,7 +372,8 @@ package com.netflix.conductor.postgres.performance;
 //            }
 //            LOGGER.info("MONITOR SIZE : {}", size);
 //
-//            if (size == 0 && producers.stream().map(Future::isDone).reduce(true, (b1, b2) -> b1 && b2)) {
+//            if (size == 0 && producers.stream().map(Future::isDone).reduce(true, (b1, b2) -> b1 &&
+// b2)) {
 //                elapsed = start.elapsed(TimeUnit.MILLISECONDS);
 //                stop.set(true);
 //                break;
@@ -412,7 +425,8 @@ package com.netflix.conductor.postgres.performance;
 //        String timestamp = Long.toString(System.nanoTime());
 //        return IntStream.range(0, i).mapToObj(j -> {
 //            String id = Thread.currentThread().getId() + "_" + timestamp + "_" + j;
-//            return new Message(id, "{ \"a\": \"b\", \"timestamp\": \" " + timestamp + " \"}", "receipt");
+//            return new Message(id, "{ \"a\": \"b\", \"timestamp\": \" " + timestamp + " \"}",
+// "receipt");
 //        }).collect(Collectors.toList());
 //    }
 //
@@ -437,4 +451,4 @@ package com.netflix.conductor.postgres.performance;
 //    public void resetAllData(DataSource dataSource) {
 //        // TODO
 //    }
-//}
+// }

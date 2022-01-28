@@ -13,7 +13,8 @@
 package com.netflix.conductor.client.config;
 
 /**
- * A default implementation of {@link ConductorClientConfiguration} where external payload storage is disabled.
+ * A default implementation of {@link ConductorClientConfiguration} where external payload storage
+ * is disabled.
  */
 public class DefaultConductorClientConfiguration implements ConductorClientConfiguration {
 

@@ -12,23 +12,23 @@
  */
 package com.netflix.conductor.contribs.queue.nats.config;
 
-import com.netflix.conductor.contribs.queue.nats.NATSObservableQueue;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import io.nats.client.ConnectionFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
-import org.springframework.lang.NonNull;
-import rx.Scheduler;
-
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author Oleksiy Lysak
- */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
+import org.springframework.lang.NonNull;
+
+import com.netflix.conductor.contribs.queue.nats.NATSObservableQueue;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+
+import io.nats.client.ConnectionFactory;
+import rx.Scheduler;
+
+/** @author Oleksiy Lysak */
 public class NATSEventQueueProvider implements EventQueueProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSEventQueueProvider.class);
@@ -46,15 +46,16 @@ public class NATSEventQueueProvider implements EventQueueProvider {
         Properties temp = new Properties();
         temp.putAll(System.getenv());
         temp.putAll(System.getProperties());
-        temp.forEach((k, v) -> {
-            String key = k.toString();
-            String val = v.toString();
+        temp.forEach(
+                (k, v) -> {
+                    String key = k.toString();
+                    String val = v.toString();
 
-            if (key.startsWith("io_nats")) {
-                key = key.replace("_", ".");
-            }
-            props.put(key, environment.getProperty(key, val));
-        });
+                    if (key.startsWith("io_nats")) {
+                        key = key.replace("_", ".");
+                    }
+                    props.put(key, environment.getProperty(key, val));
+                });
 
         // Init NATS API
         factory = new ConnectionFactory(props);
@@ -69,8 +70,9 @@ public class NATSEventQueueProvider implements EventQueueProvider {
     @Override
     @NonNull
     public ObservableQueue getQueue(String queueURI) {
-        NATSObservableQueue queue = queues
-            .computeIfAbsent(queueURI, q -> new NATSObservableQueue(factory, queueURI, scheduler));
+        NATSObservableQueue queue =
+                queues.computeIfAbsent(
+                        queueURI, q -> new NATSObservableQueue(factory, queueURI, scheduler));
         if (queue.isClosed()) {
             queue.open();
         }

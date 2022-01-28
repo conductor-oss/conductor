@@ -1,24 +1,20 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2021 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,8 +22,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,8 +48,7 @@ public class TestSubWorkflow {
     private WorkflowExecutor workflowExecutor;
     private SubWorkflow subWorkflow;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
     @Before
     public void setup() {
@@ -73,9 +74,17 @@ public class TestSubWorkflow {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId(workflowId);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
-            .thenReturn(workflowId);
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(3),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenReturn(workflowId);
 
         when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(workflow);
 
@@ -110,9 +119,19 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowVersion", 3);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-                .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
-                .thenThrow(new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "QueueDAO failure"));
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(3),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenThrow(
+                        new ApplicationException(
+                                ApplicationException.Code.BACKEND_ERROR, "QueueDAO failure"));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());
@@ -136,9 +155,19 @@ public class TestSubWorkflow {
         task.setInputData(inputData);
 
         String failureReason = "non transient failure";
-        when(workflowExecutor
-                .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
-                .thenThrow(new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, failureReason));
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(3),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenThrow(
+                        new ApplicationException(
+                                ApplicationException.Code.INTERNAL_ERROR, failureReason));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());
@@ -164,9 +193,17 @@ public class TestSubWorkflow {
         inputData.put("workflowInput", workflowInput);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(3),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -190,10 +227,17 @@ public class TestSubWorkflow {
         inputData.put("workflowInput", workflowInput);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(3), eq(workflowInput), eq(null), any(), any(), any(), eq(null),
-                any()))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(3),
+                        eq(workflowInput),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -204,9 +248,12 @@ public class TestSubWorkflow {
         WorkflowDef workflowDef = new WorkflowDef();
         Workflow workflowInstance = new Workflow();
         workflowInstance.setWorkflowDefinition(workflowDef);
-        Map<String, String> taskToDomain = new HashMap<String, String>() {{
-            put("*", "unittest");
-        }};
+        Map<String, String> taskToDomain =
+                new HashMap<String, String>() {
+                    {
+                        put("*", "unittest");
+                    }
+                };
 
         Task task = new Task();
         task.setOutputData(new HashMap<>());
@@ -217,10 +264,17 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowTaskToDomain", taskToDomain);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null),
-                eq(taskToDomain)))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(2),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        eq(taskToDomain)))
+                .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -240,9 +294,17 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowVersion", 2);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null), eq(null)))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(2),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        eq(null)))
+                .thenReturn("workflow_1");
 
         assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
     }
@@ -253,9 +315,12 @@ public class TestSubWorkflow {
         Workflow workflowInstance = new Workflow();
         Workflow subWorkflowInstance = new Workflow();
         workflowInstance.setWorkflowDefinition(workflowDef);
-        Map<String, String> taskToDomain = new HashMap<String, String>() {{
-            put("*", "unittest");
-        }};
+        Map<String, String> taskToDomain =
+                new HashMap<String, String>() {
+                    {
+                        put("*", "unittest");
+                    }
+                };
 
         Task task = new Task();
         Map<String, Object> outputData = new HashMap<>();
@@ -268,12 +333,19 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowTaskToDomain", taskToDomain);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null),
-                eq(taskToDomain)))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(2),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        eq(taskToDomain)))
+                .thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
-            .thenReturn(subWorkflowInstance);
+                .thenReturn(subWorkflowInstance);
 
         subWorkflowInstance.setStatus(Workflow.WorkflowStatus.RUNNING);
         assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
@@ -324,11 +396,19 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowVersion", 2);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null), eq(null)))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(2),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        eq(null)))
+                .thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(true)))
-            .thenReturn(subWorkflowInstance);
+                .thenReturn(subWorkflowInstance);
 
         workflowInstance.setStatus(Workflow.WorkflowStatus.TIMED_OUT);
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
@@ -352,11 +432,19 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowVersion", 2);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null), eq(null)))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq("UnitWorkFlow"),
+                        eq(2),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        any(),
+                        any(),
+                        eq(null),
+                        eq(null)))
+                .thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
-            .thenReturn(subWorkflowInstance);
+                .thenReturn(subWorkflowInstance);
 
         subWorkflow.cancel(workflowInstance, task, workflowExecutor);
 
@@ -386,9 +474,17 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowDefinition", subWorkflowDef);
         task.setInputData(inputData);
 
-        when(workflowExecutor
-            .startWorkflow(eq(subWorkflowDef), eq(inputData), eq(null), any(), eq(0), any(), any(), eq(null), any()))
-            .thenReturn("workflow_1");
+        when(workflowExecutor.startWorkflow(
+                        eq(subWorkflowDef),
+                        eq(inputData),
+                        eq(null),
+                        any(),
+                        eq(0),
+                        any(),
+                        any(),
+                        eq(null),
+                        any()))
+                .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());

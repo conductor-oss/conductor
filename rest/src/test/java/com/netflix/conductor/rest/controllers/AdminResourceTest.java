@@ -12,6 +12,18 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.service.AdminService;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -21,23 +33,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.service.AdminService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-
 public class AdminResourceTest {
 
-    @Mock
-    private AdminService mockAdminService;
+    @Mock private AdminService mockAdminService;
 
-    @Mock
-    private AdminResource adminResource;
+    @Mock private AdminResource adminResource;
 
     @Before
     public void before() {
@@ -59,7 +59,8 @@ public class AdminResourceTest {
         task.setReferenceTaskName("test");
         List<Task> listOfTask = new ArrayList<>();
         listOfTask.add(task);
-        when(mockAdminService.getListOfPendingTask(anyString(), anyInt(), anyInt())).thenReturn(listOfTask);
+        when(mockAdminService.getListOfPendingTask(anyString(), anyInt(), anyInt()))
+                .thenReturn(listOfTask);
         assertEquals(listOfTask, adminResource.view("testTask", 0, 100));
     }
 

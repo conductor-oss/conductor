@@ -16,7 +16,7 @@ const BAR_MARGIN = 50;
 const BOTTOM_MARGIN = 30;
 const GRAPH_MIN_HEIGHT = 600;
 
-class WorkflowGraph extends React.PureComponent {
+class WorkflowGraph extends React.Component {
   constructor(props) {
     super(props);
     this.renderer = new dagreD3Render();
@@ -27,36 +27,20 @@ class WorkflowGraph extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps) {
-    const selectedRef = _.get(this.props.selectedTask, "ref");
-    const dagGraph = this.props.dag.graph;
-
+    // useEffect on dag
     if (prevProps.dag !== this.props.dag) {
       this.drawGraph();
       this.zoomHome();
-    } else if (prevProps.selectedRef !== selectedRef) {
-      // if ref cannot be found in this.graph, it is captured within placeholder. Look in dagGraph.
-      let resolvedRef;
-      if (!selectedRef) {
-        resolvedRef = null;
-      } else if (this.graph.hasNode(selectedRef)) {
-        resolvedRef = selectedRef;
-      } else if (dagGraph.hasNode(selectedRef)) {
-        const parentRef = _.first(dagGraph.predecessors(selectedRef));
-        console.assert(dagGraph.node(parentRef).type === "FORK_JOIN_DYNAMIC");
-        resolvedRef = this.graph
-          .successors(parentRef)
-          .find((ref) => ref.includes("DF_TASK_PLACEHOLDER"));
-      } else {
-        throw new Error("Assertion failed. ref not found");
-      }
-      const { inner } = this;
-      inner.selectAll("g.node").classed("selected", false);
+    }
 
-      if (resolvedRef) {
-        inner.select(`g[id='${resolvedRef}']`).classed("selected", true);
-      }
+    // useEffect on selectedRef
+    if (prevProps.selectedTask !== this.props.selectedTask) {
+      this.highlightSelectedNode();
       this.zoomHome();
-    } else if (prevProps.width !== this.props.width) {
+    }
+
+    // useEffect on width
+    if (prevProps.width !== this.props.width) {
       if (prevProps.width > 0 && this.props.width > 0) {
         console.log(
           "rehoming. size change:",
@@ -90,8 +74,36 @@ class WorkflowGraph extends React.PureComponent {
     this.zoom(this.svg);
 
     this.drawGraph();
+    this.highlightSelectedNode();
     this.zoomHome();
   }
+
+  highlightSelectedNode = () => {
+    const dagGraph = this.props.dag.graph;
+    const selectedRef = _.get(this.props.selectedTask, "ref");
+    // if ref cannot be found in this.graph, it is captured within placeholder. Look in dagGraph.
+    let resolvedRef;
+    if (!selectedRef) {
+      resolvedRef = null;
+    } else if (this.graph.hasNode(selectedRef)) {
+      resolvedRef = selectedRef;
+    } else if (dagGraph.hasNode(selectedRef)) {
+      const parentRef = _.first(dagGraph.predecessors(selectedRef));
+      console.assert(dagGraph.node(parentRef).type === "FORK_JOIN_DYNAMIC");
+      resolvedRef = this.graph
+        .successors(parentRef)
+        .find((ref) => ref.includes("DF_TASK_PLACEHOLDER"));
+    } else {
+      throw new Error("Assertion failed. ref not found");
+    }
+
+    const { inner } = this;
+    inner.selectAll("g.node").classed("selected", false);
+
+    if (resolvedRef) {
+      inner.select(`g[id='${resolvedRef}']`).classed("selected", true);
+    }
+  };
 
   zoomInOut = (dir) => {
     const { svg, inner } = this;

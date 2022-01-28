@@ -21,11 +21,12 @@ public class ScriptEvaluator {
 
     private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
 
-    private ScriptEvaluator() {
-    }
+    private ScriptEvaluator() {}
 
     /**
-     * Evaluates the script with the help of input provided but converts the result to a boolean value.
+     * Evaluates the script with the help of input provided but converts the result to a boolean
+     * value.
+     *
      * @param script Script to be evaluated.
      * @param input Input parameters.
      * @throws ScriptException
@@ -37,6 +38,7 @@ public class ScriptEvaluator {
 
     /**
      * Evaluates the script with the help of input provided.
+     *
      * @param script Script to be evaluated.
      * @param input Input parameters.
      * @throws ScriptException
@@ -49,9 +51,10 @@ public class ScriptEvaluator {
     }
 
     /**
-     * Converts a generic object into boolean value.
-     * Checks if the Object is of type Boolean and returns the value of the Boolean object.
-     * Checks if the Object is of type Number and returns True if the value is greater than 0.
+     * Converts a generic object into boolean value. Checks if the Object is of type Boolean and
+     * returns the value of the Boolean object. Checks if the Object is of type Number and returns
+     * True if the value is greater than 0.
+     *
      * @param input Generic object that will be inspected to return a boolean value.
      * @return True or False based on the input provided.
      */

@@ -12,23 +12,24 @@
  */
 package com.netflix.conductor.client.http;
 
+import java.lang.reflect.ParameterizedType;
+import java.net.URI;
+import java.util.Collections;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.config.ClientConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.ParameterizedType;
-import java.net.URI;
-import java.util.Collections;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+
+import com.sun.jersey.api.client.ClientHandler;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.config.ClientConfig;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -38,11 +39,9 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringRunner.class)
 public class TaskClientTest {
 
-    @Mock
-    private ClientHandler clientHandler;
+    @Mock private ClientHandler clientHandler;
 
-    @Mock
-    private ClientConfig clientConfig;
+    @Mock private ClientConfig clientConfig;
 
     private TaskClient taskClient;
 
@@ -61,11 +60,23 @@ public class TaskClientTest {
         TaskSummary taskSummary = mock(TaskSummary.class);
 
         taskSearchResult.setResults(Collections.singletonList(taskSummary));
-        when(clientResponse.getEntity(argThat((GenericType<SearchResult<TaskSummary>> type) ->
-                ((ParameterizedType) type.getType()).getRawType().equals(SearchResult.class) &&
-                        ((ParameterizedType) type.getType()).getActualTypeArguments()[0].equals(TaskSummary.class)
-        ))).thenReturn(taskSearchResult);
-        when(clientHandler.handle(argThat(argument -> argument.getURI().equals(URI.create("http://myuri:8080/tasks/search?query=my_complex_query")))))
+        when(clientResponse.getEntity(
+                        argThat(
+                                (GenericType<SearchResult<TaskSummary>> type) ->
+                                        ((ParameterizedType) type.getType())
+                                                        .getRawType()
+                                                        .equals(SearchResult.class)
+                                                && ((ParameterizedType) type.getType())
+                                                        .getActualTypeArguments()[0].equals(
+                                                                TaskSummary.class))))
+                .thenReturn(taskSearchResult);
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/tasks/search?query=my_complex_query")))))
                 .thenReturn(clientResponse);
         SearchResult<TaskSummary> searchResult = taskClient.search("my_complex_query");
         assertEquals(1, searchResult.getTotalHits());
@@ -79,11 +90,23 @@ public class TaskClientTest {
         taskSearchResult.setTotalHits(1);
         Task task = mock(Task.class);
         taskSearchResult.setResults(Collections.singletonList(task));
-        when(clientResponse.getEntity(argThat((GenericType<SearchResult<Task>> type) ->
-                ((ParameterizedType) type.getType()).getRawType().equals(SearchResult.class) &&
-                        ((ParameterizedType) type.getType()).getActualTypeArguments()[0].equals(Task.class)
-        ))).thenReturn(taskSearchResult);
-        when(clientHandler.handle(argThat(argument -> argument.getURI().equals(URI.create("http://myuri:8080/tasks/search-v2?query=my_complex_query")))))
+        when(clientResponse.getEntity(
+                        argThat(
+                                (GenericType<SearchResult<Task>> type) ->
+                                        ((ParameterizedType) type.getType())
+                                                        .getRawType()
+                                                        .equals(SearchResult.class)
+                                                && ((ParameterizedType) type.getType())
+                                                        .getActualTypeArguments()[0].equals(
+                                                                Task.class))))
+                .thenReturn(taskSearchResult);
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/tasks/search-v2?query=my_complex_query")))))
                 .thenReturn(clientResponse);
         SearchResult<Task> searchResult = taskClient.searchV2("my_complex_query");
         assertEquals(1, searchResult.getTotalHits());
@@ -99,13 +122,26 @@ public class TaskClientTest {
         TaskSummary taskSummary = mock(TaskSummary.class);
 
         taskSearchResult.setResults(Collections.singletonList(taskSummary));
-        when(clientResponse.getEntity(argThat((GenericType<SearchResult<TaskSummary>> type) ->
-                ((ParameterizedType) type.getType()).getRawType().equals(SearchResult.class) &&
-                        ((ParameterizedType) type.getType()).getActualTypeArguments()[0].equals(TaskSummary.class)
-        ))).thenReturn(taskSearchResult);
-        when(clientHandler.handle(argThat(argument -> argument.getURI().equals(URI.create("http://myuri:8080/tasks/search?start=0&size=10&sort=sort&freeText=text&query=my_complex_query")))))
+        when(clientResponse.getEntity(
+                        argThat(
+                                (GenericType<SearchResult<TaskSummary>> type) ->
+                                        ((ParameterizedType) type.getType())
+                                                        .getRawType()
+                                                        .equals(SearchResult.class)
+                                                && ((ParameterizedType) type.getType())
+                                                        .getActualTypeArguments()[0].equals(
+                                                                TaskSummary.class))))
+                .thenReturn(taskSearchResult);
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/tasks/search?start=0&size=10&sort=sort&freeText=text&query=my_complex_query")))))
                 .thenReturn(clientResponse);
-        SearchResult<TaskSummary> searchResult = taskClient.search(0,10,"sort","text","my_complex_query");
+        SearchResult<TaskSummary> searchResult =
+                taskClient.search(0, 10, "sort", "text", "my_complex_query");
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(Collections.singletonList(taskSummary), searchResult.getResults());
     }
@@ -117,13 +153,26 @@ public class TaskClientTest {
         taskSearchResult.setTotalHits(1);
         Task task = mock(Task.class);
         taskSearchResult.setResults(Collections.singletonList(task));
-        when(clientResponse.getEntity(argThat((GenericType<SearchResult<Task>> type) ->
-                ((ParameterizedType) type.getType()).getRawType().equals(SearchResult.class) &&
-                        ((ParameterizedType) type.getType()).getActualTypeArguments()[0].equals(Task.class)
-        ))).thenReturn(taskSearchResult);
-        when(clientHandler.handle(argThat(argument -> argument.getURI().equals(URI.create("http://myuri:8080/tasks/search-v2?start=0&size=10&sort=sort&freeText=text&query=my_complex_query")))))
+        when(clientResponse.getEntity(
+                        argThat(
+                                (GenericType<SearchResult<Task>> type) ->
+                                        ((ParameterizedType) type.getType())
+                                                        .getRawType()
+                                                        .equals(SearchResult.class)
+                                                && ((ParameterizedType) type.getType())
+                                                        .getActualTypeArguments()[0].equals(
+                                                                Task.class))))
+                .thenReturn(taskSearchResult);
+        when(clientHandler.handle(
+                        argThat(
+                                argument ->
+                                        argument.getURI()
+                                                .equals(
+                                                        URI.create(
+                                                                "http://myuri:8080/tasks/search-v2?start=0&size=10&sort=sort&freeText=text&query=my_complex_query")))))
                 .thenReturn(clientResponse);
-        SearchResult<Task> searchResult = taskClient.searchV2(0,10,"sort","text","my_complex_query");
+        SearchResult<Task> searchResult =
+                taskClient.searchV2(0, 10, "sort", "text", "my_complex_query");
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(Collections.singletonList(task), searchResult.getResults());
     }

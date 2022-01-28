@@ -12,11 +12,17 @@
  */
 package com.netflix.conductor.validations;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.dao.MetadataDAO;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -24,15 +30,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.dao.MetadataDAO;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -47,9 +49,10 @@ public class WorkflowDefConstraintTest {
 
     @BeforeClass
     public static void init() {
-        validatorFactory = Validation.byProvider(ApacheValidationProvider.class)
-            .configure()
-            .buildValidatorFactory();
+        validatorFactory =
+                Validation.byProvider(ApacheValidationProvider.class)
+                        .configure()
+                        .buildValidatorFactory();
         validator = validatorFactory.getValidator();
     }
 
@@ -67,7 +70,7 @@ public class WorkflowDefConstraintTest {
 
     @Test
     public void testWorkflowTaskName() {
-        TaskDef taskDef = new TaskDef();//name is null
+        TaskDef taskDef = new TaskDef(); // name is null
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
@@ -132,8 +135,9 @@ public class WorkflowDefConstraintTest {
         when(mockMetadataDao.getTaskDef("work1")).thenReturn(new TaskDef());
         Set<ConstraintViolation<WorkflowDef>> result = validator.validate(workflowDef);
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(),
-            "taskReferenceName: work for given task: task_1 input value: fileLocation of input parameter: ${work.input.fileLocation} is not defined in workflow definition.");
+        assertEquals(
+                result.iterator().next().getMessage(),
+                "taskReferenceName: work for given task: task_1 input value: fileLocation of input parameter: ${work.input.fileLocation} is not defined in workflow definition.");
     }
 
     @Test
@@ -178,11 +182,14 @@ public class WorkflowDefConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains(
-            "taskReferenceName: task_2 for given task: task_2 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
-        assertTrue(validationErrors.contains(
-            "taskReferenceName: task_2 for given task: task_1 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
-        assertTrue(validationErrors.contains(
-            "taskReferenceName: task_1 should be unique across tasks for a given workflowDefinition: sampleWorkflow"));
+        assertTrue(
+                validationErrors.contains(
+                        "taskReferenceName: task_2 for given task: task_2 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
+        assertTrue(
+                validationErrors.contains(
+                        "taskReferenceName: task_2 for given task: task_1 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
+        assertTrue(
+                validationErrors.contains(
+                        "taskReferenceName: task_1 should be unique across tasks for a given workflowDefinition: sampleWorkflow"));
     }
 }

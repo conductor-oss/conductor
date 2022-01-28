@@ -12,35 +12,45 @@
  */
 package com.netflix.conductor.common.utils;
 
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-
 import java.io.InputStream;
 
+import com.netflix.conductor.common.run.ExternalStorageLocation;
+
 /**
- * Interface used to externalize the storage of large JSON payloads in workflow and task input/output
+ * Interface used to externalize the storage of large JSON payloads in workflow and task
+ * input/output
  */
 public interface ExternalPayloadStorage {
 
-    enum Operation {READ, WRITE}
+    enum Operation {
+        READ,
+        WRITE
+    }
 
-    enum PayloadType {WORKFLOW_INPUT, WORKFLOW_OUTPUT, TASK_INPUT, TASK_OUTPUT}
+    enum PayloadType {
+        WORKFLOW_INPUT,
+        WORKFLOW_OUTPUT,
+        TASK_INPUT,
+        TASK_OUTPUT
+    }
 
     /**
      * Obtain a uri used to store/access a json payload in external storage.
      *
-     * @param operation   the type of {@link Operation} to be performed with the uri
+     * @param operation the type of {@link Operation} to be performed with the uri
      * @param payloadType the {@link PayloadType} that is being accessed at the uri
-     * @param path        (optional) the relative path for which the external storage location object is to be
-     *                    populated. If path is not specified, it will be computed and populated.
-     * @return a {@link ExternalStorageLocation} object which contains the uri and the path for the json payload
+     * @param path (optional) the relative path for which the external storage location object is to
+     *     be populated. If path is not specified, it will be computed and populated.
+     * @return a {@link ExternalStorageLocation} object which contains the uri and the path for the
+     *     json payload
      */
     ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path);
 
     /**
      * Upload a json payload to the specified external storage location.
      *
-     * @param path        the location to which the object is to be uploaded
-     * @param payload     an {@link InputStream} containing the json payload which is to be uploaded
+     * @param path the location to which the object is to be uploaded
+     * @param payload an {@link InputStream} containing the json payload which is to be uploaded
      * @param payloadSize the size of the json payload in bytes
      */
     void upload(String path, InputStream payload, long payloadSize);

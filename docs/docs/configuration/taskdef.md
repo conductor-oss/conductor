@@ -41,6 +41,7 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
 |timeoutSeconds|Time in seconds, after which the task is marked as `TIMED_OUT` if not completed after transitioning to `IN_PROGRESS` status for the first time|No timeouts if set to 0|
 |pollTimeoutSeconds|Time in seconds, after which the task is marked as `TIMED_OUT` if not polled by a worker|No timeouts if set to 0|
 |responseTimeoutSeconds|Must be greater than 0 and less than timeoutSeconds. The task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.|defaults to 3600|
+|backoffScaleFactor|Must be greater than 0. Scale factor for linearity of the backoff|defaults to 1|
 |inputKeys|Array of keys of task's expected input.  Used for documenting task's input. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |optional|
 |outputKeys|Array of keys of task's expected output.  Used for documenting task's output|optional|
 |inputTemplate|See [Using inputTemplate](#using-inputtemplate) below.|optional|
@@ -52,6 +53,7 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
 
 * FIXED : Reschedule the task after the ```retryDelaySeconds```
 * EXPONENTIAL_BACKOFF : Reschedule after ```retryDelaySeconds  * attemptNumber```
+* LINEAR_BACKOFF : Reschedule after ```retryDelaySeconds * backoffRate * attemptNumber```
  
 ### Timeout Policy
 

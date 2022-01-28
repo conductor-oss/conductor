@@ -12,6 +12,19 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -25,18 +38,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Audit
@@ -58,14 +59,19 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskType Task name
      * @param workerId Id of the workflow
-     * @param domain   Domain of the workflow
+     * @param domain Domain of the workflow
      * @return polled {@link Task}
      */
     public Task poll(String taskType, String workerId, String domain) {
         LOGGER.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
         Task task = executionService.getLastPollTask(taskType, workerId, domain);
         if (task != null) {
-            LOGGER.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
+            LOGGER.debug(
+                    "The Task {} being returned for /tasks/poll/{}?{}&{}",
+                    task,
+                    taskType,
+                    workerId,
+                    domain);
         }
         Monitors.recordTaskPollCount(taskType, domain, 1);
         return task;
@@ -76,17 +82,20 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskType Task Name
      * @param workerId Id of the workflow
-     * @param domain   Domain of the workflow
-     * @param count    Number of tasks
-     * @param timeout  Timeout for polling in milliseconds
+     * @param domain Domain of the workflow
+     * @param count Number of tasks
+     * @param timeout Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
-    public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
+    public List<Task> batchPoll(
+            String taskType, String workerId, String domain, Integer count, Integer timeout) {
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
-        LOGGER.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
-            polledTasks.stream()
-                .map(Task::getTaskId)
-                .collect(Collectors.toList()), taskType, workerId, domain);
+        LOGGER.debug(
+                "The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+                polledTasks.stream().map(Task::getTaskId).collect(Collectors.toList()),
+                taskType,
+                workerId,
+                domain);
         Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
         return polledTasks;
     }
@@ -96,7 +105,7 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskType Task Name
      * @param startKey Start index of pagination
-     * @param count    Number of entries
+     * @param count Number of entries
      * @return list of {@link Task}
      */
     public List<Task> getTasks(String taskType, String startKey, Integer count) {
@@ -106,7 +115,7 @@ public class TaskServiceImpl implements TaskService {
     /**
      * Get in progress task for a given workflow id.
      *
-     * @param workflowId        Id of the workflow
+     * @param workflowId Id of the workflow
      * @param taskReferenceName Task reference name.
      * @return instance of {@link Task}
      */
@@ -121,17 +130,22 @@ public class TaskServiceImpl implements TaskService {
      * @return task Id of the updated task.
      */
     public String updateTask(TaskResult taskResult) {
-        LOGGER.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+        LOGGER.debug(
+                "Update Task: {} with callback time: {}",
+                taskResult,
+                taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
-        LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult,
-            taskResult.getCallbackAfterSeconds());
+        LOGGER.debug(
+                "Task: {} updated successfully with callback time: {}",
+                taskResult,
+                taskResult.getCallbackAfterSeconds());
         return taskResult.getTaskId();
     }
 
     /**
      * Ack Task is received.
      *
-     * @param taskId   Id of the task
+     * @param taskId Id of the task
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
@@ -152,13 +166,21 @@ public class TaskServiceImpl implements TaskService {
         String ackTaskOperation = "ackTaskReceived";
         AtomicBoolean ackResult = new AtomicBoolean(false);
         try {
-            new RetryUtil<>().retryOnException(() -> {
-                ackResult.set(executionService.ackTaskReceived(taskId));
-                return null;
-            }, null, null, 3, ackTaskDesc, ackTaskOperation);
+            new RetryUtil<>()
+                    .retryOnException(
+                            () -> {
+                                ackResult.set(executionService.ackTaskReceived(taskId));
+                                return null;
+                            },
+                            null,
+                            null,
+                            3,
+                            ackTaskDesc,
+                            ackTaskOperation);
 
         } catch (Exception e) {
-            // Fail the task and let decide reevaluate the workflow, thereby preventing workflow being stuck from transient ack errors.
+            // Fail the task and let decide reevaluate the workflow, thereby preventing workflow
+            // being stuck from transient ack errors.
             String errorMsg = String.format("Error when trying to ack task %s", taskId);
             LOGGER.error(errorMsg, e);
             Task task = executionService.getTask(taskId);
@@ -184,8 +206,13 @@ public class TaskServiceImpl implements TaskService {
             taskResult.setReasonForIncompletion(errorMsg);
             executionService.updateTask(taskResult);
         } catch (Exception e) {
-            LOGGER.error("Unable to fail task: {} in workflow: {}", task.getTaskId(), task.getWorkflowInstanceId(), e);
-            executionService.terminateWorkflow(task.getWorkflowInstanceId(), "Failed to ack task: " + task.getTaskId());
+            LOGGER.error(
+                    "Unable to fail task: {} in workflow: {}",
+                    task.getTaskId(),
+                    task.getWorkflowInstanceId(),
+                    e);
+            executionService.terminateWorkflow(
+                    task.getWorkflowInstanceId(), "Failed to ack task: " + task.getTaskId());
         }
     }
 
@@ -193,7 +220,7 @@ public class TaskServiceImpl implements TaskService {
      * Log Task Execution Details.
      *
      * @param taskId Id of the task
-     * @param log    Details you want to log
+     * @param log Details you want to log
      */
     public void log(String taskId, String log) {
         executionService.log(taskId, log);
@@ -223,7 +250,7 @@ public class TaskServiceImpl implements TaskService {
      * Remove Task from a Task type queue.
      *
      * @param taskType Task Name
-     * @param taskId   ID of the task
+     * @param taskId ID of the task
      */
     public void removeTaskFromQueue(String taskType, String taskId) {
         executionService.removeTaskfromQueue(taskId);
@@ -264,8 +291,13 @@ public class TaskServiceImpl implements TaskService {
      */
     public Map<String, Long> getAllQueueDetails() {
         return queueDAO.queuesDetail().entrySet().stream()
-            .sorted(Comparator.comparing(Entry::getKey))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
+                .sorted(Comparator.comparing(Entry::getKey))
+                .collect(
+                        Collectors.toMap(
+                                Entry::getKey,
+                                Entry::getValue,
+                                (v1, v2) -> v1,
+                                LinkedHashMap::new));
     }
 
     /**
@@ -298,57 +330,64 @@ public class TaskServiceImpl implements TaskService {
     }
 
     /**
-     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g. sort=name or
-     * sort=workflowId. If order is not specified, defaults to ASC.
+     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.
+     * sort=name or sort=workflowId. If order is not specified, defaults to ASC.
      *
-     * @param start    Start index of pagination
-     * @param size     Number of entries
-     * @param sort     Sorting type ASC|DESC
+     * @param start Start index of pagination
+     * @param size Number of entries
+     * @param sort Sorting type ASC|DESC
      * @param freeText Text you want to search
-     * @param query    Query you want to search
+     * @param query Query you want to search
      * @return instance of {@link SearchResult}
      */
-    public SearchResult<TaskSummary> search(int start, int size, String sort, String freeText, String query) {
+    public SearchResult<TaskSummary> search(
+            int start, int size, String sort, String freeText, String query) {
         return executionService.getSearchTasks(query, freeText, start, size, sort);
     }
 
     /**
-     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g. sort=name or
-     * sort=workflowId. If order is not specified, defaults to ASC.
+     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.
+     * sort=name or sort=workflowId. If order is not specified, defaults to ASC.
      *
-     * @param start    Start index of pagination
-     * @param size     Number of entries
-     * @param sort     Sorting type ASC|DESC
+     * @param start Start index of pagination
+     * @param size Number of entries
+     * @param sort Sorting type ASC|DESC
      * @param freeText Text you want to search
-     * @param query    Query you want to search
+     * @param query Query you want to search
      * @return instance of {@link SearchResult}
      */
-    public SearchResult<Task> searchV2(int start, int size, String sort, String freeText, String query) {
+    public SearchResult<Task> searchV2(
+            int start, int size, String sort, String freeText, String query) {
         return executionService.getSearchTasksV2(query, freeText, start, size, sort);
     }
 
     /**
      * Get the external storage location where the task output payload is stored/to be stored
      *
-     * @param path      the path for which the external storage location is to be populated
+     * @param path the path for which the external storage location is to be populated
      * @param operation the operation to be performed (read or write)
-     * @param type      the type of payload (input or output)
-     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external
-     * storage
+     * @param type the type of payload (input or output)
+     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is
+     *     stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation(String path, String operation, String type) {
+    public ExternalStorageLocation getExternalStorageLocation(
+            String path, String operation, String type) {
         try {
-            ExternalPayloadStorage.Operation payloadOperation = ExternalPayloadStorage.Operation
-                .valueOf(StringUtils.upperCase(operation));
-            ExternalPayloadStorage.PayloadType payloadType = ExternalPayloadStorage.PayloadType
-                .valueOf(StringUtils.upperCase(type));
+            ExternalPayloadStorage.Operation payloadOperation =
+                    ExternalPayloadStorage.Operation.valueOf(StringUtils.upperCase(operation));
+            ExternalPayloadStorage.PayloadType payloadType =
+                    ExternalPayloadStorage.PayloadType.valueOf(StringUtils.upperCase(type));
             return executionService.getExternalStorageLocation(payloadOperation, payloadType, path);
         } catch (Exception e) {
             // FIXME: for backwards compatibility
-            LOGGER.error("Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/TASK_OUTPUT", operation,
-                type);
-            return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE,
-                ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
+            LOGGER.error(
+                    "Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/TASK_OUTPUT",
+                    operation,
+                    type);
+            return executionService.getExternalStorageLocation(
+                    ExternalPayloadStorage.Operation.WRITE,
+                    ExternalPayloadStorage.PayloadType.TASK_OUTPUT,
+                    path);
         }
     }
 }

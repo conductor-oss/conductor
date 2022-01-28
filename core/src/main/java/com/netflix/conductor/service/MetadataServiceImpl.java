@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -23,9 +28,6 @@ import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.stereotype.Service;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Service
@@ -34,19 +36,19 @@ public class MetadataServiceImpl implements MetadataService {
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
 
-    public MetadataServiceImpl(MetadataDAO metadataDAO, EventHandlerDAO eventHandlerDAO,
-        ConductorProperties properties) {
+    public MetadataServiceImpl(
+            MetadataDAO metadataDAO,
+            EventHandlerDAO eventHandlerDAO,
+            ConductorProperties properties) {
         this.metadataDAO = metadataDAO;
         this.eventHandlerDAO = eventHandlerDAO;
 
         ValidationContext.initialize(metadataDAO);
-        OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator
-            .setOwnerEmailMandatory(properties.isOwnerEmailMandatory());
+        OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator.setOwnerEmailMandatory(
+                properties.isOwnerEmailMandatory());
     }
 
-    /**
-     * @param taskDefinitions Task Definitions to register
-     */
+    /** @param taskDefinitions Task Definitions to register */
     public void registerTaskDef(List<TaskDef> taskDefinitions) {
         for (TaskDef taskDefinition : taskDefinitions) {
             taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
@@ -58,29 +60,24 @@ public class MetadataServiceImpl implements MetadataService {
         }
     }
 
-    /**
-     * @param taskDefinition Task Definition to be updated
-     */
+    /** @param taskDefinition Task Definition to be updated */
     public void updateTaskDef(TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
-            throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
+            throw new ApplicationException(
+                    Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateTaskDef(taskDefinition);
     }
 
-    /**
-     * @param taskType Remove task definition
-     */
+    /** @param taskType Remove task definition */
     public void unregisterTaskDef(String taskType) {
         metadataDAO.removeTaskDef(taskType);
     }
 
-    /**
-     * @return List of all the registered tasks
-     */
+    /** @return List of all the registered tasks */
     public List<TaskDef> getTaskDefs() {
         return metadataDAO.getAllTaskDefs();
     }
@@ -92,23 +89,19 @@ public class MetadataServiceImpl implements MetadataService {
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null) {
-            throw new ApplicationException(Code.NOT_FOUND,
-                String.format("No such taskType found by name: %s", taskType));
+            throw new ApplicationException(
+                    Code.NOT_FOUND, String.format("No such taskType found by name: %s", taskType));
         }
         return taskDef;
     }
 
-    /**
-     * @param workflowDef Workflow definition to be updated
-     */
+    /** @param workflowDef Workflow definition to be updated */
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
     }
 
-    /**
-     * @param workflowDefList Workflow definitions to be updated.
-     */
+    /** @param workflowDefList Workflow definitions to be updated. */
     public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
         for (WorkflowDef workflowDef : workflowDefList) {
             workflowDef.setUpdateTime(System.currentTimeMillis());
@@ -117,8 +110,8 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     /**
-     * @param name    Name of the workflow to retrieve
-     * @param version Optional.  Version.  If null, then retrieves the latest
+     * @param name Name of the workflow to retrieve
+     * @param version Optional. Version. If null, then retrieves the latest
      * @return Workflow definition
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
@@ -129,8 +122,13 @@ public class MetadataServiceImpl implements MetadataService {
             workflowDef = metadataDAO.getWorkflowDef(name, version);
         }
 
-        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
-            String.format("No such workflow found by name: %s, version: %d", name, version)));
+        return workflowDef.orElseThrow(
+                () ->
+                        new ApplicationException(
+                                Code.NOT_FOUND,
+                                String.format(
+                                        "No such workflow found by name: %s, version: %d",
+                                        name, version)));
     }
 
     /**
@@ -147,8 +145,9 @@ public class MetadataServiceImpl implements MetadataService {
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         if (workflowDef.getName().contains(":")) {
-            throw new ApplicationException(Code.INVALID_INPUT,
-                "Workflow name cannot contain the following set of characters: ':'");
+            throw new ApplicationException(
+                    Code.INVALID_INPUT,
+                    "Workflow name cannot contain the following set of characters: ':'");
         }
         if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
             workflowDef.setSchemaVersion(2);
@@ -158,7 +157,7 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     /**
-     * @param name    Name of the workflow definition to be removed
+     * @param name Name of the workflow definition to be removed
      * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
@@ -166,36 +165,30 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     /**
-     * @param eventHandler Event handler to be added. Will throw an exception if an event handler already exists with
-     *                     the name
+     * @param eventHandler Event handler to be added. Will throw an exception if an event handler
+     *     already exists with the name
      */
     public void addEventHandler(EventHandler eventHandler) {
         eventHandlerDAO.addEventHandler(eventHandler);
     }
 
-    /**
-     * @param eventHandler Event handler to be updated.
-     */
+    /** @param eventHandler Event handler to be updated. */
     public void updateEventHandler(EventHandler eventHandler) {
         eventHandlerDAO.updateEventHandler(eventHandler);
     }
 
-    /**
-     * @param name Removes the event handler from the system
-     */
+    /** @param name Removes the event handler from the system */
     public void removeEventHandlerStatus(String name) {
         eventHandlerDAO.removeEventHandler(name);
     }
 
-    /**
-     * @return All the event handlers registered in the system
-     */
+    /** @return All the event handlers registered in the system */
     public List<EventHandler> getAllEventHandlers() {
         return eventHandlerDAO.getAllEventHandlers();
     }
 
     /**
-     * @param event      name of the event
+     * @param event name of the event
      * @param activeOnly if true, returns only the active handlers
      * @return Returns the list of all the event handlers for a given event
      */

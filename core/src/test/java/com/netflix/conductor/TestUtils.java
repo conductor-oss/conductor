@@ -12,18 +12,21 @@
  */
 package com.netflix.conductor;
 
-import javax.validation.ConstraintViolation;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.validation.ConstraintViolation;
+
 public class TestUtils {
 
-    public static Set<String> getConstraintViolationMessages(Set<ConstraintViolation<?>> constraintViolations) {
+    public static Set<String> getConstraintViolationMessages(
+            Set<ConstraintViolation<?>> constraintViolations) {
         Set<String> messages = new HashSet<>(constraintViolations.size());
-        messages.addAll(constraintViolations.stream()
-            .map(ConstraintViolation::getMessage)
-            .collect(Collectors.toList()));
+        messages.addAll(
+                constraintViolations.stream()
+                        .map(ConstraintViolation::getMessage)
+                        .collect(Collectors.toList()));
         return messages;
     }
 }

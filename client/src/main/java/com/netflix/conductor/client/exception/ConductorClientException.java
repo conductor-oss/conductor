@@ -12,14 +12,12 @@
  */
 package com.netflix.conductor.client.exception;
 
+import java.util.List;
+
 import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.common.validation.ValidationError;
 
-import java.util.List;
-
-/**
- * Client exception thrown from Conductor api clients.
- */
+/** Client exception thrown from Conductor api clients. */
 public class ConductorClientException extends RuntimeException {
 
     private int status;

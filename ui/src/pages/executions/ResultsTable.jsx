@@ -11,11 +11,11 @@ import { Alert, AlertTitle } from "@material-ui/lab";
 import { makeStyles } from "@material-ui/styles";
 import BulkActionModule from "./BulkActionModule";
 import executionsStyles from "./executionsStyles";
-import commonStyles from "../styles";
+import sharedStyles from "../styles";
 
 const useStyles = makeStyles({
   ...executionsStyles,
-  ...commonStyles,
+  ...sharedStyles,
 });
 
 const executionFields = [
@@ -107,7 +107,7 @@ export default function ResultsTable({
       )}
       {resultObj && (
         <DataTable
-          title={totalHits > 0 && ` Page ${page} of ${totalHits} results.`}
+          title={totalHits > 0 && ` Page ${page} of ${totalHits}`}
           data={resultObj.results}
           columns={executionFields}
           defaultShowColumns={[

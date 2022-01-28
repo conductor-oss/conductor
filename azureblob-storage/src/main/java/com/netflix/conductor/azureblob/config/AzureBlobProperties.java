@@ -14,56 +14,39 @@ package com.netflix.conductor.azureblob.config;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.external-payload-storage.azureblob")
 public class AzureBlobProperties {
 
-    /**
-     * The connection string to be used to connect to Azure Blob storage
-     */
+    /** The connection string to be used to connect to Azure Blob storage */
     private String connectionString = null;
 
-    /**
-     * The name of the container where the payloads will be stored
-     */
+    /** The name of the container where the payloads will be stored */
     private String containerName = "conductor-payloads";
 
-    /**
-     * The endpoint to be used to connect to Azure Blob storage
-     */
+    /** The endpoint to be used to connect to Azure Blob storage */
     private String endpoint = null;
 
-    /**
-     * The sas token to be used for authenticating requests
-     */
+    /** The sas token to be used for authenticating requests */
     private String sasToken = null;
 
-    /**
-     * The time for which the shared access signature is valid
-     */
+    /** The time for which the shared access signature is valid */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration signedUrlExpirationDuration = Duration.ofSeconds(5);
 
-    /**
-     * The path at which the workflow inputs will be stored
-     */
+    /** The path at which the workflow inputs will be stored */
     private String workflowInputPath = "workflow/input/";
 
-    /**
-     * The path at which the workflow outputs will be stored
-     */
+    /** The path at which the workflow outputs will be stored */
     private String workflowOutputPath = "workflow/output/";
 
-    /**
-     * The path at which the task inputs will be stored
-     */
+    /** The path at which the task inputs will be stored */
     private String taskInputPath = "task/input/";
 
-    /**
-     * The path at which the task outputs will be stored
-     */
+    /** The path at which the task outputs will be stored */
     private String taskOutputPath = "task/output/";
 
     public String getConnectionString() {

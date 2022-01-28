@@ -12,19 +12,22 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
-import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationWorkflowOutputParameter;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.Test;
+
+import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
+import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationWorkflowOutputParameter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class TestTerminate {
 
@@ -78,9 +81,12 @@ public class TestTerminate {
         Terminate terminateTask = new Terminate();
         workflow.setOutput(Collections.singletonMap("output", "${task1.output.value}"));
 
-        HashMap<String, Object> expectedOutput = new HashMap<String, Object>() {{
-            put("output", "${task0.output.value}");
-        }};
+        HashMap<String, Object> expectedOutput =
+                new HashMap<String, Object>() {
+                    {
+                        put("output", "${task0.output.value}");
+                    }
+                };
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "COMPLETED");
@@ -99,9 +105,12 @@ public class TestTerminate {
         Terminate terminateTask = new Terminate();
         workflow.setOutput(Collections.singletonMap("output", "${task1.output.value}"));
 
-        HashMap<String, Object> expectedOutput = new HashMap<String, Object>() {{
-            put("output", "${task0.output.value}");
-        }};
+        HashMap<String, Object> expectedOutput =
+                new HashMap<String, Object>() {
+                    {
+                        put("output", "${task0.output.value}");
+                    }
+                };
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "FAILED");
@@ -134,9 +143,12 @@ public class TestTerminate {
         Workflow workflow = new Workflow();
         Terminate terminateTask = new Terminate();
 
-        HashMap<String, Object> expectedOutput = new HashMap<String, Object>() {{
-            put("result", 1);
-        }};
+        HashMap<String, Object> expectedOutput =
+                new HashMap<String, Object>() {
+                    {
+                        put("result", 1);
+                    }
+                };
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "FAILED");

@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.client.spring;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("conductor.client")
 public class ClientProperties {
@@ -32,6 +32,10 @@ public class ClientProperties {
     private int updateRetryCount = 3;
 
     private Map<String, String> taskToDomain = new HashMap<>();
+
+    private Map<String, Integer> taskThreadCount = new HashMap<>();
+
+    private int shutdownGracePeriodSeconds = 10;
 
     public String getRootUri() {
         return rootUri;
@@ -79,5 +83,21 @@ public class ClientProperties {
 
     public void setTaskToDomain(Map<String, String> taskToDomain) {
         this.taskToDomain = taskToDomain;
+    }
+
+    public int getShutdownGracePeriodSeconds() {
+        return shutdownGracePeriodSeconds;
+    }
+
+    public void setShutdownGracePeriodSeconds(int shutdownGracePeriodSeconds) {
+        this.shutdownGracePeriodSeconds = shutdownGracePeriodSeconds;
+    }
+
+    public Map<String, Integer> getTaskThreadCount() {
+        return taskThreadCount;
+    }
+
+    public void setTaskThreadCount(Map<String, Integer> taskThreadCount) {
+        this.taskThreadCount = taskThreadCount;
     }
 }

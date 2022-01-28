@@ -47,7 +47,7 @@ ext {
     revMicrometer = '1.6.2'
     revMockServerClient = '5.11.2'
     revNatsStreaming = '0.5.0'
-    revOpenapi = '1.4.+'
+    revOpenapi = '1.6.+'
     revPowerMock = '2.0.9'
     revPrometheus = '0.9.0'
     revProtoBuf = '3.13.0'

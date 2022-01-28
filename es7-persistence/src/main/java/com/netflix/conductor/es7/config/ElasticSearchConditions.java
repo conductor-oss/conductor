@@ -17,8 +17,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 public class ElasticSearchConditions {
 
-    private ElasticSearchConditions() {
-    }
+    private ElasticSearchConditions() {}
 
     public static class ElasticSearchV7Enabled extends AllNestedConditions {
 
@@ -27,15 +26,17 @@ public class ElasticSearchConditions {
         }
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(name = "conductor.indexing.enabled", havingValue = "true", matchIfMissing = true)
-        static class enabledIndexing {
-
-        }
+        @ConditionalOnProperty(
+                name = "conductor.indexing.enabled",
+                havingValue = "true",
+                matchIfMissing = true)
+        static class enabledIndexing {}
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(name = "conductor.elasticsearch.version", havingValue = "7", matchIfMissing = true)
-        static class enabledES7 {
-
-        }
+        @ConditionalOnProperty(
+                name = "conductor.elasticsearch.version",
+                havingValue = "7",
+                matchIfMissing = true)
+        static class enabledES7 {}
     }
 }

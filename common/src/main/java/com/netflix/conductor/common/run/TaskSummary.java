@@ -12,24 +12,23 @@
  */
 package com.netflix.conductor.common.run;
 
-import com.netflix.conductor.annotations.protogen.ProtoField;
-import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.utils.SummaryUtil;
-import org.apache.commons.lang3.StringUtils;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
 import java.util.TimeZone;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.utils.SummaryUtil;
+
 @ProtoMessage
 public class TaskSummary {
 
-    /**
-     * The time should be stored as GMT
-     */
+    /** The time should be stored as GMT */
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     @ProtoField(id = 1)
@@ -89,8 +88,7 @@ public class TaskSummary {
     @ProtoField(id = 19)
     private int workflowPriority;
 
-    public TaskSummary() {
-    }
+    public TaskSummary() {}
 
     public TaskSummary(Task task) {
 
@@ -116,7 +114,7 @@ public class TaskSummary {
         }
 
         if (task.getOutputData() != null) {
-           this.output = SummaryUtil.serializeInputOutput(task.getOutputData());
+            this.output = SummaryUtil.serializeInputOutput(task.getOutputData());
         }
 
         if (task.getEndTime() > 0) {
@@ -131,268 +129,198 @@ public class TaskSummary {
         }
     }
 
-    /**
-     * @return the workflowId
-     */
+    /** @return the workflowId */
     public String getWorkflowId() {
         return workflowId;
     }
 
-    /**
-     * @param workflowId the workflowId to set
-     */
+    /** @param workflowId the workflowId to set */
     public void setWorkflowId(String workflowId) {
         this.workflowId = workflowId;
     }
 
-    /**
-     * @return the workflowType
-     */
+    /** @return the workflowType */
     public String getWorkflowType() {
         return workflowType;
     }
 
-    /**
-     * @param workflowType the workflowType to set
-     */
+    /** @param workflowType the workflowType to set */
     public void setWorkflowType(String workflowType) {
         this.workflowType = workflowType;
     }
 
-    /**
-     * @return the correlationId
-     */
+    /** @return the correlationId */
     public String getCorrelationId() {
         return correlationId;
     }
 
-    /**
-     * @param correlationId the correlationId to set
-     */
+    /** @param correlationId the correlationId to set */
     public void setCorrelationId(String correlationId) {
         this.correlationId = correlationId;
     }
 
-    /**
-     * @return the scheduledTime
-     */
+    /** @return the scheduledTime */
     public String getScheduledTime() {
         return scheduledTime;
     }
 
-    /**
-     * @param scheduledTime the scheduledTime to set
-     */
+    /** @param scheduledTime the scheduledTime to set */
     public void setScheduledTime(String scheduledTime) {
         this.scheduledTime = scheduledTime;
     }
 
-    /**
-     * @return the startTime
-     */
+    /** @return the startTime */
     public String getStartTime() {
         return startTime;
     }
 
-    /**
-     * @param startTime the startTime to set
-     */
+    /** @param startTime the startTime to set */
     public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
 
-    /**
-     * @return the updateTime
-     */
+    /** @return the updateTime */
     public String getUpdateTime() {
         return updateTime;
     }
 
-    /**
-     * @param updateTime the updateTime to set
-     */
+    /** @param updateTime the updateTime to set */
     public void setUpdateTime(String updateTime) {
         this.updateTime = updateTime;
     }
 
-    /**
-     * @return the endTime
-     */
+    /** @return the endTime */
     public String getEndTime() {
         return endTime;
     }
 
-    /**
-     * @param endTime the endTime to set
-     */
+    /** @param endTime the endTime to set */
     public void setEndTime(String endTime) {
         this.endTime = endTime;
     }
 
-    /**
-     * @return the status
-     */
+    /** @return the status */
     public Status getStatus() {
         return status;
     }
 
-    /**
-     * @param status the status to set
-     */
+    /** @param status the status to set */
     public void setStatus(Status status) {
         this.status = status;
     }
 
-    /**
-     * @return the reasonForIncompletion
-     */
+    /** @return the reasonForIncompletion */
     public String getReasonForIncompletion() {
         return reasonForIncompletion;
     }
 
-    /**
-     * @param reasonForIncompletion the reasonForIncompletion to set
-     */
+    /** @param reasonForIncompletion the reasonForIncompletion to set */
     public void setReasonForIncompletion(String reasonForIncompletion) {
         this.reasonForIncompletion = reasonForIncompletion;
     }
 
-    /**
-     * @return the executionTime
-     */
+    /** @return the executionTime */
     public long getExecutionTime() {
         return executionTime;
     }
 
-    /**
-     * @param executionTime the executionTime to set
-     */
+    /** @param executionTime the executionTime to set */
     public void setExecutionTime(long executionTime) {
         this.executionTime = executionTime;
     }
 
-    /**
-     * @return the queueWaitTime
-     */
+    /** @return the queueWaitTime */
     public long getQueueWaitTime() {
         return queueWaitTime;
     }
 
-    /**
-     * @param queueWaitTime the queueWaitTime to set
-     */
+    /** @param queueWaitTime the queueWaitTime to set */
     public void setQueueWaitTime(long queueWaitTime) {
         this.queueWaitTime = queueWaitTime;
     }
 
-    /**
-     * @return the taskDefName
-     */
+    /** @return the taskDefName */
     public String getTaskDefName() {
         return taskDefName;
     }
 
-    /**
-     * @param taskDefName the taskDefName to set
-     */
+    /** @param taskDefName the taskDefName to set */
     public void setTaskDefName(String taskDefName) {
         this.taskDefName = taskDefName;
     }
 
-    /**
-     * @return the taskType
-     */
+    /** @return the taskType */
     public String getTaskType() {
         return taskType;
     }
 
-    /**
-     * @param taskType the taskType to set
-     */
+    /** @param taskType the taskType to set */
     public void setTaskType(String taskType) {
         this.taskType = taskType;
     }
 
-    /**
-     * @return input to the task
-     */
+    /** @return input to the task */
     public String getInput() {
         return input;
     }
 
-    /**
-     * @param input input to the task
-     */
+    /** @param input input to the task */
     public void setInput(String input) {
         this.input = input;
     }
 
-    /**
-     * @return output of the task
-     */
+    /** @return output of the task */
     public String getOutput() {
         return output;
     }
 
-    /**
-     * @param output Task output
-     */
+    /** @param output Task output */
     public void setOutput(String output) {
         this.output = output;
     }
 
-    /**
-     * @return the taskId
-     */
+    /** @return the taskId */
     public String getTaskId() {
         return taskId;
     }
 
-    /**
-     * @param taskId the taskId to set
-     */
+    /** @param taskId the taskId to set */
     public void setTaskId(String taskId) {
         this.taskId = taskId;
     }
 
-    /**
-     * @return the external storage path for the task input payload
-     */
+    /** @return the external storage path for the task input payload */
     public String getExternalInputPayloadStoragePath() {
         return externalInputPayloadStoragePath;
     }
 
     /**
-     * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
+     * @param externalInputPayloadStoragePath the external storage path where the task input payload
+     *     is stored
      */
     public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
     }
 
-    /**
-     * @return the external storage path for the task output payload
-     */
+    /** @return the external storage path for the task output payload */
     public String getExternalOutputPayloadStoragePath() {
         return externalOutputPayloadStoragePath;
     }
 
     /**
-     * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
+     * @param externalOutputPayloadStoragePath the external storage path where the task output
+     *     payload is stored
      */
     public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
-    /**
-     * @return the priority defined on workflow
-     */
+    /** @return the priority defined on workflow */
     public int getWorkflowPriority() {
         return workflowPriority;
     }
 
-    /**
-     * @param workflowPriority Priority defined for workflow
-     */
+    /** @param workflowPriority Priority defined for workflow */
     public void setWorkflowPriority(int workflowPriority) {
         this.workflowPriority = workflowPriority;
     }
@@ -406,28 +334,40 @@ public class TaskSummary {
             return false;
         }
         TaskSummary that = (TaskSummary) o;
-        return getExecutionTime() == that.getExecutionTime() &&
-            getQueueWaitTime() == that.getQueueWaitTime() &&
-            getWorkflowPriority() == that.getWorkflowPriority() &&
-            getWorkflowId().equals(that.getWorkflowId()) &&
-            getWorkflowType().equals(that.getWorkflowType()) &&
-            Objects.equals(getCorrelationId(), that.getCorrelationId()) &&
-            getScheduledTime().equals(that.getScheduledTime()) &&
-            Objects.equals(getStartTime(), that.getStartTime()) &&
-            Objects.equals(getUpdateTime(), that.getUpdateTime()) &&
-            Objects.equals(getEndTime(), that.getEndTime()) &&
-            getStatus() == that.getStatus() &&
-            Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion()) &&
-            Objects.equals(getTaskDefName(), that.getTaskDefName()) &&
-            getTaskType().equals(that.getTaskType()) &&
-            getTaskId().equals(that.getTaskId());
+        return getExecutionTime() == that.getExecutionTime()
+                && getQueueWaitTime() == that.getQueueWaitTime()
+                && getWorkflowPriority() == that.getWorkflowPriority()
+                && getWorkflowId().equals(that.getWorkflowId())
+                && getWorkflowType().equals(that.getWorkflowType())
+                && Objects.equals(getCorrelationId(), that.getCorrelationId())
+                && getScheduledTime().equals(that.getScheduledTime())
+                && Objects.equals(getStartTime(), that.getStartTime())
+                && Objects.equals(getUpdateTime(), that.getUpdateTime())
+                && Objects.equals(getEndTime(), that.getEndTime())
+                && getStatus() == that.getStatus()
+                && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
+                && Objects.equals(getTaskDefName(), that.getTaskDefName())
+                && getTaskType().equals(that.getTaskType())
+                && getTaskId().equals(that.getTaskId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getWorkflowId(), getWorkflowType(), getCorrelationId(), getScheduledTime(), getStartTime(),
-            getUpdateTime(), getEndTime(), getStatus(), getReasonForIncompletion(), getExecutionTime(),
-            getQueueWaitTime(),
-            getTaskDefName(), getTaskType(), getTaskId(), getWorkflowPriority());
+        return Objects.hash(
+                getWorkflowId(),
+                getWorkflowType(),
+                getCorrelationId(),
+                getScheduledTime(),
+                getStartTime(),
+                getUpdateTime(),
+                getEndTime(),
+                getStatus(),
+                getReasonForIncompletion(),
+                getExecutionTime(),
+                getQueueWaitTime(),
+                getTaskDefName(),
+                getTaskType(),
+                getTaskId(),
+                getWorkflowPriority());
     }
 }

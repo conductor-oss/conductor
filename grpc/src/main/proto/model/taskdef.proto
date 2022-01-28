@@ -8,14 +8,15 @@ option java_outer_classname = "TaskDefPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message TaskDef {
+    enum RetryLogic {
+        FIXED = 0;
+        EXPONENTIAL_BACKOFF = 1;
+        LINEAR_BACKOFF = 2;
+    }
     enum TimeoutPolicy {
         RETRY = 0;
         TIME_OUT_WF = 1;
         ALERT_ONLY = 2;
-    }
-    enum RetryLogic {
-        FIXED = 0;
-        EXPONENTIAL_BACKOFF = 1;
     }
     string name = 1;
     string description = 2;
@@ -35,4 +36,5 @@ message TaskDef {
     string execution_name_space = 17;
     string owner_email = 18;
     int32 poll_timeout_seconds = 19;
+    int32 backoff_scale_factor = 20;
 }

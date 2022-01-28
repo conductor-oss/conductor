@@ -12,10 +12,14 @@
  */
 package com.netflix.conductor.grpc.server.service;
 
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.mockito.MockitoAnnotations.initMocks;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
 
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -25,23 +29,19 @@ import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 import com.netflix.conductor.service.WorkflowService;
-import io.grpc.stub.StreamObserver;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
 
-import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import io.grpc.stub.StreamObserver;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 public class WorkflowServiceImplTest {
 
     private static final String WORKFLOW_ID = "anyWorkflowId";
     private static final Boolean RESUME_SUBWORKFLOW_TASKS = true;
 
-    @Mock
-    private WorkflowService workflowService;
+    @Mock private WorkflowService workflowService;
 
     private WorkflowServiceImpl workflowServiceImpl;
 
@@ -55,11 +55,11 @@ public class WorkflowServiceImplTest {
     @Test
     public void givenWorkflowIdWhenRetryWorkflowThenRetriedSuccessfully() {
         // Given
-        WorkflowServicePb.RetryWorkflowRequest req = WorkflowServicePb.RetryWorkflowRequest
-            .newBuilder()
-            .setWorkflowId(WORKFLOW_ID)
-            .setResumeSubworkflowTasks(true)
-            .build();
+        WorkflowServicePb.RetryWorkflowRequest req =
+                WorkflowServicePb.RetryWorkflowRequest.newBuilder()
+                        .setWorkflowId(WORKFLOW_ID)
+                        .setResumeSubworkflowTasks(true)
+                        .build();
         // When
         workflowServiceImpl.retryWorkflow(req, mock(StreamObserver.class));
         // Then
@@ -71,38 +71,39 @@ public class WorkflowServiceImplTest {
         CountDownLatch streamAlive = new CountDownLatch(1);
         AtomicReference<Throwable> throwable = new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(50000)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(50000)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {}
 
-        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        throwable.set(t);
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                throwable.set(t);
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         workflowServiceImpl.search(req, streamObserver);
 
         streamAlive.await(10, TimeUnit.MILLISECONDS);
 
-        assertEquals("INVALID_ARGUMENT: Cannot return more than 5000 results", throwable.get().getMessage());
+        assertEquals(
+                "INVALID_ARGUMENT: Cannot return more than 5000 results",
+                throwable.get().getMessage());
     }
 
     @Test
@@ -110,80 +111,82 @@ public class WorkflowServiceImplTest {
         CountDownLatch streamAlive = new CountDownLatch(1);
         AtomicReference<Throwable> throwable = new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(50000)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(50000)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSearchResult value) {}
 
-        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSearchResult value) {
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        throwable.set(t);
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                throwable.set(t);
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         workflowServiceImpl.searchV2(req, streamObserver);
 
         streamAlive.await(10, TimeUnit.MILLISECONDS);
 
-        assertEquals("INVALID_ARGUMENT: Cannot return more than 5000 results", throwable.get().getMessage());
+        assertEquals(
+                "INVALID_ARGUMENT: Cannot return more than 5000 results",
+                throwable.get().getMessage());
     }
 
     @Test
     public void searchTest() throws InterruptedException {
 
         CountDownLatch streamAlive = new CountDownLatch(1);
-        AtomicReference<WorkflowServicePb.WorkflowSummarySearchResult> result = new AtomicReference<>();
+        AtomicReference<WorkflowServicePb.WorkflowSummarySearchResult> result =
+                new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(1)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(1)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {
+                        result.set(value);
+                    }
 
-        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {
-                result.set(value);
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         WorkflowSummary workflow = new WorkflowSummary();
         SearchResult<WorkflowSummary> searchResult = new SearchResult<>();
         searchResult.setTotalHits(1);
         searchResult.setResults(Collections.singletonList(workflow));
 
-
-        when(workflowService.searchWorkflows(anyInt(), anyInt(), anyList(), anyString(), anyString()))
+        when(workflowService.searchWorkflows(
+                        anyInt(), anyInt(), anyList(), anyString(), anyString()))
                 .thenReturn(searchResult);
 
         workflowServiceImpl.search(req, streamObserver);
@@ -193,49 +196,52 @@ public class WorkflowServiceImplTest {
         WorkflowServicePb.WorkflowSummarySearchResult workflowSearchResult = result.get();
 
         assertEquals(1, workflowSearchResult.getTotalHits());
-        assertEquals(WorkflowSummaryPb.WorkflowSummary.newBuilder().build(), workflowSearchResult.getResultsList().get(0));
+        assertEquals(
+                WorkflowSummaryPb.WorkflowSummary.newBuilder().build(),
+                workflowSearchResult.getResultsList().get(0));
     }
-
 
     @Test
     public void searchByTasksTest() throws InterruptedException {
 
         CountDownLatch streamAlive = new CountDownLatch(1);
-        AtomicReference<WorkflowServicePb.WorkflowSummarySearchResult> result = new AtomicReference<>();
+        AtomicReference<WorkflowServicePb.WorkflowSummarySearchResult> result =
+                new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(1)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(1)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {
+                        result.set(value);
+                    }
 
-        StreamObserver<WorkflowServicePb.WorkflowSummarySearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSummarySearchResult value) {
-                result.set(value);
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         WorkflowSummary workflow = new WorkflowSummary();
         SearchResult<WorkflowSummary> searchResult = new SearchResult<>();
         searchResult.setTotalHits(1);
         searchResult.setResults(Collections.singletonList(workflow));
 
-        when(workflowService.searchWorkflowsByTasks(anyInt(), anyInt(), anyList(), anyString(), anyString()))
+        when(workflowService.searchWorkflowsByTasks(
+                        anyInt(), anyInt(), anyList(), anyString(), anyString()))
                 .thenReturn(searchResult);
 
         workflowServiceImpl.searchByTasks(req, streamObserver);
@@ -245,7 +251,9 @@ public class WorkflowServiceImplTest {
         WorkflowServicePb.WorkflowSummarySearchResult workflowSearchResult = result.get();
 
         assertEquals(1, workflowSearchResult.getTotalHits());
-        assertEquals(WorkflowSummaryPb.WorkflowSummary.newBuilder().build(), workflowSearchResult.getResultsList().get(0));
+        assertEquals(
+                WorkflowSummaryPb.WorkflowSummary.newBuilder().build(),
+                workflowSearchResult.getResultsList().get(0));
     }
 
     @Test
@@ -254,32 +262,32 @@ public class WorkflowServiceImplTest {
         CountDownLatch streamAlive = new CountDownLatch(1);
         AtomicReference<WorkflowServicePb.WorkflowSearchResult> result = new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(1)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(1)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSearchResult value) {
+                        result.set(value);
+                    }
 
-        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSearchResult value) {
-                result.set(value);
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         Workflow workflow = new Workflow();
         SearchResult<Workflow> searchResult = new SearchResult<>();
@@ -296,9 +304,10 @@ public class WorkflowServiceImplTest {
         WorkflowServicePb.WorkflowSearchResult workflowSearchResult = result.get();
 
         assertEquals(1, workflowSearchResult.getTotalHits());
-        assertEquals(WorkflowPb.Workflow.newBuilder().build(), workflowSearchResult.getResultsList().get(0));
+        assertEquals(
+                WorkflowPb.Workflow.newBuilder().build(),
+                workflowSearchResult.getResultsList().get(0));
     }
-
 
     @Test
     public void searchByTasksV2Test() throws InterruptedException {
@@ -306,39 +315,40 @@ public class WorkflowServiceImplTest {
         CountDownLatch streamAlive = new CountDownLatch(1);
         AtomicReference<WorkflowServicePb.WorkflowSearchResult> result = new AtomicReference<>();
 
-        SearchPb.Request req = SearchPb.Request
-                .newBuilder()
-                .setStart(1)
-                .setSize(1)
-                .setSort("strings")
-                .setQuery("")
-                .setFreeText("")
-                .build();
+        SearchPb.Request req =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(1)
+                        .setSort("strings")
+                        .setQuery("")
+                        .setFreeText("")
+                        .build();
 
+        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver =
+                new StreamObserver<>() {
+                    @Override
+                    public void onNext(WorkflowServicePb.WorkflowSearchResult value) {
+                        result.set(value);
+                    }
 
-        StreamObserver<WorkflowServicePb.WorkflowSearchResult> streamObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(WorkflowServicePb.WorkflowSearchResult value) {
-                result.set(value);
-            }
+                    @Override
+                    public void onError(Throwable t) {
+                        streamAlive.countDown();
+                    }
 
-            @Override
-            public void onError(Throwable t) {
-                streamAlive.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                streamAlive.countDown();
-            }
-        };
+                    @Override
+                    public void onCompleted() {
+                        streamAlive.countDown();
+                    }
+                };
 
         Workflow workflow = new Workflow();
         SearchResult<Workflow> searchResult = new SearchResult<>();
         searchResult.setTotalHits(1);
         searchResult.setResults(Collections.singletonList(workflow));
 
-        when(workflowService.searchWorkflowsByTasksV2(1, 1, Collections.singletonList("strings"), "*", ""))
+        when(workflowService.searchWorkflowsByTasksV2(
+                        1, 1, Collections.singletonList("strings"), "*", ""))
                 .thenReturn(searchResult);
 
         workflowServiceImpl.searchByTasksV2(req, streamObserver);
@@ -348,6 +358,8 @@ public class WorkflowServiceImplTest {
         WorkflowServicePb.WorkflowSearchResult workflowSearchResult = result.get();
 
         assertEquals(1, workflowSearchResult.getTotalHits());
-        assertEquals(WorkflowPb.Workflow.newBuilder().build(), workflowSearchResult.getResultsList().get(0));
+        assertEquals(
+                WorkflowPb.Workflow.newBuilder().build(),
+                workflowSearchResult.getResultsList().get(0));
     }
 }
