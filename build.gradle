@@ -184,3 +184,14 @@ configure(allprojects - project(':conductor-grpc')) {
         }
     }
 }
+
+["cassandra-persistence", "core", "redis-concurrency-limit", "test-harness"].each {
+    configure(project(":conductor-$it")) {
+        spotless {
+            groovy {
+                importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
+                licenseHeaderFile("$rootDir/licenseheader.txt")
+            }
+        }
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,25 +12,21 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -56,12 +52,12 @@ public class SubWorkflowTaskMapper implements TaskMapper {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
         LOGGER.debug("TaskMapperContext {} in SubWorkflowTaskMapper", taskMapperContext);
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
-        // Check if the are sub workflow parameters, if not throw an exception, cannot initiate a
+        // Check if there are sub workflow parameters, if not throw an exception, cannot initiate a
         // sub-workflow without workflow params
         SubWorkflowParams subWorkflowParams = getSubWorkflowParams(taskToSchedule);
 
@@ -79,7 +75,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
             subWorkflowTaskToDomain = (Map) uncheckedTaskToDomain;
         }
 
-        Task subWorkflowTask = new Task();
+        TaskModel subWorkflowTask = new TaskModel();
         subWorkflowTask.setTaskType(TASK_TYPE_SUB_WORKFLOW);
         subWorkflowTask.setTaskDefName(taskToSchedule.getName());
         subWorkflowTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
@@ -93,7 +89,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.getInputData().put("subWorkflowDefinition", subWorkflowDefinition);
         subWorkflowTask.getInputData().put("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setTaskId(taskId);
-        subWorkflowTask.setStatus(Task.Status.SCHEDULED);
+        subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setWorkflowTask(taskToSchedule);
         subWorkflowTask.setWorkflowPriority(workflowInstance.getPriority());
         subWorkflowTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
@@ -117,7 +113,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
     }
 
     private Map<String, Object> getSubWorkflowInputParameters(
-            Workflow workflowInstance, SubWorkflowParams subWorkflowParams) {
+            WorkflowModel workflowInstance, SubWorkflowParams subWorkflowParams) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", subWorkflowParams.getName());
 

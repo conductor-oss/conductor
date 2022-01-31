@@ -1,12 +1,5 @@
 apply plugin: 'groovy'
 
-spotless {
-    groovy {
-        importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
-        licenseHeaderFile("$rootDir/licenseheader.txt")
-    }
-}
-
 dependencies {
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-common')

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 
 /** DAO to index the workflow and task details for searching. */
@@ -33,7 +33,7 @@ public interface IndexDAO {
      *
      * @param workflow Workflow to be indexed
      */
-    void indexWorkflow(Workflow workflow);
+    void indexWorkflow(WorkflowSummary workflow);
 
     /**
      * This method should return an unique identifier of the indexed doc
@@ -41,16 +41,16 @@ public interface IndexDAO {
      * @param workflow Workflow to be indexed
      * @return CompletableFuture of type void
      */
-    CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow);
+    CompletableFuture<Void> asyncIndexWorkflow(WorkflowSummary workflow);
 
     /** @param task Task to be indexed */
-    void indexTask(Task task);
+    void indexTask(TaskSummary task);
 
     /**
      * @param task Task to be indexed asynchronously
      * @return CompletableFuture of type void
      */
-    CompletableFuture<Void> asyncIndexTask(Task task);
+    CompletableFuture<Void> asyncIndexTask(TaskSummary task);
 
     /**
      * @param query SQL like query for workflow search parameters.

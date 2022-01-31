@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,18 +30,18 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -133,7 +133,7 @@ public class SwitchTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
 
-        Workflow workflowInstance = new Workflow();
+        WorkflowModel workflowInstance = new WorkflowModel();
         workflowInstance.setWorkflowDefinition(workflowDef);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "22");
@@ -147,7 +147,7 @@ public class SwitchTaskMapperTest {
                 parametersUtils.getTaskInput(
                         switchTask.getInputParameters(), workflowInstance, null, null);
 
-        Task theTask = new Task();
+        TaskModel theTask = new TaskModel();
         theTask.setReferenceTaskName("Foo");
         theTask.setTaskId(IDGenerator.generate());
 
@@ -166,7 +166,7 @@ public class SwitchTaskMapperTest {
                         .build();
 
         // When
-        List<Task> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
 
         // Then
         assertEquals(2, mappedTasks.size());
@@ -202,7 +202,7 @@ public class SwitchTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
 
-        Workflow workflowInstance = new Workflow();
+        WorkflowModel workflowInstance = new WorkflowModel();
         workflowInstance.setWorkflowDefinition(workflowDef);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "even");
@@ -216,7 +216,7 @@ public class SwitchTaskMapperTest {
                 parametersUtils.getTaskInput(
                         switchTask.getInputParameters(), workflowInstance, null, null);
 
-        Task theTask = new Task();
+        TaskModel theTask = new TaskModel();
         theTask.setReferenceTaskName("Foo");
         theTask.setTaskId(IDGenerator.generate());
 
@@ -235,7 +235,7 @@ public class SwitchTaskMapperTest {
                         .build();
 
         // When
-        List<Task> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
 
         // Then
         assertEquals(2, mappedTasks.size());

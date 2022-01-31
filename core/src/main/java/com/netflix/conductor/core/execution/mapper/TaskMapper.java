@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,14 +14,14 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.List;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.model.TaskModel;
 
 public interface TaskMapper {
 
     TaskType getTaskType();
 
-    List<Task> getMappedTasks(TaskMapperContext taskMapperContext)
+    List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException;
 }

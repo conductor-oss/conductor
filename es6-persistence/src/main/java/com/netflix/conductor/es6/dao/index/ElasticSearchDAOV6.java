@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,20 +16,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -71,11 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.events.queue.Message;
@@ -365,12 +351,11 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
-    public void indexWorkflow(Workflow workflow) {
+    public void indexWorkflow(WorkflowSummary workflow) {
         try {
             long startTime = Instant.now().toEpochMilli();
             String id = workflow.getWorkflowId();
-            WorkflowSummary summary = new WorkflowSummary(workflow);
-            byte[] doc = objectMapper.writeValueAsBytes(summary);
+            byte[] doc = objectMapper.writeValueAsBytes(workflow);
             String docType =
                     StringUtils.isBlank(docTypeOverride) ? WORKFLOW_DOC_TYPE : docTypeOverride;
 
@@ -399,17 +384,16 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
-    public CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow) {
+    public CompletableFuture<Void> asyncIndexWorkflow(WorkflowSummary workflow) {
         return CompletableFuture.runAsync(() -> indexWorkflow(workflow), executorService);
     }
 
     @Override
-    public void indexTask(Task task) {
+    public void indexTask(TaskSummary task) {
         try {
             long startTime = Instant.now().toEpochMilli();
             String id = task.getTaskId();
-            TaskSummary summary = new TaskSummary(task);
-            byte[] doc = objectMapper.writeValueAsBytes(summary);
+            byte[] doc = objectMapper.writeValueAsBytes(task);
             String docType = StringUtils.isBlank(docTypeOverride) ? TASK_DOC_TYPE : docTypeOverride;
 
             UpdateRequest req = new UpdateRequest(taskIndexName, docType, id);
@@ -421,7 +405,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                     "Time taken {} for  indexing task:{} in workflow: {}",
                     endTime - startTime,
                     task.getTaskId(),
-                    task.getWorkflowInstanceId());
+                    task.getWorkflowId());
             Monitors.recordESIndexTime("index_task", TASK_DOC_TYPE, endTime - startTime);
             Monitors.recordWorkerQueueSize(
                     "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
@@ -431,7 +415,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
-    public CompletableFuture<Void> asyncIndexTask(Task task) {
+    public CompletableFuture<Void> asyncIndexTask(TaskSummary task) {
         return CompletableFuture.runAsync(() -> indexTask(task), executorService);
     }
 

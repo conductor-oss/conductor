@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,10 +20,10 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
-import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.WorkflowModel;
 
 public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusListener {
 
@@ -75,7 +75,7 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     }
 
     @Override
-    public void onWorkflowCompleted(Workflow workflow) {
+    public void onWorkflowCompleted(WorkflowModel workflow) {
         LOGGER.info("Archiving workflow {} on completion ", workflow.getWorkflowId());
         if (delayArchiveSeconds > 0) {
             scheduledThreadPoolExecutor.schedule(
@@ -90,7 +90,7 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     }
 
     @Override
-    public void onWorkflowTerminated(Workflow workflow) {
+    public void onWorkflowTerminated(WorkflowModel workflow) {
         LOGGER.info("Archiving workflow {} on termination", workflow.getWorkflowId());
         if (delayArchiveSeconds > 0) {
             scheduledThreadPoolExecutor.schedule(
@@ -108,10 +108,10 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
 
         private final String workflowId;
         private final String workflowName;
-        private final Workflow.WorkflowStatus status;
+        private final WorkflowModel.Status status;
         private final ExecutionDAOFacade executionDAOFacade;
 
-        DelayArchiveWorkflow(Workflow workflow, ExecutionDAOFacade executionDAOFacade) {
+        DelayArchiveWorkflow(WorkflowModel workflow, ExecutionDAOFacade executionDAOFacade) {
             this.workflowId = workflow.getWorkflowId();
             this.workflowName = workflow.getWorkflowName();
             this.status = workflow.getStatus();

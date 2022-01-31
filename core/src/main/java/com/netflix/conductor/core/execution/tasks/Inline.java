@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,11 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INLINE;
 
@@ -67,7 +67,8 @@ public class Inline extends WorkflowSystemTask {
     }
 
     @Override
-    public boolean execute(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
+    public boolean execute(
+            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         Map<String, Object> taskInput = task.getInputData();
         Map<String, Object> taskOutput = task.getOutputData();
         String evaluatorType = (String) taskInput.get(QUERY_EVALUATOR_TYPE);
@@ -79,14 +80,14 @@ public class Inline extends WorkflowSystemTask {
             Evaluator evaluator = evaluators.get(evaluatorType);
             Object evalResult = evaluator.evaluate(expression, taskInput);
             taskOutput.put("result", evalResult);
-            task.setStatus(Task.Status.COMPLETED);
+            task.setStatus(TaskModel.Status.COMPLETED);
         } catch (Exception e) {
             LOGGER.error(
                     "Failed to execute Inline Task: {} in workflow: {}",
                     task.getTaskId(),
                     workflow.getWorkflowId(),
                     e);
-            task.setStatus(Task.Status.FAILED);
+            task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
             taskOutput.put(
                     "error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());

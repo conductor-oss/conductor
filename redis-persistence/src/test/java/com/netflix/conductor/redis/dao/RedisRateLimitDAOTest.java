@@ -22,9 +22,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.conductor.redis.jedis.JedisProxy;
@@ -58,7 +58,7 @@ public class RedisRateLimitDAOTest {
     @Test
     public void testExceedsRateLimitWhenNoRateLimitSet() {
         TaskDef taskDef = new TaskDef("TestTaskDefinition");
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName(taskDef.getName());
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
@@ -69,7 +69,7 @@ public class RedisRateLimitDAOTest {
         TaskDef taskDef = new TaskDef("TestTaskDefinition");
         taskDef.setRateLimitFrequencyInSeconds(60);
         taskDef.setRateLimitPerFrequency(20);
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName(taskDef.getName());
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
@@ -80,7 +80,7 @@ public class RedisRateLimitDAOTest {
         TaskDef taskDef = new TaskDef("TestTaskDefinition");
         taskDef.setRateLimitFrequencyInSeconds(60);
         taskDef.setRateLimitPerFrequency(1);
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName(taskDef.getName());
         assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));

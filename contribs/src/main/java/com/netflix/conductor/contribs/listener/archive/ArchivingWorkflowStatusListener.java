@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,10 +15,10 @@ package com.netflix.conductor.contribs.listener.archive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
-import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.WorkflowModel;
 
 /**
  * Provides default implementation of workflow archiving immediately after workflow is completed or
@@ -37,14 +37,14 @@ public class ArchivingWorkflowStatusListener implements WorkflowStatusListener {
     }
 
     @Override
-    public void onWorkflowCompleted(Workflow workflow) {
+    public void onWorkflowCompleted(WorkflowModel workflow) {
         LOGGER.info("Archiving workflow {} on completion ", workflow.getWorkflowId());
         this.executionDAOFacade.removeWorkflow(workflow.getWorkflowId(), true);
         Monitors.recordWorkflowArchived(workflow.getWorkflowName(), workflow.getStatus());
     }
 
     @Override
-    public void onWorkflowTerminated(Workflow workflow) {
+    public void onWorkflowTerminated(WorkflowModel workflow) {
         LOGGER.info("Archiving workflow {} on termination", workflow.getWorkflowId());
         this.executionDAOFacade.removeWorkflow(workflow.getWorkflowId(), true);
         Monitors.recordWorkflowArchived(workflow.getWorkflowName(), workflow.getStatus());

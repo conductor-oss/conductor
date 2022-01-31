@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,13 +17,13 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 
@@ -42,20 +42,20 @@ public class JoinTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         WorkflowDef wd = new WorkflowDef();
-        Workflow w = new Workflow();
-        w.setWorkflowDefinition(wd);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(wd);
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
                         .withWorkflowDefinition(wd)
-                        .withWorkflowInstance(w)
+                        .withWorkflowInstance(workflow)
                         .withTaskDefinition(new TaskDef())
                         .withTaskToSchedule(taskToSchedule)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();
 
-        List<Task> mappedTasks = new JoinTaskMapper().getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = new JoinTaskMapper().getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
         assertEquals(TASK_TYPE_JOIN, mappedTasks.get(0).getTaskType());

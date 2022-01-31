@@ -1,27 +1,28 @@
 /*
- *  Copyright 2021 Netflix, Inc.
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
+ * Copyright 2022 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.redis.limit
 
-import com.netflix.conductor.common.metadata.tasks.Task
-import com.netflix.conductor.common.metadata.tasks.TaskDef
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask
-import com.netflix.conductor.redis.limit.config.RedisConcurrentExecutionLimitProperties
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.spock.Testcontainers
+
+import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask
+import com.netflix.conductor.model.TaskModel
+import com.netflix.conductor.redis.limit.config.RedisConcurrentExecutionLimitProperties
+
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -51,7 +52,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         def taskDefName = 'task_def_name1'
         def keyName = "${properties.namespace}:$taskDefName" as String
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName)
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName)
 
         when:
         dao.addTaskToLimit(task)
@@ -70,7 +71,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
 
         redisTemplate.opsForSet().add(keyName, taskId)
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName)
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName)
 
         when:
         dao.removeTaskFromLimit(task)
@@ -85,7 +86,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         def taskId = 'task1'
         def taskDefName = 'task_def_name1'
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: workflowTask)
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName, workflowTask: workflowTask)
 
         when:
         def retVal = dao.exceedsLimit(task)
@@ -104,7 +105,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         def taskDefName = 'task_def_name1'
         def keyName = "${properties.namespace}:$taskDefName" as String
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
         redisTemplate.opsForSet().add(keyName, taskId)
 
@@ -121,7 +122,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         def taskDefName = 'task_def_name1'
         def keyName = "${properties.namespace}:$taskDefName" as String
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
         redisTemplate.opsForSet().add(keyName, taskId) // add the id of the task passed as argument to exceedsLimit
         redisTemplate.opsForSet().add(keyName, 'taskId2')
@@ -139,7 +140,7 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
         def taskDefName = 'task_def_name1'
         def keyName = "${properties.namespace}:$taskDefName" as String
 
-        Task task = new Task(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
+        TaskModel task = new TaskModel(taskId: taskId, taskDefName: taskDefName, workflowTask: new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2)))
 
         // add task ids different from the id of the task passed to exceedsLimit
         redisTemplate.opsForSet().add(keyName, 'taskId2')

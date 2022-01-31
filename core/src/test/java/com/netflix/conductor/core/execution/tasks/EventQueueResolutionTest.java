@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,16 +23,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.MockQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -40,8 +39,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Tests the {@link Event#getQueue(Workflow, Task)} method with a real {@link ParametersUtils}
- * object.
+ * Tests the {@link Event#getQueue(WorkflowModel, TaskModel)} method with a real {@link
+ * ParametersUtils} object.
  */
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -74,20 +73,20 @@ public class EventQueueResolutionTest {
         WorkflowDef def = new WorkflowDef();
         def.setName("wf0");
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
 
-        Task task1 = new Task();
+        TaskModel task1 = new TaskModel();
         task1.setReferenceTaskName("t1");
         task1.getOutputData().put("q", "t1_queue");
         workflow.getTasks().add(task1);
 
-        Task task2 = new Task();
+        TaskModel task2 = new TaskModel();
         task2.setReferenceTaskName("t2");
         task2.getOutputData().put("q", "task2_queue");
         workflow.getTasks().add(task2);
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setReferenceTaskName("event");
         task.getInputData().put("sink", sink);
         task.setTaskType(TaskType.EVENT.name());
@@ -133,17 +132,17 @@ public class EventQueueResolutionTest {
     @Test
     public void testDynamicSinks() {
         Event event = new Event(eventQueues, parametersUtils, objectMapper);
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(testWorkflowDefinition);
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setReferenceTaskName("task0");
         task.setTaskId("task_id_0");
-        task.setStatus(Status.IN_PROGRESS);
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.getInputData().put("sink", "conductor:some_arbitary_queue");
 
         ObservableQueue queue = event.getQueue(workflow, task);
-        assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNotNull(queue);
         assertEquals("testWorkflow:some_arbitary_queue", queue.getName());
         assertEquals("testWorkflow:some_arbitary_queue", queue.getURI());
@@ -156,7 +155,7 @@ public class EventQueueResolutionTest {
         queue = event.getQueue(workflow, task);
         assertEquals(
                 "not in progress: " + task.getReasonForIncompletion(),
-                Task.Status.IN_PROGRESS,
+                TaskModel.Status.IN_PROGRESS,
                 task.getStatus());
         assertNotNull(queue);
         assertEquals("testWorkflow:task0", queue.getName());
@@ -165,7 +164,7 @@ public class EventQueueResolutionTest {
         queue = event.getQueue(workflow, task);
         assertEquals(
                 "not in progress: " + task.getReasonForIncompletion(),
-                Task.Status.IN_PROGRESS,
+                TaskModel.Status.IN_PROGRESS,
                 task.getStatus());
         assertNotNull(queue);
         assertEquals("my_sqs_queue_name", queue.getName());

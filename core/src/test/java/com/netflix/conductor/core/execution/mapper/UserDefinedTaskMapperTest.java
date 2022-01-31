@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,16 +20,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -57,7 +57,7 @@ public class UserDefinedTaskMapperTest {
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
         workflow.setWorkflowDefinition(workflowDef);
 
@@ -74,7 +74,7 @@ public class UserDefinedTaskMapperTest {
                         .build();
 
         // when
-        List<Task> mappedTasks = userDefinedTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = userDefinedTaskMapper.getMappedTasks(taskMapperContext);
 
         // Then
         assertEquals(1, mappedTasks.size());
@@ -90,7 +90,7 @@ public class UserDefinedTaskMapperTest {
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
         workflow.setWorkflowDefinition(workflowDef);
 

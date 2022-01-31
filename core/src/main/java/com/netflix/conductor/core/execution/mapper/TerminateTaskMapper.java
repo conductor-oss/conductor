@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,11 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
 
@@ -45,12 +45,12 @@ public class TerminateTaskMapper implements TaskMapper {
     }
 
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
 
         logger.debug("TaskMapperContext {} in TerminateTaskMapper", taskMapperContext);
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> taskInput =
@@ -60,7 +60,7 @@ public class TerminateTaskMapper implements TaskMapper {
                         taskId,
                         null);
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
         task.setTaskDefName(taskToSchedule.getName());
         task.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
@@ -71,7 +71,7 @@ public class TerminateTaskMapper implements TaskMapper {
         task.setStartTime(System.currentTimeMillis());
         task.setInputData(taskInput);
         task.setTaskId(taskId);
-        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setWorkflowTask(taskToSchedule);
         task.setWorkflowPriority(workflowInstance.getPriority());
         return singletonList(task);

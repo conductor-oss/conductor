@@ -24,14 +24,14 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 /**
  * Action Processor subscribes to the Event Actions queue and processes the actions (e.g. start
@@ -43,14 +43,17 @@ public class SimpleActionProcessor implements ActionProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleActionProcessor.class);
 
     private final WorkflowExecutor workflowExecutor;
+    private final ModelMapper modelMapper;
     private final ParametersUtils parametersUtils;
     private final JsonUtils jsonUtils;
 
     public SimpleActionProcessor(
             WorkflowExecutor workflowExecutor,
+            ModelMapper modelMapper,
             ParametersUtils parametersUtils,
             JsonUtils jsonUtils) {
         this.workflowExecutor = workflowExecutor;
+        this.modelMapper = modelMapper;
         this.parametersUtils = parametersUtils;
         this.jsonUtils = jsonUtils;
     }
@@ -77,12 +80,17 @@ public class SimpleActionProcessor implements ActionProcessor {
                         action,
                         jsonObject,
                         action.getComplete_task(),
-                        Status.COMPLETED,
+                        TaskModel.Status.COMPLETED,
                         event,
                         messageId);
             case fail_task:
                 return completeTask(
-                        action, jsonObject, action.getFail_task(), Status.FAILED, event, messageId);
+                        action,
+                        jsonObject,
+                        action.getFail_task(),
+                        TaskModel.Status.FAILED,
+                        event,
+                        messageId);
             default:
                 break;
         }
@@ -94,7 +102,7 @@ public class SimpleActionProcessor implements ActionProcessor {
             Action action,
             Object payload,
             TaskDetails taskDetails,
-            Status status,
+            TaskModel.Status status,
             String event,
             String messageId) {
 
@@ -109,11 +117,11 @@ public class SimpleActionProcessor implements ActionProcessor {
         String taskId = (String) replaced.get("taskId");
         String taskRefName = (String) replaced.get("taskRefName");
 
-        Task task = null;
+        TaskModel task = null;
         if (StringUtils.isNotEmpty(taskId)) {
             task = workflowExecutor.getTask(taskId);
         } else if (StringUtils.isNotEmpty(workflowId) && StringUtils.isNotEmpty(taskRefName)) {
-            Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+            WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, true);
             if (workflow == null) {
                 replaced.put("error", "No workflow found with ID: " + workflowId);
                 return replaced;
@@ -140,7 +148,7 @@ public class SimpleActionProcessor implements ActionProcessor {
         task.getOutputData().put("conductor.event.name", event);
 
         try {
-            workflowExecutor.updateTask(new TaskResult(task));
+            workflowExecutor.updateTask(new TaskResult(modelMapper.getTask(task)));
             LOGGER.debug(
                     "Updated task: {} in workflow:{} with status: {} for event: {} for message:{}",
                     taskId,

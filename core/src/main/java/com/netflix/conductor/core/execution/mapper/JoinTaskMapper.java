@@ -21,15 +21,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
- * TaskType#JOIN} to a {@link Task} of type {@link TaskType#JOIN}
+ * TaskType#JOIN} to a {@link TaskModel} of type {@link TaskType#JOIN}
  */
 @Component
 public class JoinTaskMapper implements TaskMapper {
@@ -43,26 +43,26 @@ public class JoinTaskMapper implements TaskMapper {
 
     /**
      * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
-     * TaskType#JOIN} to a {@link Task} of type {@link TaskType#JOIN} with a status of {@link
-     * Task.Status#IN_PROGRESS}
+     * TaskType#JOIN} to a {@link TaskModel} of type {@link TaskType#JOIN} with a status of {@link
+     * TaskModel.Status#IN_PROGRESS}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
-     *     WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @return A {@link Task} of type {@link TaskType#JOIN} in a List
+     *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
+     * @return A {@link TaskModel} of type {@link TaskType#JOIN} in a List
      */
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
 
         LOGGER.debug("TaskMapperContext {} in JoinTaskMapper", taskMapperContext);
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> joinInput = new HashMap<>();
         joinInput.put("joinOn", taskToSchedule.getJoinOn());
 
-        Task joinTask = new Task();
+        TaskModel joinTask = new TaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_JOIN);
         joinTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
@@ -73,7 +73,7 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(taskId);
-        joinTask.setStatus(Task.Status.IN_PROGRESS);
+        joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
         joinTask.setWorkflowTask(taskToSchedule);
         joinTask.setWorkflowPriority(workflowInstance.getPriority());
 

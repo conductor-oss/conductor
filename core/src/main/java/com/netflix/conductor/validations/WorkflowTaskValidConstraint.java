@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -31,7 +31,7 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
- * This constraint class validates following things. 1. Check Task Def exists in DAO or not. If not
+ * This constraint class validates following things. 1. Check Task Def exists in DAO or not. If not,
  * check if it is ephemeral task type.
  */
 @Documented
@@ -67,7 +67,7 @@ public @interface WorkflowTaskValidConstraint {
 
             boolean valid = true;
 
-            // avoid task type definition check incase of non simple task
+            // avoid task type definition check in case of non-simple task
             if (!workflowTask.getType().equals(TASK_TYPE_SIMPLE)) {
                 return valid;
             }

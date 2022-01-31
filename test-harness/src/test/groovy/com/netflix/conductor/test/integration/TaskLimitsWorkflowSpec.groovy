@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package com.netflix.conductor.test.integration
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
+import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -202,7 +203,7 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "The task that was polled and acknowledged is completed"
         polledTask1.status = Task.Status.COMPLETED
-        workflowExecutionService.updateTask(polledTask1)
+        workflowExecutionService.updateTask(new TaskResult(polledTask1))
 
         and: "The task offset time is reset to ensure that a task is returned on the next poll"
         queueDAO.resetOffsetTime('test_task_with_concurrency_limit',

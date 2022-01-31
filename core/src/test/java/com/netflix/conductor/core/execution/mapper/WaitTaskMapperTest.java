@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,14 +17,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 
@@ -43,7 +43,7 @@ public class WaitTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
         workflow.setWorkflowDefinition(workflowDef);
 
@@ -60,7 +60,7 @@ public class WaitTaskMapperTest {
 
         WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
         // When
-        List<Task> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
 
         // Then
         assertEquals(1, mappedTasks.size());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,15 +19,15 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -61,7 +61,7 @@ public class JsonJQTransformTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext =
@@ -75,7 +75,7 @@ public class JsonJQTransformTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        List<Task> mappedTasks =
+        List<TaskModel> mappedTasks =
                 new JsonJQTransformTaskMapper(parametersUtils, metadataDAO)
                         .getMappedTasks(taskMapperContext);
 
@@ -99,7 +99,7 @@ public class JsonJQTransformTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext =
@@ -113,7 +113,7 @@ public class JsonJQTransformTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        List<Task> mappedTasks =
+        List<TaskModel> mappedTasks =
                 new JsonJQTransformTaskMapper(parametersUtils, metadataDAO)
                         .getMappedTasks(taskMapperContext);
 

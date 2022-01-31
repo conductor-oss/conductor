@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,9 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DistributionSummary;
 import com.netflix.spectator.api.Gauge;
@@ -175,7 +174,7 @@ public class Monitors {
     }
 
     public static void recordTaskExecutionTime(
-            String taskType, long duration, boolean includesRetries, Task.Status status) {
+            String taskType, long duration, boolean includesRetries, TaskModel.Status status) {
         getTimer(
                         classQualifier,
                         "task_execution",
@@ -284,7 +283,7 @@ public class Monitors {
     }
 
     public static void recordWorkflowTermination(
-            String workflowType, WorkflowStatus status, String ownerApp) {
+            String workflowType, WorkflowModel.Status status, String ownerApp) {
         counter(
                 classQualifier,
                 "workflow_failure",
@@ -320,7 +319,7 @@ public class Monitors {
     }
 
     public static void recordUpdateConflict(
-            String taskType, String workflowType, WorkflowStatus status) {
+            String taskType, String workflowType, WorkflowModel.Status status) {
         counter(
                 classQualifier,
                 "task_update_conflict",
@@ -332,7 +331,8 @@ public class Monitors {
                 status.name());
     }
 
-    public static void recordUpdateConflict(String taskType, String workflowType, Status status) {
+    public static void recordUpdateConflict(
+            String taskType, String workflowType, TaskModel.Status status) {
         counter(
                 classQualifier,
                 "task_update_conflict",
@@ -536,7 +536,7 @@ public class Monitors {
         counter(classQualifier, "acquire_lock_failure", "exceptionType", exceptionClassName);
     }
 
-    public static void recordWorkflowArchived(String workflowType, WorkflowStatus status) {
+    public static void recordWorkflowArchived(String workflowType, WorkflowModel.Status status) {
         counter(
                 classQualifier,
                 "workflow_archived",

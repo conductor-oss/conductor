@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,8 +19,8 @@ import java.util.Map;
 import org.junit.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -35,8 +35,8 @@ public class JsonJqTransformTest {
     @Test
     public void dataShouldBeCorrectlySelected() {
         final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
-        final Workflow workflow = new Workflow();
-        final Task task = new Task();
+        final WorkflowModel workflow = new WorkflowModel();
+        final TaskModel task = new TaskModel();
         final Map<String, Object> inputData = new HashMap<>();
         inputData.put("queryExpression", ".inputJson.key[0]");
         final Map<String, Object> inputJson = new HashMap<>();
@@ -55,8 +55,8 @@ public class JsonJqTransformTest {
     @Test
     public void simpleErrorShouldBeDisplayed() {
         final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
-        final Workflow workflow = new Workflow();
-        final Task task = new Task();
+        final WorkflowModel workflow = new WorkflowModel();
+        final TaskModel task = new TaskModel();
         final Map<String, Object> inputData = new HashMap<>();
         inputData.put("queryExpression", "{");
         task.setInputData(inputData);
@@ -72,8 +72,8 @@ public class JsonJqTransformTest {
     @Test
     public void nestedExceptionsWithNACausesShouldBeDisregarded() {
         final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
-        final Workflow workflow = new Workflow();
-        final Task task = new Task();
+        final WorkflowModel workflow = new WorkflowModel();
+        final TaskModel task = new TaskModel();
         final Map<String, Object> inputData = new HashMap<>();
         inputData.put(
                 "queryExpression",

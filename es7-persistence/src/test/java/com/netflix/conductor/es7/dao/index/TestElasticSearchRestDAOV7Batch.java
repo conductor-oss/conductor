@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,8 +18,11 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.springframework.test.context.TestPropertySource;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -32,23 +35,28 @@ public class TestElasticSearchRestDAOV7Batch extends ElasticSearchRestDaoBaseTes
     public void indexTaskWithBatchSizeTwo() {
         String correlationId = "some-correlation-id";
 
-        Task task = new Task();
-        task.setTaskId("some-task-id");
-        task.setWorkflowInstanceId("some-workflow-instance-id");
-        task.setTaskType("some-task-type");
-        task.setStatus(Task.Status.FAILED);
-        task.setInputData(
-                new HashMap<String, Object>() {
-                    {
-                        put("input_key", "input_value");
-                    }
-                });
-        task.setCorrelationId(correlationId);
-        task.setTaskDefName("some-task-def-name");
-        task.setReasonForIncompletion("some-failure-reason");
+        TaskSummary taskSummary = new TaskSummary();
+        taskSummary.setTaskId("some-task-id");
+        taskSummary.setWorkflowId("some-workflow-instance-id");
+        taskSummary.setTaskType("some-task-type");
+        taskSummary.setStatus(Status.FAILED);
+        try {
+            taskSummary.setInput(
+                    objectMapper.writeValueAsString(
+                            new HashMap<String, Object>() {
+                                {
+                                    put("input_key", "input_value");
+                                }
+                            }));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        taskSummary.setCorrelationId(correlationId);
+        taskSummary.setTaskDefName("some-task-def-name");
+        taskSummary.setReasonForIncompletion("some-failure-reason");
 
-        indexDAO.indexTask(task);
-        indexDAO.indexTask(task);
+        indexDAO.indexTask(taskSummary);
+        indexDAO.indexTask(taskSummary);
 
         await().atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(

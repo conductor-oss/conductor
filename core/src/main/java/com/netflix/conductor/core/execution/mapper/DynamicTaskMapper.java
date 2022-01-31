@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,24 +22,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.google.common.annotations.VisibleForTesting;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
- * TaskType#DYNAMIC} to a {@link Task} based on definition derived from the dynamic task name
+ * TaskType#DYNAMIC} to a {@link TaskModel} based on definition derived from the dynamic task name
  * defined in {@link WorkflowTask#getInputParameters()}
  */
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class DynamicTaskMapper implements TaskMapper {
 
@@ -60,20 +59,20 @@ public class DynamicTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method maps a dynamic task to a {@link Task} based on the input params
+     * This method maps a dynamic task to a {@link TaskModel} based on the input params
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
-     *     WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @return A {@link List} that contains a single {@link Task} with a {@link
-     *     Task.Status#SCHEDULED}
+     *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
+     * @return A {@link List} that contains a single {@link TaskModel} with a {@link
+     *     TaskModel.Status#SCHEDULED}
      */
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext)
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException {
         LOGGER.debug("TaskMapperContext {} in DynamicTaskMapper", taskMapperContext);
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
-        Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
@@ -89,14 +88,14 @@ public class DynamicTaskMapper implements TaskMapper {
                         workflowInstance,
                         taskDefinition,
                         taskMapperContext.getTaskId());
-        Task dynamicTask = new Task();
+        TaskModel dynamicTask = new TaskModel();
         dynamicTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());
         dynamicTask.setTaskId(taskMapperContext.getTaskId());
         dynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         dynamicTask.setInputData(input);
         dynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         dynamicTask.setWorkflowType(workflowInstance.getWorkflowName());
-        dynamicTask.setStatus(Task.Status.SCHEDULED);
+        dynamicTask.setStatus(TaskModel.Status.SCHEDULED);
         dynamicTask.setTaskType(taskToSchedule.getType());
         dynamicTask.setTaskDefName(taskToSchedule.getName());
         dynamicTask.setCorrelationId(workflowInstance.getCorrelationId());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -518,7 +518,7 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.IN_PROGRESS
             tasks[1].taskType == 'integration_task_0'
             tasks[1].status == Task.Status.FAILED
-            tasks[1].retried == true
+            tasks[1].retried
             tasks[2].taskType == 'integration_task_0'
             tasks[2].status == Task.Status.SCHEDULED
             tasks[2].retryCount == 1

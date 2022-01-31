@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 
@@ -32,8 +33,9 @@ public class ConductorQueueStatusPublisherConfiguration {
     @Bean
     public WorkflowStatusListener getWorkflowStatusListener(
             QueueDAO queueDAO,
+            ModelMapper modelMapper,
             ConductorQueueStatusPublisherProperties properties,
             ObjectMapper objectMapper) {
-        return new ConductorQueueStatusPublisher(queueDAO, objectMapper, properties);
+        return new ConductorQueueStatusPublisher(queueDAO, modelMapper, objectMapper, properties);
     }
 }

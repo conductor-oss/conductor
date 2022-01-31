@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,14 +24,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
 
@@ -101,13 +101,13 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(join);
         def.getTasks().add(wft4);
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
 
-        Task task1 = new Task();
+        TaskModel task1 = new TaskModel();
         task1.setReferenceTaskName(wft1.getTaskReferenceName());
 
-        Task task3 = new Task();
+        TaskModel task3 = new TaskModel();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
         Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0))
@@ -126,7 +126,7 @@ public class ForkJoinTaskMapperTest {
                         .withDeciderService(deciderService)
                         .build();
 
-        List<Task> mappedTasks = forkJoinTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = forkJoinTaskMapper.getMappedTasks(taskMapperContext);
 
         assertEquals(3, mappedTasks.size());
         assertEquals(TASK_TYPE_FORK, mappedTasks.get(0).getTaskType());
@@ -182,13 +182,13 @@ public class ForkJoinTaskMapperTest {
 
         def.getTasks().add(wft4);
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
 
-        Task task1 = new Task();
+        TaskModel task1 = new TaskModel();
         task1.setReferenceTaskName(wft1.getTaskReferenceName());
 
-        Task task3 = new Task();
+        TaskModel task3 = new TaskModel();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
         Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1, 0))

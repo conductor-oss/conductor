@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,19 +22,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
- * TaskType#SWITCH} to a List {@link Task} starting with Task of type {@link TaskType#SWITCH} which
- * is marked as IN_PROGRESS, followed by the list of {@link Task} based on the case expression
- * evaluation in the Switch task.
+ * TaskType#SWITCH} to a List {@link TaskModel} starting with Task of type {@link TaskType#SWITCH}
+ * which is marked as IN_PROGRESS, followed by the list of {@link TaskModel} based on the case
+ * expression evaluation in the Switch task.
  */
 @Component
 public class SwitchTaskMapper implements TaskMapper {
@@ -58,10 +58,10 @@ public class SwitchTaskMapper implements TaskMapper {
      * type {@link TaskType#SWITCH}.
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
-     *     WorkflowDef}, {@link Workflow} and a string representation of the TaskId
+     *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
      * @return List of tasks in the following order:
      *     <ul>
-     *       <li>{@link TaskType#SWITCH} with {@link Task.Status#IN_PROGRESS}
+     *       <li>{@link TaskType#SWITCH} with {@link TaskModel.Status#IN_PROGRESS}
      *       <li>List of tasks based on the evaluation of {@link WorkflowTask#getEvaluatorType()}
      *           and {@link WorkflowTask#getExpression()} are scheduled.
      *       <li>In the case of no matching {@link WorkflowTask#getEvaluatorType()}, workflow will
@@ -71,11 +71,11 @@ public class SwitchTaskMapper implements TaskMapper {
      *     </ul>
      */
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
+    public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
         LOGGER.debug("TaskMapperContext {} in SwitchTaskMapper", taskMapperContext);
-        List<Task> tasksToBeScheduled = new LinkedList<>();
+        List<TaskModel> tasksToBeScheduled = new LinkedList<>();
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
         String taskId = taskMapperContext.getTaskId();
@@ -91,7 +91,7 @@ public class SwitchTaskMapper implements TaskMapper {
         String evalResult = "" + evaluator.evaluate(taskToSchedule.getExpression(), taskInput);
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
-        Task switchTask = new Task();
+        TaskModel switchTask = new TaskModel();
         switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
@@ -103,7 +103,7 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.getOutputData().put("evaluationResult", Collections.singletonList(evalResult));
         switchTask.setTaskId(taskId);
         switchTask.setStartTime(System.currentTimeMillis());
-        switchTask.setStatus(Task.Status.IN_PROGRESS);
+        switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         switchTask.setWorkflowTask(taskToSchedule);
         switchTask.setWorkflowPriority(workflowInstance.getPriority());
         tasksToBeScheduled.add(switchTask);
@@ -116,14 +116,13 @@ public class SwitchTaskMapper implements TaskMapper {
             selectedTasks = taskToSchedule.getDefaultCase();
         }
         // once there are selected tasks that need to proceeded as part of the switch, get the next
-        // task to be
-        // scheduled by using the decider service
+        // task to be scheduled by using the decider service
         if (selectedTasks != null && !selectedTasks.isEmpty()) {
             WorkflowTask selectedTask =
                     selectedTasks.get(0); // Schedule the first task to be executed...
             // TODO break out this recursive call using function composition of what needs to be
             // done and then walk back the condition tree
-            List<Task> caseTasks =
+            List<TaskModel> caseTasks =
                     taskMapperContext
                             .getDeciderService()
                             .getTasksToBeScheduled(

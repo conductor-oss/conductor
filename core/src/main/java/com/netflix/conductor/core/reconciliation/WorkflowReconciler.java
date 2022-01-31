@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,13 +26,12 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 
-import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 /**
  * Periodically polls all running workflows in the system and evaluates them for timeouts and/or
  * maintain consistency.
  */
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 @ConditionalOnProperty(
         name = "conductor.workflow-reconciler.enabled",

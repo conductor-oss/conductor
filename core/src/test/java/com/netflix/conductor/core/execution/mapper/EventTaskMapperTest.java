@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,13 +19,13 @@ import java.util.Map;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,11 +48,11 @@ public class EventTaskMapperTest {
         eventTaskInput.put("sink", "SQSSINK");
 
         when(parametersUtils.getTaskInput(
-                        anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
+                        anyMap(), any(WorkflowModel.class), any(TaskDef.class), anyString()))
                 .thenReturn(eventTaskInput);
 
         WorkflowDef workflowDef = new WorkflowDef();
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext =
@@ -65,10 +65,10 @@ public class EventTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        List<Task> mappedTasks = eventTaskMapper.getMappedTasks(taskMapperContext);
+        List<TaskModel> mappedTasks = eventTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
 
-        Task eventTask = mappedTasks.get(0);
+        TaskModel eventTask = mappedTasks.get(0);
         assertEquals(taskId, eventTask.getTaskId());
     }
 }

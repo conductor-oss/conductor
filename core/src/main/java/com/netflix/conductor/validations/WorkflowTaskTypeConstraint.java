@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,7 +27,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
 import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
 
@@ -97,7 +96,7 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_DO_WHILE:
                     valid = isDoWhileTaskValid(workflowTask, context);
                     break;
-                case TASK_TYPE_SUB_WORKFLOW:
+                case TaskType.TASK_TYPE_SUB_WORKFLOW:
                     valid = isSubWorkflowTaskValid(workflowTask, context);
                     break;
                 case TaskType.TASK_TYPE_JSON_JQ_TRANSFORM:
@@ -227,7 +226,7 @@ public @interface WorkflowTaskTypeConstraint {
                 valid = false;
             }
             if (workflowTask.collectTasks().stream()
-                    .anyMatch(t -> t.getType().equals(TASK_TYPE_SUB_WORKFLOW))) {
+                    .anyMatch(t -> t.getType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW))) {
                 String message =
                         String.format(
                                 "SUB_WORKFLOW task inside loopover task: %s is not supported.",

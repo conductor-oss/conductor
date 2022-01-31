@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
@@ -55,8 +56,7 @@ public class DefaultEventQueueProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventQueueProcessor.class);
     private final Map<Status, ObservableQueue> queues;
     private final ExecutionService executionService;
-    private static final TypeReference<Map<String, Object>> _mapType =
-            new TypeReference<Map<String, Object>>() {};
+    private static final TypeReference<Map<String, Object>> _mapType = new TypeReference<>() {};
     private final ObjectMapper objectMapper;
 
     public DefaultEventQueueProcessor(
@@ -135,7 +135,7 @@ public class DefaultEventQueueProcessor {
                                                     .findFirst();
                                 }
 
-                                if (!taskOptional.isPresent()) {
+                                if (taskOptional.isEmpty()) {
                                     LOGGER.error(
                                             "No matching tasks found to be marked as completed for workflow {}, taskRefName {}, taskId {}",
                                             workflowId,
@@ -149,12 +149,11 @@ public class DefaultEventQueueProcessor {
                                 task.setStatus(status);
                                 task.getOutputData()
                                         .putAll(objectMapper.convertValue(payloadJSON, _mapType));
-                                executionService.updateTask(task);
+                                executionService.updateTask(new TaskResult(task));
 
                                 List<String> failures = queue.ack(Collections.singletonList(msg));
                                 if (!failures.isEmpty()) {
-                                    LOGGER.error(
-                                            "Not able to ack the messages {}", failures.toString());
+                                    LOGGER.error("Not able to ack the messages {}", failures);
                                 }
                             } catch (JsonParseException e) {
                                 LOGGER.error("Bad message? : {} ", msg, e);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,33 +12,36 @@
  */
 package com.netflix.conductor.core.exception;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
+
+import static com.netflix.conductor.model.WorkflowModel.Status.FAILED;
 
 public class TerminateWorkflowException extends RuntimeException {
 
-    private final WorkflowStatus workflowStatus;
-    private final Task task;
+    private final WorkflowModel.Status workflowStatus;
+    private final TaskModel task;
 
     public TerminateWorkflowException(String reason) {
-        this(reason, WorkflowStatus.FAILED);
+        this(reason, FAILED);
     }
 
-    public TerminateWorkflowException(String reason, WorkflowStatus workflowStatus) {
+    public TerminateWorkflowException(String reason, WorkflowModel.Status workflowStatus) {
         this(reason, workflowStatus, null);
     }
 
-    public TerminateWorkflowException(String reason, WorkflowStatus workflowStatus, Task task) {
+    public TerminateWorkflowException(
+            String reason, WorkflowModel.Status workflowStatus, TaskModel task) {
         super(reason);
         this.workflowStatus = workflowStatus;
         this.task = task;
     }
 
-    public WorkflowStatus getWorkflowStatus() {
+    public WorkflowModel.Status getWorkflowStatus() {
         return workflowStatus;
     }
 
-    public Task getTask() {
+    public TaskModel getTask() {
         return task;
     }
 }

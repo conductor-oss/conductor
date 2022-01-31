@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -37,17 +37,19 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
@@ -60,12 +62,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atMost;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(
         classes = {
@@ -80,8 +77,9 @@ public class TestDefaultEventProcessor {
     private MetadataService metadataService;
     private ExecutionService executionService;
     private WorkflowExecutor workflowExecutor;
+    private ModelMapper modelMapper;
+    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private SimpleActionProcessor actionProcessor;
-    private EventQueues eventQueues;
     private ParametersUtils parametersUtils;
     private JsonUtils jsonUtils;
     private ConductorProperties properties;
@@ -103,6 +101,8 @@ public class TestDefaultEventProcessor {
         metadataService = mock(MetadataService.class);
         executionService = mock(ExecutionService.class);
         workflowExecutor = mock(WorkflowExecutor.class);
+        externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+        modelMapper = new ModelMapper(externalPayloadStorageUtils);
         actionProcessor = mock(SimpleActionProcessor.class);
         parametersUtils = new ParametersUtils(objectMapper);
         jsonUtils = new JsonUtils(objectMapper);
@@ -184,16 +184,18 @@ public class TestDefaultEventProcessor {
                 .when(workflowExecutor)
                 .updateTask(any());
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setReferenceTaskName(completeTaskAction.getComplete_task().getTaskRefName());
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setTasks(Collections.singletonList(task));
         when(workflowExecutor.getWorkflow(
                         completeTaskAction.getComplete_task().getWorkflowId(), true))
                 .thenReturn(workflow);
+        doNothing().when(externalPayloadStorageUtils).verifyAndUpload(any(), any());
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(
+                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -259,7 +261,8 @@ public class TestDefaultEventProcessor {
                         eq(null));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(
+                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -323,7 +326,8 @@ public class TestDefaultEventProcessor {
                         eq(null));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(
+                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(

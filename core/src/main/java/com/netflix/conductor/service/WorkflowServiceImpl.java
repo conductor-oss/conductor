@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -75,14 +75,15 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     /**
-     * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
+     * Start a new workflow.
      *
      * @param name Name of the workflow you want to start.
      * @param version Version of the workflow you want to start.
      * @param correlationId CorrelationID of the workflow you want to start.
      * @param input Input to the workflow you want to start.
-     * @param externalInputPayloadStoragePath
-     * @param taskToDomain
+     * @param externalInputPayloadStoragePath the relative path in external storage where input
+     *     payload is located
+     * @param taskToDomain the task to domain mapping
      * @param workflowDef - workflow definition
      * @return the id of the workflow instance that can be use for tracking.
      */
@@ -113,8 +114,9 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param correlationId CorrelationID of the workflow you want to start.
      * @param priority Priority of the workflow you want to start.
      * @param input Input to the workflow you want to start.
-     * @param externalInputPayloadStoragePath
-     * @param taskToDomain
+     * @param externalInputPayloadStoragePath the relative path in external storage where input *
+     *     payload is located
+     * @param taskToDomain the task to domain mapping
      * @param workflowDef - workflow definition
      * @return the id of the workflow instance that can be use for tracking.
      */
@@ -244,9 +246,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     /**
-     * Gets the workflow by workflow Id.
+     * Gets the workflow by workflow id.
      *
-     * @param workflowId Id of the workflow.
+     * @param workflowId id of the workflow.
      * @param includeTasks Includes tasks associated with workflow.
      * @return an instance of {@link Workflow}
      */
@@ -275,7 +277,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      *
      * @param workflowName Name of the workflow.
      * @param version Version of the workflow.
-     * @param startTime Starttime of the workflow.
+     * @param startTime start time of the workflow.
      * @param endTime EndTime of the workflow
      * @return a list of workflow Ids.
      */
@@ -307,7 +309,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     /**
-     * Pauses the workflow given a worklfowId.
+     * Pauses the workflow given a workflowId.
      *
      * @param workflowId WorkflowId of the workflow.
      */

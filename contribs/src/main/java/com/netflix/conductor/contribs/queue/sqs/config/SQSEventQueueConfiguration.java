@@ -32,7 +32,6 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import rx.Scheduler;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
 @EnableConfigurationProperties(SQSEventQueueProperties.class)
 @ConditionalOnProperty(name = "conductor.event-queues.sqs.enabled", havingValue = "true")

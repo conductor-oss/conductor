@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,7 +15,7 @@ package com.netflix.conductor.core.listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.model.WorkflowModel;
 
 /** Stub listener default implementation */
 public class WorkflowStatusListenerStub implements WorkflowStatusListener {
@@ -23,17 +23,17 @@ public class WorkflowStatusListenerStub implements WorkflowStatusListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowStatusListenerStub.class);
 
     @Override
-    public void onWorkflowCompleted(Workflow workflow) {
+    public void onWorkflowCompleted(WorkflowModel workflow) {
         LOGGER.debug("Workflow {} is completed", workflow.getWorkflowId());
     }
 
     @Override
-    public void onWorkflowTerminated(Workflow workflow) {
+    public void onWorkflowTerminated(WorkflowModel workflow) {
         LOGGER.debug("Workflow {} is terminated", workflow.getWorkflowId());
     }
 
     @Override
-    public void onWorkflowFinalized(Workflow workflow) {
+    public void onWorkflowFinalized(WorkflowModel workflow) {
         LOGGER.debug("Workflow {} is finalized", workflow.getWorkflowId());
     }
 }

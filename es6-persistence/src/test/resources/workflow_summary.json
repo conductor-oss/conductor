@@ -1,0 +1,12 @@
+{
+  "workflowType": "template_workflow",
+  "version": 1,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "priority": 1,
+  "correlationId": "testTaskDefTemplate",
+  "startTime": 1534983505050,
+  "updateTime": 1534983505131,
+  "endTime": 0,
+  "status": "RUNNING",
+  "input": "{path1=file://path1, path2=file://path2, requestDetails={key1=value1, key2=42}, outputPath=s3://bucket/outputPath}"
+}

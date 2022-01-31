@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,24 +19,22 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.contribs.listener.archive.ArchivingWorkflowStatusListener;
-import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.model.WorkflowModel;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 /** @author pavel.halabala */
 public class ArchivingWorkflowStatusListenerTest {
 
-    Workflow workflow;
+    WorkflowModel workflow;
     ExecutionDAOFacade executionDAOFacade;
     ArchivingWorkflowStatusListener listener;
 
     @Before
     public void before() {
-        workflow = new Workflow();
+        workflow = new WorkflowModel();
         WorkflowDef def = new WorkflowDef();
         def.setName("name1");
         def.setVersion(1);

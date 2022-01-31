@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -248,12 +248,12 @@ public class TaskClient extends ClientBase {
             MetricsContainer.recordTaskResultPayloadSize(taskType, taskResultSize);
 
             long payloadSizeThreshold =
-                    conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024;
+                    conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024L;
             if (taskResultSize > payloadSizeThreshold) {
                 if (!conductorClientConfiguration.isExternalPayloadStorageEnabled()
                         || taskResultSize
                                 > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB()
-                                        * 1024) {
+                                        * 1024L) {
                     taskResult.setReasonForIncompletion(
                             String.format(
                                     "The TaskResult payload size: %d is greater than the permissible %d MB",

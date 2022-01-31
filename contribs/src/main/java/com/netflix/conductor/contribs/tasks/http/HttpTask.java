@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,22 +21,17 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -79,12 +74,12 @@ public class HttpTask extends WorkflowSystemTask {
     }
 
     @Override
-    public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
+    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         Object request = task.getInputData().get(requestParameter);
         task.setWorkerId(Utils.getServerId());
         if (request == null) {
             task.setReasonForIncompletion(MISSING_REQUEST);
-            task.setStatus(Status.FAILED);
+            task.setStatus(TaskModel.Status.FAILED);
             return;
         }
 
@@ -93,14 +88,14 @@ public class HttpTask extends WorkflowSystemTask {
             String reason =
                     "Missing HTTP URI.  See documentation for HttpTask for required input parameters";
             task.setReasonForIncompletion(reason);
-            task.setStatus(Status.FAILED);
+            task.setStatus(TaskModel.Status.FAILED);
             return;
         }
 
         if (input.getMethod() == null) {
             String reason = "No HTTP method specified";
             task.setReasonForIncompletion(reason);
-            task.setStatus(Status.FAILED);
+            task.setStatus(TaskModel.Status.FAILED);
             return;
         }
 
@@ -113,9 +108,9 @@ public class HttpTask extends WorkflowSystemTask {
                     task.getTaskId());
             if (response.statusCode > 199 && response.statusCode < 300) {
                 if (isAsyncComplete(task)) {
-                    task.setStatus(Status.IN_PROGRESS);
+                    task.setStatus(TaskModel.Status.IN_PROGRESS);
                 } else {
-                    task.setStatus(Status.COMPLETED);
+                    task.setStatus(TaskModel.Status.COMPLETED);
                 }
             } else {
                 if (response.body != null) {
@@ -123,7 +118,7 @@ public class HttpTask extends WorkflowSystemTask {
                 } else {
                     task.setReasonForIncompletion("No response from the remote service");
                 }
-                task.setStatus(Status.FAILED);
+                task.setStatus(TaskModel.Status.FAILED);
             }
             //noinspection ConstantConditions
             if (response != null) {
@@ -139,7 +134,7 @@ public class HttpTask extends WorkflowSystemTask {
                     input.getVipAddress(),
                     task.getWorkflowInstanceId(),
                     e);
-            task.setStatus(Status.FAILED);
+            task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(
                     "Failed to invoke " + getTaskType() + " task due to: " + e);
             task.getOutputData().put("response", e.toString());
@@ -206,13 +201,13 @@ public class HttpTask extends WorkflowSystemTask {
     }
 
     @Override
-    public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
+    public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         return false;
     }
 
     @Override
-    public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
-        task.setStatus(Status.CANCELED);
+    public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        task.setStatus(TaskModel.Status.CANCELED);
     }
 
     @Override

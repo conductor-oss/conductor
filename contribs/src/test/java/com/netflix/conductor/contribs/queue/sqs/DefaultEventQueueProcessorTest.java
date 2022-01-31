@@ -30,6 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
@@ -63,7 +64,7 @@ public class DefaultEventQueueProcessorTest {
     @Autowired private ObjectMapper objectMapper;
 
     private static final List<Message> messages = new LinkedList<>();
-    private static final List<Task> updatedTasks = new LinkedList<>();
+    private static final List<TaskResult> updatedTasks = new LinkedList<>();
 
     @Before
     public void init() {
@@ -129,11 +130,11 @@ public class DefaultEventQueueProcessorTest {
         doAnswer(
                         (Answer<Void>)
                                 invocation -> {
-                                    updatedTasks.add(invocation.getArgument(0, Task.class));
+                                    updatedTasks.add(invocation.getArgument(0, TaskResult.class));
                                     return null;
                                 })
                 .when(executionService)
-                .updateTask(any(Task.class));
+                .updateTask(any(TaskResult.class));
     }
 
     @Test

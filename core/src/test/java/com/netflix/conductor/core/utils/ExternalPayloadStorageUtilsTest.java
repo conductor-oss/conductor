@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,25 +30,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.unit.DataSize;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -129,7 +123,7 @@ public class ExternalPayloadStorageUtilsTest {
                 .when(externalPayloadStorage)
                 .upload(anyString(), any(), anyLong());
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setInputData(payload);
         externalPayloadStorageUtils.verifyAndUpload(
                 task, ExternalPayloadStorage.PayloadType.TASK_INPUT);
@@ -161,7 +155,7 @@ public class ExternalPayloadStorageUtilsTest {
                 .when(externalPayloadStorage)
                 .upload(anyString(), any(), anyLong());
 
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         WorkflowDef def = new WorkflowDef();
         def.setName("name");
         def.setVersion(1);
@@ -199,7 +193,7 @@ public class ExternalPayloadStorageUtilsTest {
 
     @Test
     public void testFailTaskWithInputPayload() {
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setInputData(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
@@ -211,7 +205,7 @@ public class ExternalPayloadStorageUtilsTest {
 
     @Test
     public void testFailTaskWithOutputPayload() {
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
@@ -223,7 +217,7 @@ public class ExternalPayloadStorageUtilsTest {
 
     @Test
     public void testFailWorkflowWithInputPayload() {
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setInput(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
@@ -231,12 +225,12 @@ public class ExternalPayloadStorageUtilsTest {
                 workflow, ExternalPayloadStorage.PayloadType.TASK_INPUT, "error");
         assertNotNull(workflow);
         assertTrue(workflow.getInput().isEmpty());
-        assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
     }
 
     @Test
     public void testFailWorkflowWithOutputPayload() {
-        Workflow workflow = new Workflow();
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setOutput(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
@@ -244,6 +238,6 @@ public class ExternalPayloadStorageUtilsTest {
                 workflow, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, "error");
         assertNotNull(workflow);
         assertTrue(workflow.getOutput().isEmpty());
-        assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
     }
 }

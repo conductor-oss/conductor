@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,10 +14,9 @@ package com.netflix.conductor.core.execution.tasks;
 
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
 
@@ -35,8 +34,9 @@ public class Decision extends WorkflowSystemTask {
     }
 
     @Override
-    public boolean execute(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
-        task.setStatus(Status.COMPLETED);
+    public boolean execute(
+            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        task.setStatus(TaskModel.Status.COMPLETED);
         return true;
     }
 }

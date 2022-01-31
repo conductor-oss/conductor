@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,12 +24,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.conductor.redis.jedis.JedisProxy;
@@ -72,14 +71,14 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         def.setName("task1");
         def.setConcurrentExecLimit(1);
 
-        Task task = new Task();
+        TaskModel task = new TaskModel();
         task.setTaskId(taskId);
         task.setWorkflowInstanceId(workflowId);
         task.setReferenceTaskName("ref_name");
         task.setTaskDefName(taskDefName);
         task.setTaskType(taskDefName);
-        task.setStatus(Status.IN_PROGRESS);
-        List<Task> tasks = executionDAO.createTasks(Collections.singletonList(task));
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        List<TaskModel> tasks = executionDAO.createTasks(Collections.singletonList(task));
         assertNotNull(tasks);
         assertEquals(1, tasks.size());
 

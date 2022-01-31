@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,18 +20,17 @@ import org.springframework.stereotype.Component
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
-import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.WorkflowContext
 import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.dao.QueueDAO
+import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
 import com.fasterxml.jackson.databind.ObjectMapper
-
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED
 
 /**
  * This is a helper class used to initialize task definitions required by the tests when loaded up.
@@ -184,7 +183,7 @@ class WorkflowTestUtil {
             int version = Integer.parseInt(StringUtils.substringAfter(workflowWithVersion, ":"))
             List<String> running = workflowExecutionService.getRunningWorkflows(workflowName, version)
             for (String workflowId : running) {
-                Workflow workflow = workflowExecutor.getWorkflow(workflowId, false)
+                WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, false)
                 if (!workflow.getStatus().isTerminal()) {
                     workflowExecutor.terminateWorkflow(workflowId, "cleanup")
                 }
@@ -237,19 +236,20 @@ class WorkflowTestUtil {
      * @param failureReason the reason to fail the task that will added to the task update
      * @param outputParams An optional output parameters if available will be added to the task before updating to failed
      * @param waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
-     * @return A Tuple of polledTask and acknowledgement of the poll
+     * @return A Tuple of taskResult and acknowledgement of the poll
      */
     Tuple pollAndFailTask(String taskName, String workerId, String failureReason, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
-        polledIntegrationTask.status = Task.Status.FAILED
-        polledIntegrationTask.reasonForIncompletion = failureReason
+        def taskResult = new TaskResult(polledIntegrationTask)
+        taskResult.status = TaskResult.Status.FAILED
+        taskResult.reasonForIncompletion = failureReason
         if (outputParams) {
             outputParams.forEach { k, v ->
-                polledIntegrationTask.outputData[k] = v
+                taskResult.outputData[k] = v
             }
         }
-        workflowExecutionService.updateTask(polledIntegrationTask)
+        workflowExecutionService.updateTask(taskResult)
         return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
     }
 
@@ -257,7 +257,7 @@ class WorkflowTestUtil {
      * A helper method to introduce delay and convert the polledIntegrationTask and ackPolledIntegrationTask
      * into a tuple. This method is intended to be used by pollAndFailTask and pollAndCompleteTask
      * @param waitAtEndSeconds The total seconds of delay before the method returns
-     * @param polledIntegrationTask instance of polled task
+     * @param ackedTaskResult the task result created after ack
      * @param ackPolledIntegrationTask a acknowledgement of a poll
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
@@ -284,30 +284,31 @@ class WorkflowTestUtil {
             return new Tuple(null, null)
         }
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
-        polledIntegrationTask.status = COMPLETED
+        def taskResult = new TaskResult(polledIntegrationTask)
+        taskResult.status = TaskResult.Status.COMPLETED
         if (outputParams) {
             outputParams.forEach { k, v ->
-                polledIntegrationTask.outputData[k] = v
+                taskResult.outputData[k] = v
             }
         }
-        workflowExecutionService.updateTask(polledIntegrationTask)
+        workflowExecutionService.updateTask(taskResult)
         return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
     }
 
     Tuple pollAndCompleteLargePayloadTask(String taskName, String workerId, String outputPayloadPath) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
-        polledIntegrationTask.status = COMPLETED
-        polledIntegrationTask.outputData = null
-        polledIntegrationTask.externalOutputPayloadStoragePath = outputPayloadPath
-        polledIntegrationTask.status = COMPLETED
-        workflowExecutionService.updateTask(polledIntegrationTask)
+        def taskResult = new TaskResult(polledIntegrationTask)
+        taskResult.status = TaskResult.Status.COMPLETED
+        taskResult.outputData = null
+        taskResult.externalOutputPayloadStoragePath = outputPayloadPath
+        workflowExecutionService.updateTask(taskResult)
         return new Tuple(polledIntegrationTask, ackPolledIntegrationTask)
     }
 
     /**
      * A helper method intended to be used in the <tt>then:</tt> block of the spock test feature, ideally intended to be called after either:
-     * pollAndCompleteTask function or  pollAndFailTask function
+     * pollAndCompleteTask function or pollAndFailTask function
      * @param completedTaskAndAck A Tuple of polledTask and acknowledgement of the poll
      * @param expectedTaskInputParams a map of input params that are verified against the polledTask that is part of the completedTaskAndAck tuple
      */

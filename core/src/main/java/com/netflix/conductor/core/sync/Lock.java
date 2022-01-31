@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -43,7 +43,7 @@ public interface Lock {
      * @param lockId resource to lock on
      * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
      * @param unit time unit
-     * @return
+     * @return true, if successfully acquired
      */
     boolean acquireLock(String lockId, long timeToTry, TimeUnit unit);
 
@@ -55,7 +55,7 @@ public interface Lock {
      * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
      * @param leaseTime Lock lease expiration duration.
      * @param unit time unit
-     * @return
+     * @return true, if successfully acquired
      */
     boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.IndexDAO;
 
@@ -34,18 +34,18 @@ public class NoopIndexDAO implements IndexDAO {
     public void setup() {}
 
     @Override
-    public void indexWorkflow(Workflow workflow) {}
+    public void indexWorkflow(WorkflowSummary workflowSummary) {}
 
     @Override
-    public CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow) {
+    public CompletableFuture<Void> asyncIndexWorkflow(WorkflowSummary workflowSummary) {
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void indexTask(Task task) {}
+    public void indexTask(TaskSummary taskSummary) {}
 
     @Override
-    public CompletableFuture<Void> asyncIndexTask(Task task) {
+    public CompletableFuture<Void> asyncIndexTask(TaskSummary taskSummary) {
         return CompletableFuture.completedFuture(null);
     }
 

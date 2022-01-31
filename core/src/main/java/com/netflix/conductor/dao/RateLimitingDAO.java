@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,19 +12,19 @@
  */
 package com.netflix.conductor.dao;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.model.TaskModel;
 
 /** An abstraction to enable different Rate Limiting implementations */
 public interface RateLimitingDAO {
 
     /**
      * Checks if the Task is rate limited or not based on the {@link
-     * Task#getRateLimitPerFrequency()} and {@link Task#getRateLimitFrequencyInSeconds()}
+     * TaskModel#getRateLimitPerFrequency()} and {@link TaskModel#getRateLimitFrequencyInSeconds()}
      *
      * @param task: which needs to be evaluated whether it is rateLimited or not
-     * @return true: If the {@link Task} is rateLimited false: If the {@link Task} is not
+     * @return true: If the {@link TaskModel} is rateLimited false: If the {@link TaskModel} is not
      *     rateLimited
      */
-    boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef);
+    boolean exceedsRateLimitPerFrequency(TaskModel task, TaskDef taskDef);
 }

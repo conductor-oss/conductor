@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -38,7 +38,9 @@ import com.amazonaws.services.s3.model.S3Object;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} using AWS S3 for storing large JSON payload
- * data. The S3 client assumes that access to S3 is configured on the instance.
+ * data.
+ *
+ * <p><em>NOTE: The S3 client assumes that access to S3 is configured on the instance.</em>
  *
  * @see <a
  *     href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/index.html?com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html">DefaultAWSCredentialsProviderChain</a>

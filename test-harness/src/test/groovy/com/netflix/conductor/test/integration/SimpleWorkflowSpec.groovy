@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -279,7 +279,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         def polledTaskRtTry2 = workflowExecutionService.poll('task_rt', 'task1.integration.worker.testTimeout')
         polledTaskRtTry2.callbackAfterSeconds = 2
         polledTaskRtTry2.status = Task.Status.IN_PROGRESS
-        workflowExecutionService.updateTask(polledTaskRtTry2)
+        workflowExecutionService.updateTask(new TaskResult(polledTaskRtTry2))
 
         then: "verify that the polled task is not null"
         polledTaskRtTry2
@@ -560,7 +560,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         polledIntegrationTask1.status = Task.Status.COMPLETED
         def polledIntegrationTask1Output = "task1.output -> " + polledIntegrationTask1.inputData['p1'] + "." + polledIntegrationTask1.inputData['p2']
         polledIntegrationTask1.outputData['op'] = polledIntegrationTask1Output
-        workflowExecutionService.updateTask(polledIntegrationTask1)
+        workflowExecutionService.updateTask(new TaskResult(polledIntegrationTask1))
 
         then: "verify that the 'integration_task_1' is polled and completed"
         ackPolledIntegrationTask1
@@ -735,7 +735,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         pollTaskTry1.outputData['op'] = 'task1.in.progress'
         pollTaskTry1.callbackAfterSeconds = 5
         pollTaskTry1.status = Task.Status.IN_PROGRESS
-        workflowExecutionService.updateTask(pollTaskTry1)
+        workflowExecutionService.updateTask(new TaskResult(pollTaskTry1))
 
         then: "verify that the task is polled and acknowledged"
         pollTaskTry1
@@ -817,7 +817,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         pollTaskTry1.outputData['op'] = 'task1.in.progress'
         pollTaskTry1.callbackAfterSeconds = 3600
         pollTaskTry1.status = Task.Status.IN_PROGRESS
-        workflowExecutionService.updateTask(pollTaskTry1)
+        workflowExecutionService.updateTask(new TaskResult(pollTaskTry1))
 
         then: "verify that the task is polled and acknowledged"
         pollTaskTry1

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,11 +23,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.redis.limit.config.RedisConcurrentExecutionLimitProperties;
 
 @Trace
@@ -52,12 +52,12 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
     }
 
     /**
-     * Adds the {@link Task} identifier to a Redis Set for the {@link TaskDef}'s name.
+     * Adds the {@link TaskModel} identifier to a Redis Set for the {@link TaskDef}'s name.
      *
-     * @param task The {@link Task} object.
+     * @param task The {@link TaskModel} object.
      */
     @Override
-    public void addTaskToLimit(Task task) {
+    public void addTaskToLimit(TaskModel task) {
         try {
             Monitors.recordDaoRequests(
                     CLASS_NAME, "addTaskToLimit", task.getTaskType(), task.getWorkflowType());
@@ -80,12 +80,12 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
     }
 
     /**
-     * Remove the {@link Task} identifier from the Redis Set for the {@link TaskDef}'s name.
+     * Remove the {@link TaskModel} identifier from the Redis Set for the {@link TaskDef}'s name.
      *
-     * @param task The {@link Task} object.
+     * @param task The {@link TaskModel} object.
      */
     @Override
-    public void removeTaskFromLimit(Task task) {
+    public void removeTaskFromLimit(TaskModel task) {
         try {
             Monitors.recordDaoRequests(
                     CLASS_NAME, "removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());
@@ -109,15 +109,15 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
     }
 
     /**
-     * Checks if the {@link Task} identifier is in the Redis Set and size of the set is more than
-     * the {@link TaskDef#concurrencyLimit()}.
+     * Checks if the {@link TaskModel} identifier is in the Redis Set and size of the set is more
+     * than the {@link TaskDef#concurrencyLimit()}.
      *
-     * @param task The {@link Task} object.
+     * @param task The {@link TaskModel} object.
      * @return true if the task id is not in the set and size of the set is more than the {@link
      *     TaskDef#concurrencyLimit()}.
      */
     @Override
-    public boolean exceedsLimit(Task task) {
+    public boolean exceedsLimit(TaskModel task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (taskDefinition.isEmpty()) {
             return false;
