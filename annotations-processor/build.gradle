@@ -5,15 +5,15 @@ sourceSets {
 
 dependencies {
     implementation project(':conductor-annotations')
-    compile 'com.google.guava:guava:25.1-jre'
-    compile 'com.squareup:javapoet:1.11.+'
-    compile 'com.github.jknack:handlebars:4.0.+'
-    compile 'com.google.protobuf:protobuf-java:3.5.1'
-    compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile gradleApi()
+    api 'com.google.guava:guava:25.1-jre'
+    api 'com.squareup:javapoet:1.11.+'
+    api 'com.github.jknack:handlebars:4.0.+'
+    api 'com.google.protobuf:protobuf-java:3.5.1'
+    api 'javax.annotation:javax.annotation-api:1.3.2'
+    api gradleApi()
 
-    exampleCompile sourceSets.main.output
-    exampleCompile project(':conductor-annotations')
+    exampleImplementation sourceSets.main.output
+    exampleImplementation project(':conductor-annotations')
 }
 
 task exampleJar(type: Jar) {

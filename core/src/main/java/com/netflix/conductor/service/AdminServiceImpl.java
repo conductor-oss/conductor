@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,13 +49,13 @@ public class AdminServiceImpl implements AdminService {
             QueueDAO queueDAO,
             Optional<WorkflowRepairService> workflowRepairService,
             Optional<EventQueueManager> eventQueueManager,
-            BuildProperties buildProperties) {
+            Optional<BuildProperties> buildProperties) {
         this.properties = properties;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
         this.workflowRepairService = workflowRepairService.orElse(null);
         this.eventQueueManager = eventQueueManager.orElse(null);
-        this.buildProperties = buildProperties;
+        this.buildProperties = buildProperties.orElse(null);
     }
 
     /**
@@ -74,6 +75,7 @@ public class AdminServiceImpl implements AdminService {
      * @return all the build properties.
      */
     private Map<String, Object> getBuildProperties() {
+        if (buildProperties == null) return Collections.emptyMap();
         Map<String, Object> buildProps = new HashMap<>();
         buildProps.put("version", buildProperties.getVersion());
         buildProps.put("buildDate", buildProperties.getTime());
