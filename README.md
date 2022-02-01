@@ -4,19 +4,15 @@
 ## Conductor
 Conductor is a _workflow orchestration_ engine that runs in the cloud.
 
-
 [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
 [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
-## Builds
-The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases).
-| Branch |                                                     Build                                                     |
-|:------:|:-------------------------------------------------------------------------------------------------------------:|
-| main | [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml) |
-| 2.31 | [![Build Status](https://travis-ci.com/Netflix/conductor.svg?branch=2.31)](https://travis-ci.com/Netflix/conductor) |
+## Releases
+The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
 
+[2.31.8](https://github.com/Netflix/conductor/releases/tag/v2.31.8) is the **final** release of `2.31` branch. As of Feb 2022, `1.x` & `2.x` versions are no longer supported.
 
 ## Getting Started - Building & Running Conductor
 ### Docker
@@ -101,10 +97,10 @@ Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use g
 ## Contributions
 Whether it is a small documentation correction, bug fix or new features, contributions are highly appreciated. We just ask to follow standard oss guidelines. [Discussion Forum](https://github.com/Netflix/conductor/discussions) is a good place to ask questions, discuss new features and explore ideas. Please check with us before spending too much time, only to find later that someone else is already working on a similar feature.
 
-`main` branch is the current working branch, while `2.31` branch is the latest stable 2.x branch. Please send your PR's to `main` branch, making sure that it builds on your local system successfully. Also, please make sure all the conflicts are resolved.
+`main` branch is the current working branch. Please send your PR's to `main` branch, making sure that it builds on your local system successfully. Also, please make sure all the conflicts are resolved.
 
 ## License
-Copyright 2021 Netflix, Inc.
+Copyright 2022 Netflix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
