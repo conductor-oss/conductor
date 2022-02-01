@@ -6,7 +6,7 @@
     },
     "compileClasspath": {
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-core",
                 "org.apache.logging.log4j:log4j-jul",
@@ -15,19 +15,19 @@
             ]
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-web"
             ]
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.30",
@@ -38,7 +38,7 @@
     },
     "runtimeClasspath": {
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-core",
                 "org.apache.logging.log4j:log4j-jul",
@@ -47,20 +47,20 @@
             ]
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-slf4j-impl",
                 "org.apache.logging.log4j:log4j-web"
             ]
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.30",
@@ -566,7 +566,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-core",
                 "org.apache.logging.log4j:log4j-jul",
@@ -576,26 +576,26 @@
             ]
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.apache.logging.log4j:log4j-web",
                 "org.springframework.boot:spring-boot-starter-log4j2"
             ]
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-log4j2"
             ]
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-log4j2"
             ]
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.0"
+            "locked": "2.17.1"
         },
         "org.apache.lucene:lucene-analyzers-common": {
             "locked": "7.7.3",
@@ -1742,8 +1742,8 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
-                "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest"
             ]
@@ -1762,6 +1762,7 @@
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -1798,6 +1799,12 @@
             ]
         },
         "com.netflix.conductor:conductor-mysql-persistence": {
+            "project": true,
+            "transitive": [
+                "com.netflix.conductor:conductor-server"
+            ]
+        },
+        "com.netflix.conductor:conductor-postgres-external-storage": {
             "project": true,
             "transitive": [
                 "com.netflix.conductor:conductor-server"
@@ -2093,21 +2100,9 @@
             ]
         },
         "io.github.classgraph:classgraph": {
-            "locked": "4.8.117",
+            "locked": "4.8.138",
             "transitive": [
-                "org.springdoc:springdoc-openapi-common"
-            ]
-        },
-        "io.github.toolfactory:jvm-driver": {
-            "locked": "4.0.0",
-            "transitive": [
-                "io.github.classgraph:classgraph"
-            ]
-        },
-        "io.github.toolfactory:narcissus": {
-            "locked": "1.0.1",
-            "transitive": [
-                "io.github.toolfactory:jvm-driver"
+                "org.springdoc:springdoc-openapi-ui"
             ]
         },
         "io.github.x-stream:mxparser": {
@@ -2363,17 +2358,10 @@
         "io.swagger.core.v3:swagger-annotations": {
             "locked": "2.1.12",
             "transitive": [
-                "io.swagger.core.v3:swagger-core",
-                "org.springdoc:springdoc-openapi-common"
+                "io.swagger.core.v3:swagger-core"
             ]
         },
         "io.swagger.core.v3:swagger-core": {
-            "locked": "2.1.12",
-            "transitive": [
-                "io.swagger.core.v3:swagger-integration"
-            ]
-        },
-        "io.swagger.core.v3:swagger-integration": {
             "locked": "2.1.12",
             "transitive": [
                 "org.springdoc:springdoc-openapi-common"
@@ -2382,9 +2370,7 @@
         "io.swagger.core.v3:swagger-models": {
             "locked": "2.1.12",
             "transitive": [
-                "io.swagger.core.v3:swagger-core",
-                "io.swagger.core.v3:swagger-integration",
-                "org.springdoc:springdoc-openapi-common"
+                "io.swagger.core.v3:swagger-core"
             ]
         },
         "jakarta.activation:jakarta.activation-api": {
@@ -2597,8 +2583,7 @@
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "io.swagger.core.v3:swagger-core",
-                "org.springdoc:springdoc-openapi-common"
+                "io.swagger.core.v3:swagger-core"
             ]
         },
         "org.apache.commons:commons-math": {
@@ -2655,7 +2640,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-cassandra-persistence",
@@ -2668,6 +2653,7 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -2681,7 +2667,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-cassandra-persistence",
@@ -2694,6 +2680,7 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -2705,7 +2692,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-cassandra-persistence",
@@ -2718,6 +2705,7 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -2727,7 +2715,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-cassandra-persistence",
@@ -2740,6 +2728,7 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -2749,7 +2738,7 @@
             ]
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.0",
+            "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-cassandra-persistence",
@@ -2762,6 +2751,7 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
@@ -3215,6 +3205,7 @@
             "locked": "6.4.4",
             "transitive": [
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ]
         },
@@ -3456,6 +3447,7 @@
         "org.postgresql:postgresql": {
             "locked": "42.2.20",
             "transitive": [
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ]
         },
@@ -3555,20 +3547,21 @@
             "locked": "1.3-groovy-2.5"
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.3",
+            "locked": "1.6.5",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.3",
+            "locked": "1.6.5",
             "transitive": [
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest",
                 "com.netflix.conductor:conductor-server"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.3",
+            "locked": "1.6.5",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -3628,6 +3621,7 @@
             "locked": "2.3.12.RELEASE",
             "transitive": [
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ]
         },
@@ -3809,7 +3803,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.1.3",
+            "locked": "4.2.1",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
