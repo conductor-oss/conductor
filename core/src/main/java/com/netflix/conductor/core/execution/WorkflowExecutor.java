@@ -702,6 +702,8 @@ public class WorkflowExecutor {
         // This should load Workflow from archive, if archived.
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setLastRetriedTime(System.currentTimeMillis());
+        String lastReasonForIncompletion = workflow.getReasonForIncompletion();
+        workflow.setReasonForIncompletion(null);
         // Add to decider queue
         queueDAO.push(
                 Utils.DECIDER_QUEUE,
@@ -709,6 +711,10 @@ public class WorkflowExecutor {
                 workflow.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
+        LOGGER.info(
+                "Workflow {} that failed due to '{}' was retried",
+                workflow.toShortString(),
+                lastReasonForIncompletion);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to
         // updateTasks after obtaining task copy from taskToBeRescheduled.
@@ -1980,10 +1986,9 @@ public class WorkflowExecutor {
 
     /** Pushes parent workflow id into the decider queue with a priority. */
     private void pushParentWorkflow(String parentWorkflowId) {
-        if (queueDAO.containsMessage(Utils.DECIDER_QUEUE, parentWorkflowId)) {
-            queueDAO.postpone(Utils.DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
-        } else {
+        if (!queueDAO.containsMessage(Utils.DECIDER_QUEUE, parentWorkflowId)) {
             queueDAO.push(Utils.DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
+            LOGGER.info("Pushed parent workflow {} to {}", parentWorkflowId, Utils.DECIDER_QUEUE);
         }
     }
 }
