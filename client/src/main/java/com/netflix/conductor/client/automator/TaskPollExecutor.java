@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +38,9 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.discovery.EurekaClient;
+import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.patterns.ThreadPoolMonitor;
 
 import com.google.common.base.Stopwatch;
 
@@ -47,6 +51,8 @@ import com.google.common.base.Stopwatch;
 class TaskPollExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskPollExecutor.class);
+
+    private static final Registry REGISTRY = Spectator.globalRegistry();
 
     private final EurekaClient eurekaClient;
     private final TaskClient taskClient;
@@ -95,6 +101,7 @@ class TaskPollExecutor {
                                 .namingPattern(workerNamePrefix)
                                 .uncaughtExceptionHandler(uncaughtExceptionHandler)
                                 .build());
+        ThreadPoolMonitor.attach(REGISTRY, (ThreadPoolExecutor) executorService, workerNamePrefix);
     }
 
     void pollAndExecute(Worker worker) {
