@@ -153,4 +153,21 @@ class ModelMapperSpec extends Specification {
             externalInputPayloadStoragePath == '/relative/task/path'
         }
     }
+
+    def "map task model status to task status"() {
+        expect:
+        taskStatus == modelMapper.mapToTaskStatus(taskModelStatus)
+
+        where:
+        taskModelStatus                             || taskStatus
+        TaskModel.Status.IN_PROGRESS                || Task.Status.IN_PROGRESS
+        TaskModel.Status.CANCELED                   || Task.Status.CANCELED
+        TaskModel.Status.FAILED                     || Task.Status.FAILED
+        TaskModel.Status.FAILED_WITH_TERMINAL_ERROR || Task.Status.FAILED_WITH_TERMINAL_ERROR
+        TaskModel.Status.COMPLETED                  || Task.Status.COMPLETED
+        TaskModel.Status.COMPLETED_WITH_ERRORS      || Task.Status.COMPLETED_WITH_ERRORS
+        TaskModel.Status.SCHEDULED                  || Task.Status.SCHEDULED
+        TaskModel.Status.TIMED_OUT                  || Task.Status.TIMED_OUT
+        TaskModel.Status.SKIPPED                    || Task.Status.SKIPPED
+    }
 }

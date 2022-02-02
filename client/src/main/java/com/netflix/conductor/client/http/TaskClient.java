@@ -256,7 +256,7 @@ public class TaskClient extends ClientBase {
                                         * 1024L) {
                     taskResult.setReasonForIncompletion(
                             String.format(
-                                    "The TaskResult payload size: %d is greater than the permissible %d MB",
+                                    "The TaskResult payload size: %d is greater than the permissible %d bytes",
                                     taskResultSize, payloadSizeThreshold));
                     taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
                     taskResult.setOutputData(null);

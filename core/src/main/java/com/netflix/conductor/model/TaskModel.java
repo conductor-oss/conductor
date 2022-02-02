@@ -20,7 +20,6 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -61,10 +60,6 @@ public class TaskModel {
 
         public boolean isRetriable() {
             return retriable;
-        }
-
-        public static Task.Status getTaskStatusDTO(Status status) {
-            return Task.Status.valueOf(status.name());
         }
     }
 

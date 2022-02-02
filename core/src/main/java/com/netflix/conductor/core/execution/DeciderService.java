@@ -400,8 +400,7 @@ public class DeciderService {
         workflow.setOutput(output);
     }
 
-    @VisibleForTesting
-    boolean checkForWorkflowCompletion(final WorkflowModel workflow)
+    public boolean checkForWorkflowCompletion(final WorkflowModel workflow)
             throws TerminateWorkflowException {
         List<TaskModel> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {

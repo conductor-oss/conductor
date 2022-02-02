@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,12 +21,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.model.TaskModel.Status;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(AMQPEventQueueProperties.class)
@@ -68,7 +67,7 @@ public class AMQPEventQueueConfiguration {
         }
         final boolean useExchange = properties.isUseExchange();
 
-        Status[] statuses = new Task.Status[] {Status.COMPLETED, Status.FAILED};
+        Status[] statuses = new Status[] {Status.COMPLETED, Status.FAILED};
         Map<Status, ObservableQueue> queues = new HashMap<>();
         for (Status status : statuses) {
             String queuePrefix =

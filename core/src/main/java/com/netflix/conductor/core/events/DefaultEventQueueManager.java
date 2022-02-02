@@ -12,12 +12,7 @@
  */
 package com.netflix.conductor.core.events;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -29,13 +24,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel.Status;
 
 /**
  * Manages the event queues registered in the system and sets up listeners for these.
@@ -108,8 +103,8 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
                 (status, queue) -> {
                     LOGGER.info(
                             "Start listening on default queue {} for status {}",
-                            status,
-                            queue.getName());
+                            queue.getName(),
+                            status);
                     queue.start();
                 });
     }

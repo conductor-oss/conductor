@@ -62,7 +62,7 @@ class SetVariableTaskSpec extends AbstractSpecification {
         def EXTRA_HASHMAP_SIZE = 17
         def expectedErrorMessage =
                 String.format(
-                        "The variables payload size: %dB of workflow: %s is greater than the permissible limit: %dKB",
+                        "The variables payload size: %d of workflow: %s is greater than the permissible limit: %d bytes",
                         EXTRA_HASHMAP_SIZE + maxThreshold * 1024 + 1, workflowInstanceId, maxThreshold)
 
         then: "verify that the task is completed and variables were set"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -29,13 +29,15 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.TaskModel.Status;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -44,13 +46,8 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
@@ -58,20 +55,22 @@ import static org.mockito.Mockito.when;
 public class DefaultEventQueueProcessorTest {
 
     private static SQSObservableQueue queue;
-    private static ExecutionService executionService;
+    private static WorkflowExecutor workflowExecutor;
+    private static ModelMapper modelMapper;
     private DefaultEventQueueProcessor defaultEventQueueProcessor;
 
     @Autowired private ObjectMapper objectMapper;
 
     private static final List<Message> messages = new LinkedList<>();
     private static final List<TaskResult> updatedTasks = new LinkedList<>();
+    private static final List<Task> mappedTasks = new LinkedList<>();
 
     @Before
     public void init() {
         Map<Status, ObservableQueue> queues = new HashMap<>();
         queues.put(Status.COMPLETED, queue);
         defaultEventQueueProcessor =
-                new DefaultEventQueueProcessor(queues, executionService, objectMapper);
+                new DefaultEventQueueProcessor(queues, workflowExecutor, modelMapper, objectMapper);
     }
 
     @BeforeClass
@@ -93,20 +92,20 @@ public class DefaultEventQueueProcessorTest {
         when(queue.observe()).thenCallRealMethod();
         when(queue.getName()).thenReturn(Status.COMPLETED.name());
 
-        Task task0 = new Task();
+        TaskModel task0 = new TaskModel();
         task0.setStatus(Status.IN_PROGRESS);
         task0.setTaskId("t0");
         task0.setReferenceTaskName("t0");
         task0.setTaskType(TASK_TYPE_WAIT);
-        Workflow workflow0 = new Workflow();
+        WorkflowModel workflow0 = new WorkflowModel();
         workflow0.setWorkflowId("v_0");
         workflow0.getTasks().add(task0);
 
-        Task task2 = new Task();
+        TaskModel task2 = new TaskModel();
         task2.setStatus(Status.IN_PROGRESS);
         task2.setTaskId("t2");
         task2.setTaskType(TASK_TYPE_WAIT);
-        Workflow workflow2 = new Workflow();
+        WorkflowModel workflow2 = new WorkflowModel();
         workflow2.setWorkflowId("v_2");
         workflow2.getTasks().add(task2);
 
@@ -120,12 +119,27 @@ public class DefaultEventQueueProcessorTest {
                 .when(queue)
                 .publish(any());
 
-        executionService = mock(ExecutionService.class);
-        assertNotNull(executionService);
+        workflowExecutor = mock(WorkflowExecutor.class);
+        assertNotNull(workflowExecutor);
 
-        doReturn(workflow0).when(executionService).getExecutionStatus(eq("v_0"), anyBoolean());
+        modelMapper = mock(ModelMapper.class);
+        when(modelMapper.mapToTaskStatus(any())).thenCallRealMethod();
+        when(modelMapper.getTask(any())).thenReturn(new Task());
 
-        doReturn(workflow2).when(executionService).getExecutionStatus(eq("v_2"), anyBoolean());
+        doReturn(workflow0).when(workflowExecutor).getWorkflow(eq("v_0"), anyBoolean());
+
+        doReturn(workflow2).when(workflowExecutor).getWorkflow(eq("v_2"), anyBoolean());
+
+        doAnswer(
+                        (Answer<Task>)
+                                invocation -> {
+                                    Task task = new Task();
+                                    task.setTaskId(
+                                            invocation.getArgument(0, TaskModel.class).getTaskId());
+                                    return task;
+                                })
+                .when(modelMapper)
+                .getTask(any(TaskModel.class));
 
         doAnswer(
                         (Answer<Void>)
@@ -133,7 +147,7 @@ public class DefaultEventQueueProcessorTest {
                                     updatedTasks.add(invocation.getArgument(0, TaskResult.class));
                                     return null;
                                 })
-                .when(executionService)
+                .when(workflowExecutor)
                 .updateTask(any(TaskResult.class));
     }
 

@@ -126,7 +126,7 @@ public class ExternalPayloadStorageUtils {
                 if (entity instanceof TaskModel) {
                     String errorMsg =
                             String.format(
-                                    "The payload size: %dB of task: %s in workflow: %s  is greater than the permissible limit: %dKB",
+                                    "The payload size: %d of task: %s in workflow: %s  is greater than the permissible limit: %d bytes",
                                     payloadSize,
                                     ((TaskModel) entity).getTaskId(),
                                     ((TaskModel) entity).getWorkflowInstanceId(),
@@ -135,7 +135,7 @@ public class ExternalPayloadStorageUtils {
                 } else {
                     String errorMsg =
                             String.format(
-                                    "The output payload size: %dB of workflow: %s is greater than the permissible limit: %dKB",
+                                    "The output payload size: %dB of workflow: %s is greater than the permissible limit: %d bytes",
                                     payloadSize,
                                     ((WorkflowModel) entity).getWorkflowId(),
                                     maxThreshold);
