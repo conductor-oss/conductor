@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
+import com.netflix.conductor.model.TaskModel.Status;
 
 import io.swagger.v3.oas.annotations.Operation;
 
