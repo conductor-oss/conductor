@@ -575,10 +575,11 @@ For example, if you have a decision where the first condition is met, you want t
 
 **Parameters:**
 
-|name|type|description|notes|
-|---|---|---|---|
-|terminationStatus|String|can only accept "COMPLETED" or "FAILED"|task cannot be optional|
-|workflowOutput|Any|Expected workflow output||
+|name|type| description                                       | notes                   |
+|---|---|---------------------------------------------------|-------------------------|
+|terminationStatus|String| can only accept "COMPLETED" or "FAILED"           | task cannot be optional |
+ |terminationReason|String| reason for incompletion to be set in the workflow | optional                |
+|workflowOutput|Any| Expected workflow output | optional |
 
 **Outputs:**
 
@@ -592,6 +593,7 @@ For example, if you have a decision where the first condition is met, you want t
   "taskReferenceName": "terminate0",
   "inputParameters": {
       "terminationStatus": "COMPLETED",
+	  "terminationReason": "",
       "workflowOutput": "${task0.output}"
   },
   "type": "TERMINATE",

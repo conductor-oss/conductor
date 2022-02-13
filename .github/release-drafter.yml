@@ -35,3 +35,5 @@ version-resolver:
 
 exclude-labels:
   - 'skip-changelog'
+  - 'gradle-wrapper'
+  - 'github_actions'
