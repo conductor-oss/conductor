@@ -805,9 +805,18 @@ public class WorkflowExecutor {
                                     .getInputParameters()
                                     .get(Terminate.getTerminationStatusParameter());
             String reason =
-                    String.format(
-                            "Workflow is %s by TERMINATE task: %s",
-                            terminationStatus, terminateTask.get().getTaskId());
+                    (String)
+                            terminateTask
+                                    .get()
+                                    .getWorkflowTask()
+                                    .getInputParameters()
+                                    .get(Terminate.getTerminationReasonParameter());
+            if (StringUtils.isBlank(reason)) {
+                reason =
+                        String.format(
+                                "Workflow is %s by TERMINATE task: %s",
+                                terminationStatus, terminateTask.get().getTaskId());
+            }
             if (WorkflowModel.Status.FAILED.name().equals(terminationStatus)) {
                 workflow.setStatus(WorkflowModel.Status.FAILED);
                 workflow =
@@ -856,12 +865,6 @@ public class WorkflowExecutor {
         deciderService.updateWorkflowOutput(workflow, null);
 
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
-        workflow.setTasks(workflow.getTasks());
-        workflow.setOutput(workflow.getOutput());
-        workflow.setReasonForIncompletion(workflow.getReasonForIncompletion());
-        workflow.setFailedTaskId(workflow.getFailedTaskId());
-        workflow.setExternalOutputPayloadStoragePath(
-                workflow.getExternalOutputPayloadStoragePath());
 
         // update the failed reference task names
         workflow.getFailedReferenceTaskNames()

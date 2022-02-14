@@ -59,6 +59,7 @@ import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
 public class Terminate extends WorkflowSystemTask {
 
     private static final String TERMINATION_STATUS_PARAMETER = "terminationStatus";
+    private static final String TERMINATION_REASON_PARAMETER = "terminationReason";
     private static final String TERMINATION_WORKFLOW_OUTPUT = "workflowOutput";
 
     public Terminate() {
@@ -82,6 +83,10 @@ public class Terminate extends WorkflowSystemTask {
 
     public static String getTerminationStatusParameter() {
         return TERMINATION_STATUS_PARAMETER;
+    }
+
+    public static String getTerminationReasonParameter() {
+        return TERMINATION_REASON_PARAMETER;
     }
 
     public static String getTerminationWorkflowOutputParameter() {

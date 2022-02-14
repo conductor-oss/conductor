@@ -94,7 +94,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks.size() == 2
-            reasonForIncompletion.contains('Workflow is FAILED by TERMINATE task')
+            reasonForIncompletion == "Early exit in terminate"
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'LAMBDA'
             tasks[0].seq == 1

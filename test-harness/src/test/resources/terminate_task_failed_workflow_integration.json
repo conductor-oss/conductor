@@ -25,6 +25,7 @@
       "taskReferenceName": "terminate0",
       "inputParameters": {
         "terminationStatus": "FAILED",
+        "terminationReason": "Early exit in terminate",
         "workflowOutput": "${lambda0.output}"
       },
       "type": "TERMINATE",
