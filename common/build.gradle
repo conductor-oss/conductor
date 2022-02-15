@@ -38,7 +38,7 @@ dependencies {
 
 task protogen(dependsOn: jar, type: JavaExec) {
     classpath configurations.annotationsProcessorCodegen
-    main = 'com.netflix.conductor.annotationsprocessor.protogen.ProtoGenTask'
+    mainClass = "com.netflix.conductor.annotationsprocessor.protogen.ProtoGenTask"
     args(
             "conductor.proto",
             "com.netflix.conductor.proto",

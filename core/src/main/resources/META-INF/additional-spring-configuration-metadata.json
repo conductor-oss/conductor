@@ -90,6 +90,17 @@
       "description": "Enables the processor for the default event queues that conductor is configured to listen on.",
       "sourceType": "com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor",
       "defaultValue": "true"
+    },
+    {
+      "name": "conductor.workflow-status-listener.type",
+      "type": "java.lang.String",
+      "description": "The implementation of the workflow status listener to be used."
+    },
+    {
+      "name": "conductor.workflow-execution-lock.type",
+      "type": "java.lang.String",
+      "description": "The implementation of the workflow execution lock to be used.",
+      "defaultValue": "noop_lock"
     }
   ],
   "hints": [
@@ -99,18 +110,28 @@
         {
           "value": "dummy",
           "description": "Use the dummy no-op implementation as the external payload storage."
+        }
+      ]
+    },
+    {
+      "name": "conductor.workflow-status-listener.type",
+      "values": [
+        {
+          "value": "stub",
+          "description": "Use the no-op implementation of the workflow status listener."
+        }
+      ]
+    },
+    {
+      "name": "conductor.workflow-execution-lock.type",
+      "values": [
+        {
+          "value": "noop_lock",
+          "description": "Use the no-op implementation as the lock provider."
         },
         {
-          "value": "azureblob",
-          "description": "Use Azure Blob as the external payload storage."
-        },
-        {
-          "value": "s3",
-          "description": "Use AWS S3 as the external payload storage."
-        },
-        {
-          "value": "postgres",
-          "description": "Use PostgreSQL as the external payload storage."
+          "value": "local_only",
+          "description": "Use the local in-memory cache based implementation as the lock provider."
         }
       ]
     }

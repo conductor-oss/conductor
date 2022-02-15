@@ -1,0 +1,13 @@
+{
+  "hints": [
+    {
+      "name": "conductor.external-payload-storage.type",
+      "values": [
+        {
+          "value": "s3",
+          "description": "Use AWS S3 as the external payload storage."
+        }
+      ]
+    }
+  ]
+}

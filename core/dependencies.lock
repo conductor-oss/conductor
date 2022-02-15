@@ -26,6 +26,15 @@
                 "org.hibernate.validator:hibernate-validator"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8"
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -109,6 +118,12 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
         },
         "org.glassfish:jakarta.el": {
             "locked": "3.0.3",
@@ -249,6 +264,15 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8"
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
@@ -353,6 +377,12 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "org.ow2.asm:asm": {
             "locked": "5.0.4",
             "transitive": [
@@ -388,6 +418,15 @@
             "locked": "1.5.1",
             "transitive": [
                 "org.hibernate.validator:hibernate-validator"
+            ]
+        },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8"
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "com.google.protobuf:protobuf-java": {
@@ -570,6 +609,12 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.codehaus.groovy:groovy": {
@@ -1067,6 +1112,15 @@
                 "org.hibernate.validator:hibernate-validator"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8"
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
@@ -1296,6 +1350,12 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.codehaus.groovy:groovy": {

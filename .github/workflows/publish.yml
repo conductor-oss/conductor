@@ -30,7 +30,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Publish candidate
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc.')
-        run: ./gradlew -x :conductor-contribs:test -Prelease.useLastTag=true candidate --scan
+        run: ./gradlew -Prelease.useLastTag=true candidate --scan
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
@@ -40,7 +40,7 @@ jobs:
           NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v') && (!contains(github.ref, '-rc.'))
-        run: ./gradlew -x :conductor-contribs:test -Prelease.useLastTag=true final --scan
+        run: ./gradlew -Prelease.useLastTag=true final --scan
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
@@ -48,3 +48,14 @@ jobs:
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
           NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
           NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
+      - name: Publish tag to community repo
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          export TAG=$(git describe --tags --abbrev=0)
+          echo "Current release version is $TAG"
+          echo "Triggering community build"
+          curl \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${{ secrets.COMMUNITY_REPO_TRIGGER }}" \
+            -X POST https://api.github.com/repos/Netflix/conductor-community/dispatches \
+            -d '{"event_type": "publish_build","client_payload": {"tag":"'"$TAG"'"}}'

@@ -568,6 +568,12 @@
                 "org.elasticsearch:elasticsearch-x-content"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.github.spullara.mustache.java:compiler": {
             "locked": "0.9.3",
             "transitive": [
@@ -581,8 +587,9 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.4.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },
@@ -927,8 +934,9 @@
             ]
         },
         "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
+            "locked": "3.8.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },
@@ -1915,6 +1923,12 @@
                 "org.elasticsearch:elasticsearch-x-content"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.github.docker-java:docker-java-api": {
             "locked": "3.2.8",
             "transitive": [
@@ -1946,8 +1960,9 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.4.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },
@@ -2361,8 +2376,9 @@
             "locked": "3.1.6"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
+            "locked": "3.8.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },

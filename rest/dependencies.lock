@@ -387,6 +387,18 @@
                 "org.springframework.boot:spring-boot-starter-json"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
@@ -577,6 +589,12 @@
             "locked": "9.0.46",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-tomcat"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.glassfish:jakarta.el": {
@@ -1331,6 +1349,18 @@
                 "org.springframework.boot:spring-boot-starter-json"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
+            ]
+        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
@@ -1567,6 +1597,12 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.glassfish:jakarta.el": {

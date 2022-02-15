@@ -39,6 +39,8 @@ dependencies {
 
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
+    implementation "com.github.ben-manes.caffeine:caffeine"
+
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"
@@ -54,10 +56,4 @@ dependencies {
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
-}
-
-test {
-    testLogging {
-        exceptionFormat = 'full'
-    }
 }

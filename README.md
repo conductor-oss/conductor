@@ -64,7 +64,6 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 | conductor-es6-persistence | Indexing using Elasticsearch 6.X |
 | conductor-rest | Spring MVC resources for the core services |
 | conductor-ui | node.js based UI for Conductor |
-| conductor-contribs | Optional contrib package that holds extended workflow tasks and support for SQS, AMQP, etc|
 | conductor-client | Java client for Conductor that includes helpers for running worker tasks |
 | conductor-client-spring | Client starter kit for Spring |
 | conductor-server | Spring Boot Web Application |

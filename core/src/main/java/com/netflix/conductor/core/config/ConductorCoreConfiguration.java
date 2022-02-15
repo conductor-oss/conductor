@@ -43,7 +43,7 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
 import com.netflix.conductor.core.storage.DummyPayloadStorage;
 import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.core.sync.NoopLock;
+import com.netflix.conductor.core.sync.noop.NoopLock;
 
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 import static com.netflix.conductor.core.execution.tasks.SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER;
