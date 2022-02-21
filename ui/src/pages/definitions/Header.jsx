@@ -16,8 +16,8 @@ export default function Header({ tabIndex, loading }) {
           Definitions
         </Heading>
         <Tabs value={tabIndex}>
-          <Tab label="Workflows" component={NavLink} path="/workflowDef" />
-          <Tab label="Tasks" component={NavLink} path="/taskDef" />
+          <Tab label="Workflows" component={NavLink} path="/workflowDefs" />
+          <Tab label="Tasks" component={NavLink} path="/taskDefs" />
           <Tab
             label="Event Handlers"
             component={NavLink}

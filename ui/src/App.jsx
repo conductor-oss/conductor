@@ -32,12 +32,15 @@ const useStyles = makeStyles((theme) => ({
   body: {
     width: "100vw",
     height: "100vh",
-    paddingTop: theme.mixins.toolbar.minHeight,
+    paddingTop: theme.overrides.MuiAppBar.root.height,
   },
   toolbarRight: {
     marginLeft: "auto",
     display: "flex",
     flexDirection: "row",
+  },
+  toolbarRegular: {
+    minHeight: 80,
   },
 }));
 
@@ -48,22 +51,20 @@ export default function App() {
     // Provide context for backward compatibility with class components
     <div className={classes.root}>
       <AppBar position="fixed">
-        <Toolbar>
+        <Toolbar
+          classes={{
+            regular: classes.toolbarRegular,
+          }}
+        >
           <AppLogo />
           <Button component={NavLink} path="/">
             Executions
           </Button>
-          <Button component={NavLink} path="/workflowDef">
+          <Button component={NavLink} path="/workflowDefs">
             Definitions
           </Button>
           <Button component={NavLink} path="/taskQueue">
             Task Queues
-          </Button>
-          <Button component={NavLink} path="/newWorkflowDef">
-            Define Workflow
-          </Button>
-          <Button component={NavLink} path="/newTaskDef">
-            Define Task
           </Button>
 
           <div className={classes.toolbarRight}>
@@ -82,22 +83,16 @@ export default function App() {
           <Route path="/execution/:id/:taskId?">
             <Execution />
           </Route>
-          <Route exact path="/workflowDef">
+          <Route exact path="/workflowDefs">
             <WorkflowDefinitions />
           </Route>
-          <Route exact path="/workflowDef/:name/:version?">
+          <Route exact path="/workflowDef/:name?/:version?">
             <WorkflowDefinition />
           </Route>
-          <Route exact path="/newWorkflowDef">
-            <WorkflowDefinition />
-          </Route>
-          <Route exact path="/taskDef">
+          <Route exact path="/taskDefs">
             <TaskDefinitions />
           </Route>
-          <Route exact path="/taskDef/:name">
-            <TaskDefinition />
-          </Route>
-          <Route exact path="/newTaskDef">
+          <Route exact path="/taskDef/:name?">
             <TaskDefinition />
           </Route>
           <Route exact path="/eventHandlerDef">

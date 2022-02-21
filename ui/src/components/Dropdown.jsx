@@ -7,7 +7,7 @@ import InputLabel from "@material-ui/core/InputLabel";
 export default function ({ label, className, style, ...props }) {
   return (
     <FormControl style={style} className={className}>
-      <InputLabel>{label}</InputLabel>
+      {label && <InputLabel>{label}</InputLabel>}
       <Autocomplete
         renderInput={(params) => <Input {...params} />}
         {...props}

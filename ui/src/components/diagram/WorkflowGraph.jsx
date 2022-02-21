@@ -5,7 +5,7 @@ import * as d3 from "d3";
 import _ from "lodash";
 import { withResizeDetector } from "react-resize-detector";
 import parseSvgPath from "parse-svg-path";
-import { IconButton } from "@material-ui/core";
+import { IconButton, Toolbar } from "@material-ui/core";
 import ZoomInIcon from "@material-ui/icons/ZoomIn";
 import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 import ZoomOutMapIcon from "@material-ui/icons/ZoomOutMap";
@@ -42,11 +42,6 @@ class WorkflowGraph extends React.Component {
     // useEffect on width
     if (prevProps.width !== this.props.width) {
       if (prevProps.width > 0 && this.props.width > 0) {
-        console.log(
-          "rehoming. size change:",
-          prevProps.width,
-          this.props.width
-        );
         this.zoomHome();
       }
     }
@@ -309,9 +304,10 @@ class WorkflowGraph extends React.Component {
   };
 
   render() {
+    const { style, className } = this.props;
     return (
-      <div className="graphContainer">
-        <div>
+      <div style={style} className={`graphWrapper ${className || ""}`}>
+        <Toolbar>
           <IconButton onClick={() => this.zoomInOut("in")}>
             <ZoomInIcon />
           </IconButton>
@@ -325,7 +321,7 @@ class WorkflowGraph extends React.Component {
             <ZoomOutMapIcon />
           </IconButton>
           <span>Shortcut: Ctrl + scroll to zoom</span>
-        </div>
+        </Toolbar>
         <svg ref={this.svgRef} className="graphSvg">
           <defs>
             <filter id="brightness">

@@ -5,6 +5,7 @@ export { default as TertiaryButton } from "./TertiaryButton";
 export { default as ButtonGroup } from "./ButtonGroup";
 export { default as DropdownButton } from "./DropdownButton";
 export { default as SplitButton } from "./SplitButton";
+export { default as Button } from "./Button";
 
 // Layout
 export { default as Paper } from "./Paper";
@@ -25,3 +26,4 @@ export { default as ReactJson } from "./ReactJson";
 
 // Misc
 export { default as LinearProgress } from "./LinearProgress";
+export { default as Pill } from "./Pill";

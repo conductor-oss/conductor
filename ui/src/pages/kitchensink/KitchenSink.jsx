@@ -7,6 +7,7 @@ import {
   InputLabel,
   FormControl,
   IconButton,
+  Toolbar,
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
 import {
@@ -24,11 +25,12 @@ import {
   Text,
   Input,
   Select,
+  Button,
 } from "../../components";
+import ZoomInIcon from "@material-ui/icons/ZoomIn";
 
 import EnhancedTable from "./EnhancedTable";
 import DataTableDemo from "./DataTableDemo";
-import { useAction } from "../../utils/query";
 import top100Films from "./sampleMovieData";
 import Dropdown from "../../components/Dropdown";
 import sharedStyles from "../styles";
@@ -70,18 +72,41 @@ export default function KitchenSink() {
           <Selects />
         </Grid>
         <Grid item xs={12}>
+          <ToolbarSection />
+        </Grid>
+        <Grid item xs={12}>
           <EnhancedTable />
         </Grid>
         <Grid item xs={12}>
           <DataTableDemo />
         </Grid>
-        <Grid item xs={12}>
-          <MutationTest />
-        </Grid>
       </Grid>
     </div>
   );
 }
+
+const ToolbarSection = () => {
+  return (
+    <Paper padded style={{ backgroundColor: "gray" }}>
+      <Heading level={3} gutterBottom>
+        Toolbar
+      </Heading>
+
+      <Toolbar>
+        <Text>Label</Text>
+        <Select value={10}>
+          <MenuItem value={10}>Ten</MenuItem>
+          <MenuItem value={20}>Twenty</MenuItem>
+          <MenuItem value={30}>Thirty</MenuItem>
+        </Select>{" "}
+        <Button>Primary</Button>
+        <IconButton>
+          <ZoomInIcon />
+        </IconButton>
+      </Toolbar>
+    </Paper>
+  );
+};
 
 const HeadingSection = () => {
   return (
@@ -381,47 +406,6 @@ const Selects = () => {
         style={{ width: 500 }}
         filterSelectedOptions
       />
-    </Paper>
-  );
-};
-
-const MutationTest = () => {
-  const postAction = useAction("/dummy/post", "post", {
-    onSuccess: (data) => console.log("onsuccess", data),
-    onError: (err) => console.log("onerror", err),
-  });
-
-  const putAction = useAction("/dummy/put", "put", {
-    onSuccess: (data) => console.log("onsuccess", data),
-    onError: (err) => console.log("onerror", err),
-  });
-
-  const deleteAction = useAction("/dummy/delete", "delete", {
-    onSuccess: (data) => console.log("onsuccess", data),
-    onError: (err) => console.log("onerror", err),
-  });
-
-  return (
-    <Paper style={{ padding: 15 }}>
-      <Heading level={3} gutterBottom>
-        Mutations
-      </Heading>
-
-      <Grid container spacing={4}>
-        <Grid item>
-          <PrimaryButton onClick={() => postAction.mutate({ body: "{}" })}>
-            POST
-          </PrimaryButton>
-        </Grid>
-        <Grid item>
-          <PrimaryButton onClick={() => putAction.mutate()}>PUT</PrimaryButton>
-        </Grid>
-        <Grid item>
-          <PrimaryButton onClick={() => deleteAction.mutate()}>
-            DELETE
-          </PrimaryButton>
-        </Grid>
-      </Grid>
     </Paper>
   );
 };

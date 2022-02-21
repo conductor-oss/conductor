@@ -7,7 +7,7 @@ import _ from "lodash";
 export default function ({ label, fullWidth, nullable = true, ...props }) {
   return (
     <FormControl fullWidth={fullWidth}>
-      <InputLabel>{label}</InputLabel>
+      {label && <InputLabel>{label}</InputLabel>}
       <Select
         variant="outlined"
         fullWidth={fullWidth}

@@ -33,11 +33,6 @@ const spacingFn = (factor) => {
 const colorFn = (color) => colors[color];
 
 const baseThemeOptions = {
-  mixins: {
-    toolbar: {
-      minHeight: 80,
-    },
-  },
   palette: {
     type: "light",
     primary: {
@@ -173,14 +168,11 @@ const baseThemeOptions = {
       variant: "outlined",
       InputProps: {
         labelWidth: 0,
-        notched: false,
-      },
-      InputLabelProps: {
-        shrink: true,
       },
     },
     MuiInputLabel: {
       shrink: true,
+      disableAnimation: true,
     },
     MuiOutlinedInput: {
       notched: false,
@@ -211,6 +203,7 @@ const overrides = {
     },
     MuiButton: {
       root: {
+        textDecoration: "none !important",
         textTransform: "none",
         paddingTop: baseTheme.spacing("space1"),
         paddingBottom: baseTheme.spacing("space1"),
@@ -365,17 +358,20 @@ const overrides = {
       },
     },
     MuiFormControlLabel: {
-      root: {
-        marginLeft: -8,
+      label: {
+        fontSize: fontSizes.fontSize3,
+        lineHeight: lineHeights.lineHeight1,
       },
     },
     MuiInputLabel: {
       root: {
+        display: "none",
         pointerEvents: "none",
         color: baseTheme.palette.text.primary,
       },
       outlined: {
         "&$shrink": {
+          display: "block",
           transform: "none",
           position: "relative",
           fontWeight: fontWeights.fontWeight1,
@@ -570,6 +566,11 @@ const overrides = {
         },
       },
     },
+    MuiToolbar: {
+      root: {
+        gap: 8,
+      },
+    },
     MuiAppBar: {
       colorPrimary: {
         backgroundColor: colors.white,
@@ -580,7 +581,7 @@ const overrides = {
         paddingLeft: 20,
         paddingRight: 20,
         boxShadow: "0 4px 8px 0 rgb(0 0 0 / 10%), 0 0 2px 0 rgb(0 0 0 / 10%)",
-
+        height: 80,
         "& .MuiButton-label": {
           color: colors.black,
         },
