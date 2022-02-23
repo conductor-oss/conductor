@@ -7,26 +7,71 @@ nav:
     - Introduction: index.md
     - Architecture: architecture.md
     - Getting Started:
+        - Installing Conductor Locally: server.md
+        - Installing via Docker Compose: running-locally-docker.md
         - Basic Concepts: gettingstarted/basicconcepts.md
         - Using the Client: gettingstarted/client.md
         - Start a Workflow: gettingstarted/startworkflow.md
     - Configuration:
         - Task Definition: configuration/taskdef.md
+        - Worker Definition: configuration/workerdef.md
         - Workflow Definition: configuration/workflowdef.md
         - System Tasks: configuration/systask.md
+        - System Operators: configuration/sysoperator.md
         - Event Handlers: configuration/eventhandlers.md
         - Task Domains: configuration/taskdomains.md
         - Isolation Groups: configuration/isolationgroups.md
-    - Conductor Server: server.md
     - API Specification: apispec.md
+    - Operators:
+        -  Do/While: reference-docs/do-while-task.md
+        -  Dynamic: reference-docs/dynamic.md
+        -  Dynamic Fork: reference-docs/dynamic-fork-task.md
+        -  Fork: reference-docs/fork-task.md
+        -  Join:    reference-docs/join-task.md
+        -  Set Variable:  reference-docs/set-variable-task.md
+        -  Sub Workflow: reference-docs/sub-workflow-task.md
+        -  Switch: reference-docs/switch-task.md 
+        -  Terminate: reference-docs/terminate-task.md
+        -  Wait: reference-docs/wait-task.md
+    - System Tasks:
+        - Event Task: reference-docs/event-task.md
+        - HTTP Task: reference-docs/http-task.md
+        - Inline Task: reference-docs/inline-task.md
+        - JSON JQ Transform Task: reference-docs/json-jq-transform-task.md
+        - Kafka Publish Task: reference-docs/kafka-publish-task.md
     - Conductor Metrics:
         - Server Metrics: metrics/server.md
         - Client Metrics: metrics/client.md
     - Extending Conductor: extend.md
     - Task Lifecycle: tasklifecycle.md
     - External Payload Storage: externalpayloadstorage.md
+    - How-Tos:
+        - Workflows:
+            - Debugging Workflows: how-tos/Workflows/debugging-workflows.md
+            - Handliing Errors: how-tos/Workflows/handling-errors.md
+            - Searching Workflows: how-tos/Workflows/searching-workflows.md
+            - Starting a Workflow: how-tos/Workflows/starting-workflows.md
+            - Updating Workflows: how-tos/Workflows/updating-workflows.md
+            - View Workflow Execution: how-tos/Workflows/view-workflow-executions.md
+        - Tasks:
+            - Creating Task Definitions: how-tos/Tasks/creating-tasks.md
+            - Dynamic vs Switch Tasks: how-tos/Tasks/dynamic-vs-switch-tasks.md
+            - Monitoring Task Queues: how-tos/Tasks/monitoring-task-queues.md
+            - Reusing Tasks: how-tos/Tasks/reusing-tasks.md
+            - Task Configurations: how-tos/Tasks/task-configurations.md
+            - Task Inputs: how-tos/Tasks/task-inputs.md
+            - Task Timeouts: how-tos/Tasks/task-timeouts.md
+            - Updating Task Definitions: how-tos/Tasks/updating-tasks.md
+        - Workers: 
+            -Build a Go Task Worker: how-tos/Workers/build-a-golang-task-worker.md
+            -Build a Java Task Worker: how-tos/Workers/build-a-java-task-worker.md
+            -Build a Python Task Worker: how-tos/Workers/build-a-python-task-worker.md
+        - Monitoring:
+            - Conductor Log Level: how-tos/Monitoring/Conductor-LogLevel.md
     - Developer Labs:
         - Beginner: labs/beginner.md
+        - A First Workflow: labs/running-first-workflow.md
+        - A First Worker: labs/running-first-worker.md
         - Events and Event Handlers: labs/eventhandlers.md
         - Kitchensink: labs/kitchensink.md
     - Best Practices: bestpractices.md

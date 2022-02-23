@@ -1,5 +1,6 @@
 ## High Level Architecture
-![Architecture](img/conductor-architecture.png)
+
+![Architecture diagram](/img/conductor-architecture.png)
 
 The API and storage layers are pluggable and provide ability to work with different backends and queue service providers.
 
@@ -13,15 +14,33 @@ The API and storage layers are pluggable and provide ability to work with differ
 Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.
 
 !!!warning:
-	In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.
+	In-Memory server is meant for a quick demonstration purposes and does not store any data on disk.  All the data is lost once the server dies.
 
-#### Checkout the source from github
+#### Checkout the source from GitHub
 
 ```
 git clone git@github.com:Netflix/conductor.git
 ```
 
 #### Start Local Server
+
+
+> **NOTE for Mac users**: If you are using a new Mac with an Apple Silicon Chip, you must make a small change to ```conductor/grpc/build.gradle``` - adding "osx-x86_64" to two lines:
+```
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${revProtoBuf}:osx-x86_64"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${revGrpc}:osx-x86_64"
+        }
+    }
+...
+} 
+```
+
+
 
 The server is in the directory `conductor/server`. To start it execute the following command in the root of the project.
 
@@ -57,7 +76,7 @@ If you get an error message `ReferenceError: primordials is not defined`, you ne
   docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up
   ```
 
-If you ran it locally, launch UI at [http://localhost:3000/](http://localhost:3000/) OR if you ran it using docker-compose launch the UI at [http://localhost:5000/](http://localhost:5000/)
+Assuming that you started Conductor locally (directly, or with Docker), launch the UI at [http://localhost:5000/](http://localhost:5000/).
 
 !!! Note
 	The server will load a sample kitchensink workflow definition by default.  See [here](../labs/kitchensink/) for details.
@@ -69,7 +88,7 @@ Conductor follows RPC based communication model where workers are running on a s
 
 **Notes**
 
-* Workers are remote systems and communicates over HTTP with the conductor servers.
+* Workers are remote systems that communicate over HTTP with the conductor servers.
 * Task Queues are used to schedule tasks for workers.  We use [dyno-queues][1] internally but it can easily be swapped with SQS or similar pub-sub mechanism.
 * conductor-redis-persistence module uses [Dynomite][2] for storing the state and metadata along with [Elasticsearch][3] for indexing backend.
 * See section under extending backend for implementing support for different databases for storage and indexing.
@@ -81,9 +100,11 @@ Conductor follows RPC based communication model where workers are running on a s
 ## High Level Steps
 **Steps required for a new workflow to be registered and get executed:**
 
-1. Define task definitions used by the workflow.
+1. Define task definitions used by the workflow. 
 2. Create the workflow definition
 3. Create task worker(s) that polls for scheduled tasks at regular interval
+
+The [Beginner lab](labs/beginner) has a good walkthrough of steps 1-3.
 
 **Trigger Workflow Execution**
 

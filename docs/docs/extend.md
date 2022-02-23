@@ -1,7 +1,7 @@
 ## Backend
 Conductor provides a pluggable backend.  The current implementation uses Dynomite.
 
-There are 4 interfaces that needs to be implemented for each backend:
+There are 4 interfaces that need to be implemented for each backend:
 
 ```java
 //Store for workflow and task definitions

@@ -14,6 +14,7 @@ Conductor typically applies two kinds of barriers:
 
 
 #### Soft Barrier
+
 The soft barrier is used to alleviate pressure on the conductor datastore. In some special workflow use-cases, the size of the payload is warranted enough to be stored as part of the workflow execution.  
 In such cases, conductor externalizes the storage of such payloads to S3 and uploads/downloads to/from S3 as needed during the execution. This process is completely transparent to the user/worker process.  
 

@@ -1,180 +1,80 @@
-## Installing
+# Running Conductor Locally
 
-### Requirements
-
-1. **Database**: [Dynomite](https://github.com/Netflix/dynomite)
-2. **Indexing Backend**: [Elasticsearch 5.x](https://www.elastic.co)
-3. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
-
-There are 3 ways in which you can install Conductor:
-
-#### 1. Build from source
-To build from source, checkout the code from github and build server module using ```gradle build``` command. If you do not have gradle installed, you can run the command ```./gradlew build``` from the project root. This produces *conductor-server-all-VERSION.jar* in the folder *./server/build/libs/*
-
-The jar can be executed using:
+## Download and Run
 ```shell
-java -jar conductor-server-VERSION-all.jar
+export CONDUCTOR_VER=3.3.4
+export REPO_URL=https://repo1.maven.org/maven2/com/netflix/conductor/conductor-server
+curl $REPO_URL/$CONDUCTOR_VER/conductor-server-$CONDUCTOR_VER-boot.jar \
+--output conductor-server-$CONDUCTOR_VER-boot.jar; java -jar conductor-server-$CONDUCTOR_VER-boot.jar 
 ```
+Navigate to the swagger URL: [http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config](http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config)
 
-#### 2. Download pre-built binaries from jcenter or maven central
-Use the following coordinates:
+## Build and Run
 
-|group|artifact|version
-|---|---|---|
-|com.netflix.conductor|conductor-server-all|2.7.+|
+In this article we will explore how you can set up Netflix Conductor on your local machine for trying out some of its
+features.
 
+### Prerequisites
+1. JDK 11 or greater
+2. (Optional) Docker if you want to run tests.  You can install docker from https://docs.docker.com/desktop/
+3. Node for building and running UI.  Install from [https://nodejs.org/en/download/package-manager/](https://nodejs.org/en/download/package-manager/)
+4. Yarn for building and running UI.  [https://classic.yarnpkg.com/en/docs/install](https://classic.yarnpkg.com/en/docs/install).
 
+### Steps to build Conductor server
 
-#### 3. Use the pre-configured Docker image
-To build the docker images for the conductor server and ui run the commands:
-```shell
-cd docker
-docker-compose build
-```
-
-After the docker images are built, run the following command to start the containers:
-- Using compose (with Dynomite):
-  ```shell
-  docker-compose -f docker-compose.yaml -f docker-compose-dynomite.yaml up
-  ```
-- Using compose (with Postgres):
-  ```shell
-  docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up
-  ```
-
-This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:5.6.8](https://hub.docker.com/_/elasticsearch/), and dynomite or postgres.
-
-To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
-
-## Configuration
-Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.
+#### 1. Checkout the code
+Clone conductor code from the repo: https://github.com/Netflix/conductor
 
 ```shell
-java -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]
+$ git clone https://github.com/Netflix/conductor.git
 ```
-log4j.properties file path is optional and allows finer control over the logging (defaults to INFO level logging in the console).
+#### 2. Build and run Server
 
-#### Configuration Parameters
-```properties
 
-# Database persistence model.  Possible values are memory, redis, redis_cluster, redis_sentinel and dynomite.
-# If omitted, the persistence used is memory
-#
-# memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
-# redis : non-Dynomite based redis instance
-# redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
-# redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
-# dynomite : Dynomite cluster.  Use this for HA configuration.
-conductor.db.type=dynomite
-
-# Dynomite Cluster details.
-# format is host:port:rack separated by semicolon
-# for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter
-workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
-
-# If you are running using dynomite, also add the following line to the property 
-# to set the rack/availability zone of the conductor server to be same as dynomite cluster config
-EC2_AVAILABILTY_ZONE=us-east-1c
-
-# Dynomite cluster name
-workflow.dynomite.cluster.name=dyno_cluster_name
-
-# Maximum connections to redis/dynomite
-workflow.dynomite.connection.maxConnsPerHost=31
-
-# Namespace for the keys stored in Dynomite/Redis
-workflow.namespace.prefix=conductor
-
-# Namespace prefix for the dyno queues
-workflow.namespace.queue.prefix=conductor_queues
-
-# No. of threads allocated to dyno-queues (optional)
-queues.dynomite.threads=10
-
-# Non-quorum port used to connect to local redis.  Used by dyno-queues.
-# When using redis directly, set this to the same port as redis server.
-# For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
-queues.dynomite.nonQuorum.port=22122
-
-# Transport address to elasticsearch
-# Specifying multiple node urls is not supported. specify one of the nodes' url, or a load balancer.
-workflow.elasticsearch.url=localhost:9300
-
-# Name of the elasticsearch cluster
-workflow.elasticsearch.index.name=conductor
-
-# Additional modules (optional)
-conductor.additional.modules=class_extending_com.google.inject.AbstractModule
-
+> **NOTE for Mac users**: If you are using a new Mac with an Apple Silicon Chip, you must make a small change to ```conductor/grpc/build.gradle``` - adding "osx-x86_64" to two lines:
+```
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${revProtoBuf}:osx-x86_64"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${revGrpc}:osx-x86_64"
+        }
+    }
+...
+} 
 ```
 
-## High Availability Configuration
-
-Conductor servers are stateless and can be deployed on multiple servers to handle scale and availability needs.  The scalability of the server is achieved by scaling the [Dynomite](https://github.com/Netflix/dynomite) cluster along with [dyno-queues](https://github.com/Netflix/dyno-queues) which is used for queues.
-
-Clients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).
-
-## Using Standalone Redis / ElastiCache
-
-Conductor server can be used with a standlone Redis or ElastiCache server.  To configure the server, change the config to use the following:
-
-```properties
-conductor.db.type=redis
-
-# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.
-# The region in this case does not matter
-workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
-workflow.dynomite.connection.maxConnsPerHost=31
-
-queues.dynomite.nonQuorum.port=server_port
+```shell
+$ cd conductor
+conductor $ cd server
+server $ ../gradlew bootRun
 ```
 
-## Setting up Zookeeper to enable Distributed Locking Service.
+Navigate to the swagger API docs:
+[http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config](http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config)
 
-See [Technical Details](../technicaldetails/#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens) for more details about this.
+![Conductor Swagger](img/tutorial/swagger.png)
 
-Locking Service is disabled by default. Enable this by setting:
+## Build and Run UI
 
-```conductor.app.workflowExecutionLockEnabled: true```
+Conductor UI allows you to visualize the workflows.  UI is built and run using node.
 
-Setup Zookeeper cluster connection string:
-
-```zk.connection=1.2.3.4:2181,5.6.7.8:2181```
-
-Optionally, configure the default timeouts:
-
-```    
-zk.sessionTimeoutMs
-zk.connectionTimeoutMs
+```shell
+$ cd conductor/ui
+ui $ yarn install
 ```
 
-## Default Workflow Archiving Module Configuration
-
-Conductor server does not perform automated workflow execution data cleaning by default. Archiving module (if enabled) 
-removes all execution data from conductor persistence storage immediately upon workflow completion or termination, 
-but keeps archived index data in elastic search. 
-
-To benefit form archiving module you have to do the following:
-
-### 1. Enable Archiving Module
-
-Set property in server configuration.
-
-```properties
-# Comma-separated additional conductor modules
-conductor.additional.modules=com.netflix.conductor.contribs.ArchivingWorkflowModule
+```shell
+ui $ yarn run start
 ```
 
-### 2. Enable Workflow Status Listener
+Launch UI [http://localhost:5000](http://localhost:5000)
 
-Archiving module is triggered only if workflow status listener is enabled on workflow definition level. To enable it 
-you have to set `workflowStatusListenerEnabled` property to `true`. See sample workflow definition below:
+![Conductor Server Home Page](img/tutorial/conductorUI.png)
 
-```json
-{
-  "name": "e2e_approval_v4",
-  "description": "Approval Process",
-  "workflowStatusListenerEnabled": true, 
-  "tasks": []
-}
-```
+## Summary
+1. All the data is stored in memory, so any workflows created or excuted will be wiped out once the server is terminated.
+2. Indexing is disabled, so search functionality in UI will not work and will result an empty set.
+3. See how to install Conductor using [Docker](running-locally-docker.md) with persistence and indexing.
