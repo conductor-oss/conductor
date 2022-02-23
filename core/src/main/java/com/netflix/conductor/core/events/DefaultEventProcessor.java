@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
@@ -103,28 +104,30 @@ public class DefaultEventProcessor {
     }
 
     public void handle(ObservableQueue queue, Message msg) {
+        List<EventExecution> transientFailures = null;
+        Boolean executionFailed = false;
         try {
             if (isEventMessageIndexingEnabled) {
                 executionService.addMessage(queue.getName(), msg);
             }
             String event = queue.getType() + ":" + queue.getName();
             LOGGER.debug("Evaluating message: {} for event: {}", msg.getId(), event);
-            List<EventExecution> transientFailures = executeEvent(event, msg);
-
-            if (transientFailures.isEmpty()) {
+            transientFailures = executeEvent(event, msg);
+        } catch (Exception e) {
+            executionFailed = true;
+            LOGGER.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
+            Monitors.recordEventQueueMessagesError(queue.getType(), queue.getName());
+        } finally {
+            if (executionFailed || CollectionUtils.isEmpty(transientFailures)) {
                 queue.ack(Collections.singletonList(msg));
                 LOGGER.debug("Message: {} acked on queue: {}", msg.getId(), queue.getName());
             } else if (queue.rePublishIfNoAck()) {
                 // re-submit this message to the queue, to be retried later
-                // This is needed for queues with no unack timeout, since messages are removed from
-                // the queue
+                // This is needed for queues with no unack timeout, since messages are removed
+                // from the queue
                 queue.publish(Collections.singletonList(msg));
                 LOGGER.debug("Message: {} published to queue: {}", msg.getId(), queue.getName());
             }
-        } catch (Exception e) {
-            LOGGER.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
-            Monitors.recordEventQueueMessagesError(queue.getType(), queue.getName());
-        } finally {
             Monitors.recordEventQueueMessagesHandled(queue.getType(), queue.getName());
         }
     }
@@ -144,8 +147,8 @@ public class DefaultEventProcessor {
         for (EventHandler eventHandler : eventHandlerList) {
             String condition = eventHandler.getCondition();
             String evaluatorType = eventHandler.getEvaluatorType();
-            // Set default to true so that if condition is not specified, it falls through to
-            // process the event.
+            // Set default to true so that if condition is not specified, it falls through
+            // to process the event.
             Boolean success = true;
             if (StringUtils.isNotEmpty(condition) && evaluators.get(evaluatorType) != null) {
                 Object result =

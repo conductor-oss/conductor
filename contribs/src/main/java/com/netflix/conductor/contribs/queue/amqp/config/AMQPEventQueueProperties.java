@@ -16,6 +16,8 @@ import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.netflix.conductor.contribs.queue.amqp.util.RetryType;
+
 import com.rabbitmq.client.AMQP.PROTOCOL;
 import com.rabbitmq.client.ConnectionFactory;
 
@@ -36,8 +38,62 @@ public class AMQPEventQueueProperties {
 
     private int port = PROTOCOL.PORT;
 
-    private Duration connectionTimeout =
-            Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT);
+    private int connectionTimeoutInMilliSecs = 180000;
+    private int networkRecoveryIntervalInMilliSecs = 5000;
+    private int requestHeartbeatTimeoutInSecs = 30;
+    private int handshakeTimeoutInMilliSecs = 180000;
+    private int maxChannelCount = 5000;
+    private int limit = 50;
+    private int duration = 1000;
+    private RetryType retryType = RetryType.REGULARINTERVALS;
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public RetryType getType() {
+        return retryType;
+    }
+
+    public void setType(RetryType type) {
+        this.retryType = type;
+    }
+
+    public int getConnectionTimeoutInMilliSecs() {
+        return connectionTimeoutInMilliSecs;
+    }
+
+    public void setConnectionTimeoutInMilliSecs(int connectionTimeoutInMilliSecs) {
+        this.connectionTimeoutInMilliSecs = connectionTimeoutInMilliSecs;
+    }
+
+    public int getHandshakeTimeoutInMilliSecs() {
+        return handshakeTimeoutInMilliSecs;
+    }
+
+    public void setHandshakeTimeoutInMilliSecs(int handshakeTimeoutInMilliSecs) {
+        this.handshakeTimeoutInMilliSecs = handshakeTimeoutInMilliSecs;
+    }
+
+    public int getMaxChannelCount() {
+        return maxChannelCount;
+    }
+
+    public void setMaxChannelCount(int maxChannelCount) {
+        this.maxChannelCount = maxChannelCount;
+    }
 
     private boolean useNio = false;
 
@@ -52,6 +108,10 @@ public class AMQPEventQueueProperties {
     private String contentEncoding = "UTF-8";
 
     private String exchangeType = "topic";
+
+    private String queueType = "classic";
+
+    private boolean sequentialMsgProcessing = true;
 
     private int deliveryMode = 2;
 
@@ -113,14 +173,6 @@ public class AMQPEventQueueProperties {
 
     public void setPort(int port) {
         this.port = port;
-    }
-
-    public Duration getConnectionTimeout() {
-        return connectionTimeout;
-    }
-
-    public void setConnectionTimeout(Duration connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
     }
 
     public boolean isUseNio() {
@@ -201,5 +253,49 @@ public class AMQPEventQueueProperties {
 
     public void setListenerQueuePrefix(String listenerQueuePrefix) {
         this.listenerQueuePrefix = listenerQueuePrefix;
+    }
+
+    public String getQueueType() {
+        return queueType;
+    }
+
+    /**
+     * @param queueType Supports two queue types, 'classic' and 'quorum'. Classic will be be
+     *     deprecated in 2022 and its usage discouraged from RabbitMQ community. So not using enum
+     *     type here to hold different values.
+     */
+    public void setQueueType(String queueType) {
+        this.queueType = queueType;
+    }
+
+    /** @return the sequentialMsgProcessing */
+    public boolean isSequentialMsgProcessing() {
+        return sequentialMsgProcessing;
+    }
+
+    /**
+     * @param sequentialMsgProcessing the sequentialMsgProcessing to set Supports sequential and
+     *     parallel message processing capabilities. In parallel message processing, number of
+     *     threads are controlled by batch size. No thread control or execution framework required
+     *     here as threads are limited and short-lived.
+     */
+    public void setSequentialMsgProcessing(boolean sequentialMsgProcessing) {
+        this.sequentialMsgProcessing = sequentialMsgProcessing;
+    }
+
+    public int getNetworkRecoveryIntervalInMilliSecs() {
+        return networkRecoveryIntervalInMilliSecs;
+    }
+
+    public void setNetworkRecoveryIntervalInMilliSecs(int networkRecoveryIntervalInMilliSecs) {
+        this.networkRecoveryIntervalInMilliSecs = networkRecoveryIntervalInMilliSecs;
+    }
+
+    public int getRequestHeartbeatTimeoutInSecs() {
+        return requestHeartbeatTimeoutInSecs;
+    }
+
+    public void setRequestHeartbeatTimeoutInSecs(int requestHeartbeatTimeoutInSecs) {
+        this.requestHeartbeatTimeoutInSecs = requestHeartbeatTimeoutInSecs;
     }
 }

@@ -44,8 +44,7 @@ public class AMQPEventQueueProviderTest {
         when(properties.getPassword()).thenReturn(ConnectionFactory.DEFAULT_PASS);
         when(properties.getVirtualHost()).thenReturn(ConnectionFactory.DEFAULT_VHOST);
         when(properties.getPort()).thenReturn(PROTOCOL.PORT);
-        when(properties.getConnectionTimeout())
-                .thenReturn(Duration.ofMillis(ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT));
+        when(properties.getConnectionTimeoutInMilliSecs()).thenReturn(60000);
         when(properties.isUseNio()).thenReturn(false);
         when(properties.isDurable()).thenReturn(true);
         when(properties.isExclusive()).thenReturn(false);

@@ -37,13 +37,13 @@ public class SemaphoreUtil {
      */
     public boolean acquireSlots(int numSlots) {
         boolean acquired = semaphore.tryAcquire(numSlots);
-        LOGGER.debug("Trying to acquire {} permit: {}", numSlots, acquired);
+        LOGGER.trace("Trying to acquire {} permit: {}", numSlots, acquired);
         return acquired;
     }
 
     /** Signals that processing is complete and the specified number of permits can be released. */
     public void completeProcessing(int numSlots) {
-        LOGGER.debug("Completed execution; releasing permit");
+        LOGGER.trace("Completed execution; releasing permit");
         semaphore.release(numSlots);
     }
 
@@ -54,7 +54,7 @@ public class SemaphoreUtil {
      */
     public int availableSlots() {
         int available = semaphore.availablePermits();
-        LOGGER.debug("Number of available permits: {}", available);
+        LOGGER.trace("Number of available permits: {}", available);
         return available;
     }
 }

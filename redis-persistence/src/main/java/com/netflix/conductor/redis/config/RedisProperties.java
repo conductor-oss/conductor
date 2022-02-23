@@ -94,6 +94,68 @@ public class RedisProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration eventExecutionPersistenceTTL = Duration.ofSeconds(60);
 
+    // Maximum number of idle connections to be maintained
+    private int maxIdleConnections = 8;
+
+    // Minimum number of idle connections to be maintained
+    private int minIdleConnections = 5;
+
+    private long minEvictableIdleTimeMillis = 1800000;
+
+    private long timeBetweenEvictionRunsMillis = -1L;
+
+    private boolean testWhileIdle = false;
+
+    private int numTestsPerEvictionRun = 3;
+
+    public int getNumTestsPerEvictionRun() {
+        return numTestsPerEvictionRun;
+    }
+
+    public void setNumTestsPerEvictionRun(int numTestsPerEvictionRun) {
+        this.numTestsPerEvictionRun = numTestsPerEvictionRun;
+    }
+
+    public boolean isTestWhileIdle() {
+        return testWhileIdle;
+    }
+
+    public void setTestWhileIdle(boolean testWhileIdle) {
+        this.testWhileIdle = testWhileIdle;
+    }
+
+    public long getMinEvictableIdleTimeMillis() {
+        return minEvictableIdleTimeMillis;
+    }
+
+    public void setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
+        this.minEvictableIdleTimeMillis = minEvictableIdleTimeMillis;
+    }
+
+    public long getTimeBetweenEvictionRunsMillis() {
+        return timeBetweenEvictionRunsMillis;
+    }
+
+    public void setTimeBetweenEvictionRunsMillis(long timeBetweenEvictionRunsMillis) {
+        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+    }
+
+    public int getMinIdleConnections() {
+        return minIdleConnections;
+    }
+
+    public void setMinIdleConnections(int minIdleConnections) {
+        this.minIdleConnections = minIdleConnections;
+    }
+
+    public int getMaxIdleConnections() {
+        return maxIdleConnections;
+    }
+
+    public void setMaxIdleConnections(int maxIdleConnections) {
+        this.maxIdleConnections = maxIdleConnections;
+    }
+
     public String getDataCenterRegion() {
         return dataCenterRegion;
     }

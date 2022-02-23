@@ -45,15 +45,10 @@ class EventTaskSpec extends AbstractSpecification {
         then: "Retrieve the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 1
+            tasks.size() == 2
             tasks[0].taskType == TaskType.EVENT.name()
-            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].status == Task.Status.COMPLETED
         }
-
-        when: "the event task is executed by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop(eventTask.taskType, 1, 200)
-        String eventTaskId = polledTaskIds.get(0)
-        asyncSystemTaskExecutor.execute(eventTask, eventTaskId)
 
         then: "Retrieve the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

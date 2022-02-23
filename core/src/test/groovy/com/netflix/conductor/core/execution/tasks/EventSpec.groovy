@@ -54,12 +54,12 @@ class EventSpec extends Specification {
         event = new Event(eventQueues, parametersUtils, objectMapper)
     }
 
-    def "verify that event task is async"() {
+    def "verify that event task is NOT async"() {
         when:
         def async = event.isAsync()
 
         then:
-        async
+        !async
     }
 
     def "event cancel calls ack on the queue"() {

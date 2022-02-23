@@ -70,4 +70,16 @@ public class AMQPConstants {
      * polling time to drain the in-memory queue.
      */
     public static int DEFAULT_POLL_TIME_MS = 100;
+
+    // info channel messages.
+    public static final String INFO_CHANNEL_BORROW_SUCCESS =
+            "Borrowed the channel object from the channel pool for " + "the connection type [%s]";
+    public static final String INFO_CHANNEL_RETURN_SUCCESS =
+            "Returned the borrowed channel object to the pool for " + "the connection type [%s]";
+    public static final String INFO_CHANNEL_CREATION_SUCCESS =
+            "Channels are not available in the pool. Created a"
+                    + " channel for the connection type [%s]";
+    public static final String INFO_CHANNEL_RESET_SUCCESS =
+            "No proper channels available in the pool. Created a "
+                    + "channel for the connection type [%s]";
 }
