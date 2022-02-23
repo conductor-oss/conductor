@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Kafka Publish Task - Conductor</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Kafka Publish Task";
+    var mkdocs_page_input_path = "reference-docs/kafka-publish-task.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workerdef/">Worker Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/sysoperator/">System Operators</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Kafka Publish Task</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#kafka-task-output">Kafka Task Output</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-worker/">A First Worker</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>System Tasks &raquo;</li>
+        
+      
+    
+    <li>Kafka Publish Task</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/main/docs/docs/reference-docs/kafka-publish-task.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="kafka-publish-task">Kafka Publish Task<a class="headerlink" href="#kafka-publish-task" title="Permanent link">&para;</a></h1>
+<pre class="codehilite"><code class="language-json">&quot;type&quot; : &quot;KAFKA_PUBLISH&quot;
+</code></pre>
+
+<h3 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h3>
+<p>A Kafka Publish task is used to push messages to another microservice via Kafka.</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>The task expects an input parameter named <code>kafka_request</code> as part of the task's input with the following details:</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bootStrapServers</td>
+<td>bootStrapServers for connecting to given kafka.</td>
+</tr>
+<tr>
+<td>key</td>
+<td>Key to be published</td>
+</tr>
+<tr>
+<td>keySerializer</td>
+<td>Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer</td>
+</tr>
+<tr>
+<td>value</td>
+<td>Value published to kafka</td>
+</tr>
+<tr>
+<td>requestTimeoutMs</td>
+<td>Request timeout while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.request.timeout.ms</code>. If the property is not set the value defaults to 100 ms</td>
+</tr>
+<tr>
+<td>maxBlockMs</td>
+<td>maxBlockMs while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.max.block.ms</code>. If the property is not set the value defaults to 500 ms</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>A map of additional kafka headers to be sent along with the request.</td>
+</tr>
+<tr>
+<td>topic</td>
+<td>Topic to publish</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<p>Sample Task </p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;call_kafka&quot;,
+  &quot;taskReferenceName&quot;: &quot;call_kafka&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;kafka_request&quot;: {
+      &quot;topic&quot;: &quot;userTopic&quot;,
+      &quot;value&quot;: &quot;Message to publish&quot;,
+      &quot;bootStrapServers&quot;: &quot;localhost:9092&quot;,
+      &quot;headers&quot;: {
+    &quot;x-Auth&quot;:&quot;Auth-key&quot;    
+      },
+      &quot;key&quot;: &quot;123&quot;,
+      &quot;keySerializer&quot;: &quot;org.apache.kafka.common.serialization.IntegerSerializer&quot;
+    }
+  },
+  &quot;type&quot;: &quot;KAFKA_PUBLISH&quot;
+}
+</code></pre>
+
+<p>The task expects an input parameter named <code>"kafka_request"</code> as part
+of the task's input with the following details:</p>
+<ol>
+<li><code>"bootStrapServers"</code> - bootStrapServers for connecting to given kafka.</li>
+<li><code>"key"</code> - Key to be published.</li>
+<li><code>"keySerializer"</code> - Serializer used for serializing the key published to kafka. 
+One of the following can be set :
+a. org.apache.kafka.common.serialization.IntegerSerializer
+b. org.apache.kafka.common.serialization.LongSerializer
+c. org.apache.kafka.common.serialization.StringSerializer.
+Default is String serializer.</li>
+<li><code>"value"</code> - Value published to kafka</li>
+<li><code>"requestTimeoutMs"</code> - Request timeout while publishing to kafka. 
+If this value is not given the value is read from the property 
+kafka.publish.request.timeout.ms. If the property is not set the value
+defaults to 100 ms.</li>
+<li><code>"maxBlockMs"</code> - maxBlockMs while publishing to kafka. If this value is
+not given the value is read from the property kafka.publish.max.block.ms.
+If the property is not set the value defaults to 500 ms.</li>
+<li><code>"headers"</code> - A map of additional kafka headers to be sent along with
+the request.</li>
+<li><code>"topic"</code> - Topic to publish.</li>
+</ol>
+<p>The producer created in the kafka task is cached. By default
+the cache size is 10 and expiry time is 120000 ms. To change the
+defaults following can be modified 
+kafka.publish.producer.cache.size,
+kafka.publish.producer.cache.time.ms respectively.</p>
+<h4 id="kafka-task-output">Kafka Task Output<a class="headerlink" href="#kafka-task-output" title="Permanent link">&para;</a></h4>
+<p>Task status transitions to <code>COMPLETED</code>.</p>
+<p>The task is marked as <code>FAILED</code> if the message could not be published to
+the Kafka queue.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../metrics/server/" class="btn btn-neutral float-right" title="Server Metrics">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../json-jq-transform-task/" class="btn btn-neutral" title="JSON JQ Transform Task"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../json-jq-transform-task/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../metrics/server/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

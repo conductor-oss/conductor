@@ -57,6 +57,10 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Getting Started</span></p>
                 <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../basicconcepts/">Basic Concepts</a>
                     </li>
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Using the Client</a>
@@ -70,9 +74,13 @@
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workerdef/">Worker Definition</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/sysoperator/">System Operators</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
                     </li>
@@ -82,11 +90,43 @@
                     </li>
                 </ul>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/kafka-publish-task/">Kafka Publish Task</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
@@ -108,9 +148,68 @@
                     <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
                 <p class="caption"><span class="caption-text">Developer Labs</span></p>
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-worker/">A First Worker</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../labs/eventhandlers/">Events and Event Handlers</a>
                     </li>
@@ -206,8 +305,9 @@
 <p>The TaskRunnerConfigurer can be used to register the worker(s) and initialize the polling loop.<br />
 Manages the task workers thread pool and server communication (poll and task update).  </p>
 <p>Use the <a href="https://github.com/Netflix/conductor/blob/master/client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L62">Builder</a> to create an instance of the TaskRunnerConfigurer. The builder accepts the following parameters:</p>
-<p>Initialize the Builder with the following:
- TaskClient | TaskClient used to communicate to the Conductor server |
+<p>Initialize the Builder with the following:</p>
+<p>TaskClient 
+ | TaskClient used to communicate to the Conductor server |
 | Workers | Workers that will be used for polling work and task execution. |</p>
 <table>
 <thead>
@@ -242,6 +342,11 @@ Manages the task workers thread pool and server communication (poll and task upd
 <td>withWorkerNamePrefix</td>
 <td>String prefix that will be used for all the workers.</td>
 <td>workflow-worker-</td>
+</tr>
+<tr>
+<td>withShutdownGracePeriodSeconds</td>
+<td>Waiting seconds before forcing shutdown of your worker</td>
+<td>10</td>
 </tr>
 </tbody>
 </table>

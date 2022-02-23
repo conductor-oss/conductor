@@ -57,6 +57,10 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Getting Started</span></p>
                 <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
@@ -82,9 +86,13 @@
     </li>
     </ul>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../workerdef/">Worker Definition</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../workflowdef/">Workflow Definition</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sysoperator/">System Operators</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../eventhandlers/">Event Handlers</a>
                     </li>
@@ -94,11 +102,43 @@
                     </li>
                 </ul>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/kafka-publish-task/">Kafka Publish Task</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
@@ -120,9 +160,68 @@
                     <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
                 <p class="caption"><span class="caption-text">Developer Labs</span></p>
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-worker/">A First Worker</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../labs/eventhandlers/">Events and Event Handlers</a>
                     </li>
@@ -186,6 +285,8 @@
             <div class="section">
               
                 <h2 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h2>
+<p>Tasks are the building blocks of workflow in Conductor. A task can be an operator, system task or custom code written in any programming language.</p>
+<p>A typical Conductor workflow is a list of tasks that are executed until completion or the termination of the workflow.</p>
 <p>Conductor maintains a registry of worker tasks.  A task MUST be registered before being used in a workflow.</p>
 <p><strong>Example</strong></p>
 <pre class="codehilite"><code class="language-json">{
@@ -242,7 +343,7 @@
 <tr>
 <td>retryLogic</td>
 <td>Mechanism for the retries</td>
-<td>see possible values below</td>
+<td><a href="#retry-logic">Retry Logic values</a></td>
 </tr>
 <tr>
 <td>retryDelaySeconds</td>
@@ -252,7 +353,7 @@
 <tr>
 <td>timeoutPolicy</td>
 <td>Task's timeout policy</td>
-<td>see possible values below</td>
+<td><a href="#timeout-policy">timeout policy values</a></td>
 </tr>
 <tr>
 <td>timeoutSeconds</td>
@@ -268,6 +369,11 @@
 <td>responseTimeoutSeconds</td>
 <td>Must be greater than 0 and less than timeoutSeconds. The task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.</td>
 <td>defaults to 3600</td>
+</tr>
+<tr>
+<td>backoffScaleFactor</td>
+<td>Must be greater than 0. Scale factor for linearity of the backoff</td>
+<td>defaults to 1</td>
 </tr>
 <tr>
 <td>inputKeys</td>
@@ -299,7 +405,8 @@
 <h3 id="retry-logic">Retry Logic<a class="headerlink" href="#retry-logic" title="Permanent link">&para;</a></h3>
 <ul>
 <li>FIXED : Reschedule the task after the <code>retryDelaySeconds</code></li>
-<li>EXPONENTIAL_BACKOFF : Reschedule after <code>retryDelaySeconds  * attemptNumber</code></li>
+<li>EXPONENTIAL_BACKOFF : Reschedule after <code>retryDelaySeconds  2^(attemptNumber)</code></li>
+<li>LINEAR_BACKOFF : Reschedule after <code>retryDelaySeconds * backoffRate * attemptNumber</code></li>
 </ul>
 <h3 id="timeout-policy">Timeout Policy<a class="headerlink" href="#timeout-policy" title="Permanent link">&para;</a></h3>
 <ul>
@@ -314,15 +421,17 @@
 If you have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set <code>concurrentExecLimit</code> to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.</li>
 </ul>
 <h3 id="task-rate-limits">Task Rate limits<a class="headerlink" href="#task-rate-limits" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Note: Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.</p>
+</blockquote>
 <ul>
 <li><code>rateLimitFrequencyInSeconds</code> and <code>rateLimitPerFrequency</code> should be used together.</li>
 <li><code>rateLimitFrequencyInSeconds</code> sets the "frequency window", i.e the <code>duration</code> to be used in <code>events per duration</code>. Eg: 1s, 5s, 60s, 300s etc.</li>
-<li><code>rateLimitPerFrequency</code>defines the number of Tasks that can be given to Workers per given "frequency window".<br />
-<strong>Example:</strong><br />
-Let's set <code>rateLimitFrequencyInSeconds = 5</code>, and <code>rateLimitPerFrequency = 12</code>. This means, our frequency window is of 5 seconds duration, and for each frequency window, Conductor would only give 12 tasks to workers. So, in a given minute, Conductor would only give 12*(60/5) = 144 tasks to workers irrespective of the number of workers that are polling for the task.<br />
-Note that unlike <code>concurrentExecLimit</code>, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example. <br />
-Note: Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.</li>
+<li><code>rateLimitPerFrequency</code>defines the number of Tasks that can be given to Workers per given "frequency window".  </li>
 </ul>
+<p><strong>Example:</strong><br />
+Let's set <code>rateLimitFrequencyInSeconds = 5</code>, and <code>rateLimitPerFrequency = 12</code>. This means, our frequency window is of 5 seconds duration, and for each frequency window, Conductor would only give 12 tasks to workers. So, in a given minute, Conductor would only give 12*(60/5) = 144 tasks to workers irrespective of the number of workers that are polling for the task.<br />
+Note that unlike <code>concurrentExecLimit</code>, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example.   </p>
 <h3 id="using-inputkeys-and-outputkeys">Using inputKeys and outputKeys<a class="headerlink" href="#using-inputkeys-and-outputkeys" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>inputKeys</code> and <code>outputKeys</code> can be considered as parameters and return values for the Task. </li>
@@ -354,7 +463,7 @@ Note: Rate limiting is only supported for the Redis-persistence module and is no
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../workflowdef/" class="btn btn-neutral float-right" title="Workflow Definition">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../workerdef/" class="btn btn-neutral float-right" title="Worker Definition">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../../gettingstarted/startworkflow/" class="btn btn-neutral" title="Start a Workflow"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -390,7 +499,7 @@ Note: Rate limiting is only supported for the Redis-persistence module and is no
       <span><a href="../../gettingstarted/startworkflow/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../workflowdef/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../workerdef/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -57,6 +57,10 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Getting Started</span></p>
                 <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
@@ -68,9 +72,13 @@
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workerdef/">Worker Definition</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/sysoperator/">System Operators</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
                     </li>
@@ -80,11 +88,43 @@
                     </li>
                 </ul>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Conductor Server</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/kafka-publish-task/">Kafka Publish Task</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
@@ -106,9 +146,68 @@
                     <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
                 <p class="caption"><span class="caption-text">Developer Labs</span></p>
                 <ul class="current">
                     <li class="toctree-l1"><a class="reference internal" href="../beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../running-first-worker/">A First Worker</a>
                     </li>
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Events and Event Handlers</a>
     <ul class="current">
@@ -335,7 +434,7 @@ Hence, we will not be registering any tasks for these workflows.</p>
         <a href="../kitchensink/" class="btn btn-neutral float-right" title="Kitchensink">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../beginner/" class="btn btn-neutral" title="Beginner"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../running-first-worker/" class="btn btn-neutral" title="A First Worker"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -365,7 +464,7 @@ Hence, we will not be registering any tasks for these workflows.</p>
         </span>
     
     
-      <span><a href="../beginner/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../running-first-worker/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../kitchensink/" style="color: #fcfcfc">Next &raquo;</a></span>

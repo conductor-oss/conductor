@@ -57,6 +57,10 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Getting Started</span></p>
                 <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../gettingstarted/client/">Using the Client</a>
@@ -68,9 +72,13 @@
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../configuration/taskdef/">Task Definition</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/workerdef/">Worker Definition</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../configuration/workflowdef/">Workflow Definition</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../configuration/sysoperator/">System Operators</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../configuration/eventhandlers/">Event Handlers</a>
                     </li>
@@ -80,11 +88,43 @@
                     </li>
                 </ul>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../server/">Conductor Server</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../apispec/">API Specification</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../apispec/">API Specification</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../reference-docs/kafka-publish-task/">Kafka Publish Task</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
@@ -106,9 +146,68 @@
                     <li class="toctree-l1"><a class="reference internal" href="../externalpayloadstorage/">External Payload Storage</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
                 <p class="caption"><span class="caption-text">Developer Labs</span></p>
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../labs/running-first-worker/">A First Worker</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../labs/eventhandlers/">Events and Event Handlers</a>
                     </li>
@@ -122,6 +221,30 @@
                 <ul class="current">
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">FAQ</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#my-workflow-fails-to-start-with-missing-task-error">My workflow fails to start with missing task error</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-can-i-get-help-with-dynomite">How can I get help with Dynomite?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed">My workflow is running and the task is SCHEDULED but it is not being processed.</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition">Can I exit early from a task without executing the configured automatic retries in the task definition?</a>
+    </li>
     </ul>
                     </li>
                 </ul>
@@ -169,7 +292,8 @@
           <div role="main">
             <div class="section">
               
-                <h3 id="how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)<a class="headerlink" href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc" title="Permanent link">&para;</a></h3>
+                <h1 id="frequently-asked-questions">Frequently asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
+<h3 id="how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)<a class="headerlink" href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc" title="Permanent link">&para;</a></h3>
 <p>After polling for the task update the status of the task to <code>IN_PROGRESS</code> and set the <code>callbackAfterSeconds</code> value to the desired time.  The task will remain in the queue until the specified second before worker polling for it will receive it again.</p>
 <p>If there is a timeout set for the task, and the <code>callbackAfterSeconds</code> exceeds the timeout value, it will result in task being TIMED_OUT.</p>
 <h3 id="how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?<a class="headerlink" href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months" title="Permanent link">&para;</a></h3>
@@ -192,9 +316,22 @@ More details about <a href="../configuration/eventhandlers/">eventing</a>.</p>
 <h3 id="how-can-i-get-help-with-dynomite">How can I get help with Dynomite?<a class="headerlink" href="#how-can-i-get-help-with-dynomite" title="Permanent link">&para;</a></h3>
 <p>Visit Dynomite's <a href="https://github.com/Netflix/dynomite">Github page</a> to find details on setup and support mechanism.</p>
 <h3 id="my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed">My workflow is running and the task is SCHEDULED but it is not being processed.<a class="headerlink" href="#my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed" title="Permanent link">&para;</a></h3>
-<p>Make sure that the worker is actively polling for this task. Navigate to the <code>Poll Data</code> tab on the Condictor UI and search for your task name in the search box on the top right corner. Ensure that <code>Last Poll Time</code> for this task is current and the <code>Last Polled By</code> is an active instance. The <code>Size</code> column shows the number of scheduled tasks for this task name.</p>
+<p>Make sure that the worker is actively polling for this task. Navigate to the <code>Task Queues</code> tab on the Conductor UI and select your task name in the search box. Ensure that <code>Last Poll Time</code> for this task is current.</p>
+<p>In Conductor 3.x, <code>conductor.redis.availabilityZone</code> defaults to <code>us-east-1c</code>.  Ensure that this matches where your workers are, and that it also maytches<code>conductor.redis.hosts</code>.</p>
 <h3 id="how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?<a class="headerlink" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails" title="Permanent link">&para;</a></h3>
-<p>Refer this <a href="../configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
+<p>When a workflow fails, you can configure a "failure workflow" to run using the<code>failureWorkflow</code> parameter. By default, three parameters are passed:</p>
+<ul>
+<li>reason</li>
+<li>workflowId: use this to pull the details of the failed workflow.</li>
+<li>failureStatus</li>
+</ul>
+<p>You can also use the Workflow Status Listener: </p>
+<ul>
+<li>Set the workflowStatusListenerEnabled field in your workflow definition to true which enables <a href="https://netflix.github.io/conductor/configuration/workflowdef/#workflow-notifications">notifications</a>.</li>
+<li>Add a custom implementation of the Workflow Status Listener. Refer <a href="https://netflix.github.io/conductor/extend/#workflow-status-listener">this</a>.</li>
+<li>This notification can be implemented in such a way as to either send a notification to an external system or to send an event on the conductor queue to complete/fail another task in another workflow as described <a href="https://netflix.github.io/conductor/configuration/eventhandlers/#event-handler">here</a>.</li>
+</ul>
+<p>Refer to this <a href="../configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure. </p>
 <h3 id="i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)<a class="headerlink" href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client" title="Permanent link">&para;</a></h3>
 <p>In a <code>PreDestroy</code> block within your application, call the <code>shutdown()</code> method on the <code>TaskRunnerConfigurer</code> instance that you have created to facilitate a graceful shutdown of your worker in case the process is being terminated.</p>
 <h3 id="can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition">Can I exit early from a task without executing the configured automatic retries in the task definition?<a class="headerlink" href="#can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition" title="Permanent link">&para;</a></h3>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>A First Workflow - Conductor</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "A First Workflow";
+    var mkdocs_page_input_path = "labs/running-first-workflow.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workerdef/">Worker Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/sysoperator/">System Operators</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../reference-docs/kafka-publish-task/">Kafka Publish Task</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">A First Workflow</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#configuring-our-first-workflow">Configuring our First Workflow</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#2-running-our-first-workflow">2. Running our First Workflow</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#summary">Summary</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../running-first-worker/">A First Worker</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Developer Labs &raquo;</li>
+        
+      
+    
+    <li>A First Workflow</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/main/docs/docs/labs/running-first-workflow.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="running-first-workflow">Running First Workflow<a class="headerlink" href="#running-first-workflow" title="Permanent link">&para;</a></h1>
+<p>In this article we will explore how we can run a really simple workflow that runs without deploying any new microservice. </p>
+<p>Conductor can orchestrate HTTP services out of the box without implementing any code.  We will use that to create and run the first workflow.</p>
+<p>See <a href="../concepts/system-tasks">System Task</a> for the list of such built-in tasks.
+Using system tasks is a great way to run a lot of our code in production.</p>
+<p>To bring up a local instance of Conductor follow one of the recommended steps:
+1. <a href="/server.md">Running Locally - From Code</a>
+2. <a href="/running-locally-docker.md">Running Locally - Docker Compose</a></p>
+<hr />
+<h2 id="configuring-our-first-workflow">Configuring our First Workflow<a class="headerlink" href="#configuring-our-first-workflow" title="Permanent link">&para;</a></h2>
+<p>This is a sample workflow that we can leverage for our test.</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;first_sample_workflow&quot;,
+  &quot;description&quot;: &quot;First Sample Workflow&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;get_population_data&quot;,
+      &quot;taskReferenceName&quot;: &quot;get_population_data&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;http_request&quot;: {
+          &quot;uri&quot;: &quot;https://datausa.io/api/data?drilldowns=Nation&amp;measures=Population&quot;,
+          &quot;method&quot;: &quot;GET&quot;
+        }
+      },
+      &quot;type&quot;: &quot;HTTP&quot;
+    }
+  ],
+  &quot;inputParameters&quot;: [],
+  &quot;outputParameters&quot;: {
+    &quot;data&quot;: &quot;${get_population_data.output.response.body.data}&quot;,
+    &quot;source&quot;: &quot;${get_population_data.output.response.body.source}&quot;
+  },
+  &quot;schemaVersion&quot;: 2,
+  &quot;restartable&quot;: true,
+  &quot;workflowStatusListenerEnabled&quot;: false,
+  &quot;ownerEmail&quot;: &quot;example@email.com&quot;,
+  &quot;timeoutPolicy&quot;: &quot;ALERT_ONLY&quot;,
+  &quot;timeoutSeconds&quot;: 0
+}
+</code></pre>
+
+<p>This is an example workflow that queries a publicly available JSON API to retrieve some data. This workflow doesn’t
+require any worker implementation as the tasks in this workflow are managed by the system itself. This is an awesome
+feature of Conductor. For a lot of typical work, we won’t have to write any code at all.</p>
+<p>Let's talk about this workflow a little more so that we can gain some context.</p>
+<pre class="codehilite"><code class="language-json">&quot;name&quot; : &quot;first_sample_workflow&quot;
+</code></pre>
+
+<p>This line here is how we name our workflow. In this case our workflow name is <code>first_sample_workflow</code></p>
+<p>This workflow contains just one worker. The workers are defined under the key <code>tasks</code>. Here is the worker definition
+with the most important values:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;get_population_data&quot;,
+  &quot;taskReferenceName&quot;: &quot;get_population_data&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;http_request&quot;: {
+      &quot;uri&quot;: &quot;https://datausa.io/api/data?drilldowns=Nation&amp;measures=Population&quot;,
+      &quot;method&quot;: &quot;GET&quot;
+    }
+  },
+  &quot;type&quot;: &quot;HTTP&quot;
+}
+</code></pre>
+
+<p>Here is a list of fields and what it does:</p>
+<ol>
+<li><code>"name"</code> : Name of our worker</li>
+<li><code>"taskReferenceName"</code> : This is a reference to this worker in this specific workflow implementation. We can have multiple
+   workers of the same name in our workflow, but we will need a unique task reference name for each of them. Task
+   reference name should be unique across our entire workflow.</li>
+<li><code>"inputParameters"</code> : These are the inputs into our worker. We can hard code inputs as we have done here. We can
+   also provide dynamic inputs such as from the workflow input or based on the output of another worker. We can find
+   examples of this in our documentation.</li>
+<li><code>"type"</code> : This is what defines what the type of worker is. In our example - this is <code>HTTP</code>. There are more task
+   types which we can find in the Conductor documentation.</li>
+<li><code>"http_request"</code> : This is an input that is required for tasks of type <code>HTTP</code>. In our example we have provided a well
+   known internet JSON API url and the type of HTTP method to invoke - <code>GET</code></li>
+</ol>
+<p>We haven't talked about the other fields that we can use in our definitions as these are either just
+metadata or more advanced concepts which we can learn more in the detailed documentation.</p>
+<p>Ok, now that we have walked through our workflow details, let's run this and see how it works.</p>
+<p>To configure the workflow, head over to the swagger API of conductor server and access the metadata workflow create API:</p>
+<p><a href="http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/metadata-resource/create">http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/metadata-resource/create</a></p>
+<p>If the link doesn’t open the right Swagger section, we can navigate to Metadata-Resource
+→ <code>POST /api/metadata/workflow</code></p>
+<p><img alt="Swagger UI - Metadata - Workflow" src="/img/tutorial/metadataWorkflowPost.png" /></p>
+<p>Paste the workflow payload into the Swagger API and hit Execute.</p>
+<p>Now if we head over to the UI, we can see this workflow definition created:</p>
+<p><img alt="Conductor UI - Workflow Definition" src="/img/tutorial/uiWorkflowDefinition.png" /></p>
+<p>If we click through we can see a visual representation of the workflow:</p>
+<p><img alt="Conductor UI - Workflow Definition - Visual Flow" src="/img/tutorial/uiWorkflowDefinitionVisual.png" /></p>
+<h2 id="2-running-our-first-workflow">2. Running our First Workflow<a class="headerlink" href="#2-running-our-first-workflow" title="Permanent link">&para;</a></h2>
+<p>Let’s run this workflow. To do that we can use the swagger API under the workflow-resources</p>
+<p><a href="http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1">http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1</a></p>
+<p><img alt="Swagger UI - Metadata - Workflow - Run" src="/img/tutorial/metadataWorkflowRun.png" /></p>
+<p>Hit <strong>Execute</strong>!</p>
+<p>Conductor will return a workflow id. We will need to use this id to load this up on the UI. If our UI installation has
+search enabled we wouldn't need to copy this. If we don't have search enabled (using Elasticsearch) copy it from the
+Swagger UI.</p>
+<p><img alt="Swagger UI - Metadata - Workflow - Run" src="/img/tutorial/workflowRunIdCopy.png" /></p>
+<p>Ok, we should see this running and get completed soon. Let’s go to the UI to see what happened.</p>
+<p>To load the workflow directly, use this URL format:</p>
+<pre class="codehilite"><code>http://localhost:5000/execution/&lt;WORKFLOW_ID&gt;
+</code></pre>
+
+<p>Replace <code>&lt;WORKFLOW_ID&gt;</code> with our workflow id from the previous step. We should see a screen like below. Click on the
+different tabs to see all inputs and outputs and task list etc. Explore away!</p>
+<p><img alt="Conductor UI - Workflow Run" src="/img/tutorial/workflowLoaded.png" /></p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>In this blog post — we learned how to run a sample workflow in our Conductor installation. Concepts we touched on:</p>
+<ol>
+<li>Workflow creation</li>
+<li>System tasks such as HTTP</li>
+<li>Running a workflow via API</li>
+</ol>
+<p>Thank you for reading, and we hope you found this helpful. Please feel free to reach out to us for any questions and we
+are happy to help in any way we can.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../running-first-worker/" class="btn btn-neutral float-right" title="A First Worker">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../beginner/" class="btn btn-neutral" title="Beginner"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../beginner/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../running-first-worker/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

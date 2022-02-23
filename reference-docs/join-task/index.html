@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Join - Conductor</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../../css/theme.css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  <link href="../../css/custom.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Join";
+    var mkdocs_page_input_path = "reference-docs/join-task.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/client/">Using the Client</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Configuration</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdef/">Task Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workerdef/">Worker Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/workflowdef/">Workflow Definition</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/sysoperator/">System Operators</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/eventhandlers/">Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/taskdomains/">Task Domains</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../configuration/isolationgroups/">Isolation Groups</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../apispec/">API Specification</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Join</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-cases">Use Cases</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#input-configuration">Input Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#output-configuration">Output Configuration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#simple-example">Simple Example</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-ignoring-one-fork">Example - ignoring one fork</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../kafka-publish-task/">Kafka Publish Task</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/server/">Server Metrics</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../metrics/client/">Client Metrics</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../extend/">Extending Conductor</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../tasklifecycle/">Task Lifecycle</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../externalpayloadstorage/">External Payload Storage</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Developer Labs</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/running-first-worker/">A First Worker</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../../labs/kitchensink/">Kitchensink</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../bestpractices/">Best Practices</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../technicaldetails/">Technical Details</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../../license/">License</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Operators &raquo;</li>
+        
+      
+    
+    <li>Join</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/main/docs/docs/reference-docs/join-task.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="join">Join<a class="headerlink" href="#join" title="Permanent link">&para;</a></h1>
+<pre class="codehilite"><code class="language-json">&quot;type&quot; : &quot;JOIN&quot;
+</code></pre>
+
+<h3 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h3>
+<p>A <code>JOIN</code> task is used in conjunction with a <code>FORK_JOIN</code> or <code>FORK_JOIN_DYNAMIC</code> task. When <code>JOIN</code> is used along with
+a <code>FORK_JOIN</code> task, tt waits for a list of zero or more of the forked tasks to be completed. However, when used with
+a <code>FORK_JOIN_DYNAMIC</code> task, it implicitly waits for all of the dynamically forked tasks to complete.</p>
+<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h3>
+<p><a href="../../reference-docs/fork-task">FORK_JOIN</a> and <a href="../../reference-docs/dynamic-fork-task">FORK_JOIN_DYNAMIC</a> task are used to execute a collection of other tasks or sub workflows in parallel. In
+such cases, there is a need for these forked tasks to complete before moving to the next stage in the workflow. </p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<h4 id="input-configuration">Input Configuration<a class="headerlink" href="#input-configuration" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>Task Name. A unique name that is descriptive of the task function</td>
+</tr>
+<tr>
+<td>taskReferenceName</td>
+<td>Task Reference Name. A unique reference to this task. There can be multiple references of a task within the same workflow definition</td>
+</tr>
+<tr>
+<td>type</td>
+<td>Task Type. In this case, <code>JOIN</code></td>
+</tr>
+<tr>
+<td>joinOn</td>
+<td>A list of task reference names, that this <code>JOIN</code> task will wait for completion</td>
+</tr>
+</tbody>
+</table>
+<h4 id="output-configuration">Output Configuration<a class="headerlink" href="#output-configuration" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>task_ref_name_1</td>
+<td>A task reference name that was being <code>joinOn</code>. The value is the output of that task</td>
+</tr>
+<tr>
+<td>task_ref_name_2</td>
+<td>A task reference name that was being <code>joinOn</code>. The value is the output of that task</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr>
+<td>task_ref_name_N</td>
+<td>A task reference name that was being <code>joinOn</code>. The value is the output of that task</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<h4 id="simple-example">Simple Example<a class="headerlink" href="#simple-example" title="Permanent link">&para;</a></h4>
+<p>Here is an example of a <em><code>JOIN</code></em> task. This task will wait for the completion of tasks <code>my_task_ref_1</code>
+and <code>my_task_ref_2</code> as specified by the <code>joinOn</code> attribute.</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;join_task&quot;,
+  &quot;taskReferenceName&quot;: &quot;my_join_task_ref&quot;,
+  &quot;type&quot;: &quot;JOIN&quot;,
+  &quot;joinOn&quot;: [
+    &quot;my_task_ref_1&quot;,
+    &quot;my_task_ref_2&quot;
+  ]
+}
+</code></pre>
+
+<h4 id="example-ignoring-one-fork">Example - ignoring one fork<a class="headerlink" href="#example-ignoring-one-fork" title="Permanent link">&para;</a></h4>
+<p>Here is an example of a <code>JOIN</code> task used in conjunction with a <code>FORK_JOIN</code> task. The 'FORK_JOIN' spawns 3 tasks.
+An <code>email_notification</code> task, a <code>sms_notification</code> task and a  <code>http_notification</code> task. Email and SMS are usually best
+effort delivery systems. However, in case of a http based notification you get a return code and you can retry until it
+succeeds or eventually give up. When you setup a notification workflow, you may decide to continue ,if you kicked off an
+email and sms notification. Im that case, you can decide to <code>joinOn</code> those specific tasks. However,
+the <code>http_notification</code> task will still continue to execute, but it will not block the rest of the workflow from
+proceeding.</p>
+<pre class="codehilite"><code class="language-json">[
+  {
+    &quot;name&quot;: &quot;fork_join&quot;,
+    &quot;taskReferenceName&quot;: &quot;my_fork_join_ref&quot;,
+    &quot;type&quot;: &quot;FORK_JOIN&quot;,
+    &quot;forkTasks&quot;: [
+      [
+        {
+          &quot;name&quot;: &quot;email_notification&quot;,
+          &quot;taskReferenceName&quot;: &quot;email_notification_ref&quot;,
+          &quot;type&quot;: &quot;SIMPLE&quot;
+        }
+      ],
+      [
+        {
+          &quot;name&quot;: &quot;sms_notification&quot;,
+          &quot;taskReferenceName&quot;: &quot;sms_notification_ref&quot;,
+          &quot;type&quot;: &quot;SIMPLE&quot;
+        }
+      ],
+      [
+        {
+          &quot;name&quot;: &quot;http_notification&quot;,
+          &quot;taskReferenceName&quot;: &quot;http_notification_ref&quot;,
+          &quot;type&quot;: &quot;SIMPLE&quot;
+        }
+      ]
+    ]
+  },
+  {
+    &quot;name&quot;: &quot;notification_join&quot;,
+    &quot;taskReferenceName&quot;: &quot;notification_join_ref&quot;,
+    &quot;type&quot;: &quot;JOIN&quot;,
+    &quot;joinOn&quot;: [
+      &quot;email_notification_ref&quot;,
+      &quot;sms_notification_ref&quot;
+    ]
+  }
+]
+</code></pre>
+
+<p>Here is how the output of notification_join will look like. The output is a map, where the keys are the names of task
+references that were being <code>joinOn</code>. The corresponding values are the outputs of those tasks.</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;email_notification_ref&quot;: {
+    &quot;email_sent_at&quot;: &quot;2021-11-06T07:37:17+0000&quot;,
+    &quot;email_sent_to&quot;: &quot;test@example.com&quot;
+  },
+  &quot;sms_notification_ref&quot;: {
+    &quot;smm_sent_at&quot;: &quot;2021-11-06T07:37:17+0129&quot;,
+    &quot;sms_sen&quot;: &quot;+1-425-555-0189&quot;
+  }
+}
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../set-variable-task/" class="btn btn-neutral float-right" title="Set Variable">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../fork-task/" class="btn btn-neutral" title="Fork"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../fork-task/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../set-variable-task/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

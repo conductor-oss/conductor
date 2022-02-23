@@ -59,6 +59,10 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Getting Started</span></p>
                 <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="server/">Installing Conductor Locally</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="running-locally-docker/">Installing via Docker Compose</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="gettingstarted/basicconcepts/">Basic Concepts</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="gettingstarted/client/">Using the Client</a>
@@ -70,9 +74,13 @@
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="configuration/taskdef/">Task Definition</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="configuration/workerdef/">Worker Definition</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="configuration/workflowdef/">Workflow Definition</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="configuration/systask/">System Tasks</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="configuration/sysoperator/">System Operators</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="configuration/eventhandlers/">Event Handlers</a>
                     </li>
@@ -82,11 +90,43 @@
                     </li>
                 </ul>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="server/">Conductor Server</a>
+                    <li class="toctree-l1"><a class="reference internal" href="apispec/">API Specification</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">Operators</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="apispec/">API Specification</a>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/do-while-task/">Do/While</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/dynamic/">Dynamic</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/dynamic-fork-task/">Dynamic Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/fork-task/">Fork</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/join-task/">Join</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/set-variable-task/">Set Variable</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/sub-workflow-task/">Sub Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/switch-task/">Switch</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/terminate-task/">Terminate</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/wait-task/">Wait</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">System Tasks</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/event-task/">Event Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/http-task/">HTTP Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/inline-task/">Inline Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/json-jq-transform-task/">JSON JQ Transform Task</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="reference-docs/kafka-publish-task/">Kafka Publish Task</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Conductor Metrics</span></p>
@@ -108,9 +148,68 @@
                     <li class="toctree-l1"><a class="reference internal" href="externalpayloadstorage/">External Payload Storage</a>
                     </li>
                 </ul>
+                <p class="caption"><span class="caption-text">How-Tos</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workflows</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/debugging-workflows/">Debugging Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/handling-errors/">Handliing Errors</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/searching-workflows/">Searching Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/starting-workflows/">Starting a Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/updating-workflows/">Updating Workflows</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workflows/view-workflow-executions/">View Workflow Execution</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Tasks</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/creating-tasks/">Creating Task Definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/dynamic-vs-switch-tasks/">Dynamic vs Switch Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/monitoring-task-queues/">Monitoring Task Queues</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/reusing-tasks/">Reusing Tasks</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/task-configurations/">Task Configurations</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/task-inputs/">Task Inputs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/task-timeouts/">Task Timeouts</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Tasks/updating-tasks/">Updating Task Definitions</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Workers</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workers/build-a-golang-task-worker/">-Build a Go Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workers/build-a-java-task-worker/">-Build a Java Task Worker</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Workers/build-a-python-task-worker/">-Build a Python Task Worker</a>
+                </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="#">Monitoring</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="how-tos/Monitoring/Conductor-LogLevel/">Conductor Log Level</a>
+                </li>
+    </ul>
+                    </li>
+                </ul>
                 <p class="caption"><span class="caption-text">Developer Labs</span></p>
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="labs/beginner/">Beginner</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="labs/running-first-workflow/">A First Workflow</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="labs/running-first-worker/">A First Worker</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="labs/eventhandlers/">Events and Event Handlers</a>
                     </li>
@@ -169,17 +268,19 @@
           <div role="main">
             <div class="section">
               
-                <p><center><img alt="Logo" src="img/conductor-vector-x.png" /></center>
-<center><img alt="Logo" src="img/corner-logo-oss.png" /></center>
-<center><strong>Conductor is a <em>Workflow Orchestration engine</em> that runs in the cloud.</strong> </center></p>
+                <p><center><img src ='img/conductor-vector-x.png' alt="Logo"></center>
+<center><img src ="img/corner-logo-oss.png" alt = "Logo"></center></p>
+<p><center><h1>Conductor is a <em>Workflow Orchestration engine</em> that runs in the cloud. </h1></center></p>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
-<p>We built Conductor to help us orchestrate microservices based process flows at Netflix with the following features:</p>
+<h2 id="conductor-was-built-to-help-netflix-orchestrate-microservices-based-process-flows-with-the-following-features">Conductor was built to help Netflix orchestrate microservices based process flows with the following features:<a class="headerlink" href="#conductor-was-built-to-help-netflix-orchestrate-microservices-based-process-flows-with-the-following-features" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A distributed server ecosystem, which stores workflow state information efficiently.</li>
 <li>Allow creation of process / business flows in which each individual task can be implemented by the same / different microservices.</li>
-<li>A JSON DSL based blueprint defines the execution flow.</li>
+<li>A DAG (Directed Acyclic Graph) based workflow definition.</li>
+<li>Workflow definitions are decoupled from the service implementations.</li>
 <li>Provide visibility and traceability into these process flows.</li>
 <li>Simple interface to connect workers, which execute the tasks in workflows.</li>
+<li>Workers are language agnostic, allowing each microservice to be written in the language most suited for the service.</li>
 <li>Full operational control over workflows with the ability to pause, resume, restart, retry and terminate.</li>
 <li>Allow greater reuse of existing microservices providing an easier path for onboarding.</li>
 <li>User interface to visualize, replay and search the process flows.</li>
@@ -190,7 +291,7 @@
 <li>Client implementations in Java, Python and other languages.</li>
 <li>Various configurable properties with sensible defaults to fine tune workflow and task executions like rate limiting, concurrent execution limits etc.</li>
 </ul>
-<p><strong>Why not peer to peer choreography?</strong></p>
+<h2 id="why-not-peer-to-peer-choreography">Why not peer to peer choreography?<a class="headerlink" href="#why-not-peer-to-peer-choreography" title="Permanent link">&para;</a></h2>
 <p>With peer to peer task choreography, we found it was harder to scale with growing business needs and complexities.
 Pub/sub model worked for simplest of the flows, but quickly highlighted some of the issues associated with the approach:</p>
 <ul>
@@ -255,6 +356,6 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
 </html>
 
 <!--
-MkDocs version : 1.2.2
-Build Date UTC : 2021-12-01 03:22:23.249475+00:00
+MkDocs version : 1.2.3
+Build Date UTC : 2022-02-23 22:35:24.192225+00:00
 -->
