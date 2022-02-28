@@ -142,15 +142,14 @@ Optionally updating task's input and output as specified in the payload.
 |`GET /tasks/queue/sizes?taskType=&taskType=&taskType`|Return the size of pending tasks for given task types|
 |||
 
-## Polling, Ack and Update Task
-These are critical endpoints used to poll for task, send ack (after polling) and finally updating the task result by worker.
+## Polling and Update Task
+These are critical endpoints used to poll for task and updating the task result by worker.
 
 |Endpoint|Description|
 |---|---|
 |`GET /tasks/poll/{taskType}?workerid=&domain=`| Poll for a task. `workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain|
 |`GET /tasks/poll/batch/{taskType}?count=&timeout=&workerid=&domain`| Poll for a task in a batch specified by `count`.  This is a long poll and the connection will wait until `timeout` or if there is at-least 1 item available, whichever comes first.`workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain|
 |`POST /tasks`| Update the result of task execution.  See the schema below.|
-|`POST /tasks/{taskId}/ack`| Acknowledges the task received AFTER poll by worker.|
 
 ### Schema for updating Task Result
 ```json
@@ -166,5 +165,3 @@ These are critical endpoints used to poll for task, send ack (after polling) and
     
 }
 ```
-!!!Info "Acknowledging tasks after poll"
-	If the worker fails to ack the task after polling, the task is re-queued and put back in queue and is made available during subsequent poll.
