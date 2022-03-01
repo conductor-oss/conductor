@@ -194,16 +194,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -336,7 +336,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -662,16 +662,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -784,7 +784,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -1202,16 +1202,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -1396,7 +1396,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -1958,16 +1958,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -2152,7 +2152,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]

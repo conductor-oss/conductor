@@ -333,13 +333,13 @@
             ]
         },
         "net.sourceforge.pmd:pmd-core": {
-            "locked": "6.36.0",
+            "locked": "6.39.0",
             "transitive": [
                 "net.sourceforge.pmd:pmd-java"
             ]
         },
         "net.sourceforge.pmd:pmd-java": {
-            "locked": "6.36.0"
+            "locked": "6.39.0"
         },
         "net.sourceforge.saxon:saxon": {
             "locked": "9.1.0.8",
@@ -362,7 +362,7 @@
             ]
         },
         "org.ow2.asm:asm": {
-            "locked": "9.1",
+            "locked": "9.2",
             "transitive": [
                 "net.sourceforge.pmd:pmd-core",
                 "net.sourceforge.pmd:pmd-java"

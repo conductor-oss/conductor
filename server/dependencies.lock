@@ -104,7 +104,7 @@
             "project": true
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.13.0"
+            "locked": "5.14.0"
         },
         "io.github.classgraph:classgraph": {
             "locked": "4.8.138",
@@ -255,16 +255,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -404,7 +404,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -662,7 +662,7 @@
             ]
         },
         "com.google.api.grpc:proto-google-common-protos": {
-            "locked": "1.17.0",
+            "locked": "2.0.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
@@ -672,16 +672,12 @@
             "transitive": [
                 "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.netflix-commons:netflix-infix",
                 "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
                 "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.perfmark:perfmark-api"
+                "io.grpc:grpc-protobuf-lite"
             ]
         },
         "com.google.code.gson:gson": {
@@ -695,14 +691,13 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.9.0",
             "transitive": [
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
                 "io.grpc:grpc-services",
                 "io.grpc:grpc-stub"
             ]
@@ -714,11 +709,12 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
+            "locked": "30.1.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
                 "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
@@ -753,12 +749,14 @@
         "com.google.j2objc:j2objc-annotations": {
             "locked": "1.3",
             "transitive": [
-                "com.google.guava:guava"
+                "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util"
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0",
+            "locked": "3.19.2",
             "transitive": [
+                "com.google.api.grpc:proto-google-common-protos",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core",
@@ -768,7 +766,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java-util": {
-            "locked": "3.12.0",
+            "locked": "3.19.2",
             "transitive": [
                 "io.grpc:grpc-services"
             ]
@@ -988,7 +986,7 @@
             ]
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.13.0",
+            "locked": "5.14.0",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
@@ -1123,7 +1121,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -1132,45 +1130,45 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
@@ -1322,7 +1320,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.19.0",
+            "locked": "0.23.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -1786,10 +1784,15 @@
                 "org.springframework.boot:spring-boot-starter-tomcat"
             ]
         },
+        "org.checkerframework:checker-compat-qual": {
+            "locked": "2.5.5",
+            "transitive": [
+                "com.google.guava:guava"
+            ]
+        },
         "org.checkerframework:checker-qual": {
             "locked": "3.5.0",
             "transitive": [
-                "com.google.guava:guava",
                 "org.postgresql:postgresql"
             ]
         },
@@ -1800,15 +1803,9 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.18",
+            "locked": "1.19",
             "transitive": [
-                "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub"
+                "io.grpc:grpc-core"
             ]
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
@@ -2125,20 +2122,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -2306,7 +2303,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -2598,7 +2595,7 @@
             ]
         },
         "com.google.api.grpc:proto-google-common-protos": {
-            "locked": "1.17.0",
+            "locked": "2.0.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
@@ -2608,16 +2605,12 @@
             "transitive": [
                 "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.netflix-commons:netflix-infix",
                 "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
                 "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.perfmark:perfmark-api"
+                "io.grpc:grpc-protobuf-lite"
             ]
         },
         "com.google.code.gson:gson": {
@@ -2631,14 +2624,13 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.9.0",
             "transitive": [
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
                 "io.grpc:grpc-services",
                 "io.grpc:grpc-stub"
             ]
@@ -2650,11 +2642,12 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
+            "locked": "30.1.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
                 "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
@@ -2689,12 +2682,14 @@
         "com.google.j2objc:j2objc-annotations": {
             "locked": "1.3",
             "transitive": [
-                "com.google.guava:guava"
+                "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util"
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0",
+            "locked": "3.19.2",
             "transitive": [
+                "com.google.api.grpc:proto-google-common-protos",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core",
@@ -2704,7 +2699,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java-util": {
-            "locked": "3.12.0",
+            "locked": "3.19.2",
             "transitive": [
                 "io.grpc:grpc-services"
             ]
@@ -2924,7 +2919,7 @@
             ]
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.13.0",
+            "locked": "5.14.0",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
@@ -3059,7 +3054,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -3068,45 +3063,45 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
@@ -3258,7 +3253,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.19.0",
+            "locked": "0.23.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -3722,10 +3717,15 @@
                 "org.springframework.boot:spring-boot-starter-tomcat"
             ]
         },
+        "org.checkerframework:checker-compat-qual": {
+            "locked": "2.5.5",
+            "transitive": [
+                "com.google.guava:guava"
+            ]
+        },
         "org.checkerframework:checker-qual": {
             "locked": "3.5.0",
             "transitive": [
-                "com.google.guava:guava",
                 "org.postgresql:postgresql"
             ]
         },
@@ -3736,15 +3736,9 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.18",
+            "locked": "1.19",
             "transitive": [
-                "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub"
+                "io.grpc:grpc-core"
             ]
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
@@ -4061,20 +4055,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -4242,7 +4236,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -4359,7 +4353,7 @@
             ]
         },
         "com.google.api.grpc:proto-google-common-protos": {
-            "locked": "1.17.0",
+            "locked": "2.0.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
@@ -4367,14 +4361,15 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
+                "com.google.guava:guava",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-protobuf"
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.5.1",
             "transitive": [
-                "io.grpc:grpc-stub"
+                "com.google.guava:guava"
             ]
         },
         "com.google.guava:failureaccess": {
@@ -4384,7 +4379,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "29.0-android",
+            "locked": "30.1.1-android",
             "transitive": [
                 "io.grpc:grpc-stub"
             ]
@@ -4404,6 +4399,7 @@
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
+                "com.google.api.grpc:proto-google-common-protos",
                 "io.grpc:grpc-protobuf"
             ]
         },
@@ -4453,7 +4449,7 @@
             "project": true
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.13.0"
+            "locked": "5.14.0"
         },
         "com.vaadin.external.google:android-json": {
             "locked": "0.0.20131108.vaadin1",
@@ -4468,7 +4464,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -4477,34 +4473,34 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-testing"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.33.1"
+            "locked": "1.44.1"
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-testing"
             ]
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.33.1"
+            "locked": "1.44.1"
         },
         "io.micrometer:micrometer-core": {
             "locked": "1.5.14",
@@ -4804,16 +4800,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5"
+            "locked": "1.6.6"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -4981,7 +4977,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -5245,7 +5241,7 @@
             ]
         },
         "com.google.api.grpc:proto-google-common-protos": {
-            "locked": "1.17.0",
+            "locked": "2.0.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
@@ -5255,17 +5251,12 @@
             "transitive": [
                 "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.netflix-commons:netflix-infix",
                 "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
                 "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.grpc:grpc-testing",
-                "io.perfmark:perfmark-api"
+                "io.grpc:grpc-protobuf-lite"
             ]
         },
         "com.google.code.gson:gson": {
@@ -5279,17 +5270,15 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
+            "locked": "2.9.0",
             "transitive": [
                 "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
                 "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.grpc:grpc-testing"
+                "io.grpc:grpc-stub"
             ]
         },
         "com.google.guava:failureaccess": {
@@ -5299,11 +5288,12 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
+            "locked": "30.1.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
                 "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
+                "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
@@ -5318,8 +5308,7 @@
                 "io.grpc:grpc-protobuf",
                 "io.grpc:grpc-protobuf-lite",
                 "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.grpc:grpc-testing"
+                "io.grpc:grpc-stub"
             ]
         },
         "com.google.guava:listenablefuture": {
@@ -5339,12 +5328,14 @@
         "com.google.j2objc:j2objc-annotations": {
             "locked": "1.3",
             "transitive": [
-                "com.google.guava:guava"
+                "com.google.guava:guava",
+                "com.google.protobuf:protobuf-java-util"
             ]
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
+                "com.google.api.grpc:proto-google-common-protos",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core",
@@ -5354,7 +5345,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java-util": {
-            "locked": "3.12.0",
+            "locked": "3.19.2",
             "transitive": [
                 "io.grpc:grpc-services"
             ]
@@ -5575,7 +5566,7 @@
             ]
         },
         "com.rabbitmq:amqp-client": {
-            "locked": "5.13.0",
+            "locked": "5.14.0",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
@@ -5716,7 +5707,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -5725,14 +5716,15 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-api",
-                "io.grpc:grpc-testing"
+                "io.grpc:grpc-testing",
+                "io.opencensus:opencensus-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services",
@@ -5740,32 +5732,32 @@
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.33.1",
+            "locked": "1.44.1",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services",
@@ -5773,7 +5765,7 @@
             ]
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.33.1"
+            "locked": "1.44.1"
         },
         "io.micrometer:micrometer-core": {
             "locked": "1.5.14",
@@ -5921,13 +5913,13 @@
             ]
         },
         "io.opencensus:opencensus-api": {
-            "locked": "0.24.0",
+            "locked": "0.28.0",
             "transitive": [
                 "io.grpc:grpc-testing"
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.19.0",
+            "locked": "0.23.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -6423,10 +6415,15 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.checkerframework:checker-compat-qual": {
+            "locked": "2.5.5",
+            "transitive": [
+                "com.google.guava:guava"
+            ]
+        },
         "org.checkerframework:checker-qual": {
             "locked": "3.5.0",
             "transitive": [
-                "com.google.guava:guava",
                 "org.postgresql:postgresql"
             ]
         },
@@ -6437,16 +6434,9 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.18",
+            "locked": "1.19",
             "transitive": [
-                "io.grpc:grpc-api",
-                "io.grpc:grpc-core",
-                "io.grpc:grpc-netty",
-                "io.grpc:grpc-protobuf",
-                "io.grpc:grpc-protobuf-lite",
-                "io.grpc:grpc-services",
-                "io.grpc:grpc-stub",
-                "io.grpc:grpc-testing"
+                "io.grpc:grpc-core"
             ]
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
@@ -6867,20 +6857,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.6",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -7076,7 +7066,7 @@
             ]
         },
         "org.webjars:swagger-ui": {
-            "locked": "4.2.1",
+            "locked": "4.5.0",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
