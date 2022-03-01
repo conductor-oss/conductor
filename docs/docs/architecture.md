@@ -1,6 +1,6 @@
 ## High Level Architecture
 
-![Architecture diagram](/img/conductor-architecture.png)
+![Architecture diagram](img/conductor-architecture.png)
 
 The API and storage layers are pluggable and provide ability to work with different backends and queue service providers.
 
