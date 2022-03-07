@@ -14,12 +14,12 @@ buildscript {
 }
 
 plugins {
-    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'application'
     id 'jacoco'
     id 'nebula.netflixoss' version '10.4.0'
-    id 'org.sonarqube' version '3.1.1'
+    id 'org.sonarqube' version '3.3'
 }
 
 /*
