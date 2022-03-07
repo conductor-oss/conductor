@@ -13,7 +13,7 @@
 
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.15'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.18'
     }
 }
 
