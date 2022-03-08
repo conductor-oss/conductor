@@ -1715,15 +1715,15 @@ public class WorkflowExecutor {
                     String.valueOf(workflow.getWorkflowVersion()));
 
             // Save the tasks in the DAO
-            createdTasks = executionDAOFacade.createTasks(tasks);
+            executionDAOFacade.createTasks(tasks);
 
             List<TaskModel> systemTasks =
-                    createdTasks.stream()
+                    tasks.stream()
                             .filter(task -> systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
             tasksToBeQueued =
-                    createdTasks.stream()
+                    tasks.stream()
                             .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 

@@ -1,0 +1,34 @@
+{
+  "name": "workflow_with_synchronous_system_task",
+  "description": "A workflow with a simple task followed a synchronous task",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "integration_task_1",
+      "taskReferenceName": "t1",
+      "type": "SIMPLE"
+    },
+    {
+      "name": "jsonjq",
+      "taskReferenceName": "jsonjq",
+      "inputParameters": {
+        "queryExpression": ".tp2.TEST_SAMPLE | length",
+        "tp1": "${workflow.input.param1}",
+        "tp2": "${t1.output.op}"
+      },
+      "type": "JSON_JQ_TRANSFORM"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "data": "${jsonjq.output.resources}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "example@email.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

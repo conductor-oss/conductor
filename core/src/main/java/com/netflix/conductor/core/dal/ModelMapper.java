@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +30,6 @@ import com.netflix.conductor.model.WorkflowModel;
 
 @Component
 public class ModelMapper {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModelMapper.class);
 
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
@@ -61,7 +57,10 @@ public class ModelMapper {
     public WorkflowModel getLeanCopy(WorkflowModel workflowModel) {
         WorkflowModel leanWorkflowModel = workflowModel.copy();
         externalizeWorkflowData(leanWorkflowModel);
-        workflowModel.getTasks().forEach(this::getLeanCopy);
+        leanWorkflowModel.setTasks(
+                workflowModel.getTasks().stream()
+                        .map(this::getLeanCopy)
+                        .collect(Collectors.toList()));
         return leanWorkflowModel;
     }
 

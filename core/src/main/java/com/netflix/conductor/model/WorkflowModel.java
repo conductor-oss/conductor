@@ -377,7 +377,7 @@ public class WorkflowModel {
         return found.getLast();
     }
 
-    /** @return a deep copy of the workflow instance */
+    /** @return a copy of the workflow instance */
     public WorkflowModel copy() {
         WorkflowModel copy = new WorkflowModel();
         BeanUtils.copyProperties(this, copy);

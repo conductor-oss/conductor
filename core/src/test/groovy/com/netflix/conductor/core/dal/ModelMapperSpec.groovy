@@ -104,9 +104,11 @@ class ModelMapperSpec extends Specification {
             externalOutputPayloadStoragePath == '/relative/workflow/path'
             endTime == 100L
             tasks.size() == 2
+            !tasks[0].is(workflowModel.tasks[0]) // check if TaskModel is copied
             tasks[0].taskId == 'taskId1'
             tasks[0].status == TaskModel.Status.SCHEDULED
             tasks[0].inputData == ['key1': 'value1']
+            !tasks[1].is(workflowModel.tasks[1]) // check if TaskModel is copied
             tasks[1].taskId == 'taskId2'
             tasks[1].status == TaskModel.Status.IN_PROGRESS
             tasks[1].externalInputPayloadStoragePath == '/relative/task/path'
