@@ -333,9 +333,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         if (workflow != null) {
             if (includeTasks) {
                 List<TaskModel> tasks = getTasksForWorkflow(workflowId);
-                tasks.sort(
-                        Comparator.comparingLong(TaskModel::getScheduledTime)
-                                .thenComparingInt(TaskModel::getSeq));
+                tasks.sort(Comparator.comparingInt(TaskModel::getSeq));
                 workflow.setTasks(tasks);
             }
         }

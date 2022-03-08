@@ -714,7 +714,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
     }
 
     def "Test wait time out task based simple workflow"() {
-        when: "Start a workflow based on a task that has a registered wiat time out"
+        when: "Start a workflow based on a task that has a registered wait time out"
         def workflowInstanceId = workflowExecutor.startWorkflow(WAIT_TIME_OUT_WORKFLOW, 1,
                 '', [:], null, null, null)
 
