@@ -101,11 +101,25 @@ public class WorkflowModel {
     // Capture the failed taskId if the workflow execution failed because of task failure
     private String failedTaskId;
 
+    private Status previousStatus;
+
+    public Status getPreviousStatus() {
+        return previousStatus;
+    }
+
+    public void setPreviousStatus(Status status) {
+        this.previousStatus = status;
+    }
+
     public Status getStatus() {
         return status;
     }
 
     public void setStatus(Status status) {
+        // update previous status if current status changed
+        if (this.status != status) {
+            setPreviousStatus(this.status);
+        }
         this.status = status;
     }
 

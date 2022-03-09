@@ -620,6 +620,7 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.updateWorkflow(any())).thenReturn("");
 
         workflowExecutor.restart(workflow.getWorkflowId(), false);
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertEquals(0, workflow.getEndTime());
         assertEquals(0, workflow.getLastRetriedTime());
@@ -646,6 +647,7 @@ public class TestWorkflowExecutor {
         when(metadataDAO.getLatestWorkflowDef(workflow.getWorkflowName()))
                 .thenReturn(Optional.of(workflowDef));
         workflowExecutor.restart(workflow.getWorkflowId(), true);
+        assertEquals(WorkflowModel.Status.COMPLETED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertEquals(0, workflow.getEndTime());
         assertEquals(0, workflow.getLastRetriedTime());
@@ -831,6 +833,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         // then:
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(1, updateTasksCalledCounter.get());
@@ -1074,6 +1077,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(6, workflow.getTasks().size());
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
     }
 
@@ -1156,7 +1160,9 @@ public class TestWorkflowExecutor {
         // then
         assertEquals(task.getStatus(), TaskModel.Status.COMPLETED);
         assertEquals(task1.getStatus(), TaskModel.Status.IN_PROGRESS);
+        assertEquals(workflow.getPreviousStatus(), WorkflowModel.Status.FAILED);
         assertEquals(workflow.getStatus(), WorkflowModel.Status.RUNNING);
+        assertEquals(subWorkflow.getPreviousStatus(), WorkflowModel.Status.FAILED);
         assertEquals(subWorkflow.getStatus(), WorkflowModel.Status.RUNNING);
     }
 
@@ -1226,6 +1232,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         // then
+        assertEquals(WorkflowModel.Status.TIMED_OUT, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertTrue(workflow.getLastRetriedTime() > 0);
         assertEquals(1, updateWorkflowCalledCounter.get());
@@ -1290,6 +1297,7 @@ public class TestWorkflowExecutor {
         // when:
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
 
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
@@ -1372,7 +1380,9 @@ public class TestWorkflowExecutor {
 
         // then:
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(WorkflowModel.Status.COMPLETED, subWorkflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
+        assertEquals(WorkflowModel.Status.COMPLETED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
     }
 
@@ -1435,6 +1445,7 @@ public class TestWorkflowExecutor {
         // when:
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
 
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
@@ -1492,6 +1503,7 @@ public class TestWorkflowExecutor {
 
         // then:
         assertEquals(TaskModel.Status.COMPLETED, task2.getStatus());
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
@@ -1576,7 +1588,9 @@ public class TestWorkflowExecutor {
         // then:
         assertEquals(TaskModel.Status.SCHEDULED, task2.getStatus());
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(WorkflowModel.Status.COMPLETED, subWorkflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
+        assertEquals(WorkflowModel.Status.COMPLETED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
     }
 
