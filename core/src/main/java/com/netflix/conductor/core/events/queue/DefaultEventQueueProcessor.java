@@ -146,7 +146,7 @@ public class DefaultEventQueueProcessor {
                                 }
 
                                 Task task = modelMapper.getTask(taskOptional.get());
-                                task.setStatus(modelMapper.mapToTaskStatus(status));
+                                task.setStatus(TaskModel.mapToTaskStatus(status));
                                 task.getOutputData()
                                         .putAll(objectMapper.convertValue(payloadJSON, _mapType));
                                 workflowExecutor.updateTask(new TaskResult(task));

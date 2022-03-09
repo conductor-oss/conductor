@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class ExecutionDAOFacadeTest {
     private IndexDAO indexDAO;
     private ModelMapper modelMapper;
     private ExecutionDAOFacade executionDAOFacade;
+    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -74,7 +76,7 @@ public class ExecutionDAOFacadeTest {
                         pollDataDAO,
                         modelMapper,
                         objectMapper,
-                        properties);
+                        properties, externalPayloadStorageUtils);
     }
 
     @Test

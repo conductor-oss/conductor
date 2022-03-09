@@ -71,8 +71,6 @@ public class ModelMapper {
      * @return the workflow DTO {@link Workflow}
      */
     public Workflow getWorkflow(WorkflowModel workflowModel) {
-        externalizeWorkflowData(workflowModel);
-
         Workflow workflow = new Workflow();
         BeanUtils.copyProperties(workflowModel, workflow);
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(workflowModel.getStatus().name()));
@@ -112,8 +110,6 @@ public class ModelMapper {
      * @return the task DTO {@link Task}
      */
     public Task getTask(TaskModel taskModel) {
-        externalizeTaskData(taskModel);
-
         Task task = new Task();
         BeanUtils.copyProperties(taskModel, task);
         task.setStatus(Task.Status.valueOf(taskModel.getStatus().name()));
@@ -140,8 +136,7 @@ public class ModelMapper {
                     workflowModel.getWorkflowName(),
                     Operation.READ.toString(),
                     PayloadType.WORKFLOW_INPUT.toString());
-            workflowModel.setInput(workflowInputParams);
-            workflowModel.setExternalInputPayloadStoragePath(null);
+            workflowModel.internalizeInput(workflowInputParams);
         }
 
         if (StringUtils.isNotBlank(workflowModel.getExternalOutputPayloadStoragePath())) {
@@ -152,8 +147,7 @@ public class ModelMapper {
                     workflowModel.getWorkflowName(),
                     Operation.READ.toString(),
                     PayloadType.WORKFLOW_OUTPUT.toString());
-            workflowModel.setOutput(workflowOutputParams);
-            workflowModel.setExternalOutputPayloadStoragePath(null);
+            workflowModel.internalizeOutput(workflowOutputParams);
         }
 
         workflowModel.getTasks().forEach(this::populateTaskData);
