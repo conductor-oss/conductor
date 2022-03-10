@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +37,12 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
@@ -87,7 +87,8 @@ public class ExecutionDAOFacade {
             PollDataDAO pollDataDAO,
             ModelMapper modelMapper,
             ObjectMapper objectMapper,
-            ConductorProperties properties, ExternalPayloadStorageUtils externalPayloadStorageUtils) {
+            ConductorProperties properties,
+            ExternalPayloadStorageUtils externalPayloadStorageUtils) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.indexDAO = indexDAO;
@@ -252,6 +253,7 @@ public class ExecutionDAOFacade {
      */
     public String createWorkflow(WorkflowModel workflowModel) {
         externalizeWorkflowData(workflowModel);
+        executionDAO.createWorkflow(workflowModel);
         // Add to decider queue
         queueDAO.push(
                 DECIDER_QUEUE,
@@ -267,13 +269,17 @@ public class ExecutionDAOFacade {
     }
 
     private void externalizeTaskData(TaskModel taskModel) {
-        externalPayloadStorageUtils.verifyAndUpload(taskModel, ExternalPayloadStorage.PayloadType.TASK_INPUT);
-        externalPayloadStorageUtils.verifyAndUpload(taskModel, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
+        externalPayloadStorageUtils.verifyAndUpload(
+                taskModel, ExternalPayloadStorage.PayloadType.TASK_INPUT);
+        externalPayloadStorageUtils.verifyAndUpload(
+                taskModel, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
     }
 
     private void externalizeWorkflowData(WorkflowModel workflowModel) {
-        externalPayloadStorageUtils.verifyAndUpload(workflowModel, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
-        externalPayloadStorageUtils.verifyAndUpload(workflowModel, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT);
+        externalPayloadStorageUtils.verifyAndUpload(
+                workflowModel, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
+        externalPayloadStorageUtils.verifyAndUpload(
+                workflowModel, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT);
     }
 
     /**
@@ -305,14 +311,14 @@ public class ExecutionDAOFacade {
                 Monitors.recordWorkerQueueSize(
                         "delayQueue", scheduledThreadPoolExecutor.getQueue().size());
             } else {
-                indexDAO.asyncIndexWorkflow(
-                        new WorkflowSummary(model.toWorkflow()));
+                indexDAO.asyncIndexWorkflow(new WorkflowSummary(model.toWorkflow()));
             }
             if (model.getStatus().isTerminal()) {
                 model.getTasks()
                         .forEach(
-                                taskModel -> indexDAO.asyncIndexTask(
-                                        new TaskSummary(taskModel.toTask())));
+                                taskModel ->
+                                        indexDAO.asyncIndexTask(
+                                                new TaskSummary(taskModel.toTask())));
             }
         } else {
             indexDAO.indexWorkflow(new WorkflowSummary(model.toWorkflow()));
@@ -430,7 +436,7 @@ public class ExecutionDAOFacade {
     }
 
     public List<TaskModel> createTasks(List<TaskModel> tasks) {
-        tasks = tasks.stream().peek(this::externalizeTaskData).collect(Collectors.toList());
+        tasks.forEach(this::externalizeTaskData);
         return executionDAO.createTasks(tasks);
     }
 
@@ -667,8 +673,9 @@ public class ExecutionDAOFacade {
 
     private void populateTaskData(TaskModel taskModel) {
         if (StringUtils.isNotBlank(taskModel.getExternalOutputPayloadStoragePath())) {
-            Map<String, Object> outputData = externalPayloadStorageUtils.downloadPayload(
-                    taskModel.getExternalOutputPayloadStoragePath());
+            Map<String, Object> outputData =
+                    externalPayloadStorageUtils.downloadPayload(
+                            taskModel.getExternalOutputPayloadStoragePath());
             taskModel.internalizeOutput(outputData);
             Monitors.recordExternalPayloadStorageUsage(
                     taskModel.getTaskDefName(),
@@ -677,8 +684,9 @@ public class ExecutionDAOFacade {
         }
 
         if (StringUtils.isNotBlank(taskModel.getExternalInputPayloadStoragePath())) {
-            Map<String, Object> inputData = externalPayloadStorageUtils.downloadPayload(
-                    taskModel.getExternalInputPayloadStoragePath());
+            Map<String, Object> inputData =
+                    externalPayloadStorageUtils.downloadPayload(
+                            taskModel.getExternalInputPayloadStoragePath());
             taskModel.internalizeInput(inputData);
             Monitors.recordExternalPayloadStorageUsage(
                     taskModel.getTaskDefName(),

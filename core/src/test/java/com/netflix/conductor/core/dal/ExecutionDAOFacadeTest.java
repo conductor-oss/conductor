@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +31,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.TestDeciderService;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -76,7 +76,8 @@ public class ExecutionDAOFacadeTest {
                         pollDataDAO,
                         modelMapper,
                         objectMapper,
-                        properties, externalPayloadStorageUtils);
+                        properties,
+                        externalPayloadStorageUtils);
     }
 
     @Test

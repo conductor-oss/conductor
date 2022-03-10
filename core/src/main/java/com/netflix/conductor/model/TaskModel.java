@@ -18,14 +18,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.Any;
 
 public class TaskModel {
@@ -156,11 +156,9 @@ public class TaskModel {
      */
     private boolean subworkflowChanged;
 
-    @JsonIgnore
-    private Map<String, Object> inputPayload = new HashMap<>();
+    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
-    @JsonIgnore
-    private Map<String, Object> outputPayload = new HashMap<>();
+    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
 
     public String getTaskType() {
         return taskType;
@@ -179,7 +177,8 @@ public class TaskModel {
     }
 
     public Map<String, Object> getInputData() {
-        return Collections.unmodifiableMap(externalInputPayloadStoragePath != null ? inputPayload : inputData);
+        return Collections.unmodifiableMap(
+                externalInputPayloadStoragePath != null ? inputPayload : inputData);
     }
 
     public void setInputData(Map<String, Object> inputData) {
@@ -369,7 +368,8 @@ public class TaskModel {
     }
 
     public Map<String, Object> getOutputData() {
-        return Collections.unmodifiableMap(externalOutputPayloadStoragePath != null ? outputPayload : outputData);
+        return Collections.unmodifiableMap(
+                externalOutputPayloadStoragePath != null ? outputPayload : outputData);
     }
 
     public void setOutputData(Map<String, Object> outputData) {

@@ -15,15 +15,13 @@ package com.netflix.conductor.model;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 
 public class WorkflowModel {
@@ -69,11 +67,9 @@ public class WorkflowModel {
 
     private Map<String, Object> output = new HashMap<>();
 
-    @JsonIgnore
-    private Map<String, Object> inputPayload = new HashMap<>();
+    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
-    @JsonIgnore
-    private Map<String, Object> outputPayload = new HashMap<>();
+    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
 
     private String correlationId;
 
@@ -175,7 +171,8 @@ public class WorkflowModel {
     }
 
     public Map<String, Object> getInput() {
-        return Collections.unmodifiableMap(externalInputPayloadStoragePath != null ? inputPayload : input);
+        return Collections.unmodifiableMap(
+                externalInputPayloadStoragePath != null ? inputPayload : input);
     }
 
     public void setInput(Map<String, Object> input) {
@@ -186,7 +183,8 @@ public class WorkflowModel {
     }
 
     public Map<String, Object> getOutput() {
-        return Collections.unmodifiableMap(externalOutputPayloadStoragePath != null ? outputPayload : output);
+        return Collections.unmodifiableMap(
+                externalOutputPayloadStoragePath != null ? outputPayload : output);
     }
 
     public void setOutput(Map<String, Object> output) {
@@ -508,8 +506,7 @@ public class WorkflowModel {
         Workflow workflow = new Workflow();
         BeanUtils.copyProperties(this, workflow);
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
-        workflow.setTasks(
-                tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
+        workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
 
         return workflow;
     }
