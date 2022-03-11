@@ -171,8 +171,7 @@ public class WorkflowModel {
     }
 
     public Map<String, Object> getInput() {
-        return Collections.unmodifiableMap(
-                externalInputPayloadStoragePath != null ? inputPayload : input);
+        return externalInputPayloadStoragePath != null ? inputPayload : input;
     }
 
     public void setInput(Map<String, Object> input) {
@@ -183,8 +182,7 @@ public class WorkflowModel {
     }
 
     public Map<String, Object> getOutput() {
-        return Collections.unmodifiableMap(
-                externalOutputPayloadStoragePath != null ? outputPayload : output);
+        return externalOutputPayloadStoragePath != null ? outputPayload : output;
     }
 
     public void setOutput(Map<String, Object> output) {
@@ -507,7 +505,6 @@ public class WorkflowModel {
         BeanUtils.copyProperties(this, workflow);
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
         workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
-
         return workflow;
     }
 }

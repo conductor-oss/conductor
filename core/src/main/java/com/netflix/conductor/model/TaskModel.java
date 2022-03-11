@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.model;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -177,8 +176,7 @@ public class TaskModel {
     }
 
     public Map<String, Object> getInputData() {
-        return Collections.unmodifiableMap(
-                externalInputPayloadStoragePath != null ? inputPayload : inputData);
+        return externalInputPayloadStoragePath != null ? inputPayload : inputData;
     }
 
     public void setInputData(Map<String, Object> inputData) {
@@ -368,8 +366,7 @@ public class TaskModel {
     }
 
     public Map<String, Object> getOutputData() {
-        return Collections.unmodifiableMap(
-                externalOutputPayloadStoragePath != null ? outputPayload : outputData);
+        return externalOutputPayloadStoragePath != null ? outputPayload : outputData;
     }
 
     public void setOutputData(Map<String, Object> outputData) {
@@ -491,8 +488,8 @@ public class TaskModel {
     public void setSubWorkflowId(String subWorkflowId) {
         this.subWorkflowId = subWorkflowId;
         // For backwards compatibility
-        if (this.getOutputData() != null && this.getOutputData().containsKey("subWorkflowId")) {
-            this.getOutputData().put("subWorkflowId", subWorkflowId);
+        if (this.outputData != null && this.outputData.containsKey("subWorkflowId")) {
+            this.outputData.put("subWorkflowId", subWorkflowId);
         }
     }
 
@@ -768,5 +765,21 @@ public class TaskModel {
 
     public static Task.Status mapToTaskStatus(TaskModel.Status status) {
         return Task.Status.valueOf(status.name());
+    }
+
+    public void addInput(String key, Object value) {
+        this.inputData.put(key, value);
+    }
+
+    public void addInput(Map<String, Object> inputData) {
+        this.inputData.putAll(inputData);
+    }
+
+    public void addOutput(String key, Object value) {
+        this.outputData.put(key, value);
+    }
+
+    public void addOutput(Map<String, Object> outputData) {
+        this.outputData.putAll(outputData);
     }
 }

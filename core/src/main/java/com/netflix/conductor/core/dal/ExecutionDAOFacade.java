@@ -285,20 +285,21 @@ public class ExecutionDAOFacade {
     /**
      * Updates the given workflow in the data store
      *
-     * @param model the workflow tp be updated
+     * @param workflowModel the workflow tp be updated
      * @return the id of the updated workflow
      */
-    public String updateWorkflow(WorkflowModel model) {
-        model.setUpdatedTime(System.currentTimeMillis());
-        if (model.getStatus().isTerminal()) {
-            model.setEndTime(System.currentTimeMillis());
+    public String updateWorkflow(WorkflowModel workflowModel) {
+        workflowModel.setUpdatedTime(System.currentTimeMillis());
+        if (workflowModel.getStatus().isTerminal()) {
+            workflowModel.setEndTime(System.currentTimeMillis());
         }
-        externalizeWorkflowData(model);
+        externalizeWorkflowData(workflowModel);
+        executionDAO.updateWorkflow(workflowModel);
         if (properties.isAsyncIndexingEnabled()) {
-            if (model.getStatus().isTerminal()
-                    && model.getEndTime() - model.getCreateTime()
+            if (workflowModel.getStatus().isTerminal()
+                    && workflowModel.getEndTime() - workflowModel.getCreateTime()
                             < properties.getAsyncUpdateShortRunningWorkflowDuration().toMillis()) {
-                final String workflowId = model.getWorkflowId();
+                final String workflowId = workflowModel.getWorkflowId();
                 DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
                 LOGGER.debug(
                         "Delayed updating workflow: {} in the index by {} seconds",
@@ -311,19 +312,20 @@ public class ExecutionDAOFacade {
                 Monitors.recordWorkerQueueSize(
                         "delayQueue", scheduledThreadPoolExecutor.getQueue().size());
             } else {
-                indexDAO.asyncIndexWorkflow(new WorkflowSummary(model.toWorkflow()));
+                indexDAO.asyncIndexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
             }
-            if (model.getStatus().isTerminal()) {
-                model.getTasks()
+            if (workflowModel.getStatus().isTerminal()) {
+                workflowModel
+                        .getTasks()
                         .forEach(
                                 taskModel ->
                                         indexDAO.asyncIndexTask(
                                                 new TaskSummary(taskModel.toTask())));
             }
         } else {
-            indexDAO.indexWorkflow(new WorkflowSummary(model.toWorkflow()));
+            indexDAO.indexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
         }
-        return model.getWorkflowId();
+        return workflowModel.getWorkflowId();
     }
 
     public void removeFromPendingWorkflow(String workflowType, String workflowId) {
@@ -449,7 +451,7 @@ public class ExecutionDAOFacade {
     public TaskModel getTaskModel(String taskId) {
         TaskModel taskModel = getTaskFromDatastore(taskId);
         populateTaskData(taskModel);
-        return null;
+        return taskModel;
     }
 
     public Task getTask(String taskId) {
