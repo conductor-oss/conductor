@@ -32,7 +32,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.dao.QueueDAO;
@@ -44,7 +43,6 @@ import static org.mockito.Mockito.when;
 public class ExecutionServiceTest {
 
     @Mock private WorkflowExecutor workflowExecutor;
-    @Mock private ModelMapper modelMapper;
     @Mock private ExecutionDAOFacade executionDAOFacade;
     @Mock private QueueDAO queueDAO;
     @Mock private ConductorProperties conductorProperties;
@@ -66,7 +64,6 @@ public class ExecutionServiceTest {
         executionService =
                 new ExecutionService(
                         workflowExecutor,
-                        modelMapper,
                         executionDAOFacade,
                         queueDAO,
                         conductorProperties,

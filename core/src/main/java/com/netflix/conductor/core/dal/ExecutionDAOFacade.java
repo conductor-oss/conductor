@@ -85,7 +85,6 @@ public class ExecutionDAOFacade {
             RateLimitingDAO rateLimitingDao,
             ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO,
             PollDataDAO pollDataDAO,
-            ModelMapper modelMapper,
             ObjectMapper objectMapper,
             ConductorProperties properties,
             ExternalPayloadStorageUtils externalPayloadStorageUtils) {

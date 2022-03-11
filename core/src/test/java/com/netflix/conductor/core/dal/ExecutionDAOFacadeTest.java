@@ -47,7 +47,6 @@ public class ExecutionDAOFacadeTest {
 
     private ExecutionDAO executionDAO;
     private IndexDAO indexDAO;
-    private ModelMapper modelMapper;
     private ExecutionDAOFacade executionDAOFacade;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
@@ -58,7 +57,6 @@ public class ExecutionDAOFacadeTest {
         executionDAO = mock(ExecutionDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
-        modelMapper = mock(ModelMapper.class);
         RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
         ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO =
                 mock(ConcurrentExecutionLimitDAO.class);
@@ -74,7 +72,6 @@ public class ExecutionDAOFacadeTest {
                         rateLimitingDao,
                         concurrentExecutionLimitDAO,
                         pollDataDAO,
-                        modelMapper,
                         objectMapper,
                         properties,
                         externalPayloadStorageUtils);
@@ -83,7 +80,6 @@ public class ExecutionDAOFacadeTest {
     @Test
     public void testGetWorkflow() throws Exception {
         when(executionDAO.getWorkflow(any(), anyBoolean())).thenReturn(new WorkflowModel());
-        when(modelMapper.getWorkflow(any(WorkflowModel.class))).thenReturn(new Workflow());
         Workflow workflow = executionDAOFacade.getWorkflow("workflowId", true);
         assertNotNull(workflow);
         verify(indexDAO, never()).get(any(), any());
@@ -92,7 +88,6 @@ public class ExecutionDAOFacadeTest {
     @Test
     public void testGetWorkflowModel() throws Exception {
         when(executionDAO.getWorkflow(any(), anyBoolean())).thenReturn(new WorkflowModel());
-        when(modelMapper.getFullCopy(any(WorkflowModel.class))).thenReturn(new WorkflowModel());
         WorkflowModel workflowModel = executionDAOFacade.getWorkflowModel("workflowId", true);
         assertNotNull(workflowModel);
         verify(indexDAO, never()).get(any(), any());
@@ -112,7 +107,6 @@ public class ExecutionDAOFacadeTest {
         when(executionDAO.canSearchAcrossWorkflows()).thenReturn(true);
         when(executionDAO.getWorkflowsByCorrelationId(any(), any(), anyBoolean()))
                 .thenReturn(Collections.singletonList(new WorkflowModel()));
-        when(modelMapper.getWorkflow(any(WorkflowModel.class))).thenReturn(new Workflow());
         List<Workflow> workflows =
                 executionDAOFacade.getWorkflowsByCorrelationId(
                         "workflowName", "correlationId", true);
@@ -130,7 +124,6 @@ public class ExecutionDAOFacadeTest {
         when(indexDAO.searchWorkflows(anyString(), anyString(), anyInt(), anyInt(), any()))
                 .thenReturn(searchResult);
         when(executionDAO.getWorkflow("workflowId", true)).thenReturn(new WorkflowModel());
-        when(modelMapper.getWorkflow(any(WorkflowModel.class))).thenReturn(new Workflow());
         workflows =
                 executionDAOFacade.getWorkflowsByCorrelationId(
                         "workflowName", "correlationId", true);

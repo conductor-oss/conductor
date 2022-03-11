@@ -30,7 +30,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -56,7 +55,6 @@ public class DefaultEventQueueProcessorTest {
 
     private static SQSObservableQueue queue;
     private static WorkflowExecutor workflowExecutor;
-    private static ModelMapper modelMapper;
     private DefaultEventQueueProcessor defaultEventQueueProcessor;
 
     @Autowired private ObjectMapper objectMapper;
@@ -70,7 +68,7 @@ public class DefaultEventQueueProcessorTest {
         Map<Status, ObservableQueue> queues = new HashMap<>();
         queues.put(Status.COMPLETED, queue);
         defaultEventQueueProcessor =
-                new DefaultEventQueueProcessor(queues, workflowExecutor, modelMapper, objectMapper);
+                new DefaultEventQueueProcessor(queues, workflowExecutor, objectMapper);
     }
 
     @BeforeClass
@@ -122,24 +120,9 @@ public class DefaultEventQueueProcessorTest {
         workflowExecutor = mock(WorkflowExecutor.class);
         assertNotNull(workflowExecutor);
 
-        modelMapper = mock(ModelMapper.class);
-        when(modelMapper.mapToTaskStatus(any())).thenCallRealMethod();
-        when(modelMapper.getTask(any())).thenReturn(new Task());
-
         doReturn(workflow0).when(workflowExecutor).getWorkflow(eq("v_0"), anyBoolean());
 
         doReturn(workflow2).when(workflowExecutor).getWorkflow(eq("v_2"), anyBoolean());
-
-        doAnswer(
-                        (Answer<Task>)
-                                invocation -> {
-                                    Task task = new Task();
-                                    task.setTaskId(
-                                            invocation.getArgument(0, TaskModel.class).getTaskId());
-                                    return task;
-                                })
-                .when(modelMapper)
-                .getTask(any(TaskModel.class));
 
         doAnswer(
                         (Answer<Void>)
