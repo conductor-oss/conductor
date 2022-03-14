@@ -130,7 +130,7 @@ const baseThemeOptions = {
     caption: {
       fontSize: fontSizes.fontSize2,
       lineHeight: lineHeights.lineHeight1,
-      fontWeight: fontWeights.fontWeight1
+      fontWeight: fontWeights.fontWeight1,
     },
     button: {
       fontSize: fontSizes.fontSize2,
@@ -268,8 +268,8 @@ const overrides = {
         },
       },
       containedPrimary: {
-        color: `${colors.white} !important`
-      }
+        color: `${colors.white} !important`,
+      },
     },
     MuiCheckbox: {
       root: {

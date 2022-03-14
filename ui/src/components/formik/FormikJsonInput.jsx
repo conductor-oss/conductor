@@ -16,13 +16,13 @@ const useStyles = makeStyles({
       margin: -2,
       borderColor: "rgb(73, 105, 228)",
       borderStyle: "solid",
-      borderWidth: 2
-    }
+      borderWidth: 2,
+    },
   },
   label: {
-    display: 'block',
-    marginBottom: 8
-  }
+    display: "block",
+    marginBottom: 8,
+  },
 });
 
 export default function ({ className, label, height, ...props }) {
@@ -65,16 +65,16 @@ export default function ({ className, label, height, ...props }) {
           overviewRulerLanes: 0,
           hideCursorInOverviewRuler: true,
           scrollbar: {
-            vertical: 'hidden'
+            vertical: "hidden",
           },
-          overviewRulerBorder: false
+          overviewRulerBorder: false,
         }}
       />
       {meta.touched && meta.error ? (
-        <FormHelperText variant="outlined" error>{meta.error}</FormHelperText>
+        <FormHelperText variant="outlined" error>
+          {meta.error}
+        </FormHelperText>
       ) : null}
     </div>
   );
 }
-
-
