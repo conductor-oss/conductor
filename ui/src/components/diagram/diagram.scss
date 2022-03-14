@@ -5,13 +5,21 @@ $edge-label-color: blue;
 $outline-width: 0.6px;
 $node-text-size: 12px;
 
-.graphContainer {
-  padding: 10px;
+.graphWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+}
+
+.graphToolbar {
+  flex: 0;
 }
 
 .graphSvg {
   width: 100%;
   min-height: 600px;
+  flex-grow: 1;
 }
 
 @mixin nodeColor($colorfg, $colorbg: #fff) {

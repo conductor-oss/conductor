@@ -1,10 +1,11 @@
 import React from "react";
-import { NavLink, DataTable } from "../../components";
+import { NavLink, DataTable, Button } from "../../components";
 import { makeStyles } from "@material-ui/styles";
 import { useFetch } from "../../utils/query";
 import Header from "./Header";
 import sharedStyles from "../styles";
 import { Helmet } from "react-helmet";
+import AddIcon from "@material-ui/icons/Add";
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -56,6 +57,12 @@ export default function TaskDefinitions() {
       <Header tabIndex={1} loading={isFetching} />
 
       <div className={classes.tabContent}>
+        <div className={classes.buttonRow}>
+          <Button component={NavLink} path="/taskDef" startIcon={<AddIcon />}>
+            New Task Definition
+          </Button>
+        </div>
+
         {tasks && (
           <DataTable
             title={`${tasks.length} results`}

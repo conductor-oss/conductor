@@ -13,12 +13,17 @@ const STALE_TIME_DROPDOWN = 600000; // 10 mins
 const STALE_TIME_WORKFLOW_DEFS = 600000; // 10 mins
 const STALE_TIME_SEARCH = 60000; // 1 min
 
-export function useFetch(path, reactQueryOptions) {
+export function useFetch(path, reactQueryOptions, defaultResponse) {
   const fetchContext = useFetchContext();
-
   return useQuery(
     [fetchContext.stack, path],
-    () => fetchWithContext(path, fetchContext),
+    () => {
+      if (path) {
+        return fetchWithContext(path, fetchContext);
+      } else {
+        return Promise.resolve(defaultResponse);
+      }
+    },
     {
       enabled: fetchContext.ready,
       keepPreviousData: true,
@@ -26,6 +31,24 @@ export function useFetch(path, reactQueryOptions) {
     }
   );
 }
+
+export function useWorkflow(workflowName, version, defaultWorkflow) {
+  let path;
+  if (workflowName) {
+    path = `/metadata/workflow/${workflowName}`;
+    if (version) path += `?version=${version}`;
+  }
+  return useFetch(path, {}, defaultWorkflow);
+}
+
+export function useTask(taskName, defaultTask) {
+  let path;
+  if (taskName) {
+    path = `/metadata/taskdefs/${taskName}`;
+  }
+  return useFetch(path, {}, defaultTask);
+}
+
 export function useWorkflowSearch(searchObj) {
   const fetchContext = useFetchContext();
   const pathRoot = "/workflow/search?";
@@ -124,7 +147,6 @@ export function useTaskQueueInfo(taskName) {
     isFetching: pollDataFetching || sizeFetching,
   };
 }
-
 export function useAction(path, method = "post", callbacks) {
   const fetchContext = useFetchContext();
   return useMutation(
@@ -177,14 +199,14 @@ export function useWorkflowNames() {
   return useMemo(() => (data ? data.map((def) => def.name) : []), [data]);
 }
 
-// Version numbers do not necessarily start, or run contiguously from 1. Could arbitrary integers e.g. 52335678.
+// Version numbers do not necessarily start, or run contiguously from 1. Could be arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
 export function useWorkflowNamesAndVersions() {
-  const { data } = useFetch("/metadata/workflow", {
+  const { data, ...rest } = useFetch("/metadata/workflow", {
     staleTime: STALE_TIME_WORKFLOW_DEFS,
   });
 
-  return useMemo(() => {
+  const newData = useMemo(() => {
     const retval = new Map();
     if (data) {
       for (let def of data) {
@@ -195,7 +217,11 @@ export function useWorkflowNamesAndVersions() {
         } else {
           arr = retval.get(def.name);
         }
-        arr.push(def.version);
+        arr.push({
+          version: def.version,
+          createTime: def.createTime,
+          updateTime: def.updateTime,
+        });
       }
 
       // Sort arrays in place
@@ -203,6 +229,8 @@ export function useWorkflowNamesAndVersions() {
     }
     return retval;
   }, [data]);
+
+  return { ...rest, data: newData };
 }
 
 export function useTaskNames() {
@@ -213,4 +241,36 @@ export function useTaskNames() {
     () => (data ? Array.from(new Set(data.map((def) => def.name))).sort() : []),
     [data]
   );
+}
+
+export function useSaveWorkflow(callbacks) {
+  const path = "/metadata/workflow";
+  const fetchContext = useFetchContext();
+
+  return useMutation(
+    ({ body, isNew }) =>
+      fetchWithContext(path, fetchContext, {
+        method: isNew ? "post" : "put",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(isNew ? body : [body]),
+      }),
+    callbacks
+  );
+}
+
+export function useSaveTask(callbacks) {
+  const path = "/metadata/taskdefs";
+  const fetchContext = useFetchContext();
+
+  return useMutation(({ body, isNew }) => {
+    return fetchWithContext(path, fetchContext, {
+      method: isNew ? "post" : "put",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(isNew ? [body] : body), // Note: application of [] is opposite of workflow
+    });
+  }, callbacks);
 }
