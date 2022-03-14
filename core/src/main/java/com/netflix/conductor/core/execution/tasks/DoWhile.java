@@ -70,7 +70,8 @@ public class DoWhile extends WorkflowSystemTask {
         for (TaskModel t : workflow.getTasks()) {
             if (task.getWorkflowTask()
                             .has(TaskUtils.removeIterationFromTaskRefName(t.getReferenceTaskName()))
-                    && !task.getReferenceTaskName().equals(t.getReferenceTaskName())) {
+                    && !task.getReferenceTaskName().equals(t.getReferenceTaskName())
+                    && task.getIteration() == t.getIteration()) {
                 relevantTask = relevantTasks.get(t.getReferenceTaskName());
                 if (relevantTask == null || t.getRetryCount() > relevantTask.getRetryCount()) {
                     relevantTasks.put(t.getReferenceTaskName(), t);
@@ -78,7 +79,11 @@ public class DoWhile extends WorkflowSystemTask {
             }
         }
         Collection<TaskModel> loopOver = relevantTasks.values();
-
+        LOGGER.debug(
+                "Workflow {} waiting for tasks {} to complete iteration {}",
+                workflow.getWorkflowId(),
+                loopOver.stream().map(TaskModel::getReferenceTaskName).collect(Collectors.toList()),
+                task.getIteration());
         for (TaskModel loopOverTask : loopOver) {
             TaskModel.Status taskStatus = loopOverTask.getStatus();
             hasFailures = !taskStatus.isSuccessful();
