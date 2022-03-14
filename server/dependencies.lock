@@ -138,7 +138,7 @@
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ],
-            "locked": "30.1.1-android"
+            "locked": "31.0.1-android"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
@@ -289,25 +289,25 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.micrometer:micrometer-registry-datadog": {
             "locked": "1.5.14"
@@ -643,7 +643,7 @@
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ],
-            "locked": "30.1.1-android"
+            "locked": "31.0.1-android"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
@@ -794,25 +794,25 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.micrometer:micrometer-registry-datadog": {
             "locked": "1.5.14"
@@ -1138,13 +1138,13 @@
             "locked": "5.14.0"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
@@ -1243,7 +1243,7 @@
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence"
             ],
-            "locked": "30.1.1-android"
+            "locked": "31.0.1-android"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
@@ -1394,28 +1394,28 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.micrometer:micrometer-registry-datadog": {
             "locked": "1.5.14"

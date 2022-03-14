@@ -12,10 +12,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -71,10 +71,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -129,7 +129,7 @@
     },
     "protobufToolsLocator_grpc": {
         "io.grpc:protoc-gen-grpc-java": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         }
     },
     "protobufToolsLocator_protoc": {
@@ -172,10 +172,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -236,10 +236,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -301,10 +301,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -398,10 +398,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.44.1"
+            "locked": "1.45.0"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
