@@ -573,8 +573,7 @@ public class DeciderService {
         rescheduled.setRetriedTaskId(task.getTaskId());
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
-        rescheduled.setInputData(new HashMap<>());
-        rescheduled.getInputData().putAll(task.getInputData());
+        rescheduled.setInputData(new HashMap<>(task.getInputData()));
         rescheduled.setReasonForIncompletion(null);
         rescheduled.setSubWorkflowId(null);
         rescheduled.setSeq(0);
@@ -587,7 +586,7 @@ public class DeciderService {
             rescheduled.setExternalInputPayloadStoragePath(
                     task.getExternalInputPayloadStoragePath());
         } else {
-            rescheduled.getInputData().putAll(task.getInputData());
+            rescheduled.addInput(task.getInputData());
         }
         if (workflowTask != null && workflow.getWorkflowDefinition().getSchemaVersion() > 1) {
             Map<String, Object> taskInput =
@@ -596,7 +595,7 @@ public class DeciderService {
                             workflow,
                             rescheduled.getTaskId(),
                             taskDefinition);
-            rescheduled.getInputData().putAll(taskInput);
+            rescheduled.addInput(taskInput);
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);

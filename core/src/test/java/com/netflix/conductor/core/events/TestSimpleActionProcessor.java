@@ -31,7 +31,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.JsonUtils;
@@ -69,12 +68,10 @@ public class TestSimpleActionProcessor {
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
 
         workflowExecutor = mock(WorkflowExecutor.class);
-        ModelMapper modelMapper = new ModelMapper(externalPayloadStorageUtils);
 
         actionProcessor =
                 new SimpleActionProcessor(
                         workflowExecutor,
-                        modelMapper,
                         new ParametersUtils(objectMapper),
                         new JsonUtils(objectMapper));
     }

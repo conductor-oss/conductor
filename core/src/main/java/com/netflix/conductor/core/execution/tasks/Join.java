@@ -59,7 +59,7 @@ public class Join extends WorkflowSystemTask {
             if (hasFailures) {
                 failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
             }
-            task.getOutputData().put(joinOnRef, forkedTask.getOutputData());
+            task.addOutput(joinOnRef, forkedTask.getOutputData());
             if (!taskStatus.isTerminal()) {
                 allDone = false;
             }

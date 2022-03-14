@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, Paper, ReactJson, Dropdown, Banner } from "../../components";
+import {
+  Tabs,
+  Tab,
+  Paper,
+  ReactJson,
+  Dropdown,
+  Banner,
+} from "../../components";
 
 import TaskSummary from "./TaskSummary";
 import TaskLogs from "./TaskLogs";
@@ -14,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
   dfSelect: {
     padding: 15,
     backgroundColor: "#efefef",
-  }
+  },
 }));
 
 export default function RightPanel({
@@ -122,16 +129,20 @@ export default function RightPanel({
             title="Task Input"
           />
         )}
-        {tabIndex === 2 && (<>
-          {taskResult.externalOutputPayloadStoragePath && 
-          <Banner className={classes.margin}>
-            This task has externalized output. Please reference <code>externalOutputPayloadStoragePath</code> for the storage location.
-          </Banner>}
-          <ReactJson
-            className={classes.margin}
-            src={taskResult.outputData}
-            title="Task Output"
-          />
+        {tabIndex === 2 && (
+          <>
+            {taskResult.externalOutputPayloadStoragePath && (
+              <Banner className={classes.margin}>
+                This task has externalized output. Please reference{" "}
+                <code>externalOutputPayloadStoragePath</code> for the storage
+                location.
+              </Banner>
+            )}
+            <ReactJson
+              className={classes.margin}
+              src={taskResult.outputData}
+              title="Task Output"
+            />
           </>
         )}
         {tabIndex === 3 && <TaskLogs task={taskResult} />}

@@ -1,4 +1,3 @@
-export default function CustomRoutes(){
-return <>
-  </>
+export default function CustomRoutes() {
+  return <></>;
 }

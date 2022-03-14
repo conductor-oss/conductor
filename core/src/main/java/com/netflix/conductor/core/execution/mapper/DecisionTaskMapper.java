@@ -93,8 +93,8 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setWorkflowType(workflowInstance.getWorkflowName());
         decisionTask.setCorrelationId(workflowInstance.getCorrelationId());
         decisionTask.setScheduledTime(System.currentTimeMillis());
-        decisionTask.getInputData().put("case", caseValue);
-        decisionTask.getOutputData().put("caseOutput", Collections.singletonList(caseValue));
+        decisionTask.addInput("case", caseValue);
+        decisionTask.addOutput("caseOutput", Collections.singletonList(caseValue));
         decisionTask.setTaskId(taskId);
         decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -125,7 +125,7 @@ public class DecisionTaskMapper implements TaskMapper {
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
             tasksToBeScheduled.addAll(caseTasks);
-            decisionTask.getInputData().put("hasChildren", "true");
+            decisionTask.addInput("hasChildren", "true");
         }
         return tasksToBeScheduled;
     }

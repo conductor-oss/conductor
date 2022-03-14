@@ -38,7 +38,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.ApplicationException;
@@ -77,7 +76,6 @@ public class TestDefaultEventProcessor {
     private MetadataService metadataService;
     private ExecutionService executionService;
     private WorkflowExecutor workflowExecutor;
-    private ModelMapper modelMapper;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private SimpleActionProcessor actionProcessor;
     private ParametersUtils parametersUtils;
@@ -102,7 +100,6 @@ public class TestDefaultEventProcessor {
         executionService = mock(ExecutionService.class);
         workflowExecutor = mock(WorkflowExecutor.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
-        modelMapper = new ModelMapper(externalPayloadStorageUtils);
         actionProcessor = mock(SimpleActionProcessor.class);
         parametersUtils = new ParametersUtils(objectMapper);
         jsonUtils = new JsonUtils(objectMapper);
@@ -194,8 +191,7 @@ public class TestDefaultEventProcessor {
         doNothing().when(externalPayloadStorageUtils).verifyAndUpload(any(), any());
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -261,8 +257,7 @@ public class TestDefaultEventProcessor {
                         eq(null));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -326,8 +321,7 @@ public class TestDefaultEventProcessor {
                         eq(null));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, modelMapper, parametersUtils, jsonUtils);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(

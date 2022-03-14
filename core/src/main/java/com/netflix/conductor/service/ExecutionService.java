@@ -44,7 +44,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -62,7 +61,6 @@ public class ExecutionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionService.class);
 
     private final WorkflowExecutor workflowExecutor;
-    private final ModelMapper modelMapper;
     private final ExecutionDAOFacade executionDAOFacade;
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
@@ -76,14 +74,12 @@ public class ExecutionService {
 
     public ExecutionService(
             WorkflowExecutor workflowExecutor,
-            ModelMapper modelMapper,
             ExecutionDAOFacade executionDAOFacade,
             QueueDAO queueDAO,
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry) {
         this.workflowExecutor = workflowExecutor;
-        this.modelMapper = modelMapper;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
@@ -137,20 +133,20 @@ public class ExecutionService {
 
         for (String taskId : taskIds) {
             try {
-                TaskModel task = executionDAOFacade.getTaskModel(taskId);
-                if (task == null || task.getStatus().isTerminal()) {
+                TaskModel taskModel = executionDAOFacade.getTaskModel(taskId);
+                if (taskModel == null || taskModel.getStatus().isTerminal()) {
                     // Remove taskId(s) without a valid Task/terminal state task from the queue
                     queueDAO.remove(queueName, taskId);
                     LOGGER.debug("Removed task: {} from the queue: {}", taskId, queueName);
                     continue;
                 }
 
-                if (executionDAOFacade.exceedsInProgressLimit(task)) {
+                if (executionDAOFacade.exceedsInProgressLimit(taskModel)) {
                     // Postpone this message, so that it would be available for poll again.
                     queueDAO.postpone(
                             queueName,
                             taskId,
-                            task.getWorkflowPriority(),
+                            taskModel.getWorkflowPriority(),
                             queueTaskMessagePostponeSecs);
                     LOGGER.debug(
                             "Postponed task: {} in queue: {} by {} seconds",
@@ -160,36 +156,37 @@ public class ExecutionService {
                     continue;
                 }
                 TaskDef taskDef =
-                        task.getTaskDefinition().isPresent()
-                                ? task.getTaskDefinition().get()
+                        taskModel.getTaskDefinition().isPresent()
+                                ? taskModel.getTaskDefinition().get()
                                 : null;
-                if (task.getRateLimitPerFrequency() > 0
-                        && executionDAOFacade.exceedsRateLimitPerFrequency(task, taskDef)) {
+                if (taskModel.getRateLimitPerFrequency() > 0
+                        && executionDAOFacade.exceedsRateLimitPerFrequency(taskModel, taskDef)) {
                     // Postpone this message, so that it would be available for poll again.
                     queueDAO.postpone(
                             queueName,
                             taskId,
-                            task.getWorkflowPriority(),
+                            taskModel.getWorkflowPriority(),
                             queueTaskMessagePostponeSecs);
                     LOGGER.debug(
                             "RateLimit Execution limited for {}:{}, limit:{}",
                             taskId,
-                            task.getTaskDefName(),
-                            task.getRateLimitPerFrequency());
+                            taskModel.getTaskDefName(),
+                            taskModel.getRateLimitPerFrequency());
                     continue;
                 }
 
-                task.setStatus(TaskModel.Status.IN_PROGRESS);
-                if (task.getStartTime() == 0) {
-                    task.setStartTime(System.currentTimeMillis());
-                    Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
+                taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
+                if (taskModel.getStartTime() == 0) {
+                    taskModel.setStartTime(System.currentTimeMillis());
+                    Monitors.recordQueueWaitTime(
+                            taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
                 }
-                task.setCallbackAfterSeconds(
+                taskModel.setCallbackAfterSeconds(
                         0); // reset callbackAfterSeconds when giving the task to the worker
-                task.setWorkerId(workerId);
-                task.incrementPollCount();
-                executionDAOFacade.updateTask(task);
-                tasks.add(modelMapper.getTask(task));
+                taskModel.setWorkerId(workerId);
+                taskModel.incrementPollCount();
+                executionDAOFacade.updateTask(taskModel);
+                tasks.add(taskModel.toTask());
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn(

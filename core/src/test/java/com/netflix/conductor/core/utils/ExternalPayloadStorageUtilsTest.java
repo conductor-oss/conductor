@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -127,7 +128,8 @@ public class ExternalPayloadStorageUtilsTest {
         task.setInputData(payload);
         externalPayloadStorageUtils.verifyAndUpload(
                 task, ExternalPayloadStorage.PayloadType.TASK_INPUT);
-        assertTrue(task.getInputData().isEmpty());
+        assertTrue(StringUtils.isNotEmpty(task.getExternalInputPayloadStoragePath()));
+        assertFalse(task.getInputData().isEmpty());
         assertEquals(1, uploadCount.get());
         assertNotNull(task.getExternalInputPayloadStoragePath());
     }
@@ -163,7 +165,8 @@ public class ExternalPayloadStorageUtilsTest {
         workflow.setWorkflowDefinition(def);
         externalPayloadStorageUtils.verifyAndUpload(
                 workflow, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT);
-        assertTrue(workflow.getOutput().isEmpty());
+        assertTrue(StringUtils.isNotEmpty(workflow.getExternalOutputPayloadStoragePath()));
+        assertFalse(workflow.getOutput().isEmpty());
         assertEquals(1, uploadCount.get());
         assertNotNull(workflow.getExternalOutputPayloadStoragePath());
     }

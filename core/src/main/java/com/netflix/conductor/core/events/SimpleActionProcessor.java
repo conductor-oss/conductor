@@ -25,7 +25,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.core.dal.ModelMapper;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -43,17 +42,14 @@ public class SimpleActionProcessor implements ActionProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleActionProcessor.class);
 
     private final WorkflowExecutor workflowExecutor;
-    private final ModelMapper modelMapper;
     private final ParametersUtils parametersUtils;
     private final JsonUtils jsonUtils;
 
     public SimpleActionProcessor(
             WorkflowExecutor workflowExecutor,
-            ModelMapper modelMapper,
             ParametersUtils parametersUtils,
             JsonUtils jsonUtils) {
         this.workflowExecutor = workflowExecutor;
-        this.modelMapper = modelMapper;
         this.parametersUtils = parametersUtils;
         this.jsonUtils = jsonUtils;
     }
@@ -117,19 +113,19 @@ public class SimpleActionProcessor implements ActionProcessor {
         String taskId = (String) replaced.get("taskId");
         String taskRefName = (String) replaced.get("taskRefName");
 
-        TaskModel task = null;
+        TaskModel taskModel = null;
         if (StringUtils.isNotEmpty(taskId)) {
-            task = workflowExecutor.getTask(taskId);
+            taskModel = workflowExecutor.getTask(taskId);
         } else if (StringUtils.isNotEmpty(workflowId) && StringUtils.isNotEmpty(taskRefName)) {
             WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, true);
             if (workflow == null) {
                 replaced.put("error", "No workflow found with ID: " + workflowId);
                 return replaced;
             }
-            task = workflow.getTaskByRefName(taskRefName);
+            taskModel = workflow.getTaskByRefName(taskRefName);
         }
 
-        if (task == null) {
+        if (taskModel == null) {
             replaced.put(
                     "error",
                     "No task found with taskId: "
@@ -141,14 +137,14 @@ public class SimpleActionProcessor implements ActionProcessor {
             return replaced;
         }
 
-        task.setStatus(status);
-        task.setOutputData(replaced);
-        task.setOutputMessage(taskDetails.getOutputMessage());
-        task.getOutputData().put("conductor.event.messageId", messageId);
-        task.getOutputData().put("conductor.event.name", event);
+        taskModel.setStatus(status);
+        taskModel.setOutputData(replaced);
+        taskModel.setOutputMessage(taskDetails.getOutputMessage());
+        taskModel.getOutputData().put("conductor.event.messageId", messageId);
+        taskModel.getOutputData().put("conductor.event.name", event);
 
         try {
-            workflowExecutor.updateTask(new TaskResult(modelMapper.getTask(task)));
+            workflowExecutor.updateTask(new TaskResult(taskModel.toTask()));
             LOGGER.debug(
                     "Updated task: {} in workflow:{} with status: {} for event: {} for message:{}",
                     taskId,
@@ -157,7 +153,8 @@ public class SimpleActionProcessor implements ActionProcessor {
                     event,
                     messageId);
         } catch (RuntimeException e) {
-            Monitors.recordEventActionError(action.getAction().name(), task.getTaskType(), event);
+            Monitors.recordEventActionError(
+                    action.getAction().name(), taskModel.getTaskType(), event);
             LOGGER.error(
                     "Error updating task: {} in workflow: {} in action: {} for event: {} for message: {}",
                     taskDetails.getTaskRefName(),

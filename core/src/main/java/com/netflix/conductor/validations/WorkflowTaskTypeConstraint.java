@@ -225,15 +225,6 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
-            if (workflowTask.collectTasks().stream()
-                    .anyMatch(t -> t.getType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW))) {
-                String message =
-                        String.format(
-                                "SUB_WORKFLOW task inside loopover task: %s is not supported.",
-                                workflowTask.getName());
-                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                valid = false;
-            }
             return valid;
         }
 

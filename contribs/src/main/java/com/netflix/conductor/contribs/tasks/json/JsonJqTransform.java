@@ -60,7 +60,6 @@ public class JsonJqTransform extends WorkflowSystemTask {
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         final Map<String, Object> taskInput = task.getInputData();
-        final Map<String, Object> taskOutput = task.getOutputData();
 
         final String queryExpression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 
@@ -81,14 +80,14 @@ public class JsonJqTransform extends WorkflowSystemTask {
 
             task.setStatus(TaskModel.Status.COMPLETED);
             if (result == null) {
-                taskOutput.put(OUTPUT_RESULT, null);
-                taskOutput.put(OUTPUT_RESULT_LIST, null);
+                task.addOutput(OUTPUT_RESULT, null);
+                task.addOutput(OUTPUT_RESULT_LIST, null);
             } else if (result.isEmpty()) {
-                taskOutput.put(OUTPUT_RESULT, null);
-                taskOutput.put(OUTPUT_RESULT_LIST, result);
+                task.addOutput(OUTPUT_RESULT, null);
+                task.addOutput(OUTPUT_RESULT_LIST, result);
             } else {
-                taskOutput.put(OUTPUT_RESULT, result.get(0));
-                taskOutput.put(OUTPUT_RESULT_LIST, result);
+                task.addOutput(OUTPUT_RESULT, result.get(0));
+                task.addOutput(OUTPUT_RESULT_LIST, result);
             }
         } catch (final Exception e) {
             LOGGER.error(
@@ -99,13 +98,13 @@ public class JsonJqTransform extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.FAILED);
             final String message = extractFirstValidMessage(e);
             task.setReasonForIncompletion(message);
-            taskOutput.put(OUTPUT_ERROR, message);
+            task.addOutput(OUTPUT_ERROR, message);
         }
     }
 
     private LoadingCache<String, JsonQuery> createQueryCache() {
         final CacheLoader<String, JsonQuery> loader =
-                new CacheLoader<String, JsonQuery>() {
+                new CacheLoader<>() {
                     @Override
                     public JsonQuery load(String query) throws JsonQueryException {
                         return JsonQuery.compile(query);

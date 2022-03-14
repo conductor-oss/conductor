@@ -1,4 +1,3 @@
 export default function CustomAppBarButtons() {
-  return <>
-  </>
+  return <></>;
 }

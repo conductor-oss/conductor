@@ -9,7 +9,7 @@
             "locked": "4.3.0"
         },
         "com.google.guava:guava": {
-            "locked": "25.1-jre"
+            "locked": "31.1-jre"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.19.4"
@@ -84,7 +84,7 @@
             "locked": "4.3.0"
         },
         "com.google.guava:guava": {
-            "locked": "25.1-jre"
+            "locked": "31.1-jre"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.19.4"
@@ -134,7 +134,7 @@
             "locked": "4.3.0"
         },
         "com.google.guava:guava": {
-            "locked": "25.1-jre"
+            "locked": "31.1-jre"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.19.4"
@@ -175,7 +175,7 @@
             "locked": "4.3.0"
         },
         "com.google.guava:guava": {
-            "locked": "25.1-jre"
+            "locked": "31.1-jre"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.19.4"

@@ -177,29 +177,6 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
-    public void testWorkflowTaskTypeDoWhileWithSubWorkflow() {
-        WorkflowTask workflowTask = createSampleWorkflowTask();
-        workflowTask.setType("DO_WHILE");
-        workflowTask.setLoopCondition("Test condition");
-        WorkflowTask workflowTask2 = createSampleWorkflowTask();
-        workflowTask2.setType("SUB_WORKFLOW");
-        workflowTask.setLoopOver(Collections.singletonList(workflowTask2));
-
-        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
-
-        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
-        assertEquals(1, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(
-                validationErrors.contains(
-                        "SUB_WORKFLOW task inside loopover task: encode is not supported."));
-    }
-
-    @Test
     public void testWorkflowTaskTypeDecisionWithCaseParam() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("DECISION");

@@ -15,7 +15,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations-processor"
             ],
-            "locked": "25.1-jre"
+            "locked": "31.1-jre"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [

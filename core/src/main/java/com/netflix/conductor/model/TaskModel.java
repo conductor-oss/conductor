@@ -20,9 +20,11 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.Any;
 
 public class TaskModel {
@@ -148,10 +150,14 @@ public class TaskModel {
     private String subWorkflowId;
 
     /**
-     * Use to note that a sub workflow associated with SUB_WORKFLOW task has an action performed on
+     * Used to note that a sub workflow associated with SUB_WORKFLOW task has an action performed on
      * it directly.
      */
     private boolean subworkflowChanged;
+
+    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
+
+    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
 
     public String getTaskType() {
         return taskType;
@@ -170,7 +176,7 @@ public class TaskModel {
     }
 
     public Map<String, Object> getInputData() {
-        return inputData;
+        return externalInputPayloadStoragePath != null ? inputPayload : inputData;
     }
 
     public void setInputData(Map<String, Object> inputData) {
@@ -360,7 +366,7 @@ public class TaskModel {
     }
 
     public Map<String, Object> getOutputData() {
-        return outputData;
+        return externalOutputPayloadStoragePath != null ? outputPayload : outputData;
     }
 
     public void setOutputData(Map<String, Object> outputData) {
@@ -482,8 +488,8 @@ public class TaskModel {
     public void setSubWorkflowId(String subWorkflowId) {
         this.subWorkflowId = subWorkflowId;
         // For backwards compatibility
-        if (this.getOutputData() != null && this.getOutputData().containsKey("subWorkflowId")) {
-            this.getOutputData().put("subWorkflowId", subWorkflowId);
+        if (this.outputData != null && this.outputData.containsKey("subWorkflowId")) {
+            this.outputData.put("subWorkflowId", subWorkflowId);
         }
     }
 
@@ -528,6 +534,28 @@ public class TaskModel {
         TaskModel copy = new TaskModel();
         BeanUtils.copyProperties(this, copy);
         return copy;
+    }
+
+    public void externalizeInput(String path) {
+        this.inputPayload = this.inputData;
+        this.inputData = new HashMap<>();
+        this.externalInputPayloadStoragePath = path;
+    }
+
+    public void externalizeOutput(String path) {
+        this.outputPayload = this.outputData;
+        this.outputData = new HashMap<>();
+        this.externalOutputPayloadStoragePath = path;
+    }
+
+    public void internalizeInput(Map<String, Object> data) {
+        this.inputData = new HashMap<>();
+        this.inputPayload = data;
+    }
+
+    public void internalizeOutput(Map<String, Object> data) {
+        this.outputData = new HashMap<>();
+        this.outputPayload = data;
     }
 
     @Override
@@ -726,5 +754,32 @@ public class TaskModel {
                 getIteration(),
                 getSubWorkflowId(),
                 isSubworkflowChanged());
+    }
+
+    public Task toTask() {
+        Task task = new Task();
+        BeanUtils.copyProperties(this, task);
+        task.setStatus(Task.Status.valueOf(status.name()));
+        return task;
+    }
+
+    public static Task.Status mapToTaskStatus(TaskModel.Status status) {
+        return Task.Status.valueOf(status.name());
+    }
+
+    public void addInput(String key, Object value) {
+        this.inputData.put(key, value);
+    }
+
+    public void addInput(Map<String, Object> inputData) {
+        this.inputData.putAll(inputData);
+    }
+
+    public void addOutput(String key, Object value) {
+        this.outputData.put(key, value);
+    }
+
+    public void addOutput(Map<String, Object> outputData) {
+        this.outputData.putAll(outputData);
     }
 }

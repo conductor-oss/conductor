@@ -58,7 +58,7 @@ public class IsolatedTaskQueueProducer {
             @Value("${conductor.app.isolatedSystemTaskEnabled:false}")
                     boolean isolatedSystemTaskEnabled,
             @Value("${conductor.app.isolatedSystemTaskQueuePollInterval:10s}")
-                    Duration isolatedSystemTaskQueuePollIntervalSecs) {
+                    Duration isolatedSystemTaskQueuePollInterval) {
 
         this.metadataService = metadataService;
         this.asyncSystemTasks = asyncSystemTasks;
@@ -71,8 +71,8 @@ public class IsolatedTaskQueueProducer {
                     .scheduleWithFixedDelay(
                             this::addTaskQueues,
                             1000,
-                            isolatedSystemTaskQueuePollIntervalSecs.getSeconds(),
-                            TimeUnit.SECONDS);
+                            isolatedSystemTaskQueuePollInterval.toMillis(),
+                            TimeUnit.MILLISECONDS);
         } else {
             LOGGER.info("Isolated System Task Worker DISABLED");
         }
