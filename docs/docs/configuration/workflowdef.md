@@ -222,7 +222,7 @@ When scheduling the task, Conductor will merge the values from workflow input an
 }
 ```
 
-And `url` would be `https://some_url:7004 if no `url` was provided as input to your workflow.
+And `url` would be `https://some_url:7004` if no `url` was provided as input to your workflow.
 
 ## Workflow notifications
 
