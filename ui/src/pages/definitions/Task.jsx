@@ -41,6 +41,8 @@ const columns = [
     sortable: false,
     searchable: false,
   },
+  { name: "concurrentExecLimit" },
+  { name: "pollTimeoutSeconds" },
 ];
 
 export default function TaskDefinitions() {
