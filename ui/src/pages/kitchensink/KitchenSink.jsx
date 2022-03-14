@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Form, Formik } from "formik";
 import {
   Checkbox,
   Grid,
@@ -28,7 +29,7 @@ import {
   Button,
 } from "../../components";
 import ZoomInIcon from "@material-ui/icons/ZoomIn";
-
+import * as Yup from 'yup';
 import EnhancedTable from "./EnhancedTable";
 import DataTableDemo from "./DataTableDemo";
 import top100Films from "./sampleMovieData";
@@ -36,6 +37,9 @@ import Dropdown from "../../components/Dropdown";
 import sharedStyles from "../styles";
 import { makeStyles } from "@material-ui/core/styles";
 import clsx from "clsx";
+import FormikInput from "../../components/formik/FormikInput";
+import FormikJsonInput from "../../components/formik/FormikJsonInput";
+
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -46,6 +50,9 @@ export default function KitchenSink() {
       <Grid container spacing={5}>
         <Grid item xs={12}>
           <p>This is a Hawkins-like theme based on vanilla Material-UI.</p>
+        </Grid>
+        <Grid item xs={12}>
+          <FormikSection />
         </Grid>
         <Grid item xs={12}>
           <NavLink path="/kitchen/gantt">Gantt</NavLink>
@@ -84,6 +91,39 @@ export default function KitchenSink() {
     </div>
   );
 }
+
+const FormikSection = () => {
+  const [formState, setFormState] = useState();
+  return (
+    <Paper padded>
+      <Heading level={3}>Formik</Heading>
+      <Formik
+         initialValues={{
+           firstName: '',
+           lastName: '',
+           description: '',
+         }}
+         validationSchema={Yup.object({
+          firstName: Yup.string()
+            .min(15, 'Must be 15 characters or more')
+            .required('Required')
+          })}
+         onSubmit={values => setFormState(values)}
+      >
+        <Form>
+          <FormikInput label="First Name" name="firstName" />
+           <FormikInput label="Last Name" name="lastName" />
+           <FormikJsonInput label="Description" name="description" />
+           <Button type="submit">Submit</Button>
+        </Form>        
+      </Formik>
+    <code>
+      <pre>{JSON.stringify(formState)}</pre>
+    </code>
+    </Paper>
+  );
+};
+
 
 const ToolbarSection = () => {
   return (

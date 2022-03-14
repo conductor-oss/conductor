@@ -69,16 +69,16 @@ const WORKFLOW_SCHEMA = {
       timeoutSeconds: 0,
     },
   ],
-  required: ["name", "description", "version", "tasks", "schemaVersion"],
+  required: ["name", "version", "tasks", "schemaVersion"],
   properties: {
     name: {
       $id: "#/properties/name",
       default: "",
       description:
-        "Workflow Name - should be without spaces or special characters. Underscores are allowed.",
+        "Workflow Name - should be without spaces or special characters. Underscores and periods are allowed.",
       examples: ["first_sample_workflow"],
       maxLength: 100,
-      pattern: "^\\w+$",
+      pattern: "^[\\w\\.]+$",
       title: "Workflow Name",
       type: "string",
     },

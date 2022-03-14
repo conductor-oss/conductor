@@ -4,12 +4,12 @@ import Autocomplete from "@material-ui/lab/Autocomplete";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 
-export default function ({ label, className, style, ...props }) {
+export default function ({ label, className, style, error, helperText, ...props }) {
   return (
     <FormControl style={style} className={className}>
-      {label && <InputLabel>{label}</InputLabel>}
+      {label && <InputLabel error={!!error}>{label}</InputLabel>}
       <Autocomplete
-        renderInput={(params) => <Input {...params} />}
+        renderInput={(params) => <Input {...params} error={!!error} helperText={helperText}/>}
         {...props}
       />
     </FormControl>

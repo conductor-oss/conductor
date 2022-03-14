@@ -42,7 +42,7 @@ export default function DataTable(props) {
 
   // If no defaultColumns passed - use all columns
   const defaultColumns = useMemo(
-    () => props.defaultShowColumns || props.columns.map((col) => col.name),
+    () => props.defaultShowColumns || props.columns.map((col) => getColumnId(col)),
     [props.defaultShowColumns, props.columns]
   );
 

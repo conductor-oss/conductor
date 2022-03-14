@@ -14,6 +14,9 @@ export default {
     padding: "20px 30px 0 30px",
     zIndex: 1,
   },
+  paddingBottom: {
+    paddingBottom: 25
+  },
   tabContent: {
     padding: 30,
   },
@@ -22,4 +25,7 @@ export default {
     display: "flex",
     justifyContent: "flex-end",
   },
+  field: {
+    marginBottom: 15
+  }
 };
