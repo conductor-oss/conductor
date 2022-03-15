@@ -10,3 +10,4 @@ We would like to keep track of whose using Conductor. Please send a pull request
 * [VMware](www.vmware.com) [[@taojwmware](https://github.com/taojwmware)] [[@venkag](https://github.com/venkag)]
 * [JP Morgan Chase](www.chase.com) [[@maheshyaddanapudi](https://github.com/maheshyaddanapudi)]
 *  [Orkes ](www.orkes.io)[[@CherishSantoshi](https://github.com/CherishSantoshi)]
+*  [313X](https://313x.com.br)[[@dalmoveras](https://github.com/dalmoveras)]
