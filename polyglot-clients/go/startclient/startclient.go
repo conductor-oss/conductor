@@ -16,11 +16,26 @@ package main
 import (
 	conductor "github.com/netflix/conductor/client/go"
 	"github.com/netflix/conductor/client/go/task/sample"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
 
-func main() {
-	c := conductor.NewConductorWorker("http://localhost:8080/api", 1, 10000)
+//Example init function that shows how to configure logging
+//Using json formatter and changing level to Debug
+func init() {
 
-	c.Start("task_1", "", sample.Task_1_Execution_Function, false)
-	c.Start("task_2", "mydomain", sample.Task_2_Execution_Function, true)
+	// Log as JSON instead of the default ASCII formatter.
+	log.SetFormatter(&log.JSONFormatter{})
+
+	//Stdout, change to a file for production use case
+	log.SetOutput(os.Stdout)
+
+	// Set to debug for demonstration.  Change to Info for production use cases.
+	log.SetLevel(log.DebugLevel)
+}
+func main() {
+	c := conductor.NewConductorWorker("http://localhost:8080/api", 1, 1)
+
+	c.Start("task_15", "", sample.Task_1_Execution_Function, true)
+	//c.Start("task_2", "mydomain", sample.Task_2_Execution_Function, true)
 }
