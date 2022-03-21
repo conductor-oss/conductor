@@ -297,7 +297,6 @@ export default class WorkflowDAG {
 
   dfChildInfo(ref) {
     const predecessors = this.graph.predecessors(ref);
-
     // Nodes might have multiple predecessors e.g. following Decision node.
     // But when parent is FORK_JOIN_DYNAMIC there should only be one.
     if (_.size(predecessors) === 1) {

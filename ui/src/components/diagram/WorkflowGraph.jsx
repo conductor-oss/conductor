@@ -36,14 +36,6 @@ class WorkflowGraph extends React.Component {
     // useEffect on selectedRef
     if (prevProps.selectedTask !== this.props.selectedTask) {
       this.highlightSelectedNode();
-      this.zoomHome();
-    }
-
-    // useEffect on width
-    if (prevProps.width !== this.props.width) {
-      if (prevProps.width > 0 && this.props.width > 0) {
-        this.zoomHome();
-      }
     }
   }
 

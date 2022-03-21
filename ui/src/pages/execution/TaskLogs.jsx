@@ -13,17 +13,8 @@ export default function TaskLogs({ task }) {
     <DataTable
       data={log}
       columns={[
-        {
-          name: "createdTime",
-          type: "date",
-          label: "Timestamp",
-          width: "180px",
-        },
-        {
-          name: "log",
-          label: "Entry",
-          style: "div:first-child { white-space: pre-wrap }",
-        },
+        { name: "createdTime", type: "date", label: "Timestamp" },
+        { name: "log", label: "Entry" },
       ]}
       title="Task Logs"
     />
