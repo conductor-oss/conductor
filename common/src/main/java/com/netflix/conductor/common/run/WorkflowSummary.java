@@ -311,9 +311,9 @@ public class WorkflowSummary {
                 && getWorkflowType().equals(that.getWorkflowType())
                 && getWorkflowId().equals(that.getWorkflowId())
                 && Objects.equals(getCorrelationId(), that.getCorrelationId())
-                && getStartTime().equals(that.getStartTime())
-                && getUpdateTime().equals(that.getUpdateTime())
-                && getEndTime().equals(that.getEndTime())
+                && StringUtils.equals(getStartTime(), that.getStartTime())
+                && StringUtils.equals(getUpdateTime(), that.getUpdateTime())
+                && StringUtils.equals(getEndTime(), that.getEndTime())
                 && getStatus() == that.getStatus()
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
                 && Objects.equals(getEvent(), that.getEvent());

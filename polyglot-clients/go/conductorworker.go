@@ -15,7 +15,7 @@ package conductor
 
 import (
 	"github.com/netflix/conductor/client/go/task"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
@@ -36,6 +36,8 @@ type ConductorWorker struct {
 	PollingInterval     int
 }
 
+// NewConductorWorker Create a new Conductor worker
+//with baseUrl (e.g. http://localhost:8080/api, and pollingInterval in millisecond)
 func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *ConductorWorker {
 	conductorWorker := new(ConductorWorker)
 	conductorWorker.ThreadCount = threadCount
@@ -48,19 +50,18 @@ func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *C
 func (c *ConductorWorker) Execute(t *task.Task, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	taskResult, err := executeFunction(t)
 	if taskResult == nil {
-		log.Println("TaskResult cannot be nil: ", t.TaskId)
+		log.Error("TaskResult cannot be nil: ", t.TaskId)
 		return
 	}
 	if err != nil {
-		log.Println("Error Executing task:", err.Error())
+		log.Error("Error Executing task:", err.Error())
 		taskResult.Status = task.FAILED
 		taskResult.ReasonForIncompletion = err.Error()
 	}
 
 	taskResultJsonString, err := taskResult.ToJSONString()
 	if err != nil {
-		log.Println(err.Error())
-		log.Println("Error Forming TaskResult JSON body")
+		log.Error("Error Forming TaskResult JSON body", err)
 		return
 	}
 	_, _ = c.ConductorHttpClient.UpdateTask(taskResultJsonString)
@@ -73,18 +74,18 @@ func (c *ConductorWorker) PollAndExecute(taskType string, domain string, execute
 		// Poll for Task taskType
 		polled, err := c.ConductorHttpClient.PollForTask(taskType, hostname, domain)
 		if err != nil {
-			log.Println("Error Polling task:", err.Error())
+			log.Error("Error Polling task:", err.Error())
 			continue
 		}
 		if polled == "" {
-			log.Println("No task found for:", taskType)
+			log.Debug("No task found for:", taskType)
 			continue
 		}
 
 		// Parse Http response into Task
 		parsedTask, err := task.ParseTask(polled)
 		if err != nil {
-			log.Println("Error Parsing task:", err.Error())
+			log.Error("Error Parsing task:", err.Error())
 			continue
 		}
 
