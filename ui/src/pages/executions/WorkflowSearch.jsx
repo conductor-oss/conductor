@@ -48,7 +48,6 @@ export default function WorkflowPanel() {
   );
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [queryFT, setQueryFT] = useState(buildQuery);
-
   const {
     data: resultObj,
     error,

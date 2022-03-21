@@ -1,90 +1,114 @@
-import React, { useState } from "react";
-import RawReactJson from "react-json-view";
-import FileCopyIcon from "@material-ui/icons/FileCopy";
-import PlaylistAddIcon from "@material-ui/icons/PlaylistAdd";
-import ListIcon from "@material-ui/icons/List";
-import { Button, Tooltip } from "@material-ui/core";
-import { Heading } from "../components";
+import React, { useRef } from "react";
+import Editor from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
+import { InputLabel, IconButton, Tooltip } from "@material-ui/core";
 import clsx from "clsx";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ExpandLessIcon from "@material-ui/icons/ExpandLess";
+import FileCopyIcon from "@material-ui/icons/FileCopy";
 
 const useStyles = makeStyles({
-  jsonWrapper: {
-    fontSize: 12,
-  },
-  jsonToolbar: {
+  monaco: {},
+  outerWrapper: {
+    height: "100%",
     display: "flex",
+    flexDirection: "column",
+  },
+  editorWrapper: {
+    flex: "1",
+    marginLeft: 10,
+  },
+  label: {
+    marginTop: 5,
+    marginBottom: 10,
+    flex: 1,
+  },
+  toolbar: {
+    paddingRight: 15,
+    paddingLeft: 15,
+    display: "flex",
+    alignItems: "flex-start",
     flexDirection: "row",
   },
 });
 
-const MAX_COLLAPSE = 100;
-const MIN_COLLAPSE = 1;
-
-export default function ReactJson({
-  title,
-  className,
-  style,
-  initialCollapse = MAX_COLLAPSE,
-  ...props
-}) {
-  const [collapse, setCollapse] = useState(initialCollapse);
-  const [clipboardMode, setClipboardMode] = useState(false);
+export default function ReactJson({ className, label, src }) {
   const classes = useStyles();
+  const editorRef = useRef(null);
 
-  const toggleCollapse = () => {
-    if (collapse < MAX_COLLAPSE) {
-      setCollapse(MAX_COLLAPSE);
-    } else {
-      setCollapse(MIN_COLLAPSE);
-    }
-  };
+  function handleEditorMount(editor) {
+    editorRef.current = editor;
+  }
+
+  function handleCopyAll() {
+    const editor = editorRef.current;
+    const range = editor.getModel().getFullModelRange();
+    editor.setSelection(range);
+    editor
+      .getAction("editor.action.clipboardCopyWithSyntaxHighlightingAction")
+      .run();
+  }
+
+  function handleExpandAll() {
+    editorRef.current.getAction("editor.unfoldAll").run();
+  }
+
+  function handleCollapse() {
+    editorRef.current.getAction("editor.foldLevel2").run();
+  }
 
   return (
-    <div className={clsx([classes.wrapper, className])} style={style}>
-      <div className={classes.jsonToolbar}>
-        <Heading level={1} gutterBottom>
-          {title}
-        </Heading>
-        <Tooltip title="Hover over document to copy snippets to clipboard.">
-          <Button
-            color={clipboardMode ? "primary" : "default"}
-            style={{ marginLeft: "auto" }}
-            onClick={() => setClipboardMode(!clipboardMode)}
-            startIcon={<FileCopyIcon />}
-            size="small"
-          >
-            Copy Mode {clipboardMode && " ON"}
-          </Button>
+    <div className={clsx([classes.outerWrapper, className])}>
+      <div className={classes.toolbar}>
+        {label && (
+          <InputLabel variant="outlined" className={classes.label}>
+            {label}
+          </InputLabel>
+        )}
+        <Tooltip title="Collapse All">
+          <IconButton size="small" onClick={handleCollapse}>
+            <ExpandLessIcon />
+          </IconButton>
         </Tooltip>
-        <Tooltip
-          title={
-            collapse === MAX_COLLAPSE
-              ? "Collapse JSON object"
-              : "Expand JSON object (could be slow for large documents)"
-          }
-        >
-          <Button
-            onClick={toggleCollapse}
-            style={{ marginLeft: 10 }}
-            size="small"
-            startIcon={
-              collapse === MAX_COLLAPSE ? <ListIcon /> : <PlaylistAddIcon />
-            }
-          >
-            {collapse === MAX_COLLAPSE ? "Collapse All" : "Expand All"}
-          </Button>
+        <Tooltip title="Expand All">
+          <IconButton size="small" onClick={handleExpandAll}>
+            <ExpandMoreIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Copy All">
+          <IconButton size="small" onClick={handleCopyAll}>
+            <FileCopyIcon />
+          </IconButton>
         </Tooltip>
       </div>
-      <RawReactJson
-        collapsed={collapse}
-        enableClipboard={clipboardMode}
-        displayObjectSize={false}
-        displayDataTypes={false}
-        name={null}
-        style={{ fontSize: 12 }}
-        {...props}
-      />
+      <div className={classes.editorWrapper}>
+        <Editor
+          className={classes.monaco}
+          height="100%"
+          defaultLanguage="json"
+          onMount={handleEditorMount}
+          defaultValue={JSON.stringify(src, null, 2)}
+          options={{
+            readOnly: true,
+            tabSize: 2,
+            minimap: { enabled: false },
+            lightbulb: { enabled: false },
+            scrollbar: { useShadows: false },
+            quickSuggestions: false,
+            showFoldingControls: "always",
+            lineNumbers: "off",
+
+            // Undocumented see https://github.com/Microsoft/vscode/issues/30795#issuecomment-410998882
+            lineDecorationsWidth: 0,
+            lineNumbersMinChars: 0,
+            renderLineHighlight: "none",
+
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+          }}
+        />
+      </div>
     </div>
   );
 }

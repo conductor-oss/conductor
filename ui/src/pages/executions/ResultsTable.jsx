@@ -66,6 +66,7 @@ export default function ResultsTable({
   busy,
   page,
   rowsPerPage,
+  sort,
   setPage,
   setSort,
   setRowsPerPage,
@@ -85,6 +86,9 @@ export default function ResultsTable({
   const [selectedRows, setSelectedRows] = useState([]);
   const [toggleCleared, setToggleCleared] = useState(false);
   const tableRef = useRef(null);
+
+  const defaultSortField = sort ? sort.split(":")[0] : null;
+  const defaultSortDirection = sort ? sort.split(":")[1] : null;
 
   useEffect(() => {
     setSelectedRows([]);
@@ -126,8 +130,8 @@ export default function ResultsTable({
           onChangeRowsPerPage={(rowsPerPage) => setRowsPerPage(rowsPerPage)}
           onChangePage={(page) => setPage(page)}
           sortServer
-          defaultSortField="startTime"
-          defaultSortAsc={false}
+          defaultSortField={defaultSortField}
+          defaultSortAsc={defaultSortDirection === "ASC"}
           onSort={(column, sortDirection) => {
             setSort(column.id, sortDirection);
           }}
