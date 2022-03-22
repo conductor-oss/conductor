@@ -529,7 +529,7 @@ public class TaskModel {
         return 0L;
     }
 
-    /** @return a deep copy of the task instance */
+    /** @return a copy of the task instance */
     public TaskModel copy() {
         TaskModel copy = new TaskModel();
         BeanUtils.copyProperties(this, copy);
@@ -760,6 +760,14 @@ public class TaskModel {
         Task task = new Task();
         BeanUtils.copyProperties(this, task);
         task.setStatus(Task.Status.valueOf(status.name()));
+
+        // ensure that input/output is properly represented
+        if (externalInputPayloadStoragePath != null) {
+            task.setInputData(new HashMap<>());
+        }
+        if (externalOutputPayloadStoragePath != null) {
+            task.setOutputData(new HashMap<>());
+        }
         return task;
     }
 
