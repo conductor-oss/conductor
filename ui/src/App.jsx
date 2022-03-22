@@ -21,6 +21,8 @@ import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
 import Examples from "./pages/kitchensink/Examples";
 import Gantt from "./pages/kitchensink/Gantt";
+import Scheduler from "./pages/scheduler/Scheduler";
+import Schedule from "./pages/scheduler/Schedule";
 
 import CustomRoutes from "./plugins/CustomRoutes";
 import AppBarModules from "./plugins/AppBarModules";
@@ -67,6 +69,9 @@ export default function App() {
           </Button>
           <Button component={NavLink} path="/taskQueue">
             Task Queues
+          </Button>
+          <Button component={NavLink} path="/scheduler">
+            Scheduler
           </Button>
           <CustomAppBarButtons />
 
@@ -118,6 +123,12 @@ export default function App() {
           </Route>
           <Route exact path="/kitchen/gantt">
             <Gantt />
+          </Route>
+          <Route exact path="/scheduler">
+            <Scheduler />
+          </Route>
+          <Route exact path="/scheduler/schedule/:name?">
+            <Schedule />
           </Route>
           <CustomRoutes />
         </Switch>

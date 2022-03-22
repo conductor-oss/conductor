@@ -43,7 +43,6 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
   if (node.taskResults.length > 1) {
     retryOptions = node.taskResults;
   }
-  console.log(retryOptions);
 
   if (taskId) {
     taskResult = node.taskResults.find((task) => task.taskId === taskId);
