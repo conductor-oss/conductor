@@ -81,8 +81,8 @@
     "@wdio/spec-reporter": "5.16.11",
     "@wdio/sync": "5.18.5",
     "js-yaml": "3.13.1",
-    "node-sass": "^6.0.1",
     "prettier": "^2.2.1",
+    "sass": "^1.49.9",
     "webdriver": "^5.0.0",
     "webdriverio": "^5.0.0"
   },
