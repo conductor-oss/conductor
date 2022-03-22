@@ -105,7 +105,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                             String reason =
                                     String.format(
                                             "Task %s is defined as sub-workflow and is missing subWorkflowParams. "
-                                                    + "Please check the blueprint",
+                                                    + "Please check the workflow definition",
                                             taskToSchedule.getName());
                             LOGGER.error(reason);
                             return new TerminateWorkflowException(reason);

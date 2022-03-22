@@ -179,7 +179,7 @@ public class SubWorkflowTaskMapperTest {
         expectedException.expectMessage(
                 String.format(
                         "Task %s is defined as sub-workflow and is missing subWorkflowParams. "
-                                + "Please check the blueprint",
+                                + "Please check the workflow definition",
                         workflowTask.getName()));
 
         subWorkflowTaskMapper.getSubWorkflowParams(workflowTask);

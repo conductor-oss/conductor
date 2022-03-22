@@ -57,11 +57,8 @@ class StartWorkflowSpec extends Specification {
     }
 
     def "StartWorkflow task is asynchronous"() {
-        when:
-        def async = startWorkflow.isAsync()
-
-        then:
-        async
+        expect:
+        startWorkflow.isAsync()
     }
 
     def "start_workflow parameter is missing"() {
