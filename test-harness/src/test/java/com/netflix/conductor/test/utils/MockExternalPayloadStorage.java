@@ -131,6 +131,9 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                     InputStream ipStream =
                             MockExternalPayloadStorage.class.getResourceAsStream(TEMP_FILE_PATH);
                     return objectMapper.readValue(ipStream, Map.class);
+                default:
+                    return objectMapper.readValue(
+                            MockExternalPayloadStorage.class.getResourceAsStream(path), Map.class);
             }
         } catch (IOException e) {
             // just handle this exception here and return empty map so that test will fail in case
