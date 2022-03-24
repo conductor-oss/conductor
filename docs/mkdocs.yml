@@ -29,8 +29,9 @@ nav:
         -  Fork: reference-docs/fork-task.md
         -  Join:    reference-docs/join-task.md
         -  Set Variable:  reference-docs/set-variable-task.md
+        -  Start Workflow: reference-docs/start-workflow-task.md
         -  Sub Workflow: reference-docs/sub-workflow-task.md
-        -  Switch: reference-docs/switch-task.md 
+        -  Switch: reference-docs/switch-task.md
         -  Terminate: reference-docs/terminate-task.md
         -  Wait: reference-docs/wait-task.md
     - System Tasks:
@@ -62,7 +63,7 @@ nav:
             - Task Inputs: how-tos/Tasks/task-inputs.md
             - Task Timeouts: how-tos/Tasks/task-timeouts.md
             - Updating Task Definitions: how-tos/Tasks/updating-tasks.md
-        - Workers: 
+        - Workers:
             -Build a Go Task Worker: how-tos/Workers/build-a-golang-task-worker.md
             -Build a Java Task Worker: how-tos/Workers/build-a-java-task-worker.md
             -Build a Python Task Worker: how-tos/Workers/build-a-python-task-worker.md
