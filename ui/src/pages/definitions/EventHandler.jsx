@@ -1,10 +1,10 @@
 import React from "react";
 import { NavLink, DataTable } from "../../components";
 import { makeStyles } from "@material-ui/styles";
-import { useFetch } from "../../utils/query";
 import Header from "./Header";
 import sharedStyles from "../styles";
 import { Helmet } from "react-helmet";
+import { useEventHandlers } from "../../data/misc";
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -23,10 +23,10 @@ const columns = [
   },
 ];
 
-export default function TaskDefinitions() {
+export default function EventHandlers() {
   const classes = useStyles();
 
-  const { data: eventHandlers, isFetching } = useFetch("/event");
+  const { data: eventHandlers, isFetching } = useEventHandlers();
 
   return (
     <div className={classes.wrapper}>

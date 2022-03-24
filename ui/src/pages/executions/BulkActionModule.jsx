@@ -6,7 +6,6 @@ import {
   DialogTitle,
 } from "@material-ui/core";
 import { makeStyles } from "@material-ui/styles";
-import { useAction } from "../../utils/query";
 import {
   DataTable,
   DropdownButton,
@@ -14,6 +13,13 @@ import {
   PrimaryButton,
   Heading,
 } from "../../components";
+import {
+  useBulkRestartAction,
+  useBulkRestartLatestAction,
+  useBulkResumeAction,
+  useBulkTerminateAction,
+  useBulkPauseAction,
+} from "../../data/bulkactions";
 
 const useStyles = makeStyles({
   actionBar: {
@@ -33,32 +39,20 @@ export default function BulkActionModule({ selectedRows }) {
   const [results, setResults] = useState();
   const classes = useStyles();
 
-  const { mutate: pauseAction, isLoading: pauseLoading } = useAction(
-    `/workflow/bulk/pause`,
-    "put",
-    { onSuccess }
-  );
-  const { mutate: resumeAction, isLoading: resumeLoading } = useAction(
-    `/workflow/bulk/resume`,
-    "put",
-    { onSuccess }
-  );
+  const { mutate: pauseAction, isLoading: pauseLoading } = useBulkPauseAction({
+    onSuccess,
+  });
+  const { mutate: resumeAction, isLoading: resumeLoading } =
+    useBulkResumeAction({ onSuccess });
   const { mutate: restartCurrentAction, isLoading: restartCurrentLoading } =
-    useAction(`/workflow/bulk/restart`, "post", { onSuccess });
+    useBulkRestartAction({ onSuccess });
   const { mutate: restartLatestAction, isLoading: restartLatestLoading } =
-    useAction(`/workflow/bulk/restart?useLatestDefinitions=true`, "post", {
-      onSuccess,
-    });
-  const { mutate: retryAction, isLoading: retryLoading } = useAction(
-    `/workflow/bulk/retry`,
-    "post",
-    { onSuccess }
-  );
-  const { mutate: terminateAction, isLoading: terminateLoading } = useAction(
-    `/workflow/bulk/terminate`,
-    "post",
-    { onSuccess }
-  );
+    useBulkRestartLatestAction({ onSuccess });
+  const { mutate: retryAction, isLoading: retryLoading } = useBulkResumeAction({
+    onSuccess,
+  });
+  const { mutate: terminateAction, isLoading: terminateLoading } =
+    useBulkTerminateAction({ onSuccess });
 
   const isLoading =
     pauseLoading ||

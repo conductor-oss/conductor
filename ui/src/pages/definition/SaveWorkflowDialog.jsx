@@ -10,10 +10,12 @@ import Alert from "@material-ui/lab/Alert";
 import { Text, Button, LinearProgress, Pill } from "../../components";
 import { DiffEditor } from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
-import { useSaveWorkflow } from "../../utils/query";
+import {
+  useSaveWorkflow,
+  useWorkflowNamesAndVersions,
+} from "../../data/workflow";
 import _ from "lodash";
 import { useEffect } from "react";
-import { useWorkflowNamesAndVersions } from "../../utils/query";
 
 const useStyles = makeStyles({
   rightButtons: {

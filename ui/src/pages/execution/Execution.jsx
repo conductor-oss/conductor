@@ -25,10 +25,10 @@ import FullscreenExitIcon from "@material-ui/icons/FullscreenExit";
 import RightPanel from "./RightPanel";
 import WorkflowDAG from "../../components/diagram/WorkflowDAG";
 import StatusBadge from "../../components/StatusBadge";
-import { useFetch } from "../../utils/query";
 import { Helmet } from "react-helmet";
 import sharedStyles from "../styles";
 import rison from "rison";
+import { useWorkflow } from "../../data/workflow";
 
 const maxWindowWidth = window.innerWidth;
 const INIT_DRAWER_WIDTH = 650;
@@ -119,8 +119,12 @@ const useStyles = makeStyles({
 
 export default function Execution() {
   const match = useRouteMatch();
-  const url = `/workflow/${match.params.id}`;
-  const { data: execution, isFetching, refetch: refresh } = useFetch(url);
+
+  const {
+    data: execution,
+    isFetching,
+    refetch: refresh,
+  } = useWorkflow(match.params.id);
 
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [isResizing, setIsResizing] = useState(false);

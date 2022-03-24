@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
 import { useRouteMatch } from "react-router-dom";
 import sharedStyles from "../styles";
-import { useFetch } from "../../utils/query";
 import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
 import { ReactJson, LinearProgress, Heading } from "../../components";
+import { useEventHandlers } from "../../data/misc";
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -13,7 +13,7 @@ export default function EventHandlerDefinition() {
   const match = useRouteMatch();
 
   // TODO: Need API that returns individual event handler by name.
-  const { data, isFetching } = useFetch("/event");
+  const { data, isFetching } = useEventHandlers();
 
   const eventHandler = useMemo(
     () => data && data.find((row) => row.name === match.params.name),
