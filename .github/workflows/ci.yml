@@ -59,6 +59,7 @@ jobs:
           name: build-scan
           path: 'buildscan.log'
   build-ui:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
