@@ -57,36 +57,35 @@ public class InlineTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in InlineTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         taskDefinition);
 
         TaskModel inlineTask = new TaskModel();
         inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
-        inlineTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        inlineTask.setReferenceTaskName(
-                taskMapperContext.getTaskToSchedule().getTaskReferenceName());
-        inlineTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        inlineTask.setWorkflowType(workflowInstance.getWorkflowName());
-        inlineTask.setCorrelationId(workflowInstance.getCorrelationId());
+        inlineTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
+        inlineTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
+        inlineTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        inlineTask.setWorkflowType(workflowModel.getWorkflowName());
+        inlineTask.setCorrelationId(workflowModel.getCorrelationId());
         inlineTask.setStartTime(System.currentTimeMillis());
         inlineTask.setScheduledTime(System.currentTimeMillis());
         inlineTask.setInputData(taskInput);
         inlineTask.setTaskId(taskId);
         inlineTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        inlineTask.setWorkflowTask(taskToSchedule);
-        inlineTask.setWorkflowPriority(workflowInstance.getPriority());
+        inlineTask.setWorkflowTask(workflowTask);
+        inlineTask.setWorkflowPriority(workflowModel.getPriority());
 
         return Collections.singletonList(inlineTask);
     }

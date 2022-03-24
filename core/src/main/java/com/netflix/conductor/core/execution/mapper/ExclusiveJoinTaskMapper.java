@@ -41,31 +41,31 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in ExclusiveJoinTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> joinInput = new HashMap<>();
-        joinInput.put("joinOn", taskToSchedule.getJoinOn());
+        joinInput.put("joinOn", workflowTask.getJoinOn());
 
-        if (taskToSchedule.getDefaultExclusiveJoinTask() != null) {
-            joinInput.put("defaultExclusiveJoinTask", taskToSchedule.getDefaultExclusiveJoinTask());
+        if (workflowTask.getDefaultExclusiveJoinTask() != null) {
+            joinInput.put("defaultExclusiveJoinTask", workflowTask.getDefaultExclusiveJoinTask());
         }
 
         TaskModel joinTask = new TaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
-        joinTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        joinTask.setCorrelationId(workflowInstance.getCorrelationId());
-        joinTask.setWorkflowType(workflowInstance.getWorkflowName());
+        joinTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        joinTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        joinTask.setCorrelationId(workflowModel.getCorrelationId());
+        joinTask.setWorkflowType(workflowModel.getWorkflowName());
         joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(taskId);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        joinTask.setWorkflowPriority(workflowInstance.getPriority());
-        joinTask.setWorkflowTask(taskToSchedule);
+        joinTask.setWorkflowPriority(workflowModel.getPriority());
+        joinTask.setWorkflowTask(workflowTask);
 
         return Collections.singletonList(joinTask);
     }

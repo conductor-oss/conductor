@@ -55,30 +55,30 @@ public class WaitTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in WaitTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> waitTaskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         null);
 
         TaskModel waitTask = new TaskModel();
         waitTask.setTaskType(TASK_TYPE_WAIT);
-        waitTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        waitTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
-        waitTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        waitTask.setWorkflowType(workflowInstance.getWorkflowName());
-        waitTask.setCorrelationId(workflowInstance.getCorrelationId());
+        waitTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
+        waitTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
+        waitTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        waitTask.setWorkflowType(workflowModel.getWorkflowName());
+        waitTask.setCorrelationId(workflowModel.getCorrelationId());
         waitTask.setScheduledTime(System.currentTimeMillis());
         waitTask.setInputData(waitTaskInput);
         waitTask.setTaskId(taskId);
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        waitTask.setWorkflowTask(taskToSchedule);
-        waitTask.setWorkflowPriority(workflowInstance.getPriority());
+        waitTask.setWorkflowTask(workflowTask);
+        waitTask.setWorkflowPriority(workflowModel.getPriority());
         return Collections.singletonList(waitTask);
     }
 }

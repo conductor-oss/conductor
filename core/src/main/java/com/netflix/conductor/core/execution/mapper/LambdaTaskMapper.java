@@ -58,36 +58,35 @@ public class LambdaTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in LambdaTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         taskDefinition);
 
         TaskModel lambdaTask = new TaskModel();
         lambdaTask.setTaskType(TaskType.TASK_TYPE_LAMBDA);
-        lambdaTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        lambdaTask.setReferenceTaskName(
-                taskMapperContext.getTaskToSchedule().getTaskReferenceName());
-        lambdaTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        lambdaTask.setWorkflowType(workflowInstance.getWorkflowName());
-        lambdaTask.setCorrelationId(workflowInstance.getCorrelationId());
+        lambdaTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
+        lambdaTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
+        lambdaTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        lambdaTask.setWorkflowType(workflowModel.getWorkflowName());
+        lambdaTask.setCorrelationId(workflowModel.getCorrelationId());
         lambdaTask.setStartTime(System.currentTimeMillis());
         lambdaTask.setScheduledTime(System.currentTimeMillis());
         lambdaTask.setInputData(taskInput);
         lambdaTask.setTaskId(taskId);
         lambdaTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        lambdaTask.setWorkflowTask(taskToSchedule);
-        lambdaTask.setWorkflowPriority(workflowInstance.getPriority());
+        lambdaTask.setWorkflowTask(workflowTask);
+        lambdaTask.setWorkflowPriority(workflowModel.getPriority());
 
         return Collections.singletonList(lambdaTask);
     }

@@ -37,9 +37,9 @@ public class WaitTaskMapperTest {
     public void getMappedTasks() {
 
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("Wait_task");
-        taskToSchedule.setType(TaskType.WAIT.name());
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("Wait_task");
+        workflowTask.setType(TaskType.WAIT.name());
         String taskId = IDGenerator.generate();
 
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
@@ -49,10 +49,9 @@ public class WaitTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withTaskId(taskId)

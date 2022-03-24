@@ -69,8 +69,8 @@ public class UserDefinedTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in UserDefinedTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
@@ -80,40 +80,36 @@ public class UserDefinedTaskMapper implements TaskMapper {
                                 () ->
                                         Optional.ofNullable(
                                                         metadataDAO.getTaskDef(
-                                                                taskToSchedule.getName()))
+                                                                workflowTask.getName()))
                                                 .orElseThrow(
                                                         () -> {
                                                             String reason =
                                                                     String.format(
                                                                             "Invalid task specified. Cannot find task by name %s in the task definitions",
-                                                                            taskToSchedule
-                                                                                    .getName());
+                                                                            workflowTask.getName());
                                                             return new TerminateWorkflowException(
                                                                     reason);
                                                         }));
 
         Map<String, Object> input =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
-                        taskId,
-                        taskDefinition);
+                        workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel userDefinedTask = new TaskModel();
-        userDefinedTask.setTaskType(taskToSchedule.getType());
-        userDefinedTask.setTaskDefName(taskToSchedule.getName());
-        userDefinedTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        userDefinedTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        userDefinedTask.setWorkflowType(workflowInstance.getWorkflowName());
-        userDefinedTask.setCorrelationId(workflowInstance.getCorrelationId());
+        userDefinedTask.setTaskType(workflowTask.getType());
+        userDefinedTask.setTaskDefName(workflowTask.getName());
+        userDefinedTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        userDefinedTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        userDefinedTask.setWorkflowType(workflowModel.getWorkflowName());
+        userDefinedTask.setCorrelationId(workflowModel.getCorrelationId());
         userDefinedTask.setScheduledTime(System.currentTimeMillis());
         userDefinedTask.setTaskId(taskId);
         userDefinedTask.setInputData(input);
         userDefinedTask.setStatus(TaskModel.Status.SCHEDULED);
         userDefinedTask.setRetryCount(retryCount);
-        userDefinedTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
-        userDefinedTask.setWorkflowTask(taskToSchedule);
-        userDefinedTask.setWorkflowPriority(workflowInstance.getPriority());
+        userDefinedTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
+        userDefinedTask.setWorkflowTask(workflowTask);
+        userDefinedTask.setWorkflowPriority(workflowModel.getPriority());
         userDefinedTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         userDefinedTask.setRateLimitFrequencyInSeconds(
                 taskDefinition.getRateLimitFrequencyInSeconds());

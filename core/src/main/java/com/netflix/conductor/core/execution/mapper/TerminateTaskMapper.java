@@ -49,31 +49,31 @@ public class TerminateTaskMapper implements TaskMapper {
 
         logger.debug("TaskMapperContext {} in TerminateTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         null);
 
         TaskModel task = new TaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
-        task.setTaskDefName(taskToSchedule.getName());
-        task.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        task.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        task.setWorkflowType(workflowInstance.getWorkflowName());
-        task.setCorrelationId(workflowInstance.getCorrelationId());
+        task.setTaskDefName(workflowTask.getName());
+        task.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        task.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        task.setWorkflowType(workflowModel.getWorkflowName());
+        task.setCorrelationId(workflowModel.getCorrelationId());
         task.setScheduledTime(System.currentTimeMillis());
         task.setStartTime(System.currentTimeMillis());
         task.setInputData(taskInput);
         task.setTaskId(taskId);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.setWorkflowTask(taskToSchedule);
-        task.setWorkflowPriority(workflowInstance.getPriority());
+        task.setWorkflowTask(workflowTask);
+        task.setWorkflowPriority(workflowModel.getPriority());
         return singletonList(task);
     }
 }

@@ -51,35 +51,32 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in JsonJQTransformTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
-                        taskId,
-                        taskDefinition);
+                        workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel jsonJQTransformTask = new TaskModel();
-        jsonJQTransformTask.setTaskType(taskToSchedule.getType());
-        jsonJQTransformTask.setTaskDefName(taskToSchedule.getName());
-        jsonJQTransformTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        jsonJQTransformTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        jsonJQTransformTask.setWorkflowType(workflowInstance.getWorkflowName());
-        jsonJQTransformTask.setCorrelationId(workflowInstance.getCorrelationId());
+        jsonJQTransformTask.setTaskType(workflowTask.getType());
+        jsonJQTransformTask.setTaskDefName(workflowTask.getName());
+        jsonJQTransformTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        jsonJQTransformTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        jsonJQTransformTask.setWorkflowType(workflowModel.getWorkflowName());
+        jsonJQTransformTask.setCorrelationId(workflowModel.getCorrelationId());
         jsonJQTransformTask.setStartTime(System.currentTimeMillis());
         jsonJQTransformTask.setScheduledTime(System.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
         jsonJQTransformTask.setTaskId(taskId);
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        jsonJQTransformTask.setWorkflowTask(taskToSchedule);
-        jsonJQTransformTask.setWorkflowPriority(workflowInstance.getPriority());
+        jsonJQTransformTask.setWorkflowTask(workflowTask);
+        jsonJQTransformTask.setWorkflowPriority(workflowModel.getPriority());
 
         return Collections.singletonList(jsonJQTransformTask);
     }

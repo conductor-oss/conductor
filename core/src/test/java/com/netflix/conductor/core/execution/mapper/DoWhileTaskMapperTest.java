@@ -47,9 +47,9 @@ public class DoWhileTaskMapperTest {
 
     @Before
     public void setup() {
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(TaskType.DO_WHILE.name());
-        taskToSchedule.setTaskReferenceName("Test");
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(TaskType.DO_WHILE.name());
+        workflowTask.setTaskReferenceName("Test");
         task1 = new TaskModel();
         task1.setReferenceTaskName("task1");
         TaskModel task2 = new TaskModel();
@@ -60,8 +60,8 @@ public class DoWhileTaskMapperTest {
         workflowTask2.setTaskReferenceName("task2");
         task1.setWorkflowTask(workflowTask1);
         task2.setWorkflowTask(workflowTask2);
-        taskToSchedule.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
-        taskToSchedule.setLoopCondition(
+        workflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
+        workflowTask.setLoopCondition(
                 "if ($.second_task + $.first_task > 10) { false; } else { true; }");
 
         String taskId = IDGenerator.generate();
@@ -75,11 +75,10 @@ public class DoWhileTaskMapperTest {
 
         taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
                         .withDeciderService(deciderService)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();

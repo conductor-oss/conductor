@@ -64,46 +64,46 @@ public class SimpleTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in SimpleTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
         TaskDef taskDefinition =
-                Optional.ofNullable(taskToSchedule.getTaskDefinition())
+                Optional.ofNullable(workflowTask.getTaskDefinition())
                         .orElseThrow(
                                 () -> {
                                     String reason =
                                             String.format(
                                                     "Invalid task. Task %s does not have a definition",
-                                                    taskToSchedule.getName());
+                                                    workflowTask.getName());
                                     return new TerminateWorkflowException(reason);
                                 });
 
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
+                        workflowTask.getInputParameters(),
+                        workflowModel,
                         taskDefinition,
                         taskMapperContext.getTaskId());
         TaskModel simpleTask = new TaskModel();
-        simpleTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());
+        simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());
         simpleTask.setTaskId(taskMapperContext.getTaskId());
-        simpleTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+        simpleTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
         simpleTask.setInputData(input);
-        simpleTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        simpleTask.setWorkflowType(workflowInstance.getWorkflowName());
+        simpleTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        simpleTask.setWorkflowType(workflowModel.getWorkflowName());
         simpleTask.setStatus(TaskModel.Status.SCHEDULED);
-        simpleTask.setTaskType(taskToSchedule.getName());
-        simpleTask.setTaskDefName(taskToSchedule.getName());
-        simpleTask.setCorrelationId(workflowInstance.getCorrelationId());
+        simpleTask.setTaskType(workflowTask.getName());
+        simpleTask.setTaskDefName(workflowTask.getName());
+        simpleTask.setCorrelationId(workflowModel.getCorrelationId());
         simpleTask.setScheduledTime(System.currentTimeMillis());
         simpleTask.setRetryCount(retryCount);
-        simpleTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
+        simpleTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
-        simpleTask.setWorkflowTask(taskToSchedule);
+        simpleTask.setWorkflowTask(workflowTask);
         simpleTask.setRetriedTaskId(retriedTaskId);
-        simpleTask.setWorkflowPriority(workflowInstance.getPriority());
+        simpleTask.setWorkflowPriority(workflowModel.getPriority());
         simpleTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         simpleTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         return Collections.singletonList(simpleTask);

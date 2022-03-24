@@ -92,7 +92,7 @@ public class ConductorCoreConfiguration {
     }
 
     @Bean
-    @Qualifier("taskProcessorsMap")
+    @Qualifier("taskMappersByTaskType")
     public Map<TaskType, TaskMapper> getTaskMappers(List<TaskMapper> taskMappers) {
         return taskMappers.stream().collect(Collectors.toMap(TaskMapper::getTaskType, identity()));
     }

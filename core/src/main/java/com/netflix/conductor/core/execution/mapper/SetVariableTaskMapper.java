@@ -41,25 +41,25 @@ public class SetVariableTaskMapper implements TaskMapper {
             throws TerminateWorkflowException {
         LOGGER.debug("TaskMapperContext {} in SetVariableMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         String taskId = taskMapperContext.getTaskId();
 
         TaskModel varTask = new TaskModel();
-        varTask.setTaskType(taskToSchedule.getType());
-        varTask.setTaskDefName(taskToSchedule.getName());
-        varTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        varTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        varTask.setWorkflowType(workflowInstance.getWorkflowName());
-        varTask.setCorrelationId(workflowInstance.getCorrelationId());
+        varTask.setTaskType(workflowTask.getType());
+        varTask.setTaskDefName(workflowTask.getName());
+        varTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        varTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        varTask.setWorkflowType(workflowModel.getWorkflowName());
+        varTask.setCorrelationId(workflowModel.getCorrelationId());
         varTask.setStartTime(System.currentTimeMillis());
         varTask.setScheduledTime(System.currentTimeMillis());
         varTask.setInputData(taskInput);
         varTask.setTaskId(taskId);
         varTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        varTask.setWorkflowTask(taskToSchedule);
-        varTask.setWorkflowPriority(workflowInstance.getPriority());
+        varTask.setWorkflowTask(workflowTask);
+        varTask.setWorkflowPriority(workflowModel.getPriority());
 
         return Collections.singletonList(varTask);
     }

@@ -40,8 +40,8 @@ public class TerminateTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(TaskType.TASK_TYPE_TERMINATE);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
 
         String taskId = IDGenerator.generate();
 
@@ -51,10 +51,9 @@ public class TerminateTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();

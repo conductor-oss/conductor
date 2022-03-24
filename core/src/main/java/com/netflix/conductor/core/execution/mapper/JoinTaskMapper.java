@@ -55,27 +55,27 @@ public class JoinTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in JoinTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> joinInput = new HashMap<>();
-        joinInput.put("joinOn", taskToSchedule.getJoinOn());
+        joinInput.put("joinOn", workflowTask.getJoinOn());
 
         TaskModel joinTask = new TaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_JOIN);
-        joinTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        joinTask.setCorrelationId(workflowInstance.getCorrelationId());
-        joinTask.setWorkflowType(workflowInstance.getWorkflowName());
+        joinTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        joinTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        joinTask.setCorrelationId(workflowModel.getCorrelationId());
+        joinTask.setWorkflowType(workflowModel.getWorkflowName());
         joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(taskId);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        joinTask.setWorkflowTask(taskToSchedule);
-        joinTask.setWorkflowPriority(workflowInstance.getPriority());
+        joinTask.setWorkflowTask(workflowTask);
+        joinTask.setWorkflowPriority(workflowModel.getPriority());
 
         return Collections.singletonList(joinTask);
     }
