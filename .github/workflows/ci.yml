@@ -48,13 +48,18 @@ jobs:
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
           NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
           NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v2
+      - name: Upload build reports
+        uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-reports
           path: '**/build/reports'
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v3
+        with: 
+          name: server-jar
+          path: server/build/libs/*-boot.jar
       - name: Store Buildscan URL
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-scan
           path: 'buildscan.log'
@@ -70,7 +75,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '14.x'
+      - name: Download a single artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: server-jar
+          path: jar
+      - name: Display structure of downloaded files
+        run: ls -R
       - name: Install dependencies
         run: yarn install
-      - run: yarn run build
+      - name: Run Yarn build
+        run: yarn run build
 
