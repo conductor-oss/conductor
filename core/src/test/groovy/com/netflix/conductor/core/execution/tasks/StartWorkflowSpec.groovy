@@ -61,7 +61,7 @@ class StartWorkflowSpec extends Specification {
         startWorkflow.isAsync()
     }
 
-    def "start_workflow parameter is missing"() {
+    def "startWorkflow parameter is missing"() {
         given: "a task with no start_workflow in input"
         taskModel.inputData = [:]
 

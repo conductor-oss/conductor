@@ -39,7 +39,7 @@ public class StartWorkflow extends WorkflowSystemTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartWorkflow.class);
 
     private static final String WORKFLOW_ID = "workflowId";
-    private static final String START_WORKFLOW_PARAMETER = "start_workflow";
+    private static final String START_WORKFLOW_PARAMETER = "startWorkflow";
 
     private final ObjectMapper objectMapper;
     private final Validator validator;

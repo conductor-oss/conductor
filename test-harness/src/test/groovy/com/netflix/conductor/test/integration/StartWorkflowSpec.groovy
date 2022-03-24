@@ -12,20 +12,16 @@
  */
 package com.netflix.conductor.test.integration
 
-import org.springframework.beans.factory.annotation.Autowired
-
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.StartWorkflow
 import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.model.TaskModel
-import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
-
+import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
 import spock.lang.Unroll
 
-import static com.netflix.conductor.model.TaskModel.Status.FAILED
+import static com.netflix.conductor.core.execution.tasks.StartWorkflow.START_WORKFLOW_PARAMETER
 
 class StartWorkflowSpec extends AbstractSpecification {
 
@@ -139,7 +135,10 @@ class StartWorkflowSpec extends AbstractSpecification {
 
         def startWorkflow = ['name': 'dynamic_wf', 'workflowDef': workflowDef]
 
-        new TestCase(name: 'workflow definition', workflowInput: ['start_workflow': startWorkflow])
+        def input = [:]
+        input[START_WORKFLOW_PARAMETER] = startWorkflow
+
+        new TestCase(name: 'workflow definition', workflowInput: input)
     }
 
     /**
@@ -147,8 +146,9 @@ class StartWorkflowSpec extends AbstractSpecification {
      */
     static workflowName() {
         def startWorkflow = ['name': 'integration_test_wf', 'input': ['param1': 'value1', 'param2': 'value2']]
-
-        new TestCase(name: 'name and version', workflowInput: ['start_workflow': startWorkflow])
+        def input = [:]
+        input[START_WORKFLOW_PARAMETER] = startWorkflow
+        new TestCase(name: 'name and version', workflowInput: input)
     }
 
     /**

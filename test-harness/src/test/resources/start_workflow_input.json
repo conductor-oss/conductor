@@ -1,5 +1,5 @@
 {
-  "start_workflow": {
+  "startWorkflow": {
     "name": "integration_test_wf",
     "input": {
       "op": {

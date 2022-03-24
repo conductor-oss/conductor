@@ -7,7 +7,7 @@
       "name": "start_workflow",
       "taskReferenceName": "st",
       "inputParameters": {
-        "start_workflow": "${workflow.input.start_workflow}"
+        "startWorkflow": "${workflow.input.startWorkflow}"
       },
       "type": "START_WORKFLOW"
     }
