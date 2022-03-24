@@ -80,21 +80,11 @@ public class KafkaPublishTaskMapper implements TaskMapper {
                 parametersUtils.getTaskInputV2(
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
-        TaskModel kafkaPublishTask = new TaskModel();
-        kafkaPublishTask.setTaskType(workflowTask.getType());
-        kafkaPublishTask.setTaskDefName(workflowTask.getName());
-        kafkaPublishTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        kafkaPublishTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        kafkaPublishTask.setWorkflowType(workflowModel.getWorkflowName());
-        kafkaPublishTask.setCorrelationId(workflowModel.getCorrelationId());
-        kafkaPublishTask.setScheduledTime(System.currentTimeMillis());
-        kafkaPublishTask.setTaskId(taskId);
+        TaskModel kafkaPublishTask = taskMapperContext.createTaskModel();
         kafkaPublishTask.setInputData(input);
         kafkaPublishTask.setStatus(TaskModel.Status.SCHEDULED);
         kafkaPublishTask.setRetryCount(retryCount);
         kafkaPublishTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        kafkaPublishTask.setWorkflowTask(workflowTask);
-        kafkaPublishTask.setWorkflowPriority(workflowModel.getPriority());
         if (Objects.nonNull(taskDefinition)) {
             kafkaPublishTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
             kafkaPublishTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());

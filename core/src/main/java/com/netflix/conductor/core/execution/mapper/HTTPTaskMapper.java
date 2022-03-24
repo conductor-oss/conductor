@@ -83,22 +83,12 @@ public class HTTPTaskMapper implements TaskMapper {
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
         Boolean asynComplete = (Boolean) input.get("asyncComplete");
 
-        TaskModel httpTask = new TaskModel();
-        httpTask.setTaskType(workflowTask.getType());
-        httpTask.setTaskDefName(workflowTask.getName());
-        httpTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        httpTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        httpTask.setWorkflowType(workflowModel.getWorkflowName());
-        httpTask.setCorrelationId(workflowModel.getCorrelationId());
-        httpTask.setScheduledTime(System.currentTimeMillis());
-        httpTask.setTaskId(taskId);
+        TaskModel httpTask = taskMapperContext.createTaskModel();
         httpTask.setInputData(input);
         httpTask.getInputData().put("asyncComplete", asynComplete);
         httpTask.setStatus(TaskModel.Status.SCHEDULED);
         httpTask.setRetryCount(retryCount);
         httpTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        httpTask.setWorkflowTask(workflowTask);
-        httpTask.setWorkflowPriority(workflowModel.getPriority());
         if (Objects.nonNull(taskDefinition)) {
             httpTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
             httpTask.setRateLimitFrequencyInSeconds(
@@ -106,6 +96,6 @@ public class HTTPTaskMapper implements TaskMapper {
             httpTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
             httpTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
         }
-        return Collections.singletonList(httpTask);
+        return List.of(httpTask);
     }
 }

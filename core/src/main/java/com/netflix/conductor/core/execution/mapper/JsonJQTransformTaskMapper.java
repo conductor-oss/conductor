@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,21 +62,11 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
                 parametersUtils.getTaskInputV2(
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
-        TaskModel jsonJQTransformTask = new TaskModel();
-        jsonJQTransformTask.setTaskType(workflowTask.getType());
-        jsonJQTransformTask.setTaskDefName(workflowTask.getName());
-        jsonJQTransformTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        jsonJQTransformTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        jsonJQTransformTask.setWorkflowType(workflowModel.getWorkflowName());
-        jsonJQTransformTask.setCorrelationId(workflowModel.getCorrelationId());
+        TaskModel jsonJQTransformTask = taskMapperContext.createTaskModel();
         jsonJQTransformTask.setStartTime(System.currentTimeMillis());
-        jsonJQTransformTask.setScheduledTime(System.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
-        jsonJQTransformTask.setTaskId(taskId);
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        jsonJQTransformTask.setWorkflowTask(workflowTask);
-        jsonJQTransformTask.setWorkflowPriority(workflowModel.getPriority());
 
-        return Collections.singletonList(jsonJQTransformTask);
+        return List.of(jsonJQTransformTask);
     }
 }

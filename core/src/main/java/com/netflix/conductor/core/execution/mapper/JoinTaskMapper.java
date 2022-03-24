@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,21 +61,13 @@ public class JoinTaskMapper implements TaskMapper {
         Map<String, Object> joinInput = new HashMap<>();
         joinInput.put("joinOn", workflowTask.getJoinOn());
 
-        TaskModel joinTask = new TaskModel();
+        TaskModel joinTask = taskMapperContext.createTaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_JOIN);
-        joinTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        joinTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        joinTask.setCorrelationId(workflowModel.getCorrelationId());
-        joinTask.setWorkflowType(workflowModel.getWorkflowName());
-        joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
-        joinTask.setTaskId(taskId);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        joinTask.setWorkflowTask(workflowTask);
-        joinTask.setWorkflowPriority(workflowModel.getPriority());
 
-        return Collections.singletonList(joinTask);
+        return List.of(joinTask);
     }
 }

@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +54,6 @@ public class WaitTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in WaitTaskMapper", taskMapperContext);
 
-        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
@@ -66,19 +64,10 @@ public class WaitTaskMapper implements TaskMapper {
                         taskId,
                         null);
 
-        TaskModel waitTask = new TaskModel();
+        TaskModel waitTask = taskMapperContext.createTaskModel();
         waitTask.setTaskType(TASK_TYPE_WAIT);
-        waitTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
-        waitTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
-        waitTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        waitTask.setWorkflowType(workflowModel.getWorkflowName());
-        waitTask.setCorrelationId(workflowModel.getCorrelationId());
-        waitTask.setScheduledTime(System.currentTimeMillis());
         waitTask.setInputData(waitTaskInput);
-        waitTask.setTaskId(taskId);
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        waitTask.setWorkflowTask(workflowTask);
-        waitTask.setWorkflowPriority(workflowModel.getPriority());
-        return Collections.singletonList(waitTask);
+        return List.of(waitTask);
     }
 }

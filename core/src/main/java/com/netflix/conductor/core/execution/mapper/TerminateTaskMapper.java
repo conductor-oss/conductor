@@ -20,14 +20,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
-
-import static java.util.Collections.singletonList;
 
 @Component
 public class TerminateTaskMapper implements TaskMapper {
@@ -49,7 +46,6 @@ public class TerminateTaskMapper implements TaskMapper {
 
         logger.debug("TaskMapperContext {} in TerminateTaskMapper", taskMapperContext);
 
-        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
@@ -60,20 +56,11 @@ public class TerminateTaskMapper implements TaskMapper {
                         taskId,
                         null);
 
-        TaskModel task = new TaskModel();
+        TaskModel task = taskMapperContext.createTaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
-        task.setTaskDefName(workflowTask.getName());
-        task.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        task.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        task.setWorkflowType(workflowModel.getWorkflowName());
-        task.setCorrelationId(workflowModel.getCorrelationId());
-        task.setScheduledTime(System.currentTimeMillis());
         task.setStartTime(System.currentTimeMillis());
         task.setInputData(taskInput);
-        task.setTaskId(taskId);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.setWorkflowTask(workflowTask);
-        task.setWorkflowPriority(workflowModel.getPriority());
-        return singletonList(task);
+        return List.of(task);
     }
 }

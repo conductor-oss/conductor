@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 
 @Component
 public class ExclusiveJoinTaskMapper implements TaskMapper {
@@ -42,8 +40,6 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
         LOGGER.debug("TaskMapperContext {} in ExclusiveJoinTaskMapper", taskMapperContext);
 
         WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
-        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
-        String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> joinInput = new HashMap<>();
         joinInput.put("joinOn", workflowTask.getJoinOn());
@@ -52,21 +48,13 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
             joinInput.put("defaultExclusiveJoinTask", workflowTask.getDefaultExclusiveJoinTask());
         }
 
-        TaskModel joinTask = new TaskModel();
+        TaskModel joinTask = taskMapperContext.createTaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
-        joinTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        joinTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        joinTask.setCorrelationId(workflowModel.getCorrelationId());
-        joinTask.setWorkflowType(workflowModel.getWorkflowName());
-        joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
-        joinTask.setTaskId(taskId);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        joinTask.setWorkflowPriority(workflowModel.getPriority());
-        joinTask.setWorkflowTask(workflowTask);
 
-        return Collections.singletonList(joinTask);
+        return List.of(joinTask);
     }
 }

@@ -78,7 +78,6 @@ public class SwitchTaskMapper implements TaskMapper {
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
-        String taskId = taskMapperContext.getTaskId();
 
         // get the expression to be evaluated
         String evaluatorType = workflowTask.getEvaluatorType();
@@ -91,21 +90,13 @@ public class SwitchTaskMapper implements TaskMapper {
         String evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
-        TaskModel switchTask = new TaskModel();
+        TaskModel switchTask = taskMapperContext.createTaskModel();
         switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
-        switchTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        switchTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        switchTask.setWorkflowType(workflowModel.getWorkflowName());
-        switchTask.setCorrelationId(workflowModel.getCorrelationId());
-        switchTask.setScheduledTime(System.currentTimeMillis());
         switchTask.getInputData().put("case", evalResult);
         switchTask.getOutputData().put("evaluationResult", Collections.singletonList(evalResult));
-        switchTask.setTaskId(taskId);
         switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        switchTask.setWorkflowTask(workflowTask);
-        switchTask.setWorkflowPriority(workflowModel.getPriority());
         tasksToBeScheduled.add(switchTask);
 
         // get the list of tasks based on the evaluated expression

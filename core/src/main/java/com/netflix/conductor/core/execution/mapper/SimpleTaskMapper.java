@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +50,8 @@ public class SimpleTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE} to a {@link Task}
+     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE} to a {@link
+     * TaskModel}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
      *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
@@ -86,26 +86,17 @@ public class SimpleTaskMapper implements TaskMapper {
                         workflowModel,
                         taskDefinition,
                         taskMapperContext.getTaskId());
-        TaskModel simpleTask = new TaskModel();
-        simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());
-        simpleTask.setTaskId(taskMapperContext.getTaskId());
-        simpleTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        simpleTask.setInputData(input);
-        simpleTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        simpleTask.setWorkflowType(workflowModel.getWorkflowName());
-        simpleTask.setStatus(TaskModel.Status.SCHEDULED);
+        TaskModel simpleTask = taskMapperContext.createTaskModel();
         simpleTask.setTaskType(workflowTask.getName());
-        simpleTask.setTaskDefName(workflowTask.getName());
-        simpleTask.setCorrelationId(workflowModel.getCorrelationId());
-        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());
+        simpleTask.setInputData(input);
+        simpleTask.setStatus(TaskModel.Status.SCHEDULED);
         simpleTask.setRetryCount(retryCount);
         simpleTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
-        simpleTask.setWorkflowTask(workflowTask);
         simpleTask.setRetriedTaskId(retriedTaskId);
-        simpleTask.setWorkflowPriority(workflowModel.getPriority());
         simpleTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         simpleTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
-        return Collections.singletonList(simpleTask);
+        return List.of(simpleTask);
     }
 }

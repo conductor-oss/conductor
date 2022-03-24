@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -63,22 +62,14 @@ public class EventTaskMapper implements TaskMapper {
         String sink = (String) eventTaskInput.get("sink");
         Boolean asynComplete = (Boolean) eventTaskInput.get("asyncComplete");
 
-        TaskModel eventTask = new TaskModel();
+        TaskModel eventTask = taskMapperContext.createTaskModel();
         eventTask.setTaskType(TASK_TYPE_EVENT);
-        eventTask.setTaskDefName(workflowTask.getName());
-        eventTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        eventTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        eventTask.setWorkflowType(workflowModel.getWorkflowName());
-        eventTask.setCorrelationId(workflowModel.getCorrelationId());
-        eventTask.setScheduledTime(System.currentTimeMillis());
+        eventTask.setStatus(TaskModel.Status.SCHEDULED);
+
         eventTask.setInputData(eventTaskInput);
         eventTask.getInputData().put("sink", sink);
         eventTask.getInputData().put("asyncComplete", asynComplete);
-        eventTask.setTaskId(taskId);
-        eventTask.setStatus(TaskModel.Status.SCHEDULED);
-        eventTask.setWorkflowPriority(workflowModel.getPriority());
-        eventTask.setWorkflowTask(workflowTask);
 
-        return Collections.singletonList(eventTask);
+        return List.of(eventTask);
     }
 }

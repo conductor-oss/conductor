@@ -69,23 +69,13 @@ public class ForkJoinTaskMapper implements TaskMapper {
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
 
-        String taskId = taskMapperContext.getTaskId();
-
         List<TaskModel> tasksToBeScheduled = new LinkedList<>();
-        TaskModel forkTask = new TaskModel();
+        TaskModel forkTask = taskMapperContext.createTaskModel();
         forkTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
-        forkTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        forkTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        forkTask.setWorkflowType(workflowModel.getWorkflowName());
-        forkTask.setCorrelationId(workflowModel.getCorrelationId());
-        forkTask.setScheduledTime(System.currentTimeMillis());
         forkTask.setStartTime(System.currentTimeMillis());
         forkTask.setInputData(taskInput);
-        forkTask.setTaskId(taskId);
         forkTask.setStatus(TaskModel.Status.COMPLETED);
-        forkTask.setWorkflowPriority(workflowModel.getPriority());
-        forkTask.setWorkflowTask(workflowTask);
 
         tasksToBeScheduled.add(forkTask);
         List<List<WorkflowTask>> forkTasks = workflowTask.getForkTasks();

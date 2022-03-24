@@ -18,6 +18,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.DeciderService;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 /** Business Object class used for interaction between the DeciderService and Different Mappers */
@@ -94,6 +95,24 @@ public class TaskMapperContext {
 
     public DeciderService getDeciderService() {
         return deciderService;
+    }
+
+    public TaskModel createTaskModel() {
+        TaskModel taskModel = new TaskModel();
+        taskModel.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        taskModel.setWorkflowInstanceId(workflowModel.getWorkflowId());
+        taskModel.setWorkflowType(workflowModel.getWorkflowName());
+        taskModel.setCorrelationId(workflowModel.getCorrelationId());
+        taskModel.setScheduledTime(System.currentTimeMillis());
+
+        taskModel.setTaskId(taskId);
+        taskModel.setWorkflowTask(workflowTask);
+        taskModel.setWorkflowPriority(workflowModel.getPriority());
+
+        // the following properties are overridden by some TaskMapper implementations
+        taskModel.setTaskType(workflowTask.getType());
+        taskModel.setTaskDefName(workflowTask.getName());
+        return taskModel;
     }
 
     @Override

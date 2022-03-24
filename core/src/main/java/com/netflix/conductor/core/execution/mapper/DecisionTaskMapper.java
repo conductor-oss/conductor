@@ -79,27 +79,18 @@ public class DecisionTaskMapper implements TaskMapper {
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
-        String taskId = taskMapperContext.getTaskId();
 
         // get the expression to be evaluated
         String caseValue = getEvaluatedCaseValue(workflowTask, taskInput);
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
-        TaskModel decisionTask = new TaskModel();
+        TaskModel decisionTask = taskMapperContext.createTaskModel();
         decisionTask.setTaskType(TaskType.TASK_TYPE_DECISION);
         decisionTask.setTaskDefName(TaskType.TASK_TYPE_DECISION);
-        decisionTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        decisionTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        decisionTask.setWorkflowType(workflowModel.getWorkflowName());
-        decisionTask.setCorrelationId(workflowModel.getCorrelationId());
-        decisionTask.setScheduledTime(System.currentTimeMillis());
         decisionTask.addInput("case", caseValue);
         decisionTask.addOutput("caseOutput", Collections.singletonList(caseValue));
-        decisionTask.setTaskId(taskId);
         decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        decisionTask.setWorkflowTask(workflowTask);
-        decisionTask.setWorkflowPriority(workflowModel.getPriority());
         tasksToBeScheduled.add(decisionTask);
 
         // get the list of tasks based on the decision

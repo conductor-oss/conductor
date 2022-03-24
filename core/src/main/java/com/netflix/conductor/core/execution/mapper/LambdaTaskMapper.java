@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,21 +72,12 @@ public class LambdaTaskMapper implements TaskMapper {
                         taskId,
                         taskDefinition);
 
-        TaskModel lambdaTask = new TaskModel();
+        TaskModel lambdaTask = taskMapperContext.createTaskModel();
         lambdaTask.setTaskType(TaskType.TASK_TYPE_LAMBDA);
-        lambdaTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
-        lambdaTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
-        lambdaTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        lambdaTask.setWorkflowType(workflowModel.getWorkflowName());
-        lambdaTask.setCorrelationId(workflowModel.getCorrelationId());
         lambdaTask.setStartTime(System.currentTimeMillis());
-        lambdaTask.setScheduledTime(System.currentTimeMillis());
         lambdaTask.setInputData(taskInput);
-        lambdaTask.setTaskId(taskId);
         lambdaTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        lambdaTask.setWorkflowTask(workflowTask);
-        lambdaTask.setWorkflowPriority(workflowModel.getPriority());
 
-        return Collections.singletonList(lambdaTask);
+        return List.of(lambdaTask);
     }
 }

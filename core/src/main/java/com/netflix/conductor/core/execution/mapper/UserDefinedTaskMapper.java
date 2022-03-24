@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -95,24 +94,15 @@ public class UserDefinedTaskMapper implements TaskMapper {
                 parametersUtils.getTaskInputV2(
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
-        TaskModel userDefinedTask = new TaskModel();
-        userDefinedTask.setTaskType(workflowTask.getType());
-        userDefinedTask.setTaskDefName(workflowTask.getName());
-        userDefinedTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        userDefinedTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        userDefinedTask.setWorkflowType(workflowModel.getWorkflowName());
-        userDefinedTask.setCorrelationId(workflowModel.getCorrelationId());
-        userDefinedTask.setScheduledTime(System.currentTimeMillis());
-        userDefinedTask.setTaskId(taskId);
+        TaskModel userDefinedTask = taskMapperContext.createTaskModel();
         userDefinedTask.setInputData(input);
         userDefinedTask.setStatus(TaskModel.Status.SCHEDULED);
         userDefinedTask.setRetryCount(retryCount);
         userDefinedTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        userDefinedTask.setWorkflowTask(workflowTask);
-        userDefinedTask.setWorkflowPriority(workflowModel.getPriority());
         userDefinedTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         userDefinedTask.setRateLimitFrequencyInSeconds(
                 taskDefinition.getRateLimitFrequencyInSeconds());
-        return Collections.singletonList(userDefinedTask);
+
+        return List.of(userDefinedTask);
     }
 }

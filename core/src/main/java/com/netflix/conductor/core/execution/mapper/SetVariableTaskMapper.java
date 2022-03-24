@@ -12,19 +12,15 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 
 @Component
 public class SetVariableTaskMapper implements TaskMapper {
@@ -41,26 +37,11 @@ public class SetVariableTaskMapper implements TaskMapper {
             throws TerminateWorkflowException {
         LOGGER.debug("TaskMapperContext {} in SetVariableMapper", taskMapperContext);
 
-        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
-        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
-        Map<String, Object> taskInput = taskMapperContext.getTaskInput();
-        String taskId = taskMapperContext.getTaskId();
-
-        TaskModel varTask = new TaskModel();
-        varTask.setTaskType(workflowTask.getType());
-        varTask.setTaskDefName(workflowTask.getName());
-        varTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        varTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        varTask.setWorkflowType(workflowModel.getWorkflowName());
-        varTask.setCorrelationId(workflowModel.getCorrelationId());
+        TaskModel varTask = taskMapperContext.createTaskModel();
         varTask.setStartTime(System.currentTimeMillis());
-        varTask.setScheduledTime(System.currentTimeMillis());
-        varTask.setInputData(taskInput);
-        varTask.setTaskId(taskId);
+        varTask.setInputData(taskMapperContext.getTaskInput());
         varTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        varTask.setWorkflowTask(workflowTask);
-        varTask.setWorkflowPriority(workflowModel.getPriority());
 
-        return Collections.singletonList(varTask);
+        return List.of(varTask);
     }
 }

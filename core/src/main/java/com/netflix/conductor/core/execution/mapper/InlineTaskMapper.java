@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,21 +71,12 @@ public class InlineTaskMapper implements TaskMapper {
                         taskId,
                         taskDefinition);
 
-        TaskModel inlineTask = new TaskModel();
+        TaskModel inlineTask = taskMapperContext.createTaskModel();
         inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
-        inlineTask.setTaskDefName(taskMapperContext.getWorkflowTask().getName());
-        inlineTask.setReferenceTaskName(taskMapperContext.getWorkflowTask().getTaskReferenceName());
-        inlineTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        inlineTask.setWorkflowType(workflowModel.getWorkflowName());
-        inlineTask.setCorrelationId(workflowModel.getCorrelationId());
         inlineTask.setStartTime(System.currentTimeMillis());
-        inlineTask.setScheduledTime(System.currentTimeMillis());
         inlineTask.setInputData(taskInput);
-        inlineTask.setTaskId(taskId);
         inlineTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        inlineTask.setWorkflowTask(workflowTask);
-        inlineTask.setWorkflowPriority(workflowModel.getPriority());
 
-        return Collections.singletonList(inlineTask);
+        return List.of(inlineTask);
     }
 }

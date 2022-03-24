@@ -75,26 +75,17 @@ public class SubWorkflowTaskMapper implements TaskMapper {
             subWorkflowTaskToDomain = (Map) uncheckedTaskToDomain;
         }
 
-        TaskModel subWorkflowTask = new TaskModel();
+        TaskModel subWorkflowTask = taskMapperContext.createTaskModel();
         subWorkflowTask.setTaskType(TASK_TYPE_SUB_WORKFLOW);
-        subWorkflowTask.setTaskDefName(workflowTask.getName());
-        subWorkflowTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        subWorkflowTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        subWorkflowTask.setWorkflowType(workflowModel.getWorkflowName());
-        subWorkflowTask.setCorrelationId(workflowModel.getCorrelationId());
-        subWorkflowTask.setScheduledTime(System.currentTimeMillis());
         subWorkflowTask.addInput("subWorkflowName", subWorkflowName);
         subWorkflowTask.addInput("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.addInput("subWorkflowTaskToDomain", subWorkflowTaskToDomain);
         subWorkflowTask.addInput("subWorkflowDefinition", subWorkflowDefinition);
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
-        subWorkflowTask.setTaskId(taskId);
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
-        subWorkflowTask.setWorkflowTask(workflowTask);
-        subWorkflowTask.setWorkflowPriority(workflowModel.getPriority());
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         LOGGER.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
-        return Collections.singletonList(subWorkflowTask);
+        return List.of(subWorkflowTask);
     }
 
     @VisibleForTesting

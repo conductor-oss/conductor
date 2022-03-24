@@ -88,22 +88,18 @@ public class DynamicTaskMapper implements TaskMapper {
                         workflowModel,
                         taskDefinition,
                         taskMapperContext.getTaskId());
-        TaskModel dynamicTask = new TaskModel();
+
+        // IMPORTANT: The WorkflowTask that is inside TaskMapperContext is changed above
+        // createTaskModel() must be called here so the changes are reflected in the created
+        // TaskModel
+        TaskModel dynamicTask = taskMapperContext.createTaskModel();
         dynamicTask.setStartDelayInSeconds(workflowTask.getStartDelay());
-        dynamicTask.setTaskId(taskMapperContext.getTaskId());
-        dynamicTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
         dynamicTask.setInputData(input);
-        dynamicTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        dynamicTask.setWorkflowType(workflowModel.getWorkflowName());
         dynamicTask.setStatus(TaskModel.Status.SCHEDULED);
         dynamicTask.setTaskType(workflowTask.getType());
-        dynamicTask.setTaskDefName(workflowTask.getName());
-        dynamicTask.setCorrelationId(workflowModel.getCorrelationId());
-        dynamicTask.setScheduledTime(System.currentTimeMillis());
         dynamicTask.setRetryCount(retryCount);
         dynamicTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         dynamicTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
-        dynamicTask.setWorkflowTask(workflowTask);
         dynamicTask.setTaskType(taskName);
         dynamicTask.setRetriedTaskId(retriedTaskId);
         dynamicTask.setWorkflowPriority(workflowModel.getPriority());

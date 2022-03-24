@@ -75,7 +75,6 @@ public class DoWhileTaskMapper implements TaskMapper {
             return Collections.emptyList();
         }
 
-        String taskId = taskMapperContext.getTaskId();
         List<TaskModel> tasksToBeScheduled = new ArrayList<>();
         int retryCount = taskMapperContext.getRetryCount();
         TaskDef taskDefinition =
@@ -87,18 +86,10 @@ public class DoWhileTaskMapper implements TaskMapper {
                                                                 workflowTask.getName()))
                                                 .orElseGet(TaskDef::new));
 
-        TaskModel loopTask = new TaskModel();
+        TaskModel loopTask = taskMapperContext.createTaskModel();
         loopTask.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
-        loopTask.setTaskDefName(workflowTask.getName());
-        loopTask.setReferenceTaskName(workflowTask.getTaskReferenceName());
-        loopTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
-        loopTask.setCorrelationId(workflowModel.getCorrelationId());
-        loopTask.setWorkflowType(workflowModel.getWorkflowName());
-        loopTask.setScheduledTime(System.currentTimeMillis());
-        loopTask.setTaskId(taskId);
         loopTask.setIteration(1);
         loopTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        loopTask.setWorkflowTask(workflowTask);
         loopTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         loopTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
 
