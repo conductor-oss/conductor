@@ -242,6 +242,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         TaskModel forkDynamicTask = taskMapperContext.createTaskModel();
         forkDynamicTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkDynamicTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
+        forkDynamicTask.setStartTime(System.currentTimeMillis());
         forkDynamicTask.setEndTime(System.currentTimeMillis());
         List<String> forkedTaskNames =
                 dynForkTasks.stream()
@@ -282,6 +283,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         joinTask.setWorkflowType(workflowModel.getWorkflowName());
         joinTask.setCorrelationId(workflowModel.getCorrelationId());
         joinTask.setScheduledTime(System.currentTimeMillis());
+        joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(IDGenerator.generate());
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
