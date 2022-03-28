@@ -4,7 +4,7 @@ import Alert from "@material-ui/lab/Alert";
 import { Text, Button, LinearProgress, Pill } from "../../components";
 import { DiffEditor } from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
-import { useSaveTask, useTaskNames } from "../../utils/query";
+import { useSaveTask, useTaskNames } from "../../data/task";
 import _ from "lodash";
 
 const useStyles = makeStyles({

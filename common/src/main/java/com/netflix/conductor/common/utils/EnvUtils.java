@@ -29,8 +29,7 @@ public class EnvUtils {
             }
         }
         String value =
-                Optional.ofNullable(System.getProperty(test))
-                        .orElseGet(() -> Optional.ofNullable(System.getenv(test)).orElse(null));
+                Optional.ofNullable(System.getProperty(test)).orElseGet(() -> System.getenv(test));
         return value != null;
     }
 

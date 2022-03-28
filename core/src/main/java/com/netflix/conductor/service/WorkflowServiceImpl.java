@@ -131,14 +131,6 @@ public class WorkflowServiceImpl implements WorkflowService {
             WorkflowDef workflowDef) {
 
         if (workflowDef == null) {
-            workflowDef = metadataService.getWorkflowDef(name, version);
-            if (workflowDef == null) {
-                throw new ApplicationException(
-                        ApplicationException.Code.NOT_FOUND,
-                        String.format(
-                                "No such workflow found by name: %s, version: %d", name, version));
-            }
-
             return workflowExecutor.startWorkflow(
                     name,
                     version,

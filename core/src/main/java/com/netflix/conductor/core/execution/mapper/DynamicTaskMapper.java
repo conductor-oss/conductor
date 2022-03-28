@@ -96,7 +96,6 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setStartDelayInSeconds(workflowTask.getStartDelay());
         dynamicTask.setInputData(input);
         dynamicTask.setStatus(TaskModel.Status.SCHEDULED);
-        dynamicTask.setTaskType(workflowTask.getType());
         dynamicTask.setRetryCount(retryCount);
         dynamicTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         dynamicTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());

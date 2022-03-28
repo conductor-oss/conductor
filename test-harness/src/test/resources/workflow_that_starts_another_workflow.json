@@ -1,0 +1,23 @@
+{
+  "name": "workflow_that_starts_another_workflow",
+  "description": "A workflow that uses START_WORKFLOW task to start another workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "start_workflow",
+      "taskReferenceName": "st",
+      "inputParameters": {
+        "startWorkflow": "${workflow.input.startWorkflow}"
+      },
+      "type": "START_WORKFLOW"
+    }
+  ],
+  "inputParameters": ["start_workflow"],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

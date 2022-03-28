@@ -1,10 +1,9 @@
 import React from "react";
 import { useRouteMatch } from "react-router-dom";
 import sharedStyles from "../styles";
-import { useTaskQueueInfo } from "../../utils/query";
+import { useTaskQueueInfo, useTaskNames } from "../../data/task";
 import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
-import { useTaskNames } from "../../utils/query";
 import { usePushHistory } from "../../components/NavLink";
 
 import {

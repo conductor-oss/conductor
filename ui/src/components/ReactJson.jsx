@@ -60,11 +60,10 @@ export default function ReactJson({ className, label, src }) {
   return (
     <div className={clsx([classes.outerWrapper, className])}>
       <div className={classes.toolbar}>
-        {label && (
-          <InputLabel variant="outlined" className={classes.label}>
-            {label}
-          </InputLabel>
-        )}
+        <InputLabel variant="outlined" className={classes.label}>
+          {label}
+        </InputLabel>
+
         <Tooltip title="Collapse All">
           <IconButton size="small" onClick={handleCollapse}>
             <ExpandLessIcon />

@@ -3,7 +3,7 @@ import { NavLink, DataTable, Button } from "../../components";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 import { useQueryState } from "react-router-use-location-state";
-import { useWorkflowDefs } from "../../utils/query";
+import { useWorkflowDefs } from "../../data/workflow";
 import Header from "./Header";
 import sharedStyles from "../styles";
 import { Helmet } from "react-helmet";

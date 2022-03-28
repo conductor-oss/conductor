@@ -120,7 +120,6 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
         WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
-        String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
         List<TaskModel> mappedTasks = new LinkedList<>();

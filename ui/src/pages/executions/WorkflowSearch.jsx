@@ -15,7 +15,7 @@ import SearchTabs from "./SearchTabs";
 import ResultsTable from "./ResultsTable";
 import DateRangePicker from "../../components/DateRangePicker";
 import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
-import { useWorkflowSearch, useWorkflowNames } from "../../utils/query";
+import { useWorkflowSearch, useWorkflowNames } from "../../data/workflow";
 
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
@@ -48,6 +48,7 @@ export default function WorkflowPanel() {
   );
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [queryFT, setQueryFT] = useState(buildQuery);
+
   const {
     data: resultObj,
     error,

@@ -28,6 +28,7 @@ public enum TaskType {
     JOIN,
     DO_WHILE,
     SUB_WORKFLOW,
+    START_WORKFLOW,
     EVENT,
     WAIT,
     USER_DEFINED,
@@ -54,6 +55,7 @@ public enum TaskType {
     public static final String TASK_TYPE_EVENT = "EVENT";
     public static final String TASK_TYPE_WAIT = "WAIT";
     public static final String TASK_TYPE_SUB_WORKFLOW = "SUB_WORKFLOW";
+    public static final String TASK_TYPE_START_WORKFLOW = "START_WORKFLOW";
     public static final String TASK_TYPE_FORK_JOIN = "FORK_JOIN";
     public static final String TASK_TYPE_SIMPLE = "SIMPLE";
     public static final String TASK_TYPE_HTTP = "HTTP";

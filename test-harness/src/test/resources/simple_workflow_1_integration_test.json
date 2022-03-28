@@ -12,16 +12,7 @@
         "p3": "${CPEWF_TASK_ID}",
         "someNullKey": null
       },
-      "type": "SIMPLE",
-      "decisionCases": {},
-      "defaultCase": [],
-      "forkTasks": [],
-      "startDelay": 0,
-      "joinOn": [],
-      "optional": false,
-      "defaultExclusiveJoinTask": [],
-      "asyncComplete": false,
-      "loopOver": []
+      "type": "SIMPLE"
     },
     {
       "name": "integration_task_2",
@@ -31,16 +22,7 @@
         "tp2": "${t1.output.op}",
         "tp3": "${CPEWF_TASK_ID}"
       },
-      "type": "SIMPLE",
-      "decisionCases": {},
-      "defaultCase": [],
-      "forkTasks": [],
-      "startDelay": 0,
-      "joinOn": [],
-      "optional": false,
-      "defaultExclusiveJoinTask": [],
-      "asyncComplete": false,
-      "loopOver": []
+      "type": "SIMPLE"
     }
   ],
   "inputParameters": [
