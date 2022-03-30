@@ -267,9 +267,35 @@
             <div class="section">
               
                 <h1 id="archival-of-workflows">Archival Of Workflows<a class="headerlink" href="#archival-of-workflows" title="Permanent link">&para;</a></h1>
-<p>TODO</p>
-<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>TODO</p>
+<p>Conductor has support for archiving workflow upon termination or completion. Enabling this will delete the workflow from the configured database, but leave the associated data in Elasticsearch so it is still searchable. </p>
+<p>To enable, set the <code>conductor.workflow-status-listener.type</code> property to <code>archive</code>.</p>
+<p>A number of additional properties are available to control archival.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>conductor.workflow-status-listener.archival.ttlDuration</td>
+<td>0s</td>
+<td>The time to live in seconds for workflow archiving module. Currently, only RedisExecutionDAO supports this</td>
+</tr>
+<tr>
+<td>conductor.workflow-status-listener.archival.delayQueueWorkerThreadCount</td>
+<td>5</td>
+<td>The number of threads to process the delay queue in workflow archival</td>
+</tr>
+<tr>
+<td>conductor.workflow-status-listener.archival.delaySeconds</td>
+<td>60</td>
+<td>The time to delay the archival of workflow</td>
+</tr>
+</tbody>
+</table>
               
             </div>
           </div>

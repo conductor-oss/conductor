@@ -544,8 +544,8 @@ Optionally updating task's input and output as specified in the payload.
 </tr>
 </tbody>
 </table>
-<h2 id="polling-ack-and-update-task">Polling, Ack and Update Task<a class="headerlink" href="#polling-ack-and-update-task" title="Permanent link">&para;</a></h2>
-<p>These are critical endpoints used to poll for task, send ack (after polling) and finally updating the task result by worker.</p>
+<h2 id="polling-and-update-task">Polling and Update Task<a class="headerlink" href="#polling-and-update-task" title="Permanent link">&para;</a></h2>
+<p>These are critical endpoints used to poll for task and updating the task result by worker.</p>
 <table>
 <thead>
 <tr>
@@ -566,10 +566,6 @@ Optionally updating task's input and output as specified in the payload.
 <td><code>POST /tasks</code></td>
 <td>Update the result of task execution.  See the schema below.</td>
 </tr>
-<tr>
-<td><code>POST /tasks/{taskId}/ack</code></td>
-<td>Acknowledges the task received AFTER poll by worker.</td>
-</tr>
 </tbody>
 </table>
 <h3 id="schema-for-updating-task-result">Schema for updating Task Result<a class="headerlink" href="#schema-for-updating-task-result" title="Permanent link">&para;</a></h3>
@@ -585,11 +581,6 @@ Optionally updating task's input and output as specified in the payload.
 
 }
 </code></pre>
-
-<div class="admonition info">
-<p class="admonition-title">Acknowledging tasks after poll</p>
-<p>If the worker fails to ack the task after polling, the task is re-queued and put back in queue and is made available during subsequent poll.</p>
-</div>
               
             </div>
           </div>
