@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +50,8 @@ public class SimpleTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE} to a {@link Task}
+     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE} to a {@link
+     * TaskModel}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link
      *     WorkflowDef}, {@link WorkflowModel} and a string representation of the TaskId
@@ -64,48 +64,39 @@ public class SimpleTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in SimpleTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
         TaskDef taskDefinition =
-                Optional.ofNullable(taskToSchedule.getTaskDefinition())
+                Optional.ofNullable(workflowTask.getTaskDefinition())
                         .orElseThrow(
                                 () -> {
                                     String reason =
                                             String.format(
                                                     "Invalid task. Task %s does not have a definition",
-                                                    taskToSchedule.getName());
+                                                    workflowTask.getName());
                                     return new TerminateWorkflowException(reason);
                                 });
 
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
+                        workflowTask.getInputParameters(),
+                        workflowModel,
                         taskDefinition,
                         taskMapperContext.getTaskId());
-        TaskModel simpleTask = new TaskModel();
-        simpleTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());
-        simpleTask.setTaskId(taskMapperContext.getTaskId());
-        simpleTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+        TaskModel simpleTask = taskMapperContext.createTaskModel();
+        simpleTask.setTaskType(workflowTask.getName());
+        simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());
         simpleTask.setInputData(input);
-        simpleTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        simpleTask.setWorkflowType(workflowInstance.getWorkflowName());
         simpleTask.setStatus(TaskModel.Status.SCHEDULED);
-        simpleTask.setTaskType(taskToSchedule.getName());
-        simpleTask.setTaskDefName(taskToSchedule.getName());
-        simpleTask.setCorrelationId(workflowInstance.getCorrelationId());
-        simpleTask.setScheduledTime(System.currentTimeMillis());
         simpleTask.setRetryCount(retryCount);
-        simpleTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
+        simpleTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
-        simpleTask.setWorkflowTask(taskToSchedule);
         simpleTask.setRetriedTaskId(retriedTaskId);
-        simpleTask.setWorkflowPriority(workflowInstance.getPriority());
         simpleTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         simpleTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
-        return Collections.singletonList(simpleTask);
+        return List.of(simpleTask);
     }
 }

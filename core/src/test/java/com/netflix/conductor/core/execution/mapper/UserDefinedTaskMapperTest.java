@@ -50,10 +50,10 @@ public class UserDefinedTaskMapperTest {
     @Test
     public void getMappedTasks() {
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("user_task");
-        taskToSchedule.setType(TaskType.USER_DEFINED.name());
-        taskToSchedule.setTaskDefinition(new TaskDef("user_task"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("user_task");
+        workflowTask.setType(TaskType.USER_DEFINED.name());
+        workflowTask.setTaskDefinition(new TaskDef("user_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
@@ -63,10 +63,9 @@ public class UserDefinedTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)
@@ -84,9 +83,9 @@ public class UserDefinedTaskMapperTest {
     @Test
     public void getMappedTasksException() {
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("user_task");
-        taskToSchedule.setType(TaskType.USER_DEFINED.name());
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("user_task");
+        workflowTask.setType(TaskType.USER_DEFINED.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
@@ -96,9 +95,8 @@ public class UserDefinedTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowModel(workflow)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)
@@ -110,7 +108,7 @@ public class UserDefinedTaskMapperTest {
         expectedException.expectMessage(
                 String.format(
                         "Invalid task specified. Cannot find task by name %s in the task definitions",
-                        taskToSchedule.getName()));
+                        workflowTask.getName()));
         // when
         userDefinedTaskMapper.getMappedTasks(taskMapperContext);
     }

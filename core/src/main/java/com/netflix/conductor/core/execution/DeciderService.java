@@ -85,7 +85,7 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
-            @Qualifier("taskProcessorsMap") Map<TaskType, TaskMapper> taskMappers,
+            @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.metadataDAO = metadataDAO;
@@ -835,10 +835,9 @@ public class DeciderService {
         String taskId = IDGenerator.generate();
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflow.getWorkflowDefinition())
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(taskToSchedule.getTaskDefinition())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(taskToSchedule)
                         .withTaskInput(input)
                         .withRetryCount(retryCount)
                         .withRetryTaskId(retriedTaskId)

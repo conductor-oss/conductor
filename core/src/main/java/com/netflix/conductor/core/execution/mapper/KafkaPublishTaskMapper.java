@@ -67,37 +67,24 @@ public class KafkaPublishTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in KafkaPublishTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> input =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
-                        taskId,
-                        taskDefinition);
+                        workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
-        TaskModel kafkaPublishTask = new TaskModel();
-        kafkaPublishTask.setTaskType(taskToSchedule.getType());
-        kafkaPublishTask.setTaskDefName(taskToSchedule.getName());
-        kafkaPublishTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        kafkaPublishTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        kafkaPublishTask.setWorkflowType(workflowInstance.getWorkflowName());
-        kafkaPublishTask.setCorrelationId(workflowInstance.getCorrelationId());
-        kafkaPublishTask.setScheduledTime(System.currentTimeMillis());
-        kafkaPublishTask.setTaskId(taskId);
+        TaskModel kafkaPublishTask = taskMapperContext.createTaskModel();
         kafkaPublishTask.setInputData(input);
         kafkaPublishTask.setStatus(TaskModel.Status.SCHEDULED);
         kafkaPublishTask.setRetryCount(retryCount);
-        kafkaPublishTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
-        kafkaPublishTask.setWorkflowTask(taskToSchedule);
-        kafkaPublishTask.setWorkflowPriority(workflowInstance.getPriority());
+        kafkaPublishTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         if (Objects.nonNull(taskDefinition)) {
             kafkaPublishTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
             kafkaPublishTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());

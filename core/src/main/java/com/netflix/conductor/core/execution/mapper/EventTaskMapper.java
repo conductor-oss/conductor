@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,34 +50,26 @@ public class EventTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in EventTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
-        taskToSchedule.getInputParameters().put("sink", taskToSchedule.getSink());
-        taskToSchedule.getInputParameters().put("asyncComplete", taskToSchedule.isAsyncComplete());
+        workflowTask.getInputParameters().put("sink", workflowTask.getSink());
+        workflowTask.getInputParameters().put("asyncComplete", workflowTask.isAsyncComplete());
         Map<String, Object> eventTaskInput =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(), workflowInstance, taskId, null);
+                        workflowTask.getInputParameters(), workflowModel, taskId, null);
         String sink = (String) eventTaskInput.get("sink");
         Boolean asynComplete = (Boolean) eventTaskInput.get("asyncComplete");
 
-        TaskModel eventTask = new TaskModel();
+        TaskModel eventTask = taskMapperContext.createTaskModel();
         eventTask.setTaskType(TASK_TYPE_EVENT);
-        eventTask.setTaskDefName(taskToSchedule.getName());
-        eventTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        eventTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        eventTask.setWorkflowType(workflowInstance.getWorkflowName());
-        eventTask.setCorrelationId(workflowInstance.getCorrelationId());
-        eventTask.setScheduledTime(System.currentTimeMillis());
+        eventTask.setStatus(TaskModel.Status.SCHEDULED);
+
         eventTask.setInputData(eventTaskInput);
         eventTask.getInputData().put("sink", sink);
         eventTask.getInputData().put("asyncComplete", asynComplete);
-        eventTask.setTaskId(taskId);
-        eventTask.setStatus(TaskModel.Status.SCHEDULED);
-        eventTask.setWorkflowPriority(workflowInstance.getPriority());
-        eventTask.setWorkflowTask(taskToSchedule);
 
-        return Collections.singletonList(eventTask);
+        return List.of(eventTask);
     }
 }

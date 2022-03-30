@@ -64,44 +64,36 @@ public class ForkJoinTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in ForkJoinTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
 
-        String taskId = taskMapperContext.getTaskId();
-
         List<TaskModel> tasksToBeScheduled = new LinkedList<>();
-        TaskModel forkTask = new TaskModel();
+        TaskModel forkTask = taskMapperContext.createTaskModel();
         forkTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
-        forkTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        forkTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        forkTask.setWorkflowType(workflowInstance.getWorkflowName());
-        forkTask.setCorrelationId(workflowInstance.getCorrelationId());
-        forkTask.setScheduledTime(System.currentTimeMillis());
-        forkTask.setStartTime(System.currentTimeMillis());
+        long epochMillis = System.currentTimeMillis();
+        forkTask.setStartTime(epochMillis);
+        forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);
-        forkTask.setTaskId(taskId);
         forkTask.setStatus(TaskModel.Status.COMPLETED);
-        forkTask.setWorkflowPriority(workflowInstance.getPriority());
-        forkTask.setWorkflowTask(taskToSchedule);
 
         tasksToBeScheduled.add(forkTask);
-        List<List<WorkflowTask>> forkTasks = taskToSchedule.getForkTasks();
+        List<List<WorkflowTask>> forkTasks = workflowTask.getForkTasks();
         for (List<WorkflowTask> wfts : forkTasks) {
             WorkflowTask wft = wfts.get(0);
             List<TaskModel> tasks2 =
                     taskMapperContext
                             .getDeciderService()
-                            .getTasksToBeScheduled(workflowInstance, wft, retryCount);
+                            .getTasksToBeScheduled(workflowModel, wft, retryCount);
             tasksToBeScheduled.addAll(tasks2);
         }
 
         WorkflowTask joinWorkflowTask =
-                workflowInstance
+                workflowModel
                         .getWorkflowDefinition()
-                        .getNextTask(taskToSchedule.getTaskReferenceName());
+                        .getNextTask(workflowTask.getTaskReferenceName());
 
         if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(TaskType.JOIN.name())) {
             throw new TerminateWorkflowException(

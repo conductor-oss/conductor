@@ -20,14 +20,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
-
-import static java.util.Collections.singletonList;
 
 @Component
 public class TerminateTaskMapper implements TaskMapper {
@@ -49,31 +46,21 @@ public class TerminateTaskMapper implements TaskMapper {
 
         logger.debug("TaskMapperContext {} in TerminateTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         null);
 
-        TaskModel task = new TaskModel();
+        TaskModel task = taskMapperContext.createTaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
-        task.setTaskDefName(taskToSchedule.getName());
-        task.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        task.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        task.setWorkflowType(workflowInstance.getWorkflowName());
-        task.setCorrelationId(workflowInstance.getCorrelationId());
-        task.setScheduledTime(System.currentTimeMillis());
         task.setStartTime(System.currentTimeMillis());
         task.setInputData(taskInput);
-        task.setTaskId(taskId);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.setWorkflowTask(taskToSchedule);
-        task.setWorkflowPriority(workflowInstance.getPriority());
-        return singletonList(task);
+        return List.of(task);
     }
 }

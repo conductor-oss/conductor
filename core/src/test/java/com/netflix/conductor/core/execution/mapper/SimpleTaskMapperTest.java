@@ -48,9 +48,9 @@ public class SimpleTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("simple_task");
-        taskToSchedule.setTaskDefinition(new TaskDef("simple_task"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("simple_task");
+        workflowTask.setTaskDefinition(new TaskDef("simple_task"));
 
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
@@ -61,10 +61,9 @@ public class SimpleTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)
@@ -80,8 +79,8 @@ public class SimpleTaskMapperTest {
     public void getMappedTasksException() {
 
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("simple_task");
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("simple_task");
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
@@ -91,10 +90,9 @@ public class SimpleTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)
@@ -106,7 +104,7 @@ public class SimpleTaskMapperTest {
         expectedException.expectMessage(
                 String.format(
                         "Invalid task. Task %s does not have a definition",
-                        taskToSchedule.getName()));
+                        workflowTask.getName()));
 
         // when
         simpleTaskMapper.getMappedTasks(taskMapperContext);

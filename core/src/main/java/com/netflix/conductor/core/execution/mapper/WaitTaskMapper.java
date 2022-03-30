@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -55,30 +54,21 @@ public class WaitTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in WaitTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         Map<String, Object> waitTaskInput =
                 parametersUtils.getTaskInputV2(
-                        taskMapperContext.getTaskToSchedule().getInputParameters(),
-                        workflowInstance,
+                        taskMapperContext.getWorkflowTask().getInputParameters(),
+                        workflowModel,
                         taskId,
                         null);
 
-        TaskModel waitTask = new TaskModel();
+        TaskModel waitTask = taskMapperContext.createTaskModel();
         waitTask.setTaskType(TASK_TYPE_WAIT);
-        waitTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
-        waitTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
-        waitTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        waitTask.setWorkflowType(workflowInstance.getWorkflowName());
-        waitTask.setCorrelationId(workflowInstance.getCorrelationId());
-        waitTask.setScheduledTime(System.currentTimeMillis());
         waitTask.setInputData(waitTaskInput);
-        waitTask.setTaskId(taskId);
+        waitTask.setStartTime(System.currentTimeMillis());
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        waitTask.setWorkflowTask(taskToSchedule);
-        waitTask.setWorkflowPriority(workflowInstance.getPriority());
-        return Collections.singletonList(waitTask);
+        return List.of(waitTask);
     }
 }

@@ -45,11 +45,11 @@ public class LambdaTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("lambda_task");
-        taskToSchedule.setType(TaskType.LAMBDA.name());
-        taskToSchedule.setTaskDefinition(new TaskDef("lambda_task"));
-        taskToSchedule.setScriptExpression(
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("lambda_task");
+        workflowTask.setType(TaskType.LAMBDA.name());
+        workflowTask.setTaskDefinition(new TaskDef("lambda_task"));
+        workflowTask.setScriptExpression(
                 "if ($.input.a==1){return {testValue: true}} else{return {testValue: false} }");
 
         String taskId = IDGenerator.generate();
@@ -60,10 +60,9 @@ public class LambdaTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();
@@ -80,9 +79,9 @@ public class LambdaTaskMapperTest {
     @Test
     public void getMappedTasks_WithoutTaskDef() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(TaskType.LAMBDA.name());
-        taskToSchedule.setScriptExpression(
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(TaskType.LAMBDA.name());
+        workflowTask.setScriptExpression(
                 "if ($.input.a==1){return {testValue: true}} else{return {testValue: false} }");
 
         String taskId = IDGenerator.generate();
@@ -93,10 +92,9 @@ public class LambdaTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(null)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();

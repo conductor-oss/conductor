@@ -74,46 +74,37 @@ public class SwitchTaskMapper implements TaskMapper {
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
         LOGGER.debug("TaskMapperContext {} in SwitchTaskMapper", taskMapperContext);
         List<TaskModel> tasksToBeScheduled = new LinkedList<>();
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
-        String taskId = taskMapperContext.getTaskId();
 
         // get the expression to be evaluated
-        String evaluatorType = taskToSchedule.getEvaluatorType();
+        String evaluatorType = workflowTask.getEvaluatorType();
         Evaluator evaluator = evaluators.get(evaluatorType);
         if (evaluator == null) {
             String errorMsg = String.format("No evaluator registered for type: %s", evaluatorType);
             LOGGER.error(errorMsg);
             throw new TerminateWorkflowException(errorMsg);
         }
-        String evalResult = "" + evaluator.evaluate(taskToSchedule.getExpression(), taskInput);
+        String evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
-        TaskModel switchTask = new TaskModel();
+        TaskModel switchTask = taskMapperContext.createTaskModel();
         switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
-        switchTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        switchTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        switchTask.setWorkflowType(workflowInstance.getWorkflowName());
-        switchTask.setCorrelationId(workflowInstance.getCorrelationId());
-        switchTask.setScheduledTime(System.currentTimeMillis());
         switchTask.getInputData().put("case", evalResult);
         switchTask.getOutputData().put("evaluationResult", Collections.singletonList(evalResult));
-        switchTask.setTaskId(taskId);
         switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        switchTask.setWorkflowTask(taskToSchedule);
-        switchTask.setWorkflowPriority(workflowInstance.getPriority());
         tasksToBeScheduled.add(switchTask);
 
         // get the list of tasks based on the evaluated expression
-        List<WorkflowTask> selectedTasks = taskToSchedule.getDecisionCases().get(evalResult);
+        List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);
         // if the tasks returned are empty based on evaluated result, then get the default case if
         // there is one
         if (selectedTasks == null || selectedTasks.isEmpty()) {
-            selectedTasks = taskToSchedule.getDefaultCase();
+            selectedTasks = workflowTask.getDefaultCase();
         }
         // once there are selected tasks that need to proceeded as part of the switch, get the next
         // task to be scheduled by using the decider service
@@ -126,7 +117,7 @@ public class SwitchTaskMapper implements TaskMapper {
                     taskMapperContext
                             .getDeciderService()
                             .getTasksToBeScheduled(
-                                    workflowInstance,
+                                    workflowModel,
                                     selectedTask,
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());

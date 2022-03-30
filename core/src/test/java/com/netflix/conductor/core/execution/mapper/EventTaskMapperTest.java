@@ -57,10 +57,9 @@ public class EventTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToBeScheduled)
+                        .withWorkflowTask(taskToBeScheduled)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();

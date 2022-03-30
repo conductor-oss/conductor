@@ -133,11 +133,11 @@ public class SwitchTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
 
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "22");
-        workflowInstance.setInput(workflowInput);
+        workflowModel.setInput(workflowInput);
 
         Map<String, Object> body = new HashMap<>();
         body.put("input", taskDefinitionInput);
@@ -145,20 +145,19 @@ public class SwitchTaskMapperTest {
 
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
-                        switchTask.getInputParameters(), workflowInstance, null, null);
+                        switchTask.getInputParameters(), workflowModel, null, null);
 
         TaskModel theTask = new TaskModel();
         theTask.setReferenceTaskName("Foo");
         theTask.setTaskId(IDGenerator.generate());
 
-        when(deciderService.getTasksToBeScheduled(workflowInstance, task2, 0, null))
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
                 .thenReturn(Collections.singletonList(theTask));
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflowInstance)
-                        .withTaskToSchedule(switchTask)
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(switchTask)
                         .withTaskInput(input)
                         .withRetryCount(0)
                         .withTaskId(IDGenerator.generate())
@@ -202,11 +201,11 @@ public class SwitchTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
 
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "even");
-        workflowInstance.setInput(workflowInput);
+        workflowModel.setInput(workflowInput);
 
         Map<String, Object> body = new HashMap<>();
         body.put("input", taskDefinitionInput);
@@ -214,20 +213,19 @@ public class SwitchTaskMapperTest {
 
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
-                        switchTask.getInputParameters(), workflowInstance, null, null);
+                        switchTask.getInputParameters(), workflowModel, null, null);
 
         TaskModel theTask = new TaskModel();
         theTask.setReferenceTaskName("Foo");
         theTask.setTaskId(IDGenerator.generate());
 
-        when(deciderService.getTasksToBeScheduled(workflowInstance, task2, 0, null))
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
                 .thenReturn(Collections.singletonList(theTask));
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflowInstance)
-                        .withTaskToSchedule(switchTask)
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(switchTask)
                         .withTaskInput(input)
                         .withRetryCount(0)
                         .withTaskId(IDGenerator.generate())

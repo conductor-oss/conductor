@@ -70,43 +70,38 @@ public class DynamicTaskMapper implements TaskMapper {
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException {
         LOGGER.debug("TaskMapperContext {} in DynamicTaskMapper", taskMapperContext);
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
-        String taskNameParam = taskToSchedule.getDynamicTaskNameParam();
+        String taskNameParam = workflowTask.getDynamicTaskNameParam();
         String taskName = getDynamicTaskName(taskInput, taskNameParam);
-        taskToSchedule.setName(taskName);
-        TaskDef taskDefinition = getDynamicTaskDefinition(taskToSchedule);
-        taskToSchedule.setTaskDefinition(taskDefinition);
+        workflowTask.setName(taskName);
+        TaskDef taskDefinition = getDynamicTaskDefinition(workflowTask);
+        workflowTask.setTaskDefinition(taskDefinition);
 
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
+                        workflowTask.getInputParameters(),
+                        workflowModel,
                         taskDefinition,
                         taskMapperContext.getTaskId());
-        TaskModel dynamicTask = new TaskModel();
-        dynamicTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());
-        dynamicTask.setTaskId(taskMapperContext.getTaskId());
-        dynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+
+        // IMPORTANT: The WorkflowTask that is inside TaskMapperContext is changed above
+        // createTaskModel() must be called here so the changes are reflected in the created
+        // TaskModel
+        TaskModel dynamicTask = taskMapperContext.createTaskModel();
+        dynamicTask.setStartDelayInSeconds(workflowTask.getStartDelay());
         dynamicTask.setInputData(input);
-        dynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        dynamicTask.setWorkflowType(workflowInstance.getWorkflowName());
         dynamicTask.setStatus(TaskModel.Status.SCHEDULED);
-        dynamicTask.setTaskType(taskToSchedule.getType());
-        dynamicTask.setTaskDefName(taskToSchedule.getName());
-        dynamicTask.setCorrelationId(workflowInstance.getCorrelationId());
-        dynamicTask.setScheduledTime(System.currentTimeMillis());
         dynamicTask.setRetryCount(retryCount);
-        dynamicTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
+        dynamicTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         dynamicTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
-        dynamicTask.setWorkflowTask(taskToSchedule);
         dynamicTask.setTaskType(taskName);
         dynamicTask.setRetriedTaskId(retriedTaskId);
-        dynamicTask.setWorkflowPriority(workflowInstance.getPriority());
+        dynamicTask.setWorkflowPriority(workflowModel.getPriority());
         return Collections.singletonList(dynamicTask);
     }
 
@@ -140,26 +135,25 @@ public class DynamicTaskMapper implements TaskMapper {
     /**
      * This method gets the TaskDefinition for a specific {@link WorkflowTask}
      *
-     * @param taskToSchedule: An instance of {@link WorkflowTask} which has the name of the using
+     * @param workflowTask: An instance of {@link WorkflowTask} which has the name of the using
      *     which the {@link TaskDef} can be retrieved.
      * @return An instance of TaskDefinition
      * @throws TerminateWorkflowException : in case of no workflow definition available
      */
     @VisibleForTesting
-    TaskDef getDynamicTaskDefinition(WorkflowTask taskToSchedule)
+    TaskDef getDynamicTaskDefinition(WorkflowTask workflowTask)
             throws TerminateWorkflowException { // TODO this is a common pattern in code base can
         // be moved to DAO
-        return Optional.ofNullable(taskToSchedule.getTaskDefinition())
+        return Optional.ofNullable(workflowTask.getTaskDefinition())
                 .orElseGet(
                         () ->
-                                Optional.ofNullable(
-                                                metadataDAO.getTaskDef(taskToSchedule.getName()))
+                                Optional.ofNullable(metadataDAO.getTaskDef(workflowTask.getName()))
                                         .orElseThrow(
                                                 () -> {
                                                     String reason =
                                                             String.format(
                                                                     "Invalid task specified.  Cannot find task by name %s in the task definitions",
-                                                                    taskToSchedule.getName());
+                                                                    workflowTask.getName());
                                                     return new TerminateWorkflowException(reason);
                                                 }));
     }

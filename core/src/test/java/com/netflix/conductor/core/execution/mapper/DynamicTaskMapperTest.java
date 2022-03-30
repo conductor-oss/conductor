@@ -78,10 +78,9 @@ public class DynamicTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowInstance(workflow)
-                        .withWorkflowDefinition(workflowDef)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(workflowTask.getTaskDefinition())
-                        .withTaskToSchedule(workflowTask)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
                         .withTaskId(taskId)

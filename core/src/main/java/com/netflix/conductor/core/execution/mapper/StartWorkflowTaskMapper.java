@@ -22,7 +22,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.START_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_START_WORKFLOW;
@@ -40,23 +39,13 @@ public class StartWorkflowTaskMapper implements TaskMapper {
     @Override
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException {
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
-        String taskId = taskMapperContext.getTaskId();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
 
-        TaskModel startWorkflowTask = new TaskModel();
+        TaskModel startWorkflowTask = taskMapperContext.createTaskModel();
         startWorkflowTask.setTaskType(TASK_TYPE_START_WORKFLOW);
-        startWorkflowTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        startWorkflowTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        startWorkflowTask.setWorkflowType(workflowInstance.getWorkflowName());
-        startWorkflowTask.setCorrelationId(workflowInstance.getCorrelationId());
-        startWorkflowTask.setScheduledTime(System.currentTimeMillis());
-        startWorkflowTask.setTaskId(taskId);
         startWorkflowTask.addInput(taskMapperContext.getTaskInput());
         startWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
-        startWorkflowTask.setWorkflowTask(taskToSchedule);
-        startWorkflowTask.setWorkflowPriority(workflowInstance.getPriority());
-        startWorkflowTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
+        startWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         LOGGER.debug("{} created", startWorkflowTask);
         return List.of(startWorkflowTask);
     }
