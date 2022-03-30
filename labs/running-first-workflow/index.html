@@ -286,8 +286,8 @@
 <p>See <a href="../concepts/system-tasks">System Task</a> for the list of such built-in tasks.
 Using system tasks is a great way to run a lot of our code in production.</p>
 <p>To bring up a local instance of Conductor follow one of the recommended steps:
-1. <a href="/server.md">Running Locally - From Code</a>
-2. <a href="/running-locally-docker.md">Running Locally - Docker Compose</a></p>
+1. <a href="../server">Running Locally - From Code</a>
+2. <a href="../running-locally-docker">Running Locally - Docker Compose</a></p>
 <hr />
 <h2 id="configuring-our-first-workflow">Configuring our First Workflow<a class="headerlink" href="#configuring-our-first-workflow" title="Permanent link">&para;</a></h2>
 <p>This is a sample workflow that we can leverage for our test.</p>
@@ -366,21 +366,21 @@ metadata or more advanced concepts which we can learn more in the detailed docum
 <p><a href="http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/metadata-resource/create">http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/metadata-resource/create</a></p>
 <p>If the link doesn’t open the right Swagger section, we can navigate to Metadata-Resource
 → <code>POST /api/metadata/workflow</code></p>
-<p><img alt="Swagger UI - Metadata - Workflow" src="/img/tutorial/metadataWorkflowPost.png" /></p>
+<p><img alt="Swagger UI - Metadata - Workflow" src="../../img/tutorial/metadataWorkflowPost.png" /></p>
 <p>Paste the workflow payload into the Swagger API and hit Execute.</p>
 <p>Now if we head over to the UI, we can see this workflow definition created:</p>
-<p><img alt="Conductor UI - Workflow Definition" src="/img/tutorial/uiWorkflowDefinition.png" /></p>
+<p><img alt="Conductor UI - Workflow Definition" src="../../img/tutorial/uiWorkflowDefinition.png" /></p>
 <p>If we click through we can see a visual representation of the workflow:</p>
-<p><img alt="Conductor UI - Workflow Definition - Visual Flow" src="/img/tutorial/uiWorkflowDefinitionVisual.png" /></p>
+<p><img alt="Conductor UI - Workflow Definition - Visual Flow" src="../../img/tutorial/uiWorkflowDefinitionVisual.png" /></p>
 <h2 id="2-running-our-first-workflow">2. Running our First Workflow<a class="headerlink" href="#2-running-our-first-workflow" title="Permanent link">&para;</a></h2>
 <p>Let’s run this workflow. To do that we can use the swagger API under the workflow-resources</p>
 <p><a href="http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1">http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1</a></p>
-<p><img alt="Swagger UI - Metadata - Workflow - Run" src="/img/tutorial/metadataWorkflowRun.png" /></p>
+<p><img alt="Swagger UI - Metadata - Workflow - Run" src="../../img/tutorial/metadataWorkflowRun.png" /></p>
 <p>Hit <strong>Execute</strong>!</p>
 <p>Conductor will return a workflow id. We will need to use this id to load this up on the UI. If our UI installation has
 search enabled we wouldn't need to copy this. If we don't have search enabled (using Elasticsearch) copy it from the
 Swagger UI.</p>
-<p><img alt="Swagger UI - Metadata - Workflow - Run" src="/img/tutorial/workflowRunIdCopy.png" /></p>
+<p><img alt="Swagger UI - Metadata - Workflow - Run" src="../../img/tutorial/workflowRunIdCopy.png" /></p>
 <p>Ok, we should see this running and get completed soon. Let’s go to the UI to see what happened.</p>
 <p>To load the workflow directly, use this URL format:</p>
 <pre class="codehilite"><code>http://localhost:5000/execution/&lt;WORKFLOW_ID&gt;
@@ -388,7 +388,7 @@ Swagger UI.</p>
 
 <p>Replace <code>&lt;WORKFLOW_ID&gt;</code> with our workflow id from the previous step. We should see a screen like below. Click on the
 different tabs to see all inputs and outputs and task list etc. Explore away!</p>
-<p><img alt="Conductor UI - Workflow Run" src="/img/tutorial/workflowLoaded.png" /></p>
+<p><img alt="Conductor UI - Workflow Run" src="../../img/tutorial/workflowLoaded.png" /></p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>In this blog post — we learned how to run a sample workflow in our Conductor installation. Concepts we touched on:</p>
 <ol>
