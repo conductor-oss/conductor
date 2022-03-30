@@ -30,6 +30,6 @@ Start Workflow task is defined directly inside the workflow with type `START_WOR
 
 #### Output
 
-| name       |type| description                    |
-|------------|---|--------------------------------|
+| name       | type   | description                    |
+|------------|--------|--------------------------------|
 | workflowId | String | The id of the started workflow |

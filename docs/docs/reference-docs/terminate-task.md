@@ -38,18 +38,18 @@ Terminate task is defined directly inside the workflow with type
 
 **Parameters:**
 
-|name|type|description|notes|
-|---|---|---|---|
-|terminationStatus|String|can only accept "COMPLETED" or "FAILED"|task cannot be optional|
-|workflowOutput|Any|Expected workflow output||
+| name              | type   | description                             | notes                   |
+|-------------------|--------|-----------------------------------------|-------------------------|
+| terminationStatus | String | can only accept "COMPLETED" or "FAILED" | task cannot be optional |
+| workflowOutput    | Any    | Expected workflow output                ||
 
 ### Output
 
 **Outputs:**
 
-|name|type|description|
-|---|---|---|
-|output|Map|The content of `workflowOutput` from the inputParameters. An empty object if `workflowOutput` is not set.|
+| name   | type | description                                                                                               |
+|--------|------|-----------------------------------------------------------------------------------------------------------|
+| output | Map  | The content of `workflowOutput` from the inputParameters. An empty object if `workflowOutput` is not set. |
 
 ### Examples
 

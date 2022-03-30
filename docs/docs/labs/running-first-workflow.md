@@ -8,8 +8,9 @@ See [System Task](../concepts/system-tasks) for the list of such built-in tasks.
 Using system tasks is a great way to run a lot of our code in production.
 
 To bring up a local instance of Conductor follow one of the recommended steps:
-1. [Running Locally - From Code](/server.md)
-2. [Running Locally - Docker Compose](/running-locally-docker.md)
+
+1. [Running Locally - From Code](../server)
+2. [Running Locally - Docker Compose](../running-locally-docker)
 
 ---
 
@@ -104,17 +105,17 @@ To configure the workflow, head over to the swagger API of conductor server and 
 If the link doesn’t open the right Swagger section, we can navigate to Metadata-Resource
 → `POST /api/metadata/workflow`
 
-![Swagger UI - Metadata - Workflow](/img/tutorial/metadataWorkflowPost.png)
+![Swagger UI - Metadata - Workflow](../img/tutorial/metadataWorkflowPost.png)
 
 Paste the workflow payload into the Swagger API and hit Execute.
 
 Now if we head over to the UI, we can see this workflow definition created:
 
-![Conductor UI - Workflow Definition](/img/tutorial/uiWorkflowDefinition.png)
+![Conductor UI - Workflow Definition](../img/tutorial/uiWorkflowDefinition.png)
 
 If we click through we can see a visual representation of the workflow:
 
-![Conductor UI - Workflow Definition - Visual Flow](/img/tutorial/uiWorkflowDefinitionVisual.png)
+![Conductor UI - Workflow Definition - Visual Flow](../img/tutorial/uiWorkflowDefinitionVisual.png)
 
 ## 2. Running our First Workflow
 
@@ -122,7 +123,7 @@ Let’s run this workflow. To do that we can use the swagger API under the workf
 
 [http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1](http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/workflow-resource/startWorkflow_1)
 
-![Swagger UI - Metadata - Workflow - Run](/img/tutorial/metadataWorkflowRun.png)
+![Swagger UI - Metadata - Workflow - Run](../img/tutorial/metadataWorkflowRun.png)
 
 Hit **Execute**!
 
@@ -130,7 +131,7 @@ Conductor will return a workflow id. We will need to use this id to load this up
 search enabled we wouldn't need to copy this. If we don't have search enabled (using Elasticsearch) copy it from the
 Swagger UI.
 
-![Swagger UI - Metadata - Workflow - Run](/img/tutorial/workflowRunIdCopy.png)
+![Swagger UI - Metadata - Workflow - Run](../img/tutorial/workflowRunIdCopy.png)
 
 Ok, we should see this running and get completed soon. Let’s go to the UI to see what happened.
 
@@ -143,7 +144,7 @@ http://localhost:5000/execution/<WORKFLOW_ID>
 Replace `<WORKFLOW_ID>` with our workflow id from the previous step. We should see a screen like below. Click on the
 different tabs to see all inputs and outputs and task list etc. Explore away!
 
-![Conductor UI - Workflow Run](/img/tutorial/workflowLoaded.png)
+![Conductor UI - Workflow Run](../img/tutorial/workflowLoaded.png)
 
 ## Summary
 

@@ -23,15 +23,15 @@ at available workflow executions.
 
 The following fields are available for searching for workflows.
 
-|Search Field Name|Description|
-|---|---|
-| Worflow Name | Use this field to filter workflows by the configured name |
-| Workflow ID  | Use this field to filter to a specific workflow by its id |
-| Status  | Use this field to filter by status - available options are presented as a multi-select option |
-|Start Time - From| Use this field to filter workflows that started on or after the time specified|
-|Start Time - To| Use this field to filter workflows that started on or before the time specified|
-|Lookback (days)| Use this field to filter workflows that ran in the last given number of days|
-|Free Text Query| If you have indexing enabled, you can query by values that was part of your workflow inputs and outputs|
+| Search Field Name | Description                                                                                             |
+|-------------------|---------------------------------------------------------------------------------------------------------|
+| Workflow Name     | Use this field to filter workflows by the configured name                                               |
+| Workflow ID       | Use this field to filter to a specific workflow by its id                                               |
+| Status            | Use this field to filter by status - available options are presented as a multi-select option           |
+| Start Time - From | Use this field to filter workflows that started on or after the time specified                          |
+| Start Time - To   | Use this field to filter workflows that started on or before the time specified                         |
+| Lookback (days)   | Use this field to filter workflows that ran in the last given number of days                            |
+| Free Text Query   | If you have indexing enabled, you can query by values that was part of your workflow inputs and outputs |
 
 The table listing has options to
 1. Select columns for display
@@ -45,9 +45,9 @@ At the bottom of the table, there are options to
 
 In addition to the options listed in **Basic Search** view, we have the following options in the **Find by Tasks** view.
 
-|Search Field Name|Description|
-|---|---|
-| Include Task ID | Use this field to filter workflows that contains a task with this id |
-| Include Task Name | Use this field to filter workflows that contains a task with name |
+| Search Field Name  | Description                                                                                                  |
+|--------------------|--------------------------------------------------------------------------------------------------------------|
+| Include Task ID    | Use this field to filter workflows that contains a task with this id                                         |
+| Include Task Name  | Use this field to filter workflows that contains a task with name                                            |
 | Free Text in Tasks | If you have indexing enabled, you can query by values that was part of your workflow task inputs and outputs |
 

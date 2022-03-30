@@ -29,18 +29,18 @@ Branching inside loopover task is supported.
 
 **Parameters:**
 
-|name|type|description|
-|---|---|---|
-|loopCondition|String|Condition to be evaluated after every iteration. This is a Javascript expression, evaluated using the Nashorn engine. If an exception occurs during evaluation, the DO_WHILE task is set to FAILED_WITH_TERMINAL_ERROR.|
-|loopOver|List[Task]|List of tasks that needs to be executed as long as the condition is true.|
+| name          | type       | description                                                                                                                                                                                                             |
+|---------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| loopCondition | String     | Condition to be evaluated after every iteration. This is a Javascript expression, evaluated using the Nashorn engine. If an exception occurs during evaluation, the DO_WHILE task is set to FAILED_WITH_TERMINAL_ERROR. |
+| loopOver      | List[Task] | List of tasks that needs to be executed as long as the condition is true.                                                                                                                                               |
 
 **Outputs:**
 
-|name|type|description|
-|---|---|---|
-|iteration|Integer|Iteration number: the current one while executing; the final one once the loop is finished|
-|`i`|Map[String, Any]|Iteration number as a string, mapped to the task references names and their output.|
-|*|Any|Any state can be stored here if the `loopCondition` does so. For example `storage` will exist if `loopCondition` is `if ($.LoopTask['iteration'] <= 10) {$.LoopTask.storage = 3; true } else {false}`|
+| name      | type             | description                                                                                                                                                                                           |
+|-----------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| iteration | Integer          | Iteration number: the current one while executing; the final one once the loop is finished                                                                                                            |
+| `i`       | Map[String, Any] | Iteration number as a string, mapped to the task references names and their output.                                                                                                                   |
+| *         | Any              | Any state can be stored here if the `loopCondition` does so. For example `storage` will exist if `loopCondition` is `if ($.LoopTask['iteration'] <= 10) {$.LoopTask.storage = 3; true } else {false}` |
 
 ### Examples
 

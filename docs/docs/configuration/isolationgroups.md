@@ -2,11 +2,11 @@
 
 Consider an HTTP task where the latency of an API is high, task queue piles up effecting execution of other HTTP tasks which have low latency.
 
-We can isolate the execution of such tasks to have predictable performance using `isolationgroupId`, a property of task def.
+We can isolate the execution of such tasks to have predictable performance using `isolationgroupId`, a property of task definition.
 
 When we set isolationGroupId,  the executor(SystemTaskWorkerCoordinator) will allocate an isolated queue and an isolated thread pool for execution of those tasks.
 
-If no isolationgroupId is specified in taskdef, then fallback is default behaviour where the executor executes the task in shared threadpool for all tasks. 
+If no `isolationgroupId` is specified in task definition, then fallback is default behaviour where the executor executes the task in shared thread-pool for all tasks. 
 
 Example taskdef  
 

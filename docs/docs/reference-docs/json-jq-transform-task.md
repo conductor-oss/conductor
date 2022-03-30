@@ -26,22 +26,22 @@ the output of one task to the input of another.
 ### Configuration
 
 
-| Attribute      | Description |
-| ----------- | ----------- |
-| name      | Task Name. A unique name that is descriptive of the task function      |
-| taskReferenceName   | Task Reference Name. A unique reference to this task. There can be multiple references of a task within the same workflow definition        |
-| type   | Task Type. In this case, JSON_JQ_TRANSFORM        |
-| inputParameters   | The input parameters that will be supplied to this task. The parameters will be a JSON object of atleast 2 attributes, one of which will be called queryExpression. The others are user named attributes. These attributes will be accessible by the JQ query processor        |
-| inputParameters/user-defined-key(s)   | User defined key(s) along with values.          |
-| inputParameters/queryExpression   | A JQ query expression        |
+| Attribute                           | Description                                                                                                                                                                                                                                                             |
+|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                                | Task Name. A unique name that is descriptive of the task function                                                                                                                                                                                                       |
+| taskReferenceName                   | Task Reference Name. A unique reference to this task. There can be multiple references of a task within the same workflow definition                                                                                                                                    |
+| type                                | Task Type. In this case, JSON_JQ_TRANSFORM                                                                                                                                                                                                                              |
+| inputParameters                     | The input parameters that will be supplied to this task. The parameters will be a JSON object of atleast 2 attributes, one of which will be called queryExpression. The others are user named attributes. These attributes will be accessible by the JQ query processor |
+| inputParameters/user-defined-key(s) | User defined key(s) along with values.                                                                                                                                                                                                                                  |
+| inputParameters/queryExpression     | A JQ query expression                                                                                                                                                                                                                                                   |
 
 #### Output Configuration
 
-| Attribute      | Description |
-| ----------- | ----------- |
-| result   | The first results returned by the JQ expression     |
-| resultList   | A List of results returned by the JQ expression        |
-| error | An optional error message, indicating that the JQ query failed processing |
+| Attribute  | Description                                                               |
+|------------|---------------------------------------------------------------------------|
+| result     | The first results returned by the JQ expression                           |
+| resultList | A List of results returned by the JQ expression                           |
+| error      | An optional error message, indicating that the JQ query failed processing |
 
 ### Example
 
@@ -107,5 +107,3 @@ attribute along with a string message will be returned if there was an error pro
   ]
 }
 ```
-
-#### Input Configuration

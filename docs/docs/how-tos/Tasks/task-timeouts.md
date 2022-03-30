@@ -7,13 +7,13 @@ sidebar_position: 1
 Tasks can be configured to handle various scenarios of timeouts. Here are some scenarios and the relevance configuration
 fields.
 
-|Scenario|Configuration|
-|---|---|
-|A task worker picked up the task, but fails to respond back with an update|`responseTimeoutSeconds`|
-|A task worker picked up the task and updates progress, but fails to complete within an expected timeframe|`timeoutSeconds`|
-|A task is stuck in a retry loop with repeated failures beyond an expected timeframe|`timeoutSeconds`|
-|Task doesn't get picked by any workers for a specific amount of time|`pollTimeoutSeconds`|
-|Task isn't completed within a specified amount of time despite being picked up by task workers|`timeoutSeconds`|
+| Scenario                                                                                                  | Configuration            |
+|-----------------------------------------------------------------------------------------------------------|--------------------------|
+| A task worker picked up the task, but fails to respond back with an update                                | `responseTimeoutSeconds` |
+| A task worker picked up the task and updates progress, but fails to complete within an expected timeframe | `timeoutSeconds`         |
+| A task is stuck in a retry loop with repeated failures beyond an expected timeframe                       | `timeoutSeconds`         |
+| Task doesn't get picked by any workers for a specific amount of time                                      | `pollTimeoutSeconds`     |
+| Task isn't completed within a specified amount of time despite being picked up by task workers            | `timeoutSeconds`         |
 
 > `timeoutSeconds` should always be greater than `responseTimeoutSeconds`
 

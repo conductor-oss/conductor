@@ -23,9 +23,9 @@ Dynamic task is defined directly inside the workflow with type `DYNAMIC`.
 
 Following are the input parameters :
 
-|name|description|
-|---|---|
-| dynamicTaskNameParam|Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.|
+| name                 | description                                                                                                                                                               |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| dynamicTaskNameParam | Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'. |
 
 #### Output
 

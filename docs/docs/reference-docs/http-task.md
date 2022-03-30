@@ -26,35 +26,35 @@ have to maintain and allows for a lot of flexibility.
 
 HTTP task is defined directly inside the workflow with the task type `HTTP`.
 
-|name|type|description|
-|---|---|---|
+| name         | type        | description             |
+|--------------|-------------|-------------------------|
 | http_request | HttpRequest | JSON object (see below) |
 
 #### Inputs
 
-|Name|Type|Description|
-|---|---|---|
-| uri | String | URI for the service. Can be a partial when using vipAddress or includes the server address.|
-| method | String | HTTP method. GET, PUT, POST, DELETE, OPTIONS, HEAD|
-| accept | String | Accept header. Default:  ```application/json``` |
-| contentType | String | Content Type - supported types are ```text/plain```, ```text/html```, and ```application/json``` (Default)|
-| headers| Map[String, Any] | A map of additional http headers to be sent along with the request.|
-| body| Map[] | Request body |
-| vipAddress | String | When using discovery based service URLs.|
-| asyncComplete | Boolean | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
-| oauthConsumerKey | String | [OAuth](https://oauth.net/core/1.0/) client consumer key  |
-| oauthConsumerSecret | String | [OAuth](https://oauth.net/core/1.0/) client consumer secret |
-| connectionTimeOut | Integer | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100. |
-| readTimeOut | Integer | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150. |
+| Name                | Type             | Description                                                                                                                                                                |
+|---------------------|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| uri                 | String           | URI for the service. Can be a partial when using vipAddress or includes the server address.                                                                                |
+| method              | String           | HTTP method. GET, PUT, POST, DELETE, OPTIONS, HEAD                                                                                                                         |
+| accept              | String           | Accept header. Default:  ```application/json```                                                                                                                            |
+| contentType         | String           | Content Type - supported types are ```text/plain```, ```text/html```, and ```application/json``` (Default)                                                                 |
+| headers             | Map[String, Any] | A map of additional http headers to be sent along with the request.                                                                                                        |
+| body                | Map[]            | Request body                                                                                                                                                               |
+| vipAddress          | String           | When using discovery based service URLs.                                                                                                                                   |
+| asyncComplete       | Boolean          | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
+| oauthConsumerKey    | String           | [OAuth](https://oauth.net/core/1.0/) client consumer key                                                                                                                   |
+| oauthConsumerSecret | String           | [OAuth](https://oauth.net/core/1.0/) client consumer secret                                                                                                                |
+| connectionTimeOut   | Integer          | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100.                                                                                    |
+| readTimeOut         | Integer          | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150.                                                                                          |
 
 #### Output
 
-|name|type|description|
-|---|---|---|
-| response | Map |  JSON body containing the response if one is present |
-| headers | Map[String, Any] | Response Headers |
-| statusCode | Integer | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
-| reasonPhrase | String | Http Status Code's reason phrase |
+| name         | type             | description                                                                 |
+|--------------|------------------|-----------------------------------------------------------------------------|
+| response     | Map              | JSON body containing the response if one is present                         |
+| headers      | Map[String, Any] | Response Headers                                                            |
+| statusCode   | Integer          | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
+| reasonPhrase | String           | Http Status Code's reason phrase                                            |
 
 ### Examples
 

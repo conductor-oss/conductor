@@ -32,14 +32,14 @@ sub-workflows are determined at run time.
 ## Configuration
 ### Input Configuration
 
-| Attribute      | Description |
-| ----------- | ----------- |
-| name      | Task Name. A unique name that is descriptive of the task function      |
-| taskReferenceName   | Task Reference Name. A unique reference to this task. There can be multiple references of a task within the same workflow definition        |
-| type   | `FORK_JOIN_DYNAMIC`        |
-| inputParameters   | The input parameters that will be supplied to this task.         |
-| dynamicForkTasksParam | This is a JSON array of tasks or sub-workflow objects that needs to be forked and run in parallel |
-| dynamicForkTasksInputParamName | A JSON map, where the keys are task or sub-workflow names, and the values are its corresponding inputParameters | 
+| Attribute                      | Description                                                                                                                          |
+|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| name                           | Task Name. A unique name that is descriptive of the task function                                                                    |
+| taskReferenceName              | Task Reference Name. A unique reference to this task. There can be multiple references of a task within the same workflow definition |
+| type                           | `FORK_JOIN_DYNAMIC`                                                                                                                  |
+| inputParameters                | The input parameters that will be supplied to this task.                                                                             |
+| dynamicForkTasksParam          | This is a JSON array of tasks or sub-workflow objects that needs to be forked and run in parallel                                    |
+| dynamicForkTasksInputParamName | A JSON map, where the keys are task or sub-workflow names, and the values are its corresponding inputParameters                      | 
 
 ### Example
 
@@ -131,7 +131,7 @@ sub-workflows that needs to be forked and run in parallel. This will have the fo
 ```
 
 * `dynamicForkTasksInputParamName` This is a JSON map of task or
-sub-workflow objects and all of the input parameters that these tasks will need to run.
+sub-workflow objects and all the input parameters that these tasks will need to run.
 
 ```
 "dynamicTasksInput":{

@@ -9,8 +9,8 @@ In this Lab, we shall:
 
 Conductor Supports Eventing with two Interfaces:
 
-* [Event Task](../../configuration/systask/#event)
-* [Event Handlers](../../configuration/eventhandlers/#event-handler)
+* [Event Task](../../configuration/systask#event)
+* [Event Handlers](../../configuration/eventhandlers#event-handler)
 
 We shall create a simple cyclic workflow similar to this:
 

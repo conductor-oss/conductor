@@ -214,7 +214,7 @@ That's it. You are all set. Run your Java application to start running your work
 After running your application, it will be able to poll and run your worker. Let's go back and load up the previously
 created workflow in your UI.
 
-![Conductor UI - Workflow Run](/img/tutorial/successfulWorkerExecution.png)
+![Conductor UI - Workflow Run](../img/tutorial/successfulWorkerExecution.png)
 
 In your worker you had this implementation:
 
