@@ -291,9 +291,12 @@
 </code></pre>
 
 <h3 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h3>
-<p>Start Workflow starts another workflow.</p>
+<p>Start Workflow starts another workflow. Unlike <code>SUB_WORKFLOW</code>, <code>START_WORKFLOW</code> does
+not create a relationship between starter and the started workflow. It also does not wait for the started workflow to complete. A <code>START_WORKFLOW</code> is 
+considered successful once the requested workflow is started successfully. In other words, <code>START_WORKFLOW</code> is marked as COMPLETED, once the started 
+workflow is in RUNNING state.</p>
 <h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h3>
-<p>When another workflow needs to be started from a workflow, <code>START_WORKFLOW</code> can be used.</p>
+<p>When another workflow needs to be started from a workflow, <code>START_WORKFLOW</code> can be used. </p>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p>Start Workflow task is defined directly inside the workflow with type <code>START_WORKFLOW</code>.</p>
 <h4 id="input">Input<a class="headerlink" href="#input" title="Permanent link">&para;</a></h4>
