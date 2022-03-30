@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,28 +54,18 @@ public class JoinTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in JoinTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
-        String taskId = taskMapperContext.getTaskId();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
 
         Map<String, Object> joinInput = new HashMap<>();
-        joinInput.put("joinOn", taskToSchedule.getJoinOn());
+        joinInput.put("joinOn", workflowTask.getJoinOn());
 
-        TaskModel joinTask = new TaskModel();
+        TaskModel joinTask = taskMapperContext.createTaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_JOIN);
-        joinTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        joinTask.setCorrelationId(workflowInstance.getCorrelationId());
-        joinTask.setWorkflowType(workflowInstance.getWorkflowName());
-        joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
-        joinTask.setTaskId(taskId);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        joinTask.setWorkflowTask(taskToSchedule);
-        joinTask.setWorkflowPriority(workflowInstance.getPriority());
 
-        return Collections.singletonList(joinTask);
+        return List.of(joinTask);
     }
 }

@@ -420,13 +420,6 @@ public class WorkflowModel {
         this.outputPayload = data;
     }
 
-    /** @return a copy of the workflow instance */
-    public WorkflowModel copy() {
-        WorkflowModel copy = new WorkflowModel();
-        BeanUtils.copyProperties(this, copy);
-        return copy;
-    }
-
     @Override
     public String toString() {
         String name = workflowDefinition != null ? workflowDefinition.getName() : null;
@@ -505,6 +498,14 @@ public class WorkflowModel {
         BeanUtils.copyProperties(this, workflow);
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
         workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
+
+        // ensure that input/output is properly represented
+        if (externalInputPayloadStoragePath != null) {
+            workflow.setInput(new HashMap<>());
+        }
+        if (externalOutputPayloadStoragePath != null) {
+            workflow.setOutput(new HashMap<>());
+        }
         return workflow;
     }
 }

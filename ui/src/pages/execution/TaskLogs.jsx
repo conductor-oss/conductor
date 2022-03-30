@@ -1,10 +1,10 @@
 import React from "react";
-import { useFetch } from "../../utils/query";
+import { useLogs } from "../../data/misc";
 import { DataTable, Text, LinearProgress } from "../../components";
 
 export default function TaskLogs({ task }) {
   const { taskId } = task;
-  const { data: log, isFetching } = useFetch(`/tasks/${taskId}/log`);
+  const { data: log, isFetching } = useLogs({ taskId });
 
   if (isFetching) {
     return <LinearProgress />;

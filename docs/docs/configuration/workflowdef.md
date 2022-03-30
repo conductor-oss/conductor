@@ -5,7 +5,7 @@
 At a high level, a workflow is the Conductor primitive that encompasses the definition and flow of your business logic.
 A workflow is a collection (graph) of tasks and sub-workflows. A workflow definition specifies the order of execution of
 these [Tasks](taskdef.md). It also specifies how data/state is passed from one task to the other (using the
-input/output parameters). These are then combined together to give you the final result. This orchestration of Tasks can
+input/output parameters). These are then combined to give you the final result. This orchestration of Tasks can
 happen in a hybrid ecosystem that includes microservices, serverless functions, and monolithic applications. They can
 also span across any public cloud and on-premise data center footprints. In addition, the orchestration of tasks can be
 across any programming language since Conductor is also language agnostic.

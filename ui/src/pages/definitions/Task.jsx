@@ -1,11 +1,11 @@
 import React from "react";
 import { NavLink, DataTable, Button } from "../../components";
 import { makeStyles } from "@material-ui/styles";
-import { useFetch } from "../../utils/query";
 import Header from "./Header";
 import sharedStyles from "../styles";
 import { Helmet } from "react-helmet";
 import AddIcon from "@material-ui/icons/Add";
+import { useTaskDefs } from "../../data/task";
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -47,8 +47,7 @@ const columns = [
 
 export default function TaskDefinitions() {
   const classes = useStyles();
-
-  const { data: tasks, isFetching } = useFetch("/metadata/taskdefs");
+  const { data: tasks, isFetching } = useTaskDefs();
 
   return (
     <div className={classes.wrapper}>

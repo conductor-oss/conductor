@@ -19,6 +19,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
+import static com.netflix.conductor.model.TaskModel.Status.IN_PROGRESS;
 
 @Component(TASK_TYPE_WAIT)
 public class Wait extends WorkflowSystemTask {
@@ -29,13 +30,7 @@ public class Wait extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        task.setStatus(TaskModel.Status.IN_PROGRESS);
-    }
-
-    @Override
-    public boolean execute(
-            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        return false;
+        task.setStatus(IN_PROGRESS);
     }
 
     @Override

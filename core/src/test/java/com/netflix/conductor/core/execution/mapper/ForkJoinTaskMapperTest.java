@@ -118,9 +118,8 @@ public class ForkJoinTaskMapperTest {
         String taskId = IDGenerator.generate();
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(def)
-                        .withWorkflowInstance(workflow)
-                        .withTaskToSchedule(forkTask)
+                        .withWorkflowModel(workflow)
+                        .withWorkflowTask(forkTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .withDeciderService(deciderService)
@@ -200,9 +199,8 @@ public class ForkJoinTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(def)
-                        .withWorkflowInstance(workflow)
-                        .withTaskToSchedule(forkTask)
+                        .withWorkflowModel(workflow)
+                        .withWorkflowTask(forkTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .withDeciderService(deciderService)

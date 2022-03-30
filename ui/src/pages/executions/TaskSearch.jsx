@@ -9,12 +9,8 @@ import {
   Input,
 } from "../../components";
 
-import {
-  useTaskSearch,
-  useTaskNames,
-  useWorkflowNames,
-} from "../../utils/query";
-
+import { useTaskSearch, useTaskNames } from "../../data/task";
+import { useWorkflowNames } from "../../data/workflow";
 import DateRangePicker from "../../components/DateRangePicker";
 import { useQueryState } from "react-router-use-location-state";
 import SearchTabs from "./SearchTabs";

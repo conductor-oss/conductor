@@ -7,7 +7,10 @@ import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
 import _ from "lodash";
 import Editor from "@monaco-editor/react";
-import { useWorkflow, useWorkflowNamesAndVersions } from "../../utils/query";
+import {
+  useWorkflowDef,
+  useWorkflowNamesAndVersions,
+} from "../../data/workflow";
 import WorkflowDAG from "../../components/diagram/WorkflowDAG";
 import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
@@ -119,7 +122,7 @@ export default function Workflow() {
     data: workflowDef,
     isFetching,
     refetch: refetchWorkflow,
-  } = useWorkflow(workflowName, workflowVersion, NEW_WORKFLOW_TEMPLATE);
+  } = useWorkflowDef(workflowName, workflowVersion, NEW_WORKFLOW_TEMPLATE);
 
   const workflowJson = useMemo(
     () => (workflowDef ? JSON.stringify(workflowDef, null, 2) : ""),

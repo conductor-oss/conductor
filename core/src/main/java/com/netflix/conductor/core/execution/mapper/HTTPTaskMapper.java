@@ -68,40 +68,27 @@ public class HTTPTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in HTTPTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        taskToSchedule.getInputParameters().put("asyncComplete", taskToSchedule.isAsyncComplete());
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        workflowTask.getInputParameters().put("asyncComplete", workflowTask.isAsyncComplete());
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> input =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
-                        taskId,
-                        taskDefinition);
+                        workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
         Boolean asynComplete = (Boolean) input.get("asyncComplete");
 
-        TaskModel httpTask = new TaskModel();
-        httpTask.setTaskType(taskToSchedule.getType());
-        httpTask.setTaskDefName(taskToSchedule.getName());
-        httpTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        httpTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        httpTask.setWorkflowType(workflowInstance.getWorkflowName());
-        httpTask.setCorrelationId(workflowInstance.getCorrelationId());
-        httpTask.setScheduledTime(System.currentTimeMillis());
-        httpTask.setTaskId(taskId);
+        TaskModel httpTask = taskMapperContext.createTaskModel();
         httpTask.setInputData(input);
         httpTask.getInputData().put("asyncComplete", asynComplete);
         httpTask.setStatus(TaskModel.Status.SCHEDULED);
         httpTask.setRetryCount(retryCount);
-        httpTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
-        httpTask.setWorkflowTask(taskToSchedule);
-        httpTask.setWorkflowPriority(workflowInstance.getPriority());
+        httpTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
         if (Objects.nonNull(taskDefinition)) {
             httpTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
             httpTask.setRateLimitFrequencyInSeconds(
@@ -109,6 +96,6 @@ public class HTTPTaskMapper implements TaskMapper {
             httpTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
             httpTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
         }
-        return Collections.singletonList(httpTask);
+        return List.of(httpTask);
     }
 }

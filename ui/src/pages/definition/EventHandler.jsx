@@ -1,19 +1,32 @@
 import React, { useMemo } from "react";
 import { useRouteMatch } from "react-router-dom";
 import sharedStyles from "../styles";
-import { useFetch } from "../../utils/query";
 import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
-import { ReactJson, LinearProgress, Heading } from "../../components";
+import { ReactJson, LinearProgress, Heading, Paper } from "../../components";
+import { useEventHandlers } from "../../data/misc";
 
-const useStyles = makeStyles(sharedStyles);
+const useStyles = makeStyles({
+  wrapper: {
+    display: "flex",
+    height: "100%",
+    alignItems: "stretch",
+    flexDirection: "column",
+  },
+  header: sharedStyles.header,
+  paper: {
+    flex: 1,
+    margin: 30,
+    paddingTop: 10
+  }
+});
 
 export default function EventHandlerDefinition() {
   const classes = useStyles();
   const match = useRouteMatch();
 
   // TODO: Need API that returns individual event handler by name.
-  const { data, isFetching } = useFetch("/event");
+  const { data, isFetching } = useEventHandlers();
 
   const eventHandler = useMemo(
     () => data && data.find((row) => row.name === match.params.name),
@@ -32,9 +45,9 @@ export default function EventHandlerDefinition() {
         <Heading level={4}>{match.params.name}</Heading>
       </div>
       {isFetching && <LinearProgress />}
-      <div className={classes.tabContent}>
+      <Paper className={classes.paper}>
         {eventHandler && <ReactJson src={eventHandler} />}
-      </div>
+      </Paper>
     </div>
   );
 }

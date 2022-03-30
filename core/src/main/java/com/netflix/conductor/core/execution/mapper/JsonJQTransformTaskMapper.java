@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,36 +50,23 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
 
         LOGGER.debug("TaskMapperContext {} in JsonJQTransformTaskMapper", taskMapperContext);
 
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         String taskId = taskMapperContext.getTaskId();
 
         TaskDef taskDefinition =
                 Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                        .orElseGet(() -> metadataDAO.getTaskDef(taskToSchedule.getName()));
+                        .orElseGet(() -> metadataDAO.getTaskDef(workflowTask.getName()));
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
-                        taskToSchedule.getInputParameters(),
-                        workflowInstance,
-                        taskId,
-                        taskDefinition);
+                        workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
-        TaskModel jsonJQTransformTask = new TaskModel();
-        jsonJQTransformTask.setTaskType(taskToSchedule.getType());
-        jsonJQTransformTask.setTaskDefName(taskToSchedule.getName());
-        jsonJQTransformTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        jsonJQTransformTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        jsonJQTransformTask.setWorkflowType(workflowInstance.getWorkflowName());
-        jsonJQTransformTask.setCorrelationId(workflowInstance.getCorrelationId());
+        TaskModel jsonJQTransformTask = taskMapperContext.createTaskModel();
         jsonJQTransformTask.setStartTime(System.currentTimeMillis());
-        jsonJQTransformTask.setScheduledTime(System.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
-        jsonJQTransformTask.setTaskId(taskId);
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        jsonJQTransformTask.setWorkflowTask(taskToSchedule);
-        jsonJQTransformTask.setWorkflowPriority(workflowInstance.getPriority());
 
-        return Collections.singletonList(jsonJQTransformTask);
+        return List.of(jsonJQTransformTask);
     }
 }

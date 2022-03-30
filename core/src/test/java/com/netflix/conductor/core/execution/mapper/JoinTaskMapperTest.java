@@ -35,9 +35,9 @@ public class JoinTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(TaskType.JOIN.name());
-        taskToSchedule.setJoinOn(Arrays.asList("task1", "task2"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(TaskType.JOIN.name());
+        workflowTask.setJoinOn(Arrays.asList("task1", "task2"));
 
         String taskId = IDGenerator.generate();
 
@@ -47,10 +47,9 @@ public class JoinTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(wd)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();

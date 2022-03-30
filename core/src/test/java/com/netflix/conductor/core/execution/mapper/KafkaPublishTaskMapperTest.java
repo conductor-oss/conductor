@@ -49,10 +49,10 @@ public class KafkaPublishTaskMapperTest {
     @Test
     public void getMappedTasks() {
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("kafka_task");
-        taskToSchedule.setType(TaskType.KAFKA_PUBLISH.name());
-        taskToSchedule.setTaskDefinition(new TaskDef("kafka_task"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("kafka_task");
+        workflowTask.setType(TaskType.KAFKA_PUBLISH.name());
+        workflowTask.setTaskDefinition(new TaskDef("kafka_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
@@ -62,10 +62,9 @@ public class KafkaPublishTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)
@@ -83,9 +82,9 @@ public class KafkaPublishTaskMapperTest {
     @Test
     public void getMappedTasks_WithoutTaskDef() {
         // Given
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("kafka_task");
-        taskToSchedule.setType(TaskType.KAFKA_PUBLISH.name());
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("kafka_task");
+        workflowTask.setType(TaskType.KAFKA_PUBLISH.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
@@ -100,10 +99,9 @@ public class KafkaPublishTaskMapperTest {
         taskdefinition.setIsolationGroupId(testIsolationGroupId);
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(taskdefinition)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(new HashMap<>())
                         .withRetryCount(0)
                         .withRetryTaskId(retriedTaskId)

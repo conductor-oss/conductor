@@ -61,14 +61,14 @@ public class SubWorkflowTaskMapperTest {
     public void getMappedTasks() {
         // Given
         WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-        WorkflowTask taskToSchedule = new WorkflowTask();
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+        WorkflowTask workflowTask = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
         subWorkflowParams.setVersion(2);
-        taskToSchedule.setSubWorkflowParam(subWorkflowParams);
-        taskToSchedule.setStartDelay(30);
+        workflowTask.setSubWorkflowParam(subWorkflowParams);
+        workflowTask.setStartDelay(30);
         Map<String, Object> taskInput = new HashMap<>();
         Map<String, String> taskToDomain =
                 new HashMap<>() {
@@ -87,9 +87,8 @@ public class SubWorkflowTaskMapperTest {
         // When
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflowInstance)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
                         .withTaskId(IDGenerator.generate())
@@ -113,9 +112,9 @@ public class SubWorkflowTaskMapperTest {
     public void testTaskToDomain() {
         // Given
         WorkflowDef workflowDef = new WorkflowDef();
-        WorkflowModel workflowInstance = new WorkflowModel();
-        workflowInstance.setWorkflowDefinition(workflowDef);
-        WorkflowTask taskToSchedule = new WorkflowTask();
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+        WorkflowTask workflowTask = new WorkflowTask();
         Map<String, String> taskToDomain =
                 new HashMap<>() {
                     {
@@ -126,7 +125,7 @@ public class SubWorkflowTaskMapperTest {
         subWorkflowParams.setName("Foo");
         subWorkflowParams.setVersion(2);
         subWorkflowParams.setTaskToDomain(taskToDomain);
-        taskToSchedule.setSubWorkflowParam(subWorkflowParams);
+        workflowTask.setSubWorkflowParam(subWorkflowParams);
         Map<String, Object> taskInput = new HashMap<>();
 
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
@@ -139,9 +138,8 @@ public class SubWorkflowTaskMapperTest {
         // When
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflowInstance)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
                         .withTaskId(IDGenerator.generate())
@@ -179,7 +177,7 @@ public class SubWorkflowTaskMapperTest {
         expectedException.expectMessage(
                 String.format(
                         "Task %s is defined as sub-workflow and is missing subWorkflowParams. "
-                                + "Please check the blueprint",
+                                + "Please check the workflow definition",
                         workflowTask.getName()));
 
         subWorkflowTaskMapper.getSubWorkflowParams(workflowTask);

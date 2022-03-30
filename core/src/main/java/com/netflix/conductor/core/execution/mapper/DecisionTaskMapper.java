@@ -75,39 +75,30 @@ public class DecisionTaskMapper implements TaskMapper {
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
         LOGGER.debug("TaskMapperContext {} in DecisionTaskMapper", taskMapperContext);
         List<TaskModel> tasksToBeScheduled = new LinkedList<>();
-        WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
-        WorkflowModel workflowInstance = taskMapperContext.getWorkflowInstance();
+        WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
+        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
-        String taskId = taskMapperContext.getTaskId();
 
         // get the expression to be evaluated
-        String caseValue = getEvaluatedCaseValue(taskToSchedule, taskInput);
+        String caseValue = getEvaluatedCaseValue(workflowTask, taskInput);
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
-        TaskModel decisionTask = new TaskModel();
+        TaskModel decisionTask = taskMapperContext.createTaskModel();
         decisionTask.setTaskType(TaskType.TASK_TYPE_DECISION);
         decisionTask.setTaskDefName(TaskType.TASK_TYPE_DECISION);
-        decisionTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-        decisionTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        decisionTask.setWorkflowType(workflowInstance.getWorkflowName());
-        decisionTask.setCorrelationId(workflowInstance.getCorrelationId());
-        decisionTask.setScheduledTime(System.currentTimeMillis());
         decisionTask.addInput("case", caseValue);
         decisionTask.addOutput("caseOutput", Collections.singletonList(caseValue));
-        decisionTask.setTaskId(taskId);
         decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        decisionTask.setWorkflowTask(taskToSchedule);
-        decisionTask.setWorkflowPriority(workflowInstance.getPriority());
         tasksToBeScheduled.add(decisionTask);
 
         // get the list of tasks based on the decision
-        List<WorkflowTask> selectedTasks = taskToSchedule.getDecisionCases().get(caseValue);
+        List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(caseValue);
         // if the tasks returned are empty based on evaluated case value, then get the default case
         // if there is one
         if (selectedTasks == null || selectedTasks.isEmpty()) {
-            selectedTasks = taskToSchedule.getDefaultCase();
+            selectedTasks = workflowTask.getDefaultCase();
         }
         // once there are selected tasks that need to proceeded as part of the decision, get the
         // next task to be scheduled by using the decider service
@@ -120,7 +111,7 @@ public class DecisionTaskMapper implements TaskMapper {
                     taskMapperContext
                             .getDeciderService()
                             .getTasksToBeScheduled(
-                                    workflowInstance,
+                                    workflowModel,
                                     selectedTask,
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
@@ -134,14 +125,14 @@ public class DecisionTaskMapper implements TaskMapper {
      * This method evaluates the case expression of a decision task and returns a string
      * representation of the evaluated result.
      *
-     * @param taskToSchedule: The decision task that has the case expression to be evaluated.
+     * @param workflowTask: The decision task that has the case expression to be evaluated.
      * @param taskInput: the input which has the values that will be used in evaluating the case
      *     expression.
      * @return A String representation of the evaluated result
      */
     @VisibleForTesting
-    String getEvaluatedCaseValue(WorkflowTask taskToSchedule, Map<String, Object> taskInput) {
-        String expression = taskToSchedule.getCaseExpression();
+    String getEvaluatedCaseValue(WorkflowTask workflowTask, Map<String, Object> taskInput) {
+        String expression = workflowTask.getCaseExpression();
         String caseValue;
         if (StringUtils.isNotBlank(expression)) {
             LOGGER.debug("Case being evaluated using decision expression: {}", expression);
@@ -159,7 +150,7 @@ public class DecisionTaskMapper implements TaskMapper {
             // representation of caseValue
             LOGGER.debug(
                     "No Expression available on the decision task, case value being assigned as param name");
-            String paramName = taskToSchedule.getCaseValueParam();
+            String paramName = workflowTask.getCaseValueParam();
             caseValue = "" + taskInput.get(paramName);
         }
         return caseValue;

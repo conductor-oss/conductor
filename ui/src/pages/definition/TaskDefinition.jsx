@@ -10,7 +10,7 @@ import { configureMonaco } from "../../schema/task";
 import { NEW_TASK_TEMPLATE } from "../../schema/task";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import SaveTaskDialog from "./SaveTaskDialog";
-import { useTask } from "../../utils/query";
+import { useTask } from "../../data/task";
 import { usePushHistory } from "../../components/NavLink";
 
 const useStyles = makeStyles({

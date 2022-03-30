@@ -47,16 +47,16 @@ public class JsonJQTransformTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("json_jq_transform_task");
-        taskToSchedule.setType(TaskType.JSON_JQ_TRANSFORM.name());
-        taskToSchedule.setTaskDefinition(new TaskDef("json_jq_transform_task"));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("json_jq_transform_task");
+        workflowTask.setType(TaskType.JSON_JQ_TRANSFORM.name());
+        workflowTask.setTaskDefinition(new TaskDef("json_jq_transform_task"));
 
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("in1", new String[] {"a", "b"});
         taskInput.put("in2", new String[] {"c", "d"});
         taskInput.put("queryExpression", "{ out: (.in1 + .in2) }");
-        taskToSchedule.setInputParameters(taskInput);
+        workflowTask.setInputParameters(taskInput);
 
         String taskId = IDGenerator.generate();
 
@@ -66,10 +66,9 @@ public class JsonJQTransformTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
                         .withTaskId(taskId)
@@ -86,15 +85,15 @@ public class JsonJQTransformTaskMapperTest {
 
     @Test
     public void getMappedTasks_WithoutTaskDef() {
-        WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setName("json_jq_transform_task");
-        taskToSchedule.setType(TaskType.JSON_JQ_TRANSFORM.name());
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("json_jq_transform_task");
+        workflowTask.setType(TaskType.JSON_JQ_TRANSFORM.name());
 
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("in1", new String[] {"a", "b"});
         taskInput.put("in2", new String[] {"c", "d"});
         taskInput.put("queryExpression", "{ out: (.in1 + .in2) }");
-        taskToSchedule.setInputParameters(taskInput);
+        workflowTask.setInputParameters(taskInput);
 
         String taskId = IDGenerator.generate();
 
@@ -104,10 +103,9 @@ public class JsonJQTransformTaskMapperTest {
 
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
-                        .withWorkflowDefinition(workflowDef)
-                        .withWorkflowInstance(workflow)
+                        .withWorkflowModel(workflow)
                         .withTaskDefinition(null)
-                        .withTaskToSchedule(taskToSchedule)
+                        .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
                         .withTaskId(taskId)
