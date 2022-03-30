@@ -368,7 +368,7 @@ case, Sub Workflow Task would be used.</p>
 </table>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <p>Imagine we have a workflow that has a fork in it. In the example below, we input one image, but using a fork to create 2 images simultaneously:</p>
-<p><img alt="" src="/img/workflow_fork.png" /></p>
+<p><img alt="workflow with fork" src="../../img/workflow_fork.png" /></p>
 <p>The left fork will create a JPG, and the right fork a WEBP image. Maintaining this workflow might be difficult, as changes made to one side of the fork do not automatically propagate the other.  Rather than using 2 tasks, we can define a <code>image_convert_resize</code> workflow that we can call for both forks as a sub-workflow:</p>
 <pre class="codehilite"><code class="language-json">{{
     &quot;name&quot;: &quot;image_convert_resize_subworkflow1&quot;,
