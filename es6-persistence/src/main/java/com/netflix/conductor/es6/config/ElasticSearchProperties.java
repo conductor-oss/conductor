@@ -80,6 +80,12 @@ public class ElasticSearchProperties {
      */
     private String documentTypeOverride = "";
 
+    /** Elasticsearch basic auth username */
+    private String username;
+
+    /** Elasticsearch basic auth password */
+    private String password;
+
     public String getUrl() {
         return url;
     }
@@ -182,6 +188,22 @@ public class ElasticSearchProperties {
 
     public void setDocumentTypeOverride(String documentTypeOverride) {
         this.documentTypeOverride = documentTypeOverride;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public List<URL> toURLs() {
