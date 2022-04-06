@@ -60,6 +60,8 @@ include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
 
+include 'java-sdk'
+
 include 'test-harness'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
