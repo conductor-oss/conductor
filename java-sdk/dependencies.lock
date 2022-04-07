@@ -5,17 +5,8 @@
         }
     },
     "compileClasspath": {
-        "aopalliance:aopalliance": {
-            "locked": "1.0",
-            "transitive": [
-                "com.google.inject:guice"
-            ]
-        },
-        "com.ecwid.consul:consul-api": {
-            "locked": "1.2.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "cglib:cglib": {
+            "locked": "3.3.0"
         },
         "com.fasterxml.jackson.core:jackson-annotations": {
             "locked": "2.11.4",
@@ -30,231 +21,60 @@
             ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
+            "locked": "2.11.4"
+        },
+        "com.google.code.findbugs:jsr305": {
+            "locked": "3.0.2",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.google.guava:guava"
             ]
         },
-        "com.google.code.gson:gson": {
-            "locked": "2.8.7",
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.3.4",
             "transitive": [
-                "com.ecwid.consul:consul-api",
-                "com.netflix.dyno:dyno-recipes"
+                "com.google.guava:guava"
+            ]
+        },
+        "com.google.guava:failureaccess": {
+            "locked": "1.0.1",
+            "transitive": [
+                "com.google.guava:guava"
             ]
         },
         "com.google.guava:guava": {
-            "locked": "19.0",
+            "locked": "30.0-jre"
+        },
+        "com.google.guava:listenablefuture": {
+            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
             "transitive": [
-                "com.google.inject:guice"
+                "com.google.guava:guava"
             ]
         },
-        "com.google.inject:guice": {
-            "locked": "4.1.0",
+        "com.google.j2objc:j2objc-annotations": {
+            "locked": "1.3",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
+                "com.google.guava:guava"
             ]
         },
-        "com.googlecode.json-simple:json-simple": {
-            "locked": "1.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.archaius:archaius-core": {
-            "locked": "0.7.6",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "com.netflix.conductor:conductor-client": {
+            "project": true
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
-        "com.netflix.conductor:conductor-core": {
-            "project": true
-        },
-        "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.20",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.20"
-        },
-        "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
-            ]
-        },
-        "com.netflix.dyno:dyno-core": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.eureka:eureka-client": {
-            "locked": "1.8.6",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.12.17",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
         },
         "com.sun.jersey:jersey-core": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "commons-io:commons-io": {
-            "locked": "2.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "commons-logging:commons-logging": {
-            "locked": "1.2",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "io.github.x-stream:mxparser": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.thoughtworks.xstream:xstream"
-            ]
-        },
-        "jakarta.annotation:jakarta.annotation-api": {
-            "locked": "1.3.5",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "javax.inject:javax.inject": {
-            "locked": "1",
-            "transitive": [
-                "com.google.inject:guice"
+                "com.sun.jersey:jersey-client"
             ]
         },
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1",
             "transitive": [
                 "com.sun.jersey:jersey-core"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "org.apache.commons:commons-lang3": {
-            "locked": "3.10",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "org.apache.commons:commons-math": {
-            "locked": "2.2",
-            "transitive": [
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "org.apache.commons:commons-pool2": {
-            "locked": "2.8.1",
-            "transitive": [
-                "redis.clients:jedis"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
@@ -281,122 +101,22 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
-        "org.luaj:luaj-jse": {
-            "locked": "3.0",
+        "org.checkerframework:checker-qual": {
+            "locked": "3.5.0",
             "transitive": [
-                "org.rarefiedredis.redis:redis-java"
+                "com.google.guava:guava"
             ]
         },
-        "org.projectlombok:lombok": {
-            "locked": "1.18.20",
+        "org.ow2.asm:asm": {
+            "locked": "7.1",
             "transitive": [
-                "com.netflix.dyno:dyno-jedis"
-            ]
-        },
-        "org.rarefiedredis.redis:redis-java": {
-            "locked": "0.0.17"
-        },
-        "org.slf4j:jul-to-slf4j": {
-            "locked": "1.7.30",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-logging"
+                "cglib:cglib"
             ]
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.30",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j",
-                "redis.clients:jedis"
-            ]
-        },
-        "org.springframework.boot:spring-boot": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-autoconfigure",
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "org.springframework.boot:spring-boot-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-starter-logging": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "org.springframework:spring-aop": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-beans": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-aop",
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-context": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot"
-            ]
-        },
-        "org.springframework:spring-core": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework:spring-aop",
-                "org.springframework:spring-beans",
-                "org.springframework:spring-context",
-                "org.springframework:spring-expression"
-            ]
-        },
-        "org.springframework:spring-expression": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-jcl": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-core"
-            ]
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "1.26",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "redis.clients:jedis": {
-            "locked": "3.3.0",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis",
-                "org.rarefiedredis.redis:redis-java"
-            ]
-        },
-        "xmlpull:xmlpull": {
-            "locked": "1.1.3.1",
-            "transitive": [
-                "io.github.x-stream:mxparser"
+                "org.apache.logging.log4j:log4j-slf4j-impl"
             ]
         }
     },
@@ -414,18 +134,22 @@
                 "com.google.inject:guice"
             ]
         },
-        "com.ecwid.consul:consul-api": {
-            "locked": "1.2.1",
+        "cglib:cglib": {
+            "locked": "3.3.0"
+        },
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.fasterxml.jackson.core:jackson-annotations": {
             "locked": "2.11.4",
             "transitive": [
                 "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.eureka:eureka-client"
             ]
         },
@@ -433,20 +157,56 @@
             "locked": "2.11.4",
             "transitive": [
                 "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.eureka:eureka-client"
             ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.11.4",
             "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.eureka:eureka-client"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.netflix.conductor:conductor-client"
+            ]
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
+            ]
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.netflix.conductor:conductor-client"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-jaxb-annotations": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
         "com.github.andrewoma.dexx:dexx-collections": {
@@ -462,7 +222,7 @@
             ]
         },
         "com.github.vlsi.compactmap:compactmap": {
-            "locked": "1.2.1",
+            "locked": "2.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
             ]
@@ -473,14 +233,13 @@
                 "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
+                "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
         "com.google.code.gson:gson": {
             "locked": "2.8.7",
             "transitive": [
-                "com.ecwid.consul:consul-api",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -502,7 +261,7 @@
                 "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
             ]
@@ -516,8 +275,6 @@
         "com.google.inject:guice": {
             "locked": "4.1.0",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client"
             ]
         },
@@ -530,32 +287,12 @@
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.googlecode.json-simple:json-simple": {
-            "locked": "1.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.jayway.jsonpath:json-path": {
-            "locked": "2.4.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.6",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-eventbus"
             ]
@@ -566,75 +303,19 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
         "com.netflix.conductor:conductor-common": {
             "project": true,
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.netflix.conductor:conductor-core": {
-            "project": true
-        },
-        "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.20",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.20"
-        },
-        "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
-            ]
-        },
-        "com.netflix.dyno:dyno-core": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.netflix.eureka:eureka-client": {
-            "locked": "1.8.6",
+            "locked": "1.10.10",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.netflix.netflix-commons:netflix-eventbus": {
@@ -650,10 +331,8 @@
             ]
         },
         "com.netflix.servo:servo-core": {
-            "locked": "0.12.17",
+            "locked": "0.12.21",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-eventbus"
             ]
@@ -661,13 +340,7 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.spotify:completable-futures": {
-            "locked": "0.3.3",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.sun.jersey.contribs:jersey-apache-client4": {
@@ -677,35 +350,24 @@
             ]
         },
         "com.sun.jersey:jersey-client": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
         },
         "com.sun.jersey:jersey-core": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
         },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19",
+            "locked": "1.4.13",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -715,16 +377,16 @@
             ]
         },
         "commons-configuration:commons-configuration": {
-            "locked": "1.8",
+            "locked": "1.10",
             "transitive": [
-                "com.netflix.archaius:archaius-core"
+                "com.netflix.archaius:archaius-core",
+                "com.netflix.eureka:eureka-client"
             ]
         },
         "commons-io:commons-io": {
             "locked": "2.7",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno:dyno-core"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "commons-jxpath:commons-jxpath": {
@@ -742,33 +404,22 @@
         "commons-logging:commons-logging": {
             "locked": "1.2",
             "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
                 "commons-configuration:commons-configuration",
                 "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "io.github.x-stream:mxparser": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.thoughtworks.xstream:xstream"
-            ]
-        },
-        "io.reactivex:rxjava": {
-            "locked": "1.3.8",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
             ]
         },
         "jakarta.activation:jakarta.activation-api": {
             "locked": "1.2.2",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "jakarta.xml.bind:jakarta.xml.bind-api"
             ]
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "locked": "2.3.3",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
         "javax.inject:javax.inject": {
@@ -791,27 +442,10 @@
             ]
         },
         "joda-time:joda-time": {
-            "locked": "2.3",
+            "locked": "2.8.1",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.netflix-commons:netflix-infix"
-            ]
-        },
-        "net.minidev:accessors-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "net.minidev:json-smart"
-            ]
-        },
-        "net.minidev:json-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "com.jayway.jsonpath:json-path"
             ]
         },
         "org.antlr:antlr-runtime": {
@@ -829,41 +463,26 @@
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.10",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-math": {
             "locked": "2.2",
             "transitive": [
-                "com.netflix.dyno:dyno-core",
                 "com.netflix.netflix-commons:netflix-eventbus"
-            ]
-        },
-        "org.apache.commons:commons-pool2": {
-            "locked": "2.8.1",
-            "transitive": [
-                "redis.clients:jedis"
             ]
         },
         "org.apache.httpcomponents:httpclient": {
             "locked": "4.5.13",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -878,8 +497,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.apache.logging.log4j:log4j-core",
                 "org.apache.logging.log4j:log4j-jul",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
@@ -890,8 +509,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
                 "org.apache.logging.log4j:log4j-web"
             ]
@@ -900,24 +519,24 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.checkerframework:checker-qual": {
@@ -927,83 +546,51 @@
             ]
         },
         "org.codehaus.jettison:jettison": {
-            "locked": "1.3.7",
+            "locked": "1.4.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
             ]
         },
-        "org.luaj:luaj-jse": {
-            "locked": "3.0",
-            "transitive": [
-                "org.rarefiedredis.redis:redis-java"
-            ]
-        },
         "org.ow2.asm:asm": {
-            "locked": "5.0.4",
+            "locked": "7.1",
             "transitive": [
-                "net.minidev:accessors-smart"
+                "cglib:cglib"
             ]
-        },
-        "org.projectlombok:lombok": {
-            "locked": "1.18.20",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis"
-            ]
-        },
-        "org.rarefiedredis.redis:redis-java": {
-            "locked": "0.0.17"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.30",
             "transitive": [
-                "com.jayway.jsonpath:json-path",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "redis.clients:jedis"
+                "org.apache.logging.log4j:log4j-slf4j-impl"
             ]
         },
-        "redis.clients:jedis": {
-            "locked": "3.3.0",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis",
-                "org.rarefiedredis.redis:redis-java"
-            ]
-        },
-        "stax:stax-api": {
+        "software.amazon.ion:ion-java": {
             "locked": "1.0.1",
             "transitive": [
-                "org.codehaus.jettison:jettison"
+                "com.amazonaws:aws-java-sdk-core"
             ]
         },
         "xmlpull:xmlpull": {
             "locked": "1.1.3.1",
             "transitive": [
-                "io.github.x-stream:mxparser"
+                "com.thoughtworks.xstream:xstream"
+            ]
+        },
+        "xpp3:xpp3_min": {
+            "locked": "1.1.4c",
+            "transitive": [
+                "com.thoughtworks.xstream:xstream"
             ]
         }
     },
     "testCompileClasspath": {
-        "aopalliance:aopalliance": {
-            "locked": "1.0",
-            "transitive": [
-                "com.google.inject:guice"
-            ]
-        },
-        "com.ecwid.consul:consul-api": {
-            "locked": "1.2.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "cglib:cglib": {
+            "locked": "3.3.0"
         },
         "com.fasterxml.jackson.core:jackson-annotations": {
             "locked": "2.11.4",
@@ -1018,40 +605,39 @@
             ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
+            "locked": "2.11.4"
+        },
+        "com.google.code.findbugs:jsr305": {
+            "locked": "3.0.2",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.google.guava:guava"
             ]
         },
-        "com.google.code.gson:gson": {
-            "locked": "2.8.7",
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.3.4",
             "transitive": [
-                "com.ecwid.consul:consul-api",
-                "com.netflix.dyno:dyno-recipes"
+                "com.google.guava:guava"
+            ]
+        },
+        "com.google.guava:failureaccess": {
+            "locked": "1.0.1",
+            "transitive": [
+                "com.google.guava:guava"
             ]
         },
         "com.google.guava:guava": {
-            "locked": "19.0",
+            "locked": "30.0-jre"
+        },
+        "com.google.guava:listenablefuture": {
+            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
             "transitive": [
-                "com.google.inject:guice"
+                "com.google.guava:guava"
             ]
         },
-        "com.google.inject:guice": {
-            "locked": "4.1.0",
+        "com.google.j2objc:j2objc-annotations": {
+            "locked": "1.3",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
-        },
-        "com.googlecode.json-simple:json-simple": {
-            "locked": "1.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.google.guava:guava"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -1060,101 +646,26 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
-        "com.netflix.archaius:archaius-core": {
-            "locked": "0.7.6",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "com.netflix.conductor:conductor-client": {
+            "project": true
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
-        "com.netflix.conductor:conductor-core": {
-            "project": true
-        },
-        "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.20",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.20"
-        },
-        "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
-            ]
-        },
-        "com.netflix.dyno:dyno-core": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.eureka:eureka-client": {
-            "locked": "1.8.6",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.12.17",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
-            ]
+        "com.sun.jersey:jersey-client": {
+            "locked": "1.19.4"
         },
         "com.sun.jersey:jersey-core": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.sun.jersey:jersey-client"
             ]
         },
-        "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
+        "com.thoughtworks.qdox:qdox": {
+            "locked": "1.12.1",
+            "transitive": [
+                "org.codehaus.groovy:groovy-docgenerator"
+            ]
         },
         "com.vaadin.external.google:android-json": {
             "locked": "0.0.20131108.vaadin1",
@@ -1165,31 +676,13 @@
         "commons-cli:commons-cli": {
             "locked": "1.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "org.codehaus.groovy:groovy-cli-commons"
             ]
         },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
+        "info.picocli:picocli": {
+            "locked": "4.3.2",
             "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "commons-io:commons-io": {
-            "locked": "2.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "commons-logging:commons-logging": {
-            "locked": "1.2",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "io.github.x-stream:mxparser": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.thoughtworks.xstream:xstream"
+                "org.codehaus.groovy:groovy-cli-picocli"
             ]
         },
         "jakarta.activation:jakarta.activation-api": {
@@ -1210,33 +703,24 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
-        "javax.inject:javax.inject": {
-            "locked": "1",
-            "transitive": [
-                "com.google.inject:guice"
-            ]
-        },
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1",
             "transitive": [
                 "com.sun.jersey:jersey-core"
             ]
         },
-        "joda-time:joda-time": {
-            "locked": "2.3",
+        "jline:jline": {
+            "locked": "2.14.6",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "org.codehaus.groovy:groovy-groovysh"
             ]
         },
         "junit:junit": {
             "locked": "4.13.2",
             "transitive": [
-                "org.junit.vintage:junit-vintage-engine"
+                "org.codehaus.groovy:groovy-test",
+                "org.junit.vintage:junit-vintage-engine",
+                "org.spockframework:spock-core"
             ]
         },
         "net.bytebuddy:byte-buddy": {
@@ -1263,41 +747,20 @@
                 "com.jayway.jsonpath:json-path"
             ]
         },
+        "org.apache.ant:ant": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.apache.ant:ant-launcher": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.apache.ant:ant"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.10",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "org.apache.commons:commons-math": {
-            "locked": "2.2",
-            "transitive": [
-                "com.netflix.dyno:dyno-core"
-            ]
-        },
-        "org.apache.commons:commons-pool2": {
-            "locked": "2.8.1",
-            "transitive": [
-                "redis.clients:jedis"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
+            "locked": "3.10"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1",
@@ -1346,10 +809,208 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.5.0",
+            "transitive": [
+                "com.google.guava:guava"
+            ]
+        },
+        "org.codehaus.groovy:groovy": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-ant",
+                "org.codehaus.groovy:groovy-cli-commons",
+                "org.codehaus.groovy:groovy-cli-picocli",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-datetime",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-groovysh",
+                "org.codehaus.groovy:groovy-jmx",
+                "org.codehaus.groovy:groovy-json",
+                "org.codehaus.groovy:groovy-jsr223",
+                "org.codehaus.groovy:groovy-macro",
+                "org.codehaus.groovy:groovy-nio",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.codehaus.groovy:groovy-sql",
+                "org.codehaus.groovy:groovy-swing",
+                "org.codehaus.groovy:groovy-templates",
+                "org.codehaus.groovy:groovy-test",
+                "org.codehaus.groovy:groovy-test-junit5",
+                "org.codehaus.groovy:groovy-testng",
+                "org.codehaus.groovy:groovy-xml",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-all": {
+            "locked": "2.5.13"
+        },
+        "org.codehaus.groovy:groovy-ant": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-cli-commons": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-cli-picocli": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-groovysh"
+            ]
+        },
+        "org.codehaus.groovy:groovy-console": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-groovysh"
+            ]
+        },
+        "org.codehaus.groovy:groovy-datetime": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-docgenerator": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-groovydoc": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.codehaus.groovy:groovy-groovysh": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-jmx": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-json": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-jsr223": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-macro": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-nio": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-servlet": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-sql": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-swing": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console"
+            ]
+        },
+        "org.codehaus.groovy:groovy-templates": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-test": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-test-junit5": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-testng": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-xml": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.codehaus.groovy:groovy-templates",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
         "org.hamcrest:hamcrest": {
             "locked": "2.2",
             "transitive": [
+                "org.hamcrest:hamcrest-core",
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.hamcrest:hamcrest-core": {
+            "locked": "2.2",
+            "transitive": [
+                "junit:junit"
             ]
         },
         "org.junit.jupiter:junit-jupiter": {
@@ -1361,6 +1022,7 @@
         "org.junit.jupiter:junit-jupiter-api": {
             "locked": "5.6.3",
             "transitive": [
+                "org.codehaus.groovy:groovy-test-junit5",
                 "org.junit.jupiter:junit-jupiter",
                 "org.junit.jupiter:junit-jupiter-params"
             ]
@@ -1381,7 +1043,14 @@
         "org.junit.platform:junit-platform-engine": {
             "locked": "1.6.3",
             "transitive": [
+                "org.junit.platform:junit-platform-launcher",
                 "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.junit.platform:junit-platform-launcher": {
+            "locked": "1.6.3",
+            "transitive": [
+                "org.codehaus.groovy:groovy-test-junit5"
             ]
         },
         "org.junit.vintage:junit-vintage-engine": {
@@ -1398,13 +1067,8 @@
                 "org.junit.jupiter:junit-jupiter-params",
                 "org.junit.platform:junit-platform-commons",
                 "org.junit.platform:junit-platform-engine",
+                "org.junit.platform:junit-platform-launcher",
                 "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.luaj:luaj-jse": {
-            "locked": "3.0",
-            "transitive": [
-                "org.rarefiedredis.redis:redis-java"
             ]
         },
         "org.mockito:mockito-core": {
@@ -1434,19 +1098,11 @@
             ]
         },
         "org.ow2.asm:asm": {
-            "locked": "5.0.4",
+            "locked": "7.1",
             "transitive": [
+                "cglib:cglib",
                 "net.minidev:accessors-smart"
             ]
-        },
-        "org.projectlombok:lombok": {
-            "locked": "1.18.20",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis"
-            ]
-        },
-        "org.rarefiedredis.redis:redis-java": {
-            "locked": "0.0.17"
         },
         "org.skyscreamer:jsonassert": {
             "locked": "1.5.0",
@@ -1465,16 +1121,18 @@
             "locked": "1.7.30",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j",
-                "redis.clients:jedis"
+                "org.slf4j:jul-to-slf4j"
             ]
+        },
+        "org.spockframework:spock-core": {
+            "locked": "1.3-groovy-2.5",
+            "transitive": [
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.spockframework:spock-spring": {
+            "locked": "1.3-groovy-2.5"
         },
         "org.springframework.boot:spring-boot": {
             "locked": "2.3.12.RELEASE",
@@ -1533,7 +1191,8 @@
             "locked": "5.2.15.RELEASE",
             "transitive": [
                 "org.springframework:spring-aop",
-                "org.springframework:spring-context"
+                "org.springframework:spring-context",
+                "org.springframework:spring-web"
             ]
         },
         "org.springframework:spring-context": {
@@ -1552,7 +1211,8 @@
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
                 "org.springframework:spring-expression",
-                "org.springframework:spring-test"
+                "org.springframework:spring-test",
+                "org.springframework:spring-web"
             ]
         },
         "org.springframework:spring-expression": {
@@ -1573,6 +1233,9 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.springframework:spring-web": {
+            "locked": "5.2.15.RELEASE"
+        },
         "org.xmlunit:xmlunit-core": {
             "locked": "2.7.0",
             "transitive": [
@@ -1583,19 +1246,6 @@
             "locked": "1.26",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "redis.clients:jedis": {
-            "locked": "3.3.0",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis",
-                "org.rarefiedredis.redis:redis-java"
-            ]
-        },
-        "xmlpull:xmlpull": {
-            "locked": "1.1.3.1",
-            "transitive": [
-                "io.github.x-stream:mxparser"
             ]
         }
     },
@@ -1613,18 +1263,28 @@
                 "com.google.inject:guice"
             ]
         },
-        "com.ecwid.consul:consul-api": {
-            "locked": "1.2.1",
+        "cglib:cglib": {
+            "locked": "3.3.0"
+        },
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib"
+                "com.netflix.conductor:conductor-client"
+            ]
+        },
+        "com.beust:jcommander": {
+            "locked": "1.72",
+            "transitive": [
+                "org.testng:testng"
             ]
         },
         "com.fasterxml.jackson.core:jackson-annotations": {
             "locked": "2.11.4",
             "transitive": [
                 "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.eureka:eureka-client"
             ]
         },
@@ -1632,20 +1292,56 @@
             "locked": "2.11.4",
             "transitive": [
                 "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.eureka:eureka-client"
             ]
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.11.4",
             "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+                "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.eureka:eureka-client"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
+            ]
+        },
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.netflix.conductor:conductor-client"
+            ]
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
+            ]
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.netflix.conductor:conductor-client"
+            ]
+        },
+        "com.fasterxml.jackson.module:jackson-module-jaxb-annotations": {
+            "locked": "2.11.4",
+            "transitive": [
+                "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
         "com.github.andrewoma.dexx:dexx-collections": {
@@ -1661,7 +1357,7 @@
             ]
         },
         "com.github.vlsi.compactmap:compactmap": {
-            "locked": "1.2.1",
+            "locked": "2.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
             ]
@@ -1672,14 +1368,13 @@
                 "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
+                "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
         "com.google.code.gson:gson": {
             "locked": "2.8.7",
             "transitive": [
-                "com.ecwid.consul:consul-api",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -1701,7 +1396,7 @@
                 "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
             ]
@@ -1715,8 +1410,6 @@
         "com.google.inject:guice": {
             "locked": "4.1.0",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client"
             ]
         },
@@ -1729,33 +1422,18 @@
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.googlecode.json-simple:json-simple": {
-            "locked": "1.1",
-            "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.6",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-eventbus"
             ]
@@ -1766,75 +1444,19 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
         "com.netflix.conductor:conductor-common": {
             "project": true,
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.netflix.conductor:conductor-core": {
-            "project": true
-        },
-        "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.20",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.20"
-        },
-        "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
-            ]
-        },
-        "com.netflix.dyno:dyno-core": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-core",
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
-            ]
-        },
-        "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.7.2-rc2",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.netflix.eureka:eureka-client": {
-            "locked": "1.8.6",
+            "locked": "1.10.10",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.netflix.netflix-commons:netflix-eventbus": {
@@ -1850,10 +1472,8 @@
             ]
         },
         "com.netflix.servo:servo-core": {
-            "locked": "0.12.17",
+            "locked": "0.12.21",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-contrib",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-eventbus"
             ]
@@ -1861,13 +1481,7 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.122.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.spotify:completable-futures": {
-            "locked": "0.3.3",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "com.sun.jersey.contribs:jersey-apache-client4": {
@@ -1877,27 +1491,28 @@
             ]
         },
         "com.sun.jersey:jersey-client": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
         },
         "com.sun.jersey:jersey-core": {
-            "locked": "1.19.1",
+            "locked": "1.19.4",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
         },
+        "com.thoughtworks.qdox:qdox": {
+            "locked": "1.12.1",
+            "transitive": [
+                "org.codehaus.groovy:groovy-docgenerator"
+            ]
+        },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19",
+            "locked": "1.4.13",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
             ]
@@ -1911,7 +1526,7 @@
         "commons-cli:commons-cli": {
             "locked": "1.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "org.codehaus.groovy:groovy-cli-commons"
             ]
         },
         "commons-codec:commons-codec": {
@@ -1921,16 +1536,16 @@
             ]
         },
         "commons-configuration:commons-configuration": {
-            "locked": "1.8",
+            "locked": "1.10",
             "transitive": [
-                "com.netflix.archaius:archaius-core"
+                "com.netflix.archaius:archaius-core",
+                "com.netflix.eureka:eureka-client"
             ]
         },
         "commons-io:commons-io": {
             "locked": "2.7",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno:dyno-core"
+                "com.netflix.conductor:conductor-client"
             ]
         },
         "commons-jxpath:commons-jxpath": {
@@ -1948,26 +1563,21 @@
         "commons-logging:commons-logging": {
             "locked": "1.2",
             "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
                 "commons-configuration:commons-configuration",
                 "org.apache.httpcomponents:httpclient"
             ]
         },
-        "io.github.x-stream:mxparser": {
-            "locked": "1.2.2",
+        "info.picocli:picocli": {
+            "locked": "4.3.2",
             "transitive": [
-                "com.thoughtworks.xstream:xstream"
-            ]
-        },
-        "io.reactivex:rxjava": {
-            "locked": "1.3.8",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "org.codehaus.groovy:groovy-cli-picocli"
             ]
         },
         "jakarta.activation:jakarta.activation-api": {
             "locked": "1.2.2",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "jakarta.xml.bind:jakarta.xml.bind-api"
             ]
         },
@@ -1980,7 +1590,7 @@
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "locked": "2.3.3",
             "transitive": [
-                "com.netflix.conductor:conductor-core",
+                "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
@@ -2003,22 +1613,25 @@
                 "com.sun.jersey:jersey-core"
             ]
         },
-        "joda-time:joda-time": {
-            "locked": "2.3",
+        "jline:jline": {
+            "locked": "2.14.6",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "org.codehaus.groovy:groovy-groovysh"
+            ]
+        },
+        "joda-time:joda-time": {
+            "locked": "2.8.1",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
         "junit:junit": {
             "locked": "4.13.2",
             "transitive": [
-                "org.junit.vintage:junit-vintage-engine"
+                "org.codehaus.groovy:groovy-test",
+                "org.junit.vintage:junit-vintage-engine",
+                "org.spockframework:spock-core"
             ]
         },
         "net.bytebuddy:byte-buddy": {
@@ -2057,44 +1670,55 @@
                 "org.antlr:antlr-runtime"
             ]
         },
+        "org.apache.ant:ant": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.apache.ant:ant-junit",
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.apache.ant:ant-antlr": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.apache.ant:ant-junit": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.apache.ant:ant-launcher": {
+            "locked": "1.9.15",
+            "transitive": [
+                "org.apache.ant:ant",
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.10",
             "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-math": {
             "locked": "2.2",
             "transitive": [
-                "com.netflix.dyno:dyno-core",
                 "com.netflix.netflix-commons:netflix-eventbus"
-            ]
-        },
-        "org.apache.commons:commons-pool2": {
-            "locked": "2.8.1",
-            "transitive": [
-                "redis.clients:jedis"
             ]
         },
         "org.apache.httpcomponents:httpclient": {
             "locked": "4.5.13",
             "transitive": [
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -2109,8 +1733,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.apache.logging.log4j:log4j-core",
                 "org.apache.logging.log4j:log4j-jul",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
@@ -2121,8 +1745,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
                 "org.apache.logging.log4j:log4j-web",
                 "org.springframework.boot:spring-boot-starter-log4j2"
@@ -2132,8 +1756,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.springframework.boot:spring-boot-starter-log4j2"
             ]
         },
@@ -2141,8 +1765,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
                 "org.springframework.boot:spring-boot-starter-log4j2"
             ]
         },
@@ -2150,8 +1774,8 @@
             "locked": "2.17.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apiguardian:apiguardian-api": {
@@ -2177,8 +1801,194 @@
                 "com.google.guava:guava"
             ]
         },
+        "org.codehaus.groovy:groovy": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-ant",
+                "org.codehaus.groovy:groovy-cli-commons",
+                "org.codehaus.groovy:groovy-cli-picocli",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-datetime",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-groovysh",
+                "org.codehaus.groovy:groovy-jmx",
+                "org.codehaus.groovy:groovy-json",
+                "org.codehaus.groovy:groovy-jsr223",
+                "org.codehaus.groovy:groovy-macro",
+                "org.codehaus.groovy:groovy-nio",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.codehaus.groovy:groovy-sql",
+                "org.codehaus.groovy:groovy-swing",
+                "org.codehaus.groovy:groovy-templates",
+                "org.codehaus.groovy:groovy-test",
+                "org.codehaus.groovy:groovy-test-junit5",
+                "org.codehaus.groovy:groovy-testng",
+                "org.codehaus.groovy:groovy-xml",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-all": {
+            "locked": "2.5.13"
+        },
+        "org.codehaus.groovy:groovy-ant": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-cli-commons": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-cli-picocli": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-groovysh"
+            ]
+        },
+        "org.codehaus.groovy:groovy-console": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-groovysh"
+            ]
+        },
+        "org.codehaus.groovy:groovy-datetime": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-docgenerator": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-groovydoc"
+            ]
+        },
+        "org.codehaus.groovy:groovy-groovydoc": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-ant"
+            ]
+        },
+        "org.codehaus.groovy:groovy-groovysh": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-jmx": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-json": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-jsr223": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-macro": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-nio": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-servlet": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-sql": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-swing": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console"
+            ]
+        },
+        "org.codehaus.groovy:groovy-templates": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-console",
+                "org.codehaus.groovy:groovy-docgenerator",
+                "org.codehaus.groovy:groovy-groovydoc",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-test": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.codehaus.groovy:groovy-test-junit5": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-testng": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all"
+            ]
+        },
+        "org.codehaus.groovy:groovy-xml": {
+            "locked": "2.5.14",
+            "transitive": [
+                "org.codehaus.groovy:groovy-all",
+                "org.codehaus.groovy:groovy-servlet",
+                "org.codehaus.groovy:groovy-templates",
+                "org.spockframework:spock-core",
+                "org.spockframework:spock-spring"
+            ]
+        },
         "org.codehaus.jettison:jettison": {
-            "locked": "1.3.7",
+            "locked": "1.4.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
             ]
@@ -2186,7 +1996,14 @@
         "org.hamcrest:hamcrest": {
             "locked": "2.2",
             "transitive": [
+                "org.hamcrest:hamcrest-core",
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.hamcrest:hamcrest-core": {
+            "locked": "2.2",
+            "transitive": [
+                "junit:junit"
             ]
         },
         "org.junit.jupiter:junit-jupiter": {
@@ -2198,6 +2015,7 @@
         "org.junit.jupiter:junit-jupiter-api": {
             "locked": "5.6.3",
             "transitive": [
+                "org.codehaus.groovy:groovy-test-junit5",
                 "org.junit.jupiter:junit-jupiter",
                 "org.junit.jupiter:junit-jupiter-engine",
                 "org.junit.jupiter:junit-jupiter-params",
@@ -2207,6 +2025,7 @@
         "org.junit.jupiter:junit-jupiter-engine": {
             "locked": "5.6.3",
             "transitive": [
+                "org.codehaus.groovy:groovy-test-junit5",
                 "org.junit.jupiter:junit-jupiter"
             ]
         },
@@ -2227,7 +2046,14 @@
             "locked": "1.6.3",
             "transitive": [
                 "org.junit.jupiter:junit-jupiter-engine",
+                "org.junit.platform:junit-platform-launcher",
                 "org.junit.vintage:junit-vintage-engine"
+            ]
+        },
+        "org.junit.platform:junit-platform-launcher": {
+            "locked": "1.6.3",
+            "transitive": [
+                "org.codehaus.groovy:groovy-test-junit5"
             ]
         },
         "org.junit.vintage:junit-vintage-engine": {
@@ -2245,13 +2071,8 @@
                 "org.junit.jupiter:junit-jupiter-params",
                 "org.junit.platform:junit-platform-commons",
                 "org.junit.platform:junit-platform-engine",
+                "org.junit.platform:junit-platform-launcher",
                 "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.luaj:luaj-jse": {
-            "locked": "3.0",
-            "transitive": [
-                "org.rarefiedredis.redis:redis-java"
             ]
         },
         "org.mockito:mockito-core": {
@@ -2281,19 +2102,11 @@
             ]
         },
         "org.ow2.asm:asm": {
-            "locked": "5.0.4",
+            "locked": "7.1",
             "transitive": [
+                "cglib:cglib",
                 "net.minidev:accessors-smart"
             ]
-        },
-        "org.projectlombok:lombok": {
-            "locked": "1.18.20",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis"
-            ]
-        },
-        "org.rarefiedredis.redis:redis-java": {
-            "locked": "0.0.17"
         },
         "org.skyscreamer:jsonassert": {
             "locked": "1.5.0",
@@ -2313,20 +2126,23 @@
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
+                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
                 "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j",
-                "redis.clients:jedis"
+                "org.slf4j:jul-to-slf4j"
             ]
+        },
+        "org.spockframework:spock-core": {
+            "locked": "1.3-groovy-2.5",
+            "transitive": [
+                "org.spockframework:spock-spring"
+            ]
+        },
+        "org.spockframework:spock-spring": {
+            "locked": "1.3-groovy-2.5"
         },
         "org.springframework.boot:spring-boot": {
             "locked": "2.3.12.RELEASE",
@@ -2385,7 +2201,8 @@
             "locked": "5.2.15.RELEASE",
             "transitive": [
                 "org.springframework:spring-aop",
-                "org.springframework:spring-context"
+                "org.springframework:spring-context",
+                "org.springframework:spring-web"
             ]
         },
         "org.springframework:spring-context": {
@@ -2404,7 +2221,8 @@
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
                 "org.springframework:spring-expression",
-                "org.springframework:spring-test"
+                "org.springframework:spring-test",
+                "org.springframework:spring-web"
             ]
         },
         "org.springframework:spring-expression": {
@@ -2425,6 +2243,15 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.springframework:spring-web": {
+            "locked": "5.2.15.RELEASE"
+        },
+        "org.testng:testng": {
+            "locked": "6.13.1",
+            "transitive": [
+                "org.codehaus.groovy:groovy-testng"
+            ]
+        },
         "org.xmlunit:xmlunit-core": {
             "locked": "2.7.0",
             "transitive": [
@@ -2437,23 +2264,22 @@
                 "org.springframework.boot:spring-boot-starter"
             ]
         },
-        "redis.clients:jedis": {
-            "locked": "3.3.0",
-            "transitive": [
-                "com.netflix.dyno:dyno-jedis",
-                "org.rarefiedredis.redis:redis-java"
-            ]
-        },
-        "stax:stax-api": {
+        "software.amazon.ion:ion-java": {
             "locked": "1.0.1",
             "transitive": [
-                "org.codehaus.jettison:jettison"
+                "com.amazonaws:aws-java-sdk-core"
             ]
         },
         "xmlpull:xmlpull": {
             "locked": "1.1.3.1",
             "transitive": [
-                "io.github.x-stream:mxparser"
+                "com.thoughtworks.xstream:xstream"
+            ]
+        },
+        "xpp3:xpp3_min": {
+            "locked": "1.1.4c",
+            "transitive": [
+                "com.thoughtworks.xstream:xstream"
             ]
         }
     }
