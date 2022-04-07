@@ -7,7 +7,7 @@ dependencies {
 
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.google.guava:guava:${revGuava}"
-    implementation "cglib:cglib:3.2.4"
+    implementation "cglib:cglib:3.3.0"
     implementation "com.sun.jersey:jersey-client:${revJersey}"
 
     testImplementation "org.springframework:spring-web"
