@@ -48,6 +48,7 @@ spotbugsMain {
             enabled = true
         }
     }
+    excludeFilter = file("spotbugsExclude.xml")
 }
 
 pmd {
