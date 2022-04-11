@@ -4,11 +4,11 @@ import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
   paper: {
-    margin: 30
+    margin: 30,
   },
   wrapper: {
-    overflowY: "auto"
-  }
+    overflowY: "auto",
+  },
 });
 
 export default function ExecutionSummary({ execution }) {
@@ -55,9 +55,9 @@ export default function ExecutionSummary({ execution }) {
 
   return (
     <div className={classes.wrapper}>
-    <Paper className={classes.paper}>
-      <KeyValueTable data={data} />
-    </Paper>
+      <Paper className={classes.paper}>
+        <KeyValueTable data={data} />
+      </Paper>
     </div>
   );
 }

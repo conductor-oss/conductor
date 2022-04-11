@@ -196,6 +196,9 @@ const overrides = {
       root: {
         fontSize: fontSizes.fontSize6,
       },
+      fontSizeSmall: {
+        fontSize: fontSizes.fontSize1,
+      },
     },
     MuiAvatar: {
       root: {
@@ -296,6 +299,10 @@ const overrides = {
       label: {
         paddingLeft: baseTheme.spacing("space1"),
         paddingRight: baseTheme.spacing("space1"),
+      },
+      sizeSmall: {
+        fontSize: fontSizes.fontSize0,
+        height: 20,
       },
       deleteIcon: {
         height: "100%",
@@ -506,8 +513,8 @@ const overrides = {
         height: 4,
       },
       root: {
-        minHeight: 0
-      }
+        minHeight: 0,
+      },
     },
     MuiListItemText: {
       secondary: {
@@ -584,7 +591,7 @@ const overrides = {
         color: colors.gray00,
       },
       root: {
-        zIndex: 0,
+        zIndex: 999,
         paddingLeft: 20,
         paddingRight: 20,
         boxShadow: "0 4px 8px 0 rgb(0 0 0 / 10%), 0 0 2px 0 rgb(0 0 0 / 10%)",

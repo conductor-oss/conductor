@@ -7,10 +7,10 @@ import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
   taskWrapper: {
-    overflowY: 'auto',
+    overflowY: "auto",
     padding: 30,
-    height: '100%'
-  }
+    height: "100%",
+  },
 });
 
 export default function TaskDetails({
@@ -24,38 +24,38 @@ export default function TaskDetails({
 
   return (
     <div className={classes.taskWrapper}>
-    <Paper>
-      <Tabs value={tabIndex} contextual>
-        <Tab label="Diagram" onClick={() => setTabIndex(0)} />
-        <Tab label="Task List" onClick={() => setTabIndex(1)} />
-        <Tab label="Timeline" onClick={() => setTabIndex(2)} />
-      </Tabs>
+      <Paper>
+        <Tabs value={tabIndex} contextual>
+          <Tab label="Diagram" onClick={() => setTabIndex(0)} />
+          <Tab label="Task List" onClick={() => setTabIndex(1)} />
+          <Tab label="Timeline" onClick={() => setTabIndex(2)} />
+        </Tabs>
 
-      {tabIndex === 0 && (
-        <WorkflowGraph
-          selectedTask={selectedTask}
-          executionMode={true}
-          dag={dag}
-          onClick={setSelectedTask}
-        />
-      )}
-      {tabIndex === 1 && (
-        <TaskList
-          selectedTask={selectedTask}
-          tasks={execution.tasks}
-          dag={dag}
-          onClick={setSelectedTask}
-        />
-      )}
-      {tabIndex === 2 && (
-        <Timeline
-          selectedTask={selectedTask}
-          tasks={execution.tasks}
-          dag={dag}
-          onClick={setSelectedTask}
-        />
-      )}
-    </Paper>
+        {tabIndex === 0 && (
+          <WorkflowGraph
+            selectedTask={selectedTask}
+            executionMode={true}
+            dag={dag}
+            onClick={setSelectedTask}
+          />
+        )}
+        {tabIndex === 1 && (
+          <TaskList
+            selectedTask={selectedTask}
+            tasks={execution.tasks}
+            dag={dag}
+            onClick={setSelectedTask}
+          />
+        )}
+        {tabIndex === 2 && (
+          <Timeline
+            selectedTask={selectedTask}
+            tasks={execution.tasks}
+            dag={dag}
+            onClick={setSelectedTask}
+          />
+        )}
+      </Paper>
     </div>
   );
 }

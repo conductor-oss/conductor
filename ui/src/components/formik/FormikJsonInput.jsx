@@ -1,12 +1,17 @@
-import React, { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useField } from "formik";
 import Editor from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
 import { FormHelperText, InputLabel } from "@material-ui/core";
+import clsx from "clsx";
 
 const useStyles = makeStyles({
+  wrapper: {
+    width: "100%",
+  },
   monaco: {
     padding: 10,
+    width: "100%",
     borderColor: "rgba(128, 128, 128, 0.2)",
     borderStyle: "solid",
     borderWidth: 1,
@@ -25,7 +30,13 @@ const useStyles = makeStyles({
   },
 });
 
-export default function ({ className, label, height, ...props }) {
+export default function ({
+  className,
+  label,
+  height,
+  reinitialize = false,
+  ...props
+}) {
   const classes = useStyles();
   const [field, meta, helper] = useField(props);
   const editorRef = useRef(null);
@@ -37,11 +48,18 @@ export default function ({ className, label, height, ...props }) {
     });
   }
 
+  useEffect(() => {
+    if (reinitialize && editorRef.current) {
+      editorRef.current.getModel().setValue(field.value);
+    }
+  }, [reinitialize, field.value]);
+
   return (
-    <div className={className}>
-      <InputLabel variant="outlined" error={meta.touched && meta.error}>
+    <div className={clsx([classes.wrapper, className])}>
+      <InputLabel variant="outlined" error={meta.touched && !!meta.error}>
         {label}
       </InputLabel>
+
       <Editor
         className={classes.monaco}
         height={height || 90}
@@ -70,6 +88,7 @@ export default function ({ className, label, height, ...props }) {
           overviewRulerBorder: false,
         }}
       />
+
       {meta.touched && meta.error ? (
         <FormHelperText variant="outlined" error>
           {meta.error}

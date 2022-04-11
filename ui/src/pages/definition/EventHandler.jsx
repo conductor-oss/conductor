@@ -17,8 +17,8 @@ const useStyles = makeStyles({
   paper: {
     flex: 1,
     margin: 30,
-    paddingTop: 10
-  }
+    paddingTop: 10,
+  },
 });
 
 export default function EventHandlerDefinition() {

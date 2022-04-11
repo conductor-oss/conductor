@@ -25,6 +25,7 @@ import Gantt from "./pages/kitchensink/Gantt";
 import CustomRoutes from "./plugins/CustomRoutes";
 import AppBarModules from "./plugins/AppBarModules";
 import CustomAppBarButtons from "./plugins/CustomAppBarButtons";
+import Workbench from "./pages/workbench/Workbench";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -68,6 +69,9 @@ export default function App() {
           <Button component={NavLink} path="/taskQueue">
             Task Queues
           </Button>
+          <Button component={NavLink} path="/workbench">
+            Workbench
+          </Button>
           <CustomAppBarButtons />
 
           <div className={classes.toolbarRight}>
@@ -106,6 +110,9 @@ export default function App() {
           </Route>
           <Route exact path="/taskQueue/:name?">
             <TaskQueue />
+          </Route>
+          <Route exact path="/workbench">
+            <Workbench />
           </Route>
           <Route exact path="/kitchen">
             <KitchenSink />

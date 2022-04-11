@@ -7,7 +7,7 @@ export function useFetchContext() {
     ready: true,
   };
 }
-export function fetchWithContext(path, context, fetchParams) {
+export function fetchWithContext(path, context, fetchParams, isJsonResponse) {
   const newParams = { ...fetchParams };
 
   const newPath = `/api/${path}`;
@@ -22,6 +22,8 @@ export function fetchWithContext(path, context, fetchParams) {
         return Promise.reject(error);
       } else if (!text || text.length === 0) {
         return null;
+      } else if (!isJsonResponse) {
+        return text;
       } else {
         try {
           return JSON.parse(text);

@@ -16,11 +16,11 @@ const useStyles = makeStyles({
     gap: 15,
     flex: 2,
     marginBottom: 15,
-    overflow: "hidden"
+    overflow: "hidden",
   },
   paper: {
     flex: 1,
-    overflow: "hidden"
+    overflow: "hidden",
   },
 });
 

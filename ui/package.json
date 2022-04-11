@@ -46,12 +46,6 @@
     "eject": "react-scripts eject",
     "prettier": "prettier --write ."
   },
-  "eslintConfig": {
-    "extends": "react-app",
-    "rules": {
-      "import/no-anonymous-default-export": 0
-    }
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -86,6 +80,7 @@
     "js-yaml": "3.13.1",
     "prettier": "^2.2.1",
     "sass": "^1.49.9",
+    "typescript": "^4.6.3",
     "webdriver": "^5.0.0",
     "webdriverio": "^5.0.0"
   },

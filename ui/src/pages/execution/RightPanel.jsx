@@ -17,7 +17,7 @@ const useStyles = makeStyles({
   },
   tabContent: {
     flex: 1,
-    overflowY: 'auto'
+    overflowY: "auto",
   },
 });
 
@@ -115,10 +115,7 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
       <div className={classes.tabContent}>
         {tabIndex === 0 && <TaskSummary taskResult={taskResult} />}
         {tabIndex === 1 && (
-          <ReactJson
-            src={taskResult.inputData}
-            label="Task Input"
-          />
+          <ReactJson src={taskResult.inputData} label="Task Input" />
         )}
         {tabIndex === 2 && (
           <>
@@ -129,10 +126,7 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
                 location.
               </Banner>
             )}
-            <ReactJson
-              src={taskResult.outputData}
-              label="Task Output"
-            />
+            <ReactJson src={taskResult.outputData} label="Task Output" />
           </>
         )}
         {tabIndex === 3 && <TaskLogs task={taskResult} />}

@@ -66,3 +66,9 @@ export function defaultCompare(x, y) {
 
   return 0;
 }
+
+export function immutableReplaceAt(array, index, value) {
+  const ret = array.slice(0);
+  ret[index] = value;
+  return ret;
+}

@@ -13,12 +13,12 @@ const useStyles = makeStyles({
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    paddingTop: 15
+    paddingTop: 15,
   },
   editorWrapper: {
     flex: 1,
     marginLeft: 10,
-    position: "relative"
+    position: "relative",
   },
   label: {
     marginTop: 5,

@@ -28,3 +28,4 @@ export { default as ReactJson } from "./ReactJson";
 // Misc
 export { default as LinearProgress } from "./LinearProgress";
 export { default as Pill } from "./Pill";
+export { default as StatusBadge } from "./StatusBadge";

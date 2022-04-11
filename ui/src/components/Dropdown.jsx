@@ -10,6 +10,8 @@ export default function ({
   style,
   error,
   helperText,
+  name,
+  value,
   ...props
 }) {
   return (
@@ -17,8 +19,14 @@ export default function ({
       {label && <InputLabel error={!!error}>{label}</InputLabel>}
       <Autocomplete
         renderInput={(params) => (
-          <Input {...params} error={!!error} helperText={helperText} />
+          <Input
+            {...params}
+            name={name}
+            error={!!error}
+            helperText={helperText}
+          />
         )}
+        value={value === undefined ? null : value} // convert undefined to null
         {...props}
       />
     </FormControl>

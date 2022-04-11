@@ -4,15 +4,15 @@ import ReactJson from "../../components/ReactJson";
 import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
-  paper: {    
+  paper: {
     margin: 30,
-    flex: 1
+    flex: 1,
   },
   wrapper: {
     flex: 1,
     display: "flex",
-    flexDirection: "column"
-  }
+    flexDirection: "column",
+  },
 });
 
 export default function ExecutionJson({ execution }) {
@@ -20,9 +20,9 @@ export default function ExecutionJson({ execution }) {
 
   return (
     <div className={classes.wrapper}>
-    <Paper className={classes.paper}>
-      <ReactJson label="Unabridged Workflow JSON" src={execution} />
-    </Paper>
+      <Paper className={classes.paper}>
+        <ReactJson label="Unabridged Workflow JSON" src={execution} />
+      </Paper>
     </div>
   );
 }
