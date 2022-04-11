@@ -505,6 +505,9 @@ const overrides = {
       indicator: {
         height: 4,
       },
+      root: {
+        minHeight: 0
+      }
     },
     MuiListItemText: {
       secondary: {

@@ -35,10 +35,6 @@ const INIT_DRAWER_WIDTH = 650;
 
 const useStyles = makeStyles({
   header: sharedStyles.header,
-
-  wrapper: {
-    height: "100%",
-  },
   drawer: {
     zIndex: 999,
     position: "absolute",
@@ -75,13 +71,13 @@ const useStyles = makeStyles({
     flexDirection: "column",
   },
   drawerContent: {
-    flex: "1 1 auto",
+    flex: 1,
     backgroundColor: "#fff",
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden"
   },
   content: {
-    overflowY: "auto",
     height: "100%",
     display: "flex",
     flexDirection: "column",
@@ -90,13 +86,14 @@ const useStyles = makeStyles({
     marginRight: (state) => state.drawerWidth,
   },
   tabContent: {
-    padding: 30,
     flex: 1,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column"
   },
   headerSubtitle: {
     marginBottom: 20,
   },
-
   fr: {
     display: "flex",
     position: "relative",
@@ -130,21 +127,22 @@ export default function Execution() {
   const [isResizing, setIsResizing] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(INIT_DRAWER_WIDTH);
 
+  const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
   const [selectedTaskJson, setSelectedTaskJson] = useQueryState("task", "");
 
   const dag = useMemo(
     () => (execution ? new WorkflowDAG(execution) : null),
     [execution]
   );
+  const selectedTask = useMemo(
+    () => dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null,
+    [dag, selectedTaskJson]
+  );
 
   const classes = useStyles({
     isFullWidth,
     drawerWidth,
   });
-
-  const selectedTask =
-    dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null;
-  const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
 
   const handleMousemove = useCallback(
     (e) => {
@@ -197,115 +195,113 @@ export default function Execution() {
     };
   }, [handleMousemove]);
 
-  return (
-    <div className={classes.wrapper}>
-      <Helmet>
-        <title>Conductor UI - Execution - {match.params.id}</title>
-      </Helmet>
-      <div
-        className={clsx(classes.content, {
-          [classes.contentShift]: !!selectedTask,
-        })}
-      >
-        {isFetching && <LinearProgress />}
-        {execution && (
-          <>
-            <div className={classes.header}>
-              <div className={classes.fr}>
-                {execution.parentWorkflowId && (
-                  <div className={classes.frItem}>
-                    <NavLink
-                      newTab
-                      path={`/execution/${execution.parentWorkflowId}`}
-                    >
-                      Parent Workflow
-                    </NavLink>
-                  </div>
-                )}
-                <SecondaryButton onClick={refresh} style={{ marginRight: 10 }}>
-                  Refresh
-                </SecondaryButton>
-                <ActionModule execution={execution} triggerReload={refresh} />
-              </div>
-              <Heading level={3} gutterBottom>
-                {execution.workflowType || execution.workflowName}{" "}
-                <StatusBadge status={execution.status} />
-              </Heading>
-              <Heading level={0} className={classes.headerSubtitle}>
-                {execution.workflowId}
-              </Heading>
+  return <>
+    <Helmet>
+      <title>Conductor UI - Execution - {match.params.id}</title>
+    </Helmet>
+    <div
+      className={clsx(classes.content, {
+        [classes.contentShift]: !!selectedTask,
+      })}
+    >
+      {isFetching && <LinearProgress />}
+      {execution && (
+        <>
+          <div className={classes.header}>
+            <div className={classes.fr}>
+              {execution.parentWorkflowId && (
+                <div className={classes.frItem}>
+                  <NavLink
+                    newTab
+                    path={`/execution/${execution.parentWorkflowId}`}
+                  >
+                    Parent Workflow
+                  </NavLink>
+                </div>
+              )}
+              <SecondaryButton onClick={refresh} style={{ marginRight: 10 }}>
+                Refresh
+              </SecondaryButton>
+              <ActionModule execution={execution} triggerReload={refresh} />
+            </div>
+            <Heading level={3} gutterBottom>
+              {execution.workflowType || execution.workflowName}{" "}
+              <StatusBadge status={execution.status} />
+            </Heading>
+            <Heading level={0} className={classes.headerSubtitle}>
+              {execution.workflowId}
+            </Heading>
 
-              {execution.reasonForIncompletion && (
-                <Alert severity="error">
-                  {execution.reasonForIncompletion}
-                </Alert>
-              )}
+            {execution.reasonForIncompletion && (
+              <Alert severity="error">
+                {execution.reasonForIncompletion}
+              </Alert>
+            )}
 
-              <Tabs value={tabIndex} style={{ marginBottom: 0 }}>
-                <Tab label="Tasks" onClick={() => setTabIndex(0)} />
-                <Tab label="Summary" onClick={() => setTabIndex(1)} />
-                <Tab
-                  label="Workflow Input/Output"
-                  onClick={() => setTabIndex(2)}
-                />
-                <Tab label="JSON" onClick={() => setTabIndex(3)} />
-              </Tabs>
-            </div>
-            <div className={classes.tabContent}>
-              {tabIndex === 0 && (
-                <TaskDetails
-                  dag={dag}
-                  execution={execution}
-                  setSelectedTask={handleSelectTask}
-                  selectedTask={selectedTask}
-                />
-              )}
-              {tabIndex === 1 && <ExecutionSummary execution={execution} />}
-              {tabIndex === 2 && <InputOutput execution={execution} />}
-              {tabIndex === 3 && <ExecutionJson execution={execution} />}
-            </div>
-          </>
-        )}
-      </div>
-      {selectedTask && (
-        <div className={classes.drawer}>
-          <div
-            id="dragger"
-            onMouseDown={(event) => handleMousedown(event)}
-            className={classes.dragger}
-          />
-          <div className={classes.drawerMain}>
-            <div className={classes.drawerHeader}>
-              {isFullWidth ? (
-                <Tooltip title="Restore sidebar">
-                  <IconButton onClick={() => handleFullScreenExit()}>
-                    <FullscreenExitIcon />
-                  </IconButton>
-                </Tooltip>
-              ) : (
-                <Tooltip title="Maximize sidebar">
-                  <IconButton onClick={() => handleFullScreen()}>
-                    <FullscreenIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Close sidebar">
-                <IconButton onClick={() => handleClose()}>
-                  <CloseIcon />
-                </IconButton>
-              </Tooltip>
-            </div>
-            <div className={classes.drawerContent}>
-              <RightPanel
-                className={classes.rightPanel}
-                selectedTask={selectedTask}
-                dag={dag}
-                onTaskChange={handleSelectTask}
+            <Tabs value={tabIndex} style={{ marginBottom: 0 }}>
+              <Tab label="Tasks" onClick={() => setTabIndex(0)} />
+              <Tab label="Summary" onClick={() => setTabIndex(1)} />
+              <Tab
+                label="Workflow Input/Output"
+                onClick={() => setTabIndex(2)}
               />
-            </div>
+              <Tab label="JSON" onClick={() => setTabIndex(3)} />
+            </Tabs>
           </div>
-        </div>
+          <div className={classes.tabContent}>
+            {tabIndex === 0 && (
+              <TaskDetails
+                dag={dag}
+                execution={execution}
+                setSelectedTask={handleSelectTask}
+                selectedTask={selectedTask}
+              />
+            )}
+            {tabIndex === 1 && <ExecutionSummary execution={execution} />}
+            {tabIndex === 2 && <InputOutput execution={execution} />}
+            {tabIndex === 3 && <ExecutionJson execution={execution} />}
+          </div>
+        </>
       )}
     </div>
-  );
+    {selectedTask && (
+      <div className={classes.drawer}>
+        <div
+          id="dragger"
+          onMouseDown={(event) => handleMousedown(event)}
+          className={classes.dragger}
+        />
+        <div className={classes.drawerMain}>
+          <div className={classes.drawerHeader}>
+            {isFullWidth ? (
+              <Tooltip title="Restore sidebar">
+                <IconButton onClick={() => handleFullScreenExit()}>
+                  <FullscreenExitIcon />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Maximize sidebar">
+                <IconButton onClick={() => handleFullScreen()}>
+                  <FullscreenIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Close sidebar">
+              <IconButton onClick={() => handleClose()}>
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
+          </div>
+          <div className={classes.drawerContent}>
+            <RightPanel
+              className={classes.rightPanel}
+              selectedTask={selectedTask}
+              dag={dag}
+              onTaskChange={handleSelectTask}
+            />
+          </div>
+        </div>
+      </div>
+    )}
+  </>
 }

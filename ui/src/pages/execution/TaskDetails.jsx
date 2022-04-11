@@ -3,6 +3,15 @@ import { Tabs, Tab, Paper } from "../../components";
 import Timeline from "./Timeline";
 import TaskList from "./TaskList";
 import WorkflowGraph from "../../components/diagram/WorkflowGraph";
+import { makeStyles } from "@material-ui/styles";
+
+const useStyles = makeStyles({
+  taskWrapper: {
+    overflowY: 'auto',
+    padding: 30,
+    height: '100%'
+  }
+});
 
 export default function TaskDetails({
   execution,
@@ -11,9 +20,11 @@ export default function TaskDetails({
   setSelectedTask,
 }) {
   const [tabIndex, setTabIndex] = useState(0);
+  const classes = useStyles();
 
   return (
-    <Paper style={{ width: "100%" }}>
+    <div className={classes.taskWrapper}>
+    <Paper>
       <Tabs value={tabIndex} contextual>
         <Tab label="Diagram" onClick={() => setTabIndex(0)} />
         <Tab label="Task List" onClick={() => setTabIndex(1)} />
@@ -45,5 +56,6 @@ export default function TaskDetails({
         />
       )}
     </Paper>
+    </div>
   );
 }
