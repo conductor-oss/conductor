@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Text, Pill } from "../../components";
-import { Toolbar, IconButton } from "@material-ui/core";
+import { Toolbar, IconButton, Tooltip } from "@material-ui/core";
 import FormikInput from "../../components/formik/FormikInput";
 import FormikJsonInput from "../../components/formik/FormikJsonInput";
 import FormikDropdown from "../../components/formik/FormikDropdown";
@@ -146,7 +146,6 @@ function WorkbenchForm(props) {
     validateForm().then((errors) => {
       if (Object.keys(errors).length === 0) {
         const payload = formDataToRunPayload(values);
-        console.log(payload);
         saveRun(payload);
       } else {
         setTouched(setNestedObjectValues(errors, true));
@@ -158,18 +157,30 @@ function WorkbenchForm(props) {
     <Form className={classes.main}>
       <Toolbar className={classes.toolbar}>
         <Text className={classes.workflowName}>Workflow Workbench</Text>
-        <IconButton onClick={handleRun}>
-          <PlayArrowIcon />
-        </IconButton>
-        <IconButton disabled={!dirty} onClick={handleSave}>
-          <SaveIcon />
-        </IconButton>
-        <IconButton
-          disabled={!values.workflowName}
-          onClick={triggerPopulateInput}
-        >
-          <PlaylistAddIcon />
-        </IconButton>
+        <Tooltip title="Execute Workflow">
+          <IconButton onClick={handleRun}>
+            <PlayArrowIcon />
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Save Workflow Trigger">
+          <div>
+            <IconButton disabled={!dirty} onClick={handleSave}>
+              <SaveIcon />
+            </IconButton>
+          </div>
+        </Tooltip>
+
+        <Tooltip title="Populate Input Parameters">
+          <div>
+            <IconButton
+              disabled={!values.workflowName}
+              onClick={triggerPopulateInput}
+            >
+              <PlaylistAddIcon />
+            </IconButton>
+          </div>
+        </Tooltip>
 
         {dirty && <Pill label="Modified" />}
         {createTime && <Text>Created: {timestampRenderer(createTime)}</Text>}

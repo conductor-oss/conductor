@@ -81,7 +81,10 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
     },
     onError: (err) => {
       console.log("onerror", err);
-      setErrorMsg(`${WORKFLOW_SAVE_FAILED} - Error: ${err}`);
+      let errStr = _.isString(err.body)
+        ? err.body
+        : JSON.stringify(err.body, null, 2);
+      setErrorMsg(`${WORKFLOW_SAVE_FAILED}: ${errStr}`);
     },
   });
 

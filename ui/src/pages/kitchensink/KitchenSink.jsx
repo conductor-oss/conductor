@@ -35,7 +35,7 @@ import DataTableDemo from "./DataTableDemo";
 import top100Films from "./sampleMovieData";
 import Dropdown from "../../components/Dropdown";
 import sharedStyles from "../styles";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
 import FormikInput from "../../components/formik/FormikInput";
 import FormikJsonInput from "../../components/formik/FormikJsonInput";

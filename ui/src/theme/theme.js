@@ -617,7 +617,6 @@ const overrides = {
       },
       clearIndicator: {
         fontSize: fontSizes.fontSize5,
-        color: baseTheme.palette.text.primary,
       },
       inputRoot: {
         padding: "0px !important",

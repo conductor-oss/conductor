@@ -85,16 +85,11 @@ export function useWorkflowDefs() {
   const workflows = useMemo(() => {
     if (data) {
       const unique = new Map();
-      const types = new Set();
       for (let workflowDef of data) {
         if (!unique.has(workflowDef.name)) {
           unique.set(workflowDef.name, workflowDef);
         } else if (unique.get(workflowDef.name).version < workflowDef.version) {
           unique.set(workflowDef.name, workflowDef);
-        }
-
-        for (let task of workflowDef.tasks) {
-          types.add(task.type);
         }
       }
 
@@ -102,6 +97,7 @@ export function useWorkflowDefs() {
     }
   }, [data]);
 
+  console.log(workflows);
   return {
     data: workflows,
     ...rest,

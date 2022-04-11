@@ -3,6 +3,7 @@ import { Input } from "./";
 import Autocomplete from "@material-ui/lab/Autocomplete";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
+import CloseIcon from "@material-ui/icons/Close";
 
 export default function ({
   label,
@@ -18,6 +19,8 @@ export default function ({
     <FormControl style={style} className={className}>
       {label && <InputLabel error={!!error}>{label}</InputLabel>}
       <Autocomplete
+        {...props}
+        closeIcon={<CloseIcon />}
         renderInput={(params) => (
           <Input
             {...params}
@@ -27,7 +30,6 @@ export default function ({
           />
         )}
         value={value === undefined ? null : value} // convert undefined to null
-        {...props}
       />
     </FormControl>
   );

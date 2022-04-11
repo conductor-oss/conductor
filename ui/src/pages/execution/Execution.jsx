@@ -10,7 +10,7 @@ import {
   Heading,
 } from "../../components";
 import { Tooltip } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/styles";
 import { useRouteMatch } from "react-router-dom";
 import TaskDetails from "./TaskDetails";
 import ExecutionSummary from "./ExecutionSummary";

@@ -83,8 +83,6 @@ const RunHistory = forwardRef((props: RunHistoryProps, ref) => {
       return newRun;
     },
     updateRun: (createTime: number, workflowId: string) => {
-      console.log("updating run", createTime, workflowId);
-
       const idx = runHistory.findIndex((v) => v.createTime === createTime);
       const currRun = runHistory[idx];
       const oldRecords = currRun.workflowRecords;

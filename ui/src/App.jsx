@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Route, Switch } from "react-router-dom";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/styles";
 import { Button, AppBar, Toolbar } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
