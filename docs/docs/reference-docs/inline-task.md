@@ -13,10 +13,10 @@ Inline Task helps execute necessary logic at Workflow run-time,
 using an evaluator. There are two supported evaluators as of now:
 
 ### Configuration
-|name|description|
-|---|---|
-| value-param | Use a parameter directly as the value |
-| javascript | Evaluate Javascript expressions and compute value |
+| name        | description                                       |
+|-------------|---------------------------------------------------|
+| value-param | Use a parameter directly as the value             |
+| javascript  | Evaluate Javascript expressions and compute value |
 
 
 ### Use Cases

@@ -20,14 +20,14 @@ the view itself. To see details of the failure, you can click on the failed task
 
 The following fields are useful in debugging
 
-|Field Name|Description|
-|---|---|
-| Task Detail > Summary > Reason for Incompletion | If an exception was thrown by the worker, it will be captured and displayed here|
-| Task Detail > Summary > Worker | The worker instance id where this failure last occurred. Useful to dig for detailed logs if not already captured by Conductor|
-| Task Detail > Input | Verify if the task inputs were computed and provided correctly to the task|
-| Task Detail > Output | If output of a previous task is used as an input to your next task, refer here for what was produced|
-| Task Detail > Logs | If your task is supplying logs, we can look at that here|
-| Task Detail > Retried Task - Select an instance | If your task was retried, we can see all the attempts and correponding details here|
+| Field Name                                      | Description                                                                                                                   |
+|-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Task Detail > Summary > Reason for Incompletion | If an exception was thrown by the worker, it will be captured and displayed here                                              |
+| Task Detail > Summary > Worker                  | The worker instance id where this failure last occurred. Useful to dig for detailed logs if not already captured by Conductor |
+| Task Detail > Input                             | Verify if the task inputs were computed and provided correctly to the task                                                    |
+| Task Detail > Output                            | If output of a previous task is used as an input to your next task, refer here for what was produced                          |
+| Task Detail > Logs                              | If your task is supplying logs, we can look at that here                                                                      |
+| Task Detail > Retried Task - Select an instance | If your task was retried, we can see all the attempts and correponding details here                                           |
 
 Note: We can also access the task list from **Tasks > Task List** tab.
 

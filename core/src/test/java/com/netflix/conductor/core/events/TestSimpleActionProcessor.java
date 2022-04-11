@@ -238,6 +238,53 @@ public class TestSimpleActionProcessor {
     }
 
     @Test
+    public void testCompleteLoopOverTask() throws Exception {
+        TaskDetails taskDetails = new TaskDetails();
+        taskDetails.setWorkflowId("${workflowId}");
+        taskDetails.setTaskRefName("testTask");
+        taskDetails.getOutput().put("someNEKey", "${Message.someNEKey}");
+        taskDetails.getOutput().put("someKey", "${Message.someKey}");
+        taskDetails.getOutput().put("someNullKey", "${Message.someNullKey}");
+
+        Action action = new Action();
+        action.setAction(Type.complete_task);
+        action.setComplete_task(taskDetails);
+
+        String payloadJson =
+                "{\"workflowId\":\"workflow_1\",  \"taskRefName\":\"testTask\", \"Message\":{\"someKey\":\"someData\",\"someNullKey\":null}}";
+        Object payload = objectMapper.readValue(payloadJson, Object.class);
+
+        TaskModel task = new TaskModel();
+        task.setIteration(1);
+        task.setReferenceTaskName("testTask__1");
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.getTasks().add(task);
+
+        when(workflowExecutor.getWorkflow(eq("workflow_1"), anyBoolean())).thenReturn(workflow);
+        doNothing().when(externalPayloadStorageUtils).verifyAndUpload(any(), any());
+
+        actionProcessor.execute(action, payload, "testEvent", "testMessage");
+
+        ArgumentCaptor<TaskResult> argumentCaptor = ArgumentCaptor.forClass(TaskResult.class);
+        verify(workflowExecutor).updateTask(argumentCaptor.capture());
+        assertEquals(Status.COMPLETED, argumentCaptor.getValue().getStatus());
+        assertEquals(
+                "testMessage",
+                argumentCaptor.getValue().getOutputData().get("conductor.event.messageId"));
+        assertEquals(
+                "testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
+        assertEquals("workflow_1", argumentCaptor.getValue().getOutputData().get("workflowId"));
+        assertEquals("testTask", argumentCaptor.getValue().getOutputData().get("taskRefName"));
+        assertEquals("someData", argumentCaptor.getValue().getOutputData().get("someKey"));
+        // Assert values not in message are evaluated to null
+        assertTrue("testTask", argumentCaptor.getValue().getOutputData().containsKey("someNEKey"));
+        // Assert null values from message are kept
+        assertTrue(
+                "testTask", argumentCaptor.getValue().getOutputData().containsKey("someNullKey"));
+        assertNull("testTask", argumentCaptor.getValue().getOutputData().get("someNullKey"));
+    }
+
+    @Test
     public void testCompleteTaskByTaskId() throws Exception {
         TaskDetails taskDetails = new TaskDetails();
         taskDetails.setWorkflowId("${workflowId}");

@@ -86,32 +86,32 @@ The mail_a_box workflow has 2 tasks:
 
 ## Fields in a Workflow
 
-|field|description|Notes|
-|:-----|:---|:---|
-|name|Name of the workflow||
-|description|Description of the workflow|optional|
-|version|Numeric field used to identify the version of the schema.  Use incrementing numbers|When starting a workflow execution, if not specified, the definition with highest version is used|
-|tasks|An array of task definitions.|[Task properties](#tasks-within-workflow)|
-|inputParameters|List of input parameters. Used for documenting the required inputs to workflow|optional|
-|inputTemplate|Default input values. See [Using inputTemplate](#using-inputtemplate)|optional|
-|outputParameters|JSON template used to generate the output of the workflow|If not specified, the output is defined as the output of the _last_ executed task|
-|failureWorkflow|String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.|optional|
-|schemaVersion|Current Conductor Schema version. schemaVersion 1 is discontinued.|Must be 2|
-|restartable|Boolean flag to allow Workflow restarts|defaults to true|
-|workflowStatusListenerEnabled|If true, every workflow that gets terminated or completed will send a notification. See [workflow notifictions](#workflow-notifications)|optional (false by default)|
+| Field                         | Description                                                                                                                              | Notes                                                                                             |
+|:------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------|
+| name                          | Name of the workflow                                                                                                                     ||
+| description                   | Description of the workflow                                                                                                              | optional                                                                                          |
+| version                       | Numeric field used to identify the version of the schema.  Use incrementing numbers                                                      | When starting a workflow execution, if not specified, the definition with highest version is used |
+| tasks                         | An array of task definitions.                                                                                                            | [Task properties](#tasks-within-workflow)                                                         |
+| inputParameters               | List of input parameters. Used for documenting the required inputs to workflow                                                           | optional                                                                                          |
+| inputTemplate                 | Default input values. See [Using inputTemplate](#using-inputtemplate)                                                                    | optional                                                                                          |
+| outputParameters              | JSON template used to generate the output of the workflow                                                                                | If not specified, the output is defined as the output of the _last_ executed task                 |
+| failureWorkflow               | String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.                                   | optional                                                                                          |
+| schemaVersion                 | Current Conductor Schema version. schemaVersion 1 is discontinued.                                                                       | Must be 2                                                                                         |
+| restartable                   | Boolean flag to allow Workflow restarts                                                                                                  | defaults to true                                                                                  |
+| workflowStatusListenerEnabled | If true, every workflow that gets terminated or completed will send a notification. See [workflow notifictions](#workflow-notifications) | optional (false by default)                                                                       |
 
 ## Tasks within Workflow
 ```tasks``` property in a workflow execution defines an array of tasks to be executed in that order.
 
-|field|description|Notes|
-|:-----|:---|:---|
-|name|Name of the task. MUST be registered as a task with Conductor before starting the workflow||
-|taskReferenceName|Alias used to refer the task within the workflow.  MUST be unique within workflow.||
-|type|Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types||
-|description|Description of the task|optional|
-|optional|true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS`|Defaults to `false`|
-|inputParameters|JSON template that defines the input given to the task|See [Wiring Inputs and Outputs](#wiring-inputs-and-outputs) for details|
-|domain|See [Task Domains](/conductor/configuration/taskdomains) for more information.|optional|
+| Field             | Description                                                                                                                                    | Notes                                                                   |
+|:------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------|
+| name              | Name of the task. MUST be registered as a task with Conductor before starting the workflow                                                     ||
+| taskReferenceName | Alias used to refer the task within the workflow.  MUST be unique within workflow.                                                             ||
+| type              | Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types                                                     ||
+| description       | Description of the task                                                                                                                        | optional                                                                |
+| optional          | true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS` | Defaults to `false`                                                     |
+| inputParameters   | JSON template that defines the input given to the task                                                                                         | See [Wiring Inputs and Outputs](#wiring-inputs-and-outputs) for details |
+| domain            | See [Task Domains](/conductor/configuration/taskdomains) for more information.                                                                 | optional                                                                |
 
 In addition to these parameters, System Tasks have their own parameters. Checkout [System Tasks](/conductor/configuration/systask/) for more information.
 
@@ -126,11 +126,11 @@ Syntax for mapping the values follows the pattern as:
 
 __${SOURCE.input/output.JSONPath}__
 
-|field|description|
-|------|---|
-|SOURCE|can be either "workflow" or any of the task reference name |
-|input/output|refers to either the input or output of the source|
-|JSONPath|JSON path expression to extract JSON fragment from source's input/output|
+| field        | description                                                              |
+|--------------|--------------------------------------------------------------------------|
+| SOURCE       | can be either "workflow" or any of the task reference name               |
+| input/output | refers to either the input or output of the source                       |
+| JSONPath     | JSON path expression to extract JSON fragment from source's input/output |
 
 
 !!! note "JSON Path Support"
@@ -226,4 +226,4 @@ And `url` would be `https://some_url:7004` if no `url` was provided as input to 
 
 ## Workflow notifications
 
-Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See [extending conductor](../../extend/#workflow-status-listener) for details.
+Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See [extending conductor](../../extend#workflow-status-listener) for details.

@@ -21,6 +21,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -86,13 +90,31 @@ public class ElasticSearchV6Configuration {
                             requestConfigBuilder.setConnectionRequestTimeout(
                                     properties.getRestClientConnectionRequestTimeout()));
         }
+
         return restClientBuilder.build();
     }
 
     @Bean
     @Conditional(IsHttpProtocol.class)
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
-        return RestClient.builder(convertToHttpHosts(properties.toURLs()));
+        RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+
+        if (properties.getUsername() != null && properties.getPassword() != null) {
+            log.info(
+                    "Configure ElasticSearch with BASIC authentication. User:{}",
+                    properties.getUsername());
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(
+                    AuthScope.ANY,
+                    new UsernamePasswordCredentials(
+                            properties.getUsername(), properties.getPassword()));
+            builder.setHttpClientConfigCallback(
+                    httpClientBuilder ->
+                            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        } else {
+            log.info("Configure ElasticSearch with no authentication.");
+        }
+        return builder;
     }
 
     @Bean

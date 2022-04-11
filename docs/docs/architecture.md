@@ -7,7 +7,7 @@ The API and storage layers are pluggable and provide ability to work with differ
 ## Installing and Running
 
 !!! hint "Running in production"
-	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](../server) documentation.
+	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](server) documentation.
 
 ### Running In-Memory Server
 
@@ -79,12 +79,12 @@ If you get an error message `ReferenceError: primordials is not defined`, you ne
 Assuming that you started Conductor locally (directly, or with Docker), launch the UI at [http://localhost:5000/](http://localhost:5000/).
 
 !!! Note
-	The server will load a sample kitchensink workflow definition by default.  See [here](../labs/kitchensink/) for details.
+	The server will load a sample kitchensink workflow definition by default.  See [here](labs/kitchensink) for details.
 
 ## Runtime Model
 Conductor follows RPC based communication model where workers are running on a separate machine from the server. Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.
 
-![name_for_alt](img/overview.png)
+![Runtime Model of Conductor](img/overview.png)
 
 **Notes**
 
@@ -104,7 +104,7 @@ Conductor follows RPC based communication model where workers are running on a s
 2. Create the workflow definition
 3. Create task worker(s) that polls for scheduled tasks at regular interval
 
-The [Beginner lab](labs/beginner) has a good walkthrough of steps 1-3.
+The [Beginner lab](labs/beginner) has a good walk-through of steps 1-3.
 
 **Trigger Workflow Execution**
 

@@ -4,9 +4,9 @@ Dynamic Tasks allow you to execute a registered task dynamically at run-time. It
 
 **Parameters:**
 
-|name|description|
-|---|---|
-| dynamicTaskNameParam|Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.|
+| name                 | description                                                                                                                                                               |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| dynamicTaskNameParam | Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'. |
 
 **Example**
 ``` json

@@ -35,23 +35,23 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
 }
 ```
 
-|field|description|Notes|
-|---|---|---|
-|name|Task Type. Unique name of the Task that resonates with it's function.|Unique|
-|description|Description of the task|optional|
-|retryCount|No. of retries to attempt when a Task is marked as failure|defaults to 3|
-|retryLogic|Mechanism for the retries|[Retry Logic values](#retry-logic)|
-|retryDelaySeconds|Time to wait before retries|defaults to 60 seconds|
-|timeoutPolicy|Task's timeout policy|[timeout policy values](#timeout-policy)|
-|timeoutSeconds|Time in seconds, after which the task is marked as `TIMED_OUT` if not completed after transitioning to `IN_PROGRESS` status for the first time|No timeouts if set to 0|
-|pollTimeoutSeconds|Time in seconds, after which the task is marked as `TIMED_OUT` if not polled by a worker|No timeouts if set to 0|
-|responseTimeoutSeconds|Must be greater than 0 and less than timeoutSeconds. The task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.|defaults to 3600|
-|backoffScaleFactor|Must be greater than 0. Scale factor for linearity of the backoff|defaults to 1|
-|inputKeys|Array of keys of task's expected input.  Used for documenting task's input. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |optional|
-|outputKeys|Array of keys of task's expected output.  Used for documenting task's output|optional|
-|inputTemplate|See [Using inputTemplate](#using-inputtemplate) below.|optional|
-|concurrentExecLimit|Number of tasks that can be executed at any given time.|optional|
-|rateLimitFrequencyInSeconds, rateLimitPerFrequency|See [Task Rate limits](#task-rate-limits) below.|optional|
+| Field                                              | Description                                                                                                                                                                                                                                     | Notes                                    |
+|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+| name                                               | Task Type. Unique name of the Task that resonates with it's function.                                                                                                                                                                           | Unique                                   |
+| description                                        | Description of the task                                                                                                                                                                                                                         | optional                                 |
+| retryCount                                         | No. of retries to attempt when a Task is marked as failure                                                                                                                                                                                      | defaults to 3                            |
+| retryLogic                                         | Mechanism for the retries                                                                                                                                                                                                                       | [Retry Logic values](#retry-logic)       |
+| retryDelaySeconds                                  | Time to wait before retries                                                                                                                                                                                                                     | defaults to 60 seconds                   |
+| timeoutPolicy                                      | Task's timeout policy                                                                                                                                                                                                                           | [timeout policy values](#timeout-policy) |
+| timeoutSeconds                                     | Time in seconds, after which the task is marked as `TIMED_OUT` if not completed after transitioning to `IN_PROGRESS` status for the first time                                                                                                  | No timeouts if set to 0                  |
+| pollTimeoutSeconds                                 | Time in seconds, after which the task is marked as `TIMED_OUT` if not polled by a worker                                                                                                                                                        | No timeouts if set to 0                  |
+| responseTimeoutSeconds                             | Must be greater than 0 and less than timeoutSeconds. The task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure. | defaults to 3600                         |
+| backoffScaleFactor                                 | Must be greater than 0. Scale factor for linearity of the backoff                                                                                                                                                                               | defaults to 1                            |
+| inputKeys                                          | Array of keys of task's expected input.  Used for documenting task's input. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys).                                                                                              | optional                                 |
+| outputKeys                                         | Array of keys of task's expected output.  Used for documenting task's output                                                                                                                                                                    | optional                                 |
+| inputTemplate                                      | See [Using inputTemplate](#using-inputtemplate) below.                                                                                                                                                                                          | optional                                 |
+| concurrentExecLimit                                | Number of tasks that can be executed at any given time.                                                                                                                                                                                         | optional                                 |
+| rateLimitFrequencyInSeconds, rateLimitPerFrequency | See [Task Rate limits](#task-rate-limits) below.                                                                                                                                                                                                | optional                                 |
 
 
 ### Retry Logic
