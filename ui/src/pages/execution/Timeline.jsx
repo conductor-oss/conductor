@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import Timeline from "react-vis-timeline";
+import Timeline from "react-vis-timeline-2";
 import { timestampRenderer, durationRenderer } from "../../utils/helpers";
 import _ from "lodash";
 import "./timeline.scss";

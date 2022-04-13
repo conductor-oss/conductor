@@ -19,6 +19,7 @@ import {
   useBulkResumeAction,
   useBulkTerminateAction,
   useBulkPauseAction,
+  useBulkRetryAction,
 } from "../../data/bulkactions";
 
 const useStyles = makeStyles({
@@ -48,7 +49,7 @@ export default function BulkActionModule({ selectedRows }) {
     useBulkRestartAction({ onSuccess });
   const { mutate: restartLatestAction, isLoading: restartLatestLoading } =
     useBulkRestartLatestAction({ onSuccess });
-  const { mutate: retryAction, isLoading: retryLoading } = useBulkResumeAction({
+  const { mutate: retryAction, isLoading: retryLoading } = useBulkRetryAction({
     onSuccess,
   });
   const { mutate: terminateAction, isLoading: terminateLoading } =

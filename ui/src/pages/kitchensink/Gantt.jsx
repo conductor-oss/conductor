@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import Timeline from "react-vis-timeline";
+import Timeline from "react-vis-timeline-2";
 import moment from "moment";
 import { Paper } from "../../components";
 
