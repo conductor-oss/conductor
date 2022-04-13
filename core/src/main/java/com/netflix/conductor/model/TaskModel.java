@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.protobuf.Any;
 
 public class TaskModel {
@@ -68,8 +69,6 @@ public class TaskModel {
     private String taskType;
 
     private Status status;
-
-    private Map<String, Object> inputData = new HashMap<>();
 
     private String referenceTaskName;
 
@@ -119,8 +118,6 @@ public class TaskModel {
 
     private String workerId;
 
-    private Map<String, Object> outputData = new HashMap<>();
-
     private WorkflowTask workflowTask;
 
     private String domain;
@@ -159,6 +156,10 @@ public class TaskModel {
 
     @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
 
+    @JsonIgnore private Map<String, Object> inputData = new HashMap<>();
+
+    @JsonIgnore private Map<String, Object> outputData = new HashMap<>();
+
     public String getTaskType() {
         return taskType;
     }
@@ -175,15 +176,31 @@ public class TaskModel {
         this.status = status;
     }
 
+    @JsonIgnore
     public Map<String, Object> getInputData() {
         return externalInputPayloadStoragePath != null ? inputPayload : inputData;
     }
 
+    @JsonIgnore
     public void setInputData(Map<String, Object> inputData) {
         if (inputData == null) {
             inputData = new HashMap<>();
         }
         this.inputData = inputData;
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @JsonProperty("inputData")
+    @Deprecated
+    public void setRawInputData(Map<String, Object> inputData) {
+        setInputData(inputData);
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @JsonProperty("inputData")
+    @Deprecated
+    public Map<String, Object> getRawInputData() {
+        return inputData;
     }
 
     public String getReferenceTaskName() {
@@ -365,15 +382,31 @@ public class TaskModel {
         this.workerId = workerId;
     }
 
+    @JsonIgnore
     public Map<String, Object> getOutputData() {
         return externalOutputPayloadStoragePath != null ? outputPayload : outputData;
     }
 
+    @JsonIgnore
     public void setOutputData(Map<String, Object> outputData) {
         if (outputData == null) {
             outputData = new HashMap<>();
         }
         this.outputData = outputData;
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @JsonProperty("outputData")
+    @Deprecated
+    public void setRawOutputData(Map<String, Object> inputData) {
+        setOutputData(inputData);
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @JsonProperty("outputData")
+    @Deprecated
+    public Map<String, Object> getRawOutputData() {
+        return outputData;
     }
 
     public WorkflowTask getWorkflowTask() {
