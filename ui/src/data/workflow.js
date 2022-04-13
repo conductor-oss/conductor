@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { useQuery, useMutation } from "react-query";
-import qs from "qs";
+import { useQuery, useMutation, useQueryClient } from "react-query";
 import { useFetchContext, fetchWithContext } from "../plugins/fetch";
-import { useFetch } from "./common";
+import { useFetch, useFetchParallel } from "./common";
+import { useEnv } from "../plugins/env";
+import qs from "qs";
 
 const STALE_TIME_WORKFLOW_DEFS = 600000; // 10 mins
 const STALE_TIME_SEARCH = 60000; // 1 min
@@ -36,16 +37,43 @@ export function useWorkflowSearch(searchObj) {
 }
 
 export function useWorkflow(workflowId) {
-  return useFetch(`/workflow/${workflowId}`);
+  return useFetch(`/workflow/${workflowId}`, { enabled: !!workflowId });
 }
 
-export function useWorkflowDef(workflowName, version, defaultWorkflow) {
+export function useWorkflows(workflowIds, reactQueryOptions) {
+  return useFetchParallel(
+    workflowIds.map((workflowId) => ["workflow", workflowId]),
+    reactQueryOptions
+  );
+}
+
+export function useInvalidateWorkflows() {
+  const { stack } = useEnv();
+  const client = useQueryClient();
+
+  return function (workflowIds) {
+    console.log("invalidating workflow Ids", workflowIds);
+    client.invalidateQueries({
+      predicate: (query) =>
+        query.queryKey[0] === stack &&
+        query.queryKey[1] === "workflow" &&
+        workflowIds.includes(query.queryKey[2]),
+    });
+  };
+}
+
+export function useWorkflowDef(
+  workflowName,
+  version,
+  defaultWorkflow,
+  reactQueryOptions = {}
+) {
   let path;
   if (workflowName) {
     path = `/metadata/workflow/${workflowName}`;
     if (version) path += `?version=${version}`;
   }
-  return useFetch(path, {}, defaultWorkflow);
+  return useFetch(path, reactQueryOptions, defaultWorkflow);
 }
 
 export function useWorkflowDefs() {
@@ -57,16 +85,11 @@ export function useWorkflowDefs() {
   const workflows = useMemo(() => {
     if (data) {
       const unique = new Map();
-      const types = new Set();
       for (let workflowDef of data) {
         if (!unique.has(workflowDef.name)) {
           unique.set(workflowDef.name, workflowDef);
         } else if (unique.get(workflowDef.name).version < workflowDef.version) {
           unique.set(workflowDef.name, workflowDef);
-        }
-
-        for (let task of workflowDef.tasks) {
-          types.add(task.type);
         }
       }
 
@@ -74,6 +97,7 @@ export function useWorkflowDefs() {
     }
   }, [data]);
 
+  console.log(workflows);
   return {
     data: workflows,
     ...rest,
@@ -134,4 +158,26 @@ export function useWorkflowNamesAndVersions() {
   }, [data]);
 
   return { ...rest, data: newData };
+}
+
+export function useStartWorkflow(callbacks) {
+  const path = "/workflow";
+  const fetchContext = useFetchContext();
+
+  return useMutation(
+    ({ body }) =>
+      fetchWithContext(
+        path,
+        fetchContext,
+        {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        false
+      ),
+    callbacks
+  );
 }

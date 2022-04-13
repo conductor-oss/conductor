@@ -105,7 +105,6 @@ export default function TaskSearchPanel() {
     setQueryFT(newQuery);
 
     if (oldQuery === newQuery) {
-      console.log("refetching");
       refetch();
     }
   }

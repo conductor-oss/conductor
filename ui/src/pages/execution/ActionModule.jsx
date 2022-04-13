@@ -51,7 +51,7 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <RestartIcon className={classes.menuIcon} fontSize="small" />
+            <RestartIcon className={classes.menuIcon} />
             Restart with Current Definitions
           </>
         ),
@@ -61,7 +61,7 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <FlareIcon className={classes.menuIcon} fontSize="small" />
+            <FlareIcon className={classes.menuIcon} />
             Restart with Latest Definitions
           </>
         ),
@@ -78,7 +78,6 @@ export default function ActionModule({ execution, triggerReload }) {
             label: (
               <>
                 <StopIcon
-                  fontSize="small"
                   style={{ color: "red" }}
                   className={classes.menuIcon}
                 />
@@ -90,7 +89,7 @@ export default function ActionModule({ execution, triggerReload }) {
           {
             label: (
               <>
-                <PauseIcon fontSize="small" className={classes.menuIcon} />
+                <PauseIcon className={classes.menuIcon} />
                 Pause
               </>
             ),
@@ -104,7 +103,7 @@ export default function ActionModule({ execution, triggerReload }) {
   } else if (execution.status === "PAUSED") {
     return (
       <PrimaryButton onClick={() => resumeAction.mutate()}>
-        <ResumeIcon fontSize="small" />
+        <ResumeIcon />
         Resume
       </PrimaryButton>
     );
@@ -115,7 +114,7 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <RestartIcon className={classes.menuIcon} fontSize="small" />
+            <RestartIcon className={classes.menuIcon} />
             Restart with Current Definitions
           </>
         ),
@@ -125,7 +124,7 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <FlareIcon className={classes.menuIcon} fontSize="small" />
+            <FlareIcon className={classes.menuIcon} />
             Restart with Latest Definitions
           </>
         ),
@@ -136,7 +135,7 @@ export default function ActionModule({ execution, triggerReload }) {
     options.push({
       label: (
         <>
-          <ReplayIcon className={classes.menuIcon} fontSize="small" />
+          <ReplayIcon className={classes.menuIcon} />
           Retry - From failed task
         </>
       ),
@@ -153,7 +152,7 @@ export default function ActionModule({ execution, triggerReload }) {
       options.push({
         label: (
           <>
-            <ReplayIcon className={classes.menuIcon} fontSize="small" />
+            <ReplayIcon className={classes.menuIcon} />
             Retry - Resume subworkflow
           </>
         ),

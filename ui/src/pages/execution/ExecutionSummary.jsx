@@ -4,7 +4,10 @@ import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
   paper: {
-    minHeight: 300,
+    margin: 30,
+  },
+  wrapper: {
+    overflowY: "auto",
   },
 });
 
@@ -51,8 +54,10 @@ export default function ExecutionSummary({ execution }) {
   }
 
   return (
-    <Paper className={classes.paper}>
-      <KeyValueTable data={data} />
-    </Paper>
+    <div className={classes.wrapper}>
+      <Paper className={classes.paper}>
+        <KeyValueTable data={data} />
+      </Paper>
+    </div>
   );
 }

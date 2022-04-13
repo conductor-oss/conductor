@@ -13,13 +13,15 @@ const useStyles = makeStyles({
     height: "100%",
     display: "flex",
     flexDirection: "column",
+    paddingTop: 15,
   },
   editorWrapper: {
-    flex: "1",
+    flex: 1,
     marginLeft: 10,
+    position: "relative",
   },
   label: {
-    marginTop: 5,
+    marginTop: 13,
     marginBottom: 10,
     flex: 1,
   },
@@ -65,17 +67,17 @@ export default function ReactJson({ className, label, src }) {
         </InputLabel>
 
         <Tooltip title="Collapse All">
-          <IconButton size="small" onClick={handleCollapse}>
+          <IconButton onClick={handleCollapse}>
             <ExpandLessIcon />
           </IconButton>
         </Tooltip>
         <Tooltip title="Expand All">
-          <IconButton size="small" onClick={handleExpandAll}>
+          <IconButton onClick={handleExpandAll}>
             <ExpandMoreIcon />
           </IconButton>
         </Tooltip>
         <Tooltip title="Copy All">
-          <IconButton size="small" onClick={handleCopyAll}>
+          <IconButton onClick={handleCopyAll}>
             <FileCopyIcon />
           </IconButton>
         </Tooltip>

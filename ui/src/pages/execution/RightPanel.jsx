@@ -8,7 +8,7 @@ import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 
 const useStyles = makeStyles({
-  margin: {
+  banner: {
     margin: 15,
   },
   dfSelect: {
@@ -16,9 +16,9 @@ const useStyles = makeStyles({
     backgroundColor: "#efefef",
   },
   tabContent: {
-    flexGrow: 1,
+    flex: 1,
+    overflowY: "auto",
   },
-  reactJson: {},
 });
 
 export default function RightPanel({ selectedTask, dag, onTaskChange }) {
@@ -115,39 +115,29 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
       <div className={classes.tabContent}>
         {tabIndex === 0 && <TaskSummary taskResult={taskResult} />}
         {tabIndex === 1 && (
-          <ReactJson
-            className={classes.reactJson}
-            src={taskResult.inputData}
-            label="Task Input"
-          />
+          <ReactJson src={taskResult.inputData} label="Task Input" />
         )}
         {tabIndex === 2 && (
           <>
             {taskResult.externalOutputPayloadStoragePath && (
-              <Banner className={classes.margin}>
+              <Banner className={classes.banner}>
                 This task has externalized output. Please reference{" "}
                 <code>externalOutputPayloadStoragePath</code> for the storage
                 location.
               </Banner>
             )}
-            <ReactJson
-              className={classes.reactJson}
-              src={taskResult.outputData}
-              label="Task Output"
-            />
+            <ReactJson src={taskResult.outputData} label="Task Output" />
           </>
         )}
         {tabIndex === 3 && <TaskLogs task={taskResult} />}
         {tabIndex === 4 && (
           <ReactJson
-            className={classes.reactJson}
             src={taskResult}
             label="Unabridged Task Execution Result"
           />
         )}
         {tabIndex === 5 && (
           <ReactJson
-            className={classes.reactJson}
             src={taskResult.workflowTask}
             label="Task Definition at Runtime"
           />

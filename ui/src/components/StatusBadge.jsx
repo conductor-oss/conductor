@@ -8,7 +8,7 @@ const colorMap = {
   warning: "#fba404",
 };
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, ...props }) {
   let color;
   switch (status) {
     case "RUNNING":
@@ -26,6 +26,7 @@ export default function StatusBadge({ status }) {
 
   return (
     <Chip
+      {...props}
       style={color && { backgroundColor: color, color: "white" }}
       label={status}
     />

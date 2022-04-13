@@ -4,21 +4,23 @@ import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
   wrapper: {
+    margin: 30,
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    overflow: "hidden",
   },
   column: {
     display: "flex",
     flexDirection: "row",
     gap: 15,
     flex: 2,
+    marginBottom: 15,
+    overflow: "hidden",
   },
   paper: {
     flex: 1,
-    marginBottom: 15,
-    padding: "10px 0 0 0",
+    overflow: "hidden",
   },
 });
 

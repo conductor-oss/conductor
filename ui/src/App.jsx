@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Route, Switch } from "react-router-dom";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/styles";
 import { Button, AppBar, Toolbar } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
@@ -25,6 +25,7 @@ import Gantt from "./pages/kitchensink/Gantt";
 import CustomRoutes from "./plugins/CustomRoutes";
 import AppBarModules from "./plugins/AppBarModules";
 import CustomAppBarButtons from "./plugins/CustomAppBarButtons";
+import Workbench from "./pages/workbench/Workbench";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -68,6 +69,9 @@ export default function App() {
           <Button component={NavLink} path="/taskQueue">
             Task Queues
           </Button>
+          <Button component={NavLink} path="/workbench">
+            Workbench
+          </Button>
           <CustomAppBarButtons />
 
           <div className={classes.toolbarRight}>
@@ -106,6 +110,9 @@ export default function App() {
           </Route>
           <Route exact path="/taskQueue/:name?">
             <TaskQueue />
+          </Route>
+          <Route exact path="/workbench">
+            <Workbench />
           </Route>
           <Route exact path="/kitchen">
             <KitchenSink />

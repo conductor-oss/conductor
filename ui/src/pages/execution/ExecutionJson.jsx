@@ -5,8 +5,13 @@ import { makeStyles } from "@material-ui/styles";
 
 const useStyles = makeStyles({
   paper: {
-    height: "100%",
-    padding: "10px 0 0 0",
+    margin: 30,
+    flex: 1,
+  },
+  wrapper: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
   },
 });
 
@@ -14,8 +19,10 @@ export default function ExecutionJson({ execution }) {
   const classes = useStyles();
 
   return (
-    <Paper className={classes.paper}>
-      <ReactJson label="Unabridged Workflow JSON" src={execution} />
-    </Paper>
+    <div className={classes.wrapper}>
+      <Paper className={classes.paper}>
+        <ReactJson label="Unabridged Workflow JSON" src={execution} />
+      </Paper>
+    </div>
   );
 }

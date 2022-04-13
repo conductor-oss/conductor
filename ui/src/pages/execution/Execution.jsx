@@ -10,7 +10,7 @@ import {
   Heading,
 } from "../../components";
 import { Tooltip } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/styles";
 import { useRouteMatch } from "react-router-dom";
 import TaskDetails from "./TaskDetails";
 import ExecutionSummary from "./ExecutionSummary";
@@ -35,10 +35,6 @@ const INIT_DRAWER_WIDTH = 650;
 
 const useStyles = makeStyles({
   header: sharedStyles.header,
-
-  wrapper: {
-    height: "100%",
-  },
   drawer: {
     zIndex: 999,
     position: "absolute",
@@ -75,13 +71,13 @@ const useStyles = makeStyles({
     flexDirection: "column",
   },
   drawerContent: {
-    flex: "1 1 auto",
+    flex: 1,
     backgroundColor: "#fff",
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   },
   content: {
-    overflowY: "auto",
     height: "100%",
     display: "flex",
     flexDirection: "column",
@@ -90,13 +86,14 @@ const useStyles = makeStyles({
     marginRight: (state) => state.drawerWidth,
   },
   tabContent: {
-    padding: 30,
     flex: 1,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
   },
   headerSubtitle: {
     marginBottom: 20,
   },
-
   fr: {
     display: "flex",
     position: "relative",
@@ -130,21 +127,22 @@ export default function Execution() {
   const [isResizing, setIsResizing] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(INIT_DRAWER_WIDTH);
 
+  const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
   const [selectedTaskJson, setSelectedTaskJson] = useQueryState("task", "");
 
   const dag = useMemo(
     () => (execution ? new WorkflowDAG(execution) : null),
     [execution]
   );
+  const selectedTask = useMemo(
+    () => (dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null),
+    [dag, selectedTaskJson]
+  );
 
   const classes = useStyles({
     isFullWidth,
     drawerWidth,
   });
-
-  const selectedTask =
-    dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null;
-  const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
 
   const handleMousemove = useCallback(
     (e) => {
@@ -198,7 +196,7 @@ export default function Execution() {
   }, [handleMousemove]);
 
   return (
-    <div className={classes.wrapper}>
+    <>
       <Helmet>
         <title>Conductor UI - Execution - {match.params.id}</title>
       </Helmet>
@@ -306,6 +304,6 @@ export default function Execution() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
