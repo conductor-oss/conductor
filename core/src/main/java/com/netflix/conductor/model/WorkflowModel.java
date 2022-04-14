@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
 public class WorkflowModel {
@@ -63,14 +64,6 @@ public class WorkflowModel {
 
     private List<TaskModel> tasks = new LinkedList<>();
 
-    private Map<String, Object> input = new HashMap<>();
-
-    private Map<String, Object> output = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
-
     private String correlationId;
 
     private String reRunFromWorkflowId;
@@ -109,6 +102,14 @@ public class WorkflowModel {
     private String failedTaskId;
 
     private Status previousStatus;
+
+    @JsonIgnore private Map<String, Object> input = new HashMap<>();
+
+    @JsonIgnore private Map<String, Object> output = new HashMap<>();
+
+    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
+
+    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
 
     public Status getPreviousStatus() {
         return previousStatus;
@@ -170,10 +171,12 @@ public class WorkflowModel {
         this.tasks = tasks;
     }
 
+    @JsonIgnore
     public Map<String, Object> getInput() {
         return externalInputPayloadStoragePath != null ? inputPayload : input;
     }
 
+    @JsonIgnore
     public void setInput(Map<String, Object> input) {
         if (input == null) {
             input = new HashMap<>();
@@ -181,15 +184,45 @@ public class WorkflowModel {
         this.input = input;
     }
 
+    @JsonIgnore
     public Map<String, Object> getOutput() {
         return externalOutputPayloadStoragePath != null ? outputPayload : output;
     }
 
+    @JsonIgnore
     public void setOutput(Map<String, Object> output) {
         if (output == null) {
             output = new HashMap<>();
         }
         this.output = output;
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @Deprecated
+    @JsonProperty("input")
+    public Map<String, Object> getRawInput() {
+        return input;
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @Deprecated
+    @JsonProperty("input")
+    public void setRawInput(Map<String, Object> input) {
+        setInput(input);
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @Deprecated
+    @JsonProperty("output")
+    public Map<String, Object> getRawOutput() {
+        return output;
+    }
+
+    /** @deprecated Used only for JSON serialization and deserialization. */
+    @Deprecated
+    @JsonProperty("output")
+    public void setRawOutput(Map<String, Object> output) {
+        setOutput(output);
     }
 
     public String getCorrelationId() {
