@@ -12,11 +12,7 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -40,7 +36,6 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
@@ -487,7 +482,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
         // Empty list, this is a bad state, workflow should terminate
         when(deciderService.getTasksToBeScheduled(workflowModel, wt2, 0))
-                .thenReturn(Lists.newArrayList());
+                .thenReturn(new ArrayList<>());
 
         String taskId = idGenerator.generate();
         TaskMapperContext taskMapperContext =

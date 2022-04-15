@@ -215,12 +215,6 @@
                 "com.github.vlsi.compactmap:compactmap"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.vlsi.compactmap:compactmap": {
             "locked": "2.0",
             "transitive": [
@@ -230,7 +224,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.eureka:eureka-client",
@@ -258,10 +251,8 @@
         "com.google.guava:guava": {
             "locked": "30.0-jre",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
             ]
@@ -1350,12 +1341,6 @@
                 "com.github.vlsi.compactmap:compactmap"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.vlsi.compactmap:compactmap": {
             "locked": "2.0",
             "transitive": [
@@ -1365,7 +1350,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.eureka:eureka-client",
@@ -1393,10 +1377,8 @@
         "com.google.guava:guava": {
             "locked": "30.0-jre",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
             ]

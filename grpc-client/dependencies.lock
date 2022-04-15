@@ -64,7 +64,7 @@
             "project": true
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -73,31 +73,31 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.netty:netty-buffer": {
             "locked": "4.1.65.Final",
@@ -224,12 +224,6 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.google.android:annotations": {
             "locked": "4.1.1.4",
             "transitive": [
@@ -245,7 +239,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-protobuf",
@@ -277,7 +270,6 @@
         "com.google.guava:guava": {
             "locked": "30.0-jre",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty",
@@ -323,7 +315,7 @@
             "project": true
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -332,34 +324,34 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc"
             ]
@@ -451,7 +443,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.23.0",
+            "locked": "0.25.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -612,7 +604,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -621,31 +613,31 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.netty:netty-buffer": {
             "locked": "4.1.65.Final",
@@ -1054,12 +1046,6 @@
                 "com.netflix.conductor:conductor-common"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.google.android:annotations": {
             "locked": "4.1.1.4",
             "transitive": [
@@ -1075,7 +1061,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-protobuf",
@@ -1107,7 +1092,6 @@
         "com.google.guava:guava": {
             "locked": "30.0-jre",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty",
@@ -1165,7 +1149,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -1174,34 +1158,34 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc"
             ]
@@ -1293,7 +1277,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.23.0",
+            "locked": "0.25.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"

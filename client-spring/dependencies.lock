@@ -385,12 +385,6 @@
                 "com.github.vlsi.compactmap:compactmap"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.vlsi.compactmap:compactmap": {
             "locked": "2.0",
             "transitive": [
@@ -400,8 +394,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-infix"
@@ -413,45 +405,19 @@
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
+            "locked": "19.0",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "com.google.inject:guice": {
             "locked": "4.1.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "com.google.protobuf:protobuf-java": {
@@ -713,12 +679,6 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "org.codehaus.jettison:jettison": {
@@ -1427,12 +1387,6 @@
                 "com.github.vlsi.compactmap:compactmap"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.vlsi.compactmap:compactmap": {
             "locked": "2.0",
             "transitive": [
@@ -1442,8 +1396,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.eureka:eureka-client",
                 "com.netflix.netflix-commons:netflix-infix"
@@ -1455,45 +1407,19 @@
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
+            "locked": "19.0",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.netflix.archaius:archaius-core",
-                "com.netflix.conductor:conductor-client",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "com.google.inject:guice": {
             "locked": "4.1.0",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "com.google.protobuf:protobuf-java": {
@@ -1818,12 +1744,6 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "org.codehaus.jettison:jettison": {

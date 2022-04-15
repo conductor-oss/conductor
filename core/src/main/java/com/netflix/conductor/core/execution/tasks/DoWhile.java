@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.events.ScriptEvaluator;
@@ -29,8 +30,6 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-
-import com.google.common.annotations.VisibleForTesting;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DO_WHILE;
 

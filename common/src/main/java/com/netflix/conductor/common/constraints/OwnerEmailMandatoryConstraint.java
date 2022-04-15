@@ -22,7 +22,7 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -51,7 +51,7 @@ public @interface OwnerEmailMandatoryConstraint {
 
         @Override
         public boolean isValid(String ownerEmail, ConstraintValidatorContext context) {
-            return !ownerEmailMandatory || !Strings.isNullOrEmpty(ownerEmail);
+            return !ownerEmailMandatory || !StringUtils.isEmpty(ownerEmail);
         }
 
         private static boolean ownerEmailMandatory = true;

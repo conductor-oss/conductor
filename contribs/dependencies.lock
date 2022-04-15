@@ -511,16 +511,9 @@
                 "org.apache.kafka:kafka-clients"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava"
             ]
         },
@@ -537,11 +530,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "30.0-jre",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.netflix.conductor:conductor-core"
-            ]
+            "locked": "30.0-jre"
         },
         "com.google.guava:listenablefuture": {
             "locked": "9999.0-empty-to-avoid-conflict-with-guava",
@@ -2130,12 +2119,6 @@
                 "org.apache.kafka:kafka-clients"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
@@ -2145,7 +2128,6 @@
                 "com.github.java-json-tools:json-schema-validator",
                 "com.github.java-json-tools:msg-simple",
                 "com.github.java-json-tools:uri-template",
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava"
             ]
         },
@@ -2165,8 +2147,6 @@
             "locked": "30.0-jre",
             "transitive": [
                 "com.github.java-json-tools:json-schema-validator",
-                "com.github.rholder:guava-retrying",
-                "com.netflix.conductor:conductor-core",
                 "io.swagger:swagger-core",
                 "org.mock-server:mockserver-client-java",
                 "org.mock-server:mockserver-core"

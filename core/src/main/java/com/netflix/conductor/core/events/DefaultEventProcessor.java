@@ -22,9 +22,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -32,11 +35,9 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
@@ -44,8 +45,9 @@ import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.futures.CompletableFutures;
+
+import static com.netflix.conductor.core.utils.Utils.isTransientException;
 
 /**
  * Event Processor is used to dispatch actions configured in the event handlers, based on incoming
@@ -61,7 +63,6 @@ import com.spotify.futures.CompletableFutures;
 public class DefaultEventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventProcessor.class);
-    private static final int RETRY_COUNT = 3;
 
     private final MetadataService metadataService;
     private final ExecutionService executionService;
@@ -72,6 +73,7 @@ public class DefaultEventProcessor {
     private final JsonUtils jsonUtils;
     private final boolean isEventMessageIndexingEnabled;
     private final Map<String, Evaluator> evaluators;
+    private final RetryTemplate retryTemplate;
 
     public DefaultEventProcessor(
             ExecutionService executionService,
@@ -80,7 +82,8 @@ public class DefaultEventProcessor {
             JsonUtils jsonUtils,
             ConductorProperties properties,
             ObjectMapper objectMapper,
-            Map<String, Evaluator> evaluators) {
+            Map<String, Evaluator> evaluators,
+            @Qualifier("onTransientErrorRetryTemplate") RetryTemplate retryTemplate) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
@@ -94,12 +97,15 @@ public class DefaultEventProcessor {
                             + "processing, set conductor.default-event-processor.enabled=false.");
         }
         ThreadFactory threadFactory =
-                new ThreadFactoryBuilder().setNameFormat("event-action-executor-thread-%d").build();
+                new BasicThreadFactory.Builder()
+                        .namingPattern("event-action-executor-thread-%d")
+                        .build();
         eventActionExecutorService =
                 Executors.newFixedThreadPool(
                         properties.getEventProcessorThreadCount(), threadFactory);
 
         this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
+        this.retryTemplate = retryTemplate;
         LOGGER.info("Event Processing is ENABLED");
     }
 
@@ -254,30 +260,21 @@ public class DefaultEventProcessor {
      */
     protected EventExecution execute(EventExecution eventExecution, Action action, Object payload) {
         try {
-            String methodName = "executeEventAction";
-            String description =
-                    String.format(
-                            "Executing action: %s for event: %s with messageId: %s with payload: %s",
-                            action.getAction(),
-                            eventExecution.getId(),
-                            eventExecution.getMessageId(),
-                            payload);
-            LOGGER.debug(description);
+            LOGGER.debug(
+                    "Executing action: {} for event: {} with messageId: {} with payload: {}",
+                    action.getAction(),
+                    eventExecution.getId(),
+                    eventExecution.getMessageId(),
+                    payload);
 
             Map<String, Object> output =
-                    new RetryUtil<Map<String, Object>>()
-                            .retryOnException(
-                                    () ->
-                                            actionProcessor.execute(
-                                                    action,
-                                                    payload,
-                                                    eventExecution.getEvent(),
-                                                    eventExecution.getMessageId()),
-                                    this::isTransientException,
-                                    null,
-                                    RETRY_COUNT,
-                                    description,
-                                    methodName);
+                    retryTemplate.execute(
+                            context ->
+                                    actionProcessor.execute(
+                                            action,
+                                            payload,
+                                            eventExecution.getEvent(),
+                                            eventExecution.getMessageId()));
             if (output != null) {
                 eventExecution.getOutput().putAll(output);
             }
@@ -293,7 +290,7 @@ public class DefaultEventProcessor {
                     eventExecution.getEvent(),
                     eventExecution.getMessageId(),
                     e);
-            if (!isTransientException(e.getCause())) {
+            if (!isTransientException(e)) {
                 // not a transient error, fail the event execution
                 eventExecution.setStatus(Status.FAILED);
                 eventExecution.getOutput().put("exception", e.getMessage());
@@ -305,24 +302,6 @@ public class DefaultEventProcessor {
             }
         }
         return eventExecution;
-    }
-
-    /**
-     * Used to determine if the exception is thrown due to a transient failure and the operation is
-     * expected to succeed upon retrying.
-     *
-     * @param throwableException the exception that is thrown
-     * @return true - if the exception is a transient failure false - if the exception is
-     *     non-transient
-     */
-    protected boolean isTransientException(Throwable throwableException) {
-        if (throwableException != null) {
-            return !((throwableException instanceof UnsupportedOperationException)
-                    || (throwableException instanceof ApplicationException
-                            && ((ApplicationException) throwableException).getCode()
-                                    != ApplicationException.Code.BACKEND_ERROR));
-        }
-        return true;
     }
 
     private Object getPayloadObject(String payload) {

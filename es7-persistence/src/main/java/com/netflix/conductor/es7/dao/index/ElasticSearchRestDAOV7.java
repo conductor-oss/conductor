@@ -34,17 +34,14 @@ import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
@@ -59,6 +56,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -66,7 +64,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.dao.IndexDAO;
@@ -86,7 +83,6 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
     private static final Logger logger = LoggerFactory.getLogger(ElasticSearchRestDAOV7.class);
 
-    private static final int RETRY_COUNT = 3;
     private static final int CORE_POOL_SIZE = 6;
     private static final long KEEP_ALIVE_TIME = 1L;
 
@@ -127,6 +123,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
     private final int indexBatchSize;
     private final int asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
+    private final RetryTemplate retryTemplate;
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -134,6 +131,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
     public ElasticSearchRestDAOV7(
             RestClientBuilder restClientBuilder,
+            RetryTemplate retryTemplate,
             ElasticSearchProperties properties,
             ObjectMapper objectMapper) {
 
@@ -194,6 +192,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(this::flushBulkRequests, 60, 30, TimeUnit.SECONDS);
+        this.retryTemplate = retryTemplate;
     }
 
     @PreDestroy
@@ -493,22 +492,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
                     new IndexRequest(workflowIndexName)
                             .id(workflowId)
                             .source(docBytes, XContentType.JSON);
-            new RetryUtil<IndexResponse>()
-                    .retryOnException(
-                            () -> {
-                                try {
-                                    return elasticSearchClient.index(
-                                            request, RequestOptions.DEFAULT);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            },
-                            null,
-                            null,
-                            RETRY_COUNT,
-                            "Indexing workflow document: " + workflow.getWorkflowId(),
-                            "indexWorkflow");
-
+            elasticSearchClient.index(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -576,21 +560,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
         }
 
         try {
-            new RetryUtil<BulkResponse>()
-                    .retryOnException(
-                            () -> {
-                                try {
-                                    return elasticSearchClient.bulk(
-                                            bulkRequest, RequestOptions.DEFAULT);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            },
-                            null,
-                            BulkResponse::hasFailures,
-                            RETRY_COUNT,
-                            "Indexing task execution logs",
-                            "addTaskExecutionLogs");
+            elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -831,42 +801,35 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
     @Override
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
-        if (keys.length != values.length) {
-            throw new ApplicationException(
-                    ApplicationException.Code.INVALID_INPUT,
-                    "Number of keys and values do not match");
+        try {
+            if (keys.length != values.length) {
+                throw new ApplicationException(
+                        ApplicationException.Code.INVALID_INPUT,
+                        "Number of keys and values do not match");
+            }
+
+            long startTime = Instant.now().toEpochMilli();
+            UpdateRequest request = new UpdateRequest(workflowIndexName, workflowInstanceId);
+            Map<String, Object> source =
+                    IntStream.range(0, keys.length)
+                            .boxed()
+                            .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
+            request.doc(source);
+
+            logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
+            elasticSearchClient.update(request, RequestOptions.DEFAULT);
+            long endTime = Instant.now().toEpochMilli();
+            logger.debug(
+                    "Time taken {} for updating workflow: {}",
+                    endTime - startTime,
+                    workflowInstanceId);
+            Monitors.recordESIndexTime("update_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
+            Monitors.recordWorkerQueueSize(
+                    "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
+        } catch (Exception e) {
+            logger.error("Failed to update workflow {}", workflowInstanceId, e);
+            Monitors.error(className, "update");
         }
-
-        long startTime = Instant.now().toEpochMilli();
-        UpdateRequest request = new UpdateRequest(workflowIndexName, workflowInstanceId);
-        Map<String, Object> source =
-                IntStream.range(0, keys.length)
-                        .boxed()
-                        .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-        request.doc(source);
-
-        logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-
-        new RetryUtil<UpdateResponse>()
-                .retryOnException(
-                        () -> {
-                            try {
-                                return elasticSearchClient.update(request, RequestOptions.DEFAULT);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        },
-                        null,
-                        null,
-                        RETRY_COUNT,
-                        "Updating workflow document: " + workflowInstanceId,
-                        "updateWorkflow");
-        long endTime = Instant.now().toEpochMilli();
-        logger.debug(
-                "Time taken {} for updating workflow: {}", endTime - startTime, workflowInstanceId);
-        Monitors.recordESIndexTime("update_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
-        Monitors.recordWorkerQueueSize(
-                "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
     }
 
     @Override
@@ -1110,21 +1073,8 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             final BulkRequest request, final String operationDescription, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            new RetryUtil<BulkResponse>()
-                    .retryOnException(
-                            () -> {
-                                try {
-                                    return elasticSearchClient.bulk(
-                                            request, RequestOptions.DEFAULT);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            },
-                            null,
-                            null,
-                            RETRY_COUNT,
-                            operationDescription,
-                            "indexWithRetry");
+            retryTemplate.execute(
+                    context -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);
@@ -1149,7 +1099,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
                 .filter(
                         entry ->
                                 (System.currentTimeMillis() - entry.getValue().getLastFlushTime())
-                                        >= asyncBufferFlushTimeout * 1000)
+                                        >= asyncBufferFlushTimeout * 1000L)
                 .filter(
                         entry ->
                                 entry.getValue().getBulkRequest() != null

@@ -255,16 +255,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7"
+            "locked": "1.6.8"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -338,6 +338,12 @@
         "org.springframework.boot:spring-boot-starter-web": {
             "locked": "2.3.12.RELEASE"
         },
+        "org.springframework.retry:spring-retry": {
+            "locked": "1.2.5.RELEASE",
+            "transitive": [
+                "com.netflix.conductor:conductor-es7-persistence"
+            ]
+        },
         "org.springframework:spring-aop": {
             "locked": "5.2.15.RELEASE",
             "transitive": [
@@ -366,6 +372,7 @@
             "transitive": [
                 "org.springframework.boot:spring-boot",
                 "org.springframework.boot:spring-boot-starter",
+                "org.springframework.retry:spring-retry",
                 "org.springframework:spring-aop",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
@@ -637,12 +644,6 @@
                 "org.apache.kafka:kafka-clients"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.spullara.mustache.java:compiler": {
             "locked": "0.9.3",
             "transitive": [
@@ -670,7 +671,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
@@ -712,12 +712,10 @@
             "locked": "31.0.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence",
@@ -1121,7 +1119,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -1130,45 +1128,45 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
@@ -1320,7 +1318,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.23.0",
+            "locked": "0.25.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -2123,20 +2121,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -2222,6 +2220,12 @@
                 "com.netflix.conductor:conductor-rest"
             ]
         },
+        "org.springframework.retry:spring-retry": {
+            "locked": "1.2.5.RELEASE",
+            "transitive": [
+                "com.netflix.conductor:conductor-es7-persistence"
+            ]
+        },
         "org.springframework:spring-aop": {
             "locked": "5.2.15.RELEASE",
             "transitive": [
@@ -2252,6 +2256,7 @@
             "transitive": [
                 "org.springframework.boot:spring-boot",
                 "org.springframework.boot:spring-boot-starter",
+                "org.springframework.retry:spring-retry",
                 "org.springframework:spring-aop",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
@@ -2571,12 +2576,6 @@
                 "org.apache.kafka:kafka-clients"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.spullara.mustache.java:compiler": {
             "locked": "0.9.3",
             "transitive": [
@@ -2604,7 +2603,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
@@ -2646,12 +2644,10 @@
             "locked": "31.0.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence",
@@ -3055,7 +3051,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -3064,45 +3060,45 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
@@ -3254,7 +3250,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.23.0",
+            "locked": "0.25.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -4057,20 +4053,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -4156,6 +4152,12 @@
                 "com.netflix.conductor:conductor-rest"
             ]
         },
+        "org.springframework.retry:spring-retry": {
+            "locked": "1.2.5.RELEASE",
+            "transitive": [
+                "com.netflix.conductor:conductor-es7-persistence"
+            ]
+        },
         "org.springframework:spring-aop": {
             "locked": "5.2.15.RELEASE",
             "transitive": [
@@ -4186,6 +4188,7 @@
             "transitive": [
                 "org.springframework.boot:spring-boot",
                 "org.springframework.boot:spring-boot-starter",
+                "org.springframework.retry:spring-retry",
                 "org.springframework:spring-aop",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
@@ -4467,7 +4470,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -4476,34 +4479,34 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-testing"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-testing"
             ]
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.micrometer:micrometer-core": {
             "locked": "1.5.14",
@@ -4809,16 +4812,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7"
+            "locked": "1.6.8"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -4912,6 +4915,12 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.springframework.retry:spring-retry": {
+            "locked": "1.2.5.RELEASE",
+            "transitive": [
+                "com.netflix.conductor:conductor-es7-persistence"
+            ]
+        },
         "org.springframework:spring-aop": {
             "locked": "5.2.15.RELEASE",
             "transitive": [
@@ -4941,6 +4950,7 @@
                 "org.springframework.boot:spring-boot",
                 "org.springframework.boot:spring-boot-starter",
                 "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.retry:spring-retry",
                 "org.springframework:spring-aop",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
@@ -5225,12 +5235,6 @@
                 "org.apache.kafka:kafka-clients"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "com.github.spullara.mustache.java:compiler": {
             "locked": "0.9.3",
             "transitive": [
@@ -5258,7 +5262,6 @@
         "com.google.code.findbugs:jsr305": {
             "locked": "3.0.2",
             "transitive": [
-                "com.github.rholder:guava-retrying",
                 "com.google.guava:guava",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
@@ -5300,12 +5303,10 @@
             "locked": "31.0.1-android",
             "transitive": [
                 "com.datastax.cassandra:cassandra-driver-core",
-                "com.github.rholder:guava-retrying",
                 "com.google.inject:guice",
                 "com.google.protobuf:protobuf-java-util",
                 "com.netflix.archaius:archaius-core",
                 "com.netflix.conductor:conductor-contribs",
-                "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-es6-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence",
                 "com.netflix.conductor:conductor-postgres-persistence",
@@ -5716,7 +5717,7 @@
             ]
         },
         "io.grpc:grpc-api": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-protobuf",
@@ -5725,14 +5726,14 @@
             ]
         },
         "io.grpc:grpc-context": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-api",
                 "io.grpc:grpc-testing"
             ]
         },
         "io.grpc:grpc-core": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-netty",
                 "io.grpc:grpc-services",
@@ -5740,32 +5741,32 @@
             ]
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services"
             ]
         },
         "io.grpc:grpc-protobuf-lite": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "io.grpc:grpc-protobuf"
             ]
         },
         "io.grpc:grpc-services": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ]
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.45.1",
+            "locked": "1.46.0",
             "transitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "io.grpc:grpc-services",
@@ -5773,7 +5774,7 @@
             ]
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.45.1"
+            "locked": "1.46.0"
         },
         "io.micrometer:micrometer-core": {
             "locked": "1.5.14",
@@ -5921,7 +5922,7 @@
             ]
         },
         "io.perfmark:perfmark-api": {
-            "locked": "0.23.0",
+            "locked": "0.25.0",
             "transitive": [
                 "io.grpc:grpc-core",
                 "io.grpc:grpc-netty"
@@ -6860,20 +6861,20 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest"
             ]
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -6979,6 +6980,12 @@
                 "org.springframework.boot:spring-boot-starter-test"
             ]
         },
+        "org.springframework.retry:spring-retry": {
+            "locked": "1.2.5.RELEASE",
+            "transitive": [
+                "com.netflix.conductor:conductor-es7-persistence"
+            ]
+        },
         "org.springframework:spring-aop": {
             "locked": "5.2.15.RELEASE",
             "transitive": [
@@ -7010,6 +7017,7 @@
                 "org.springframework.boot:spring-boot",
                 "org.springframework.boot:spring-boot-starter",
                 "org.springframework.boot:spring-boot-starter-test",
+                "org.springframework.retry:spring-retry",
                 "org.springframework:spring-aop",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context",
