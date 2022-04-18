@@ -13,7 +13,7 @@ EVENT is a task used to publish an event into one of the supported eventing syst
 Conductor supports the the following eventing models:
 
 1. Conductor internal events (type: conductor)
-2. SQL (type: sqs)
+2. SQS (type: sqs)
 
 ### Use Cases 
 Consider a use case where at some point in the execution, an event is published to an external eventing system such as SQS.
