@@ -331,7 +331,7 @@ yarn run start
 <p>Assuming that you started Conductor locally (directly, or with Docker), launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The server will load a sample kitchensink workflow definition by default.  See <a href="labs/kitchensink">here</a> for details.</p>
+<p>The server will load a sample kitchensink workflow definition by default.  See <a href="../labs/kitchensink">here</a> for details.</p>
 </div>
 <h2 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h2>
 <p>Conductor follows RPC based communication model where workers are running on a separate machine from the server. Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
@@ -350,7 +350,7 @@ yarn run start
 <li>Create the workflow definition</li>
 <li>Create task worker(s) that polls for scheduled tasks at regular interval</li>
 </ol>
-<p>The <a href="labs/beginner">Beginner lab</a> has a good walk-through of steps 1-3.</p>
+<p>The <a href="../labs/beginner">Beginner lab</a> has a good walk-through of steps 1-3.</p>
 <p><strong>Trigger Workflow Execution</strong></p>
 <pre class="codehilite"><code>POST /workflow/{name}
 {
