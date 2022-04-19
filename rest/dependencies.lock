@@ -207,6 +207,9 @@
         "com.netflix.runtime:health-api": {
             "locked": "1.1.4"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
@@ -334,6 +337,9 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "2.3.3"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

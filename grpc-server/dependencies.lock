@@ -247,6 +247,9 @@
         "io.grpc:grpc-testing": {
             "locked": "1.45.1"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
@@ -403,6 +406,9 @@
                 "com.netflix.conductor:conductor-grpc"
             ],
             "locked": "1.3.2"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

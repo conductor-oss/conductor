@@ -196,6 +196,9 @@
         "com.netflix.conductor:conductor-annotations": {
             "project": true
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5"
         },
@@ -242,6 +245,9 @@
         },
         "com.netflix.conductor:conductor-annotations": {
             "project": true
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5"

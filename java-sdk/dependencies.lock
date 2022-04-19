@@ -212,6 +212,9 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
@@ -339,6 +342,9 @@
                 "com.netflix.conductor:conductor-client"
             ],
             "locked": "2.7"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

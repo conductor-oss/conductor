@@ -206,6 +206,9 @@
         "commons-io:commons-io": {
             "locked": "2.7"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
@@ -297,6 +300,9 @@
         },
         "commons-io:commons-io": {
             "locked": "2.7"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

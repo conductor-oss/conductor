@@ -221,6 +221,9 @@
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "locked": "2.3.3"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.bval:bval-jsr": {
             "locked": "2.0.5"
         },
@@ -324,6 +327,9 @@
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "locked": "2.3.3"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

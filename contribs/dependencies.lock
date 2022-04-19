@@ -300,6 +300,9 @@
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "net.thisptr:jackson-jq": {
             "locked": "0.0.13"
         },
@@ -463,6 +466,9 @@
         },
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "net.thisptr:jackson-jq": {
             "locked": "0.0.13"

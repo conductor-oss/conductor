@@ -1146,6 +1146,9 @@
         "io.grpc:grpc-testing": {
             "locked": "1.45.1"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
@@ -1468,6 +1471,9 @@
                 "com.netflix.conductor:conductor-contribs"
             ],
             "locked": "1.1.1"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "mysql:mysql-connector-java": {
             "firstLevelTransitive": [

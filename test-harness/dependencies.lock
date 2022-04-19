@@ -96,6 +96,9 @@
         "com.rabbitmq:amqp-client": {
             "locked": "5.14.0"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
@@ -519,6 +522,9 @@
                 "com.netflix.conductor:conductor-contribs"
             ],
             "locked": "1.1.1"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "mysql:mysql-connector-java": {
             "firstLevelTransitive": [

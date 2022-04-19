@@ -244,6 +244,9 @@
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
         },
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
@@ -308,6 +311,9 @@
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -405,6 +411,9 @@
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
+        },
+        "junit:junit": {
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [

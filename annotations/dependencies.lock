@@ -39,6 +39,9 @@
         }
     },
     "testCompileClasspath": {
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
@@ -62,6 +65,9 @@
         }
     },
     "testRuntimeClasspath": {
+        "junit:junit": {
+            "locked": "4.13.2"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
