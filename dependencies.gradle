@@ -28,7 +28,7 @@ ext {
     revCuratorTest = '2.4.0'
     revDynoQueues = '2.0.20'
     revElasticSearch6 = '6.8.12'
-    revElasticSearch7 = '7.6.2'
+    revElasticSearch7 = '7.15.2'
     revEmbeddedRedis = '0.6'
     revEurekaClient = '1.10.10'
     revGroovy = '2.5.13'
