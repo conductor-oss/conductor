@@ -29,6 +29,7 @@ import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -100,7 +101,8 @@ public class TestDoWhile {
                                 properties,
                                 executionLockService,
                                 systemTaskRegistry,
-                                parametersUtils));
+                                parametersUtils,
+                                new IDGenerator()));
         WorkflowTask loopWorkflowTask1 = new WorkflowTask();
         loopWorkflowTask1.setTaskReferenceName("task1");
         loopWorkflowTask1.setName("task1");

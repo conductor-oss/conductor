@@ -52,6 +52,7 @@ import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -113,6 +114,11 @@ public class TestDeciderService {
         public ParametersUtils parametersUtils(ObjectMapper mapper) {
             return new ParametersUtils(mapper);
         }
+
+        @Bean
+        public IDGenerator idGenerator() {
+            return new IDGenerator();
+        }
     }
 
     private DeciderService deciderService;
@@ -153,6 +159,7 @@ public class TestDeciderService {
 
         deciderService =
                 new DeciderService(
+                        new IDGenerator(),
                         parametersUtils,
                         metadataDAO,
                         externalPayloadStorageUtils,

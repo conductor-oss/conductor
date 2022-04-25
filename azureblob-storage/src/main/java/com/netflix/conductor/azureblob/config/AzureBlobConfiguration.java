@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.azureblob.storage.AzureBlobPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.utils.IDGenerator;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(AzureBlobProperties.class)
@@ -26,7 +27,8 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 public class AzureBlobConfiguration {
 
     @Bean
-    public ExternalPayloadStorage azureBlobExternalPayloadStorage(AzureBlobProperties properties) {
-        return new AzureBlobPayloadStorage(properties);
+    public ExternalPayloadStorage azureBlobExternalPayloadStorage(
+            IDGenerator idGenerator, AzureBlobProperties properties) {
+        return new AzureBlobPayloadStorage(idGenerator, properties);
     }
 }

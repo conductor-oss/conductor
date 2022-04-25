@@ -39,7 +39,7 @@ public class JoinTaskMapperTest {
         workflowTask.setType(TaskType.JOIN.name());
         workflowTask.setJoinOn(Arrays.asList("task1", "task2"));
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef wd = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();

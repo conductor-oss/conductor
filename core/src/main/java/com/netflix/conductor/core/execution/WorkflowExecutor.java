@@ -73,6 +73,7 @@ public class WorkflowExecutor {
     private final MetadataMapperService metadataMapperService;
     private final ExecutionDAOFacade executionDAOFacade;
     private final ParametersUtils parametersUtils;
+    private final IDGenerator idGenerator;
     private final WorkflowStatusListener workflowStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
 
@@ -104,7 +105,8 @@ public class WorkflowExecutor {
             ConductorProperties properties,
             ExecutionLockService executionLockService,
             SystemTaskRegistry systemTaskRegistry,
-            ParametersUtils parametersUtils) {
+            ParametersUtils parametersUtils,
+            IDGenerator idGenerator) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -115,6 +117,7 @@ public class WorkflowExecutor {
         this.workflowStatusListener = workflowStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
+        this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
     }
 
@@ -361,7 +364,7 @@ public class WorkflowExecutor {
         validateWorkflow(workflowDefinition, workflowInput, externalInputPayloadStoragePath);
 
         // A random UUID is assigned to the work flow instance
-        String workflowId = IDGenerator.generate();
+        String workflowId = idGenerator.generate();
 
         // Persist the Workflow
         WorkflowModel workflow = new WorkflowModel();
@@ -756,7 +759,7 @@ public class WorkflowExecutor {
      */
     private TaskModel taskToBeRescheduled(WorkflowModel workflow, TaskModel task) {
         TaskModel taskToBeRetried = task.copy();
-        taskToBeRetried.setTaskId(IDGenerator.generate());
+        taskToBeRetried.setTaskId(idGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
         taskToBeRetried.setStatus(SCHEDULED);
         taskToBeRetried.setRetryCount(task.getRetryCount() + 1);
@@ -1575,7 +1578,7 @@ public class WorkflowExecutor {
 
         // Now create a "SKIPPED" task for this workflow
         TaskModel taskToBeSkipped = new TaskModel();
-        taskToBeSkipped.setTaskId(IDGenerator.generate());
+        taskToBeSkipped.setTaskId(idGenerator.generate());
         taskToBeSkipped.setReferenceTaskName(taskReferenceName);
         taskToBeSkipped.setWorkflowInstanceId(workflowId);
         taskToBeSkipped.setWorkflowPriority(workflow.getPriority());

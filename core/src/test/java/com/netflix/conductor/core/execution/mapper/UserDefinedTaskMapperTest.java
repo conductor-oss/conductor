@@ -36,6 +36,8 @@ import static org.mockito.Mockito.mock;
 
 public class UserDefinedTaskMapperTest {
 
+    private IDGenerator idGenerator;
+
     private UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule public ExpectedException expectedException = ExpectedException.none();
@@ -45,6 +47,7 @@ public class UserDefinedTaskMapperTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils, metadataDAO);
+        idGenerator = new IDGenerator();
     }
 
     @Test
@@ -54,8 +57,8 @@ public class UserDefinedTaskMapperTest {
         workflowTask.setName("user_task");
         workflowTask.setType(TaskType.USER_DEFINED.name());
         workflowTask.setTaskDefinition(new TaskDef("user_task"));
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
@@ -86,8 +89,8 @@ public class UserDefinedTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("user_task");
         workflowTask.setType(TaskType.USER_DEFINED.name());
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();

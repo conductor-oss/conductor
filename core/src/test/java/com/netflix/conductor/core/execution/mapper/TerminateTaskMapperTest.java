@@ -43,7 +43,7 @@ public class TerminateTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();

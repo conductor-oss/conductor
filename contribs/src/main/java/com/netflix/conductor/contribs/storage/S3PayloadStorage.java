@@ -50,11 +50,13 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3PayloadStorage.class);
     private static final String CONTENT_TYPE = "application/json";
 
+    private final IDGenerator idGenerator;
     private final AmazonS3 s3Client;
     private final String bucketName;
     private final long expirationSec;
 
-    public S3PayloadStorage(S3Properties properties) {
+    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties) {
+        this.idGenerator = idGenerator;
         bucketName = properties.getBucketName();
         expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
         String region = properties.getRegion();
@@ -171,7 +173,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                 stringBuilder.append("task/output/");
                 break;
         }
-        stringBuilder.append(IDGenerator.generate()).append(".json");
+        stringBuilder.append(idGenerator.generate()).append(".json");
         return stringBuilder.toString();
     }
 }

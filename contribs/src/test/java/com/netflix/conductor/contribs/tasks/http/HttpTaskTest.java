@@ -32,6 +32,7 @@ import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -356,6 +357,7 @@ public class HttpTaskTest {
         SystemTaskRegistry systemTaskRegistry = mock(SystemTaskRegistry.class);
 
         new DeciderService(
+                        new IDGenerator(),
                         parametersUtils,
                         metadataDAO,
                         externalPayloadStorageUtils,

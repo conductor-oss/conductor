@@ -55,7 +55,7 @@ public class InlineTaskMapperTest {
                 "function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
                         + "{testValue: false} }}; scriptFun();");
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();
@@ -89,7 +89,7 @@ public class InlineTaskMapperTest {
                 "function scriptFun() {if ($.input.a==1){return {testValue: true}} else{return "
                         + "{testValue: false} }}; scriptFun();");
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();

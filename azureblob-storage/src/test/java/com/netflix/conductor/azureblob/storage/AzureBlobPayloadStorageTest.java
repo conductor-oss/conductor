@@ -23,6 +23,7 @@ import com.netflix.conductor.azureblob.config.AzureBlobProperties;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.utils.IDGenerator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,9 +35,12 @@ public class AzureBlobPayloadStorageTest {
 
     private AzureBlobProperties properties;
 
+    private IDGenerator idGenerator;
+
     @Before
     public void setUp() {
         properties = mock(AzureBlobProperties.class);
+        idGenerator = new IDGenerator();
         when(properties.getConnectionString()).thenReturn(null);
         when(properties.getContainerName()).thenReturn("conductor-payloads");
         when(properties.getEndpoint()).thenReturn(null);
@@ -57,26 +61,27 @@ public class AzureBlobPayloadStorageTest {
     @Test
     public void testNoStorageAccount() {
         expectedException.expect(ApplicationException.class);
-        new AzureBlobPayloadStorage(properties);
+        new AzureBlobPayloadStorage(idGenerator, properties);
     }
 
     @Test
     public void testUseConnectionString() {
         when(properties.getConnectionString()).thenReturn(azuriteConnectionString);
-        new AzureBlobPayloadStorage(properties);
+        new AzureBlobPayloadStorage(idGenerator, properties);
     }
 
     @Test
     public void testUseEndpoint() {
         String azuriteEndpoint = "http://127.0.0.1:10000/";
         when(properties.getEndpoint()).thenReturn(azuriteEndpoint);
-        new AzureBlobPayloadStorage(properties);
+        new AzureBlobPayloadStorage(idGenerator, properties);
     }
 
     @Test
     public void testGetLocationFixedPath() {
         when(properties.getConnectionString()).thenReturn(azuriteConnectionString);
-        AzureBlobPayloadStorage azureBlobPayloadStorage = new AzureBlobPayloadStorage(properties);
+        AzureBlobPayloadStorage azureBlobPayloadStorage =
+                new AzureBlobPayloadStorage(idGenerator, properties);
         String path = "somewhere";
         ExternalStorageLocation externalStorageLocation =
                 azureBlobPayloadStorage.getLocation(
@@ -105,7 +110,8 @@ public class AzureBlobPayloadStorageTest {
     @Test
     public void testGetAllLocations() {
         when(properties.getConnectionString()).thenReturn(azuriteConnectionString);
-        AzureBlobPayloadStorage azureBlobPayloadStorage = new AzureBlobPayloadStorage(properties);
+        AzureBlobPayloadStorage azureBlobPayloadStorage =
+                new AzureBlobPayloadStorage(idGenerator, properties);
 
         testGetLocation(
                 azureBlobPayloadStorage,
