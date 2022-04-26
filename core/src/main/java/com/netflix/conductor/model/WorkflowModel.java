@@ -20,10 +20,10 @@ import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.utils.Utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 
 public class WorkflowModel {
 
@@ -378,7 +378,7 @@ public class WorkflowModel {
      * @return the workflow definition name.
      */
     public String getWorkflowName() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        Utils.checkNotNull(workflowDefinition, "Workflow definition is null");
         return workflowDefinition.getName();
     }
 
@@ -388,7 +388,7 @@ public class WorkflowModel {
      * @return the workflow definition version.
      */
     public int getWorkflowVersion() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        Utils.checkNotNull(workflowDefinition, "Workflow definition is null");
         return workflowDefinition.getVersion();
     }
 

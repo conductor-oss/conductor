@@ -34,7 +34,6 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -286,7 +285,7 @@ public class ParametersUtils {
                 (paramName, value) -> {
                     String paramPath = "" + value;
                     String[] paramPathComponents = paramPath.split("\\.");
-                    Preconditions.checkArgument(
+                    Utils.checkArgument(
                             paramPathComponents.length == 3,
                             "Invalid input expression for "
                                     + paramName

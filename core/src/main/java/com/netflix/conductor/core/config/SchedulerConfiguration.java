@@ -16,6 +16,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -24,7 +25,6 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -43,8 +43,8 @@ public class SchedulerConfiguration implements SchedulingConfigurer {
     @Bean
     public Scheduler scheduler(ConductorProperties properties) {
         ThreadFactory threadFactory =
-                new ThreadFactoryBuilder()
-                        .setNameFormat("event-queue-poll-scheduler-thread-%d")
+                new BasicThreadFactory.Builder()
+                        .namingPattern("event-queue-poll-scheduler-thread-%d")
                         .build();
         Executor executorService =
                 Executors.newFixedThreadPool(
@@ -60,7 +60,7 @@ public class SchedulerConfiguration implements SchedulingConfigurer {
                     "conductor.app.sweeper-thread-count must be greater than 0.");
         }
         ThreadFactory threadFactory =
-                new ThreadFactoryBuilder().setNameFormat("sweeper-thread-%d").build();
+                new BasicThreadFactory.Builder().namingPattern("sweeper-thread-%d").build();
         return Executors.newFixedThreadPool(properties.getSweeperThreadCount(), threadFactory);
     }
 

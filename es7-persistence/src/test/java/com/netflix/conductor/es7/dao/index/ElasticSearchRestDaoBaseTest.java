@@ -24,6 +24,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.springframework.retry.support.RetryTemplate;
 
 public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
 
@@ -41,7 +42,9 @@ public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
         RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"));
         restClient = restClientBuilder.build();
 
-        indexDAO = new ElasticSearchRestDAOV7(restClientBuilder, properties, objectMapper);
+        indexDAO =
+                new ElasticSearchRestDAOV7(
+                        restClientBuilder, new RetryTemplate(), properties, objectMapper);
         indexDAO.setup();
     }
 

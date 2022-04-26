@@ -25,35 +25,20 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.postgres.util.ExecuteFunction;
-import com.netflix.conductor.postgres.util.LazyToString;
-import com.netflix.conductor.postgres.util.Query;
-import com.netflix.conductor.postgres.util.QueryFunction;
-import com.netflix.conductor.postgres.util.TransactionalFunction;
+import com.netflix.conductor.postgres.util.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
-
-import static java.lang.Integer.parseInt;
-import static java.lang.System.getProperty;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.*;
 
 public abstract class PostgresBaseDAO {
 
-    private static final String ER_LOCK_DEADLOCK = "40P01";
-    private static final String ER_SERIALIZATION_FAILURE = "40001";
-    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME =
-            "conductor.postgres.deadlock.retry.max";
-    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
-    private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
     private static final List<String> EXCLUDED_STACKTRACE_CLASS =
             ImmutableList.of(PostgresBaseDAO.class.getName(), Thread.class.getName());
 
@@ -61,7 +46,11 @@ public abstract class PostgresBaseDAO {
     protected final ObjectMapper objectMapper;
     protected final DataSource dataSource;
 
-    protected PostgresBaseDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    private final RetryTemplate retryTemplate;
+
+    protected PostgresBaseDAO(
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+        this.retryTemplate = retryTemplate;
         this.objectMapper = objectMapper;
         this.dataSource = dataSource;
     }
@@ -156,16 +145,9 @@ public abstract class PostgresBaseDAO {
 
     <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
-            return new RetryUtil<R>()
-                    .retryOnException(
-                            () -> getWithTransaction(function),
-                            this::isDeadLockError,
-                            null,
-                            MAX_RETRY_ON_DEADLOCK,
-                            "retry on deadlock",
-                            "transactional");
-        } catch (RuntimeException e) {
-            throw (ApplicationException) e.getCause();
+            return retryTemplate.execute(context -> getWithTransaction(function));
+        } catch (Exception e) {
+            throw (ApplicationException) e;
         }
     }
 
@@ -272,33 +254,5 @@ public abstract class PostgresBaseDAO {
      */
     protected void executeWithTransaction(String query, ExecuteFunction function) {
         withTransaction(tx -> execute(tx, query, function));
-    }
-
-    private boolean isDeadLockError(Throwable throwable) {
-        SQLException sqlException = findCauseSQLException(throwable);
-        if (sqlException == null) {
-            return false;
-        }
-        return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState())
-                || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
-    }
-
-    private SQLException findCauseSQLException(Throwable throwable) {
-        Throwable causeException = throwable;
-        while (null != causeException && !(causeException instanceof SQLException)) {
-            causeException = causeException.getCause();
-        }
-        return (SQLException) causeException;
-    }
-
-    private static int getMaxRetriesOnDeadLock() {
-        try {
-            return parseInt(
-                    getProperty(
-                            MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME,
-                            MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE));
-        } catch (Exception e) {
-            return parseInt(MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE);
-        }
     }
 }

@@ -14,7 +14,6 @@ package com.netflix.conductor.core.execution;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -58,7 +57,6 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
@@ -1604,7 +1602,7 @@ public class TestWorkflowExecutor {
     }
 
     @Test
-    public void testGetActiveDomain() {
+    public void testGetActiveDomain() throws Exception {
         String taskType = "test-task";
         String[] domains = new String[] {"domain1", "domain2"};
 
@@ -1615,8 +1613,7 @@ public class TestWorkflowExecutor {
                 .thenReturn(pollData1);
         String activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
         assertEquals(domains[0], activeDomain);
-
-        Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+        Thread.sleep(2000L);
 
         PollData pollData2 =
                 new PollData(
@@ -1626,7 +1623,7 @@ public class TestWorkflowExecutor {
         activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
         assertEquals(domains[1], activeDomain);
 
-        Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+        Thread.sleep(2000L);
         activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
         assertEquals(domains[1], activeDomain);
 

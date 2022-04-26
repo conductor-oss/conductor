@@ -48,7 +48,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.20.0",
+            "locked": "3.20.1",
             "transitive": [
                 "com.netflix.conductor:conductor-annotations-processor"
             ]
@@ -174,46 +174,6 @@
                 "org.hibernate.validator:hibernate-validator"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0"
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.11.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:guava": {
-            "locked": "31.1-jre",
-            "transitive": [
-                "com.github.rholder:guava-retrying"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -302,12 +262,6 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.12.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "org.glassfish:jakarta.el": {
             "locked": "3.0.3",
             "transitive": [
@@ -342,16 +296,16 @@
             ]
         },
         "org.springdoc:springdoc-openapi-common": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-webmvc-core"
             ]
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.7"
+            "locked": "1.6.8"
         },
         "org.springdoc:springdoc-openapi-webmvc-core": {
-            "locked": "1.6.7",
+            "locked": "1.6.8",
             "transitive": [
                 "org.springdoc:springdoc-openapi-ui"
             ]
@@ -483,46 +437,6 @@
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.11.4"
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0"
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.11.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:guava": {
-            "locked": "31.1-jre",
-            "transitive": [
-                "com.github.rholder:guava-retrying"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -571,12 +485,6 @@
                 "com.netflix.conductor:conductor-annotations"
             ]
         },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.12.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.30",
             "transitive": [
@@ -604,46 +512,6 @@
             "locked": "1.5.1",
             "transitive": [
                 "org.hibernate.validator:hibernate-validator"
-            ]
-        },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0"
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.11.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:guava": {
-            "locked": "31.1-jre",
-            "transitive": [
-                "com.github.rholder:guava-retrying"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "com.google.protobuf:protobuf-java": {
@@ -769,12 +637,6 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.12.0",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "org.glassfish:jakarta.el": {
@@ -1039,46 +901,6 @@
                 "org.hibernate.validator:hibernate-validator"
             ]
         },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0"
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.11.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:guava": {
-            "locked": "31.1-jre",
-            "transitive": [
-                "com.github.rholder:guava-retrying"
-            ]
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
         },
@@ -1211,12 +1033,6 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.12.0",
-            "transitive": [
-                "com.google.guava:guava"
             ]
         },
         "org.glassfish:jakarta.el": {

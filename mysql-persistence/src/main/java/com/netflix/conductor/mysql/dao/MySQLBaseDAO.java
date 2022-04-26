@@ -25,34 +25,20 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.mysql.util.ExecuteFunction;
-import com.netflix.conductor.mysql.util.LazyToString;
-import com.netflix.conductor.mysql.util.Query;
-import com.netflix.conductor.mysql.util.QueryFunction;
-import com.netflix.conductor.mysql.util.TransactionalFunction;
+import com.netflix.conductor.mysql.util.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
-
-import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
-import static java.lang.Integer.parseInt;
-import static java.lang.System.getProperty;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.*;
 
 public abstract class MySQLBaseDAO {
 
-    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME =
-            "conductor.mysql.deadlock.retry.max";
-    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
-    private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
     private static final List<String> EXCLUDED_STACKTRACE_CLASS =
             ImmutableList.of(MySQLBaseDAO.class.getName(), Thread.class.getName());
 
@@ -60,8 +46,12 @@ public abstract class MySQLBaseDAO {
     protected final ObjectMapper objectMapper;
     protected final DataSource dataSource;
 
-    protected MySQLBaseDAO(ObjectMapper om, DataSource dataSource) {
-        this.objectMapper = om;
+    private final RetryTemplate retryTemplate;
+
+    protected MySQLBaseDAO(
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+        this.retryTemplate = retryTemplate;
+        this.objectMapper = objectMapper;
         this.dataSource = dataSource;
     }
 
@@ -155,16 +145,9 @@ public abstract class MySQLBaseDAO {
 
     <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
-            return new RetryUtil<R>()
-                    .retryOnException(
-                            () -> getWithTransaction(function),
-                            this::isDeadLockError,
-                            null,
-                            MAX_RETRY_ON_DEADLOCK,
-                            "retry on deadlock",
-                            "transactional");
-        } catch (RuntimeException e) {
-            throw (ApplicationException) e.getCause();
+            return retryTemplate.execute(context -> getWithTransaction(function));
+        } catch (Exception e) {
+            throw (ApplicationException) e;
         }
     }
 
@@ -271,32 +254,5 @@ public abstract class MySQLBaseDAO {
      */
     protected void executeWithTransaction(String query, ExecuteFunction function) {
         withTransaction(tx -> execute(tx, query, function));
-    }
-
-    private boolean isDeadLockError(Throwable throwable) {
-        SQLException sqlException = findCauseSQLException(throwable);
-        if (sqlException == null) {
-            return false;
-        }
-        return ER_LOCK_DEADLOCK == sqlException.getErrorCode();
-    }
-
-    private SQLException findCauseSQLException(Throwable throwable) {
-        Throwable causeException = throwable;
-        while (null != causeException && !(causeException instanceof SQLException)) {
-            causeException = causeException.getCause();
-        }
-        return (SQLException) causeException;
-    }
-
-    private static int getMaxRetriesOnDeadLock() {
-        try {
-            return parseInt(
-                    getProperty(
-                            MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME,
-                            MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE));
-        } catch (Exception e) {
-            return parseInt(MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE);
-        }
     }
 }

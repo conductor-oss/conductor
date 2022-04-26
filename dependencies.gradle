@@ -34,7 +34,6 @@ ext {
     revGroovy = '2.5.13'
     revGrpc = '1.+'
     revGuava = '30.0-jre'
-    revGuavaRetrying = '2.0.0'
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.+'
     revJAXB = '2.3.3'

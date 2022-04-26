@@ -15,6 +15,7 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.retry:spring-retry'
 
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
@@ -27,6 +28,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-core"
 
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
 
     testImplementation project(':conductor-core').sourceSets.test.output

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,11 +15,7 @@ package com.netflix.conductor.client.automator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -34,25 +30,19 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.discovery.EurekaClient;
 
-import com.google.common.util.concurrent.Uninterruptibles;
-
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.IN_PROGRESS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TaskPollExecutorTest {
 
     private static final String TEST_TASK_DEF_NAME = "test";
 
     @Test
-    public void testTaskExecutionException() {
+    public void testTaskExecutionException() throws InterruptedException {
         Worker worker =
                 Worker.create(
                         TEST_TASK_DEF_NAME,
@@ -83,13 +73,13 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).updateTask(any());
     }
 
     @SuppressWarnings("rawtypes")
     @Test
-    public void testMultipleTasksExecution() {
+    public void testMultipleTasksExecution() throws InterruptedException {
         String outputKey = "KEY";
         Task task = testTask();
         Worker worker = mock(Worker.class);
@@ -101,9 +91,10 @@ public class TaskPollExecutorTest {
                             private int count = 0;
                             Map<String, Object> outputMap = new HashMap<>();
 
-                            public TaskResult answer(InvocationOnMock invocation) {
+                            public TaskResult answer(InvocationOnMock invocation)
+                                    throws InterruptedException {
                                 // Sleep for 2 seconds to simulate task execution
-                                Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+                                Thread.sleep(2000L);
                                 TaskResult taskResult = new TaskResult(task);
                                 outputMap.put(outputKey, count++);
                                 taskResult.setOutputData(outputMap);
@@ -138,7 +129,7 @@ public class TaskPollExecutorTest {
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
 
         // execute() is called 3 times on the worker (once for each task)
         verify(worker, times(3)).execute(any());
@@ -146,7 +137,7 @@ public class TaskPollExecutorTest {
     }
 
     @Test
-    public void testLargePayloadCanFailUpdateWithRetry() {
+    public void testLargePayloadCanFailUpdateWithRetry() throws InterruptedException {
         Task task = testTask();
 
         Worker worker = mock(Worker.class);
@@ -163,7 +154,7 @@ public class TaskPollExecutorTest {
                             Object[] args = invocation.getArguments();
                             TaskResult result = (TaskResult) args[0];
                             assertNull(result.getReasonForIncompletion());
-                            result.setReasonForIncompletion("some_reason");
+                            result.setReasonForIncompletion("some_reason_1");
                             throw new ConductorClientException();
                         })
                 .when(taskClient)
@@ -184,14 +175,14 @@ public class TaskPollExecutorTest {
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
 
         // When evaluateAndUploadLargePayload fails indefinitely, task update shouldn't be called.
         verify(taskClient, times(0)).updateTask(any());
     }
 
     @Test
-    public void testTaskPollException() {
+    public void testTaskPollException() throws InterruptedException {
         Task task = testTask();
 
         Worker worker = mock(Worker.class);
@@ -224,12 +215,12 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).updateTask(any());
     }
 
     @Test
-    public void testTaskPoll() {
+    public void testTaskPoll() throws InterruptedException {
         Task task = testTask();
 
         Worker worker = mock(Worker.class);
@@ -260,12 +251,12 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).updateTask(any());
     }
 
     @Test
-    public void testTaskPollDomain() {
+    public void testTaskPollDomain() throws InterruptedException {
         TaskClient taskClient = Mockito.mock(TaskClient.class);
         String testDomain = "foo";
         Map<String, String> taskToDomain = new HashMap<>();
@@ -292,12 +283,12 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).pollTask(TEST_TASK_DEF_NAME, workerName, testDomain);
     }
 
     @Test
-    public void testPollOutOfDiscoveryForTask() {
+    public void testPollOutOfDiscoveryForTask() throws InterruptedException {
         Task task = testTask();
 
         EurekaClient client = mock(EurekaClient.class);
@@ -331,7 +322,7 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).updateTask(any());
     }
 
@@ -418,7 +409,7 @@ public class TaskPollExecutorTest {
     }
 
     @Test
-    public void testPollOutOfDiscoveryIsIgnoredWhenDiscoveryIsUp() {
+    public void testPollOutOfDiscoveryIsIgnoredWhenDiscoveryIsUp() throws InterruptedException {
         Task task = testTask();
 
         EurekaClient client = mock(EurekaClient.class);
@@ -452,12 +443,12 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).updateTask(any());
     }
 
     @Test
-    public void testTaskThreadCount() {
+    public void testTaskThreadCount() throws InterruptedException {
         TaskClient taskClient = Mockito.mock(TaskClient.class);
 
         Map<String, Integer> taskThreadCount = new HashMap<>();
@@ -485,7 +476,7 @@ public class TaskPollExecutorTest {
                 .scheduleAtFixedRate(
                         () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
 
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
         verify(taskClient).pollTask(TEST_TASK_DEF_NAME, workerName, null);
     }
 

@@ -12,12 +12,7 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -28,7 +23,6 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
@@ -37,25 +31,12 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
-import static com.netflix.conductor.cassandra.util.Constants.DEFAULT_SHARD_ID;
-import static com.netflix.conductor.cassandra.util.Constants.DEFAULT_TOTAL_PARTITIONS;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_TASK;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_WORKFLOW;
-import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.*;
 
 @Trace
 public class CassandraExecutionDAO extends CassandraBaseDAO
@@ -746,19 +727,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         try {
             recordCassandraDaoRequests(
                     "addTaskToLimit", task.getTaskType(), task.getWorkflowType());
-            new RetryUtil<>()
-                    .retryOnException(
-                            () ->
-                                    session.execute(
-                                            updateTaskDefLimitStatement.bind(
-                                                    UUID.fromString(task.getWorkflowInstanceId()),
-                                                    task.getTaskDefName(),
-                                                    UUID.fromString(task.getTaskId()))),
-                            null,
-                            null,
-                            3,
-                            "Adding to task_def_limit",
-                            "addTaskToLimit");
+            session.execute(
+                    updateTaskDefLimitStatement.bind(
+                            UUID.fromString(task.getWorkflowInstanceId()),
+                            task.getTaskDefName(),
+                            UUID.fromString(task.getTaskId())));
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "addTaskToLimit");
             String errorMsg =
@@ -775,18 +748,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         try {
             recordCassandraDaoRequests(
                     "removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());
-            new RetryUtil<>()
-                    .retryOnException(
-                            () ->
-                                    session.execute(
-                                            deleteTaskDefLimitStatement.bind(
-                                                    task.getTaskDefName(),
-                                                    UUID.fromString(task.getTaskId()))),
-                            null,
-                            null,
-                            3,
-                            "Deleting from task_def_limit",
-                            "removeTaskFromLimit");
+            session.execute(
+                    deleteTaskDefLimitStatement.bind(
+                            task.getTaskDefName(), UUID.fromString(task.getTaskId())));
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeTaskFromLimit");
             String errorMsg =

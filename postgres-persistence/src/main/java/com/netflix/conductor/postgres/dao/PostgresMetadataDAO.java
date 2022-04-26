@@ -13,16 +13,14 @@
 package com.netflix.conductor.postgres.dao;
 
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
+
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -42,8 +40,11 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     private static final String CLASS_NAME = PostgresMetadataDAO.class.getSimpleName();
 
     public PostgresMetadataDAO(
-            ObjectMapper objectMapper, DataSource dataSource, PostgresProperties properties) {
-        super(objectMapper, dataSource);
+            RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource,
+            PostgresProperties properties) {
+        super(retryTemplate, objectMapper, dataSource);
 
         long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
         Executors.newSingleThreadScheduledExecutor()

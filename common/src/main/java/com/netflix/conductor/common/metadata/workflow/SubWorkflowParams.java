@@ -23,7 +23,6 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.google.common.base.Preconditions;
 
 @ProtoMessage
 public class SubWorkflowParams {
@@ -95,9 +94,10 @@ public class SubWorkflowParams {
 
     /** @param workflowDef the workflowDefinition to set */
     public void setWorkflowDefinition(Object workflowDef) {
-        Preconditions.checkArgument(
-                workflowDef == null || workflowDef instanceof WorkflowDef,
-                "workflowDefinition must be either null or WorkflowDef");
+        if (!(workflowDef == null || workflowDef instanceof WorkflowDef)) {
+            throw new IllegalArgumentException(
+                    "workflowDefinition must be either null or WorkflowDef");
+        }
         this.workflowDefinition = workflowDef;
     }
 

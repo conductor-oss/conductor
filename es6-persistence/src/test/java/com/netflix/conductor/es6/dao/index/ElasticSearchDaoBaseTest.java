@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.springframework.retry.support.RetryTemplate;
 
 abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
 
@@ -45,7 +46,9 @@ abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
                                 new TransportAddress(
                                         InetAddress.getByName("localhost"), mappedPort));
 
-        indexDAO = new ElasticSearchDAOV6(elasticSearchClient, properties, objectMapper);
+        indexDAO =
+                new ElasticSearchDAOV6(
+                        elasticSearchClient, new RetryTemplate(), properties, objectMapper);
         indexDAO.setup();
     }
 

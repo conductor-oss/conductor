@@ -24,10 +24,13 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
@@ -79,10 +82,21 @@ public class ElasticSearchV7Configuration {
     @Bean
     public IndexDAO es7IndexDAO(
             RestClientBuilder restClientBuilder,
+            @Qualifier("es7RetryTemplate") RetryTemplate retryTemplate,
             ElasticSearchProperties properties,
             ObjectMapper objectMapper) {
         String url = properties.getUrl();
-        return new ElasticSearchRestDAOV7(restClientBuilder, properties, objectMapper);
+        return new ElasticSearchRestDAOV7(
+                restClientBuilder, retryTemplate, properties, objectMapper);
+    }
+
+    @Bean
+    public RetryTemplate es7RetryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
+        fixedBackOffPolicy.setBackOffPeriod(1000L);
+        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
+        return retryTemplate;
     }
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {
