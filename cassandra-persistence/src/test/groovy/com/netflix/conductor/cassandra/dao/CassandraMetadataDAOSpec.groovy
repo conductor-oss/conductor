@@ -69,7 +69,7 @@ class CassandraMetadataDAOSpec extends CassandraSpec {
         defOptional.get() == workflowDef
 
         when: // modify the definition
-        workflowDef.setOwnerEmail("junit@test.com")
+        workflowDef.setOwnerEmail("test@junit.com")
         metadataDAO.updateWorkflowDef(workflowDef)
         defOptional = metadataDAO.getWorkflowDef(name, higherVersion)
 
@@ -137,5 +137,40 @@ class CassandraMetadataDAOSpec extends CassandraSpec {
         taskDefList && taskDefList.size() == 1
         // fetch deleted task def
         metadataDAO.getTaskDef(task2Name) == null
+    }
+
+    def "parse index string"() {
+        expect:
+        def pair = metadataDAO.getWorkflowNameAndVersion(nameVersionStr)
+        pair.left == workflowName
+        pair.right == version
+
+        where:
+        nameVersionStr << ['name/1', 'namespace/name/3', '/namespace/name_with_lodash/2', 'name//4', 'name-with$%/895']
+        workflowName << ['name', 'namespace/name', '/namespace/name_with_lodash', 'name/', 'name-with$%']
+        version << [1, 3, 2, 4, 895]
+    }
+
+    def "parse index string - incorrect values"() {
+        when:
+        metadataDAO.getWorkflowNameAndVersion("name_with_no_version")
+
+        then:
+        def ex = thrown(IllegalStateException.class)
+        println(ex.message)
+
+        when:
+        metadataDAO.getWorkflowNameAndVersion("name_with_no_version/")
+
+        then:
+        ex = thrown(IllegalStateException.class)
+        println(ex.message)
+
+        when:
+        metadataDAO.getWorkflowNameAndVersion("name/non_number_version")
+
+        then:
+        ex = thrown(IllegalStateException.class)
+        println(ex.message)
     }
 }
