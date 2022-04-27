@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import org.springframework.retry.support.RetryTemplate;
+
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.util.Query;
@@ -36,8 +38,9 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
 
-    public MySQLQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
-        super(objectMapper, dataSource);
+    public MySQLQueueDAO(
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+        super(retryTemplate, objectMapper, dataSource);
 
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(

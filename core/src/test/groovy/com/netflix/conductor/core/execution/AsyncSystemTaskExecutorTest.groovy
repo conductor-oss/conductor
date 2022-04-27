@@ -66,7 +66,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         String subWorkflowId = "subWorkflowId"
         SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper())
 
-        String task1Id = IDGenerator.generate()
+        String task1Id = new IDGenerator().generate()
         TaskModel task1 = new TaskModel()
         task1.setTaskType(SUB_WORKFLOW.name())
         task1.setReferenceTaskName("waitTask")

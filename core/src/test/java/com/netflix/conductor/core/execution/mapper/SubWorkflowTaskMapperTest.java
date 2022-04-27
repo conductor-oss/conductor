@@ -46,6 +46,7 @@ public class SubWorkflowTaskMapperTest {
     private SubWorkflowTaskMapper subWorkflowTaskMapper;
     private ParametersUtils parametersUtils;
     private DeciderService deciderService;
+    private IDGenerator idGenerator;
 
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
@@ -55,6 +56,7 @@ public class SubWorkflowTaskMapperTest {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         subWorkflowTaskMapper = new SubWorkflowTaskMapper(parametersUtils, metadataDAO);
         deciderService = mock(DeciderService.class);
+        idGenerator = new IDGenerator();
     }
 
     @Test
@@ -91,7 +93,7 @@ public class SubWorkflowTaskMapperTest {
                         .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
-                        .withTaskId(IDGenerator.generate())
+                        .withTaskId(idGenerator.generate())
                         .withDeciderService(deciderService)
                         .build();
 
@@ -142,7 +144,7 @@ public class SubWorkflowTaskMapperTest {
                         .withWorkflowTask(workflowTask)
                         .withTaskInput(taskInput)
                         .withRetryCount(0)
-                        .withTaskId(IDGenerator.generate())
+                        .withTaskId(new IDGenerator().generate())
                         .withDeciderService(deciderService)
                         .build();
 

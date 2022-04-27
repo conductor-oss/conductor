@@ -30,11 +30,7 @@ import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.*;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} using AWS S3 for storing large JSON payload
@@ -50,11 +46,13 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3PayloadStorage.class);
     private static final String CONTENT_TYPE = "application/json";
 
+    private final IDGenerator idGenerator;
     private final AmazonS3 s3Client;
     private final String bucketName;
     private final long expirationSec;
 
-    public S3PayloadStorage(S3Properties properties) {
+    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties) {
+        this.idGenerator = idGenerator;
         bucketName = properties.getBucketName();
         expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
         String region = properties.getRegion();
@@ -101,7 +99,10 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                             .toASCIIString());
             return externalStorageLocation;
         } catch (SdkClientException e) {
-            String msg = "Error communicating with S3";
+            String msg =
+                    String.format(
+                            "Error communicating with S3 - operation:%s, payloadType: %s, path: %s",
+                            operation, payloadType, path);
             LOGGER.error(msg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, msg, e);
         } catch (URISyntaxException e) {
@@ -130,7 +131,9 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                     new PutObjectRequest(bucketName, path, payload, objectMetadata);
             s3Client.putObject(request);
         } catch (SdkClientException e) {
-            String msg = "Error communicating with S3";
+            String msg =
+                    String.format(
+                            "Error uploading to S3 - path:%s, payloadSize: %d", path, payloadSize);
             LOGGER.error(msg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, msg, e);
         }
@@ -149,7 +152,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
             S3Object s3Object = s3Client.getObject(new GetObjectRequest(bucketName, path));
             return s3Object.getObjectContent();
         } catch (SdkClientException e) {
-            String msg = "Error communicating with S3";
+            String msg = String.format("Error downloading from S3 - path:%s", path);
             LOGGER.error(msg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, msg, e);
         }
@@ -171,7 +174,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                 stringBuilder.append("task/output/");
                 break;
         }
-        stringBuilder.append(IDGenerator.generate()).append(".json");
+        stringBuilder.append(idGenerator.generate()).append(".json");
         return stringBuilder.toString();
     }
 }

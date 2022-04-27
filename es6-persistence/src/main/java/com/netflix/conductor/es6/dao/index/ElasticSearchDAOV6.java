@@ -31,7 +31,6 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -40,7 +39,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -56,6 +54,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -63,7 +62,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.dao.IndexDAO;
@@ -86,7 +84,6 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     private static final String EVENT_DOC_TYPE = "event";
     private static final String MSG_DOC_TYPE = "message";
 
-    private static final int RETRY_COUNT = 3;
     private static final int CORE_POOL_SIZE = 6;
     private static final long KEEP_ALIVE_TIME = 1L;
     private static final int UPDATE_REQUEST_RETRY_COUNT = 5;
@@ -117,12 +114,15 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     private final long asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
 
+    private final RetryTemplate retryTemplate;
+
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
     }
 
     public ElasticSearchDAOV6(
             Client elasticSearchClient,
+            RetryTemplate retryTemplate,
             ElasticSearchProperties properties,
             ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -182,6 +182,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(this::flushBulkRequests, 60, 30, TimeUnit.SECONDS);
+        this.retryTemplate = retryTemplate;
     }
 
     @PreDestroy
@@ -360,14 +361,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                     StringUtils.isBlank(docTypeOverride) ? WORKFLOW_DOC_TYPE : docTypeOverride;
 
             UpdateRequest req = buildUpdateRequest(id, doc, workflowIndexName, docType);
-            new RetryUtil<UpdateResponse>()
-                    .retryOnException(
-                            () -> elasticSearchClient.update(req).actionGet(),
-                            null,
-                            null,
-                            RETRY_COUNT,
-                            "Indexing workflow document: " + workflow.getWorkflowId(),
-                            "indexWorkflow");
+            elasticSearchClient.update(req).actionGet();
 
             long endTime = Instant.now().toEpochMilli();
             LOGGER.debug(
@@ -461,14 +455,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                 request.source(objectMapper.writeValueAsBytes(log), XContentType.JSON);
                 bulkRequestBuilder.add(request);
             }
-            new RetryUtil<BulkResponse>()
-                    .retryOnException(
-                            () -> bulkRequestBuilder.execute().actionGet(5, TimeUnit.SECONDS),
-                            null,
-                            BulkResponse::hasFailures,
-                            RETRY_COUNT,
-                            "Indexing task execution logs",
-                            "addTaskExecutionLogs");
+            bulkRequestBuilder.execute().actionGet(5, TimeUnit.SECONDS);
             long endTime = Instant.now().toEpochMilli();
             LOGGER.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -656,14 +643,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     private void updateWithRetry(BulkRequestBuilderWrapper request, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            new RetryUtil<BulkResponse>()
-                    .retryOnException(
-                            () -> request.execute().actionGet(5, TimeUnit.SECONDS),
-                            null,
-                            BulkResponse::hasFailures,
-                            RETRY_COUNT,
-                            "Bulk Indexing " + docType,
-                            "updateWithRetry");
+            retryTemplate.execute(context -> request.execute().actionGet(5, TimeUnit.SECONDS));
             long endTime = Instant.now().toEpochMilli();
             LOGGER.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);
@@ -738,14 +718,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                 "Updating workflow {} in elasticsearch index: {}",
                 workflowInstanceId,
                 workflowIndexName);
-        new RetryUtil<>()
-                .retryOnException(
-                        () -> elasticSearchClient.update(request).actionGet(),
-                        null,
-                        null,
-                        RETRY_COUNT,
-                        "Updating index for doc_type workflow",
-                        "updateWorkflow");
+        elasticSearchClient.update(request).actionGet();
         long endTime = Instant.now().toEpochMilli();
         LOGGER.debug(
                 "Time taken {} for updating workflow: {}", endTime - startTime, workflowInstanceId);

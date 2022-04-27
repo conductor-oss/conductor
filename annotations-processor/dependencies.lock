@@ -42,7 +42,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.20.0"
+            "locked": "3.20.1"
         },
         "com.netflix.conductor:conductor-annotations": {
             "project": true
@@ -181,7 +181,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.20.0"
+            "locked": "3.20.1"
         },
         "com.netflix.conductor:conductor-annotations": {
             "project": true
@@ -280,7 +280,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.20.0"
+            "locked": "3.20.1"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0",
@@ -661,7 +661,7 @@
             ]
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.20.0"
+            "locked": "3.20.1"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0",

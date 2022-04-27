@@ -479,7 +479,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         def result = taskResource.updateTask(taskResult)
 
         then: "updateTask fails with an exception"
-        2 * queueDAO.postpone(*_) >> { throw new IllegalStateException("Queue postpone failed from Spy") }
+        1 * queueDAO.postpone(*_) >> { throw new IllegalStateException("Queue postpone failed from Spy") }
         thrown(Exception)
     }
 

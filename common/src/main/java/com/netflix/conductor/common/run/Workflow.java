@@ -12,13 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.Max;
@@ -32,8 +26,6 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-
-import com.google.common.base.Preconditions;
 
 @ProtoMessage
 public class Workflow extends Auditable {
@@ -328,7 +320,9 @@ public class Workflow extends Auditable {
      * @return the workflow definition name.
      */
     public String getWorkflowName() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        if (workflowDefinition == null) {
+            throw new NullPointerException("Workflow definition is null");
+        }
         return workflowDefinition.getName();
     }
 
@@ -338,7 +332,9 @@ public class Workflow extends Auditable {
      * @return the workflow definition version.
      */
     public int getWorkflowVersion() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        if (workflowDefinition == null) {
+            throw new NullPointerException("Workflow definition is null");
+        }
         return workflowDefinition.getVersion();
     }
 

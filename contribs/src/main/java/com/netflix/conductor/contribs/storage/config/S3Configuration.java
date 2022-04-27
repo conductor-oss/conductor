@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.storage.S3PayloadStorage;
+import com.netflix.conductor.core.utils.IDGenerator;
 
 @Configuration
 @EnableConfigurationProperties(S3Properties.class)
@@ -26,7 +27,8 @@ import com.netflix.conductor.contribs.storage.S3PayloadStorage;
 public class S3Configuration {
 
     @Bean
-    public ExternalPayloadStorage s3ExternalPayloadStorage(S3Properties properties) {
-        return new S3PayloadStorage(properties);
+    public ExternalPayloadStorage s3ExternalPayloadStorage(
+            IDGenerator idGenerator, S3Properties properties) {
+        return new S3PayloadStorage(idGenerator, properties);
     }
 }

@@ -49,6 +49,7 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringRunner.class)
 public class DecisionTaskMapperTest {
 
+    private IDGenerator idGenerator;
     private ParametersUtils parametersUtils;
     private DeciderService deciderService;
     // Subject
@@ -66,6 +67,7 @@ public class DecisionTaskMapperTest {
     @Before
     public void setUp() {
         parametersUtils = new ParametersUtils(objectMapper);
+        idGenerator = new IDGenerator();
 
         ip1 = new HashMap<>();
         ip1.put("p1", "${workflow.input.param1}");
@@ -135,7 +137,7 @@ public class DecisionTaskMapperTest {
 
         TaskModel theTask = new TaskModel();
         theTask.setReferenceTaskName("Foo");
-        theTask.setTaskId(IDGenerator.generate());
+        theTask.setTaskId(idGenerator.generate());
 
         when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
                 .thenReturn(Collections.singletonList(theTask));
@@ -146,7 +148,7 @@ public class DecisionTaskMapperTest {
                         .withWorkflowTask(decisionTask)
                         .withTaskInput(input)
                         .withRetryCount(0)
-                        .withTaskId(IDGenerator.generate())
+                        .withTaskId(idGenerator.generate())
                         .withDeciderService(deciderService)
                         .build();
 

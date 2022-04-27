@@ -12,11 +12,7 @@
  */
 package com.netflix.conductor.core.events;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,8 +21,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -37,6 +35,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
+import com.netflix.conductor.core.config.ConductorCoreConfiguration;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -54,19 +53,15 @@ import com.netflix.conductor.service.MetadataService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ContextConfiguration(
         classes = {
             TestObjectMapperConfiguration.class,
-            TestDefaultEventProcessor.TestConfiguration.class
+            TestDefaultEventProcessor.TestConfiguration.class,
+            ConductorCoreConfiguration.class
         })
 @RunWith(SpringRunner.class)
 public class TestDefaultEventProcessor {
@@ -86,6 +81,9 @@ public class TestDefaultEventProcessor {
     @Autowired private Map<String, Evaluator> evaluators;
 
     @Autowired private ObjectMapper objectMapper;
+
+    @Autowired
+    private @Qualifier("onTransientErrorRetryTemplate") RetryTemplate retryTemplate;
 
     @Configuration
     @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans
@@ -201,7 +199,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         eventProcessor.handle(queue, message);
         assertTrue(started.get());
         assertTrue(completed.get());
@@ -267,7 +266,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         eventProcessor.handle(queue, message);
         assertTrue(started.get());
     }
@@ -331,7 +331,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         eventProcessor.handle(queue, message);
         assertTrue(started.get());
     }
@@ -368,7 +369,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         eventProcessor.handle(queue, message);
         verify(queue, never()).ack(any());
         verify(queue, never()).publish(any());
@@ -407,7 +409,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         eventProcessor.handle(queue, message);
         verify(queue, atMost(1)).ack(any());
         verify(queue, never()).publish(any());
@@ -433,7 +436,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setName("handler");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
@@ -469,7 +473,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
@@ -506,7 +511,8 @@ public class TestDefaultEventProcessor {
                         jsonUtils,
                         properties,
                         objectMapper,
-                        evaluators);
+                        evaluators,
+                        retryTemplate);
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");

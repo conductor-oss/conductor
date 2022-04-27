@@ -25,11 +25,21 @@ public class PostgresProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
+    private Integer deadlockRetryMax = 3;
+
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
 
     public void setTaskDefCacheRefreshInterval(Duration taskDefCacheRefreshInterval) {
         this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
+    }
+
+    public Integer getDeadlockRetryMax() {
+        return deadlockRetryMax;
+    }
+
+    public void setDeadlockRetryMax(Integer deadlockRetryMax) {
+        this.deadlockRetryMax = deadlockRetryMax;
     }
 }

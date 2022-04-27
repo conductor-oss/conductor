@@ -37,6 +37,8 @@ public class SimpleTaskMapperTest {
 
     private SimpleTaskMapper simpleTaskMapper;
 
+    private IDGenerator idGenerator = new IDGenerator();
+
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
     @Before
@@ -52,8 +54,8 @@ public class SimpleTaskMapperTest {
         workflowTask.setName("simple_task");
         workflowTask.setTaskDefinition(new TaskDef("simple_task"));
 
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();
@@ -81,8 +83,8 @@ public class SimpleTaskMapperTest {
         // Given
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("simple_task");
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();

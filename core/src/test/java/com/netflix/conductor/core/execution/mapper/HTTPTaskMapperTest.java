@@ -36,6 +36,7 @@ import static org.mockito.Mockito.mock;
 public class HTTPTaskMapperTest {
 
     private HTTPTaskMapper httpTaskMapper;
+    private IDGenerator idGenerator;
 
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
@@ -44,6 +45,7 @@ public class HTTPTaskMapperTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         httpTaskMapper = new HTTPTaskMapper(parametersUtils, metadataDAO);
+        idGenerator = new IDGenerator();
     }
 
     @Test
@@ -53,8 +55,8 @@ public class HTTPTaskMapperTest {
         workflowTask.setName("http_task");
         workflowTask.setType(TaskType.HTTP.name());
         workflowTask.setTaskDefinition(new TaskDef("http_task"));
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
@@ -85,8 +87,8 @@ public class HTTPTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("http_task");
         workflowTask.setType(TaskType.HTTP.name());
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();

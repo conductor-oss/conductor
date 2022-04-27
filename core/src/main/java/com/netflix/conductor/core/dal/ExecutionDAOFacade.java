@@ -449,7 +449,9 @@ public class ExecutionDAOFacade {
 
     public TaskModel getTaskModel(String taskId) {
         TaskModel taskModel = getTaskFromDatastore(taskId);
-        populateTaskData(taskModel);
+        if (taskModel != null) {
+            populateTaskData(taskModel);
+        }
         return taskModel;
     }
 

@@ -40,7 +40,7 @@ public class WaitTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("Wait_task");
         workflowTask.setType(TaskType.WAIT.name());
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         WorkflowModel workflow = new WorkflowModel();

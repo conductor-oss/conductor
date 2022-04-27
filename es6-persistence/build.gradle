@@ -16,6 +16,7 @@ dependencies {
     implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.retry:spring-retry'
 
     implementation "commons-io:commons-io:${revCommonsIo}"
     implementation "org.apache.commons:commons-lang3"
@@ -26,6 +27,7 @@ dependencies {
     implementation "org.elasticsearch.client:elasticsearch-rest-client"
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
 
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation project(':conductor-common').sourceSets.test.output

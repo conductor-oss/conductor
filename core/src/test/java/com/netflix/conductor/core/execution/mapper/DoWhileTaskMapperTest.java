@@ -64,7 +64,7 @@ public class DoWhileTaskMapperTest {
         workflowTask.setLoopCondition(
                 "if ($.second_task + $.first_task > 10) { false; } else { true; }");
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflow = new WorkflowModel();

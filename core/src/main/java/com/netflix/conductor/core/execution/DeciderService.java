@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -43,8 +44,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -60,6 +59,7 @@ public class DeciderService {
 
     @VisibleForTesting static final String MAX_TASK_LIMIT = "conductor.app.max-task-limit";
 
+    private final IDGenerator idGenerator;
     private final ParametersUtils parametersUtils;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
@@ -81,6 +81,7 @@ public class DeciderService {
                                                     && task.getStatus().isSuccessful());
 
     public DeciderService(
+            IDGenerator idGenerator,
             ParametersUtils parametersUtils,
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
@@ -88,6 +89,7 @@ public class DeciderService {
             @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
+        this.idGenerator = idGenerator;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
@@ -569,7 +571,7 @@ public class DeciderService {
         rescheduled.setCallbackAfterSeconds(startDelay);
         rescheduled.setRetryCount(task.getRetryCount() + 1);
         rescheduled.setRetried(false);
-        rescheduled.setTaskId(IDGenerator.generate());
+        rescheduled.setTaskId(idGenerator.generate());
         rescheduled.setRetriedTaskId(task.getTaskId());
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
@@ -832,7 +834,7 @@ public class DeciderService {
                         .map(TaskModel::getReferenceTaskName)
                         .collect(Collectors.toList());
 
-        String taskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
                         .withWorkflowModel(workflow)

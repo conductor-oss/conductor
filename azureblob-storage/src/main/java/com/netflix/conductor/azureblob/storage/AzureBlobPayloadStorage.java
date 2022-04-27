@@ -52,6 +52,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobPayloadStorage.class);
     private static final String CONTENT_TYPE = "application/json";
 
+    private final IDGenerator idGenerator;
     private final String workflowInputPath;
     private final String workflowOutputPath;
     private final String taskInputPath;
@@ -61,7 +62,8 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
     private final long expirationSec;
     private final SasTokenCredential sasTokenCredential;
 
-    public AzureBlobPayloadStorage(AzureBlobProperties properties) {
+    public AzureBlobPayloadStorage(IDGenerator idGenerator, AzureBlobProperties properties) {
+        this.idGenerator = idGenerator;
         workflowInputPath = properties.getWorkflowInputPath();
         workflowOutputPath = properties.getWorkflowOutputPath();
         taskInputPath = properties.getTaskInputPath();
@@ -222,7 +224,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
                 stringBuilder.append(taskOutputPath);
                 break;
         }
-        stringBuilder.append(IDGenerator.generate()).append(".json");
+        stringBuilder.append(idGenerator.generate()).append(".json");
         return stringBuilder.toString();
     }
 }
