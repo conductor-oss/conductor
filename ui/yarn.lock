@@ -11475,7 +11475,7 @@ react-transition-group@^4.4.0:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react-vis-timeline-2@^2.0.3:
+react-vis-timeline-2@^2.1.6:
   version "2.1.6"
   resolved "https://registry.yarnpkg.com/react-vis-timeline-2/-/react-vis-timeline-2-2.1.6.tgz#4b9a8d5dc1cde31ee7b084952531477f154d9c09"
   integrity sha512-/RggBBK3E89E1pl4DPe3lEZ+zR3cUZWKpO+/i9vtgv/XiPgSp/QiEY1s05F0AvLjHeYUVgks3XqL1pQxAFossQ==
