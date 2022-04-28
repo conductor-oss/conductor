@@ -197,6 +197,7 @@ public class ExecutionService {
         }
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
         Monitors.recordTaskPoll(queueName);
+        tasks.stream().forEach(task -> ackTaskReceived(task));
         return tasks;
     }
 
