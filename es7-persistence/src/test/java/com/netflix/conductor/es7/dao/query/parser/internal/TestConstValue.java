@@ -18,7 +18,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/** @author Viren */
+/**
+ * @author Viren
+ */
 public class TestConstValue extends AbstractParserTest {
 
     @Test

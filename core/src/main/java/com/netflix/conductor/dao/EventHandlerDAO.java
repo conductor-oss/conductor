@@ -26,13 +26,19 @@ public interface EventHandlerDAO {
      */
     void addEventHandler(EventHandler eventHandler);
 
-    /** @param eventHandler Event handler to be updated. */
+    /**
+     * @param eventHandler Event handler to be updated.
+     */
     void updateEventHandler(EventHandler eventHandler);
 
-    /** @param name Removes the event handler from the system */
+    /**
+     * @param name Removes the event handler from the system
+     */
     void removeEventHandler(String name);
 
-    /** @return All the event handlers registered in the system */
+    /**
+     * @return All the event handlers registered in the system
+     */
     List<EventHandler> getAllEventHandlers();
 
     /**

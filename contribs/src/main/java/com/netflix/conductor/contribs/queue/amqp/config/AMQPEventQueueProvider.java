@@ -24,7 +24,9 @@ import com.netflix.conductor.contribs.queue.amqp.AMQPObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
-/** @author Ritu Parathody */
+/**
+ * @author Ritu Parathody
+ */
 public class AMQPEventQueueProvider implements EventQueueProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQPEventQueueProvider.class);

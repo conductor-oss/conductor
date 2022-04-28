@@ -119,7 +119,9 @@ public class WorkflowExecutor {
         this.systemTaskRegistry = systemTaskRegistry;
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -130,7 +132,9 @@ public class WorkflowExecutor {
                 name, version, correlationId, input, externalInputPayloadStoragePath, null);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -148,7 +152,9 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -167,7 +173,9 @@ public class WorkflowExecutor {
                 event);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -189,7 +197,9 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -209,7 +219,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -232,7 +244,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -254,7 +268,9 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -272,7 +288,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -293,7 +311,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -317,7 +337,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException */
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
@@ -344,7 +366,9 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /** @throws ApplicationException if validation fails */
+    /**
+     * @throws ApplicationException if validation fails
+     */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -1436,7 +1460,9 @@ public class WorkflowExecutor {
         return dedupedTasks;
     }
 
-    /** @throws ApplicationException if the workflow cannot be paused */
+    /**
+     * @throws ApplicationException if the workflow cannot be paused
+     */
     public void pauseWorkflow(String workflowId) {
         try {
             executionLockService.acquireLock(workflowId, 60000);

@@ -30,7 +30,9 @@ import com.netflix.conductor.sdk.workflow.utils.ObjectMapperProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** @param <T> Type of the workflow input */
+/**
+ * @param <T> Type of the workflow input
+ */
 public class ConductorWorkflow<T> {
 
     public static final InputOutputGetter input =
@@ -235,7 +237,9 @@ public class ConductorWorkflow<T> {
         return workflowExecutor.registerWorkflow(workflowDef, overwrite);
     }
 
-    /** @return Convert to the WorkflowDef model used by the Metadata APIs */
+    /**
+     * @return Convert to the WorkflowDef model used by the Metadata APIs
+     */
     public WorkflowDef toWorkflowDef() {
 
         WorkflowDef def = new WorkflowDef();

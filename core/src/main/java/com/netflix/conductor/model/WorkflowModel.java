@@ -197,28 +197,36 @@ public class WorkflowModel {
         this.output = output;
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @Deprecated
     @JsonProperty("input")
     public Map<String, Object> getRawInput() {
         return input;
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @Deprecated
     @JsonProperty("input")
     public void setRawInput(Map<String, Object> input) {
         setInput(input);
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @Deprecated
     @JsonProperty("output")
     public Map<String, Object> getRawOutput() {
         return output;
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @Deprecated
     @JsonProperty("output")
     public void setRawOutput(Map<String, Object> output) {

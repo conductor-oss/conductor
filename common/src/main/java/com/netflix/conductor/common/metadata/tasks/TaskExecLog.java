@@ -37,32 +37,44 @@ public class TaskExecLog {
         this.createdTime = System.currentTimeMillis();
     }
 
-    /** @return Task Exec Log */
+    /**
+     * @return Task Exec Log
+     */
     public String getLog() {
         return log;
     }
 
-    /** @param log The Log */
+    /**
+     * @param log The Log
+     */
     public void setLog(String log) {
         this.log = log;
     }
 
-    /** @return the taskId */
+    /**
+     * @return the taskId
+     */
     public String getTaskId() {
         return taskId;
     }
 
-    /** @param taskId the taskId to set */
+    /**
+     * @param taskId the taskId to set
+     */
     public void setTaskId(String taskId) {
         this.taskId = taskId;
     }
 
-    /** @return the createdTime */
+    /**
+     * @return the createdTime
+     */
     public long getCreatedTime() {
         return createdTime;
     }
 
-    /** @param createdTime the createdTime to set */
+    /**
+     * @param createdTime the createdTime to set
+     */
     public void setCreatedTime(long createdTime) {
         this.createdTime = createdTime;
     }

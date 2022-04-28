@@ -48,7 +48,9 @@ import com.rabbitmq.client.GetResponse;
 import rx.Observable;
 import rx.Subscriber;
 
-/** @author Ritu Parathody */
+/**
+ * @author Ritu Parathody
+ */
 public class AMQPObservableQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQPObservableQueue.class);

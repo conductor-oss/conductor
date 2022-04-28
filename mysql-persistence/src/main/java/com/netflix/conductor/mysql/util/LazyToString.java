@@ -19,7 +19,9 @@ public class LazyToString {
 
     private final Supplier<String> supplier;
 
-    /** @param supplier Supplier to execute when {@link #toString()} is called. */
+    /**
+     * @param supplier Supplier to execute when {@link #toString()} is called.
+     */
     public LazyToString(Supplier<String> supplier) {
         this.supplier = supplier;
     }

@@ -126,42 +126,58 @@ public class WorkflowSummary {
         }
     }
 
-    /** @return the workflowType */
+    /**
+     * @return the workflowType
+     */
     public String getWorkflowType() {
         return workflowType;
     }
 
-    /** @return the version */
+    /**
+     * @return the version
+     */
     public int getVersion() {
         return version;
     }
 
-    /** @return the workflowId */
+    /**
+     * @return the workflowId
+     */
     public String getWorkflowId() {
         return workflowId;
     }
 
-    /** @return the correlationId */
+    /**
+     * @return the correlationId
+     */
     public String getCorrelationId() {
         return correlationId;
     }
 
-    /** @return the startTime */
+    /**
+     * @return the startTime
+     */
     public String getStartTime() {
         return startTime;
     }
 
-    /** @return the endTime */
+    /**
+     * @return the endTime
+     */
     public String getEndTime() {
         return endTime;
     }
 
-    /** @return the status */
+    /**
+     * @return the status
+     */
     public WorkflowStatus getStatus() {
         return status;
     }
 
-    /** @return the input */
+    /**
+     * @return the input
+     */
     public String getInput() {
         return input;
     }
@@ -170,7 +186,9 @@ public class WorkflowSummary {
         return input != null ? input.length() : 0;
     }
 
-    /** @return the output */
+    /**
+     * @return the output
+     */
     public String getOutput() {
         return output;
     }
@@ -179,27 +197,37 @@ public class WorkflowSummary {
         return output != null ? output.length() : 0;
     }
 
-    /** @return the reasonForIncompletion */
+    /**
+     * @return the reasonForIncompletion
+     */
     public String getReasonForIncompletion() {
         return reasonForIncompletion;
     }
 
-    /** @return the executionTime */
+    /**
+     * @return the executionTime
+     */
     public long getExecutionTime() {
         return executionTime;
     }
 
-    /** @return the updateTime */
+    /**
+     * @return the updateTime
+     */
     public String getUpdateTime() {
         return updateTime;
     }
 
-    /** @return The event */
+    /**
+     * @return The event
+     */
     public String getEvent() {
         return event;
     }
 
-    /** @param event The event */
+    /**
+     * @param event The event
+     */
     public void setEvent(String event) {
         this.event = event;
     }
@@ -260,7 +288,9 @@ public class WorkflowSummary {
         this.executionTime = executionTime;
     }
 
-    /** @return the external storage path of the workflow input payload */
+    /**
+     * @return the external storage path of the workflow input payload
+     */
     public String getExternalInputPayloadStoragePath() {
         return externalInputPayloadStoragePath;
     }
@@ -273,7 +303,9 @@ public class WorkflowSummary {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
     }
 
-    /** @return the external storage path of the workflow output payload */
+    /**
+     * @return the external storage path of the workflow output payload
+     */
     public String getExternalOutputPayloadStoragePath() {
         return externalOutputPayloadStoragePath;
     }
@@ -286,12 +318,16 @@ public class WorkflowSummary {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
-    /** @return the priority to define on tasks */
+    /**
+     * @return the priority to define on tasks
+     */
     public int getPriority() {
         return priority;
     }
 
-    /** @param priority priority of tasks (between 0 and 99) */
+    /**
+     * @param priority priority of tasks (between 0 and 99)
+     */
     public void setPriority(int priority) {
         this.priority = priority;
     }

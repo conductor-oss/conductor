@@ -16,7 +16,9 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-/** @author Viren */
+/**
+ * @author Viren
+ */
 public abstract class AbstractParserTest {
 
     protected InputStream getInputStream(String expression) {

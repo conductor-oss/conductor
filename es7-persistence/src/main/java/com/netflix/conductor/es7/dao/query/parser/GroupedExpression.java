@@ -19,7 +19,9 @@ import org.elasticsearch.index.query.QueryBuilder;
 import com.netflix.conductor.es7.dao.query.parser.internal.AbstractNode;
 import com.netflix.conductor.es7.dao.query.parser.internal.ParserException;
 
-/** @author Viren */
+/**
+ * @author Viren
+ */
 public class GroupedExpression extends AbstractNode implements FilterProvider {
 
     private Expression expression;
@@ -44,7 +46,9 @@ public class GroupedExpression extends AbstractNode implements FilterProvider {
         return "(" + expression + ")";
     }
 
-    /** @return the expression */
+    /**
+     * @return the expression
+     */
     public Expression getExpression() {
         return expression;
     }

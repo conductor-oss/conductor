@@ -55,12 +55,16 @@ public class Range extends AbstractNode {
         return sb.toString().trim();
     }
 
-    /** @return the low */
+    /**
+     * @return the low
+     */
     public String getLow() {
         return low;
     }
 
-    /** @return the high */
+    /**
+     * @return the high
+     */
     public String getHigh() {
         return high;
     }

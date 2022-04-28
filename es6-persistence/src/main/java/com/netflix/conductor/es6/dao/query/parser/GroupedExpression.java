@@ -43,7 +43,9 @@ public class GroupedExpression extends AbstractNode implements FilterProvider {
         return "(" + expression + ")";
     }
 
-    /** @return the expression */
+    /**
+     * @return the expression
+     */
     public Expression getExpression() {
         return expression;
     }

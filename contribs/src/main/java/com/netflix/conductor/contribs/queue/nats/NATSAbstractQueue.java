@@ -33,7 +33,9 @@ import io.nats.client.NUID;
 import rx.Observable;
 import rx.Scheduler;
 
-/** @author Oleksiy Lysak */
+/**
+ * @author Oleksiy Lysak
+ */
 public abstract class NATSAbstractQueue implements ObservableQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSAbstractQueue.class);

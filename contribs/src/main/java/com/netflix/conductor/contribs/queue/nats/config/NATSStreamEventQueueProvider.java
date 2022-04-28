@@ -25,7 +25,9 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 import rx.Scheduler;
 
-/** @author Oleksiy Lysak */
+/**
+ * @author Oleksiy Lysak
+ */
 public class NATSStreamEventQueueProvider implements EventQueueProvider {
 
     private static final Logger LOGGER =

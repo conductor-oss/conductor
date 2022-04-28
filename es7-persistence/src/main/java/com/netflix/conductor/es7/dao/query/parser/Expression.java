@@ -23,7 +23,9 @@ import com.netflix.conductor.es7.dao.query.parser.internal.AbstractNode;
 import com.netflix.conductor.es7.dao.query.parser.internal.BooleanOp;
 import com.netflix.conductor.es7.dao.query.parser.internal.ParserException;
 
-/** @author Viren */
+/**
+ * @author Viren
+ */
 public class Expression extends AbstractNode implements FilterProvider {
 
     private NameValue nameVal;

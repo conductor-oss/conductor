@@ -34,7 +34,9 @@ public class MetadataClient extends ClientBase {
         this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
-    /** @param clientConfig REST Client configuration */
+    /**
+     * @param clientConfig REST Client configuration
+     */
     public MetadataClient(ClientConfig clientConfig) {
         this(clientConfig, new DefaultConductorClientConfiguration(), null);
     }

@@ -47,7 +47,9 @@ public class MetadataServiceImpl implements MetadataService {
                 properties.isOwnerEmailMandatory());
     }
 
-    /** @param taskDefinitions Task Definitions to register */
+    /**
+     * @param taskDefinitions Task Definitions to register
+     */
     public void registerTaskDef(List<TaskDef> taskDefinitions) {
         for (TaskDef taskDefinition : taskDefinitions) {
             taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
@@ -59,7 +61,9 @@ public class MetadataServiceImpl implements MetadataService {
         }
     }
 
-    /** @param taskDefinition Task Definition to be updated */
+    /**
+     * @param taskDefinition Task Definition to be updated
+     */
     public void updateTaskDef(TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
@@ -71,12 +75,16 @@ public class MetadataServiceImpl implements MetadataService {
         metadataDAO.updateTaskDef(taskDefinition);
     }
 
-    /** @param taskType Remove task definition */
+    /**
+     * @param taskType Remove task definition
+     */
     public void unregisterTaskDef(String taskType) {
         metadataDAO.removeTaskDef(taskType);
     }
 
-    /** @return List of all the registered tasks */
+    /**
+     * @return List of all the registered tasks
+     */
     public List<TaskDef> getTaskDefs() {
         return metadataDAO.getAllTaskDefs();
     }
@@ -94,13 +102,17 @@ public class MetadataServiceImpl implements MetadataService {
         return taskDef;
     }
 
-    /** @param workflowDef Workflow definition to be updated */
+    /**
+     * @param workflowDef Workflow definition to be updated
+     */
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
     }
 
-    /** @param workflowDefList Workflow definitions to be updated. */
+    /**
+     * @param workflowDefList Workflow definitions to be updated.
+     */
     public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
         for (WorkflowDef workflowDef : workflowDefList) {
             workflowDef.setUpdateTime(System.currentTimeMillis());
@@ -171,17 +183,23 @@ public class MetadataServiceImpl implements MetadataService {
         eventHandlerDAO.addEventHandler(eventHandler);
     }
 
-    /** @param eventHandler Event handler to be updated. */
+    /**
+     * @param eventHandler Event handler to be updated.
+     */
     public void updateEventHandler(EventHandler eventHandler) {
         eventHandlerDAO.updateEventHandler(eventHandler);
     }
 
-    /** @param name Removes the event handler from the system */
+    /**
+     * @param name Removes the event handler from the system
+     */
     public void removeEventHandlerStatus(String name) {
         eventHandlerDAO.removeEventHandler(name);
     }
 
-    /** @return All the event handlers registered in the system */
+    /**
+     * @return All the event handlers registered in the system
+     */
     public List<EventHandler> getAllEventHandlers() {
         return eventHandlerDAO.getAllEventHandlers();
     }

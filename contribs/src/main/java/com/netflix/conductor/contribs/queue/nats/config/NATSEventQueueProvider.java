@@ -28,7 +28,9 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.ConnectionFactory;
 import rx.Scheduler;
 
-/** @author Oleksiy Lysak */
+/**
+ * @author Oleksiy Lysak
+ */
 public class NATSEventQueueProvider implements EventQueueProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSEventQueueProvider.class);

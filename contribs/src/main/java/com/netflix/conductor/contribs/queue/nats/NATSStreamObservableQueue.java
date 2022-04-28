@@ -24,7 +24,9 @@ import io.nats.streaming.Subscription;
 import io.nats.streaming.SubscriptionOptions;
 import rx.Scheduler;
 
-/** @author Oleksiy Lysak */
+/**
+ * @author Oleksiy Lysak
+ */
 public class NATSStreamObservableQueue extends NATSAbstractQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSStreamObservableQueue.class);

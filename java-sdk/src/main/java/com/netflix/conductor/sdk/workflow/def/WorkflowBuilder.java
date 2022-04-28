@@ -24,7 +24,9 @@ import com.netflix.conductor.sdk.workflow.utils.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** @param <T> Input type for the workflow */
+/**
+ * @param <T> Input type for the workflow
+ */
 public class WorkflowBuilder<T> {
 
     private String name;

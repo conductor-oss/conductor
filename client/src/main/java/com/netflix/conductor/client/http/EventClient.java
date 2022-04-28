@@ -36,7 +36,9 @@ public class EventClient extends ClientBase {
         this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
-    /** @param clientConfig REST Client configuration */
+    /**
+     * @param clientConfig REST Client configuration
+     */
     public EventClient(ClientConfig clientConfig) {
         this(clientConfig, new DefaultConductorClientConfiguration(), null);
     }

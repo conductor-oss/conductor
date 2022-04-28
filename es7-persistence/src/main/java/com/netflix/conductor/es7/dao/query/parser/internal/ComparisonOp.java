@@ -14,7 +14,9 @@ package com.netflix.conductor.es7.dao.query.parser.internal;
 
 import java.io.InputStream;
 
-/** @author Viren */
+/**
+ * @author Viren
+ */
 public class ComparisonOp extends AbstractNode {
 
     public enum Operators {

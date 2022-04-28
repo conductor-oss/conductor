@@ -33,7 +33,9 @@ import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_MAX_PRIORITY;
 import static com.netflix.conductor.contribs.queue.amqp.util.AMQPConfigurations.PARAM_ROUTING_KEY;
 
-/** @author Ritu Parathody */
+/**
+ * @author Ritu Parathody
+ */
 public class AMQPSettings {
 
     private static final Pattern URI_PATTERN =
@@ -287,12 +289,16 @@ public class AMQPSettings {
         return eventName;
     }
 
-    /** @return the queueType */
+    /**
+     * @return the queueType
+     */
     public String getQueueType() {
         return queueType;
     }
 
-    /** @return the sequentialProcessing */
+    /**
+     * @return the sequentialProcessing
+     */
     public boolean isSequentialProcessing() {
         return sequentialProcessing;
     }

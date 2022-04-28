@@ -21,7 +21,9 @@ import io.nats.client.ConnectionFactory;
 import io.nats.client.Subscription;
 import rx.Scheduler;
 
-/** @author Oleksiy Lysak */
+/**
+ * @author Oleksiy Lysak
+ */
 public class NATSObservableQueue extends NATSAbstractQueue {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NATSObservableQueue.class);

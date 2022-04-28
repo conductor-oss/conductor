@@ -28,22 +28,30 @@ public class SearchResult<T> {
         this.results = results;
     }
 
-    /** @return the totalHits */
+    /**
+     * @return the totalHits
+     */
     public long getTotalHits() {
         return totalHits;
     }
 
-    /** @return the results */
+    /**
+     * @return the results
+     */
     public List<T> getResults() {
         return results;
     }
 
-    /** @param totalHits the totalHits to set */
+    /**
+     * @param totalHits the totalHits to set
+     */
     public void setTotalHits(long totalHits) {
         this.totalHits = totalHits;
     }
 
-    /** @param results the results to set */
+    /**
+     * @param results the results to set
+     */
     public void setResults(List<T> results) {
         this.results = results;
     }
