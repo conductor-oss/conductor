@@ -745,28 +745,6 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
-    public TaskDefPb.TaskDef.TimeoutPolicy toProto(TaskDef.TimeoutPolicy from) {
-        TaskDefPb.TaskDef.TimeoutPolicy to;
-        switch (from) {
-            case RETRY: to = TaskDefPb.TaskDef.TimeoutPolicy.RETRY; break;
-            case TIME_OUT_WF: to = TaskDefPb.TaskDef.TimeoutPolicy.TIME_OUT_WF; break;
-            case ALERT_ONLY: to = TaskDefPb.TaskDef.TimeoutPolicy.ALERT_ONLY; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
-    public TaskDef.TimeoutPolicy fromProto(TaskDefPb.TaskDef.TimeoutPolicy from) {
-        TaskDef.TimeoutPolicy to;
-        switch (from) {
-            case RETRY: to = TaskDef.TimeoutPolicy.RETRY; break;
-            case TIME_OUT_WF: to = TaskDef.TimeoutPolicy.TIME_OUT_WF; break;
-            case ALERT_ONLY: to = TaskDef.TimeoutPolicy.ALERT_ONLY; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
     public TaskDefPb.TaskDef.RetryLogic toProto(TaskDef.RetryLogic from) {
         TaskDefPb.TaskDef.RetryLogic to;
         switch (from) {
@@ -784,6 +762,28 @@ public abstract class AbstractProtoMapper {
             case FIXED: to = TaskDef.RetryLogic.FIXED; break;
             case EXPONENTIAL_BACKOFF: to = TaskDef.RetryLogic.EXPONENTIAL_BACKOFF; break;
             case LINEAR_BACKOFF: to = TaskDef.RetryLogic.LINEAR_BACKOFF; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public TaskDefPb.TaskDef.TimeoutPolicy toProto(TaskDef.TimeoutPolicy from) {
+        TaskDefPb.TaskDef.TimeoutPolicy to;
+        switch (from) {
+            case RETRY: to = TaskDefPb.TaskDef.TimeoutPolicy.RETRY; break;
+            case TIME_OUT_WF: to = TaskDefPb.TaskDef.TimeoutPolicy.TIME_OUT_WF; break;
+            case ALERT_ONLY: to = TaskDefPb.TaskDef.TimeoutPolicy.ALERT_ONLY; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public TaskDef.TimeoutPolicy fromProto(TaskDefPb.TaskDef.TimeoutPolicy from) {
+        TaskDef.TimeoutPolicy to;
+        switch (from) {
+            case RETRY: to = TaskDef.TimeoutPolicy.RETRY; break;
+            case TIME_OUT_WF: to = TaskDef.TimeoutPolicy.TIME_OUT_WF; break;
+            case ALERT_ONLY: to = TaskDef.TimeoutPolicy.ALERT_ONLY; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;

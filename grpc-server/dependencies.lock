@@ -329,6 +329,12 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.google.android:annotations": {
             "locked": "4.1.1.4",
             "transitive": [
@@ -361,6 +367,7 @@
         "com.google.errorprone:error_prone_annotations": {
             "locked": "2.10.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava",
                 "com.google.protobuf:protobuf-java-util",
                 "io.grpc:grpc-api",
@@ -714,6 +721,7 @@
         "org.checkerframework:checker-qual": {
             "locked": "3.12.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },
@@ -1362,6 +1370,12 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.google.android:annotations": {
             "locked": "4.1.1.4",
             "transitive": [
@@ -1400,6 +1414,7 @@
         "com.google.errorprone:error_prone_annotations": {
             "locked": "2.10.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava",
                 "com.google.protobuf:protobuf-java-util",
                 "io.grpc:grpc-api",
@@ -1824,6 +1839,7 @@
         "org.checkerframework:checker-qual": {
             "locked": "3.12.0",
             "transitive": [
+                "com.github.ben-manes.caffeine:caffeine",
                 "com.google.guava:guava"
             ]
         },
