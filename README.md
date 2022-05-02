@@ -14,6 +14,13 @@ The latest version is [![Github release](https://img.shields.io/github/v/release
 
 [2.31.8](https://github.com/Netflix/conductor/releases/tag/v2.31.8) is the **final** release of `2.31` branch. As of Feb 2022, `1.x` & `2.x` versions are no longer supported.
 
+## Community Contributions
+The modules contributed by the community are housed at [conductor-community](https://github.com/Netflix/conductor-community). Compatible versions of the community modules are released simultaneously with releases of the main modules.
+
+[Discussion Forum](https://github.com/Netflix/conductor/discussions) Please use the forum for questions and discussing ideas and join the community.
+
+[Access here other Conductor related projects made by the community!](/RELATED.md) - Backup tool, Cron like workflow starter, Docker containers...
+
 ## Getting Started - Building & Running Conductor
 ### Docker
 The easiest way to get started is with Docker containers. Please follow the instructions [here](https://github.com/Netflix/conductor/tree/main/docker). The server and UI can also be built from source separately.
@@ -53,27 +60,27 @@ To run the UI on the bundled development server, run `yarn run start`. Navigate 
 ## Published Artifacts
 Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository, or the [Maven Central Repository](https://search.maven.org/search?q=g:com.netflix.conductor).
 
-| Artifact | Description |
-| ----------- | --------------- |
-| conductor-common | Common models used by various conductor modules |
-| conductor-core | Core Conductor module |
-| conductor-redis-persistence | Persistence and queue using Redis/Dynomite |
-| conductor-cassandra-persistence | Persistence using Cassandra |
-| conductor-mysql-persistence | Persistence and queue using MySQL |
-| conductor-postgres-persistence | Persistence and queue using Postgres |
-| conductor-es6-persistence | Indexing using Elasticsearch 6.X |
-| conductor-rest | Spring MVC resources for the core services |
-| conductor-ui | node.js based UI for Conductor |
-| conductor-client | Java client for Conductor that includes helpers for running worker tasks |
-| conductor-client-spring | Client starter kit for Spring |
-| conductor-server | Spring Boot Web Application |
-| conductor-azureblob-storage | External payload storage implementation using AzureBlob |
-| conductor-redis-lock | Workflow execution lock implementation using Redis |
-| conductor-zookeeper-lock | Workflow execution lock implementation using Zookeeper |
-| conductor-grpc | Protobuf models used by the server and client |
-| conductor-grpc-client | gRPC server Application |
-| conductor-grpc-server | gRPC client to interact with the gRPC server |
-| conductor-test-harness | Integration and regression tests |
+| Artifact                        | Description                                                                                     |
+|---------------------------------|-------------------------------------------------------------------------------------------------|
+| conductor-common                | Common models used by various conductor modules                                                 |
+| conductor-core                  | Core Conductor module                                                                           |
+| conductor-redis-persistence     | Persistence and queue using Redis/Dynomite                                                      |
+| conductor-cassandra-persistence | Persistence using Cassandra                                                                     |
+| conductor-es6-persistence       | Indexing using Elasticsearch 6.X                                                                |
+| conductor-rest                  | Spring MVC resources for the core services                                                      |
+| conductor-ui                    | node.js based UI for Conductor                                                                  |
+| conductor-client                | Java client for Conductor that includes helpers for running worker tasks                        |
+| conductor-client-spring         | Client starter kit for Spring                                                                   |
+| conductor-server                | Spring Boot Web Application                                                                     |
+| conductor-redis-lock            | Workflow execution lock implementation using Redis                                              |
+| conductor-awss3-storage         | External payload storage implementation using AWS S3                                            |
+| conductor-awssqs-event-queue    | Event queue implementation using AWS SQS                                                        |
+| conductor-http-task             | Workflow system task implementation to send make requests                                       |
+| conductor-json-jq-task          | Workflow system task implementation to evaluate JSON using [jq](https://stedolan.github.io/jq/) |
+| conductor-grpc                  | Protobuf models used by the server and client                                                   |
+| conductor-grpc-client           | gRPC server Application                                                                         |
+| conductor-grpc-server           | gRPC client to interact with the gRPC server                                                    |
+| conductor-test-harness          | Integration and regression tests                                                                |
 
 ## Database Requirements
 
@@ -84,11 +91,6 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 ## Other Requirements
 * JDK 11+
 * UI requires Node 14 to build. Earlier Node versions may work but is untested.
-
-## Community
-[Discussion Forum](https://github.com/Netflix/conductor/discussions) Please use the forum for questions and discussing ideas and join the community.
-
-[Access here other Conductor related projects made by the community!](/RELATED.md) - Backup tool, Cron like workflow starter, Docker containers...
 
 ## Get Support
 Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use github issue tracking for filing issues and [Discussion Forum](https://github.com/Netflix/conductor/discussions) for any other questions, ideas or support requests. 

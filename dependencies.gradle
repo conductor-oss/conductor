@@ -1,5 +1,5 @@
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2022 Netflix, Inc.
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -16,19 +16,14 @@
  */
 ext {
     revActivation = '2.0.0'
-    revAmqpClient = '5.14.0'
     revAwaitility = '3.1.6'
     revAwsSdk = '1.11.86'
-    revAzureStorageBlobSdk = '12.7.0'
     revBval = '2.0.5'
     revCassandra = '3.10.2'
     revCassandraUnit = '3.11.2.0'
     revCommonsIo = '2.7'
-    revCuratorRecipes = '2.4.0'
-    revCuratorTest = '2.4.0'
     revDynoQueues = '2.0.20'
     revElasticSearch6 = '6.8.12'
-    revElasticSearch7 = '7.6.2'
     revEmbeddedRedis = '0.6'
     revEurekaClient = '1.10.10'
     revGroovy = '2.5.13'
@@ -42,13 +37,9 @@ ext {
     revJsonPath = '2.4.0'
     revJq = '0.0.13'
     revJsr311Api = '1.1.1'
-    revKafka = '2.6.0'
-    revMicrometer = '1.6.2'
     revMockServerClient = '5.12.0'
-    revNatsStreaming = '0.5.0'
     revOpenapi = '1.6.+'
     revPowerMock = '2.0.9'
-    revPrometheus = '0.9.0'
     revProtoBuf = '3.13.0'
     revProtogenAnnotations = '1.0.0'
     revProtogenCodegen = '1.4.0'
