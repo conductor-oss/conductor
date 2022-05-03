@@ -79,10 +79,10 @@ First we would build these two task definitions. Let's assume that ```shipping i
 ```
 
 The mail_a_box workflow has 2 tasks:
- 1. The first task takes the provided account number, and outpus an address.  
- 2. The 2nd task takes the address infom and generates a shipping label.
+ 1. The first task takes the provided account number, and outputs an address.  
+ 2. The 2nd task takes the address info and generates a shipping label.
  
- Upon completion of the 2 tasks, the workflow outpust the trackking number generated in the 2nd task.  If the workflow fails, a second workflow named ```shipping_issues``` is run.
+ Upon completion of the 2 tasks, the workflow outputs the trackking number generated in the 2nd task.  If the workflow fails, a second workflow named ```shipping_issues``` is run.
 
 ## Fields in a Workflow
 
