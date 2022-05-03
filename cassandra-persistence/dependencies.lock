@@ -299,6 +299,12 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.github.jnr:jffi": {
             "locked": "1.2.16",
             "transitive": [
@@ -328,6 +334,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "com.google.guava:guava": {
@@ -521,6 +533,12 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.ow2.asm:asm": {
@@ -1402,6 +1420,12 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
+        "com.github.ben-manes.caffeine:caffeine": {
+            "locked": "2.8.8",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "com.github.docker-java:docker-java-api": {
             "locked": "3.2.8",
             "transitive": [
@@ -1449,6 +1473,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.google.errorprone:error_prone_annotations": {
+            "locked": "2.4.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "com.google.guava:guava": {
@@ -1760,6 +1790,12 @@
             "locked": "3.16.1",
             "transitive": [
                 "org.springframework.boot:spring-boot-starter-test"
+            ]
+        },
+        "org.checkerframework:checker-qual": {
+            "locked": "3.8.0",
+            "transitive": [
+                "com.github.ben-manes.caffeine:caffeine"
             ]
         },
         "org.codehaus.groovy:groovy": {

@@ -7,6 +7,15 @@
   ],
   "hints": [
     {
+      "name": "conductor.workflow-execution-lock.type",
+      "values": [
+        {
+          "value": "redis",
+          "description": "Use the redis-lock implementation as the lock provider."
+        }
+      ]
+    },
+    {
       "name": "conductor.redis-lock.server-type",
       "providers": [
         {
