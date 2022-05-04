@@ -155,7 +155,12 @@ public class HttpTask extends WorkflowSystemTask {
         headers.setContentType(MediaType.valueOf(input.getContentType()));
         headers.setAccept(Collections.singletonList(MediaType.valueOf(input.getAccept())));
 
-        input.headers.forEach((key, value) -> headers.add(key, value.toString()));
+        input.headers.forEach(
+                (key, value) -> {
+                    if (value != null) {
+                        headers.add(key, value.toString());
+                    }
+                });
 
         HttpEntity<Object> request = new HttpEntity<>(input.getBody(), headers);
 
