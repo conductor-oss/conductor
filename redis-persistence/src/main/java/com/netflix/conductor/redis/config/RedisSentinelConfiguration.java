@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.config;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -28,6 +29,7 @@ import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.Protocol;
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
@@ -59,8 +61,31 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
         for (Host host : hostSupplier.getHosts()) {
             sentinels.add(host.getHostName() + ":" + host.getPort());
         }
-        return new JedisSentinel(
-                new JedisSentinelPool(
-                        properties.getClusterName(), sentinels, genericObjectPoolConfig));
+        // We use the password of the first sentinel host as password and sentinelPassword
+        String password = getPassword(hostSupplier.getHosts());
+        if (password != null) {
+            return new JedisSentinel(
+                    new JedisSentinelPool(
+                            properties.getClusterName(),
+                            sentinels,
+                            genericObjectPoolConfig,
+                            Protocol.DEFAULT_TIMEOUT,
+                            Protocol.DEFAULT_TIMEOUT,
+                            password,
+                            Protocol.DEFAULT_DATABASE,
+                            null,
+                            Protocol.DEFAULT_TIMEOUT,
+                            Protocol.DEFAULT_TIMEOUT,
+                            password,
+                            null));
+        } else {
+            return new JedisSentinel(
+                    new JedisSentinelPool(
+                            properties.getClusterName(), sentinels, genericObjectPoolConfig));
+        }
+    }
+
+    private String getPassword(List<Host> hosts) {
+        return hosts.isEmpty() ? null : hosts.get(0).getPassword();
     }
 }

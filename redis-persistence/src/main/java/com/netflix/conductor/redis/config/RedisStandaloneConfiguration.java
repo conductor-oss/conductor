@@ -25,6 +25,7 @@ import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
@@ -44,6 +45,20 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
         config.setMaxTotal(properties.getMaxConnectionsPerHost());
         log.info("Starting conductor server using redis_standalone.");
         Host host = hostSupplier.getHosts().get(0);
-        return new JedisStandalone(new JedisPool(config, host.getHostName(), host.getPort()));
+        return new JedisStandalone(getJedisPool(config, host));
+    }
+
+    private JedisPool getJedisPool(JedisPoolConfig config, Host host) {
+        if (host.getPassword() != null) {
+            log.info("Connecting to Redis Standalone with AUTH");
+            return new JedisPool(
+                    config,
+                    host.getHostName(),
+                    host.getPort(),
+                    Protocol.DEFAULT_TIMEOUT,
+                    host.getPassword());
+        } else {
+            return new JedisPool(config, host.getHostName(), host.getPort());
+        }
     }
 }
