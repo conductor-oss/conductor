@@ -591,7 +591,7 @@ public class TestWorkflowExecutor {
         workflowDef.setName("testDef");
         workflowDef.setVersion(1);
         workflowDef.setRestartable(true);
-        workflowDef.getTasks().addAll(Collections.singletonList(workflowTask));
+        workflowDef.getTasks().add(workflowTask);
 
         TaskModel task_1 = new TaskModel();
         task_1.setTaskId(UUID.randomUUID().toString());
@@ -1240,6 +1240,18 @@ public class TestWorkflowExecutor {
         assertTrue(workflow.getLastRetriedTime() > 0);
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(1, updateTasksCalledCounter.get());
+    }
+
+    @Test(expected = ApplicationException.class)
+    public void testRerunNonTerminalWorkflow() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("testRetryNonTerminalWorkflow");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
+        rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
+        workflowExecutor.rerun(rerunWorkflowRequest);
     }
 
     @Test
