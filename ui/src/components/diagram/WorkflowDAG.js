@@ -9,6 +9,7 @@ export default class WorkflowDAG {
     this.graph = new graphlib.Graph({ directed: true, compound: false });
     this.taskResults = new Map();
 
+    this.loopTaskRefs = [];
     this.constructGraph();
   }
 
@@ -38,9 +39,20 @@ export default class WorkflowDAG {
     else if (execution) {
       let isTerminated = false;
       for (let task of execution.tasks) {
-        if (task.taskType === "TERMINATE") isTerminated = true;
-
-        this.addTaskResult(task.referenceTaskName, task);
+        if (task["taskType"] === "TERMINATE") isTerminated = true;
+        if (task["loopOverTask"]) {
+          let refTaskName = task["referenceTaskName"];
+          let refTaskNameSansIter = refTaskName.substring(
+            0,
+            refTaskName.lastIndexOf("__")
+          );
+          let taskModel = {
+            ...task,
+            referenceTaskName: refTaskNameSansIter,
+          };
+          this.addTaskResult(refTaskNameSansIter, taskModel);
+        }
+        this.addTaskResult(task["referenceTaskName"], task);
       }
 
       if (execution.status) {
@@ -143,7 +155,11 @@ export default class WorkflowDAG {
       // Special case - When the antecedent of an executed node is a SWITCH, the edge may not necessarily be highlighted.
       // E.g. the default edge not taken.
       // SWITCH is the newer version of DECISION and DECISION is deprecated
-      if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
+      if (
+        antecedent.type === "SWITCH" ||
+        antecedent.type === "DECISION" ||
+        antecedents.type === "DO_WHILE"
+      ) {
         edgeParams.caseValue = getCaseValue(
           taskConfig.taskReferenceName,
           antecedent
@@ -196,7 +212,7 @@ export default class WorkflowDAG {
       retval.push(decisionTask); // Empty default path
     } else {
       retval.push(
-        ...this.processTaskList(decisionTask.defaultCase, [decisionTask], null)
+        ...this.processTaskList(decisionTask.defaultCase, [decisionTask])
       );
     }
 
@@ -246,6 +262,54 @@ export default class WorkflowDAG {
     }
   }
 
+  processDoWhileTask(doWhileTask, antecedents) {
+    console.assert(Array.isArray(antecedents));
+
+    let doWhileTaskResult = _.last(
+      this.taskResults.get(doWhileTask.taskReferenceName)
+    );
+    let startDoWhileTask = {
+      ...doWhileTask,
+      taskReferenceName: doWhileTask.taskReferenceName + "-START",
+    };
+    this.addTaskResult(startDoWhileTask.taskReferenceName, {
+      ...doWhileTaskResult,
+    });
+    this.graph.setEdge(
+      doWhileTask.taskReferenceName + "-START",
+      doWhileTask.taskReferenceName,
+      {
+        caseValue: "LOOP",
+        executed: true,
+      }
+    );
+    this.addVertex(startDoWhileTask, antecedents);
+
+    antecedents = [startDoWhileTask];
+
+    const retval = [];
+
+    if (_.isEmpty(doWhileTask.loopOver)) {
+      retval.push(doWhileTask); // Empty default path
+    } else {
+      this.loopTaskRefs.push(doWhileTask.taskReferenceName);
+      retval.push(...this.processTaskList(doWhileTask.loopOver, antecedents));
+      this.loopTaskRefs.pop();
+    }
+    // Set an edge from the do_while task to the first task
+    this.graph.setEdge(
+      doWhileTask.taskReferenceName,
+      doWhileTask.taskReferenceName + "-START",
+      {
+        caseValue: "LOOP",
+        executed: true,
+      }
+    );
+    // Add do_while final state at the end
+    this.addVertex(doWhileTask, retval);
+    return [doWhileTask];
+  }
+
   processForkJoin(forkJoinTask, antecedents) {
     let outerForkTasks = forkJoinTask.forkTasks || [];
 
@@ -279,6 +343,10 @@ export default class WorkflowDAG {
       case "TERMINATE": {
         this.addVertex(task, antecedents);
         return [];
+      }
+
+      case "DO_WHILE": {
+        return this.processDoWhileTask(task, antecedents);
       }
 
       /*
