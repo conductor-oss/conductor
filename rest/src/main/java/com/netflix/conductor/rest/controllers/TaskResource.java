@@ -111,6 +111,17 @@ public class TaskResource {
         return taskService.getTaskQueueSizes(taskTypes);
     }
 
+    @GetMapping("/queue/size")
+    @Operation(summary = "Get queue size for a task type.")
+    public Integer taskDepth(
+            @RequestParam("taskType") String taskType,
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "isolationGroupId", required = false) String isolationGroupId,
+            @RequestParam(value = "executionNamespace", required = false)
+                    String executionNamespace) {
+        return taskService.getTaskQueueSize(taskType, domain, executionNamespace, isolationGroupId);
+    }
+
     @GetMapping("/queue/all/verbose")
     @Operation(summary = "Get the details about each queue")
     public Map<String, Map<String, Map<String, Long>>> allVerbose() {

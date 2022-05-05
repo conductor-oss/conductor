@@ -40,14 +40,13 @@ public class QueueUtils {
     }
 
     /**
-     * @param taskType
-     * @param domain
-     * @param isolationGroup
-     * @param executionNameSpace
-     * @return //domain:taskType@eexecutionNameSpace-isolationGroup
+     * Creates a queue name string using <code>taskType</code>, <code>domain</code>, <code>
+     * isolationGroupId</code> and <code>executionNamespace</code>.
+     *
+     * @return domain:taskType@eexecutionNameSpace-isolationGroupId.
      */
     public static String getQueueName(
-            String taskType, String domain, String isolationGroup, String executionNameSpace) {
+            String taskType, String domain, String isolationGroupId, String executionNamespace) {
 
         String queueName;
         if (domain == null) {
@@ -56,12 +55,12 @@ public class QueueUtils {
             queueName = domain + DOMAIN_SEPARATOR + taskType;
         }
 
-        if (executionNameSpace != null) {
-            queueName = queueName + EXECUTION_NAME_SPACE_SEPARATOR + executionNameSpace;
+        if (executionNamespace != null) {
+            queueName = queueName + EXECUTION_NAME_SPACE_SEPARATOR + executionNamespace;
         }
 
-        if (isolationGroup != null) {
-            queueName = queueName + ISOLATION_SEPARATOR + isolationGroup;
+        if (isolationGroupId != null) {
+            queueName = queueName + ISOLATION_SEPARATOR + isolationGroupId;
         }
         return queueName;
     }

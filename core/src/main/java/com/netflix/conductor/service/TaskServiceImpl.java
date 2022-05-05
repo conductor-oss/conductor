@@ -34,6 +34,7 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -252,6 +253,15 @@ public class TaskServiceImpl implements TaskService {
      */
     public Map<String, Integer> getTaskQueueSizes(List<String> taskTypes) {
         return executionService.getTaskQueueSizes(taskTypes);
+    }
+
+    @Override
+    public Integer getTaskQueueSize(
+            String taskType, String domain, String isolationGroupId, String executionNamespace) {
+        String queueName =
+                QueueUtils.getQueueName(taskType, domain, isolationGroupId, executionNamespace);
+
+        return executionService.getTaskQueueSize(queueName);
     }
 
     /**
