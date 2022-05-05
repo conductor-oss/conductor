@@ -124,6 +124,7 @@ public class ParametersUtils {
                                     "reasonForIncompletion", task.getReasonForIncompletion());
                             taskParams.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
                             taskParams.put("workerId", task.getWorkerId());
+                            taskParams.put("iteration", task.getIteration());
                             inputMap.put(
                                     task.isLoopOverTask()
                                             ? TaskUtils.removeIterationFromTaskRefName(

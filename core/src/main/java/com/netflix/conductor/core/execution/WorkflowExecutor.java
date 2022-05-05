@@ -1302,9 +1302,10 @@ public class WorkflowExecutor {
             List<TaskModel> tasksToBeScheduled = outcome.tasksToBeScheduled;
             setTaskDomains(tasksToBeScheduled, workflow);
             List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
-            boolean stateChanged = false;
 
             tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+
+            boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled); // start
 
             for (TaskModel task : outcome.tasksToBeScheduled) {
                 if (systemTaskRegistry.isSystemTask(task.getTaskType())
@@ -1324,12 +1325,9 @@ public class WorkflowExecutor {
                 executionDAOFacade.updateWorkflow(workflow);
             }
 
-            stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
-
             if (stateChanged) {
                 decide(workflowId);
             }
-
         } catch (TerminateWorkflowException twe) {
             LOGGER.info("Execution terminated of workflow: {}", workflowId, twe);
             terminate(workflow, twe);
@@ -1685,7 +1683,6 @@ public class WorkflowExecutor {
 
     @VisibleForTesting
     boolean scheduleTask(WorkflowModel workflow, List<TaskModel> tasks) {
-        List<TaskModel> createdTasks;
         List<TaskModel> tasksToBeQueued;
         boolean startedSystemTasks = false;
 
