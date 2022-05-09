@@ -14,6 +14,7 @@ package com.netflix.conductor.client.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -354,13 +355,43 @@ public class TaskClient extends ClientBase {
     public int getQueueSizeForTask(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
 
-        Map<String, Integer> taskTypeToQueueSizeMap =
+        Integer queueSize =
                 getForEntity(
-                        "tasks/queue/sizes", new Object[] {"taskType", taskType}, queueSizeMap);
-        if (taskTypeToQueueSizeMap.containsKey(taskType)) {
-            return taskTypeToQueueSizeMap.get(taskType);
+                        "tasks/queue/size",
+                        new Object[] {"taskType", taskType},
+                        new GenericType<Integer>() {});
+        return queueSize != null ? queueSize : 0;
+    }
+
+    public int getQueueSizeForTask(
+            String taskType, String domain, String isolationGroupId, String executionNamespace) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+
+        List<Object> params = new LinkedList<>();
+        params.add("taskType");
+        params.add(taskType);
+
+        if (StringUtils.isNotBlank(domain)) {
+            params.add("domain");
+            params.add(domain);
         }
-        return 0;
+
+        if (StringUtils.isNotBlank(isolationGroupId)) {
+            params.add("isolationGroupId");
+            params.add(isolationGroupId);
+        }
+
+        if (StringUtils.isNotBlank(executionNamespace)) {
+            params.add("executionNamespace");
+            params.add(executionNamespace);
+        }
+
+        Integer queueSize =
+                getForEntity(
+                        "tasks/queue/size",
+                        params.toArray(new Object[0]),
+                        new GenericType<Integer>() {});
+        return queueSize != null ? queueSize : 0;
     }
 
     /**
