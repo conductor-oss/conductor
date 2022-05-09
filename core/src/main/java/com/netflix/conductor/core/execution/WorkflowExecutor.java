@@ -1823,6 +1823,13 @@ public class WorkflowExecutor {
 
         // Get the workflow
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
+        if (!workflow.getStatus().isTerminal()) {
+            String errorMsg =
+                    String.format(
+                            "Workflow: %s is not in terminal state, unable to rerun.", workflow);
+            LOGGER.error(errorMsg);
+            throw new ApplicationException(CONFLICT, errorMsg);
+        }
         updateAndPushParents(workflow, "reran");
 
         // If the task Id is null it implies that the entire workflow has to be rerun

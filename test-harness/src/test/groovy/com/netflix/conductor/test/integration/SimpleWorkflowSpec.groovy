@@ -247,13 +247,11 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         when: "Poll for a 'task_rt' task and then ack the task"
         def polledTaskRtTry1 = workflowExecutionService.poll('task_rt', 'task1.integration.worker.testTimeout')
-        def received = workflowExecutionService.ackTaskReceived(polledTaskRtTry1.taskId)
 
         then: "Verify that the 'task_rt' was polled"
         polledTaskRtTry1
         polledTaskRtTry1.taskType == 'task_rt'
         polledTaskRtTry1.workflowInstanceId == workflowInstanceId
-        received
         polledTaskRtTry1.status == Task.Status.IN_PROGRESS
 
         when: "An additional poll is done wto retrieved another 'task_rt'"
@@ -556,14 +554,12 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         when: "Poll for the first task and complete the task"
         def polledIntegrationTask1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
-        def ackPolledIntegrationTask1 = workflowExecutionService.ackTaskReceived(polledIntegrationTask1.taskId)
         polledIntegrationTask1.status = Task.Status.COMPLETED
         def polledIntegrationTask1Output = "task1.output -> " + polledIntegrationTask1.inputData['p1'] + "." + polledIntegrationTask1.inputData['p2']
         polledIntegrationTask1.outputData['op'] = polledIntegrationTask1Output
         workflowExecutionService.updateTask(new TaskResult(polledIntegrationTask1))
 
         then: "verify that the 'integration_task_1' is polled and completed"
-        ackPolledIntegrationTask1
         with(polledIntegrationTask1) {
             inputData.containsKey('p1')
             inputData.containsKey('p2')
@@ -731,7 +727,6 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         when: "the first task 'integration_task_1' is polled and then sent back with a callBack seconds"
         def pollTaskTry1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
-        def ackReceivedTaskTry1 = workflowExecutionService.ackTaskReceived(pollTaskTry1)
         pollTaskTry1.outputData['op'] = 'task1.in.progress'
         pollTaskTry1.callbackAfterSeconds = 5
         pollTaskTry1.status = Task.Status.IN_PROGRESS
@@ -739,7 +734,6 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         then: "verify that the task is polled and acknowledged"
         pollTaskTry1
-        ackReceivedTaskTry1
 
         and: "the input data of the data is as expected"
         pollTaskTry1.inputData.containsKey('p1')
@@ -813,7 +807,6 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         when: "the first task 'integration_task_1' is polled and then sent back with a callBack seconds"
         def pollTaskTry1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
-        def ackReceivedTaskTry1 = workflowExecutionService.ackTaskReceived(pollTaskTry1)
         pollTaskTry1.outputData['op'] = 'task1.in.progress'
         pollTaskTry1.callbackAfterSeconds = 3600
         pollTaskTry1.status = Task.Status.IN_PROGRESS
@@ -821,7 +814,6 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         then: "verify that the task is polled and acknowledged"
         pollTaskTry1
-        ackReceivedTaskTry1
 
         and: "the input data of the data is as expected"
         pollTaskTry1.inputData.containsKey('p1')

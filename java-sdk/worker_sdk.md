@@ -74,12 +74,12 @@ Output:
 ```
 
 ## Managing Task Workers
-Annotated Workers are managed by [WorkflowExecutor](src/main/java/com/netflix/conductor/sdk/workflow/executor/WorkflowExecutor.java)
+Annotated Workers are managed by [WorkflowExecutor](https://github.com/netflix/conductor/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/executor/WorkflowExecutor.java)
 
 ### Start Workers
 ```java
 WorkflowExecutor executor = new WorkflowExecutor("http://server/api/");
-//List of packages  (comma separated) to scan for annonated workers.  
+//List of packages  (comma separated) to scan for annotated workers.  
 // Please note,the worker method MUST be public and the class in which they are defined
 //MUST have a no-args constructor        
 executor.initWorkers("com.company.package1,com.company.package2");
@@ -95,7 +95,7 @@ executor.shutdown();
 Workers implemented with the annotations are regular Java methods can be united tested with any testing framework.
 
 #### Mock workers for workflow testing
-Create a mock worker in a different pacakge (e.g. test) and scan for these packages when loading up the workers for integration testing.
+Create a mock worker in a different package (e.g. test) and scan for these packages when loading up the workers for integration testing.
 
 See [Unit Testing Framework](testing_framework.md) for more details on testing.
 
