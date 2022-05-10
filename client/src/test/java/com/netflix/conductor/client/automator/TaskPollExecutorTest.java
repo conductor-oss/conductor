@@ -14,6 +14,7 @@ package com.netflix.conductor.client.automator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -136,6 +137,7 @@ public class TaskPollExecutorTest {
         verify(taskClient, times(3)).updateTask(any());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testLargePayloadCanFailUpdateWithRetry() throws InterruptedException {
         Task task = testTask();
@@ -158,7 +160,7 @@ public class TaskPollExecutorTest {
                             throw new ConductorClientException();
                         })
                 .when(taskClient)
-                .evaluateAndUploadLargePayload(any(TaskResult.class), any());
+                .evaluateAndUploadLargePayload(any(Map.class), any());
 
         TaskPollExecutor taskPollExecutor =
                 new TaskPollExecutor(
@@ -179,6 +181,50 @@ public class TaskPollExecutorTest {
 
         // When evaluateAndUploadLargePayload fails indefinitely, task update shouldn't be called.
         verify(taskClient, times(0)).updateTask(any());
+    }
+
+    @Test
+    public void testLargePayloadLocationUpdate() throws InterruptedException {
+        Task task = testTask();
+        String largePayloadLocation = "large_payload_location";
+
+        Worker worker = mock(Worker.class);
+        when(worker.getPollingInterval()).thenReturn(3000);
+        when(worker.getTaskDefName()).thenReturn(TEST_TASK_DEF_NAME);
+        when(worker.execute(any())).thenReturn(new TaskResult(task));
+
+        TaskClient taskClient = Mockito.mock(TaskClient.class);
+        when(taskClient.pollTask(any(), any(), any())).thenReturn(task);
+        when(taskClient.ack(any(), any())).thenReturn(true);
+        //noinspection unchecked
+        when(taskClient.evaluateAndUploadLargePayload(any(Map.class), any()))
+                .thenReturn(Optional.of(largePayloadLocation));
+
+        TaskPollExecutor taskPollExecutor =
+                new TaskPollExecutor(
+                        null, taskClient, 1, 3, new HashMap<>(), "test-worker-", new HashMap<>());
+        CountDownLatch latch = new CountDownLatch(1);
+
+        doAnswer(
+                        invocation -> {
+                            Object[] args = invocation.getArguments();
+                            TaskResult result = (TaskResult) args[0];
+                            assertNull(result.getOutputData());
+                            assertEquals(
+                                    largePayloadLocation,
+                                    result.getExternalOutputPayloadStoragePath());
+                            latch.countDown();
+                            return null;
+                        })
+                .when(taskClient)
+                .updateTask(any());
+
+        Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(
+                        () -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
+        latch.await();
+
+        verify(taskClient, times(1)).updateTask(any());
     }
 
     @Test

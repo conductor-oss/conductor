@@ -311,25 +311,4 @@ public class TaskResult {
         result.setStatus(status);
         return result;
     }
-
-    /**
-     * Copy the given task result object
-     *
-     * @return a deep copy of the task result object except the externalOutputPayloadStoragePath
-     *     field
-     */
-    public TaskResult copy() {
-        TaskResult taskResult = new TaskResult();
-        taskResult.setWorkflowInstanceId(workflowInstanceId);
-        taskResult.setTaskId(taskId);
-        taskResult.setReasonForIncompletion(reasonForIncompletion);
-        taskResult.setCallbackAfterSeconds(callbackAfterSeconds);
-        taskResult.setWorkerId(workerId);
-        taskResult.setStatus(status);
-        taskResult.setOutputData(outputData);
-        taskResult.setOutputMessage(outputMessage);
-        taskResult.setLogs(logs);
-        taskResult.setSubWorkflowId(subWorkflowId);
-        return taskResult;
-    }
 }

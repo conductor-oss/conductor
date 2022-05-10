@@ -238,14 +238,10 @@ public class TaskClient extends ClientBase {
         postForEntityWithRequestOnly("tasks", taskResult);
     }
 
-    public void evaluateAndUploadLargePayload(TaskResult taskResult, String taskType) {
-        Preconditions.checkNotNull(taskResult, "Task result cannot be null");
-        Preconditions.checkArgument(
-                StringUtils.isBlank(taskResult.getExternalOutputPayloadStoragePath()),
-                "External Storage Path must not be set");
-
+    public Optional<String> evaluateAndUploadLargePayload(
+            Map<String, Object> taskOutputData, String taskType) {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            objectMapper.writeValue(byteArrayOutputStream, taskResult.getOutputData());
+            objectMapper.writeValue(byteArrayOutputStream, taskOutputData);
             byte[] taskOutputBytes = byteArrayOutputStream.toByteArray();
             long taskResultSize = taskOutputBytes.length;
             MetricsContainer.recordTaskResultPayloadSize(taskType, taskResultSize);
@@ -257,30 +253,22 @@ public class TaskClient extends ClientBase {
                         || taskResultSize
                                 > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB()
                                         * 1024L) {
-                    taskResult.setReasonForIncompletion(
+                    throw new IllegalArgumentException(
                             String.format(
                                     "The TaskResult payload size: %d is greater than the permissible %d bytes",
                                     taskResultSize, payloadSizeThreshold));
-                    taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
-                    taskResult.setOutputData(null);
-                } else {
-                    MetricsContainer.incrementExternalPayloadUsedCount(
-                            taskType,
-                            ExternalPayloadStorage.Operation.WRITE.name(),
-                            ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
-                    String externalStoragePath =
-                            uploadToExternalPayloadStorage(
-                                    ExternalPayloadStorage.PayloadType.TASK_OUTPUT,
-                                    taskOutputBytes,
-                                    taskResultSize);
-                    taskResult.setExternalOutputPayloadStoragePath(externalStoragePath);
-                    taskResult.setOutputData(null);
                 }
+                MetricsContainer.incrementExternalPayloadUsedCount(
+                        taskType,
+                        ExternalPayloadStorage.Operation.WRITE.name(),
+                        ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
+                return Optional.of(
+                        uploadToExternalPayloadStorage(
+                                PayloadType.TASK_OUTPUT, taskOutputBytes, taskResultSize));
             }
+            return Optional.empty();
         } catch (IOException e) {
-            String errorMsg =
-                    String.format(
-                            "Unable to update task: %s with task result", taskResult.getTaskId());
+            String errorMsg = String.format("Unable to update task: %s with task result", taskType);
             LOGGER.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         }
