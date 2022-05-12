@@ -1,14 +1,12 @@
 import _ from "lodash";
 import { useQuery, useQueries, useMutation } from "react-query";
 import { useFetchContext, fetchWithContext } from "../plugins/fetch";
-import assert from "assert";
 
 export function useFetchParallel(paths, reactQueryOptions) {
   const fetchContext = useFetchContext();
 
   return useQueries(
     paths.map((path) => {
-      assert(_.isArray(path));
       return {
         queryKey: [fetchContext.stack, ...path],
         queryFn: () => fetchWithContext(`/${path.join("/")}`, fetchContext),
