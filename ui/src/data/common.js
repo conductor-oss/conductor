@@ -21,17 +21,14 @@ export function useFetchParallel(paths, reactQueryOptions) {
   );
 }
 
-export function useFetch(path, reactQueryOptions, defaultResponse) {
+export function useFetch(key, path, reactQueryOptions, defaultResponse) {
   const fetchContext = useFetchContext();
-  const key = _.isArray(path)
-    ? [fetchContext.stack, ...path]
-    : [fetchContext.stack, path];
-  const pathStr = _.isArray(path) ? `/${path.join("/")}` : path;
+
   return useQuery(
-    key,
+    [fetchContext.stack, ...key],
     () => {
-      if (pathStr) {
-        return fetchWithContext(pathStr, fetchContext);
+      if (path) {
+        return fetchWithContext(path, fetchContext);
       } else {
         return Promise.resolve(defaultResponse);
       }

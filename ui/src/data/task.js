@@ -9,14 +9,13 @@ import {
 import qs from "qs";
 import { useFetchContext, fetchWithContext } from "../plugins/fetch";
 import { useFetch } from "./common";
-const STALE_TIME_DROPDOWN = 600000; // 10 mins
 
 export function useTask(taskName, defaultTask) {
   let path;
   if (taskName) {
     path = `/metadata/taskdefs/${taskName}`;
   }
-  return useFetch(path, {}, defaultTask);
+  return useFetch(["taskDef", taskName], path, {}, defaultTask);
 }
 
 export function useTaskSearch({ searchReady, ...searchObj }) {
@@ -91,9 +90,7 @@ export function useTaskQueueInfo(taskName) {
 }
 
 export function useTaskNames() {
-  const { data } = useFetch(`/metadata/taskdefs`, {
-    staleTime: STALE_TIME_DROPDOWN,
-  });
+  const { data } = useTaskDefs();
   return useMemo(
     () => (data ? Array.from(new Set(data.map((def) => def.name))).sort() : []),
     [data]
@@ -101,7 +98,7 @@ export function useTaskNames() {
 }
 
 export function useTaskDefs() {
-  return useFetch("/metadata/taskdefs");
+  return useFetch(["taskDefs"], "/metadata/taskdefs");
 }
 
 export function useSaveTask(callbacks) {
