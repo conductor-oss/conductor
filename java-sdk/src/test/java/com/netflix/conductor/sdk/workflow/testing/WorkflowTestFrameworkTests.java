@@ -42,7 +42,7 @@ public class WorkflowTestFrameworkTests {
 
     @BeforeAll
     public static void init() throws IOException {
-        testRunner = new WorkflowTestRunner(8096, "3.5.2");
+        testRunner = new WorkflowTestRunner(8080, "3.7.3");
         testRunner.init("com.netflix.conductor.sdk.workflow.testing");
 
         executor = testRunner.getWorkflowExecutor();

@@ -9,7 +9,6 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:7.0.0'
-        // revElasticSearch7 in dependencies.gradle needs to be updated when spring is upgraded
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.6.6'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
