@@ -65,7 +65,9 @@ public abstract class WorkflowSystemTask {
      */
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {}
 
-    /** @return True if the task is supposed to be started asynchronously using internal queues. */
+    /**
+     * @return True if the task is supposed to be started asynchronously using internal queues.
+     */
     public boolean isAsync() {
         return false;
     }
@@ -86,7 +88,9 @@ public abstract class WorkflowSystemTask {
         }
     }
 
-    /** @return name of the system task */
+    /**
+     * @return name of the system task
+     */
     public String getTaskType() {
         return taskType;
     }

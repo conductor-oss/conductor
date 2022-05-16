@@ -43,7 +43,9 @@ public interface IndexDAO {
      */
     CompletableFuture<Void> asyncIndexWorkflow(WorkflowSummary workflow);
 
-    /** @param task Task to be indexed */
+    /**
+     * @param task Task to be indexed
+     */
     void indexTask(TaskSummary task);
 
     /**
@@ -118,7 +120,9 @@ public interface IndexDAO {
      */
     String get(String workflowInstanceId, String key);
 
-    /** @param logs Task Execution logs to be indexed */
+    /**
+     * @param logs Task Execution logs to be indexed
+     */
     void addTaskExecutionLogs(List<TaskExecLog> logs);
 
     /**
@@ -133,7 +137,9 @@ public interface IndexDAO {
      */
     List<TaskExecLog> getTaskExecutionLogs(String taskId);
 
-    /** @param eventExecution Event Execution to be indexed */
+    /**
+     * @param eventExecution Event Execution to be indexed
+     */
     void addEventExecution(EventExecution eventExecution);
 
     List<EventExecution> getEventExecutions(String event);

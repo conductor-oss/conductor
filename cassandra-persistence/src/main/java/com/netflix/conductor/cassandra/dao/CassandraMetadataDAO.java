@@ -24,10 +24,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -42,7 +44,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 
 import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
@@ -292,8 +293,8 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                             row -> {
                                 String defNameVersion =
                                         row.getString(WORKFLOW_DEF_NAME_VERSION_KEY);
-                                String[] tokens = defNameVersion.split(INDEX_DELIMITER);
-                                return getWorkflowDef(tokens[0], Integer.parseInt(tokens[1]))
+                                var nameVersion = getWorkflowNameAndVersion(defNameVersion);
+                                return getWorkflowDef(nameVersion.getLeft(), nameVersion.getRight())
                                         .orElse(null);
                             })
                     .filter(Objects::nonNull)
@@ -403,5 +404,28 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     @VisibleForTesting
     String getWorkflowDefIndexValue(String name, int version) {
         return name + INDEX_DELIMITER + version;
+    }
+
+    @VisibleForTesting
+    ImmutablePair<String, Integer> getWorkflowNameAndVersion(String nameVersionStr) {
+        int lastIndexOfDelimiter = nameVersionStr.lastIndexOf(INDEX_DELIMITER);
+
+        if (lastIndexOfDelimiter == -1) {
+            throw new IllegalStateException(
+                    nameVersionStr
+                            + " is not in the 'workflowName"
+                            + INDEX_DELIMITER
+                            + "version' pattern.");
+        }
+
+        String workflowName = nameVersionStr.substring(0, lastIndexOfDelimiter);
+        String versionStr = nameVersionStr.substring(lastIndexOfDelimiter + 1);
+
+        try {
+            return new ImmutablePair<>(workflowName, Integer.parseInt(versionStr));
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                    versionStr + " in " + nameVersionStr + " is not a valid number.");
+        }
     }
 }

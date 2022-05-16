@@ -138,6 +138,7 @@ allprojects {
         testLogging {
             events = ["SKIPPED", "FAILED"]
             exceptionFormat = "full"
+            displayGranularity = 1
             showStandardStreams = false
         }
     }
@@ -154,9 +155,9 @@ allprojects {
 
 jacocoTestReport {
     reports {
-        html.enabled = true
-        xml.enabled = true
-        csv.enabled = false
+        html.required = true
+        xml.required = true
+        csv.required = false
     }
 }
 

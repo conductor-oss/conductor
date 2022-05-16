@@ -64,7 +64,7 @@ public class DoWhileTaskMapperTest {
         workflowTask.setLoopCondition(
                 "if ($.second_task + $.first_task > 10) { false; } else { true; }");
 
-        String taskId = IDGenerator.generate();
+        String taskId = new IDGenerator().generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflow = new WorkflowModel();
@@ -95,9 +95,7 @@ public class DoWhileTaskMapperTest {
                 new DoWhileTaskMapper(metadataDAO).getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
-        assertEquals(mappedTasks.size(), 2);
-        assertEquals("task1__1", mappedTasks.get(1).getReferenceTaskName());
-        assertEquals(1, mappedTasks.get(1).getIteration());
+        assertEquals(mappedTasks.size(), 1);
         assertEquals(TASK_TYPE_DO_WHILE, mappedTasks.get(0).getTaskType());
     }
 

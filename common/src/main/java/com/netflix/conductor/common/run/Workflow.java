@@ -12,13 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.Max;
@@ -32,8 +26,6 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-
-import com.google.common.base.Preconditions;
 
 @ProtoMessage
 public class Workflow extends Auditable {
@@ -133,62 +125,86 @@ public class Workflow extends Auditable {
 
     public Workflow() {}
 
-    /** @return the status */
+    /**
+     * @return the status
+     */
     public WorkflowStatus getStatus() {
         return status;
     }
 
-    /** @param status the status to set */
+    /**
+     * @param status the status to set
+     */
     public void setStatus(WorkflowStatus status) {
         this.status = status;
     }
 
-    /** @return the startTime */
+    /**
+     * @return the startTime
+     */
     public long getStartTime() {
         return getCreateTime();
     }
 
-    /** @param startTime the startTime to set */
+    /**
+     * @param startTime the startTime to set
+     */
     public void setStartTime(long startTime) {
         this.setCreateTime(startTime);
     }
 
-    /** @return the endTime */
+    /**
+     * @return the endTime
+     */
     public long getEndTime() {
         return endTime;
     }
 
-    /** @param endTime the endTime to set */
+    /**
+     * @param endTime the endTime to set
+     */
     public void setEndTime(long endTime) {
         this.endTime = endTime;
     }
 
-    /** @return the workflowId */
+    /**
+     * @return the workflowId
+     */
     public String getWorkflowId() {
         return workflowId;
     }
 
-    /** @param workflowId the workflowId to set */
+    /**
+     * @param workflowId the workflowId to set
+     */
     public void setWorkflowId(String workflowId) {
         this.workflowId = workflowId;
     }
 
-    /** @return the tasks which are scheduled, in progress or completed. */
+    /**
+     * @return the tasks which are scheduled, in progress or completed.
+     */
     public List<Task> getTasks() {
         return tasks;
     }
 
-    /** @param tasks the tasks to set */
+    /**
+     * @param tasks the tasks to set
+     */
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
     }
 
-    /** @return the input */
+    /**
+     * @return the input
+     */
     public Map<String, Object> getInput() {
         return input;
     }
 
-    /** @param input the input to set */
+    /**
+     * @param input the input to set
+     */
     public void setInput(Map<String, Object> input) {
         if (input == null) {
             input = new HashMap<>();
@@ -196,22 +212,30 @@ public class Workflow extends Auditable {
         this.input = input;
     }
 
-    /** @return the task to domain map */
+    /**
+     * @return the task to domain map
+     */
     public Map<String, String> getTaskToDomain() {
         return taskToDomain;
     }
 
-    /** @param taskToDomain the task to domain map */
+    /**
+     * @param taskToDomain the task to domain map
+     */
     public void setTaskToDomain(Map<String, String> taskToDomain) {
         this.taskToDomain = taskToDomain;
     }
 
-    /** @return the output */
+    /**
+     * @return the output
+     */
     public Map<String, Object> getOutput() {
         return output;
     }
 
-    /** @param output the output to set */
+    /**
+     * @param output the output to set
+     */
     public void setOutput(Map<String, Object> output) {
         if (output == null) {
             output = new HashMap<>();
@@ -219,12 +243,16 @@ public class Workflow extends Auditable {
         this.output = output;
     }
 
-    /** @return The correlation id used when starting the workflow */
+    /**
+     * @return The correlation id used when starting the workflow
+     */
     public String getCorrelationId() {
         return correlationId;
     }
 
-    /** @param correlationId the correlation id */
+    /**
+     * @param correlationId the correlation id
+     */
     public void setCorrelationId(String correlationId) {
         this.correlationId = correlationId;
     }
@@ -245,32 +273,44 @@ public class Workflow extends Auditable {
         this.reasonForIncompletion = reasonForIncompletion;
     }
 
-    /** @return the parentWorkflowId */
+    /**
+     * @return the parentWorkflowId
+     */
     public String getParentWorkflowId() {
         return parentWorkflowId;
     }
 
-    /** @param parentWorkflowId the parentWorkflowId to set */
+    /**
+     * @param parentWorkflowId the parentWorkflowId to set
+     */
     public void setParentWorkflowId(String parentWorkflowId) {
         this.parentWorkflowId = parentWorkflowId;
     }
 
-    /** @return the parentWorkflowTaskId */
+    /**
+     * @return the parentWorkflowTaskId
+     */
     public String getParentWorkflowTaskId() {
         return parentWorkflowTaskId;
     }
 
-    /** @param parentWorkflowTaskId the parentWorkflowTaskId to set */
+    /**
+     * @param parentWorkflowTaskId the parentWorkflowTaskId to set
+     */
     public void setParentWorkflowTaskId(String parentWorkflowTaskId) {
         this.parentWorkflowTaskId = parentWorkflowTaskId;
     }
 
-    /** @return Name of the event that started the workflow */
+    /**
+     * @return Name of the event that started the workflow
+     */
     public String getEvent() {
         return event;
     }
 
-    /** @param event Name of the event that started the workflow */
+    /**
+     * @param event Name of the event that started the workflow
+     */
     public void setEvent(String event) {
         this.event = event;
     }
@@ -291,7 +331,9 @@ public class Workflow extends Auditable {
         this.workflowDefinition = workflowDefinition;
     }
 
-    /** @return the external storage path of the workflow input payload */
+    /**
+     * @return the external storage path of the workflow input payload
+     */
     public String getExternalInputPayloadStoragePath() {
         return externalInputPayloadStoragePath;
     }
@@ -304,17 +346,23 @@ public class Workflow extends Auditable {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
     }
 
-    /** @return the external storage path of the workflow output payload */
+    /**
+     * @return the external storage path of the workflow output payload
+     */
     public String getExternalOutputPayloadStoragePath() {
         return externalOutputPayloadStoragePath;
     }
 
-    /** @return the priority to define on tasks */
+    /**
+     * @return the priority to define on tasks
+     */
     public int getPriority() {
         return priority;
     }
 
-    /** @param priority priority of tasks (between 0 and 99) */
+    /**
+     * @param priority priority of tasks (between 0 and 99)
+     */
     public void setPriority(int priority) {
         if (priority < 0 || priority > 99) {
             throw new IllegalArgumentException("priority MUST be between 0 and 99 (inclusive)");
@@ -328,7 +376,9 @@ public class Workflow extends Auditable {
      * @return the workflow definition name.
      */
     public String getWorkflowName() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        if (workflowDefinition == null) {
+            throw new NullPointerException("Workflow definition is null");
+        }
         return workflowDefinition.getName();
     }
 
@@ -338,7 +388,9 @@ public class Workflow extends Auditable {
      * @return the workflow definition version.
      */
     public int getWorkflowVersion() {
-        Preconditions.checkNotNull(workflowDefinition, "Workflow definition is null");
+        if (workflowDefinition == null) {
+            throw new NullPointerException("Workflow definition is null");
+        }
         return workflowDefinition.getVersion();
     }
 
@@ -350,12 +402,16 @@ public class Workflow extends Auditable {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
-    /** @return the global workflow variables */
+    /**
+     * @return the global workflow variables
+     */
     public Map<String, Object> getVariables() {
         return variables;
     }
 
-    /** @param variables the set of global workflow variables to set */
+    /**
+     * @param variables the set of global workflow variables to set
+     */
     public void setVariables(Map<String, Object> variables) {
         this.variables = variables;
     }
@@ -369,7 +425,9 @@ public class Workflow extends Auditable {
         return lastRetriedTime;
     }
 
-    /** @param lastRetriedTime time in milliseconds when the workflow is retried */
+    /**
+     * @param lastRetriedTime time in milliseconds when the workflow is retried
+     */
     public void setLastRetriedTime(long lastRetriedTime) {
         this.lastRetriedTime = lastRetriedTime;
     }
@@ -403,7 +461,9 @@ public class Workflow extends Auditable {
         return found.getLast();
     }
 
-    /** @return a deep copy of the workflow instance */
+    /**
+     * @return a deep copy of the workflow instance
+     */
     public Workflow copy() {
         Workflow copy = new Workflow();
         copy.setInput(input);

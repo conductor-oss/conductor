@@ -16,6 +16,7 @@ dependencies {
     implementation project(':conductor-common')
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.springframework.retry:spring-retry'
 
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-databind"
@@ -34,11 +35,11 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
-    implementation "com.google.guava:guava:${revGuava}"
-
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
 
     implementation "org.apache.bval:bval-jsr:${revBval}"
+
+    implementation "com.github.ben-manes.caffeine:caffeine"
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
@@ -49,15 +50,10 @@ dependencies {
     testImplementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation project(':conductor-common').sourceSets.test.output
 
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
-}
-
-test {
-    testLogging {
-        exceptionFormat = 'full'
-    }
 }

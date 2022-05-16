@@ -19,20 +19,21 @@ dependencies {
 
     implementation project(':conductor-rest')
     implementation project(':conductor-core')
-    implementation project(':conductor-contribs')
     implementation project(':conductor-redis-persistence')
     implementation project(':conductor-cassandra-persistence')
-    implementation project(':conductor-postgres-persistence')
-    implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-es6-persistence')
-    implementation(project(path: ':conductor-es7-persistence', configuration: 'shadow'))
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-redis-lock')
-    implementation project(':conductor-postgres-external-storage')
+    implementation project(':conductor-redis-concurrency-limit')
+    implementation project(':conductor-http-task')
+    implementation project(':conductor-json-jq-task')
+    implementation project(':conductor-awss3-storage')
+    implementation project(':conductor-awssqs-event-queue')
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.retry:spring-retry'
 
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation 'org.apache.logging.log4j:log4j-web'
@@ -40,11 +41,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
-
-    implementation(group: 'com.rabbitmq', name: 'amqp-client'){ version{require "${revAmqpClient}"}}
-    runtimeOnly 'io.micrometer:micrometer-registry-datadog'
-
-    runtimeOnly 'com.netflix.spectator:spectator-reg-micrometer'
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 

@@ -189,14 +189,18 @@ public class TaskModel {
         this.inputData = inputData;
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @JsonProperty("inputData")
     @Deprecated
     public void setRawInputData(Map<String, Object> inputData) {
         setInputData(inputData);
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @JsonProperty("inputData")
     @Deprecated
     public Map<String, Object> getRawInputData() {
@@ -395,14 +399,18 @@ public class TaskModel {
         this.outputData = outputData;
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @JsonProperty("outputData")
     @Deprecated
     public void setRawOutputData(Map<String, Object> inputData) {
         setOutputData(inputData);
     }
 
-    /** @deprecated Used only for JSON serialization and deserialization. */
+    /**
+     * @deprecated Used only for JSON serialization and deserialization.
+     */
     @JsonProperty("outputData")
     @Deprecated
     public Map<String, Object> getRawOutputData() {
@@ -538,7 +546,9 @@ public class TaskModel {
         ++this.pollCount;
     }
 
-    /** @return {@link Optional} containing the task definition if available */
+    /**
+     * @return {@link Optional} containing the task definition if available
+     */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
@@ -547,7 +557,9 @@ public class TaskModel {
         return iteration > 0;
     }
 
-    /** @return the queueWaitTime */
+    /**
+     * @return the queueWaitTime
+     */
     public long getQueueWaitTime() {
         if (this.startTime > 0 && this.scheduledTime > 0) {
             if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
@@ -562,7 +574,9 @@ public class TaskModel {
         return 0L;
     }
 
-    /** @return a copy of the task instance */
+    /**
+     * @return a copy of the task instance
+     */
     public TaskModel copy() {
         TaskModel copy = new TaskModel();
         BeanUtils.copyProperties(this, copy);

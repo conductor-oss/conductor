@@ -158,87 +158,121 @@ public class TaskDef extends Auditable {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 
-    /** @return the name */
+    /**
+     * @return the name
+     */
     public String getName() {
         return name;
     }
 
-    /** @param name the name to set */
+    /**
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
-    /** @return the description */
+    /**
+     * @return the description
+     */
     public String getDescription() {
         return description;
     }
 
-    /** @param description the description to set */
+    /**
+     * @param description the description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
-    /** @return the retryCount */
+    /**
+     * @return the retryCount
+     */
     public int getRetryCount() {
         return retryCount;
     }
 
-    /** @param retryCount the retryCount to set */
+    /**
+     * @param retryCount the retryCount to set
+     */
     public void setRetryCount(int retryCount) {
         this.retryCount = retryCount;
     }
 
-    /** @return the timeoutSeconds */
+    /**
+     * @return the timeoutSeconds
+     */
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
 
-    /** @param timeoutSeconds the timeoutSeconds to set */
+    /**
+     * @param timeoutSeconds the timeoutSeconds to set
+     */
     public void setTimeoutSeconds(long timeoutSeconds) {
         this.timeoutSeconds = timeoutSeconds;
     }
 
-    /** @return Returns the input keys */
+    /**
+     * @return Returns the input keys
+     */
     public List<String> getInputKeys() {
         return inputKeys;
     }
 
-    /** @param inputKeys Set of keys that the task accepts in the input map */
+    /**
+     * @param inputKeys Set of keys that the task accepts in the input map
+     */
     public void setInputKeys(List<String> inputKeys) {
         this.inputKeys = inputKeys;
     }
 
-    /** @return Returns the output keys for the task when executed */
+    /**
+     * @return Returns the output keys for the task when executed
+     */
     public List<String> getOutputKeys() {
         return outputKeys;
     }
 
-    /** @param outputKeys Sets the output keys */
+    /**
+     * @param outputKeys Sets the output keys
+     */
     public void setOutputKeys(List<String> outputKeys) {
         this.outputKeys = outputKeys;
     }
 
-    /** @return the timeoutPolicy */
+    /**
+     * @return the timeoutPolicy
+     */
     public TimeoutPolicy getTimeoutPolicy() {
         return timeoutPolicy;
     }
 
-    /** @param timeoutPolicy the timeoutPolicy to set */
+    /**
+     * @param timeoutPolicy the timeoutPolicy to set
+     */
     public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
         this.timeoutPolicy = timeoutPolicy;
     }
 
-    /** @return the retryLogic */
+    /**
+     * @return the retryLogic
+     */
     public RetryLogic getRetryLogic() {
         return retryLogic;
     }
 
-    /** @param retryLogic the retryLogic to set */
+    /**
+     * @param retryLogic the retryLogic to set
+     */
     public void setRetryLogic(RetryLogic retryLogic) {
         this.retryLogic = retryLogic;
     }
 
-    /** @return the retryDelaySeconds */
+    /**
+     * @return the retryDelaySeconds
+     */
     public int getRetryDelaySeconds() {
         return retryDelaySeconds;
     }
@@ -258,12 +292,16 @@ public class TaskDef extends Auditable {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 
-    /** @param retryDelaySeconds the retryDelaySeconds to set */
+    /**
+     * @param retryDelaySeconds the retryDelaySeconds to set
+     */
     public void setRetryDelaySeconds(int retryDelaySeconds) {
         this.retryDelaySeconds = retryDelaySeconds;
     }
 
-    /** @return the inputTemplate */
+    /**
+     * @return the inputTemplate
+     */
     public Map<String, Object> getInputTemplate() {
         return inputTemplate;
     }
@@ -309,17 +347,23 @@ public class TaskDef extends Auditable {
         this.concurrentExecLimit = concurrentExecLimit;
     }
 
-    /** @return Limit of number of concurrent task that can be IN_PROGRESS at a given time */
+    /**
+     * @return Limit of number of concurrent task that can be IN_PROGRESS at a given time
+     */
     public Integer getConcurrentExecLimit() {
         return concurrentExecLimit;
     }
 
-    /** @return concurrency limit */
+    /**
+     * @return concurrency limit
+     */
     public int concurrencyLimit() {
         return concurrentExecLimit == null ? 0 : concurrentExecLimit;
     }
 
-    /** @param inputTemplate the inputTemplate to set */
+    /**
+     * @param inputTemplate the inputTemplate to set
+     */
     public void setInputTemplate(Map<String, Object> inputTemplate) {
         this.inputTemplate = inputTemplate;
     }
@@ -340,32 +384,44 @@ public class TaskDef extends Auditable {
         this.executionNameSpace = executionNameSpace;
     }
 
-    /** @return the email of the owner of this task definition */
+    /**
+     * @return the email of the owner of this task definition
+     */
     public String getOwnerEmail() {
         return ownerEmail;
     }
 
-    /** @param ownerEmail the owner email to set */
+    /**
+     * @param ownerEmail the owner email to set
+     */
     public void setOwnerEmail(String ownerEmail) {
         this.ownerEmail = ownerEmail;
     }
 
-    /** @param pollTimeoutSeconds the poll timeout to set */
+    /**
+     * @param pollTimeoutSeconds the poll timeout to set
+     */
     public void setPollTimeoutSeconds(Integer pollTimeoutSeconds) {
         this.pollTimeoutSeconds = pollTimeoutSeconds;
     }
 
-    /** @return the poll timeout of this task definition */
+    /**
+     * @return the poll timeout of this task definition
+     */
     public Integer getPollTimeoutSeconds() {
         return pollTimeoutSeconds;
     }
 
-    /** @param backoffScaleFactor the backoff rate to set */
+    /**
+     * @param backoffScaleFactor the backoff rate to set
+     */
     public void setBackoffScaleFactor(Integer backoffScaleFactor) {
         this.backoffScaleFactor = backoffScaleFactor;
     }
 
-    /** @return the backoff rate of this task definition */
+    /**
+     * @return the backoff rate of this task definition
+     */
     public Integer getBackoffScaleFactor() {
         return backoffScaleFactor;
     }

@@ -18,8 +18,6 @@ configurations.all {
 
 dependencies {
     implementation project(':conductor-common')
-    // SBMTODO: remove guava dep
-    implementation "com.google.guava:guava:${revGuava}"
 
     implementation "com.sun.jersey:jersey-client:${revJersey}"
 

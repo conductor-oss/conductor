@@ -36,32 +36,44 @@ public class Message {
         this.priority = priority;
     }
 
-    /** @return the payload */
+    /**
+     * @return the payload
+     */
     public String getPayload() {
         return payload;
     }
 
-    /** @param payload the payload to set */
+    /**
+     * @param payload the payload to set
+     */
     public void setPayload(String payload) {
         this.payload = payload;
     }
 
-    /** @return the id */
+    /**
+     * @return the id
+     */
     public String getId() {
         return id;
     }
 
-    /** @param id the id to set */
+    /**
+     * @param id the id to set
+     */
     public void setId(String id) {
         this.id = id;
     }
 
-    /** @return Receipt attached to the message */
+    /**
+     * @return Receipt attached to the message
+     */
     public String getReceipt() {
         return receipt;
     }
 
-    /** @param receipt Receipt attached to the message */
+    /**
+     * @param receipt Receipt attached to the message
+     */
     public void setReceipt(String receipt) {
         this.receipt = receipt;
     }

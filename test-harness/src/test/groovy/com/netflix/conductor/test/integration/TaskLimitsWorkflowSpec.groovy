@@ -176,12 +176,10 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         when: "The task is polled and acknowledged"
         def polledTask1 = workflowExecutionService.poll('test_task_with_concurrency_limit', 'test_task_worker')
-        def ackPolledTask1 = workflowExecutionService.ackTaskReceived(polledTask1.taskId)
 
         then: "Verify that the task was polled and acknowledged"
         polledTask1.taskType == 'test_task_with_concurrency_limit'
         polledTask1.workflowInstanceId == workflowInstanceId
-        ackPolledTask1
 
         when: "A additional workflow that has a concurrency execution limited task in it"
         def workflowTwoInstanceId = workflowExecutor.startWorkflow(CONCURRENCY_EXECUTION_LIMITED_WORKFLOW, 1,
@@ -219,11 +217,9 @@ class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
         and: "The task is polled again and acknowledged"
         def polledTaskTry2 = workflowExecutionService.poll('test_task_with_concurrency_limit', 'test_task_worker')
-        def ackPolledTaskTry2 = workflowExecutionService.ackTaskReceived(polledTaskTry2.taskId)
 
         then: "Verify that the task is returned since there are no tasks in progress"
         polledTaskTry2.taskType == 'test_task_with_concurrency_limit'
         polledTaskTry2.workflowInstanceId == workflowTwoInstanceId
-        ackPolledTaskTry2
     }
 }

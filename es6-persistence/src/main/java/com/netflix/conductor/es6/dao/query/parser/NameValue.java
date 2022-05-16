@@ -72,17 +72,23 @@ public class NameValue extends AbstractNode implements FilterProvider {
         return "" + name + op + value;
     }
 
-    /** @return the name */
+    /**
+     * @return the name
+     */
     public Name getName() {
         return name;
     }
 
-    /** @return the op */
+    /**
+     * @return the op
+     */
     public ComparisonOp getOp() {
         return op;
     }
 
-    /** @return the value */
+    /**
+     * @return the value
+     */
     public ConstValue getValue() {
         return value;
     }

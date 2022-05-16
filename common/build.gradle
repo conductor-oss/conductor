@@ -13,8 +13,6 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.github.rholder:guava-retrying:${revGuavaRetrying}"
-
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
@@ -40,7 +38,7 @@ dependencies {
 
 task protogen(dependsOn: jar, type: JavaExec) {
     classpath configurations.annotationsProcessorCodegen
-    main = 'com.netflix.conductor.annotationsprocessor.protogen.ProtoGenTask'
+    mainClass = "com.netflix.conductor.annotationsprocessor.protogen.ProtoGenTask"
     args(
             "conductor.proto",
             "com.netflix.conductor.proto",

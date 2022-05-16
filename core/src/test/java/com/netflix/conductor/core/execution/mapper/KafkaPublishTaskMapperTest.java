@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 
 public class KafkaPublishTaskMapperTest {
 
+    private IDGenerator idGenerator;
     private KafkaPublishTaskMapper kafkaTaskMapper;
 
     @Rule public ExpectedException expectedException = ExpectedException.none();
@@ -44,6 +45,7 @@ public class KafkaPublishTaskMapperTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         kafkaTaskMapper = new KafkaPublishTaskMapper(parametersUtils, metadataDAO);
+        idGenerator = new IDGenerator();
     }
 
     @Test
@@ -53,8 +55,8 @@ public class KafkaPublishTaskMapperTest {
         workflowTask.setName("kafka_task");
         workflowTask.setType(TaskType.KAFKA_PUBLISH.name());
         workflowTask.setTaskDefinition(new TaskDef("kafka_task"));
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();
@@ -85,8 +87,8 @@ public class KafkaPublishTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("kafka_task");
         workflowTask.setType(TaskType.KAFKA_PUBLISH.name());
-        String taskId = IDGenerator.generate();
-        String retriedTaskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
+        String retriedTaskId = idGenerator.generate();
 
         WorkflowModel workflow = new WorkflowModel();
         WorkflowDef workflowDef = new WorkflowDef();

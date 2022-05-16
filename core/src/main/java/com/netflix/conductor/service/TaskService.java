@@ -165,6 +165,15 @@ public interface TaskService {
     Map<String, Integer> getTaskQueueSizes(List<String> taskTypes);
 
     /**
+     * Get the queue size for a Task Type. The input can optionally include <code>domain</code>,
+     * <code>isolationGroupId</code> and <code>executionNamespace</code>.
+     *
+     * @return
+     */
+    Integer getTaskQueueSize(
+            String taskType, String domain, String isolationGroupId, String executionNamespace);
+
+    /**
      * Get the details about each queue.
      *
      * @return map of queue details.

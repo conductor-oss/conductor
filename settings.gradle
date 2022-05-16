@@ -12,7 +12,7 @@
  */
 
 plugins {
-    id "com.gradle.enterprise" version "3.9"
+    id "com.gradle.enterprise" version "3.10"
 }
 
 gradleEnterprise {
@@ -35,25 +35,23 @@ include 'annotations-processor'
 include 'server'
 include 'common'
 include 'core'
-include 'contribs'
 include 'client'
 include 'client-spring'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
-include 'mysql-persistence'
-include 'postgres-persistence'
 
 include 'es6-persistence'
-include 'es7-persistence'
 
 include 'redis-lock'
-include 'zookeeper-lock'
 
-include 'azureblob-storage'
-include 'postgres-external-storage'
+include 'awss3-storage'
+include 'awssqs-event-queue'
 
 include 'redis-concurrency-limit'
+
+include 'json-jq-task'
+include 'http-task'
 
 include 'rest'
 include 'grpc'

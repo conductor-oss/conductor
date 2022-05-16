@@ -197,6 +197,7 @@ public class ExecutionService {
         }
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
         Monitors.recordTaskPoll(queueName);
+        tasks.forEach(this::ackTaskReceived);
         return tasks;
     }
 
@@ -292,9 +293,13 @@ public class ExecutionService {
     public Map<String, Integer> getTaskQueueSizes(List<String> taskDefNames) {
         Map<String, Integer> sizes = new HashMap<>();
         for (String taskDefName : taskDefNames) {
-            sizes.put(taskDefName, queueDAO.getSize(taskDefName));
+            sizes.put(taskDefName, getTaskQueueSize(taskDefName));
         }
         return sizes;
+    }
+
+    public Integer getTaskQueueSize(String queueName) {
+        return queueDAO.getSize(queueName);
     }
 
     public void removeTaskFromQueue(String taskId) {

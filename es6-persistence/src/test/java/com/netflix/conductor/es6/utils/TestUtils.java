@@ -31,7 +31,7 @@ public class TestUtils {
             ObjectMapper objectMapper, String resourceFileName) {
         try {
             String content = loadJsonResource(resourceFileName);
-            String workflowId = IDGenerator.generate();
+            String workflowId = new IDGenerator().generate();
             content = content.replace(WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowId);
 
             return objectMapper.readValue(content, WorkflowSummary.class);
@@ -43,7 +43,7 @@ public class TestUtils {
     public static TaskSummary loadTaskSnapshot(ObjectMapper objectMapper, String resourceFileName) {
         try {
             String content = loadJsonResource(resourceFileName);
-            String workflowId = IDGenerator.generate();
+            String workflowId = new IDGenerator().generate();
             content = content.replace(WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowId);
 
             return objectMapper.readValue(content, TaskSummary.class);

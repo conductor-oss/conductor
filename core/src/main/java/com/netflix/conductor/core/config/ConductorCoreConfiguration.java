@@ -14,12 +14,14 @@ package com.netflix.conductor.core.config;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,6 +29,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.NoBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
@@ -37,12 +43,11 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
 import com.netflix.conductor.core.storage.DummyPayloadStorage;
 import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.core.sync.NoopLock;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.conductor.core.sync.noop.NoopLock;
 
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 import static com.netflix.conductor.core.execution.tasks.SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER;
+import static com.netflix.conductor.core.utils.Utils.isTransientException;
 
 import static java.util.function.Function.identity;
 
@@ -83,9 +88,9 @@ public class ConductorCoreConfiguration {
     @Bean
     public ExecutorService executorService(ConductorProperties conductorProperties) {
         ThreadFactory threadFactory =
-                new ThreadFactoryBuilder()
-                        .setNameFormat("conductor-worker-%d")
-                        .setDaemon(true)
+                new BasicThreadFactory.Builder()
+                        .namingPattern("conductor-worker-%d")
+                        .daemon(true)
                         .build();
         return Executors.newFixedThreadPool(
                 conductorProperties.getExecutorServiceMaxThreadCount(), threadFactory);
@@ -111,5 +116,28 @@ public class ConductorCoreConfiguration {
             List<EventQueueProvider> eventQueueProviders) {
         return eventQueueProviders.stream()
                 .collect(Collectors.toMap(EventQueueProvider::getQueueType, identity()));
+    }
+
+    @Bean
+    public RetryTemplate onTransientErrorRetryTemplate() {
+        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
+        retryPolicy.setMaxAttempts(3);
+
+        RetryTemplate retryTemplate = new RetryTemplate();
+        retryTemplate.setRetryPolicy(retryPolicy);
+        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
+        return retryTemplate;
+    }
+
+    public static class CustomRetryPolicy extends SimpleRetryPolicy {
+
+        @Override
+        public boolean canRetry(final RetryContext context) {
+            final Optional<Throwable> lastThrowable =
+                    Optional.ofNullable(context.getLastThrowable());
+            return lastThrowable
+                    .map(throwable -> super.canRetry(context) && isTransientException(throwable))
+                    .orElseGet(() -> super.canRetry(context));
+        }
     }
 }

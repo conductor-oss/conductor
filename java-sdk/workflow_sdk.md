@@ -3,7 +3,7 @@ Workflow SDK provides fluent API to create workflows with strongly typed interfa
 
 ## APIs
 ### ConductorWorkflow
-[ConductorWorkflow](src/main/java/com/netflix/conductor/sdk/workflow/def/ConductorWorkflow.java) is the SDK representation of a Conductor workflow.
+[ConductorWorkflow](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/ConductorWorkflow.java) is the SDK representation of a Conductor workflow.
 
 #### Create a `ConductorWorkflow` instance
 ```java
@@ -18,7 +18,7 @@ ConductorWorkflow<GetInsuranceQuote> conductorWorkflow = new WorkflowBuilder<Get
     .build();
 ```
 ### Working with Simple Worker Tasks
-Use [SimpleTask](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SimpleTask.java) to add simple task to a workflow.
+Use [SimpleTask](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SimpleTask.java) to add simple task to a workflow.
 
 Example:
 ```java
@@ -43,16 +43,16 @@ builder.add(
 ### Working with operators
 Each of the operator - 
 
-[ForkJoin](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/ForkJoin.java), 
-[Wait](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Wait.java), 
-[Switch](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Switch.java),
-[DynamicFork](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/DynamicFork.java),
-[DoWhile](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/DoWhile.java),
-[Join](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Join.java),
-[Dynamic](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Dynamic.java),
-[Terminate](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Terminate.java),
-[SubWorkflow](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SubWorkflow.java),
-[SetVariable](src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SetVariable.java),
+[ForkJoin](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/ForkJoin.java), 
+[Wait](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Wait.java), 
+[Switch](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Switch.java),
+[DynamicFork](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/DynamicFork.java),
+[DoWhile](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/DoWhile.java),
+[Join](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Join.java),
+[Dynamic](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Dynamic.java),
+[Terminate](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/Terminate.java),
+[SubWorkflow](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SubWorkflow.java),
+[SetVariable](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/def/tasks/SetVariable.java),
 
 have their own class that can be added to the workflow builder.
 
@@ -63,7 +63,7 @@ have their own class that can be added to the workflow builder.
 //Reasons why this method will return false
 //1. Network connectivity issue
 //2. Workflow already exists with the specified name and version 
-//3. There are missing task definions
+//3. There are missing task definitions
 boolean registered = workflow.registerWorkflow();
 ```
 #### Overwrite existing workflow definition
@@ -102,14 +102,14 @@ String workflowId = workflowRun.getWorkflowId();
 //Get the status of workflow execution
 WorkflowStatus status = workflowRun.getStatus();
 ```
-See [Workflow](../common/src/main/java/com/netflix/conductor/common/run/Workflow.java) for more details on Workflow object.
+See [Workflow](https://github.com/Netflix/conductor/blob/main/common/src/main/java/com/netflix/conductor/common/run/Workflow.java) for more details on Workflow object.
 
 #### Start a dynamic workflow execution
 Dynamic workflows are executed by specifying the workflow definition along with the execution and does not require registering the workflow on the server before executing.
 
 ##### Use cases for dynamic workflows
 1. Each workflow run has a unique workflow definition 
-2. Workflows are defined based on the user data and cannnot be modeled ahead of time statically 
+2. Workflows are defined based on the user data and cannot be modeled ahead of time statically 
 
 ```java
 //1. Use WorkflowBuilder to create ConductorWorkflow

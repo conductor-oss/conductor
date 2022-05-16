@@ -289,7 +289,9 @@ public class Statements {
     // ExecutionDAO
     // Insert Statements
 
-    /** @return cql query statement to insert a new workflow into the "workflows" table */
+    /**
+     * @return cql query statement to insert a new workflow into the "workflows" table
+     */
     public String getInsertWorkflowStatement() {
         return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOWS)
                 .value(WORKFLOW_ID_KEY, bindMarker())
@@ -302,7 +304,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to insert a new task into the "workflows" table */
+    /**
+     * @return cql query statement to insert a new task into the "workflows" table
+     */
     public String getInsertTaskStatement() {
         return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOWS)
                 .value(WORKFLOW_ID_KEY, bindMarker())
@@ -340,7 +344,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to retrieve a task from the "workflows" table */
+    /**
+     * @return cql query statement to retrieve a task from the "workflows" table
+     */
     public String getSelectTaskStatement() {
         return QueryBuilder.select(PAYLOAD_KEY)
                 .from(keyspace, TABLE_WORKFLOWS)
@@ -414,7 +420,9 @@ public class Statements {
 
     // Update Statements
 
-    /** @return cql query statement to update a workflow in the "workflows" table */
+    /**
+     * @return cql query statement to update a workflow in the "workflows" table
+     */
     public String getUpdateWorkflowStatement() {
         return QueryBuilder.update(keyspace, TABLE_WORKFLOWS)
                 .with(set(PAYLOAD_KEY, bindMarker()))
@@ -461,7 +469,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to add a new task_id to the "task_def_limit" table */
+    /**
+     * @return cql query statement to add a new task_id to the "task_def_limit" table
+     */
     public String getUpdateTaskDefLimitStatement() {
         return QueryBuilder.update(keyspace, TABLE_TASK_DEF_LIMIT)
                 .with(set(WORKFLOW_ID_KEY, bindMarker()))
@@ -470,7 +480,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to update an event execution in the "event_executions" table */
+    /**
+     * @return cql query statement to update an event execution in the "event_executions" table
+     */
     public String getUpdateEventExecutionStatement() {
         return QueryBuilder.update(keyspace, TABLE_EVENT_EXECUTIONS)
                 .using(QueryBuilder.ttl(bindMarker()))
@@ -483,7 +495,9 @@ public class Statements {
 
     // Delete statements
 
-    /** @return cql query statement to delete a workflow from the "workflows" table */
+    /**
+     * @return cql query statement to delete a workflow from the "workflows" table
+     */
     public String getDeleteWorkflowStatement() {
         return QueryBuilder.delete()
                 .from(keyspace, TABLE_WORKFLOWS)
@@ -503,7 +517,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to delete a task from the "workflows" table */
+    /**
+     * @return cql query statement to delete a task from the "workflows" table
+     */
     public String getDeleteTaskStatement() {
         return QueryBuilder.delete()
                 .from(keyspace, TABLE_WORKFLOWS)
@@ -514,7 +530,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to delete a task_id from the "task_def_limit" table */
+    /**
+     * @return cql query statement to delete a task_id from the "task_def_limit" table
+     */
     public String getDeleteTaskDefLimitStatement() {
         return QueryBuilder.delete()
                 .from(keyspace, TABLE_TASK_DEF_LIMIT)
@@ -523,7 +541,9 @@ public class Statements {
                 .getQueryString();
     }
 
-    /** @return cql query statement to delete an event execution from the "event_execution" table */
+    /**
+     * @return cql query statement to delete an event execution from the "event_execution" table
+     */
     public String getDeleteEventExecutionsStatement() {
         return QueryBuilder.delete()
                 .from(keyspace, TABLE_EVENT_EXECUTIONS)
@@ -536,7 +556,9 @@ public class Statements {
     // EventHandlerDAO
     // Insert Statements
 
-    /** @return cql query statement to insert an event handler into the "event_handlers" table */
+    /**
+     * @return cql query statement to insert an event handler into the "event_handlers" table
+     */
     public String getInsertEventHandlerStatement() {
         return QueryBuilder.insertInto(keyspace, TABLE_EVENT_HANDLERS)
                 .value(HANDLERS_KEY, HANDLERS_KEY)

@@ -414,6 +414,11 @@ class WorkflowGraph extends React.Component {
         retval.firstDfRef = v.firstDfRef;
         retval.shape = "stack";
         break;
+      case "DO_WHILE":
+        retval = composeBarNode(v, "bidir");
+        retval.label = `${retval.label} [DO_WHILE]`;
+        this.barNodes.push(v.ref);
+        break;
       default:
         retval.label = `${v.ref}\n(${v.name})`;
         retval.shape = "rect";
@@ -445,6 +450,13 @@ class WorkflowGraph extends React.Component {
           this.graph.edge(e).elem.querySelector("path").getAttribute("d")
         );
         return _.first(points);
+      });
+    } else if (barNode.fanDir === "bidir") {
+      fanOut = this.graph.inEdges(barRef).map((e) => {
+        const points = parseSvgPath(
+          this.graph.edge(e).elem.querySelector("path").getAttribute("d")
+        );
+        return _.last(points);
       });
     } else {
       fanOut = this.graph.inEdges(barRef).map((e) => {

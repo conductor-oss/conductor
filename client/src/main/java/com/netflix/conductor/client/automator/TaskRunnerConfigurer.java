@@ -198,17 +198,23 @@ public class TaskRunnerConfigurer {
         }
     }
 
-    /** @return Thread Count for the shared executor pool */
+    /**
+     * @return Thread Count for the shared executor pool
+     */
     public int getThreadCount() {
         return threadCount;
     }
 
-    /** @return Thread Count for individual task type */
+    /**
+     * @return Thread Count for individual task type
+     */
     public Map<String, Integer> getTaskThreadCount() {
         return taskThreadCount;
     }
 
-    /** @return seconds before forcing shutdown of worker */
+    /**
+     * @return seconds before forcing shutdown of worker
+     */
     public int getShutdownGracePeriodSeconds() {
         return shutdownGracePeriodSeconds;
     }
@@ -229,7 +235,9 @@ public class TaskRunnerConfigurer {
         return updateRetryCount;
     }
 
-    /** @return prefix used for worker names */
+    /**
+     * @return prefix used for worker names
+     */
     public String getWorkerNamePrefix() {
         return workerNamePrefix;
     }

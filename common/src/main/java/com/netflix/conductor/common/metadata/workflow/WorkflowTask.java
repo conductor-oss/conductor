@@ -145,47 +145,65 @@ public class WorkflowTask {
     @ProtoField(id = 28)
     private String expression;
 
-    /** @return the name */
+    /**
+     * @return the name
+     */
     public String getName() {
         return name;
     }
 
-    /** @param name the name to set */
+    /**
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
-    /** @return the taskReferenceName */
+    /**
+     * @return the taskReferenceName
+     */
     public String getTaskReferenceName() {
         return taskReferenceName;
     }
 
-    /** @param taskReferenceName the taskReferenceName to set */
+    /**
+     * @param taskReferenceName the taskReferenceName to set
+     */
     public void setTaskReferenceName(String taskReferenceName) {
         this.taskReferenceName = taskReferenceName;
     }
 
-    /** @return the description */
+    /**
+     * @return the description
+     */
     public String getDescription() {
         return description;
     }
 
-    /** @param description the description to set */
+    /**
+     * @param description the description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
-    /** @return the inputParameters */
+    /**
+     * @return the inputParameters
+     */
     public Map<String, Object> getInputParameters() {
         return inputParameters;
     }
 
-    /** @param inputParameters the inputParameters to set */
+    /**
+     * @param inputParameters the inputParameters to set
+     */
     public void setInputParameters(Map<String, Object> inputParameters) {
         this.inputParameters = inputParameters;
     }
 
-    /** @return the type */
+    /**
+     * @return the type
+     */
     public String getType() {
         return type;
     }
@@ -194,67 +212,93 @@ public class WorkflowTask {
         this.type = type.name();
     }
 
-    /** @param type the type to set */
+    /**
+     * @param type the type to set
+     */
     public void setType(@NotEmpty(message = "WorkTask type cannot be null or empty") String type) {
         this.type = type;
     }
 
-    /** @return the decisionCases */
+    /**
+     * @return the decisionCases
+     */
     public Map<String, List<WorkflowTask>> getDecisionCases() {
         return decisionCases;
     }
 
-    /** @param decisionCases the decisionCases to set */
+    /**
+     * @param decisionCases the decisionCases to set
+     */
     public void setDecisionCases(Map<String, List<WorkflowTask>> decisionCases) {
         this.decisionCases = decisionCases;
     }
 
-    /** @return the defaultCase */
+    /**
+     * @return the defaultCase
+     */
     public List<WorkflowTask> getDefaultCase() {
         return defaultCase;
     }
 
-    /** @param defaultCase the defaultCase to set */
+    /**
+     * @param defaultCase the defaultCase to set
+     */
     public void setDefaultCase(List<WorkflowTask> defaultCase) {
         this.defaultCase = defaultCase;
     }
 
-    /** @return the forkTasks */
+    /**
+     * @return the forkTasks
+     */
     public List<List<WorkflowTask>> getForkTasks() {
         return forkTasks;
     }
 
-    /** @param forkTasks the forkTasks to set */
+    /**
+     * @param forkTasks the forkTasks to set
+     */
     public void setForkTasks(List<List<WorkflowTask>> forkTasks) {
         this.forkTasks = forkTasks;
     }
 
-    /** @return the startDelay in seconds */
+    /**
+     * @return the startDelay in seconds
+     */
     public int getStartDelay() {
         return startDelay;
     }
 
-    /** @param startDelay the startDelay to set */
+    /**
+     * @param startDelay the startDelay to set
+     */
     public void setStartDelay(int startDelay) {
         this.startDelay = startDelay;
     }
 
-    /** @return the retryCount */
+    /**
+     * @return the retryCount
+     */
     public Integer getRetryCount() {
         return retryCount;
     }
 
-    /** @param retryCount the retryCount to set */
+    /**
+     * @param retryCount the retryCount to set
+     */
     public void setRetryCount(final Integer retryCount) {
         this.retryCount = retryCount;
     }
 
-    /** @return the dynamicTaskNameParam */
+    /**
+     * @return the dynamicTaskNameParam
+     */
     public String getDynamicTaskNameParam() {
         return dynamicTaskNameParam;
     }
 
-    /** @param dynamicTaskNameParam the dynamicTaskNameParam to set to be used by DYNAMIC tasks */
+    /**
+     * @param dynamicTaskNameParam the dynamicTaskNameParam to set to be used by DYNAMIC tasks
+     */
     public void setDynamicTaskNameParam(String dynamicTaskNameParam) {
         this.dynamicTaskNameParam = dynamicTaskNameParam;
     }
@@ -336,57 +380,79 @@ public class WorkflowTask {
         this.scriptExpression = expression;
     }
 
-    /** @return the subWorkflow */
+    /**
+     * @return the subWorkflow
+     */
     public SubWorkflowParams getSubWorkflowParam() {
         return subWorkflowParam;
     }
 
-    /** @param subWorkflow the subWorkflowParam to set */
+    /**
+     * @param subWorkflow the subWorkflowParam to set
+     */
     public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
         this.subWorkflowParam = subWorkflow;
     }
 
-    /** @return the joinOn */
+    /**
+     * @return the joinOn
+     */
     public List<String> getJoinOn() {
         return joinOn;
     }
 
-    /** @param joinOn the joinOn to set */
+    /**
+     * @param joinOn the joinOn to set
+     */
     public void setJoinOn(List<String> joinOn) {
         this.joinOn = joinOn;
     }
 
-    /** @return the loopCondition */
+    /**
+     * @return the loopCondition
+     */
     public String getLoopCondition() {
         return loopCondition;
     }
 
-    /** @param loopCondition the expression to set */
+    /**
+     * @param loopCondition the expression to set
+     */
     public void setLoopCondition(String loopCondition) {
         this.loopCondition = loopCondition;
     }
 
-    /** @return the loopOver */
+    /**
+     * @return the loopOver
+     */
     public List<WorkflowTask> getLoopOver() {
         return loopOver;
     }
 
-    /** @param loopOver the loopOver to set */
+    /**
+     * @param loopOver the loopOver to set
+     */
     public void setLoopOver(List<WorkflowTask> loopOver) {
         this.loopOver = loopOver;
     }
 
-    /** @return Sink value for the EVENT type of task */
+    /**
+     * @return Sink value for the EVENT type of task
+     */
     public String getSink() {
         return sink;
     }
 
-    /** @param sink Name of the sink */
+    /**
+     * @param sink Name of the sink
+     */
     public void setSink(String sink) {
         this.sink = sink;
     }
 
-    /** @return whether wait for an external event to complete the task, for EVENT and HTTP tasks */
+    /**
+     * @return whether wait for an external event to complete the task, for EVENT and HTTP tasks
+     */
     public Boolean isAsyncComplete() {
         return asyncComplete;
     }
@@ -403,17 +469,23 @@ public class WorkflowTask {
         return optional;
     }
 
-    /** @return Task definition associated to the Workflow Task */
+    /**
+     * @return Task definition associated to the Workflow Task
+     */
     public TaskDef getTaskDefinition() {
         return taskDefinition;
     }
 
-    /** @param taskDefinition Task definition */
+    /**
+     * @param taskDefinition Task definition
+     */
     public void setTaskDefinition(TaskDef taskDefinition) {
         this.taskDefinition = taskDefinition;
     }
 
-    /** @param optional when set to true, the task is marked as optional */
+    /**
+     * @param optional when set to true, the task is marked as optional
+     */
     public void setOptional(boolean optional) {
         this.optional = optional;
     }
@@ -438,12 +510,16 @@ public class WorkflowTask {
         this.defaultExclusiveJoinTask = defaultExclusiveJoinTask;
     }
 
-    /** @return the evaluatorType */
+    /**
+     * @return the evaluatorType
+     */
     public String getEvaluatorType() {
         return evaluatorType;
     }
 
-    /** @param evaluatorType the evaluatorType to set */
+    /**
+     * @param evaluatorType the evaluatorType to set
+     */
     public void setEvaluatorType(String evaluatorType) {
         this.evaluatorType = evaluatorType;
     }
@@ -457,7 +533,9 @@ public class WorkflowTask {
         return expression;
     }
 
-    /** @param expression the expression to set */
+    /**
+     * @param expression the expression to set
+     */
     public void setExpression(String expression) {
         this.expression = expression;
     }

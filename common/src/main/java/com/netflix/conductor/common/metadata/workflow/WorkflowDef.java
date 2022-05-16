@@ -101,72 +101,100 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
 
-    /** @return the name */
+    /**
+     * @return the name
+     */
     public String getName() {
         return name;
     }
 
-    /** @param name the name to set */
+    /**
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
-    /** @return the description */
+    /**
+     * @return the description
+     */
     public String getDescription() {
         return description;
     }
 
-    /** @param description the description to set */
+    /**
+     * @param description the description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
-    /** @return the tasks */
+    /**
+     * @return the tasks
+     */
     public List<WorkflowTask> getTasks() {
         return tasks;
     }
 
-    /** @param tasks the tasks to set */
+    /**
+     * @param tasks the tasks to set
+     */
     public void setTasks(List<@Valid WorkflowTask> tasks) {
         this.tasks = tasks;
     }
 
-    /** @return the inputParameters */
+    /**
+     * @return the inputParameters
+     */
     public List<String> getInputParameters() {
         return inputParameters;
     }
 
-    /** @param inputParameters the inputParameters to set */
+    /**
+     * @param inputParameters the inputParameters to set
+     */
     public void setInputParameters(List<String> inputParameters) {
         this.inputParameters = inputParameters;
     }
 
-    /** @return the outputParameters */
+    /**
+     * @return the outputParameters
+     */
     public Map<String, Object> getOutputParameters() {
         return outputParameters;
     }
 
-    /** @param outputParameters the outputParameters to set */
+    /**
+     * @param outputParameters the outputParameters to set
+     */
     public void setOutputParameters(Map<String, Object> outputParameters) {
         this.outputParameters = outputParameters;
     }
 
-    /** @return the version */
+    /**
+     * @return the version
+     */
     public int getVersion() {
         return version;
     }
 
-    /** @return the failureWorkflow */
+    /**
+     * @return the failureWorkflow
+     */
     public String getFailureWorkflow() {
         return failureWorkflow;
     }
 
-    /** @param failureWorkflow the failureWorkflow to set */
+    /**
+     * @param failureWorkflow the failureWorkflow to set
+     */
     public void setFailureWorkflow(String failureWorkflow) {
         this.failureWorkflow = failureWorkflow;
     }
 
-    /** @param version the version to set */
+    /**
+     * @param version the version to set
+     */
     public void setVersion(int version) {
         this.version = version;
     }
@@ -190,12 +218,16 @@ public class WorkflowDef extends Auditable {
         this.restartable = restartable;
     }
 
-    /** @return the schemaVersion */
+    /**
+     * @return the schemaVersion
+     */
     public int getSchemaVersion() {
         return schemaVersion;
     }
 
-    /** @param schemaVersion the schemaVersion to set */
+    /**
+     * @param schemaVersion the schemaVersion to set
+     */
     public void setSchemaVersion(int schemaVersion) {
         this.schemaVersion = schemaVersion;
     }
@@ -217,42 +249,58 @@ public class WorkflowDef extends Auditable {
         this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
     }
 
-    /** @return the email of the owner of this workflow definition */
+    /**
+     * @return the email of the owner of this workflow definition
+     */
     public String getOwnerEmail() {
         return ownerEmail;
     }
 
-    /** @param ownerEmail the owner email to set */
+    /**
+     * @param ownerEmail the owner email to set
+     */
     public void setOwnerEmail(String ownerEmail) {
         this.ownerEmail = ownerEmail;
     }
 
-    /** @return the timeoutPolicy */
+    /**
+     * @return the timeoutPolicy
+     */
     public TimeoutPolicy getTimeoutPolicy() {
         return timeoutPolicy;
     }
 
-    /** @param timeoutPolicy the timeoutPolicy to set */
+    /**
+     * @param timeoutPolicy the timeoutPolicy to set
+     */
     public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
         this.timeoutPolicy = timeoutPolicy;
     }
 
-    /** @return the time after which a workflow is deemed to have timed out */
+    /**
+     * @return the time after which a workflow is deemed to have timed out
+     */
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
 
-    /** @param timeoutSeconds the timeout in seconds to set */
+    /**
+     * @param timeoutSeconds the timeout in seconds to set
+     */
     public void setTimeoutSeconds(long timeoutSeconds) {
         this.timeoutSeconds = timeoutSeconds;
     }
 
-    /** @return the global workflow variables */
+    /**
+     * @return the global workflow variables
+     */
     public Map<String, Object> getVariables() {
         return variables;
     }
 
-    /** @param variables the set of global workflow variables to set */
+    /**
+     * @param variables the set of global workflow variables to set
+     */
     public void setVariables(Map<String, Object> variables) {
         this.variables = variables;
     }

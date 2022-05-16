@@ -240,7 +240,6 @@ class WorkflowTestUtil {
      */
     Tuple pollAndFailTask(String taskName, String workerId, String failureReason, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
-        def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.FAILED
         taskResult.reasonForIncompletion = failureReason
@@ -250,7 +249,7 @@ class WorkflowTestUtil {
             }
         }
         workflowExecutionService.updateTask(taskResult)
-        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
+        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask)
     }
 
     /**
@@ -258,14 +257,13 @@ class WorkflowTestUtil {
      * into a tuple. This method is intended to be used by pollAndFailTask and pollAndCompleteTask
      * @param waitAtEndSeconds The total seconds of delay before the method returns
      * @param ackedTaskResult the task result created after ack
-     * @param ackPolledIntegrationTask a acknowledgement of a poll
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    static Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask, boolean ackPolledIntegrationTask) {
+    static Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask) {
         if (waitAtEndSeconds > 0) {
             Thread.sleep(waitAtEndSeconds * 1000)
         }
-        return new Tuple(polledIntegrationTask, ackPolledIntegrationTask)
+        return new Tuple(polledIntegrationTask)
     }
 
     /**
@@ -283,7 +281,6 @@ class WorkflowTestUtil {
         if (polledIntegrationTask == null) {
             return new Tuple(null, null)
         }
-        def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.COMPLETED
         if (outputParams) {
@@ -292,18 +289,17 @@ class WorkflowTestUtil {
             }
         }
         workflowExecutionService.updateTask(taskResult)
-        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
+        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask)
     }
 
     Tuple pollAndCompleteLargePayloadTask(String taskName, String workerId, String outputPayloadPath) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
-        def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         def taskResult = new TaskResult(polledIntegrationTask)
         taskResult.status = TaskResult.Status.COMPLETED
         taskResult.outputData = null
         taskResult.externalOutputPayloadStoragePath = outputPayloadPath
         workflowExecutionService.updateTask(taskResult)
-        return new Tuple(polledIntegrationTask, ackPolledIntegrationTask)
+        return new Tuple(polledIntegrationTask)
     }
 
     /**
@@ -315,9 +311,7 @@ class WorkflowTestUtil {
     static void verifyPolledAndAcknowledgedTask(Tuple completedTaskAndAck, Map<String, String> expectedTaskInputParams = null) {
         assert completedTaskAndAck[0]: "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
-        def ackPolledIntegrationTask = completedTaskAndAck[1] as boolean
         assert polledIntegrationTask
-        assert ackPolledIntegrationTask
         if (expectedTaskInputParams) {
             expectedTaskInputParams.forEach {
                 k, v ->
@@ -330,8 +324,6 @@ class WorkflowTestUtil {
     static void verifyPolledAndAcknowledgedLargePayloadTask(Tuple completedTaskAndAck) {
         assert completedTaskAndAck[0]: "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
-        def ackPolledIntegrationTask = completedTaskAndAck[1] as boolean
         assert polledIntegrationTask
-        assert ackPolledIntegrationTask
     }
 }

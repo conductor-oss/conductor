@@ -24,6 +24,7 @@ import com.netflix.conductor.model.WorkflowModel
 import spock.lang.Subject
 
 import static com.netflix.conductor.common.metadata.events.EventExecution.Status.COMPLETED
+import static com.netflix.conductor.common.metadata.events.EventExecution.Status.IN_PROGRESS
 import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT
 
 class CassandraExecutionDAOSpec extends CassandraSpec {
@@ -65,7 +66,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
     def "workflow CRUD"() {
         given:
-        String workflowId = IDGenerator.generate()
+        String workflowId = new IDGenerator().generate()
         WorkflowDef workflowDef = new WorkflowDef()
         workflowDef.name = "def1"
         workflowDef.setVersion(1)
@@ -118,15 +119,15 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
     def "create tasks and verify methods that read tasks and workflow"() {
         given: 'we create a workflow'
-        String workflowId = IDGenerator.generate()
+        String workflowId = new IDGenerator().generate()
         WorkflowDef workflowDef = new WorkflowDef(name: 'def1', version: 1)
         WorkflowModel workflow = new WorkflowModel(workflowDefinition: workflowDef, workflowId: workflowId, input: new HashMap(), status: WorkflowModel.Status.RUNNING, createTime: System.currentTimeMillis())
         executionDAO.createWorkflow(workflow)
 
         and: 'create tasks for this workflow'
-        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
+        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
 
         def taskList = [task1, task2, task3]
 
@@ -190,15 +191,15 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
     def "verify tasks are updated"() {
         given: 'we create a workflow'
-        String workflowId = IDGenerator.generate()
+        String workflowId = new IDGenerator().generate()
         WorkflowDef workflowDef = new WorkflowDef(name: 'def1', version: 1)
         WorkflowModel workflow = new WorkflowModel(workflowDefinition: workflowDef, workflowId: workflowId, input: new HashMap(), status: WorkflowModel.Status.RUNNING, createTime: System.currentTimeMillis())
         executionDAO.createWorkflow(workflow)
 
         and: 'create tasks for this workflow'
-        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
+        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
 
         and: 'add the tasks to the datastore'
         executionDAO.createTasks([task1, task2, task3])
@@ -228,15 +229,15 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
     def "verify tasks are removed"() {
         given: 'we create a workflow'
-        String workflowId = IDGenerator.generate()
+        String workflowId = new IDGenerator().generate()
         WorkflowDef workflowDef = new WorkflowDef(name: 'def1', version: 1)
         WorkflowModel workflow = new WorkflowModel(workflowDefinition: workflowDef, workflowId: workflowId, input: new HashMap(), status: WorkflowModel.Status.RUNNING, createTime: System.currentTimeMillis())
         executionDAO.createWorkflow(workflow)
 
         and: 'create tasks for this workflow'
-        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
-        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: IDGenerator.generate())
+        TaskModel task1 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task1', referenceTaskName: 'task1', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task2 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task2', referenceTaskName: 'task2', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
+        TaskModel task3 = new TaskModel(workflowInstanceId: workflowId, taskType: 'task3', referenceTaskName: 'task3', status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate())
 
         and: 'add the tasks to the datastore'
         executionDAO.createTasks([task1, task2, task3])
@@ -278,7 +279,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
     def "CRUD on task def limit"() {
         given:
         String taskDefName = "test_task_def"
-        String taskId = IDGenerator.generate()
+        String taskId = new IDGenerator().generate()
 
         TaskDef taskDef = new TaskDef(concurrentExecLimit: 1)
         WorkflowTask workflowTask = new WorkflowTask(taskDefinition: taskDef)
@@ -287,7 +288,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
         TaskModel task = new TaskModel()
         task.taskDefName = taskDefName
         task.taskId = taskId
-        task.workflowInstanceId = IDGenerator.generate()
+        task.workflowInstanceId = new IDGenerator().generate()
         task.setWorkflowTask(workflowTask)
         task.setTaskType("test_task")
         task.setWorkflowType("test_workflow")
@@ -295,8 +296,8 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
         TaskModel newTask = new TaskModel()
         newTask.setTaskDefName(taskDefName)
-        newTask.setTaskId(IDGenerator.generate())
-        newTask.setWorkflowInstanceId(IDGenerator.generate())
+        newTask.setTaskId(new IDGenerator().generate())
+        newTask.setWorkflowInstanceId(new IDGenerator().generate())
         newTask.setWorkflowTask(workflowTask)
         newTask.setTaskType("test_task")
         newTask.setWorkflowType("test_workflow")
@@ -349,8 +350,8 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
         ex && ex.code == INVALID_INPUT
 
         and: 'verify that a non-existing generated id returns null'
-        executionDAO.getTask(IDGenerator.generate()) == null
-        executionDAO.getWorkflow(IDGenerator.generate(), true) == null
+        executionDAO.getTask(new IDGenerator().generate()) == null
+        executionDAO.getWorkflow(new IDGenerator().generate(), true) == null
     }
 
     def "CRUD on event execution"() throws Exception {
@@ -387,6 +388,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
         then: // fetch executions
         eventExecutionList != null && eventExecutionList.size() == 2
+        eventExecutionList[0].status == IN_PROGRESS
         eventExecutionList[1].status == COMPLETED
 
         when: // sleep for 5 seconds (TTL)

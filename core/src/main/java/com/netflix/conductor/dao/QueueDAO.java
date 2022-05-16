@@ -110,13 +110,19 @@ public interface QueueDAO {
      */
     boolean setUnackTimeout(String queueName, String messageId, long unackTimeout);
 
-    /** @param queueName Name of the queue */
+    /**
+     * @param queueName Name of the queue
+     */
     void flush(String queueName);
 
-    /** @return key : queue name, value: size of the queue */
+    /**
+     * @return key : queue name, value: size of the queue
+     */
     Map<String, Long> queuesDetail();
 
-    /** @return key : queue name, value: map of shard name to size and unack queue size */
+    /**
+     * @return key : queue name, value: map of shard name to size and unack queue size
+     */
     Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose();
 
     default void processUnacks(String queueName) {}

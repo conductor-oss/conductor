@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
 
 public class LambdaTaskMapperTest {
 
+    private IDGenerator idGenerator;
     private ParametersUtils parametersUtils;
     private MetadataDAO metadataDAO;
 
@@ -40,6 +41,7 @@ public class LambdaTaskMapperTest {
     public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
         metadataDAO = mock(MetadataDAO.class);
+        idGenerator = new IDGenerator();
     }
 
     @Test
@@ -52,7 +54,7 @@ public class LambdaTaskMapperTest {
         workflowTask.setScriptExpression(
                 "if ($.input.a==1){return {testValue: true}} else{return {testValue: false} }");
 
-        String taskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();
@@ -84,7 +86,7 @@ public class LambdaTaskMapperTest {
         workflowTask.setScriptExpression(
                 "if ($.input.a==1){return {testValue: true}} else{return {testValue: false} }");
 
-        String taskId = IDGenerator.generate();
+        String taskId = idGenerator.generate();
 
         WorkflowDef workflowDef = new WorkflowDef();
         WorkflowModel workflow = new WorkflowModel();

@@ -216,12 +216,16 @@ public class Task {
         this.taskType = taskType;
     }
 
-    /** @return Status of the task */
+    /**
+     * @return Status of the task
+     */
     public Status getStatus() {
         return status;
     }
 
-    /** @param status Status of the task */
+    /**
+     * @param status Status of the task
+     */
     public void setStatus(Status status) {
         this.status = status;
     }
@@ -237,107 +241,149 @@ public class Task {
         this.inputData = inputData;
     }
 
-    /** @return the referenceTaskName */
+    /**
+     * @return the referenceTaskName
+     */
     public String getReferenceTaskName() {
         return referenceTaskName;
     }
 
-    /** @param referenceTaskName the referenceTaskName to set */
+    /**
+     * @param referenceTaskName the referenceTaskName to set
+     */
     public void setReferenceTaskName(String referenceTaskName) {
         this.referenceTaskName = referenceTaskName;
     }
 
-    /** @return the correlationId */
+    /**
+     * @return the correlationId
+     */
     public String getCorrelationId() {
         return correlationId;
     }
 
-    /** @param correlationId the correlationId to set */
+    /**
+     * @param correlationId the correlationId to set
+     */
     public void setCorrelationId(String correlationId) {
         this.correlationId = correlationId;
     }
 
-    /** @return the retryCount */
+    /**
+     * @return the retryCount
+     */
     public int getRetryCount() {
         return retryCount;
     }
 
-    /** @param retryCount the retryCount to set */
+    /**
+     * @param retryCount the retryCount to set
+     */
     public void setRetryCount(int retryCount) {
         this.retryCount = retryCount;
     }
 
-    /** @return the scheduledTime */
+    /**
+     * @return the scheduledTime
+     */
     public long getScheduledTime() {
         return scheduledTime;
     }
 
-    /** @param scheduledTime the scheduledTime to set */
+    /**
+     * @param scheduledTime the scheduledTime to set
+     */
     public void setScheduledTime(long scheduledTime) {
         this.scheduledTime = scheduledTime;
     }
 
-    /** @return the startTime */
+    /**
+     * @return the startTime
+     */
     public long getStartTime() {
         return startTime;
     }
 
-    /** @param startTime the startTime to set */
+    /**
+     * @param startTime the startTime to set
+     */
     public void setStartTime(long startTime) {
         this.startTime = startTime;
     }
 
-    /** @return the endTime */
+    /**
+     * @return the endTime
+     */
     public long getEndTime() {
         return endTime;
     }
 
-    /** @param endTime the endTime to set */
+    /**
+     * @param endTime the endTime to set
+     */
     public void setEndTime(long endTime) {
         this.endTime = endTime;
     }
 
-    /** @return the startDelayInSeconds */
+    /**
+     * @return the startDelayInSeconds
+     */
     public int getStartDelayInSeconds() {
         return startDelayInSeconds;
     }
 
-    /** @param startDelayInSeconds the startDelayInSeconds to set */
+    /**
+     * @param startDelayInSeconds the startDelayInSeconds to set
+     */
     public void setStartDelayInSeconds(int startDelayInSeconds) {
         this.startDelayInSeconds = startDelayInSeconds;
     }
 
-    /** @return the retriedTaskId */
+    /**
+     * @return the retriedTaskId
+     */
     public String getRetriedTaskId() {
         return retriedTaskId;
     }
 
-    /** @param retriedTaskId the retriedTaskId to set */
+    /**
+     * @param retriedTaskId the retriedTaskId to set
+     */
     public void setRetriedTaskId(String retriedTaskId) {
         this.retriedTaskId = retriedTaskId;
     }
 
-    /** @return the seq */
+    /**
+     * @return the seq
+     */
     public int getSeq() {
         return seq;
     }
 
-    /** @param seq the seq to set */
+    /**
+     * @param seq the seq to set
+     */
     public void setSeq(int seq) {
         this.seq = seq;
     }
 
-    /** @return the updateTime */
+    /**
+     * @return the updateTime
+     */
     public long getUpdateTime() {
         return updateTime;
     }
 
-    /** @param updateTime the updateTime to set */
+    /**
+     * @param updateTime the updateTime to set
+     */
     public void setUpdateTime(long updateTime) {
         this.updateTime = updateTime;
     }
 
-    /** @return the queueWaitTime */
+    /**
+     * @return the queueWaitTime
+     */
     public long getQueueWaitTime() {
         if (this.startTime > 0 && this.scheduledTime > 0) {
             if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
@@ -352,12 +398,16 @@ public class Task {
         return 0L;
     }
 
-    /** @return True if the task has been retried after failure */
+    /**
+     * @return True if the task has been retried after failure
+     */
     public boolean isRetried() {
         return retried;
     }
 
-    /** @param retried the retried to set */
+    /**
+     * @param retried the retried to set
+     */
     public void setRetried(boolean retried) {
         this.retried = retried;
     }
@@ -370,12 +420,16 @@ public class Task {
         return executed;
     }
 
-    /** @param executed the executed value to set */
+    /**
+     * @param executed the executed value to set
+     */
     public void setExecuted(boolean executed) {
         this.executed = executed;
     }
 
-    /** @return No. of times task has been polled */
+    /**
+     * @return No. of times task has been polled
+     */
     public int getPollCount() {
         return pollCount;
     }
@@ -396,7 +450,9 @@ public class Task {
         this.callbackFromWorker = callbackFromWorker;
     }
 
-    /** @return Name of the task definition */
+    /**
+     * @return Name of the task definition
+     */
     public String getTaskDefName() {
         if (taskDefName == null || "".equals(taskDefName)) {
             taskDefName = taskType;
@@ -404,7 +460,9 @@ public class Task {
         return taskDefName;
     }
 
-    /** @param taskDefName Name of the task definition */
+    /**
+     * @param taskDefName Name of the task definition
+     */
     public void setTaskDefName(String taskDefName) {
         this.taskDefName = taskDefName;
     }
@@ -424,12 +482,16 @@ public class Task {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 
-    /** @return the workflowInstanceId */
+    /**
+     * @return the workflowInstanceId
+     */
     public String getWorkflowInstanceId() {
         return workflowInstanceId;
     }
 
-    /** @param workflowInstanceId the workflowInstanceId to set */
+    /**
+     * @param workflowInstanceId the workflowInstanceId to set
+     */
     public void setWorkflowInstanceId(String workflowInstanceId) {
         this.workflowInstanceId = workflowInstanceId;
     }
@@ -447,52 +509,72 @@ public class Task {
         return this;
     }
 
-    /** @return the taskId */
+    /**
+     * @return the taskId
+     */
     public String getTaskId() {
         return taskId;
     }
 
-    /** @param taskId the taskId to set */
+    /**
+     * @param taskId the taskId to set
+     */
     public void setTaskId(String taskId) {
         this.taskId = taskId;
     }
 
-    /** @return the reasonForIncompletion */
+    /**
+     * @return the reasonForIncompletion
+     */
     public String getReasonForIncompletion() {
         return reasonForIncompletion;
     }
 
-    /** @param reasonForIncompletion the reasonForIncompletion to set */
+    /**
+     * @param reasonForIncompletion the reasonForIncompletion to set
+     */
     public void setReasonForIncompletion(String reasonForIncompletion) {
         this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
     }
 
-    /** @return the callbackAfterSeconds */
+    /**
+     * @return the callbackAfterSeconds
+     */
     public long getCallbackAfterSeconds() {
         return callbackAfterSeconds;
     }
 
-    /** @param callbackAfterSeconds the callbackAfterSeconds to set */
+    /**
+     * @param callbackAfterSeconds the callbackAfterSeconds to set
+     */
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
     }
 
-    /** @return the workerId */
+    /**
+     * @return the workerId
+     */
     public String getWorkerId() {
         return workerId;
     }
 
-    /** @param workerId the workerId to set */
+    /**
+     * @param workerId the workerId to set
+     */
     public void setWorkerId(String workerId) {
         this.workerId = workerId;
     }
 
-    /** @return the outputData */
+    /**
+     * @return the outputData
+     */
     public Map<String, Object> getOutputData() {
         return outputData;
     }
 
-    /** @param outputData the outputData to set */
+    /**
+     * @param outputData the outputData to set
+     */
     public void setOutputData(Map<String, Object> outputData) {
         if (outputData == null) {
             outputData = new HashMap<>();
@@ -500,22 +582,30 @@ public class Task {
         this.outputData = outputData;
     }
 
-    /** @return Workflow Task definition */
+    /**
+     * @return Workflow Task definition
+     */
     public WorkflowTask getWorkflowTask() {
         return workflowTask;
     }
 
-    /** @param workflowTask Task definition */
+    /**
+     * @param workflowTask Task definition
+     */
     public void setWorkflowTask(WorkflowTask workflowTask) {
         this.workflowTask = workflowTask;
     }
 
-    /** @return the domain */
+    /**
+     * @return the domain
+     */
     public String getDomain() {
         return domain;
     }
 
-    /** @param domain the Domain */
+    /**
+     * @param domain the Domain
+     */
     public void setDomain(String domain) {
         this.domain = domain;
     }
@@ -536,7 +626,9 @@ public class Task {
         this.outputMessage = outputMessage;
     }
 
-    /** @return {@link Optional} containing the task definition if available */
+    /**
+     * @return {@link Optional} containing the task definition if available
+     */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
@@ -557,7 +649,9 @@ public class Task {
         this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
     }
 
-    /** @return the external storage path for the task input payload */
+    /**
+     * @return the external storage path for the task input payload
+     */
     public String getExternalInputPayloadStoragePath() {
         return externalInputPayloadStoragePath;
     }
@@ -570,7 +664,9 @@ public class Task {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
     }
 
-    /** @return the external storage path for the task output payload */
+    /**
+     * @return the external storage path for the task output payload
+     */
     public String getExternalOutputPayloadStoragePath() {
         return externalOutputPayloadStoragePath;
     }
@@ -599,12 +695,16 @@ public class Task {
         this.executionNameSpace = executionNameSpace;
     }
 
-    /** @return the iteration */
+    /**
+     * @return the iteration
+     */
     public int getIteration() {
         return iteration;
     }
 
-    /** @param iteration iteration */
+    /**
+     * @param iteration iteration
+     */
     public void setIteration(int iteration) {
         this.iteration = iteration;
     }
@@ -618,7 +718,9 @@ public class Task {
         return workflowPriority;
     }
 
-    /** @param workflowPriority Priority defined for workflow */
+    /**
+     * @param workflowPriority Priority defined for workflow
+     */
     public void setWorkflowPriority(int workflowPriority) {
         this.workflowPriority = workflowPriority;
     }

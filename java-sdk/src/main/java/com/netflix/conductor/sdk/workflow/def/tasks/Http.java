@@ -114,72 +114,100 @@ public class Http extends Task<Http> {
         private Integer connectionTimeOut;
         private Integer readTimeOut;
 
-        /** @return the method */
+        /**
+         * @return the method
+         */
         public HttpMethod getMethod() {
             return method;
         }
 
-        /** @param method the method to set */
+        /**
+         * @param method the method to set
+         */
         public void setMethod(HttpMethod method) {
             this.method = method;
         }
 
-        /** @return the headers */
+        /**
+         * @return the headers
+         */
         public Map<String, Object> getHeaders() {
             return headers;
         }
 
-        /** @param headers the headers to set */
+        /**
+         * @param headers the headers to set
+         */
         public void setHeaders(Map<String, Object> headers) {
             this.headers = headers;
         }
 
-        /** @return the body */
+        /**
+         * @return the body
+         */
         public Object getBody() {
             return body;
         }
 
-        /** @param body the body to set */
+        /**
+         * @param body the body to set
+         */
         public void setBody(Object body) {
             this.body = body;
         }
 
-        /** @return the uri */
+        /**
+         * @return the uri
+         */
         public String getUri() {
             return uri;
         }
 
-        /** @param uri the uri to set */
+        /**
+         * @param uri the uri to set
+         */
         public void setUri(String uri) {
             this.uri = uri;
         }
 
-        /** @return the vipAddress */
+        /**
+         * @return the vipAddress
+         */
         public String getVipAddress() {
             return vipAddress;
         }
 
-        /** @param vipAddress the vipAddress to set */
+        /**
+         * @param vipAddress the vipAddress to set
+         */
         public void setVipAddress(String vipAddress) {
             this.vipAddress = vipAddress;
         }
 
-        /** @return the accept */
+        /**
+         * @return the accept
+         */
         public String getAccept() {
             return accept;
         }
 
-        /** @param accept the accept to set */
+        /**
+         * @param accept the accept to set
+         */
         public void setAccept(String accept) {
             this.accept = accept;
         }
 
-        /** @return the MIME content type to use for the request */
+        /**
+         * @return the MIME content type to use for the request
+         */
         public String getContentType() {
             return contentType;
         }
 
-        /** @param contentType the MIME content type to set */
+        /**
+         * @param contentType the MIME content type to set
+         */
         public void setContentType(String contentType) {
             this.contentType = contentType;
         }
@@ -192,12 +220,16 @@ public class Http extends Task<Http> {
             this.appName = appName;
         }
 
-        /** @return the connectionTimeOut */
+        /**
+         * @return the connectionTimeOut
+         */
         public Integer getConnectionTimeOut() {
             return connectionTimeOut;
         }
 
-        /** @return the readTimeOut */
+        /**
+         * @return the readTimeOut
+         */
         public Integer getReadTimeOut() {
             return readTimeOut;
         }

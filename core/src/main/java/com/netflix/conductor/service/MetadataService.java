@@ -29,19 +29,27 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 @Validated
 public interface MetadataService {
 
-    /** @param taskDefinitions Task Definitions to register */
+    /**
+     * @param taskDefinitions Task Definitions to register
+     */
     void registerTaskDef(
             @NotNull(message = "TaskDefList cannot be empty or null")
                     @Size(min = 1, message = "TaskDefList is empty")
                     List<@Valid TaskDef> taskDefinitions);
 
-    /** @param taskDefinition Task Definition to be updated */
+    /**
+     * @param taskDefinition Task Definition to be updated
+     */
     void updateTaskDef(@NotNull(message = "TaskDef cannot be null") @Valid TaskDef taskDefinition);
 
-    /** @param taskType Remove task definition */
+    /**
+     * @param taskType Remove task definition
+     */
     void unregisterTaskDef(@NotEmpty(message = "TaskName cannot be null or empty") String taskType);
 
-    /** @return List of all the registered tasks */
+    /**
+     * @return List of all the registered tasks
+     */
     List<TaskDef> getTaskDefs();
 
     /**
@@ -50,10 +58,14 @@ public interface MetadataService {
      */
     TaskDef getTaskDef(@NotEmpty(message = "TaskType cannot be null or empty") String taskType);
 
-    /** @param def Workflow definition to be updated */
+    /**
+     * @param def Workflow definition to be updated
+     */
     void updateWorkflowDef(@NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef def);
 
-    /** @param workflowDefList Workflow definitions to be updated. */
+    /**
+     * @param workflowDefList Workflow definitions to be updated.
+     */
     void updateWorkflowDef(
             @NotNull(message = "WorkflowDef list name cannot be null or empty")
                     @Size(min = 1, message = "WorkflowDefList is empty")
@@ -96,15 +108,21 @@ public interface MetadataService {
     void addEventHandler(
             @NotNull(message = "EventHandler cannot be null") @Valid EventHandler eventHandler);
 
-    /** @param eventHandler Event handler to be updated. */
+    /**
+     * @param eventHandler Event handler to be updated.
+     */
     void updateEventHandler(
             @NotNull(message = "EventHandler cannot be null") @Valid EventHandler eventHandler);
 
-    /** @param name Removes the event handler from the system */
+    /**
+     * @param name Removes the event handler from the system
+     */
     void removeEventHandlerStatus(
             @NotEmpty(message = "EventName cannot be null or empty") String name);
 
-    /** @return All the event handlers registered in the system */
+    /**
+     * @return All the event handlers registered in the system
+     */
     List<EventHandler> getAllEventHandlers();
 
     /**

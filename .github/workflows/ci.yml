@@ -37,12 +37,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./gradlew build -x :conductor-contribs:test --scan
+          ./gradlew build --scan
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           echo "Running build for commit ${{ github.sha }}"
-          ./gradlew build -x :conductor-contribs:test snapshot --scan
+          ./gradlew build snapshot --scan
         env:
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
