@@ -18,6 +18,8 @@ dependencies {
     testImplementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
+    testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
 }
 
 test {
