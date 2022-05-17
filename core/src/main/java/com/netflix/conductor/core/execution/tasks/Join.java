@@ -39,6 +39,7 @@ public class Join extends WorkflowSystemTask {
         boolean allDone = true;
         boolean hasFailures = false;
         StringBuilder failureReason = new StringBuilder();
+        StringBuilder optionalTaskFailures = new StringBuilder();
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get complete
@@ -66,11 +67,26 @@ public class Join extends WorkflowSystemTask {
             if (hasFailures) {
                 break;
             }
+
+            // check for optional task failures
+            if (forkedTask.getWorkflowTask().isOptional()
+                    && taskStatus == TaskModel.Status.COMPLETED_WITH_ERRORS) {
+                optionalTaskFailures
+                        .append(
+                                String.format(
+                                        "%s/%s",
+                                        forkedTask.getTaskDefName(), forkedTask.getTaskId()))
+                        .append(" ");
+            }
         }
-        if (allDone || hasFailures) {
+        if (allDone || hasFailures || optionalTaskFailures.length() > 0) {
             if (hasFailures) {
                 task.setReasonForIncompletion(failureReason.toString());
                 task.setStatus(TaskModel.Status.FAILED);
+            } else if (optionalTaskFailures.length() > 0) {
+                task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+                optionalTaskFailures.append("completed with errors");
+                task.setReasonForIncompletion(optionalTaskFailures.toString());
             } else {
                 task.setStatus(TaskModel.Status.COMPLETED);
             }

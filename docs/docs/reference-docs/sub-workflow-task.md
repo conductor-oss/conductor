@@ -173,3 +173,7 @@ Looking at the subworkflow (the WEBP version):
 
 The ```subWorkflowParam``` tells conductor which workflow to call. The task is marked as completed upon the completion of the spawned workflow. 
 If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
+
+### Optional Sub Workflow Task
+If the Sub Workflow task is defined as optional in the parent workflow task definition, the parent workflow task will not be retried if sub-workflow is terminated or failed.
+In addition, even if the sub-workflow is retried/rerun/restarted after reaching to a terminal status, the parent workflow task status will remain as it is.

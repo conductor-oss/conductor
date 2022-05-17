@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -821,7 +822,7 @@ class ForkJoinSpec extends AbstractSpecification {
         }
         sweep(workflowInstanceId)
 
-        and: "verify that the workflow is in a COMPLETED state"
+        and: "verify that the workflow is in a COMPLETED state and the join task is also marked as COMPLETED_WITH_ERRORS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 4
@@ -832,7 +833,34 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[2].taskType == 'SUB_WORKFLOW'
             tasks[2].status == Task.Status.COMPLETED_WITH_ERRORS
             tasks[3].taskType == 'JOIN'
-            tasks[3].status == Task.Status.COMPLETED
+            tasks[3].status == Task.Status.COMPLETED_WITH_ERRORS
+        }
+
+        when: "do a rerun on the sub workflow"
+        def reRunSubWorkflowRequest = new RerunWorkflowRequest()
+        reRunSubWorkflowRequest.reRunFromWorkflowId = subWorkflowInstanceId1
+        workflowExecutor.rerun(reRunSubWorkflowRequest)
+
+        then: "verify that the sub workflows are in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId1, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+        }
+
+        and: "parent workflow remains the same"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 4
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.COMPLETED_WITH_ERRORS
+            tasks[2].taskType == 'SUB_WORKFLOW'
+            tasks[2].status == Task.Status.COMPLETED_WITH_ERRORS
+            tasks[3].taskType == 'JOIN'
+            tasks[3].status == Task.Status.COMPLETED_WITH_ERRORS
         }
     }
 
