@@ -1,8 +1,4 @@
----
-sidebar_position: 1
----
-
-# Updating Workflow Definitions
+# Updating Workflows
 
 Workflows can be created or updated using the workflow metadata API
 

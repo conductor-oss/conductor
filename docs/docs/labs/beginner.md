@@ -1,16 +1,16 @@
+# Beginner Lab
 ## Hands on mode
 Please feel free to follow along using any of these resources:
 
-- Using cURL.
-- Postman or similar REST client.
+- Using cURL
+- Postman or similar REST client
 
 ## Creating a Workflow
 
 Let's create a simple workflow that adds Netflix Idents to videos. We'll be mocking the adding Idents part and focusing on actually executing this process flow.
 
 !!!info "What are Netflix Idents?" 
-    Netflix Idents are those 4 second videos with Netflix logo, which appears at the beginning and end of shows.
-    Learn more about them [here](https://partnerhelp.netflixstudios.com/hc/en-us/articles/115004750187-Master-QC-Identifying-and-Implementing-the-Netflix-Ident-). You might have also noticed they're different for Animation and several other genres.
+    Netflix Idents are those 4 second videos with Netflix logo, which appears at the beginning and end of shows.  You might have also noticed they're different for Animation and several other genres.
 
 !!!warning "Disclaimer"
     Obviously, this is not how Netflix adds Idents. Those Workflows are indeed very complex. But, it should give you an idea about how Conductor can be used to implement similar features.
@@ -22,12 +22,17 @@ The workflow in this lab will look like this:
 This workflow contains the following:
 
 * Worker Task `verify_if_idents_are_added` to verify if Idents are already added.
-* [Decision Task](../configuration/systask#decision) that takes output from the previous task, and decides whether to schedule the `add_idents` task.
+
+* [Switch Task](/reference-docs/switch-task.html) that takes output from the previous task, and decides whether to schedule the `add_idents` task.
+
 * `add_idents` task which is another worker Task.
 
 ### Creating Task definitions
 
-Let's create the [task definition](../configuration/taskdef) for `verify_if_idents_are_added` in JSON. This task will be a *SIMPLE* task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.
+
+Let's create the [task definition](/configuration/taskdef.html) for `verify_if_idents_are_added` in JSON. This task will be a *SIMPLE* task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.
+
+
 
 **Note** that at this point, we don't have to specify whether it is a System task or Worker task. We are only specifying the required configurations for the task, like number of times it should be retried, timeouts etc. We shall start by using `name` parameter for task name.
 ```json
@@ -61,7 +66,7 @@ i.e. if the task doesn't finish execution within this time limit after transitio
 }
 ```
 
-And a [responseTimeout](/tasklifecycle/#response-timeout-seconds) of 180 seconds.
+And a [responseTimeout](/architecture/tasklifecycle.html#response-timeout-seconds) of 180 seconds.
 
 ```json
 {
@@ -75,7 +80,9 @@ And a [responseTimeout](/tasklifecycle/#response-timeout-seconds) of 180 seconds
 }
 ```
 
-We can define several other fields defined [here](../configuration/taskdef), but this is a good place to start with.
+
+We can define several other fields defined [here](/configuration/taskdef.html), but this is a good place to start with.
+
 
 Similarly, create another task definition: `add_idents`.
 
@@ -93,7 +100,7 @@ Similarly, create another task definition: `add_idents`.
 
 Send a `POST` request to `/metadata/taskdefs` endpoint to register these tasks. You can use Swagger, Postman, CURL or similar tools.
 
-!!!info "Why is the Decision Task not registered?"
+!!!info "Why is the Switch Task not registered?"
     System Tasks that are part of control flow do not need to be registered. However, some system tasks where the retries, rate limiting and other mechanisms are required, like `HTTP` Task, are to be registered though.
 
 !!! Important
@@ -131,7 +138,7 @@ curl -X POST \
 
 ### Creating Workflow Definition
 
-Creating Workflow definition is almost similar. We shall use the Task definitions created above. Note that same Task definitions can be used in multiple workflows, or for multipe times in same Workflow (that's where `taskReferenceName` is useful).
+Creating Workflow definition is almost similar. We shall use the Task definitions created above. Note that same Task definitions can be used in multiple workflows, or for multiple times in same Workflow (that's where `taskReferenceName` is useful).
 
 A workflow without any tasks looks like this:
 ```json
@@ -170,13 +177,21 @@ Add the first task that this workflow has to execute. All the tasks must be adde
 Notice how we were using `${workflow.input.contentId}` to pass inputs to this task. Conductor can wire inputs between workflow and tasks, and between tasks.  
 i.e The task `verify_if_idents_are_added` is wired to accept inputs from the workflow input using JSONPath expression `${workflow.input.param}`.
 
-Learn more about wiring inputs and outputs [here](../configuration/workflowdef#wiring-inputs-and-outputs).
 
-Let's define `decisionCases` now. Checkout the Decision task structure [here](../configuration/systask#decision).
+Learn more about wiring inputs and outputs [here](/configuration/workflowdef.html#wiring-inputs-and-outputs).
 
-A Decision task is specified by `type:"DECISION"`, `caseValueParam` and `decisionCases` which lists all the branches of Decision task. This is similar to a `switch..case` but written in Conductor JSON DSL.
+Let's define `decisionCases` now. 
 
-Adding the decision task:
+
+>Note: in earlier versions of this tutorial, the "decision" task was used. This has been deprecated.
+
+Checkout the Switch task structure [here](/reference-docs/switch-task.html).
+
+A Switch task is specified by the `evaulatorType`, `expression` (the expression that defines the Switch) and `decisionCases` which lists all the branches of Switch task.  
+
+In this case, we'll use `"evaluatorType": "value-param"`, meaning that we'll just use the value inputted to make the decision.  Alternatively, there is a `"evaluatorType": "JavaScript"` that can be used for more complicated evaluations.
+
+Adding the switch task (without any decision cases):
 ```json
 {
     "name": "add_netflix_identation",
@@ -193,13 +208,14 @@ Adding the decision task:
 		    "type": "SIMPLE"
     	},
         {
-            "name": "decide_task",
+            "name": "switch_task",
             "taskReferenceName": "is_idents_added",
             "inputParameters": {
                 "case_value_param": "${ident_verification.output.is_idents_added}"
             },
-            "type": "DECISION",
-            "caseValueParam": "case_value_param",
+            "type": "SWITCH",
+            "evaluatorType": "value-param",
+            "expression": "case_value_param",
             "decisionCases": {
                 
             }
@@ -208,7 +224,7 @@ Adding the decision task:
 }
 ```
 
-Each decision branch could have multiple tasks, so it has to be defined as an array.
+Each switch task can have multiple tasks, so it has to be defined as an array.
 ```json
 {
     "name": "add_netflix_identation",
@@ -225,13 +241,14 @@ Each decision branch could have multiple tasks, so it has to be defined as an ar
 		    "type": "SIMPLE"
     	},
         {
-            "name": "decide_task",
+            "name": "switch_task",
             "taskReferenceName": "is_idents_added",
             "inputParameters": {
                 "case_value_param": "${ident_verification.output.is_idents_added}"
             },
-            "type": "DECISION",
-            "caseValueParam": "case_value_param",
+            "type": "SWITCH",
+            "evaluatorType": "value-param",
+            "expression": "case_value_param",
             "decisionCases": {
                 "false": [
                     {
@@ -262,7 +279,6 @@ curl -X POST \
     "description": "Adds Netflix Identation to video files.",
     "version": 2,
     "schemaVersion": 2,
-    "ownerEmail": "type your email here",
     "tasks": [
     	{
     		"name": "verify_if_idents_are_added",
@@ -273,13 +289,14 @@ curl -X POST \
 		    "type": "SIMPLE"
     	},
         {
-            "name": "decide_task",
+            "name": "switch_task",
             "taskReferenceName": "is_idents_added",
             "inputParameters": {
                 "case_value_param": "${ident_verification.output.is_idents_added}"
             },
-            "type": "DECISION",
-            "caseValueParam": "case_value_param",
+            "type": "SWITCH",
+            "evaluatorType": "value-param",
+            "expression": "case_value_param",
             "decisionCases": {
                 "false": [
                     {
@@ -343,7 +360,7 @@ Feel free to explore the various functionalities that the UI exposes. To elabora
 
 Now that `verify_if_idents_are_added` task is in `SCHEDULED` state, it is the worker's turn to fetch the task, execute it and update Conductor with final status of the task.
 
-Ideally, the workers implementing the [Client](../gettingstarted/client#worker) interface would do this process, executing the tasks on real microservices. But, let's mock this part.
+Ideally, the workers implementing the [Client](/gettingstarted/client.html#worker) interface would do this process, executing the tasks on real microservices. But, let's mock this part.
 
 Send a `GET` request to `/poll` endpoint with your task type.
 

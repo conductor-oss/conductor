@@ -85,7 +85,7 @@ is used to determine the switch-case. The evaluator type is `value-param` and th
 the name of an input parameter. If the value of `switch_case_value` is `fedex` then the decision case `ship_via_fedex`is
 executed as shown below.
 
-![Conductor UI - Workflow Run](../img/Switch_Fedex.png)
+![Conductor UI - Workflow Run](/img/Switch_Fedex.png)
 
 In a similar way - if the input was `ups`, then `ship_via_ups` will be executed. If none of the cases match then the
 default option is executed.

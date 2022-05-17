@@ -1,0 +1,14 @@
+{%- if not nav_item.children %}
+<li class="tocitem">
+    <a href="{{ nav_item.url|url }}" class="toc-link {% if nav_item.active %} active{% endif %}">{{ nav_item.title }}</a>
+</li>
+{%- else %}
+  <li class="tocitem">
+    <span class="toc-link">{{ nav_item.title }}</span>
+    <ul>
+      {%- for nav_item in nav_item.children %}
+        {% include "toc-sub.html" %}
+      {%- endfor %}
+    </ul>
+  </li>
+{%- endif %}

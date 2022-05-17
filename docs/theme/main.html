@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<meta name="description" content=" Conductor is a platform created by Netflix to orchestrate workflows that span across microservices.">
+<link rel="icon" href="/img/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+
+{% block content %}
+{% if page and page.is_homepage %}
+<div class="col-md-12 main">{% include "content.html" %}</div>
+{% else %}
+<div class="col-md-3">{% include "toc.html" %}</div>
+<div class="col-md-9 main">{% include "content.html" %}</div>
+{% endif %}
+{% endblock %}
+
+{%- block next_prev %}
+{%- endblock %}
+
+{% block footer %}
+<div class="footer">
+  <div class="container">
+  <div class="row align-items-center">
+    <div class="col-6">
+      <div class="subhead">Netflix Engineering</div>
+      <div><a href="https://netflixtechblog.com">Tech Blog</a></div>
+      <div><a href="https://twitter.com/netflixeng">Twitter</a></div>
+      <div><a href="https://www.youtube.com/channel/UCGGRRqAjPm6sL3-WGBDnKJA">Youtube</a></div>
+      <div><a href="https://netflix.github.io">Github</a></div>
+      <div><a href="https://jobs.netflix.com">Jobs</a></div>
+    </div>
+    <div class="col-6 fr">
+      <img src="/img/netflix-oss.png" />
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

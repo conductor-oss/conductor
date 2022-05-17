@@ -1,4 +1,4 @@
-## Publishing metrics
+# Server Metrics
 
 Conductor uses [spectator](https://github.com/Netflix/spectator) to collect the metrics.
 

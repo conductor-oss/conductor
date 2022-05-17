@@ -1,3 +1,5 @@
+# Client Metrics
+
 When using the Java client, the following metrics are published:
 
 | Name        | Purpose           | Tags  |

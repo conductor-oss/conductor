@@ -15,7 +15,7 @@ a `FORK_JOIN_DYNAMIC` task, it implicitly waits for all of the dynamically forke
 
 ### Use Cases
 
-[FORK_JOIN](../../reference-docs/fork-task) and [FORK_JOIN_DYNAMIC](../../reference-docs/dynamic-fork-task) task are used to execute a collection of other tasks or sub workflows in parallel. In
+[FORK_JOIN](/reference-docs/fork-task.html) and [FORK_JOIN_DYNAMIC](/reference-docs/dynamic-fork-task.html) task are used to execute a collection of other tasks or sub workflows in parallel. In
 such cases, there is a need for these forked tasks to complete before moving to the next stage in the workflow. 
 
 ### Configuration

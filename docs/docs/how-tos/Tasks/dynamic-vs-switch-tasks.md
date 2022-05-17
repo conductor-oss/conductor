@@ -6,11 +6,11 @@ sidebar_position: 1
 
 Learn more about
 
-1. [Dynamic Tasks](../reference-docs/dynamic-task)
-2. [Switch Tasks](../reference-docs/switch-task)
+1. [Dynamic Tasks](/reference-docs/dynamic-task.html)
+2. [Switch Tasks](/reference-docs/switch-task.html)
 
 Dynamic Tasks are useful in situations when need to run a task of which the task type is determined at runtime instead
-of during the configuration. It is similar to the [SWITCH](../reference-docs/switch-task) use case but with `DYNAMIC`
+of during the configuration. It is similar to the [SWITCH](/reference-docs/switch-task.html) use case but with `DYNAMIC`
 we won't need to preconfigure all case options in the workflow definition itself. Instead, we can mark the task
 as `DYNAMIC` and determine which underlying task does it run during the workflow execution itself.
 
