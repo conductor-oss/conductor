@@ -110,12 +110,12 @@ Go to [http://127.0.0.1:9090](http://127.0.0.1:9090).
 ## Combined Server & UI Docker Image
 This image at `/docker/serverAndUI` is provided to illustrate starting both the server & UI within the same container. The UI is hosted using nginx.
 
-### Building the image
+### Building the combined image
 `docker build -t conductor:serverAndUI .`
 
-##$ Running the conductor server
- - Standalone server (interal DB): `docker run -p 8080:8080 -p 80:5000 -d -t conductor:serverAndUI`
- - Server (external DB required): `docker run -p 8080:8080 -p 80:5000 -d -t -e "CONFIG_PROP=config.properties" conductor:serverAndUI`
+### Running the combined image
+ - With interal DB: `docker run -p 8080:8080 -p 80:5000 -d -t conductor:serverAndUI`
+ - With external DB: `docker run -p 8080:8080 -p 80:5000 -d -t -e "CONFIG_PROP=config.properties" conductor:serverAndUI`
 
 
 
