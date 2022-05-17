@@ -44,7 +44,7 @@ subprojects {
 }
 
 apply from: "$rootDir/dependencies.gradle"
-apply from: "$rootDir/managed-version-overrides.gradle"
+apply from: "$rootDir/springboot-bom-overrides.gradle"
 
 allprojects {
     apply plugin: 'nebula.netflixoss'
@@ -90,7 +90,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/2.6.6/reference/htmlsingle/#appendix.dependency-versions
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/2.6.7/reference/htmlsingle/#appendix.dependency-versions
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }

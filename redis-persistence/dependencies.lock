@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "compileClasspath": {
@@ -36,7 +36,7 @@
             "locked": "0.0.17"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "redis.clients:jedis": {
             "locked": "3.3.0"
@@ -61,7 +61,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -235,10 +235,10 @@
             "locked": "0.0.17"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "redis.clients:jedis": {
             "locked": "3.3.0"
@@ -263,7 +263,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -402,10 +402,10 @@
             "locked": "0.0.17"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "redis.clients:jedis": {
             "locked": "3.3.0"
