@@ -1,5 +1,5 @@
 site_name: Conductor Documentation
-
+site_description: Conductor is a platform created by Netflix to orchestrate workflows that span across microservices.
 repo_url: https://github.com/Netflix/conductor
 edit_uri: ''
 strict: true
