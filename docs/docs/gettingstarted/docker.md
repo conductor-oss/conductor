@@ -1,8 +1,9 @@
 
-# Running via Docker Compose
+# Running Conductor using Docker
 
 In this article we will explore how you can set up Netflix Conductor on your local machine using Docker compose.
 The docker compose will bring up the following:
+
 1. Conductor API Server
 2. Conductor UI
 3. Elasticsearch for searching workflows
@@ -13,29 +14,21 @@ The docker compose will bring up the following:
 
 ## Steps
 
-#### 1. Clone the Conductor Code
+### 1. Clone the Conductor Code
 
 ```shell
 $ git clone https://github.com/Netflix/conductor.git
 ```
 
-#### 2. Build the Docker Compose
+### 2. Build the Docker Compose
 
 ```shell
 $ cd conductor
 conductor $ cd docker
 docker $ docker-compose build
 ```
-#### Note: Conductor supplies multiple docker compose templates that can be used with different configurations:
 
-| File                           | Containers                                                                              |
-|--------------------------------|-----------------------------------------------------------------------------------------|
-| docker-compose.yaml            | 1. In Memory Conductor Server 2. Elasticsearch 3. UI                                    |
-| docker-compose-dynomite.yaml   | 1. In Memory Conductor Server 2. Elasticsearch 3. UI 4. Dynomite Redis for persistence  |
-| docker-compose-postgres.yaml   | 1. In Memory Conductor Server 2. Elasticsearch 3. UI 4. Postgres persistence            |
-| docker-compose-prometheus.yaml | Brings up Prometheus server                                                             |    
-
-#### 3. Run Docker Compose
+### 3. Run Docker Compose
 
 ```shell
 docker $ docker-compose up
@@ -47,21 +40,40 @@ Once up and running, you will see the following in your Docker dashboard:
 2. Conductor UI
 3. Conductor Server
 
-You can access all three on your browser to verify that it is running correctly:
+You can access the UI & Server on your browser to verify that they are running correctly:
 
-Conductor Server URL: [http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config](http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config)
+#### Conductor Server URL
+[http://localhost:8080](http://localhost:8080)
 
 <img src="/img/tutorial/swagger.png" style="width: 100%"/>
 
-Conductor UI URL: [http://localhost:5000/](http://localhost:5000/)
+#### Conductor UI URL
+[http://localhost:5000/](http://localhost:5000)
 
 <img src="/img/tutorial/conductorUI.png" style="width: 100%" />
 
 
-### Exiting Compose
+### 4. Exiting Compose
 `Ctrl+c` will exit docker compose.
 
 To ensure images are stopped execute: `docker-compose down`.
+
+## Alternative Persistence Engines
+By default `docker-compose.yaml` uses `config-local.properties`. This configures the `memory` database, where data is lost when the server terminates. This configuration is useful for testing or demo only.
+
+A selection of `docker-compose-*.yaml` and `config-*.properties` files are provided demonstrating the use of alternative persistence engines.
+
+| File                           | Containers                                                                              |
+|--------------------------------|-----------------------------------------------------------------------------------------|
+| docker-compose.yaml            | <ol><li>In Memory Conductor Server</li><li>Elasticsearch</li><li>UI</li></ol>           |
+| docker-compose-dynomite.yaml   | <ol><li>Conductor Server</li><li>Elasticsearch</li><li>UI</li><li>Dynomite Redis for persistence</li></ol> |
+| docker-compose-postgres.yaml   | <ol><li>Conductor Server</li><li>Elasticsearch</li><li>UI</li><li>Postgres persistence</li></ol> |
+| docker-compose-prometheus.yaml | Brings up Prometheus server                                                             |    
+
+For example this will start the server instance backed by a PostgreSQL DB.
+```
+docker-compose -f docker-compose.yaml -f docker-compose-postgres.yaml up
+```
 
 ## Standalone Server Image
 To build and run the server image, without using `docker-compose`, from the `docker` directory execute:
@@ -94,6 +106,17 @@ Start Prometheus with:
 `docker-compose -f docker-compose-prometheus.yaml up -d`
 
 Go to [http://127.0.0.1:9090](http://127.0.0.1:9090).
+
+## Combined Server & UI Docker Image
+This image at `/docker/serverAndUI` is provided to illustrate starting both the server & UI within the same container. The UI is hosted using nginx.
+
+### Building the image
+`docker build -t conductor:serverAndUI .`
+
+##$ Running the conductor server
+ - Standalone server (interal DB): `docker run -p 8080:8080 -p 80:5000 -d -t conductor:serverAndUI`
+ - Server (external DB required): `docker run -p 8080:8080 -p 80:5000 -d -t -e "CONFIG_PROP=config.properties" conductor:serverAndUI`
+
 
 
 ## Potential problem when using Docker Images

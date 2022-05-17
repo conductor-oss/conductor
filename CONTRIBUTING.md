@@ -1,1 +1,1 @@
-[Code of Conduct](docs/docs/resources/contributing.md)
+[Contributing](docs/docs/resources/contributing.md)
