@@ -26,7 +26,7 @@ Start Workflow task is defined directly inside the workflow with type `START_WOR
 
 | name          | type             | description                                                                                                         |
 |---------------|------------------|---------------------------------------------------------------------------------------------------------------------|
-| startWorkflow | Map[String, Any] | The value of this parameter is [Start Workflow Request](../../gettingstarted/startworkflow#start-workflow-request). |
+| startWorkflow | Map[String, Any] | The value of this parameter is [Start Workflow Request](/gettingstarted/startworkflow.html#start-workflow-request). |
 
 #### Output
 

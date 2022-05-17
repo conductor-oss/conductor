@@ -95,9 +95,7 @@ public class DoWhileTaskMapperTest {
                 new DoWhileTaskMapper(metadataDAO).getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
-        assertEquals(mappedTasks.size(), 2);
-        assertEquals("task1__1", mappedTasks.get(1).getReferenceTaskName());
-        assertEquals(1, mappedTasks.get(1).getIteration());
+        assertEquals(mappedTasks.size(), 1);
         assertEquals(TASK_TYPE_DO_WHILE, mappedTasks.get(0).getTaskType());
     }
 

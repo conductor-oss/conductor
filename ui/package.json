@@ -32,7 +32,7 @@
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0",
     "react-router-use-location-state": "^2.5.0",
-    "react-scripts": "4.0.3",
+    "react-scripts": "^5.0.1",
     "react-vis-timeline-2": "^2.1.6",
     "rison": "^0.1.1",
     "styled-components": "^5.3.0",
@@ -61,33 +61,29 @@
     ]
   },
   "resolutions": {
-    "immer": "^9.0.6",
-    "ansi-html": "^0.0.8",
-    "glob-parent": "^5.1.2",
-    "node-forge": "^1.3.0",
     "validator": "^13.7.0",
     "nth-check": "^2.0.1",
-    "browserslist": "^4.16.5",
-    "async": "^3.2.2"
+    "async": "^3.2.2",
+    "ejs": "^3.1.7"
   },
   "devDependencies": {
     "@testing-library/dom": "^8.2.0",
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/user-event": "^7.1.2",
-    "@wdio/cli": "5.18.5",
-    "@wdio/junit-reporter": "5.18.3",
-    "@wdio/local-runner": "5.18.5",
-    "@wdio/mocha-framework": "5.16.15",
-    "@wdio/selenium-standalone-service": "5.16.10",
-    "@wdio/spec-reporter": "5.16.11",
-    "@wdio/sync": "5.18.5",
-    "js-yaml": "3.13.1",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.2.0",
+    "@testing-library/user-event": "^14.2.0",
+    "@wdio/cli": "7.19.7",
+    "@wdio/junit-reporter": "7.19.7",
+    "@wdio/local-runner": "7.19.7",
+    "@wdio/mocha-framework": "7.19.7",
+    "@wdio/selenium-standalone-service": "7.19.5",
+    "@wdio/spec-reporter": "7.19.7",
+    "@wdio/sync": "7.19.7",
+    "js-yaml": "4.1.0",
     "prettier": "^2.2.1",
     "sass": "^1.49.9",
     "typescript": "^4.6.3",
-    "webdriver": "^5.0.0",
-    "webdriverio": "^5.0.0"
+    "webdriver": "^7.19.7",
+    "webdriverio": "^7.19.7"
   },
   "engines": {
     "node": ">=14.17.0"

@@ -515,7 +515,9 @@ public class TestDeciderOutcomes {
 
         assertEquals(TaskModel.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(0).getStatus());
         new Join().execute(workflow, outcome.tasksToBeScheduled.get(0), null);
-        assertEquals(TaskModel.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
+        assertEquals(
+                TaskModel.Status.COMPLETED_WITH_ERRORS,
+                outcome.tasksToBeScheduled.get(0).getStatus());
     }
 
     @Test

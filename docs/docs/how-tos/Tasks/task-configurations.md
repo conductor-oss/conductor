@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Task Configurations
 
-Refer to [Task Definitions](../getting-started/concepts/tasks-and-workers#task-definitions) for details on how to configure task definitions
+Refer to [Task Definitions](/configuration/taskdef.html) for details on how to configure task definitions
 
 ### Example
 
@@ -31,5 +31,5 @@ Here is a task template payload with commonly used fields:
 
 ### Best Practices
 
-1. Refer to [Task Timeouts](./task-timeouts) for additional information on how the various timeout settings work
-2. Refer to [Monitoring Task Queues](./monitoring-task-queues) on how to monitor task queues
+1. Refer to [Task Timeouts](/how-tos/Tasks/task-timeouts.html) for additional information on how the various timeout settings work
+2. Refer to [Monitoring Task Queues](/how-tos/Tasks/monitoring-task-queues.html) on how to monitor task queues

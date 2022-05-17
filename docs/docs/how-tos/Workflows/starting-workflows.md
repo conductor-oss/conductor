@@ -1,8 +1,4 @@
----
-sidebar_position: 1
----
-
-# Starting Workflow Executions
+# Starting Workflows
 
 Workflow executions can be started by using the following API:
 

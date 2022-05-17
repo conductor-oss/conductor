@@ -57,8 +57,6 @@ public class DeciderService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeciderService.class);
 
-    @VisibleForTesting static final String MAX_TASK_LIMIT = "conductor.app.max-task-limit";
-
     private final IDGenerator idGenerator;
     private final ParametersUtils parametersUtils;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;

@@ -1,92 +1,12 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.3.12.RELEASE"
+            "locked": "2.6.6"
         }
     },
     "compileClasspath": {
-        "com.carrotsearch:hppc": {
-            "locked": "0.7.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.github.spullara.mustache.java:compiler": {
-            "locked": "0.9.3",
-            "transitive": [
-                "org.elasticsearch.plugin:lang-mustache-client"
-            ]
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
@@ -94,124 +14,17 @@
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.tdunning:t-digest": {
-            "locked": "3.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
         "commons-io:commons-io": {
             "locked": "2.7"
         },
-        "io.netty:netty-buffer": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec-http": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-common": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-handler": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "io.netty:netty-codec-http",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-resolver": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-transport": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "jakarta.annotation:jakarta.annotation-api": {
-            "locked": "1.3.5",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.10.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "net.sf.jopt-simple:jopt-simple": {
-            "locked": "5.0.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-cli"
-            ]
-        },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.10"
-        },
-        "org.apache.httpcomponents:httpasyncclient": {
-            "locked": "4.1.4",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore-nio": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.apache.logging.log4j:log4j-jul",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web",
-                "org.elasticsearch:elasticsearch"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-web"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "locked": "2.17.1"
@@ -222,108 +35,8 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-analyzers-common": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-backward-codecs": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-core": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-grouping": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-highlighter": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-join": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-memory": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-misc": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queries": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queryparser": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-sandbox": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial-extras": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial3d": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-suggest": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.plugin:reindex-client"
-            ]
+            "locked": "6.8.12"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "6.8.12"
@@ -331,1179 +44,210 @@
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
         },
-        "org.elasticsearch.plugin:aggs-matrix-stats-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-            ]
-        },
-        "org.elasticsearch.plugin:lang-mustache-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:parent-join-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:percolator-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:rank-eval-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:reindex-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:transport-netty4-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-cli": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-core": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch",
-                "org.elasticsearch:elasticsearch-cli",
-                "org.elasticsearch:elasticsearch-ssl-config",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-secure-sm": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-ssl-config": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.plugin:reindex-client"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-x-content": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:jna": {
-            "locked": "5.5.0",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.hdrhistogram:HdrHistogram": {
-            "locked": "2.1.9",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.slf4j:jul-to-slf4j": {
-            "locked": "1.7.30",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-logging"
-            ]
-        },
-        "org.slf4j:slf4j-api": {
-            "locked": "1.7.30",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j"
-            ]
-        },
-        "org.springframework.boot:spring-boot": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-autoconfigure",
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "org.springframework.boot:spring-boot-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-starter-logging": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
+            "locked": "2.6.6"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.2.5.RELEASE"
-        },
-        "org.springframework:spring-aop": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-beans": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-aop",
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-context": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot"
-            ]
-        },
-        "org.springframework:spring-core": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.retry:spring-retry",
-                "org.springframework:spring-aop",
-                "org.springframework:spring-beans",
-                "org.springframework:spring-context",
-                "org.springframework:spring-expression"
-            ]
-        },
-        "org.springframework:spring-expression": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-jcl": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-core"
-            ]
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "1.26",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content",
-                "org.springframework.boot:spring-boot-starter"
-            ]
+            "locked": "1.3.2"
         }
     },
     "runtimeClasspath": {
-        "com.carrotsearch:hppc": {
-            "locked": "0.7.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
+            ],
+            "locked": "2.13.2.2"
         },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.8.8",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.github.spullara.mustache.java:compiler": {
-            "locked": "0.9.3",
-            "transitive": [
-                "org.elasticsearch.plugin:lang-mustache-client"
-            ]
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.4.0",
-            "transitive": [
-                "com.github.ben-manes.caffeine:caffeine",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
+            ],
+            "locked": "2.9.3"
         },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
         },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "3.13.0"
         },
         "com.jayway.jsonpath:json-path": {
-            "locked": "2.4.0",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.6.0"
         },
         "com.netflix.conductor:conductor-annotations": {
-            "project": true,
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-common": {
-            "project": true,
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.122.0",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "0.122.0"
         },
         "com.spotify:completable-futures": {
-            "locked": "0.3.3",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.tdunning:t-digest": {
-            "locked": "3.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            ],
+            "locked": "0.3.3"
         },
         "commons-io:commons-io": {
-            "locked": "2.7",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "io.netty:netty-buffer": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec-http": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-common": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-handler": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "io.netty:netty-codec-http",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-resolver": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-transport": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
+            ],
+            "locked": "2.7"
         },
         "io.reactivex:rxjava": {
-            "locked": "1.3.8",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "1.3.8"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "jakarta.xml.bind:jakarta.xml.bind-api"
-            ]
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.10.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "net.minidev:accessors-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "net.minidev:json-smart"
-            ]
-        },
-        "net.minidev:json-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "com.jayway.jsonpath:json-path"
-            ]
-        },
-        "net.sf.jopt-simple:jopt-simple": {
-            "locked": "5.0.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-cli"
-            ]
+            ],
+            "locked": "2.3.3"
         },
         "org.apache.bval:bval-jsr": {
-            "locked": "2.0.5",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.10",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.apache.httpcomponents:httpasyncclient": {
-            "locked": "4.1.4",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore-nio": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            ],
+            "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.apache.logging.log4j:log4j-core",
-                "org.apache.logging.log4j:log4j-jul",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web",
-                "org.elasticsearch:elasticsearch"
-            ]
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web"
-            ]
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.apache.lucene:lucene-analyzers-common": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-backward-codecs": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-core": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-grouping": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-highlighter": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-join": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-memory": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-misc": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queries": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queryparser": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-sandbox": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial-extras": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial3d": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-suggest": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.8.0",
-            "transitive": [
-                "com.github.ben-manes.caffeine:caffeine",
-                "com.google.guava:guava"
-            ]
+            ],
+            "locked": "2.17.1"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.plugin:reindex-client"
-            ]
+            "locked": "6.8.12"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "6.8.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
-        },
-        "org.elasticsearch.plugin:aggs-matrix-stats-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-            ]
-        },
-        "org.elasticsearch.plugin:lang-mustache-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:parent-join-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:percolator-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:rank-eval-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:reindex-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:transport-netty4-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-cli": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-core": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch",
-                "org.elasticsearch:elasticsearch-cli",
-                "org.elasticsearch:elasticsearch-ssl-config",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-secure-sm": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-ssl-config": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.plugin:reindex-client"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-x-content": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:jna": {
-            "locked": "5.5.0",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.hdrhistogram:HdrHistogram": {
-            "locked": "2.1.9",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.ow2.asm:asm": {
-            "locked": "5.0.4",
-            "transitive": [
-                "net.minidev:accessors-smart"
-            ]
-        },
-        "org.slf4j:slf4j-api": {
-            "locked": "1.7.30",
-            "transitive": [
-                "com.jayway.jsonpath:json-path",
-                "com.netflix.spectator:spectator-api",
-                "org.apache.logging.log4j:log4j-slf4j-impl"
-            ]
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "1.26",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
         }
     },
     "testCompileClasspath": {
-        "com.carrotsearch:hppc": {
-            "locked": "0.7.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
-                "com.github.docker-java:docker-java-api"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.github.docker-java:docker-java-api": {
-            "locked": "3.2.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "com.github.docker-java:docker-java-transport": {
-            "locked": "3.2.8",
-            "transitive": [
-                "com.github.docker-java:docker-java-transport-zerodep"
-            ]
-        },
-        "com.github.docker-java:docker-java-transport-zerodep": {
-            "locked": "3.2.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "com.github.spullara.mustache.java:compiler": {
-            "locked": "0.9.3",
-            "transitive": [
-                "org.elasticsearch.plugin:lang-mustache-client"
-            ]
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.3.4",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
-        },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.jayway.jsonpath:json-path": {
-            "locked": "2.4.0",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
-        },
-        "com.tdunning:t-digest": {
-            "locked": "3.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "com.vaadin.external.google:android-json": {
-            "locked": "0.0.20131108.vaadin1",
-            "transitive": [
-                "org.skyscreamer:jsonassert"
-            ]
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
         },
         "commons-io:commons-io": {
             "locked": "2.7"
         },
-        "io.netty:netty-buffer": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec-http": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-common": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-handler": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "io.netty:netty-codec-http",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-resolver": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-transport": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "jakarta.activation:jakarta.activation-api": {
-            "locked": "1.2.2",
-            "transitive": [
-                "jakarta.xml.bind:jakarta.xml.bind-api"
-            ]
-        },
-        "jakarta.annotation:jakarta.annotation-api": {
-            "locked": "1.3.5",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
-        },
-        "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.10.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
         "junit:junit": {
-            "locked": "4.13.2",
-            "transitive": [
-                "org.junit.vintage:junit-vintage-engine",
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "net.bytebuddy:byte-buddy": {
-            "locked": "1.10.22",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.bytebuddy:byte-buddy-agent": {
-            "locked": "1.10.22",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.java.dev.jna:jna": {
-            "locked": "5.8.0",
-            "transitive": [
-                "com.github.docker-java:docker-java-transport-zerodep",
-                "org.rnorth.visible-assertions:visible-assertions"
-            ]
-        },
-        "net.minidev:accessors-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "net.minidev:json-smart"
-            ]
-        },
-        "net.minidev:json-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "com.jayway.jsonpath:json-path"
-            ]
-        },
-        "net.sf.jopt-simple:jopt-simple": {
-            "locked": "5.0.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-cli"
-            ]
-        },
-        "org.apache.commons:commons-compress": {
-            "locked": "1.20",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
+            "locked": "4.13.2"
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.10"
-        },
-        "org.apache.httpcomponents:httpasyncclient": {
-            "locked": "4.1.4",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore-nio": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-core",
-                "org.apache.logging.log4j:log4j-jul",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web",
-                "org.elasticsearch:elasticsearch"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.apache.logging.log4j:log4j-web",
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
+            "locked": "2.17.1"
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-analyzers-common": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-backward-codecs": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-core": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-grouping": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-highlighter": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-join": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-memory": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-misc": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queries": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queryparser": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-sandbox": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial-extras": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial3d": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-suggest": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apiguardian:apiguardian-api": {
-            "locked": "1.1.0",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.jupiter:junit-jupiter-params",
-                "org.junit.platform:junit-platform-commons",
-                "org.junit.platform:junit-platform-engine",
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.assertj:assertj-core": {
-            "locked": "3.16.1",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
         "org.awaitility:awaitility": {
             "locked": "3.1.6"
         },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.5.0",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.plugin:reindex-client"
-            ]
+            "locked": "6.8.12"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "6.8.12"
@@ -1511,883 +255,175 @@
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
         },
-        "org.elasticsearch.plugin:aggs-matrix-stats-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-            ]
-        },
-        "org.elasticsearch.plugin:lang-mustache-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:parent-join-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:percolator-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:rank-eval-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:reindex-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:transport-netty4-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-cli": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-core": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch",
-                "org.elasticsearch:elasticsearch-cli",
-                "org.elasticsearch:elasticsearch-ssl-config",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-secure-sm": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-ssl-config": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.plugin:reindex-client"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-x-content": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:jna": {
-            "locked": "5.5.0",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.hamcrest:hamcrest": {
-            "locked": "2.2",
-            "transitive": [
-                "org.hamcrest:hamcrest-core",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.hamcrest:hamcrest-core": {
-            "locked": "2.2",
-            "transitive": [
-                "junit:junit",
-                "org.awaitility:awaitility",
-                "org.hamcrest:hamcrest-library"
-            ]
-        },
-        "org.hamcrest:hamcrest-library": {
-            "locked": "2.2",
-            "transitive": [
-                "org.awaitility:awaitility"
-            ]
-        },
-        "org.hdrhistogram:HdrHistogram": {
-            "locked": "2.1.9",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter-api": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter",
-                "org.junit.jupiter:junit-jupiter-params"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter-params": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter"
-            ]
-        },
-        "org.junit.platform:junit-platform-commons": {
-            "locked": "1.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.platform:junit-platform-engine"
-            ]
-        },
-        "org.junit.platform:junit-platform-engine": {
-            "locked": "1.6.3",
-            "transitive": [
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.junit.vintage:junit-vintage-engine": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.junit:junit-bom": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter",
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.jupiter:junit-jupiter-params",
-                "org.junit.platform:junit-platform-commons",
-                "org.junit.platform:junit-platform-engine",
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.mockito:mockito-core": {
-            "locked": "3.3.3",
-            "transitive": [
-                "org.mockito:mockito-junit-jupiter",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.mockito:mockito-junit-jupiter": {
-            "locked": "3.3.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.objenesis:objenesis": {
-            "locked": "2.6",
-            "transitive": [
-                "org.awaitility:awaitility",
-                "org.mockito:mockito-core"
-            ]
-        },
-        "org.opentest4j:opentest4j": {
-            "locked": "1.2.0",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.platform:junit-platform-engine"
-            ]
-        },
-        "org.ow2.asm:asm": {
-            "locked": "5.0.4",
-            "transitive": [
-                "net.minidev:accessors-smart"
-            ]
-        },
-        "org.rnorth.duct-tape:duct-tape": {
-            "locked": "1.0.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.rnorth.visible-assertions:visible-assertions": {
-            "locked": "2.1.2",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.skyscreamer:jsonassert": {
-            "locked": "1.5.0",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.slf4j:jul-to-slf4j": {
-            "locked": "1.7.30",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-log4j2",
-                "org.springframework.boot:spring-boot-starter-logging"
-            ]
-        },
-        "org.slf4j:slf4j-api": {
-            "locked": "1.7.30",
-            "transitive": [
-                "com.github.docker-java:docker-java-api",
-                "com.github.docker-java:docker-java-transport-zerodep",
-                "com.jayway.jsonpath:json-path",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j",
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.springframework.boot:spring-boot": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-autoconfigure",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-test",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-starter-logging": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
+            "locked": "2.6.6"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-test": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-test-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+            "locked": "2.6.6"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.2.5.RELEASE"
-        },
-        "org.springframework:spring-aop": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-beans": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-aop",
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-context": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot"
-            ]
-        },
-        "org.springframework:spring-core": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-starter-test",
-                "org.springframework.retry:spring-retry",
-                "org.springframework:spring-aop",
-                "org.springframework:spring-beans",
-                "org.springframework:spring-context",
-                "org.springframework:spring-expression",
-                "org.springframework:spring-test"
-            ]
-        },
-        "org.springframework:spring-expression": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-jcl": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-core"
-            ]
-        },
-        "org.springframework:spring-test": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+            "locked": "1.3.2"
         },
         "org.testcontainers:elasticsearch": {
             "locked": "1.15.3"
-        },
-        "org.testcontainers:testcontainers": {
-            "locked": "1.15.3",
-            "transitive": [
-                "org.testcontainers:elasticsearch"
-            ]
-        },
-        "org.xmlunit:xmlunit-core": {
-            "locked": "2.7.0",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "1.26",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content",
-                "org.springframework.boot:spring-boot-starter"
-            ]
         }
     },
     "testRuntimeClasspath": {
-        "com.carrotsearch:hppc": {
-            "locked": "0.7.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
-                "com.github.docker-java:docker-java-api",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.11.4",
-            "transitive": [
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.11.4",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
+            ],
+            "locked": "2.13.2.2"
         },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.8.8",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.github.docker-java:docker-java-api": {
-            "locked": "3.2.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "com.github.docker-java:docker-java-transport": {
-            "locked": "3.2.8",
-            "transitive": [
-                "com.github.docker-java:docker-java-transport-zerodep"
-            ]
-        },
-        "com.github.docker-java:docker-java-transport-zerodep": {
-            "locked": "3.2.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "com.github.spullara.mustache.java:compiler": {
-            "locked": "0.9.3",
-            "transitive": [
-                "org.elasticsearch.plugin:lang-mustache-client"
-            ]
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "3.0.2",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.4.0",
-            "transitive": [
-                "com.github.ben-manes.caffeine:caffeine",
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.guava:failureaccess": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
+            ],
+            "locked": "2.9.3"
         },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
         },
-        "com.google.guava:listenablefuture": {
-            "locked": "9999.0-empty-to-avoid-conflict-with-guava",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
-        "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.3",
-            "transitive": [
-                "com.google.guava:guava"
-            ]
-        },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "3.13.0"
         },
         "com.jayway.jsonpath:json-path": {
-            "locked": "2.4.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.6.0"
         },
         "com.netflix.conductor:conductor-annotations": {
-            "project": true,
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-common": {
-            "project": true,
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.122.0",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "0.122.0"
         },
         "com.spotify:completable-futures": {
-            "locked": "0.3.3",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.tdunning:t-digest": {
-            "locked": "3.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "com.vaadin.external.google:android-json": {
-            "locked": "0.0.20131108.vaadin1",
-            "transitive": [
-                "org.skyscreamer:jsonassert"
-            ]
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            ],
+            "locked": "0.3.3"
         },
         "commons-io:commons-io": {
-            "locked": "2.7",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "io.netty:netty-buffer": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-codec-http": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-common": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-handler": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "io.netty:netty-codec-http",
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-resolver": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
-        },
-        "io.netty:netty-transport": {
-            "locked": "4.1.65.Final",
-            "transitive": [
-                "org.elasticsearch.plugin:transport-netty4-client"
-            ]
+            ],
+            "locked": "2.7"
         },
         "io.reactivex:rxjava": {
-            "locked": "1.3.8",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "1.3.8"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "jakarta.xml.bind:jakarta.xml.bind-api"
-            ]
-        },
-        "jakarta.annotation:jakarta.annotation-api": {
-            "locked": "1.3.5",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3",
-            "transitive": [
-                "com.netflix.conductor:conductor-core",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.10.1",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.3.3"
         },
         "junit:junit": {
-            "locked": "4.13.2",
-            "transitive": [
-                "org.junit.vintage:junit-vintage-engine",
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "net.bytebuddy:byte-buddy": {
-            "locked": "1.10.22",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.bytebuddy:byte-buddy-agent": {
-            "locked": "1.10.22",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.java.dev.jna:jna": {
-            "locked": "5.8.0",
-            "transitive": [
-                "com.github.docker-java:docker-java-transport-zerodep",
-                "org.rnorth.visible-assertions:visible-assertions"
-            ]
-        },
-        "net.minidev:accessors-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "net.minidev:json-smart"
-            ]
-        },
-        "net.minidev:json-smart": {
-            "locked": "2.3.1",
-            "transitive": [
-                "com.jayway.jsonpath:json-path"
-            ]
-        },
-        "net.sf.jopt-simple:jopt-simple": {
-            "locked": "5.0.2",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-cli"
-            ]
+            "locked": "4.13.2"
         },
         "org.apache.bval:bval-jsr": {
-            "locked": "2.0.5",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.apache.commons:commons-compress": {
-            "locked": "1.20",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
+            ],
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.10",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.apache.httpcomponents:httpasyncclient": {
-            "locked": "4.1.4",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.13",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore-nio": {
-            "locked": "4.4.14",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-client"
-            ]
+            ],
+            "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.apache.logging.log4j:log4j-core",
-                "org.apache.logging.log4j:log4j-jul",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web",
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.apache.logging.log4j:log4j-web",
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core",
-                "org.springframework.boot:spring-boot-starter-log4j2"
-            ]
-        },
-        "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1",
-            "transitive": [
+            "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
+            ],
+            "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-analyzers-common": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
+        "org.apache.logging.log4j:log4j-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-backward-codecs": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
+        "org.apache.logging.log4j:log4j-jul": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-core": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
+        "org.apache.logging.log4j:log4j-slf4j-impl": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
-        "org.apache.lucene:lucene-grouping": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-highlighter": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-join": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-memory": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-misc": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queries": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-queryparser": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-sandbox": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial-extras": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-spatial3d": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apache.lucene:lucene-suggest": {
-            "locked": "7.7.3",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.apiguardian:apiguardian-api": {
-            "locked": "1.1.0",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.jupiter:junit-jupiter-engine",
-                "org.junit.jupiter:junit-jupiter-params",
-                "org.junit.platform:junit-platform-commons",
-                "org.junit.platform:junit-platform-engine",
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.assertj:assertj-core": {
-            "locked": "3.16.1",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+        "org.apache.logging.log4j:log4j-web": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-annotations",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.17.1"
         },
         "org.awaitility:awaitility": {
             "locked": "3.1.6"
         },
-        "org.checkerframework:checker-qual": {
-            "locked": "3.8.0",
-            "transitive": [
-                "com.github.ben-manes.caffeine:caffeine",
-                "com.google.guava:guava"
-            ]
-        },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.plugin:reindex-client"
-            ]
+            "locked": "6.8.12"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "6.8.12"
@@ -2395,375 +431,17 @@
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
         },
-        "org.elasticsearch.plugin:aggs-matrix-stats-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-            ]
-        },
-        "org.elasticsearch.plugin:lang-mustache-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:parent-join-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:percolator-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:rank-eval-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:reindex-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch.plugin:transport-netty4-client": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.client:elasticsearch-rest-high-level-client",
-                "org.elasticsearch.client:transport"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-cli": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-core": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch",
-                "org.elasticsearch:elasticsearch-cli",
-                "org.elasticsearch:elasticsearch-ssl-config",
-                "org.elasticsearch:elasticsearch-x-content"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-secure-sm": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-ssl-config": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch.plugin:reindex-client"
-            ]
-        },
-        "org.elasticsearch:elasticsearch-x-content": {
-            "locked": "6.8.12",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.elasticsearch:jna": {
-            "locked": "5.5.0",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.hamcrest:hamcrest": {
-            "locked": "2.2",
-            "transitive": [
-                "org.hamcrest:hamcrest-core",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.hamcrest:hamcrest-core": {
-            "locked": "2.2",
-            "transitive": [
-                "junit:junit",
-                "org.awaitility:awaitility",
-                "org.hamcrest:hamcrest-library"
-            ]
-        },
-        "org.hamcrest:hamcrest-library": {
-            "locked": "2.2",
-            "transitive": [
-                "org.awaitility:awaitility"
-            ]
-        },
-        "org.hdrhistogram:HdrHistogram": {
-            "locked": "2.1.9",
-            "transitive": [
-                "org.elasticsearch:elasticsearch"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter-api": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter",
-                "org.junit.jupiter:junit-jupiter-engine",
-                "org.junit.jupiter:junit-jupiter-params",
-                "org.mockito:mockito-junit-jupiter"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter-engine": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter"
-            ]
-        },
-        "org.junit.jupiter:junit-jupiter-params": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter"
-            ]
-        },
-        "org.junit.platform:junit-platform-commons": {
-            "locked": "1.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.platform:junit-platform-engine"
-            ]
-        },
-        "org.junit.platform:junit-platform-engine": {
-            "locked": "1.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-engine",
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.junit.vintage:junit-vintage-engine": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.junit:junit-bom": {
-            "locked": "5.6.3",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter",
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.jupiter:junit-jupiter-engine",
-                "org.junit.jupiter:junit-jupiter-params",
-                "org.junit.platform:junit-platform-commons",
-                "org.junit.platform:junit-platform-engine",
-                "org.junit.vintage:junit-vintage-engine"
-            ]
-        },
-        "org.mockito:mockito-core": {
-            "locked": "3.3.3",
-            "transitive": [
-                "org.mockito:mockito-junit-jupiter",
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.mockito:mockito-junit-jupiter": {
-            "locked": "3.3.3",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.objenesis:objenesis": {
-            "locked": "2.6",
-            "transitive": [
-                "org.awaitility:awaitility",
-                "org.mockito:mockito-core"
-            ]
-        },
-        "org.opentest4j:opentest4j": {
-            "locked": "1.2.0",
-            "transitive": [
-                "org.junit.jupiter:junit-jupiter-api",
-                "org.junit.platform:junit-platform-engine"
-            ]
-        },
-        "org.ow2.asm:asm": {
-            "locked": "5.0.4",
-            "transitive": [
-                "net.minidev:accessors-smart"
-            ]
-        },
-        "org.rnorth.duct-tape:duct-tape": {
-            "locked": "1.0.8",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.rnorth.visible-assertions:visible-assertions": {
-            "locked": "2.1.2",
-            "transitive": [
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.skyscreamer:jsonassert": {
-            "locked": "1.5.0",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.slf4j:jul-to-slf4j": {
-            "locked": "1.7.30",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-log4j2",
-                "org.springframework.boot:spring-boot-starter-logging"
-            ]
-        },
-        "org.slf4j:slf4j-api": {
-            "locked": "1.7.30",
-            "transitive": [
-                "com.github.docker-java:docker-java-api",
-                "com.github.docker-java:docker-java-transport-zerodep",
-                "com.jayway.jsonpath:json-path",
-                "com.netflix.spectator:spectator-api",
-                "org.apache.logging.log4j:log4j-slf4j-impl",
-                "org.slf4j:jul-to-slf4j",
-                "org.testcontainers:testcontainers"
-            ]
-        },
-        "org.springframework.boot:spring-boot": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-autoconfigure",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-test",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-starter-logging": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter"
-            ]
+            "locked": "2.6.6"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.3.12.RELEASE"
-        },
-        "org.springframework.boot:spring-boot-test": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test",
-                "org.springframework.boot:spring-boot-test-autoconfigure"
-            ]
-        },
-        "org.springframework.boot:spring-boot-test-autoconfigure": {
-            "locked": "2.3.12.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+            "locked": "2.6.6"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.2.5.RELEASE"
-        },
-        "org.springframework:spring-aop": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-beans": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-aop",
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-context": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot"
-            ]
-        },
-        "org.springframework:spring-core": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot",
-                "org.springframework.boot:spring-boot-starter",
-                "org.springframework.boot:spring-boot-starter-test",
-                "org.springframework.retry:spring-retry",
-                "org.springframework:spring-aop",
-                "org.springframework:spring-beans",
-                "org.springframework:spring-context",
-                "org.springframework:spring-expression",
-                "org.springframework:spring-test"
-            ]
-        },
-        "org.springframework:spring-expression": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-context"
-            ]
-        },
-        "org.springframework:spring-jcl": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework:spring-core"
-            ]
-        },
-        "org.springframework:spring-test": {
-            "locked": "5.2.15.RELEASE",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
+            "locked": "1.3.2"
         },
         "org.testcontainers:elasticsearch": {
             "locked": "1.15.3"
-        },
-        "org.testcontainers:testcontainers": {
-            "locked": "1.15.3",
-            "transitive": [
-                "org.testcontainers:elasticsearch"
-            ]
-        },
-        "org.xmlunit:xmlunit-core": {
-            "locked": "2.7.0",
-            "transitive": [
-                "org.springframework.boot:spring-boot-starter-test"
-            ]
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "1.26",
-            "transitive": [
-                "org.elasticsearch:elasticsearch-x-content",
-                "org.springframework.boot:spring-boot-starter"
-            ]
         }
     }
 }

@@ -1,6 +1,7 @@
+# Kitchen Sink
 An example kitchensink workflow that demonstrates the usage of all the schema constructs.
 
-###Definition
+### Definition
 
 ```json
 {
@@ -162,10 +163,10 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
 }
 ```
 ### Visual Flow
-![img](../img/kitchensink.png)
+![img](/img/kitchensink.png)
 
 ### Running Kitchensink Workflow
-1. Start the server as documented [here](/server).  Use ```-DloadSample=true``` java system property when launching the server.  This will create a kitchensink workflow, related task definitions and kick off an instance of kitchensink workflow.
+1. Start the server as documented [here](/gettingstarted/docker.html).  Use ```-DloadSample=true``` java system property when launching the server.  This will create a kitchensink workflow, related task definitions and kick off an instance of kitchensink workflow.
 2. Once the workflow has started, the first task remains in the ```SCHEDULED``` state.  This is because no workers are currently polling for the task.
 3. We will use the REST endpoints directly to poll for tasks and updating the status.
 
@@ -187,7 +188,7 @@ The response is a text string identifying the workflow instance id.
 curl http://localhost:8080/api/tasks/poll/task_1
 ```
    
-   The response should look something like:
+The response should look something like:
    
 ```json
 {
@@ -253,5 +254,6 @@ curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST htt
 	}
 }'
 ```
+
 This will mark the task_1 as completed and schedule ```task_5``` as the next task.  
 Repeat the same process for the subsequently scheduled tasks until the completion.

@@ -37,7 +37,9 @@ export function useWorkflowSearch(searchObj) {
 }
 
 export function useWorkflow(workflowId) {
-  return useFetch(`/workflow/${workflowId}`, { enabled: !!workflowId });
+  return useFetch(["workflow", workflowId], `/workflow/${workflowId}`, {
+    enabled: !!workflowId,
+  });
 }
 
 export function useWorkflows(workflowIds, reactQueryOptions) {
@@ -69,15 +71,19 @@ export function useWorkflowDef(
   reactQueryOptions = {}
 ) {
   let path;
+  const key = ["workflowDef", workflowName];
   if (workflowName) {
     path = `/metadata/workflow/${workflowName}`;
-    if (version) path += `?version=${version}`;
+    if (version) {
+      path += `?version=${version}`;
+      key.push(version);
+    }
   }
-  return useFetch(path, reactQueryOptions, defaultWorkflow);
+  return useFetch(key, path, reactQueryOptions, defaultWorkflow);
 }
 
 export function useWorkflowDefs() {
-  const { data, ...rest } = useFetch("/metadata/workflow", {
+  const { data, ...rest } = useFetch(["workflowDefs"], "/metadata/workflow", {
     staleTime: STALE_TIME_WORKFLOW_DEFS,
   });
 
@@ -97,7 +103,6 @@ export function useWorkflowDefs() {
     }
   }, [data]);
 
-  console.log(workflows);
   return {
     data: workflows,
     ...rest,
@@ -129,7 +134,7 @@ export function useWorkflowNames() {
 // Version numbers do not necessarily start, or run contiguously from 1. Could be arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
 export function useWorkflowNamesAndVersions() {
-  const { data, ...rest } = useFetch("/metadata/workflow", {
+  const { data, ...rest } = useFetch(["workflowDefs"], "/metadata/workflow", {
     staleTime: STALE_TIME_WORKFLOW_DEFS,
   });
 

@@ -1,21 +1,23 @@
+# API Specification
+
 ## Task & Workflow Metadata
 | Endpoint                                 | Description                      | Input                                                       |
 |------------------------------------------|:---------------------------------|-------------------------------------------------------------|
 | `GET /metadata/taskdefs`                 | Get all the task definitions     | n/a                                                         |
 | `GET /metadata/taskdefs/{taskType}`      | Retrieve task definition         | Task Name                                                   |
-| `POST /metadata/taskdefs`                | Register new task definitions    | List of [Task Definitions](../configuration/taskdef)        |
-| `PUT /metadata/taskdefs`                 | Update a task definition         | A [Task Definition](../configuration/taskdef)               |
+| `POST /metadata/taskdefs`                | Register new task definitions    | List of [Task Definitions](/configuration/taskdef.html)        |
+| `PUT /metadata/taskdefs`                 | Update a task definition         | A [Task Definition](/configuration/taskdef.html)               |
 | `DELETE /metadata/taskdefs/{taskType}`   | Delete a task definition         | Task Name                                                   |
 |||
 | `GET /metadata/workflow`                 | Get all the workflow definitions | n/a                                                         |
-| `POST /metadata/workflow`                | Register new workflow            | [Workflow Definition](../configuration/workflowdef)         |
-| `PUT /metadata/workflow`                 | Register/Update new workflows    | List of [Workflow Definition](../configuration/workflowdef) |
+| `POST /metadata/workflow`                | Register new workflow            | [Workflow Definition](/configuration/workflowdef.html)         |
+| `PUT /metadata/workflow`                 | Register/Update new workflows    | List of [Workflow Definition](/configuration/workflowdef.html) |
 | `GET /metadata/workflow/{name}?version=` | Get the workflow definitions     | workflow name, version (optional)                           |
 |||
  
 ## Start A Workflow
 ### With Input only
-See [Start Workflow Request](../gettingstarted/startworkflow/#start-workflow-request).
+See [Start Workflow Request](/gettingstarted/startworkflow.html).
 
 #### Output
 Id of the workflow (GUID)
@@ -142,14 +144,16 @@ Optionally updating task's input and output as specified in the payload.
 | `GET /tasks/queue/sizes?taskType=&taskType=&taskType` | Return the size of pending tasks for given task types |
 |||
 
-## Polling and Update Task
-These are critical endpoints used to poll for task and updating the task result by worker.
+## Polling, Ack and Update Task
+These are critical endpoints used to poll for task, send ack (after polling) and finally updating the task result by worker.
+
 
 | Endpoint                                                            | Description                                                                                                                                                                                                                                                                                                        |
 |---------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `GET /tasks/poll/{taskType}?workerid=&domain=`                      | Poll for a task. `workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain                                                                                                                                                                   |
 | `GET /tasks/poll/batch/{taskType}?count=&timeout=&workerid=&domain` | Poll for a task in a batch specified by `count`.  This is a long poll and the connection will wait until `timeout` or if there is at-least 1 item available, whichever comes first.`workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain |
 | `POST /tasks`                                                       | Update the result of task execution.  See the schema below.                                                                                                                                                                                                                                                        |
+
 
 ### Schema for updating Task Result
 ```json
@@ -165,3 +169,5 @@ These are critical endpoints used to poll for task and updating the task result 
     
 }
 ```
+!!!Info "Acknowledging tasks after poll"
+	If the worker fails to ack the task after polling, the task is re-queued and put back in queue and is made available during subsequent poll.

@@ -1,15 +1,16 @@
-#### Isolation Group Id
+# Isolation Groups
 
 Consider an HTTP task where the latency of an API is high, task queue piles up effecting execution of other HTTP tasks which have low latency.
 
 We can isolate the execution of such tasks to have predictable performance using `isolationgroupId`, a property of task definition.
 
-When we set isolationGroupId,  the executor(SystemTaskWorkerCoordinator) will allocate an isolated queue and an isolated thread pool for execution of those tasks.
+When we set isolationGroupId,  the executor `SystemTaskWorkerCoordinator` will allocate an isolated queue and an isolated thread pool for execution of those tasks.
 
 If no `isolationgroupId` is specified in task definition, then fallback is default behaviour where the executor executes the task in shared thread-pool for all tasks. 
 
-Example taskdef  
+## Example
 
+** Task Definition **
 ```json
 {
   "name": "encode_task",
@@ -35,7 +36,7 @@ Example taskdef
   "isolationgroupId": "myIsolationGroupId"
 }
 ```
-Example Workflow task 
+** Workflow Definition **
 ```json
 {
   "name": "encode_and_deploy",
@@ -73,7 +74,7 @@ The property `workflow.isolated.system.task.worker.thread.count`  sets the threa
 
 isolationGroupId is currently supported only in HTTP and kafka Task. 
 
-#### Execution Name Space
+### Execution Name Space
 
 `executionNameSpace` A property of taskdef can be used to provide JVM isolation to task execution and scale executor deployments horizontally.
 
@@ -112,10 +113,7 @@ If the property is not set, the executor executes tasks without any executionNam
 }
 ```
 
-
-
-
-Example Workflow task
+#### Example Workflow task
 
 ```json
 { 

@@ -1,4 +1,4 @@
-## Introduction
+# Event Handlers
 Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.
 
 This includes:
@@ -11,7 +11,7 @@ Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside
 ## Event Task
 Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS. Event tasks are useful for creating event based dependencies for workflows and tasks.
 
-See [Event Task](../../reference-docs/event-task) for documentation.
+See [Event Task](/reference-docs/event-task.html) for documentation.
 
 ## Event Handler
 Event handlers are listeners registered that executes an action when a matching event occurs.  The supported actions are:
@@ -108,7 +108,7 @@ Given the following payload in the message:
     "expandInlineJSON": true
 }
 ```
-Input for starting a workflow and output when completing / failing task follows the same [expressions](/configuration/workflowdef/#wiring-inputs-and-outputs) used for wiring workflow inputs.
+Input for starting a workflow and output when completing / failing task follows the same [expressions](/configuration/workflowdef.html#wiring-inputs-and-outputs) used for wiring workflow inputs.
 
 !!!info "Expanding stringified JSON elements in payload"
 	`expandInlineJSON` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  

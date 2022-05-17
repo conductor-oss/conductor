@@ -41,7 +41,7 @@ Following is the workflow definition with `SET_VARIABLE` task.
       "taskReferenceName": "Set_Name",
       "type": "SET_VARIABLE",
       "inputParameters": {
-        "name": "Orkes"
+        "name": "Foo"
       }
     },
     {
@@ -61,5 +61,5 @@ Following is the workflow definition with `SET_VARIABLE` task.
 ```
 
 In the above example, it can be seen that the task `Set_Name` is a Set Variable Task and
-the variable `name` is set to `Orkes` and later in the workflow it is referenced by
+the variable `name` is set to `Foo` and later in the workflow it is referenced by
 `"${workflow.variables.name}"` in another task.

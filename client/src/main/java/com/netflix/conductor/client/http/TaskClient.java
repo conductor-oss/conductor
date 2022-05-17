@@ -14,6 +14,7 @@ package com.netflix.conductor.client.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -237,14 +238,10 @@ public class TaskClient extends ClientBase {
         postForEntityWithRequestOnly("tasks", taskResult);
     }
 
-    public void evaluateAndUploadLargePayload(TaskResult taskResult, String taskType) {
-        Preconditions.checkNotNull(taskResult, "Task result cannot be null");
-        Preconditions.checkArgument(
-                StringUtils.isBlank(taskResult.getExternalOutputPayloadStoragePath()),
-                "External Storage Path must not be set");
-
+    public Optional<String> evaluateAndUploadLargePayload(
+            Map<String, Object> taskOutputData, String taskType) {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            objectMapper.writeValue(byteArrayOutputStream, taskResult.getOutputData());
+            objectMapper.writeValue(byteArrayOutputStream, taskOutputData);
             byte[] taskOutputBytes = byteArrayOutputStream.toByteArray();
             long taskResultSize = taskOutputBytes.length;
             MetricsContainer.recordTaskResultPayloadSize(taskType, taskResultSize);
@@ -256,30 +253,22 @@ public class TaskClient extends ClientBase {
                         || taskResultSize
                                 > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB()
                                         * 1024L) {
-                    taskResult.setReasonForIncompletion(
+                    throw new IllegalArgumentException(
                             String.format(
                                     "The TaskResult payload size: %d is greater than the permissible %d bytes",
                                     taskResultSize, payloadSizeThreshold));
-                    taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
-                    taskResult.setOutputData(null);
-                } else {
-                    MetricsContainer.incrementExternalPayloadUsedCount(
-                            taskType,
-                            ExternalPayloadStorage.Operation.WRITE.name(),
-                            ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
-                    String externalStoragePath =
-                            uploadToExternalPayloadStorage(
-                                    ExternalPayloadStorage.PayloadType.TASK_OUTPUT,
-                                    taskOutputBytes,
-                                    taskResultSize);
-                    taskResult.setExternalOutputPayloadStoragePath(externalStoragePath);
-                    taskResult.setOutputData(null);
                 }
+                MetricsContainer.incrementExternalPayloadUsedCount(
+                        taskType,
+                        ExternalPayloadStorage.Operation.WRITE.name(),
+                        ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
+                return Optional.of(
+                        uploadToExternalPayloadStorage(
+                                PayloadType.TASK_OUTPUT, taskOutputBytes, taskResultSize));
             }
+            return Optional.empty();
         } catch (IOException e) {
-            String errorMsg =
-                    String.format(
-                            "Unable to update task: %s with task result", taskResult.getTaskId());
+            String errorMsg = String.format("Unable to update task: %s with task result", taskType);
             LOGGER.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         }
@@ -354,13 +343,43 @@ public class TaskClient extends ClientBase {
     public int getQueueSizeForTask(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
 
-        Map<String, Integer> taskTypeToQueueSizeMap =
+        Integer queueSize =
                 getForEntity(
-                        "tasks/queue/sizes", new Object[] {"taskType", taskType}, queueSizeMap);
-        if (taskTypeToQueueSizeMap.containsKey(taskType)) {
-            return taskTypeToQueueSizeMap.get(taskType);
+                        "tasks/queue/size",
+                        new Object[] {"taskType", taskType},
+                        new GenericType<Integer>() {});
+        return queueSize != null ? queueSize : 0;
+    }
+
+    public int getQueueSizeForTask(
+            String taskType, String domain, String isolationGroupId, String executionNamespace) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+
+        List<Object> params = new LinkedList<>();
+        params.add("taskType");
+        params.add(taskType);
+
+        if (StringUtils.isNotBlank(domain)) {
+            params.add("domain");
+            params.add(domain);
         }
-        return 0;
+
+        if (StringUtils.isNotBlank(isolationGroupId)) {
+            params.add("isolationGroupId");
+            params.add(isolationGroupId);
+        }
+
+        if (StringUtils.isNotBlank(executionNamespace)) {
+            params.add("executionNamespace");
+            params.add(executionNamespace);
+        }
+
+        Integer queueSize =
+                getForEntity(
+                        "tasks/queue/size",
+                        params.toArray(new Object[0]),
+                        new GenericType<Integer>() {});
+        return queueSize != null ? queueSize : 0;
     }
 
     /**

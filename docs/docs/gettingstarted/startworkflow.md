@@ -1,16 +1,16 @@
-## Start Workflow Request
-
-When starting a Workflow execution with a registered definition, Workflow accepts following parameters:
+# Starting a Workflow
+## Start Workflow Endpoint
+When starting a Workflow execution with a registered definition, `/workflow` accepts following parameters:
 
 | Field                           | Description                                                                                                                               | Notes                                                                                                   |
 |:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------|
 | name                            | Name of the Workflow. MUST be registered with Conductor before starting workflow                                                          |                                                                                                         |
 | version                         | Workflow version                                                                                                                          | defaults to latest available version                                                                    |
-| input                           | JSON object with key value params, that can be used by downstream tasks                                                                   | See [Wiring Inputs and Outputs](../../configuration/workflowdef/#wiring-inputs-and-outputs) for details |
+| input                           | JSON object with key value params, that can be used by downstream tasks                                                                   | See [Wiring Inputs and Outputs](/configuration/workflowdef.html#wiring-inputs-and-outputs) for details |
 | correlationId                   | Unique Id that correlates multiple Workflow executions                                                                                    | optional                                                                                                |
-| taskToDomain                    | See [Task Domains](../../configuration/taskdomains/#task-domains) for more information.                                                   | optional                                                                                                |
-| workflowDef                     | An adhoc [Workflow Definition](../../configuration/workflowdef) to run, without registering. See [Dynamic Workflows](#dynamic-workflows). | optional                                                                                                |
-| externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](../../externalpayloadstorage/) for more info.                        | optional                                                                                                |
+| taskToDomain                    | See [Task Domains](/configuration/taskdomains.html) for more information.                                                   | optional                                                                                                |
+| workflowDef                     | An adhoc [Workflow Definition](/configuration/workflowdef.html) to run, without registering. See [Dynamic Workflows](#dynamic-workflows). | optional                                                                                                |
+| externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](/externalpayloadstorage.html) for more info.                        | optional                                                                                                |
 | priority                        | Priority level for the tasks within this workflow execution. Possible values are between 0 - 99.                                          | optional                                                                                                |
 
 **Example:**

@@ -33,6 +33,7 @@ class DoWhileSpec extends AbstractSpecification {
                 "do_while_multiple_integration_test.json",
                 "do_while_as_subtask_integration_test.json",
                 'simple_one_task_sub_workflow_integration_test.json',
+                'do_while_iteration_fix_test.json',
                 "do_while_sub_workflow_integration_test.json")
     }
 
@@ -792,9 +793,9 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'DO_WHILE'
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[2].taskType == 'integration_task_0'
+            tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.SCHEDULED
-            tasks[3].taskType == 'integration_task_2'
+            tasks[3].taskType == 'integration_task_0'
             tasks[3].status == Task.Status.SCHEDULED
             tasks[4].taskType == 'JOIN'
             tasks[4].status == Task.Status.IN_PROGRESS
@@ -813,10 +814,10 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'DO_WHILE'
             tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[2].taskType == 'integration_task_0'
-            tasks[2].status == Task.Status.COMPLETED
-            tasks[3].taskType == 'integration_task_2'
-            tasks[3].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'integration_task_0'
+            tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
             tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_1'
@@ -836,10 +837,10 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'DO_WHILE'
             tasks[1].status == Task.Status.COMPLETED
-            tasks[2].taskType == 'integration_task_0'
-            tasks[2].status == Task.Status.COMPLETED
-            tasks[3].taskType == 'integration_task_2'
-            tasks[3].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'integration_task_0'
+            tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
             tasks[4].status == Task.Status.IN_PROGRESS
             tasks[5].taskType == 'integration_task_1'
@@ -858,14 +859,37 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'DO_WHILE'
             tasks[1].status == Task.Status.COMPLETED
-            tasks[2].taskType == 'integration_task_0'
+            tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.COMPLETED
-            tasks[3].taskType == 'integration_task_2'
+            tasks[3].taskType == 'integration_task_0'
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'JOIN'
             tasks[4].status == Task.Status.COMPLETED
             tasks[5].taskType == 'integration_task_1'
             tasks[5].status == Task.Status.COMPLETED
+        }
+    }
+
+    def "Test workflow with Do While task contains loop over task that use iteration in script expression"() {
+        given: "Number of iterations of the loop is set to 2"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 2
+
+        when: "A do_while workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow_Iteration_Fix", 1, "looptest", workflowInput, null, null)
+
+        then: "Verify that the workflow has competed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 3
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].outputData.get("result") == 0
+            tasks[2].taskType == 'LAMBDA'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].outputData.get("result") == 1
         }
     }
 

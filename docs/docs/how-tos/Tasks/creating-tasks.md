@@ -1,14 +1,8 @@
----
-sidebar_position: 1
----
-
 # Creating Task Definitions
 
 Tasks can be created using the tasks metadata API
 
-```http request
-POST /api/metadata/taskdefs
-```
+`POST /api/metadata/taskdefs`
 
 This API takes an array of new task definitions.
 
@@ -36,6 +30,6 @@ fetch("http://localhost:8080/api/metadata/taskdefs", {
 ## Best Practices
 
 1. You can update a set of tasks together in this API
-2. Task configurations are important attributes that controls the behavior of this task in a Workflow. Refer to [Task Configurations](/content/docs/how-tos/task-configurations) for all the options and details' 
+2. Task configurations are important attributes that controls the behavior of this task in a Workflow. Refer to [Task Configurations](/configuration/taskdef.html) for all the options and details' 
 3. You can also use the Conductor Swagger UI to update the tasks
 

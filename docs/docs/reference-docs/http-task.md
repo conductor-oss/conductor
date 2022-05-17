@@ -140,5 +140,5 @@ Following is the example of HTTP task with `DELETE` method.
 
 1. Why are my HTTP tasks not getting picked up?
     1. We might have too many HTTP tasks in the queue. There is a concept called Isolation Groups that you can rely on
-       for prioritizing certain HTTP tasks over others. Read more here: [Isolation Groups](https://netflix.github.io/conductor/configuration/isolationgroups/)
+       for prioritizing certain HTTP tasks over others. Read more here: [Isolation Groups](/configuration/isolationgroups.html)
    

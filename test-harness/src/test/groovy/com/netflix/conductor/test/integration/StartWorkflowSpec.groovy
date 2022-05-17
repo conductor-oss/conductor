@@ -13,12 +13,15 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.ClassPathResource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.StartWorkflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
+import com.netflix.conductor.test.utils.MockExternalPayloadStorage
 
 import spock.lang.Shared
 import spock.lang.Unroll
@@ -31,12 +34,18 @@ class StartWorkflowSpec extends AbstractSpecification {
     @Autowired
     StartWorkflow startWorkflowTask
 
+    @Autowired
+    MockExternalPayloadStorage mockExternalPayloadStorage
+
     @Shared
     def WORKFLOW_THAT_STARTS_ANOTHER_WORKFLOW = 'workflow_that_starts_another_workflow'
+
+    static String workflowInputPath = "${UUID.randomUUID()}.json"
 
     def setup() {
         workflowTestUtil.registerWorkflows('workflow_that_starts_another_workflow.json',
                 'simple_workflow_1_integration_test.json')
+        mockExternalPayloadStorage.upload(workflowInputPath, StartWorkflowSpec.class.getResourceAsStream("/start_workflow_input.json"), 0)
     }
 
     @Unroll
@@ -151,7 +160,7 @@ class StartWorkflowSpec extends AbstractSpecification {
      * Builds a TestCase for a StartWorkflowRequest with a workflow name and input in external payload storage.
      */
     static workflowRequestWithExternalPayloadStorage() {
-        new TestCase(name: 'name and version with external input', workflowInputPath: '/start_workflow_input.json')
+        new TestCase(name: 'name and version with external input', workflowInputPath: workflowInputPath)
     }
 
     static class TestCase {

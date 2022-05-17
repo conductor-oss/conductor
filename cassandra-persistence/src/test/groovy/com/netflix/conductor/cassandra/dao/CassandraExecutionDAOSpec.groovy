@@ -24,6 +24,7 @@ import com.netflix.conductor.model.WorkflowModel
 import spock.lang.Subject
 
 import static com.netflix.conductor.common.metadata.events.EventExecution.Status.COMPLETED
+import static com.netflix.conductor.common.metadata.events.EventExecution.Status.IN_PROGRESS
 import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT
 
 class CassandraExecutionDAOSpec extends CassandraSpec {
@@ -387,6 +388,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
 
         then: // fetch executions
         eventExecutionList != null && eventExecutionList.size() == 2
+        eventExecutionList[0].status == IN_PROGRESS
         eventExecutionList[1].status == COMPLETED
 
         when: // sleep for 5 seconds (TTL)

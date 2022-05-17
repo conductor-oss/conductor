@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 buildscript {
     repositories {
         mavenCentral()
@@ -7,8 +9,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:7.0.0'
-        // revElasticSearch7 in dependencies.gradle needs to be updated when spring is upgraded
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.12.RELEASE'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.6.6'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -43,9 +44,7 @@ subprojects {
 }
 
 apply from: "$rootDir/dependencies.gradle"
-
-// change the ES version used by Spring Boot Dependency Management plugin
-ext['elasticsearch.version'] = revElasticSearch6
+apply from: "$rootDir/managed-version-overrides.gradle"
 
 allprojects {
     apply plugin: 'nebula.netflixoss'
@@ -91,7 +90,8 @@ allprojects {
 
     dependencyManagement {
         imports {
-            mavenBom("org.springframework.boot:spring-boot-dependencies:2.3.12.RELEASE")
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/2.6.6/reference/htmlsingle/#appendix.dependency-versions
+            mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }
 
@@ -125,6 +125,7 @@ allprojects {
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
+        testImplementation 'junit:junit'
     }
 
     // processes additional configuration metadata json file as described here
@@ -140,8 +141,6 @@ allprojects {
             showStandardStreams = false
         }
     }
-
-
 }
 
 // all client and their related modules are published with Java 8 compatibility

@@ -105,10 +105,22 @@ public class TaskResource {
     }
 
     @GetMapping("/queue/sizes")
-    @Operation(summary = "Get Task type queue sizes")
+    @Operation(summary = "Deprecated. Please use /tasks/queue/size endpoint")
+    @Deprecated
     public Map<String, Integer> size(
             @RequestParam(value = "taskType", required = false) List<String> taskTypes) {
         return taskService.getTaskQueueSizes(taskTypes);
+    }
+
+    @GetMapping("/queue/size")
+    @Operation(summary = "Get queue size for a task type.")
+    public Integer taskDepth(
+            @RequestParam("taskType") String taskType,
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "isolationGroupId", required = false) String isolationGroupId,
+            @RequestParam(value = "executionNamespace", required = false)
+                    String executionNamespace) {
+        return taskService.getTaskQueueSize(taskType, domain, executionNamespace, isolationGroupId);
     }
 
     @GetMapping("/queue/all/verbose")
