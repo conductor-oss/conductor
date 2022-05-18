@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "compileClasspath": {
@@ -39,7 +39,7 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "runtimeClasspath": {
@@ -64,7 +64,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -232,13 +232,13 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "testRuntimeClasspath": {
@@ -263,7 +263,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -396,13 +396,13 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     }
 }

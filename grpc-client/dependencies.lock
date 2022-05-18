@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "compileClasspath": {
@@ -59,7 +59,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
@@ -210,10 +210,10 @@
             "locked": "1.7.36"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "testRuntimeClasspath": {
@@ -227,7 +227,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.guava:guava": {
             "locked": "30.0-jre"
@@ -334,10 +334,10 @@
             "locked": "1.7.36"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     }
 }

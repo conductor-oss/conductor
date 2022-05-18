@@ -7,8 +7,9 @@ use_directory_urls: false
 
 nav:
   - Getting Started:
-    - Running Conductor Locally: gettingstarted/local.md
-    - Installing via Docker Compose: gettingstarted/docker.md
+    - Running Conductor:
+      - From Source: gettingstarted/source.md
+      - Using Docker: gettingstarted/docker.md
     - Basic Concepts: gettingstarted/basicconcepts.md
     - High Level Steps: gettingstarted/steps.md
     - Using the Client: gettingstarted/client.md
