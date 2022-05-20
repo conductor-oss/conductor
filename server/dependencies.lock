@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "compileClasspath": {
@@ -60,22 +60,22 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-actuator": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-web": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.2"
+            "locked": "1.3.3"
         }
     },
     "productionRuntimeClasspath": {
@@ -115,7 +115,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -482,25 +482,25 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-actuator": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.2"
+            "locked": "1.3.3"
         },
         "redis.clients:jedis": {
             "firstLevelTransitive": [
@@ -547,7 +547,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -914,25 +914,25 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-actuator": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.2"
+            "locked": "1.3.3"
         },
         "redis.clients:jedis": {
             "firstLevelTransitive": [
@@ -1016,25 +1016,25 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-actuator": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-web": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.2"
+            "locked": "1.3.3"
         }
     },
     "testRuntimeClasspath": {
@@ -1074,7 +1074,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -1447,28 +1447,28 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-actuator": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.2"
+            "locked": "1.3.3"
         },
         "redis.clients:jedis": {
             "firstLevelTransitive": [

@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "compileClasspath": {
@@ -30,10 +30,10 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "2.6.3"
+            "locked": "2.6.4"
         },
         "redis.clients:jedis": {
             "locked": "3.3.0"
@@ -58,7 +58,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -229,13 +229,13 @@
             "locked": "1.3-groovy-2.5"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "2.6.3"
+            "locked": "2.6.4"
         },
         "org.testcontainers:spock": {
             "locked": "1.15.3"
@@ -266,7 +266,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.github.ben-manes.caffeine:caffeine": {
             "firstLevelTransitive": [
@@ -405,13 +405,13 @@
             "locked": "1.3-groovy-2.5"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "2.6.3"
+            "locked": "2.6.4"
         },
         "org.testcontainers:spock": {
             "locked": "1.15.3"

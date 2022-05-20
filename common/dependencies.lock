@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "annotationsProcessorCodegen": {
@@ -85,7 +85,7 @@
             "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
@@ -118,10 +118,10 @@
             "locked": "1.6.8"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "runtimeClasspath": {
@@ -129,7 +129,7 @@
             "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
@@ -179,7 +179,7 @@
             "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
@@ -212,13 +212,13 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     },
     "testRuntimeClasspath": {
@@ -226,7 +226,7 @@
             "locked": "2.13.2"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.13.2.2"
+            "locked": "2.13.2.1"
         },
         "com.google.protobuf:protobuf-java": {
             "locked": "3.13.0"
@@ -274,13 +274,13 @@
             "locked": "2.17.1"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.6.6"
+            "locked": "2.6.7"
         }
     }
 }

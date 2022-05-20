@@ -9,7 +9,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:7.0.0'
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.6.6'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.6.7'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -44,7 +44,7 @@ subprojects {
 }
 
 apply from: "$rootDir/dependencies.gradle"
-apply from: "$rootDir/managed-version-overrides.gradle"
+apply from: "$rootDir/springboot-bom-overrides.gradle"
 
 allprojects {
     apply plugin: 'nebula.netflixoss'
@@ -90,7 +90,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/2.6.6/reference/htmlsingle/#appendix.dependency-versions
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/2.6.7/reference/htmlsingle/#appendix.dependency-versions
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }
