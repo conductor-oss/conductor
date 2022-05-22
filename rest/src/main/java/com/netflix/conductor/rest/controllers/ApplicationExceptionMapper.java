@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -24,14 +27,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
 
 @RestControllerAdvice
 @Order(ValidationExceptionMapper.ORDER + 1)
@@ -40,6 +41,16 @@ public class ApplicationExceptionMapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
 
     private final String host = Utils.getServerId();
+
+    private static final Map<Class<? extends Throwable>, HttpStatus> EXCEPTION_STATUS_MAP =
+            new HashMap<>();
+
+    static {
+        EXCEPTION_STATUS_MAP.put(NotFoundException.class, HttpStatus.NOT_FOUND);
+        EXCEPTION_STATUS_MAP.put(ConflictException.class, HttpStatus.CONFLICT);
+        EXCEPTION_STATUS_MAP.put(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
+        EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<ErrorResponse> handleApplicationException(
@@ -52,42 +63,29 @@ public class ApplicationExceptionMapper {
                 toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFoundException(
-            HttpServletRequest request, NotFoundException nfe) {
-        logException(request, nfe);
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
+        logException(request, th);
 
-        HttpStatus status = HttpStatus.NOT_FOUND;
+        HttpStatus status =
+                EXCEPTION_STATUS_MAP.getOrDefault(th.getClass(), HttpStatus.INTERNAL_SERVER_ERROR);
+
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setInstance(host);
         errorResponse.setStatus(status.value());
-        errorResponse.setMessage(nfe.getMessage());
-        errorResponse.setRetryable(false);
+        errorResponse.setMessage(th.getMessage());
+        errorResponse.setRetryable(false); // set it to true for BACKEND_ERROR
 
         Monitors.error("error", String.valueOf(status.value()));
 
         return new ResponseEntity<>(errorResponse, status);
     }
 
-    @ExceptionHandler(Throwable.class)
-    public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
-        logException(request, th);
-
-        ApplicationException.Code code =
-                (th instanceof IllegalArgumentException || th instanceof InvalidFormatException)
-                        ? INVALID_INPUT
-                        : INTERNAL_ERROR;
-
-        ApplicationException ex = new ApplicationException(code, th.getMessage(), th);
-
-        return handleApplicationException(request, ex);
-    }
-
     private void logException(HttpServletRequest request, Throwable exception) {
         LOGGER.error(
-                String.format(
-                        "Error %s url: '%s'",
-                        exception.getClass().getSimpleName(), request.getRequestURI()),
+                "Error {} url: '{}'",
+                exception.getClass().getSimpleName(),
+                request.getRequestURI(),
                 exception);
     }
 

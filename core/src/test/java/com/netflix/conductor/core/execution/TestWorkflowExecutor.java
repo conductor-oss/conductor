@@ -41,6 +41,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
@@ -59,7 +60,6 @@ import com.netflix.conductor.service.ExecutionLockService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
 
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
@@ -2008,8 +2008,7 @@ public class TestWorkflowExecutor {
         try {
             workflowExecutor.pauseWorkflow(workflowId);
             fail("Expected " + ApplicationException.class);
-        } catch (ApplicationException e) {
-            assertEquals(e.getCode(), CONFLICT);
+        } catch (ConflictException e) {
             verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
             verify(queueDAO, never()).remove(anyString(), anyString());
         }

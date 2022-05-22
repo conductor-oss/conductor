@@ -32,8 +32,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -160,8 +159,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     public void createWorkflowDef(WorkflowDef def) {
         if (jedisProxy.hexists(
                 nsKey(WORKFLOW_DEF, def.getName()), String.valueOf(def.getVersion()))) {
-            throw new ApplicationException(
-                    Code.CONFLICT, "Workflow with " + def.key() + " already exists!");
+            throw new ConflictException("Workflow with %s already exists!", def.key());
         }
         _createOrUpdate(def);
     }
