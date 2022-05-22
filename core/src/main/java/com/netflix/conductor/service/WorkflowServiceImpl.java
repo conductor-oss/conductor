@@ -33,7 +33,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.Utils;
 
@@ -187,10 +187,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             Map<String, Object> input) {
         WorkflowDef workflowDef = metadataService.getWorkflowDef(name, version);
         if (workflowDef == null) {
-            throw new ApplicationException(
-                    ApplicationException.Code.NOT_FOUND,
-                    String.format(
-                            "No such workflow found by name: %s, version: %d", name, version));
+            throw new NotFoundException(
+                    "No such workflow found by name: %s, version: %d", name, version);
         }
         return workflowExecutor.startWorkflow(
                 workflowDef.getName(),
@@ -247,9 +245,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
         Workflow workflow = executionService.getExecutionStatus(workflowId, includeTasks);
         if (workflow == null) {
-            throw new ApplicationException(
-                    ApplicationException.Code.NOT_FOUND,
-                    String.format("Workflow with Id: %s not found.", workflowId));
+            throw new NotFoundException("Workflow with id: %s not found.", workflowId);
         }
         return workflow;
     }

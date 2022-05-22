@@ -42,6 +42,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
@@ -163,7 +164,7 @@ public class ExecutionDAOFacade {
             if (json == null) {
                 String errorMsg = String.format("No such workflow found by id: %s", workflowId);
                 LOGGER.error(errorMsg);
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND, errorMsg);
+                throw new NotFoundException(errorMsg);
             }
 
             try {
