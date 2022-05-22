@@ -35,6 +35,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -490,8 +491,8 @@ public class WorkflowExecutor {
     public void resetCallbacksForWorkflow(String workflowId) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(
-                    CONFLICT, "Workflow is in terminal state. Status =" + workflow.getStatus());
+            throw new ConflictException(
+                    "Workflow is in terminal state. Status = %s", workflow.getStatus());
         }
 
         // Get SIMPLE tasks in SCHEDULED state that have callbackAfterSeconds > 0 and set the
@@ -544,7 +545,7 @@ public class WorkflowExecutor {
                     String.format(
                             "Workflow: %s is not in terminal state, unable to restart.", workflow);
             LOGGER.error(errorMsg);
-            throw new ApplicationException(CONFLICT, errorMsg);
+            throw new ConflictException(errorMsg);
         }
 
         WorkflowDef workflowDef;
@@ -580,8 +581,7 @@ public class WorkflowExecutor {
                                 WorkflowModel.Status
                                         .COMPLETED)) { // Can only restart non-completed workflows
             // when the configuration is set to false
-            throw new ApplicationException(
-                    CONFLICT, String.format("Workflow: %s is non-restartable", workflow));
+            throw new NotFoundException("Workflow: %s is non-restartable", workflow);
         }
 
         // Reset the workflow in the primary datastore and remove from indexer; then re-create it
@@ -623,11 +623,11 @@ public class WorkflowExecutor {
     public void retry(String workflowId, boolean resumeSubworkflowTasks) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(
-                    CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
+            throw new NotFoundException(
+                    "Workflow is still running.  status=%s", workflow.getStatus());
         }
         if (workflow.getTasks().isEmpty()) {
-            throw new ApplicationException(CONFLICT, "Workflow has not started yet");
+            throw new ConflictException("Workflow has not started yet");
         }
 
         if (resumeSubworkflowTasks) {
@@ -721,8 +721,7 @@ public class WorkflowExecutor {
         // it may not have any unsuccessful tasks that can be retried
         if (retriableMap.values().size() == 0
                 && workflow.getStatus() != WorkflowModel.Status.TIMED_OUT) {
-            throw new ApplicationException(
-                    CONFLICT,
+            throw new ConflictException(
                     "There are no retryable tasks! Use restart if you want to attempt entire workflow execution again.");
         }
 
@@ -881,7 +880,7 @@ public class WorkflowExecutor {
             String msg =
                     "Workflow is already in terminal state. Current status: "
                             + workflow.getStatus();
-            throw new ApplicationException(CONFLICT, msg);
+            throw new ConflictException(msg);
         }
 
         // FIXME Backwards compatibility for legacy workflows already running.
@@ -931,7 +930,7 @@ public class WorkflowExecutor {
     public void terminateWorkflow(String workflowId, String reason) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (WorkflowModel.Status.COMPLETED.equals(workflow.getStatus())) {
-            throw new ApplicationException(CONFLICT, "Cannot terminate a COMPLETED workflow.");
+            throw new ConflictException("Cannot terminate a COMPLETED workflow.");
         }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
         terminateWorkflow(workflow, reason, null);
@@ -1469,9 +1468,9 @@ public class WorkflowExecutor {
             WorkflowModel.Status status = WorkflowModel.Status.PAUSED;
             WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
             if (workflow.getStatus().isTerminal()) {
-                throw new ApplicationException(
-                        CONFLICT,
-                        "Workflow id " + workflowId + " has ended, status cannot be updated.");
+                throw new ConflictException(
+                        "Workflow %s has ended, status cannot be updated.",
+                        workflow.toShortString());
             }
             if (workflow.getStatus().equals(status)) {
                 return; // Already paused!
@@ -1827,7 +1826,7 @@ public class WorkflowExecutor {
                     String.format(
                             "Workflow: %s is not in terminal state, unable to rerun.", workflow);
             LOGGER.error(errorMsg);
-            throw new ApplicationException(CONFLICT, errorMsg);
+            throw new ConflictException(errorMsg);
         }
         updateAndPushParents(workflow, "reran");
 

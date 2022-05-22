@@ -24,8 +24,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.redis.config.AnyRedisCondition;
@@ -56,9 +55,8 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
     public void addEventHandler(EventHandler eventHandler) {
         Preconditions.checkNotNull(eventHandler.getName(), "Missing Name");
         if (getEventHandler(eventHandler.getName()) != null) {
-            throw new ApplicationException(
-                    Code.CONFLICT,
-                    "EventHandler with name " + eventHandler.getName() + " already exists!");
+            throw new ConflictException(
+                    "EventHandler with name %s already exists!", eventHandler.getName());
         }
         index(eventHandler);
         jedisProxy.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));

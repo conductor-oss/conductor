@@ -36,6 +36,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -176,11 +177,9 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                                     workflowDef.getVersion(),
                                     workflowDefinition))
                     .wasApplied()) {
-                throw new ApplicationException(
-                        Code.CONFLICT,
-                        String.format(
-                                "Workflow: %s, version: %s already exists!",
-                                workflowDef.getName(), workflowDef.getVersion()));
+                throw new ConflictException(
+                        "Workflow: %s, version: %s already exists!",
+                        workflowDef.getName(), workflowDef.getVersion());
             }
             String workflowDefIndex =
                     getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
