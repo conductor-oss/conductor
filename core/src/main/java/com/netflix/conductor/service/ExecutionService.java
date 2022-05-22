@@ -46,6 +46,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -305,9 +306,7 @@ public class ExecutionService {
     public void removeTaskFromQueue(String taskId) {
         Task task = getTask(taskId);
         if (task == null) {
-            throw new ApplicationException(
-                    ApplicationException.Code.NOT_FOUND,
-                    String.format("No such task found by taskId: %s", taskId));
+            throw new NotFoundException("No such task found by taskId: %s", taskId);
         }
         queueDAO.remove(QueueUtils.getQueueName(task), taskId);
     }

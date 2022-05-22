@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -49,6 +50,23 @@ public class ApplicationExceptionMapper {
 
         return new ResponseEntity<>(
                 toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(
+            HttpServletRequest request, NotFoundException nfe) {
+        logException(request, nfe);
+
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setInstance(host);
+        errorResponse.setStatus(status.value());
+        errorResponse.setMessage(nfe.getMessage());
+        errorResponse.setRetryable(false);
+
+        Monitors.error("error", String.valueOf(status.value()));
+
+        return new ResponseEntity<>(errorResponse, status);
     }
 
     @ExceptionHandler(Throwable.class)

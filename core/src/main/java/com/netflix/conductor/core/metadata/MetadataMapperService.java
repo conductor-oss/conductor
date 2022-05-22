@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -68,11 +69,8 @@ public class MetadataMapperService {
                             "There is no workflow defined with name {} and version {}",
                             name,
                             version);
-                    return new ApplicationException(
-                            ApplicationException.Code.NOT_FOUND,
-                            String.format(
-                                    "No such workflow defined. name=%s, version=%s",
-                                    name, version));
+                    return new NotFoundException(
+                            "No such workflow defined. name=%s, version=%s", name, version);
                 });
     }
 

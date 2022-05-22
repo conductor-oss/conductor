@@ -259,7 +259,11 @@ public class TaskServiceImpl implements TaskService {
     public Integer getTaskQueueSize(
             String taskType, String domain, String isolationGroupId, String executionNamespace) {
         String queueName =
-                QueueUtils.getQueueName(taskType, domain, isolationGroupId, executionNamespace);
+                QueueUtils.getQueueName(
+                        taskType,
+                        StringUtils.trimToNull(domain),
+                        StringUtils.trimToNull(isolationGroupId),
+                        StringUtils.trimToNull(executionNamespace));
 
         return executionService.getTaskQueueSize(queueName);
     }

@@ -35,6 +35,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
@@ -553,11 +554,9 @@ public class WorkflowExecutor {
                             .getLatestWorkflowDef(workflow.getWorkflowName())
                             .orElseThrow(
                                     () ->
-                                            new ApplicationException(
-                                                    NOT_FOUND,
-                                                    String.format(
-                                                            "Unable to find latest definition for %s",
-                                                            workflowId)));
+                                            new NotFoundException(
+                                                    "Unable to find latest definition for %s",
+                                                    workflowId));
             workflow.setWorkflowDefinition(workflowDef);
         } else {
             workflowDef =
@@ -570,11 +569,9 @@ public class WorkflowExecutor {
                                                             workflow.getWorkflowVersion())
                                                     .orElseThrow(
                                                             () ->
-                                                                    new ApplicationException(
-                                                                            NOT_FOUND,
-                                                                            String.format(
-                                                                                    "Unable to find definition for %s",
-                                                                                    workflowId))));
+                                                                    new NotFoundException(
+                                                                            "Unable to find definition for %s",
+                                                                            workflowId)));
         }
 
         if (!workflowDef.isRestartable()
@@ -1098,10 +1095,9 @@ public class WorkflowExecutor {
                 Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
                         .orElseThrow(
                                 () ->
-                                        new ApplicationException(
-                                                ApplicationException.Code.NOT_FOUND,
-                                                "No such task found by id: "
-                                                        + taskResult.getTaskId()));
+                                        new NotFoundException(
+                                                "No such task found by id: %s",
+                                                taskResult.getTaskId()));
 
         LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
 
@@ -1730,8 +1726,8 @@ public class WorkflowExecutor {
             for (TaskModel task : systemTasks) {
                 WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
                 if (workflowSystemTask == null) {
-                    throw new ApplicationException(
-                            NOT_FOUND, "No system task found by name " + task.getTaskType());
+                    throw new NotFoundException(
+                            "No system task found by name %s", task.getTaskType());
                 }
                 if (task.getStatus() != null
                         && !task.getStatus().isTerminal()

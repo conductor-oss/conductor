@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -859,11 +860,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         })
                 .orElseThrow(
                         () ->
-                                new ApplicationException(
-                                        Code.NOT_FOUND,
-                                        String.format(
-                                                "Workflow with id: %s not found in data store",
-                                                workflowId)));
+                                new NotFoundException(
+                                        "Workflow with id: %s not found in data store",
+                                        workflowId));
     }
 
     @VisibleForTesting

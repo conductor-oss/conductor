@@ -34,6 +34,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.AnyRedisCondition;
@@ -149,8 +150,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(name, "TaskDef name cannot be null");
         Long result = jedisProxy.hdel(nsKey(ALL_TASK_DEFS), name);
         if (!result.equals(1L)) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND, "Cannot remove the task - no such task definition");
+            throw new NotFoundException("Cannot remove the task - no such task definition");
         }
         recordRedisDaoRequests("removeTaskDef");
         refreshTaskDefs();
@@ -244,12 +244,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(version, "Input version cannot be null");
         Long result = jedisProxy.hdel(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
         if (!result.equals(1L)) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND,
-                    String.format(
-                            "Cannot remove the workflow - no such workflow"
-                                    + " definition: %s version: %d",
-                            name, version));
+            throw new NotFoundException(
+                    "Cannot remove the workflow - no such workflow" + " definition: %s version: %d",
+                    name, version);
         }
 
         // check if there are any more versions remaining if not delete the
@@ -257,7 +254,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Optional<Integer> optionMaxVersion = getWorkflowMaxVersion(name);
 
         // delete workflow name
-        if (!optionMaxVersion.isPresent()) {
+        if (optionMaxVersion.isEmpty()) {
             jedisProxy.srem(nsKey(WORKFLOW_DEF_NAMES), name);
         }
 
