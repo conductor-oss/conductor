@@ -990,7 +990,7 @@ public class WorkflowExecutor {
             workflowStatusListener.onWorkflowTerminatedIfEnabled(workflow);
             Monitors.recordWorkflowTermination(
                     workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
-
+            LOGGER.info("Workflow {} is terminated because of {}", workflowId, reason);
             List<TaskModel> tasks = workflow.getTasks();
             try {
                 // Remove from the task queue if they were there
