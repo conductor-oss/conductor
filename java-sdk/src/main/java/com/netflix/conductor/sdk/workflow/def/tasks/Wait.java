@@ -12,11 +12,23 @@
  */
 package com.netflix.conductor.sdk.workflow.def.tasks;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import javax.swing.*;
+
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 /** Wait task */
 public class Wait extends Task<Wait> {
+
+    public static final String DURATION_INPUT = "duration";
+    public static final String UNTIL_INPUT = "until";
+
+    public static final DateTimeFormatter dateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm z");
 
     /**
      * Wait until and external signal completes the task. The external signal can be either an API
@@ -31,6 +43,18 @@ public class Wait extends Task<Wait> {
      */
     public Wait(String taskReferenceName) {
         super(taskReferenceName, TaskType.WAIT);
+    }
+
+    public Wait(String taskReferenceName, Duration waitFor) {
+        super(taskReferenceName, TaskType.WAIT);
+        long seconds = waitFor.getSeconds();
+        input(DURATION_INPUT, seconds + "s");
+    }
+
+    public Wait(String taskReferenceName, ZonedDateTime waitUntil) {
+        super(taskReferenceName, TaskType.WAIT);
+        String formattedDateTime = waitUntil.format(dateTimeFormatter);
+        input(UNTIL_INPUT, formattedDateTime);
     }
 
     Wait(WorkflowTask workflowTask) {

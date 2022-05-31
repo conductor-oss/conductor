@@ -23,12 +23,17 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.utils.DateTimeUtils;
 
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
 import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
+import static com.netflix.conductor.core.execution.tasks.Wait.DURATION_INPUT;
+import static com.netflix.conductor.core.execution.tasks.Wait.UNTIL_INPUT;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.TYPE;
@@ -101,6 +106,9 @@ public @interface WorkflowTaskTypeConstraint {
                     break;
                 case TaskType.TASK_TYPE_JSON_JQ_TRANSFORM:
                     valid = isJSONJQTransformTaskValid(workflowTask, context);
+                    break;
+                case TaskType.TASK_TYPE_WAIT:
+                    valid = isWaitTaskValid(workflowTask, context);
                     break;
             }
 
@@ -238,6 +246,40 @@ public @interface WorkflowTaskTypeConstraint {
                                 "dynamicTaskNameParam",
                                 TaskType.DYNAMIC,
                                 workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        private boolean isWaitTaskValid(
+                WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            boolean valid = true;
+            String duration =
+                    Optional.ofNullable(workflowTask.getInputParameters().get(DURATION_INPUT))
+                            .orElse("")
+                            .toString();
+            String until =
+                    Optional.ofNullable(workflowTask.getInputParameters().get(UNTIL_INPUT))
+                            .orElse("")
+                            .toString();
+
+            if (StringUtils.isNotBlank(duration) && StringUtils.isNotBlank(until)) {
+                String message =
+                        "Both 'duration' and 'until' specified. Please provide only one input";
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+
+            try {
+                if (StringUtils.isNotBlank(duration)) {
+                    DateTimeUtils.parseDuration(duration);
+                } else if (StringUtils.isNotBlank(until)) {
+                    DateTimeUtils.parseDate(until);
+                }
+            } catch (Exception e) {
+                String message = "Wait time specified is invalid.  The duration must be in ";
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
