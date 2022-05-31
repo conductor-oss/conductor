@@ -4,7 +4,7 @@ Pull Request type
 - [ ] Bugfix
 - [ ] Feature
 - [ ] Refactoring (no functional changes, no api changes)
-- [ ] Build related changes (Please run `./gradlew generateLock saveLock` to refresh dependencies)
+- [ ] Build related changes (Please run `./gradlew generateLock saveLock` to refresh dependencies, and run './gradlew :conductor-java-sdk:spotlessApply' to fix any format violations)
 - [ ] WHOSUSING.md
 - [ ] Other (please describe):
 
