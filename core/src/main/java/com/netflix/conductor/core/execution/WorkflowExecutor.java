@@ -1136,9 +1136,8 @@ public class WorkflowExecutor {
             return;
         }
 
-        // for system tasks, setting to SCHEDULED would mean restarting the task which is
-        // undesirable
-        // for worker tasks, set status to SCHEDULED and push to the queue
+        // for SIMPLE tasks, set status to SCHEDULED and push to the queue
+        // for other task types, resetting status to SCHEDULED is undesirable
         if (!systemTaskRegistry.isSystemTask(task.getTaskType())
                 && taskResult.getStatus() == TaskResult.Status.IN_PROGRESS) {
             task.setStatus(SCHEDULED);

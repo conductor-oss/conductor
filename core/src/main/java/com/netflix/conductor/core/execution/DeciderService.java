@@ -12,18 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import java.time.Duration;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -43,8 +31,20 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
+import static com.netflix.conductor.core.execution.managed.ManagedTask.MANAGED_TASKS;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
 /**
@@ -62,6 +62,8 @@ public class DeciderService {
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
     private final SystemTaskRegistry systemTaskRegistry;
+
+    private final Set<String> managedTasks;
     private final long taskPendingTimeThresholdMins;
 
     private final Map<TaskType, TaskMapper> taskMappers;
@@ -84,6 +86,7 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
+            @Qualifier(MANAGED_TASKS) Set<String> managedTasks,
             @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
@@ -94,6 +97,7 @@ public class DeciderService {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
+        this.managedTasks = managedTasks;
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -165,7 +169,8 @@ public class DeciderService {
         // A new workflow does not enter this code branch
         for (TaskModel pendingTask : pendingTasks) {
 
-            if (systemTaskRegistry.isSystemTask(pendingTask.getTaskType())
+            if ((systemTaskRegistry.isSystemTask(pendingTask.getTaskType())
+                            || managedTasks.contains(pendingTask.getTaskType()))
                     && !pendingTask.getStatus().isTerminal()) {
                 tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());

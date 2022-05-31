@@ -155,6 +155,8 @@ public class TaskModel {
      */
     private boolean subworkflowChanged;
 
+    private String functionName;
+
     @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
     @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
@@ -543,6 +545,14 @@ public class TaskModel {
 
     public void setSubworkflowChanged(boolean subworkflowChanged) {
         this.subworkflowChanged = subworkflowChanged;
+    }
+
+    public String getFunctionName() {
+        return functionName;
+    }
+
+    public void setFunctionName(String functionName) {
+        this.functionName = functionName;
     }
 
     public void incrementPollCount() {

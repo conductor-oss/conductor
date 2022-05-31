@@ -14,6 +14,7 @@ package com.netflix.conductor.core.reconciliation;
 
 import java.time.Duration;
 
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import org.junit.Before;
 import org.junit.Test;
 

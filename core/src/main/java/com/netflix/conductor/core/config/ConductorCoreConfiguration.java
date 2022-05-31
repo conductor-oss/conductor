@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.core.execution.managed.ManagedTask;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.core.sync.noop.NoopLock;
 
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
+import static com.netflix.conductor.core.execution.managed.ManagedTask.MANAGED_TASKS;
 import static com.netflix.conductor.core.execution.tasks.SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER;
 import static com.netflix.conductor.core.utils.Utils.isTransientException;
 
@@ -116,6 +118,14 @@ public class ConductorCoreConfiguration {
             List<EventQueueProvider> eventQueueProviders) {
         return eventQueueProviders.stream()
                 .collect(Collectors.toMap(EventQueueProvider::getQueueType, identity()));
+    }
+
+    @Bean
+    @Qualifier(MANAGED_TASKS)
+    public Set<String> managedTasks(Set<ManagedTask> managedTasks) {
+        return managedTasks.stream()
+                .map(ManagedTask::getTaskType)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Bean

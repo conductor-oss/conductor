@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
