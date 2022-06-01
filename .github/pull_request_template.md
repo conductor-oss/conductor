@@ -6,6 +6,7 @@ Pull Request type
 - [ ] Build related changes (Please run `./gradlew generateLock saveLock` to refresh dependencies)
 - [ ] WHOSUSING.md
 - [ ] Other (please describe):
+
 Please remember to run './gradlew :conductor-java-sdk:spotlessApply' to fix any format violations.
 
 Changes in this PR
