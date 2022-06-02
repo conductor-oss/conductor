@@ -21,6 +21,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.managed.ManagedTask;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -63,7 +64,7 @@ public class DeciderService {
     private final MetadataDAO metadataDAO;
     private final SystemTaskRegistry systemTaskRegistry;
 
-    private final Set<String> managedTasks;
+    private final Map<String, ManagedTask> managedTasks;
     private final long taskPendingTimeThresholdMins;
 
     private final Map<TaskType, TaskMapper> taskMappers;
@@ -86,7 +87,7 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
-            @Qualifier(MANAGED_TASKS) Set<String> managedTasks,
+            @Qualifier(MANAGED_TASKS) Map<String, ManagedTask> managedTasks,
             @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
@@ -170,7 +171,7 @@ public class DeciderService {
         for (TaskModel pendingTask : pendingTasks) {
 
             if ((systemTaskRegistry.isSystemTask(pendingTask.getTaskType())
-                            || managedTasks.contains(pendingTask.getTaskType()))
+                            || managedTasks.containsKey(pendingTask.getTaskType()))
                     && !pendingTask.getStatus().isTerminal()) {
                 tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());

@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.execution.tasks
 
-
 import java.time.Duration
 
 import org.junit.Test

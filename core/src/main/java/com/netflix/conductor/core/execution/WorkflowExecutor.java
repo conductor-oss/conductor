@@ -12,15 +12,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.*;
@@ -36,6 +27,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.managed.ManagedTask;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -51,8 +43,18 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.netflix.conductor.core.exception.ApplicationException.Code.*;
+import static com.netflix.conductor.core.execution.managed.ManagedTask.MANAGED_TASKS;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -74,6 +76,8 @@ public class WorkflowExecutor {
     private final IDGenerator idGenerator;
     private final WorkflowStatusListener workflowStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
+
+    private final Map<String, ManagedTask> managedTasks;
 
     private long activeWorkerLastPollMs;
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
@@ -103,6 +107,7 @@ public class WorkflowExecutor {
             ConductorProperties properties,
             ExecutionLockService executionLockService,
             SystemTaskRegistry systemTaskRegistry,
+            @Qualifier(MANAGED_TASKS) Map<String, ManagedTask> managedTasks,
             ParametersUtils parametersUtils,
             IDGenerator idGenerator) {
         this.deciderService = deciderService;
@@ -117,11 +122,10 @@ public class WorkflowExecutor {
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
+        this.managedTasks = managedTasks;
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -132,9 +136,7 @@ public class WorkflowExecutor {
                 name, version, correlationId, input, externalInputPayloadStoragePath, null);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -152,9 +154,7 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -173,9 +173,7 @@ public class WorkflowExecutor {
                 event);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -197,9 +195,7 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -219,9 +215,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -244,9 +238,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -268,9 +260,7 @@ public class WorkflowExecutor {
                 null);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -288,9 +278,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -311,9 +299,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -337,9 +323,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException
-     */
+    /** @throws ApplicationException */
     public String startWorkflow(
             String name,
             Integer version,
@@ -366,9 +350,7 @@ public class WorkflowExecutor {
                 taskToDomain);
     }
 
-    /**
-     * @throws ApplicationException if validation fails
-     */
+    /** @throws ApplicationException if validation fails */
     public String startWorkflow(
             WorkflowDef workflowDefinition,
             Map<String, Object> workflowInput,
@@ -1138,7 +1120,8 @@ public class WorkflowExecutor {
 
         // for SIMPLE tasks, set status to SCHEDULED and push to the queue
         // for other task types, resetting status to SCHEDULED is undesirable
-        if (!systemTaskRegistry.isSystemTask(task.getTaskType())
+        if (!(systemTaskRegistry.isSystemTask(task.getTaskType())
+                        || managedTasks.containsKey(task.getTaskType()))
                 && taskResult.getStatus() == TaskResult.Status.IN_PROGRESS) {
             task.setStatus(SCHEDULED);
         } else {
@@ -1463,9 +1446,7 @@ public class WorkflowExecutor {
         return dedupedTasks;
     }
 
-    /**
-     * @throws ApplicationException if the workflow cannot be paused
-     */
+    /** @throws ApplicationException if the workflow cannot be paused */
     public void pauseWorkflow(String workflowId) {
         try {
             executionLockService.acquireLock(workflowId, 60000);
@@ -1719,6 +1700,11 @@ public class WorkflowExecutor {
                             .filter(task -> systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
+            List<TaskModel> managedTaskList =
+                    tasks.stream()
+                            .filter(task -> managedTasks.containsKey(task.getTaskType()))
+                            .collect(Collectors.toList());
+
             tasksToBeQueued =
                     tasks.stream()
                             .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
@@ -1755,6 +1741,8 @@ public class WorkflowExecutor {
                 } else {
                     tasksToBeQueued.add(task);
                 }
+
+                managedTaskList.forEach(managedTask -> managedTasks.get(managedTask.getTaskType()).invoke(workflow, managedTask));
             }
         } catch (Exception e) {
             List<String> taskIds =

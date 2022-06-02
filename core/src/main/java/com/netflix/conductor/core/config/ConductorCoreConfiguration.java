@@ -12,16 +12,17 @@
  */
 package com.netflix.conductor.core.config;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
-
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.execution.managed.ManagedTask;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.listener.WorkflowStatusListener;
+import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
+import com.netflix.conductor.core.storage.DummyPayloadStorage;
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.core.sync.noop.NoopLock;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,22 +36,19 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.listener.WorkflowStatusListener;
-import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
-import com.netflix.conductor.core.storage.DummyPayloadStorage;
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.core.sync.noop.NoopLock;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 import static com.netflix.conductor.core.execution.managed.ManagedTask.MANAGED_TASKS;
 import static com.netflix.conductor.core.execution.tasks.SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER;
 import static com.netflix.conductor.core.utils.Utils.isTransientException;
-
 import static java.util.function.Function.identity;
 
 @Configuration(proxyBeanMethods = false)
@@ -122,10 +120,9 @@ public class ConductorCoreConfiguration {
 
     @Bean
     @Qualifier(MANAGED_TASKS)
-    public Set<String> managedTasks(Set<ManagedTask> managedTasks) {
+    public Map<String, ManagedTask> managedTasks(Set<ManagedTask> managedTasks) {
         return managedTasks.stream()
-                .map(ManagedTask::getTaskType)
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toMap(ManagedTask::getTaskType, identity()));
     }
 
     @Bean

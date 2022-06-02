@@ -33,7 +33,7 @@ public class RedisLockProperties {
     private String namespace = "";
 
     /**
-     * Enable to otionally continue without a lock to not block executions until the locking service
+     * Enable to optionally continue without a lock to not block executions until the locking service
      * becomes available
      */
     private boolean ignoreLockingExceptions = false;

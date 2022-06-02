@@ -21,10 +21,10 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import org.springframework.stereotype.Component;
 
-@Component(LambdaManagedTask.MANAGED_TASK_TYPE)
+@Component(LambdaManagedTask.AWS_LAMBDA_MANAGED_TASK)
 public class LambdaManagedTask implements ManagedTask {
 
-    public static final String MANAGED_TASK_TYPE = "AWS_LAMBDA";
+    public static final String AWS_LAMBDA_MANAGED_TASK = "AWS_LAMBDA";
 
     private final AWSLambdaAsync client;
 
@@ -34,7 +34,7 @@ public class LambdaManagedTask implements ManagedTask {
 
     @Override
     public String getTaskType() {
-        return MANAGED_TASK_TYPE;
+        return AWS_LAMBDA_MANAGED_TASK;
     }
 
     @Override
