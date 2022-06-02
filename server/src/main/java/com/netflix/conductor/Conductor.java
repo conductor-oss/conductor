@@ -15,13 +15,13 @@ package com.netflix.conductor;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.util.StringUtils;
 
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
 // In case that SQL database is selected this class will be imported back in the appropriate
@@ -48,7 +48,7 @@ public class Conductor {
      */
     private static void loadExternalConfig() throws IOException {
         String configFile = System.getProperty("CONDUCTOR_CONFIG_FILE");
-        if (!StringUtils.isEmpty(configFile)) {
+        if (StringUtils.isNotBlank(configFile)) {
             FileSystemResource resource = new FileSystemResource(configFile);
             if (resource.exists()) {
                 Properties properties = new Properties();
