@@ -21,7 +21,9 @@ dependencies {
     implementation "com.sun.jersey:jersey-client:${revJersey}"
 
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
-    implementation "com.netflix.eureka:eureka-client:${revEurekaClient}"
+    implementation ("com.netflix.eureka:eureka-client:${revEurekaClient}") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
     implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
 
     implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"

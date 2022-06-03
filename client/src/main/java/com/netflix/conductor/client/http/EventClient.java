@@ -14,13 +14,12 @@ package com.netflix.conductor.client.http;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Preconditions;
 
 // Client class for all Event Handler operations
 public class EventClient extends ClientBase {
@@ -48,7 +47,7 @@ public class EventClient extends ClientBase {
      * @param eventHandler the eventHandler definition.
      */
     public void registerEventHandler(EventHandler eventHandler) {
-        Preconditions.checkNotNull(eventHandler, "Event Handler definition cannot be null");
+        Validate.notNull(eventHandler, "Event Handler definition cannot be null");
         post("event", eventHandler);
     }
 
@@ -58,7 +57,7 @@ public class EventClient extends ClientBase {
      * @param eventHandler the eventHandler definition.
      */
     public void updateEventHandler(EventHandler eventHandler) {
-        Preconditions.checkNotNull(eventHandler, "Event Handler definition cannot be null");
+        Validate.notNull(eventHandler, "Event Handler definition cannot be null");
         put("event", null, eventHandler);
     }
 
@@ -68,7 +67,7 @@ public class EventClient extends ClientBase {
      * @return Returns the list of all the event handlers for a given event.
      */
     public List<EventHandler> getEventHandlers(String event, boolean activeOnly) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(event), "Event cannot be blank");
+        Validate.notBlank(event, "Event cannot be blank");
 
         return getForEntity(
                 "event/{event}", new Object[] {"activeOnly", activeOnly}, eventHandlerList, event);
@@ -80,8 +79,7 @@ public class EventClient extends ClientBase {
      * @param name the name of the event handler to be unregistered
      */
     public void unregisterEventHandler(String name) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(name), "Event handler name cannot be blank");
+        Validate.notBlank(name, "Event handler name cannot be blank");
         delete("event/{name}", name);
     }
 }

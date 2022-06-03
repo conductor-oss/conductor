@@ -31,6 +31,7 @@ import javax.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,6 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.base.Preconditions;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 /** Abstract client for the REST server */
@@ -179,7 +179,7 @@ public abstract class ClientBase {
      */
     protected String uploadToExternalPayloadStorage(
             ExternalPayloadStorage.PayloadType payloadType, byte[] payloadBytes, long payloadSize) {
-        Preconditions.checkArgument(
+        Validate.isTrue(
                 payloadType.equals(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT)
                         || payloadType.equals(ExternalPayloadStorage.PayloadType.TASK_OUTPUT),
                 "Payload type must be workflow input or task output");
@@ -204,7 +204,7 @@ public abstract class ClientBase {
     @SuppressWarnings("unchecked")
     protected Map<String, Object> downloadFromExternalStorage(
             ExternalPayloadStorage.PayloadType payloadType, String path) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(path), "uri cannot be blank");
+        Validate.notBlank(path, "uri cannot be blank");
         ExternalStorageLocation externalStorageLocation =
                 payloadStorage.getLocation(
                         ExternalPayloadStorage.Operation.READ, payloadType, path);
@@ -224,7 +224,7 @@ public abstract class ClientBase {
     }
 
     private UriBuilder getURIBuilder(String path, Object[] queryParams) {
-        path = org.apache.commons.lang3.StringUtils.trimToEmpty(path);
+        path = StringUtils.trimToEmpty(path);
 
         UriBuilder builder = UriBuilder.fromPath(path);
         if (queryParams != null) {
@@ -274,12 +274,17 @@ public abstract class ClientBase {
             return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new ConductorClientException("Error converting response to String", e);
+        } finally {
+            IOUtils.closeQuietly(inputStream, (e) -> LOGGER.error("Error closing input stream", e));
         }
     }
 
     private <T> T convertToType(InputStream inputStream, Class<T> responseType) {
         try {
-            return objectMapper.readValue(inputStream, responseType);
+            String value = convertToString(inputStream);
+            return StringUtils.isNotBlank(value)
+                    ? objectMapper.readValue(value, responseType)
+                    : null;
         } catch (IOException e) {
             throw new ConductorClientException("Error converting response to " + responseType, e);
         }
@@ -287,7 +292,10 @@ public abstract class ClientBase {
 
     private <T> T convertToType(InputStream inputStream, TypeReference<T> responseType) {
         try {
-            return objectMapper.readValue(inputStream, responseType);
+            String value = convertToString(inputStream);
+            return StringUtils.isNotBlank(value)
+                    ? objectMapper.readValue(value, responseType)
+                    : null;
         } catch (IOException e) {
             throw new ConductorClientException("Error converting response to " + responseType, e);
         }

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Preconditions;
 
 public class WorkflowClient extends ClientBase {
 
@@ -70,11 +70,9 @@ public class WorkflowClient extends ClientBase {
      *     ConductorClientConfiguration#getWorkflowInputMaxPayloadThresholdKB()}
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
-        Preconditions.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(startWorkflowRequest.getName()),
-                "Workflow name cannot be null or empty");
-        Preconditions.checkArgument(
+        Validate.notNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
+        Validate.notBlank(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
+        Validate.isTrue(
                 StringUtils.isBlank(startWorkflowRequest.getExternalInputPayloadStoragePath()),
                 "External Storage Path must not be set");
 
@@ -146,8 +144,7 @@ public class WorkflowClient extends ClientBase {
      * @return the requested workflow
      */
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         Workflow workflow =
                 getForEntity(
                         "workflow/{workflowId}",
@@ -169,9 +166,8 @@ public class WorkflowClient extends ClientBase {
      */
     public List<Workflow> getWorkflows(
             String name, String correlationId, boolean includeClosed, boolean includeTasks) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(correlationId), "correlationId cannot be blank");
+        Validate.notBlank(name, "name cannot be blank");
+        Validate.notBlank(correlationId, "correlationId cannot be blank");
 
         Object[] params =
                 new Object[] {"includeClosed", includeClosed, "includeTasks", includeTasks};
@@ -212,8 +208,7 @@ public class WorkflowClient extends ClientBase {
      * @param archiveWorkflow flag to indicate if the workflow should be archived before deletion
      */
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
+        Validate.notBlank(workflowId, "Workflow id cannot be blank");
 
         Object[] params = new Object[] {"archiveWorkflow", archiveWorkflow};
         deleteWithUriVariables("workflow/{workflowId}/remove", params, workflowId);
@@ -227,7 +222,7 @@ public class WorkflowClient extends ClientBase {
      * @return the {@link BulkResponse} contains bulkErrorResults and bulkSuccessfulResults
      */
     public BulkResponse terminateWorkflows(List<String> workflowIds, String reason) {
-        Preconditions.checkArgument(!workflowIds.isEmpty(), "workflow id cannot be blank");
+        Validate.isTrue(!workflowIds.isEmpty(), "workflow id cannot be blank");
         return postForEntity(
                 "workflow/bulk/terminate",
                 workflowIds,
@@ -243,8 +238,7 @@ public class WorkflowClient extends ClientBase {
      * @return the list of running workflow instances
      */
     public List<String> getRunningWorkflow(String workflowName, Integer version) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank");
+        Validate.notBlank(workflowName, "Workflow name cannot be blank");
         return getForEntity(
                 "workflow/running/{name}",
                 new Object[] {"version", version},
@@ -263,10 +257,9 @@ public class WorkflowClient extends ClientBase {
      */
     public List<String> getWorkflowsByTimePeriod(
             String workflowName, int version, Long startTime, Long endTime) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank");
-        Preconditions.checkNotNull(startTime, "Start time cannot be null");
-        Preconditions.checkNotNull(endTime, "End time cannot be null");
+        Validate.notBlank(workflowName, "Workflow name cannot be blank");
+        Validate.notNull(startTime, "Start time cannot be null");
+        Validate.notNull(endTime, "End time cannot be null");
 
         Object[] params =
                 new Object[] {"version", version, "startTime", startTime, "endTime", endTime};
@@ -283,8 +276,7 @@ public class WorkflowClient extends ClientBase {
      * @param workflowId the id of the workflow instance
      */
     public void runDecider(String workflowId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         put("workflow/decide/{workflowId}", null, null, workflowId);
     }
 
@@ -294,8 +286,7 @@ public class WorkflowClient extends ClientBase {
      * @param workflowId the workflow id of the workflow to be paused
      */
     public void pauseWorkflow(String workflowId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         put("workflow/{workflowId}/pause", null, null, workflowId);
     }
 
@@ -305,8 +296,7 @@ public class WorkflowClient extends ClientBase {
      * @param workflowId the workflow id of the paused workflow
      */
     public void resumeWorkflow(String workflowId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         put("workflow/{workflowId}/resume", null, null, workflowId);
     }
 
@@ -317,10 +307,8 @@ public class WorkflowClient extends ClientBase {
      * @param taskReferenceName the reference name of the task to be skipped
      */
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
+        Validate.notBlank(taskReferenceName, "Task reference name cannot be blank");
 
         put(
                 "workflow/{workflowId}/skiptask/{taskReferenceName}",
@@ -338,9 +326,8 @@ public class WorkflowClient extends ClientBase {
      * @return the id of the workflow
      */
     public String rerunWorkflow(String workflowId, RerunWorkflowRequest rerunWorkflowRequest) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
-        Preconditions.checkNotNull(rerunWorkflowRequest, "RerunWorkflowRequest cannot be null");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
+        Validate.notNull(rerunWorkflowRequest, "RerunWorkflowRequest cannot be null");
 
         return postForString("workflow/{workflowId}/rerun", rerunWorkflowRequest, null, workflowId);
     }
@@ -354,8 +341,7 @@ public class WorkflowClient extends ClientBase {
      *     workflow execution when restarting the workflow
      */
     public void restart(String workflowId, boolean useLatestDefinitions) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         Object[] params = new Object[] {"useLatestDefinitions", useLatestDefinitions};
         postForEntity("workflow/{workflowId}/restart", null, params, Void.TYPE, workflowId);
     }
@@ -366,8 +352,7 @@ public class WorkflowClient extends ClientBase {
      * @param workflowId the workflow id of the workflow with the failed task
      */
     public void retryLastFailedTask(String workflowId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         postWithUriVariables("workflow/{workflowId}/retry", workflowId);
     }
 
@@ -377,8 +362,7 @@ public class WorkflowClient extends ClientBase {
      * @param workflowId the id of the workflow
      */
     public void resetCallbacksForInProgressTasks(String workflowId) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         postWithUriVariables("workflow/{workflowId}/resetcallbacks", workflowId);
     }
 
@@ -389,8 +373,7 @@ public class WorkflowClient extends ClientBase {
      * @param reason the reason to be logged and displayed
      */
     public void terminateWorkflow(String workflowId, String reason) {
-        Preconditions.checkArgument(
-                StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
         deleteWithUriVariables(
                 "workflow/{workflowId}", new Object[] {"reason", reason}, workflowId);
     }

@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Preconditions;
 
 /** Client for conductor task management including polling for task, updating task status etc. */
 public class TaskClient extends ClientBase {
@@ -84,8 +84,8 @@ public class TaskClient extends ClientBase {
      * @return Task waiting to be executed.
      */
     public Task pollTask(String taskType, String workerId, String domain) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
+        Validate.notBlank(workerId, "Worker id cannot be blank");
 
         Object[] params = new Object[] {"workerid", workerId, "domain", domain};
         Task task =
@@ -108,9 +108,9 @@ public class TaskClient extends ClientBase {
      */
     public List<Task> batchPollTasksByTaskType(
             String taskType, String workerId, int count, int timeoutInMillisecond) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
-        Preconditions.checkArgument(count > 0, "Count must be greater than 0");
+        Validate.notBlank(taskType, "Task type cannot be blank");
+        Validate.notBlank(workerId, "Worker id cannot be blank");
+        Validate.isTrue(count > 0, "Count must be greater than 0");
 
         Object[] params =
                 new Object[] {
@@ -134,9 +134,9 @@ public class TaskClient extends ClientBase {
      */
     public List<Task> batchPollTasksInDomain(
             String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
-        Preconditions.checkArgument(count > 0, "Count must be greater than 0");
+        Validate.notBlank(taskType, "Task type cannot be blank");
+        Validate.notBlank(workerId, "Worker id cannot be blank");
+        Validate.isTrue(count > 0, "Count must be greater than 0");
 
         Object[] params =
                 new Object[] {
@@ -194,7 +194,7 @@ public class TaskClient extends ClientBase {
      * @param taskResult the {@link TaskResult} of the executed task to be updated.
      */
     public void updateTask(TaskResult taskResult) {
-        Preconditions.checkNotNull(taskResult, "Task result cannot be null");
+        Validate.notNull(taskResult, "Task result cannot be null");
         post("tasks", taskResult);
     }
 
@@ -243,7 +243,7 @@ public class TaskClient extends ClientBase {
      *     the server returns false, the client should NOT attempt to ack again.
      */
     public Boolean ack(String taskId, String workerId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        Validate.notBlank(taskId, "Task id cannot be blank");
 
         String response =
                 postForString(
@@ -258,7 +258,7 @@ public class TaskClient extends ClientBase {
      * @param logMessage the message to be logged
      */
     public void logMessageForTask(String taskId, String logMessage) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        Validate.notBlank(taskId, "Task id cannot be blank");
         post("tasks/" + taskId + "/log", logMessage);
     }
 
@@ -268,7 +268,7 @@ public class TaskClient extends ClientBase {
      * @param taskId id of the task.
      */
     public List<TaskExecLog> getTaskLogs(String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        Validate.notBlank(taskId, "Task id cannot be blank");
         return getForEntity("tasks/{taskId}/log", null, taskExecLogList, taskId);
     }
 
@@ -279,7 +279,7 @@ public class TaskClient extends ClientBase {
      * @return Task details
      */
     public Task getTaskDetails(String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        Validate.notBlank(taskId, "Task id cannot be blank");
         return getForEntity("tasks/{taskId}", null, Task.class, taskId);
     }
 
@@ -290,14 +290,14 @@ public class TaskClient extends ClientBase {
      * @param taskId the id of the task to be removed
      */
     public void removeTaskFromQueue(String taskType, String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
+        Validate.notBlank(taskId, "Task id cannot be blank");
 
         delete("tasks/queue/{taskType}/{taskId}", taskType, taskId);
     }
 
     public int getQueueSizeForTask(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
 
         Integer queueSize =
                 getForEntity(
@@ -309,7 +309,7 @@ public class TaskClient extends ClientBase {
 
     public int getQueueSizeForTask(
             String taskType, String domain, String isolationGroupId, String executionNamespace) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
 
         List<Object> params = new LinkedList<>();
         params.add("taskType");
@@ -345,7 +345,7 @@ public class TaskClient extends ClientBase {
      * @return returns the list of poll data for the task type
      */
     public List<PollData> getPollData(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
 
         Object[] params = new Object[] {"taskType", taskType};
         return getForEntity("tasks/queue/polldata", params, pollDataList);
@@ -375,7 +375,7 @@ public class TaskClient extends ClientBase {
      * @return returns the number of tasks that have been requeued
      */
     public String requeuePendingTasksByTaskType(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
         return postForString("tasks/queue/requeue/{taskType}", null, null, taskType);
     }
 

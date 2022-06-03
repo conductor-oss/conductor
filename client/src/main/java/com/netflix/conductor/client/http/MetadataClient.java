@@ -14,13 +14,11 @@ package com.netflix.conductor.client.http;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-
-import com.google.common.base.Preconditions;
 
 public class MetadataClient extends ClientBase {
 
@@ -46,7 +44,7 @@ public class MetadataClient extends ClientBase {
      * @param workflowDef the workflow definition
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
+        Validate.notNull(workflowDef, "Worfklow definition cannot be null");
         post("metadata/workflow", workflowDef);
     }
 
@@ -56,7 +54,7 @@ public class MetadataClient extends ClientBase {
      * @param workflowDefs List of workflow definitions to be updated
      */
     public void updateWorkflowDefs(List<WorkflowDef> workflowDefs) {
-        Preconditions.checkNotNull(workflowDefs, "Workflow defs list cannot be null");
+        Validate.notNull(workflowDefs, "Worfklow defs list cannot be null");
         put("metadata/workflow", null, workflowDefs);
     }
 
@@ -68,7 +66,7 @@ public class MetadataClient extends ClientBase {
      * @return Workflow definition for the given workflow and version
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
+        Validate.notBlank(name, "name cannot be blank");
         return getForEntity(
                 "metadata/workflow/{name}",
                 new Object[] {"version", version},
@@ -84,8 +82,8 @@ public class MetadataClient extends ClientBase {
      * @param version Version of the workflow definition to be unregistered.
      */
     public void unregisterWorkflowDef(String name, Integer version) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Workflow name cannot be blank");
-        Preconditions.checkNotNull(version, "Version cannot be null");
+        Validate.notBlank(name, "Workflow name cannot be blank");
+        Validate.notNull(version, "Version cannot be null");
         delete("metadata/workflow/{name}/{version}", name, version);
     }
 
@@ -97,7 +95,7 @@ public class MetadataClient extends ClientBase {
      * @param taskDefs List of task types to be registered.
      */
     public void registerTaskDefs(List<TaskDef> taskDefs) {
-        Preconditions.checkNotNull(taskDefs, "Task defs list cannot be null");
+        Validate.notNull(taskDefs, "Task defs list cannot be null");
         post("metadata/taskdefs", taskDefs);
     }
 
@@ -107,7 +105,7 @@ public class MetadataClient extends ClientBase {
      * @param taskDef the task definition to be updated
      */
     public void updateTaskDef(TaskDef taskDef) {
-        Preconditions.checkNotNull(taskDef, "Task definition cannot be null");
+        Validate.notNull(taskDef, "Task definition cannot be null");
         put("metadata/taskdefs", null, taskDef);
     }
 
@@ -118,7 +116,7 @@ public class MetadataClient extends ClientBase {
      * @return Task Definition for the given task type
      */
     public TaskDef getTaskDef(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
         return getForEntity("metadata/taskdefs/{tasktype}", null, TaskDef.class, taskType);
     }
 
@@ -128,7 +126,7 @@ public class MetadataClient extends ClientBase {
      * @param taskType Task type to be unregistered.
      */
     public void unregisterTaskDef(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Validate.notBlank(taskType, "Task type cannot be blank");
         delete("metadata/taskdefs/{tasktype}", taskType);
     }
 }

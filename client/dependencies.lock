@@ -51,11 +51,6 @@
             "locked": "1.7.36"
         }
     },
-    "pmd": {
-        "net.sourceforge.pmd:pmd-java": {
-            "locked": "6.39.0"
-        }
-    },
     "runtimeClasspath": {
         "com.amazonaws:aws-java-sdk-core": {
             "locked": "1.11.86"
@@ -154,16 +149,6 @@
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.36"
-        }
-    },
-    "spotbugs": {
-        "com.github.spotbugs:spotbugs": {
-            "locked": "4.4.1"
-        }
-    },
-    "spotbugsSlf4j": {
-        "org.slf4j:slf4j-simple": {
-            "locked": "1.8.0-beta4"
         }
     },
     "testCompileClasspath": {
