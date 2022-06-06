@@ -146,6 +146,9 @@ public class TaskModel {
 
     private String subWorkflowId;
 
+    // Timeout after which the wait task should be marked as completed
+    private long waitTimeout;
+
     /**
      * Used to note that a sub workflow associated with SUB_WORKFLOW task has an action performed on
      * it directly.
@@ -557,6 +560,14 @@ public class TaskModel {
         return iteration > 0;
     }
 
+    public long getWaitTimeout() {
+        return waitTimeout;
+    }
+
+    public void setWaitTimeout(long waitTimeout) {
+        this.waitTimeout = waitTimeout;
+    }
+
     /**
      * @return the queueWaitTime
      */
@@ -675,6 +686,9 @@ public class TaskModel {
                 + ", domain='"
                 + domain
                 + '\''
+                + ", waitTimeout='"
+                + waitTimeout
+                + '\''
                 + ", inputMessage="
                 + inputMessage
                 + ", outputMessage="
@@ -742,6 +756,7 @@ public class TaskModel {
                 && Objects.equals(getTaskId(), taskModel.getTaskId())
                 && Objects.equals(getReasonForIncompletion(), taskModel.getReasonForIncompletion())
                 && Objects.equals(getWorkerId(), taskModel.getWorkerId())
+                && Objects.equals(getWaitTimeout(), taskModel.getWaitTimeout())
                 && Objects.equals(getOutputData(), taskModel.getOutputData())
                 && Objects.equals(getWorkflowTask(), taskModel.getWorkflowTask())
                 && Objects.equals(getDomain(), taskModel.getDomain())
@@ -786,6 +801,7 @@ public class TaskModel {
                 getReasonForIncompletion(),
                 getCallbackAfterSeconds(),
                 getWorkerId(),
+                getWaitTimeout(),
                 getOutputData(),
                 getWorkflowTask(),
                 getDomain(),

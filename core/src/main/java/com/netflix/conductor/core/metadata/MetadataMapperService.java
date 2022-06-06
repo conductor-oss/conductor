@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -123,6 +124,11 @@ public class MetadataMapperService {
         Utils.checkNotNull(workflowTask, "WorkflowTask cannot be null");
         if (shouldPopulateTaskDefinition(workflowTask)) {
             workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
+            if (workflowTask.getTaskDefinition() == null
+                    && workflowTask.getType().equals(TaskType.SIMPLE.name())) {
+                // ad-hoc task def
+                workflowTask.setTaskDefinition(new TaskDef(workflowTask.getName()));
+            }
         }
         if (workflowTask.getType().equals(TaskType.SUB_WORKFLOW.name())) {
             populateVersionForSubWorkflow(workflowTask);

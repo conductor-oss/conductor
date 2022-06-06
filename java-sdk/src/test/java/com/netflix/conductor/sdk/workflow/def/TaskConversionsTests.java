@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.sdk.workflow.def;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -379,6 +382,26 @@ public class TaskConversionsTests {
         assertEquals(waitTask.getType(), taskFromWorkflowTask.getType());
         assertEquals(waitTask.getStartDelay(), taskFromWorkflowTask.getStartDelay());
         assertEquals(waitTask.getInput(), taskFromWorkflowTask.getInput());
+
+        // Wait for 10 seconds
+        waitTask = new Wait("wait_for_10_seconds", Duration.of(10, ChronoUnit.SECONDS));
+        workflowTask = waitTask.getWorkflowDefTasks().get(0);
+        assertNotNull(workflowTask.getInputParameters());
+        assertEquals("10s", workflowTask.getInputParameters().get(Wait.DURATION_INPUT));
+
+        // Wait for 10 minutes
+        waitTask = new Wait("wait_for_10_seconds", Duration.of(10, ChronoUnit.MINUTES));
+        workflowTask = waitTask.getWorkflowDefTasks().get(0);
+        assertNotNull(workflowTask.getInputParameters());
+        assertEquals("600s", workflowTask.getInputParameters().get(Wait.DURATION_INPUT));
+
+        // Wait till next week some time
+        ZonedDateTime nextWeek = ZonedDateTime.now().plusDays(7);
+        String formattedDateTime = Wait.dateTimeFormatter.format(nextWeek);
+        waitTask = new Wait("wait_till_next_week", nextWeek);
+        workflowTask = waitTask.getWorkflowDefTasks().get(0);
+        assertNotNull(workflowTask.getInputParameters());
+        assertEquals(formattedDateTime, workflowTask.getInputParameters().get(Wait.UNTIL_INPUT));
     }
 
     @Test
