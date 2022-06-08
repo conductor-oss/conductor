@@ -1,14 +1,19 @@
-import { format, intervalToDuration } from "date-fns";
+import { format, formatDuration, intervalToDuration } from "date-fns";
 import _ from "lodash";
 
 export function timestampRenderer(date) {
-  return !_.isNil(date) && format(new Date(date), "yyyy-MM-dd HH:mm:ss"); // could be string or number.
+  if (_.isNil(date)) return null;
+
+  const parsed = new Date(date);
+  if (parsed.getTime() === 0) return null; // 0 epoch (UTC 1970-1-1)
+
+  return format(parsed, "yyyy-MM-dd HH:mm:ss"); // could be string or number.
 }
 
 export function durationRenderer(durationMs) {
   const duration = intervalToDuration({ start: 0, end: durationMs });
   if (durationMs > 5000) {
-    return `${duration.minutes}m${duration.seconds}s`;
+    return formatDuration(duration);
   } else {
     return `${durationMs}ms`;
   }
@@ -51,9 +56,6 @@ export function isFailedTask(status) {
 }
 
 export function defaultCompare(x, y) {
-  //INFO: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
-  //ECMA specification: http://www.ecma-international.org/ecma-262/6.0/#sec-sortcompare
-
   if (x === undefined && y === undefined) return 0;
 
   if (x === undefined) return 1;
@@ -71,4 +73,12 @@ export function immutableReplaceAt(array, index, value) {
   const ret = array.slice(0);
   ret[index] = value;
   return ret;
+}
+
+export function isEmptyIterable(iterable) {
+  // eslint-disable-next-line no-unused-vars, no-unreachable-loop
+  for (const _ of iterable) {
+    return false;
+  }
+  return true;
 }
