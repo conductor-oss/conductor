@@ -149,7 +149,7 @@ $node-text-size: 12px;
     &.dimmed {
       rect {
         stroke: $light-color;
-        fill: #fff;
+        fill: #fff;        
       }
       text {
         fill: $light-color;
@@ -176,18 +176,36 @@ $node-text-size: 12px;
 
 .edgePath {
   path {
+    marker-end: url(#endarrow);
     stroke: $dark-color;
     stroke-width: 1px;
   }
+
+  &.reverse {
+    path {
+      marker-end: none;
+      marker-start: url(#startarrow);
+    }
+  }
+
   &.dimmed {
     path {
       stroke: $light-color;
       stroke-dasharray: 5;
+      marker-end: url(#endarrow-dimmed);
     }
     marker {
       fill: $light-color;
     }
   }
+  
+  &.dimmed.reverse {
+    path {
+      marker-end: none;
+      marker-start: url(#startarrow-dimmed);
+    }
+  }
+
   &.executed {
     path {
       stroke-width: 2px;
