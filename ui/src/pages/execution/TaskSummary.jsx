@@ -13,7 +13,10 @@ export default function TaskSummary({ taskResult }) {
     { label: "Task Name", value: taskResult.workflowTask.name },
     {
       label: "Task Reference",
-      value: taskResult.workflowTask.taskReferenceName,
+      value:
+        taskResult.referenceTaskName ||
+        taskResult.workflowTask.aliasForRef ||
+        taskResult.workflowTask.taskReferenceName,
     },
   ];
 
@@ -76,12 +79,6 @@ export default function TaskSummary({ taskResult }) {
       value: taskResult.workerId,
       type: "workerId",
     });
-  }
-  if (!_.isNil(taskResult.callbackAfterSeconds)) {
-    data.push({ label: "Callback After Seconds", value: taskResult.callbackAfterSeconds });
-  }
-  if (!_.isNil(taskResult.pollCount)) {
-    data.push({ label: "Poll Count", value: taskResult.pollCount });
   }
   if (taskResult.taskType === "DECISION") {
     data.push({

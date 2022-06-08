@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, Tab, ReactJson, Dropdown, Banner } from "../../components";
+import { TabPanel, TabContext } from "@material-ui/lab";
 
 import TaskSummary from "./TaskSummary";
 import TaskLogs from "./TaskLogs";
 
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
+import TaskPollData from "./TaskPollData";
 
 const useStyles = makeStyles({
   banner: {
@@ -15,19 +17,20 @@ const useStyles = makeStyles({
     padding: 15,
     backgroundColor: "#efefef",
   },
-  tabContent: {
+  tabPanel: {
+    padding: 0,
     flex: 1,
     overflowY: "auto",
   },
 });
 
 export default function RightPanel({ selectedTask, dag, onTaskChange }) {
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState("summary");
 
   const classes = useStyles();
 
   useEffect(() => {
-    setTabIndex(0); // Reset to Status Tab on ref change
+    setTabIndex("summary"); // Reset to Status Tab on ref change
   }, [selectedTask]);
 
   if (!selectedTask) {
@@ -51,7 +54,7 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
   }
 
   return (
-    <>
+    <TabContext value={tabIndex}>
       {dfOptions && (
         <div className={classes.dfSelect}>
           <Dropdown
@@ -88,36 +91,54 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
         </div>
       )}
 
-      <Tabs value={tabIndex} contextual>
-        <Tab label="Summary" onClick={() => setTabIndex(0)} />
-        <Tab
-          label="Input"
-          onClick={() => setTabIndex(1)}
-          disabled={!taskResult.status}
-        />
-        <Tab
-          label="Output"
-          onClick={() => setTabIndex(2)}
-          disabled={!taskResult.status}
-        />
-        <Tab
-          label="Logs"
-          onClick={() => setTabIndex(3)}
-          disabled={!taskResult.status}
-        />
-        <Tab
-          label="JSON"
-          onClick={() => setTabIndex(4)}
-          disabled={!taskResult.status}
-        />
-        <Tab label="Definition" onClick={() => setTabIndex(5)} />
+      <Tabs value={tabIndex} contextual onChange={(e, v) => setTabIndex(v)}>
+        {[
+          <Tab label="Summary" value="summary" key="summary" />,
+          <Tab
+            label="Input"
+            disabled={!taskResult.status}
+            value="input"
+            key="input"
+          />,
+          <Tab
+            label="Output"
+            disabled={!taskResult.status}
+            value="output"
+            key="output"
+          />,
+          <Tab
+            label="Logs"
+            disabled={!taskResult.status}
+            value="logs"
+            key="logs"
+          />,
+          <Tab
+            label="JSON"
+            disabled={!taskResult.status}
+            value="json"
+            key="json"
+          />,
+          <Tab label="Definition" value="definition" key="definition" />,
+          ...(_.get(taskResult, "workflowTask.type") === "SIMPLE"
+            ? [
+                <Tab
+                  label="Poll Data"
+                  disabled={!taskResult.status}
+                  value="pollData"
+                  key="pollData"
+                />,
+              ]
+            : []),
+        ]}
       </Tabs>
-      <div className={classes.tabContent}>
-        {tabIndex === 0 && <TaskSummary taskResult={taskResult} />}
-        {tabIndex === 1 && (
+      <>
+        <TabPanel className={classes.tabPanel} value="summary">
+          <TaskSummary taskResult={taskResult} />
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="input">
           <ReactJson src={taskResult.inputData} label="Task Input" />
-        )}
-        {tabIndex === 2 && (
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="output">
           <>
             {taskResult.externalOutputPayloadStoragePath && (
               <Banner className={classes.banner}>
@@ -128,22 +149,27 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
             )}
             <ReactJson src={taskResult.outputData} label="Task Output" />
           </>
-        )}
-        {tabIndex === 3 && <TaskLogs task={taskResult} />}
-        {tabIndex === 4 && (
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="pollData">
+          <TaskPollData task={taskResult} />
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="logs">
+          <TaskLogs task={taskResult} />
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="json">
           <ReactJson
             src={taskResult}
             label="Unabridged Task Execution Result"
           />
-        )}
-        {tabIndex === 5 && (
+        </TabPanel>
+        <TabPanel className={classes.tabPanel} value="definition">
           <ReactJson
             src={taskResult.workflowTask}
             label="Task Definition at Runtime"
           />
-        )}
-      </div>
-    </>
+        </TabPanel>
+      </>
+    </TabContext>
   );
 }
 
