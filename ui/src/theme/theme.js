@@ -342,6 +342,7 @@ const overrides = {
         },
       },
     },
+
     MuiOutlinedInput: {
       notchedOutline: {
         borderColor: colors.blackXXLight,
@@ -354,6 +355,14 @@ const overrides = {
       root: {
         "&:hover $notchedOutline": {
           borderColor: colors.blackXXLight,
+        },
+        "&.$Mui-disabled": {
+          backgroundColor: colors.grayXXLight,
+          borderColor: colors.blackXXLight,
+          color: colors.blackLight,
+        },
+        "&.$Mui-disabled .MuiOutlinedInput-notchedOutline": {
+          borderColor: "inherit",
         },
         backgroundColor: baseTheme.palette.background.paper,
       },
@@ -379,6 +388,9 @@ const overrides = {
         display: "none",
         pointerEvents: "none",
         color: baseTheme.palette.text.primary,
+        "&.$Mui-disabled": {
+          color: colors.blackXLight,
+        },
       },
       outlined: {
         "&$shrink": {
