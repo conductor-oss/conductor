@@ -1,16 +1,11 @@
-import { useMemo } from "react";
 import { Text, Pill } from "../../components";
 import { Toolbar, IconButton, Tooltip } from "@material-ui/core";
 import FormikInput from "../../components/formik/FormikInput";
 import FormikJsonInput from "../../components/formik/FormikJsonInput";
-import FormikDropdown from "../../components/formik/FormikDropdown";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 import { Form, setNestedObjectValues, withFormik } from "formik";
-import {
-  useWorkflowNamesAndVersions,
-  useWorkflowDef,
-} from "../../data/workflow";
+import { useWorkflowDef } from "../../data/workflow";
 import FormikVersionDropdown from "../../components/formik/FormikVersionDropdown";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PlaylistAddIcon from "@material-ui/icons/PlaylistAdd";
@@ -18,6 +13,7 @@ import SaveIcon from "@material-ui/icons/Save";
 import { colors } from "../../theme/variables";
 import { timestampRenderer } from "../../utils/helpers";
 import * as Yup from "yup";
+import FormikWorkflowNameInput from "../../components/formik/FormikWorkflowNameInput";
 
 const useStyles = makeStyles({
   name: {
@@ -90,11 +86,6 @@ function WorkbenchForm(props) {
   const { workflowName, workflowVersion } = values;
   const createTime = selectedRun ? selectedRun.createTime : undefined;
 
-  const { data: namesAndVersions } = useWorkflowNamesAndVersions();
-  const workflowNames = useMemo(
-    () => (namesAndVersions ? Array.from(namesAndVersions.keys()) : []),
-    [namesAndVersions]
-  );
   const { refetch } = useWorkflowDef(workflowName, workflowVersion, null, {
     onSuccess: populateInput,
     enabled: false,
@@ -187,10 +178,9 @@ function WorkbenchForm(props) {
       </Toolbar>
 
       <div className={classes.fields}>
-        <FormikDropdown
+        <FormikWorkflowNameInput
           fullWidth
           label="Workflow Name"
-          options={workflowNames}
           name="workflowName"
         />
 

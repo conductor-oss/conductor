@@ -134,10 +134,21 @@ export default function Execution() {
     () => (execution ? new WorkflowDAG(execution) : null),
     [execution]
   );
-  const selectedTask = useMemo(
-    () => (dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null),
-    [dag, selectedTaskJson]
-  );
+
+  const selectedTask = useMemo(() => {
+    if (!dag || !selectedTaskJson) return null;
+    let selectedTask = rison.decode(selectedTaskJson);
+    // If id is supplied, resolve the correct ref for it.
+    if (selectedTask.id) {
+      const task = dag.findTaskById(selectedTask.id);
+      if (task) {
+        selectedTask.ref = task.referenceTaskName;
+      } else {
+        selectedTask = null;
+      }
+    }
+    return selectedTask;
+  }, [dag, selectedTaskJson]);
 
   const classes = useStyles({
     isFullWidth,
