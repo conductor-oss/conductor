@@ -7,7 +7,7 @@ Pull Request type
 - [ ] WHOSUSING.md
 - [ ] Other (please describe):
 
-Please remember to run `./gradlew :conductor-java-sdk:spotlessApply` to fix any format violations.
+**NOTE**: Please remember to run `./gradlew spotlessApply` to fix any format violations.
 
 Changes in this PR
 ----
