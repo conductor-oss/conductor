@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +38,6 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.patterns.ThreadPoolMonitor;
-
-import com.google.common.base.Stopwatch;
 
 /**
  * Manages the threadpool used by the workers for execution and server communication (polling and
@@ -220,7 +219,8 @@ class TaskPollExecutor {
     }
 
     private void executeTask(Worker worker, Task task) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        StopWatch stopwatch = new StopWatch();
+        stopwatch.start();
         TaskResult result = null;
         try {
             LOGGER.debug(
@@ -246,7 +246,7 @@ class TaskPollExecutor {
         } finally {
             stopwatch.stop();
             MetricsContainer.getExecutionTimer(worker.getTaskDefName())
-                    .record(stopwatch.elapsed(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
+                    .record(stopwatch.getTime(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
         }
 
         LOGGER.debug(

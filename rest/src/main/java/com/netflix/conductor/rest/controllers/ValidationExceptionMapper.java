@@ -140,9 +140,9 @@ public class ValidationExceptionMapper {
 
     private void logException(HttpServletRequest request, ValidationException exception) {
         LOGGER.error(
-                String.format(
-                        "Error %s url: '%s'",
-                        exception.getClass().getSimpleName(), request.getRequestURI()),
+                "Error {} url: '{}'",
+                exception.getClass().getSimpleName(),
+                request.getRequestURI(),
                 exception);
     }
 }

@@ -27,7 +27,6 @@
   <bean class="WorkflowTask" ignore-annotations="false">
     <class ignore-annotations="false">
       <constraint annotation="com.netflix.conductor.validations.WorkflowTaskTypeConstraint"/>
-      <constraint annotation="com.netflix.conductor.validations.WorkflowTaskValidConstraint"/>
     </class>
   </bean>
 </constraint-mappings>

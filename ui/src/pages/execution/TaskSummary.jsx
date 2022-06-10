@@ -77,6 +77,12 @@ export default function TaskSummary({ taskResult }) {
       type: "workerId",
     });
   }
+  if (!_.isNil(taskResult.callbackAfterSeconds)) {
+    data.push({ label: "Callback After Seconds", value: taskResult.callbackAfterSeconds });
+  }
+  if (!_.isNil(taskResult.pollCount)) {
+    data.push({ label: "Poll Count", value: taskResult.pollCount });
+  }
   if (taskResult.taskType === "DECISION") {
     data.push({
       label: "Evaluated Case",

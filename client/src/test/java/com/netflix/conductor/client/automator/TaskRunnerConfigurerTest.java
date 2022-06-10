@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -29,8 +28,6 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-
-import com.google.common.util.concurrent.Uninterruptibles;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.COMPLETED;
 
@@ -125,7 +122,7 @@ public class TaskRunnerConfigurerTest {
     }
 
     @Test
-    public void testMultipleWorkersExecution() {
+    public void testMultipleWorkersExecution() throws Exception {
         String task1Name = "task1";
         Worker worker1 = mock(Worker.class);
         when(worker1.getPollingInterval()).thenReturn(3000);
@@ -135,7 +132,7 @@ public class TaskRunnerConfigurerTest {
                 .thenAnswer(
                         invocation -> {
                             // Sleep for 2 seconds to simulate task execution
-                            Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+                            Thread.sleep(2000);
                             TaskResult taskResult = new TaskResult();
                             taskResult.setStatus(COMPLETED);
                             return taskResult;
@@ -150,7 +147,7 @@ public class TaskRunnerConfigurerTest {
                 .thenAnswer(
                         invocation -> {
                             // Sleep for 2 seconds to simulate task execution
-                            Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+                            Thread.sleep(2000);
                             TaskResult taskResult = new TaskResult();
                             taskResult.setStatus(COMPLETED);
                             return taskResult;
@@ -200,7 +197,7 @@ public class TaskRunnerConfigurerTest {
                 .when(taskClient)
                 .updateTask(any());
         configurer.init();
-        Uninterruptibles.awaitUninterruptibly(latch);
+        latch.await();
 
         assertEquals(1, task1Counter.get());
         assertEquals(1, task2Counter.get());

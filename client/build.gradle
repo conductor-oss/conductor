@@ -9,8 +9,7 @@ buildscript {
     }
 }
 
-apply plugin: 'com.github.spotbugs'
-apply plugin: 'pmd'
+apply plugin: 'groovy'
 
 configurations.all {
     exclude group: 'amazon', module: 'aws-java-sdk'
@@ -22,7 +21,9 @@ dependencies {
     implementation "com.sun.jersey:jersey-client:${revJersey}"
 
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
-    implementation "com.netflix.eureka:eureka-client:${revEurekaClient}"
+    implementation ("com.netflix.eureka:eureka-client:${revEurekaClient}") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
     implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
 
     implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
@@ -35,20 +36,8 @@ dependencies {
 
     testImplementation "org.powermock:powermock-module-junit4:${revPowerMock}"
     testImplementation "org.powermock:powermock-api-mockito2:${revPowerMock}"
-}
 
-spotbugsMain {
-    reports {
-        xml {
-            enabled = false
-        }
-        html {
-            enabled = true
-        }
-    }
-    excludeFilter = file("spotbugsExclude.xml")
-}
-
-pmd {
-    ignoreFailures = true
+    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.spockframework:spock-core:${revSpock}"
+    testImplementation "org.spockframework:spock-spring:${revSpock}"
 }

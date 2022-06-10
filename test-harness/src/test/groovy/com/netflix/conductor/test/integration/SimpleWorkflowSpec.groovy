@@ -951,4 +951,82 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         simpleWorkflowDefinition.restartable = true
         metadataService.updateWorkflowDef(simpleWorkflowDefinition)
     }
+
+    def "Test simple workflow when update task's result with call back after seconds"() {
+
+        given: "A new simple workflow is started"
+        def correlationId = 'integration_test_1'
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when: "start a new workflow with the input"
+        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+                correlationId, workflowInput,
+                null, null, null)
+
+        then: "verify that the workflow is in running state and the task queue has an entry for the first task of the workflow"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+        workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
+
+        when: "the first task 'integration_task_1' is polled and then sent back with no callBack seconds"
+        def pollTaskTry1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
+        pollTaskTry1.outputData['op'] = 'task1.in.progress'
+        pollTaskTry1.status = Task.Status.IN_PROGRESS
+        workflowExecutionService.updateTask(new TaskResult(pollTaskTry1))
+
+        then: "verify that the task is polled and acknowledged"
+        pollTaskTry1
+
+        and: "the input data of the data is as expected"
+        pollTaskTry1.inputData.containsKey('p1')
+        pollTaskTry1.inputData['p1'] == 'p1 value'
+        pollTaskTry1.inputData.containsKey('p2')
+        pollTaskTry1.inputData['p1'] == 'p1 value'
+
+        and: "the task gets put back into the queue of 'integration_task_1' immediately for future poll"
+        workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
+
+        and: "The task in in SCHEDULED status with workerId reset"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].callbackAfterSeconds == 0
+        }
+
+        when: "the 'integration_task_1' task is polled again"
+        def pollTaskTry2 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
+        pollTaskTry2.outputData['op'] = 'task1.in.progress'
+        pollTaskTry2.status = Task.Status.IN_PROGRESS
+        pollTaskTry2.callbackAfterSeconds = 3600
+        workflowExecutionService.updateTask(new TaskResult(pollTaskTry2))
+
+        then: "verify that the task is polled and acknowledged"
+        pollTaskTry2
+
+        and: "the task gets put back into the queue of 'integration_task_1' with callbackAfterSeconds delay for future poll"
+        workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
+
+        and: "The task in in SCHEDULED status with workerId reset"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].callbackAfterSeconds == pollTaskTry2.callbackAfterSeconds
+        }
+
+        when: "the 'integration_task_1' task is polled again"
+        def pollTaskTry3 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
+
+        then: "verify that there was no task polled"
+        !pollTaskTry3
+    }
 }

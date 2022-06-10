@@ -33,6 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -2363,6 +2364,87 @@ public class TestWorkflowExecutor {
         assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
         assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, task.getStatus());
         assertEquals(WorkflowModel.Status.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testUpdateTaskWithCallbackAfterSeconds() {
+        String workflowId = "test-workflow-id";
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel simpleTask = new TaskModel();
+        simpleTask.setTaskType(TaskType.SIMPLE.name());
+        simpleTask.setReferenceTaskName("simpleTask");
+        simpleTask.setWorkflowInstanceId(workflowId);
+        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setCallbackAfterSeconds(0);
+        simpleTask.setTaskId("simple-task-id");
+        simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        workflow.getTasks().addAll(Arrays.asList(simpleTask));
+        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.setWorkflowInstanceId(workflowId);
+        taskResult.setTaskId(simpleTask.getTaskId());
+        taskResult.setWorkerId("test-worker-id");
+        taskResult.log("not ready yet");
+        taskResult.setCallbackAfterSeconds(300);
+        taskResult.setStatus(TaskResult.Status.IN_PROGRESS);
+
+        workflowExecutor.updateTask(taskResult);
+        verify(queueDAO, times(1)).postpone(anyString(), anyString(), any(), any());
+        ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
+        assertEquals(
+                taskResult.getCallbackAfterSeconds(),
+                argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
+        assertEquals(
+                taskResult.getWorkflowInstanceId(),
+                argumentCaptor.getAllValues().get(0).getWorkerId());
+    }
+
+    @Test
+    public void testUpdateTaskWithOutCallbackAfterSeconds() {
+        String workflowId = "test-workflow-id";
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setWorkflowDefinition(new WorkflowDef());
+
+        TaskModel simpleTask = new TaskModel();
+        simpleTask.setTaskType(TaskType.SIMPLE.name());
+        simpleTask.setReferenceTaskName("simpleTask");
+        simpleTask.setWorkflowInstanceId(workflowId);
+        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setCallbackAfterSeconds(0);
+        simpleTask.setTaskId("simple-task-id");
+        simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        workflow.getTasks().addAll(Arrays.asList(simpleTask));
+        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.setWorkflowInstanceId(workflowId);
+        taskResult.setTaskId(simpleTask.getTaskId());
+        taskResult.setWorkerId("test-worker-id");
+        taskResult.log("not ready yet");
+        taskResult.setStatus(TaskResult.Status.IN_PROGRESS);
+
+        workflowExecutor.updateTask(taskResult);
+        verify(queueDAO, times(1)).postpone(anyString(), anyString(), any(), any());
+        ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
+        assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
+        assertEquals(
+                taskResult.getWorkflowInstanceId(),
+                argumentCaptor.getAllValues().get(0).getWorkerId());
     }
 
     private WorkflowModel generateSampleWorkflow() {

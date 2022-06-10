@@ -955,4 +955,31 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
             tasks[0].inputData.get('http_request')['uri'] == '/get/something'
         }
     }
+
+    def "Test task def created if not exist"() {
+        setup: "Register a workflow definition with task def not registered"
+        def taskDefName = "task_not_registered"
+        WorkflowTask workflowTask = new WorkflowTask()
+        workflowTask.setName(taskDefName)
+        workflowTask.setWorkflowTaskType(TaskType.SIMPLE)
+        workflowTask.setTaskReferenceName("t0")
+
+        WorkflowDef testWorkflowDef = new WorkflowDef()
+        testWorkflowDef.setName("test_workflow")
+        testWorkflowDef.getTasks().add(workflowTask)
+        testWorkflowDef.setSchemaVersion(2)
+        testWorkflowDef.setOwnerEmail("test@harness.com")
+        metadataService.registerWorkflowDef(testWorkflowDef)
+
+        when: "the workflow is started"
+        def correlationId = 'workflow_taskdef_not_registered'
+        def workflowInstanceId = workflowExecutor.startWorkflow(testWorkflowDef, new HashMap(), null, correlationId, null, null)
+
+        then: "the workflow is in running state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskDefName == taskDefName
+        }
+    }
 }
