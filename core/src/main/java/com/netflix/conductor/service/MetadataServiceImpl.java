@@ -23,8 +23,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -152,8 +150,7 @@ public class MetadataServiceImpl implements MetadataService {
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         if (workflowDef.getName().contains(":")) {
-            throw new ApplicationException(
-                    Code.INVALID_INPUT,
+            throw new IllegalArgumentException(
                     "Workflow name cannot contain the following set of characters: ':'");
         }
         if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {

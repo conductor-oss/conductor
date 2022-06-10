@@ -474,8 +474,7 @@ public class WorkflowExecutor {
             if (workflowInput == null && StringUtils.isBlank(externalStoragePath)) {
                 LOGGER.error(
                         "The input for the workflow '{}' cannot be NULL", workflowDef.getName());
-                throw new ApplicationException(
-                        INVALID_INPUT, "NULL input passed when starting workflow");
+                throw new IllegalArgumentException("NULL input passed when starting workflow");
             }
         } catch (Exception e) {
             Monitors.recordWorkflowStartError(
@@ -521,8 +520,8 @@ public class WorkflowExecutor {
                 request.getTaskInput(),
                 request.getWorkflowInput(),
                 request.getCorrelationId())) {
-            throw new ApplicationException(
-                    INVALID_INPUT, "Task " + request.getReRunFromTaskId() + " not found");
+            throw new IllegalArgumentException(
+                    "Task " + request.getReRunFromTaskId() + " not found");
         }
         return request.getReRunFromWorkflowId();
     }
@@ -1076,8 +1075,7 @@ public class WorkflowExecutor {
      */
     public void updateTask(TaskResult taskResult) {
         if (taskResult == null) {
-            throw new ApplicationException(
-                    ApplicationException.Code.INVALID_INPUT, "Task object is null");
+            throw new IllegalArgumentException("Task object is null");
         }
 
         String workflowId = taskResult.getWorkflowInstanceId();

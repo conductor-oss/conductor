@@ -21,7 +21,6 @@ import java.util.Map;
 public class ApplicationException extends RuntimeException {
 
     public enum Code {
-        INVALID_INPUT(400),
         INTERNAL_ERROR(500),
         UNAUTHORIZED(403),
         BACKEND_ERROR(500);

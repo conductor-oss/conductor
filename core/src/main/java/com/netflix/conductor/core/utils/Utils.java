@@ -73,7 +73,7 @@ public class Utils {
      */
     public static void checkNotNullOrEmpty(Collection<?> collection, String errorMessage) {
         if (collection == null || collection.isEmpty()) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         }
     }
 
@@ -86,7 +86,7 @@ public class Utils {
      */
     public static void checkNotNullOrEmpty(Map<?, ?> map, String errorMessage) {
         if (map == null || map.isEmpty()) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         }
     }
 
@@ -99,7 +99,7 @@ public class Utils {
      */
     public static void checkNotNullOrEmpty(String input, String errorMessage) {
         if (StringUtils.isEmpty(input)) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         }
     }
 

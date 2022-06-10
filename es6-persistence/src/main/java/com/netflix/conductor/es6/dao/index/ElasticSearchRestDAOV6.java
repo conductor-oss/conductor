@@ -774,9 +774,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
         try {
             if (keys.length != values.length) {
-                throw new ApplicationException(
-                        ApplicationException.Code.INVALID_INPUT,
-                        "Number of keys and values do not match");
+                throw new IllegalArgumentException("Number of keys and values do not match");
             }
 
             long startTime = Instant.now().toEpochMilli();

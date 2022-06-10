@@ -45,7 +45,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -110,8 +109,7 @@ public class ExecutionService {
     public List<Task> poll(
             String taskType, String workerId, String domain, int count, int timeoutInMilliSecond) {
         if (timeoutInMilliSecond > MAX_POLL_TIMEOUT_MS) {
-            throw new ApplicationException(
-                    ApplicationException.Code.INVALID_INPUT,
+            throw new IllegalArgumentException(
                     "Long Poll Timeout value cannot be more than 5 seconds");
         }
         String queueName = QueueUtils.getQueueName(taskType, domain, null, null);

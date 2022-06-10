@@ -25,7 +25,6 @@ import spock.lang.Subject
 
 import static com.netflix.conductor.common.metadata.events.EventExecution.Status.COMPLETED
 import static com.netflix.conductor.common.metadata.events.EventExecution.Status.IN_PROGRESS
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT
 
 class CassandraExecutionDAOSpec extends CassandraSpec {
 
@@ -339,15 +338,13 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
         executionDAO.getTask('invalid_id')
 
         then:
-        def ex = thrown(ApplicationException.class)
-        ex && ex.code == INVALID_INPUT
+        thrown(IllegalArgumentException.class)
 
         when: 'verify that a non-conforming uuid throws an exception'
         executionDAO.getWorkflow('invalid_id', true)
 
         then:
-        ex = thrown(ApplicationException.class)
-        ex && ex.code == INVALID_INPUT
+        thrown(IllegalArgumentException.class)
 
         and: 'verify that a non-existing generated id returns null'
         executionDAO.getTask(new IDGenerator().generate()) == null

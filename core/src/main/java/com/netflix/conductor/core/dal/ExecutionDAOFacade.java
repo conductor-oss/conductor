@@ -41,7 +41,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
@@ -377,8 +376,7 @@ public class ExecutionDAOFacade {
                         new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
                         new Object[] {objectMapper.writeValueAsString(workflow), true});
             } else {
-                throw new ApplicationException(
-                        Code.INVALID_INPUT,
+                throw new IllegalArgumentException(
                         String.format(
                                 "Cannot archive workflow: %s with status: %s",
                                 workflow.getWorkflowId(), workflow.getStatus()));

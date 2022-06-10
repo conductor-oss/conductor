@@ -701,9 +701,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     @Override
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
         if (keys.length != values.length) {
-            throw new ApplicationException(
-                    ApplicationException.Code.INVALID_INPUT,
-                    "Number of keys and values do not match");
+            throw new IllegalArgumentException("Number of keys and values do not match");
         }
 
         long startTime = Instant.now().toEpochMilli();

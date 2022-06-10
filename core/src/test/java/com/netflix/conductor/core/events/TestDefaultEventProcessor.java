@@ -396,10 +396,7 @@ public class TestDefaultEventProcessor {
         when(executionService.addEventExecution(any())).thenReturn(true);
 
         when(actionProcessor.execute(any(), any(), any(), any()))
-                .thenThrow(
-                        new ApplicationException(
-                                ApplicationException.Code.INVALID_INPUT,
-                                "some non-retriable error"));
+                .thenThrow(new IllegalArgumentException("some non-retriable error"));
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -458,9 +455,7 @@ public class TestDefaultEventProcessor {
                         (Answer<Map<String, Object>>)
                                 invocation -> {
                                     executeInvoked.incrementAndGet();
-                                    throw new ApplicationException(
-                                            ApplicationException.Code.INVALID_INPUT,
-                                            "some non-retriable error");
+                                    throw new IllegalArgumentException("some non-retriable error");
                                 })
                 .when(actionProcessor)
                 .execute(any(), any(), any(), any());

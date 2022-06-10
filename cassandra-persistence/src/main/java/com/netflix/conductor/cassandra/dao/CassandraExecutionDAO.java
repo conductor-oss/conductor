@@ -359,7 +359,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 return task;
                             })
                     .orElse(null);
-        } catch (ApplicationException ae) {
+        } catch (ApplicationException | IllegalArgumentException ae) {
             throw ae;
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getTask");
@@ -556,7 +556,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "getWorkflow");
             String errorMsg = String.format("Invalid workflow id: %s", workflowId);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.INVALID_INPUT, errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "getWorkflow");
             String errorMsg = String.format("Failed to get workflow: %s", workflowId);
@@ -877,7 +877,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Invalid task id: %s", taskId);
             LOGGER.error(errorMsg, iae);
-            throw new ApplicationException(Code.INVALID_INPUT, errorMsg, iae);
+            throw new IllegalArgumentException(errorMsg, iae);
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Failed to lookup workflowId from taskId: %s", taskId);
