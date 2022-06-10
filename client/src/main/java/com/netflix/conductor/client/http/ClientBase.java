@@ -49,7 +49,6 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 /** Abstract client for the REST server */
 public abstract class ClientBase {
@@ -70,17 +69,12 @@ public abstract class ClientBase {
             RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
 
-        if (requestHandler == null) {
-            // https://github.com/FasterXML/jackson-databind/issues/2683
-            if (isNewerJacksonVersion()) {
-                objectMapper.registerModule(new JavaTimeModule());
-            }
-            this.requestHandler =
-                    new JerseyRequestHandler(new DefaultClientConfig(), null, objectMapper);
-        } else {
-            this.requestHandler = requestHandler;
+        // https://github.com/FasterXML/jackson-databind/issues/2683
+        if (isNewerJacksonVersion()) {
+            objectMapper.registerModule(new JavaTimeModule());
         }
 
+        this.requestHandler = ObjectUtils.defaultIfNull(requestHandler, new JerseyRequestHandler());
         this.conductorClientConfiguration =
                 ObjectUtils.defaultIfNull(
                         clientConfiguration, new DefaultConductorClientConfiguration());
@@ -244,7 +238,7 @@ public abstract class ClientBase {
         return builder;
     }
 
-    private boolean isNewerJacksonVersion() {
+    protected boolean isNewerJacksonVersion() {
         Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
         return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
     }
@@ -275,7 +269,11 @@ public abstract class ClientBase {
         } catch (IOException e) {
             throw new ConductorClientException("Error converting response to String", e);
         } finally {
-            IOUtils.closeQuietly(inputStream, (e) -> LOGGER.error("Error closing input stream", e));
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                LOGGER.error("Error closing input stream", e);
+            }
         }
     }
 
