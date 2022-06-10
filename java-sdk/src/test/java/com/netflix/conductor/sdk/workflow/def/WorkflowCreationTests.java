@@ -162,6 +162,7 @@ public class WorkflowCreationTests {
                     run.getStatus(),
                     run.getReasonForIncompletion());
         } catch (Exception e) {
+            e.printStackTrace();
             fail(e.getMessage());
         }
     }
@@ -182,6 +183,7 @@ public class WorkflowCreationTests {
         try {
             execution.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
+            e.printStackTrace();
             fail(e.getMessage());
         }
     }
