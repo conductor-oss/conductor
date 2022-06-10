@@ -21,7 +21,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations-processor"
             ],
-            "locked": "3.20.1"
+            "locked": "3.21.1"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -115,7 +115,7 @@
             "locked": "2.17.1"
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"

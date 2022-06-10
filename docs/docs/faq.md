@@ -53,7 +53,7 @@ Visit Dynomite's [Github page](https://github.com/Netflix/dynomite) to find deta
 
 Make sure that the worker is actively polling for this task. Navigate to the `Task Queues` tab on the Conductor UI and select your task name in the search box. Ensure that `Last Poll Time` for this task is current.
 
-In Conductor 3.x, ```conductor.redis.availabilityZone``` defaults to ```us-east-1c```.  Ensure that this matches where your workers are, and that it also maytches```conductor.redis.hosts```.
+In Conductor 3.x, ```conductor.redis.availabilityZone``` defaults to ```us-east-1c```.  Ensure that this matches where your workers are, and that it also matches```conductor.redis.hosts```.
 
 ### How do I configure a notification when my workflow completes or fails?
 
