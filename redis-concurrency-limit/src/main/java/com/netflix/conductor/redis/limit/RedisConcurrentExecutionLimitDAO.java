@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
@@ -75,7 +75,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
                             "Error updating taskDefLimit for task - %s:%s in workflow: %s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -104,7 +104,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
                             "Error updating taskDefLimit for task - %s:%s in workflow: %s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -156,7 +156,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
                             "Failed to get in progress limit - %s:%s in workflow :%s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 

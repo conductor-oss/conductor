@@ -28,8 +28,7 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -96,7 +95,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             Monitors.error(CLASS_NAME, "removeEventHandler");
             String errorMsg = String.format("Failed to remove event handler: %s", name);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshEventHandlersCache();
     }
@@ -158,7 +157,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             Monitors.error(CLASS_NAME, "getAllEventHandlersFromDB");
             String errorMsg = "Failed to get all event handlers";
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -175,7 +174,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
                             "Error creating/updating event handler: %s/%s",
                             eventHandler.getName(), eventHandler.getEvent());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshEventHandlersCache();
     }

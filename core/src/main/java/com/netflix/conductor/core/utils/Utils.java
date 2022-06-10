@@ -19,6 +19,7 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 
 public class Utils {
 
@@ -127,9 +128,7 @@ public class Utils {
     public static boolean isTransientException(Throwable throwable) {
         if (throwable != null) {
             return !((throwable instanceof UnsupportedOperationException)
-                    || (throwable instanceof ApplicationException
-                            && ((ApplicationException) throwable).getCode()
-                                    != ApplicationException.Code.BACKEND_ERROR));
+                    || (throwable instanceof TransientException));
         }
         return true;
     }

@@ -66,6 +66,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es6.config.ElasticSearchProperties;
 import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
@@ -725,8 +726,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
             return searchObjectIdsViaExpression(
                     query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+            throw new TransientException(e.getMessage(), e);
         }
     }
 
@@ -736,8 +736,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         try {
             return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+            throw new TransientException(e.getMessage(), e);
         }
     }
 
@@ -952,8 +951,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         try {
             return getObjectCounts(query, freeText, WORKFLOW_DOC_TYPE);
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+            throw new TransientException(e.getMessage(), e);
         }
     }
 

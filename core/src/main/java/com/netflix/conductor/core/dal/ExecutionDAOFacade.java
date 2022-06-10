@@ -42,6 +42,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
@@ -174,8 +175,7 @@ public class ExecutionDAOFacade {
             } catch (IOException e) {
                 String errorMsg = String.format("Error reading workflow: %s", workflowId);
                 LOGGER.error(errorMsg);
-                throw new ApplicationException(
-                        ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+                throw new TransientException(errorMsg, e);
             }
         }
         return workflow;
@@ -353,10 +353,7 @@ public class ExecutionDAOFacade {
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error removing workflow: " + workflowId,
-                    e);
+            throw new TransientException("Error removing workflow: " + workflowId, e);
         }
         try {
             queueDAO.remove(DECIDER_QUEUE, workflowId);
@@ -403,10 +400,7 @@ public class ExecutionDAOFacade {
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error removing workflow: " + workflowId,
-                    e);
+            throw new TransientException("Error removing workflow: " + workflowId, e);
         }
     }
 
@@ -428,10 +422,7 @@ public class ExecutionDAOFacade {
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error resetting workflow state: " + workflowId,
-                    e);
+            throw new TransientException("Error resetting workflow state: " + workflowId, e);
         }
     }
 
@@ -518,7 +509,7 @@ public class ExecutionDAOFacade {
                             "Error updating task: %s in workflow: %s",
                             taskModel.getTaskId(), taskModel.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 

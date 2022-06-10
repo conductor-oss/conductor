@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -235,7 +236,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     String.format(
                             "Error creating %d tasks for workflow: %s", tasks.size(), workflowId);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -268,7 +269,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Error updating task: %s in workflow: %s",
                             task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -316,7 +317,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Failed to get in progress limit - %s:%s in workflow :%s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
         return false;
     }
@@ -365,7 +366,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "getTask");
             String errorMsg = String.format("Error getting task by id: %s", taskId);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -418,7 +419,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             String errorMsg =
                     String.format("Error creating workflow: %s", workflow.getWorkflowId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -441,7 +442,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             String errorMsg =
                     String.format("Failed to update workflow: %s", workflow.getWorkflowId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -462,7 +463,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
                 LOGGER.error(errorMsg, e);
-                throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+                throw new TransientException(errorMsg);
             }
             workflow.getTasks().forEach(this::removeTaskLookup);
         }
@@ -561,7 +562,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "getWorkflow");
             String errorMsg = String.format("Failed to get workflow: %s", workflowId);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -653,7 +654,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Failed to add event execution for event: %s, handler: %s",
                             eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -678,7 +679,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Failed to update event execution for event: %s, handler: %s",
                             eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -698,7 +699,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Failed to remove event execution for event: %s, handler: %s",
                             eventExecution.getEvent(), eventExecution.getName());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -719,7 +720,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Failed to fetch event executions for event: %s, handler: %s",
                             eventName, eventHandlerName);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -740,7 +741,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Error updating taskDefLimit for task - %s:%s in workflow: %s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -759,7 +760,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             "Error updating taskDefLimit for task - %s:%s in workflow: %s",
                             task.getTaskDefName(), task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -796,7 +797,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "removeTask");
             String errorMsg = String.format("Failed to remove task: %s", task.getTaskId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -815,7 +816,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "removeTaskLookup");
             String errorMsg = String.format("Failed to remove task lookup: %s", task.getTaskId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg);
+            throw new TransientException(errorMsg);
         }
     }
 
@@ -882,7 +883,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Failed to lookup workflowId from taskId: %s", taskId);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 }

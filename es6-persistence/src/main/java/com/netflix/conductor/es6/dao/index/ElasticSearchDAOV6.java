@@ -63,7 +63,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es6.config.ElasticSearchProperties;
 import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
@@ -772,8 +772,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             SearchResponse response = srb.get();
             return response.getHits().getTotalHits();
         } catch (ParserException e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+            throw new TransientException(e.getMessage(), e);
         }
     }
 
@@ -800,8 +799,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
             return mapSearchResult(srb.get());
         } catch (ParserException e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+            throw new TransientException(e.getMessage(), e);
         }
     }
 

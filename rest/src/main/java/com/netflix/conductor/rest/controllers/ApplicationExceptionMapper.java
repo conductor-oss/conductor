@@ -29,6 +29,7 @@ import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -74,7 +75,8 @@ public class ApplicationExceptionMapper {
         errorResponse.setInstance(host);
         errorResponse.setStatus(status.value());
         errorResponse.setMessage(th.getMessage());
-        errorResponse.setRetryable(false); // set it to true for BACKEND_ERROR
+        errorResponse.setRetryable(
+                th instanceof TransientException); // set it to true for BACKEND_ERROR
 
         Monitors.error("error", String.valueOf(status.value()));
 

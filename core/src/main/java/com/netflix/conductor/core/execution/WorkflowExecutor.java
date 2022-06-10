@@ -38,6 +38,7 @@ import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -54,7 +55,6 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
-import static com.netflix.conductor.core.exception.ApplicationException.Code.*;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -446,8 +446,7 @@ public class WorkflowExecutor {
      */
     private void createWorkflow(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
-            throw new ApplicationException(
-                    BACKEND_ERROR, "Error acquiring lock when creating workflow: {}");
+            throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
         try {
             executionDAOFacade.createWorkflow(workflow);
@@ -1201,7 +1200,7 @@ public class WorkflowExecutor {
                     LOGGER.error(errorMsg, e);
                     Monitors.recordTaskQueueOpError(
                             task.getTaskType(), workflowInstance.getWorkflowName());
-                    throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e);
+                    throw new TransientException(errorMsg, e);
                 }
                 break;
             default:
@@ -1218,7 +1217,7 @@ public class WorkflowExecutor {
                             task.getTaskId(), workflowId);
             LOGGER.error(errorMsg, e);
             Monitors.recordTaskUpdateError(task.getTaskType(), workflowInstance.getWorkflowName());
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e);
+            throw new TransientException(errorMsg, e);
         }
 
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
@@ -1379,8 +1378,7 @@ public class WorkflowExecutor {
                                                         workflow.getWorkflowVersion())
                                                 .orElseThrow(
                                                         () ->
-                                                                new ApplicationException(
-                                                                        BACKEND_ERROR,
+                                                                new TransientException(
                                                                         "Workflow Definition is not found")));
         if (workflowDef.containsType(TaskType.TASK_TYPE_SUB_WORKFLOW)
                 || workflow.getWorkflowDefinition()

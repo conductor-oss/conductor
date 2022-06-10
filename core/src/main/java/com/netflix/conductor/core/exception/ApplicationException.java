@@ -21,9 +21,7 @@ import java.util.Map;
 public class ApplicationException extends RuntimeException {
 
     public enum Code {
-        INTERNAL_ERROR(500),
-        UNAUTHORIZED(403),
-        BACKEND_ERROR(500);
+        INTERNAL_ERROR(500);
 
         private final int statusCode;
 
@@ -39,7 +37,7 @@ public class ApplicationException extends RuntimeException {
     private final Code code;
 
     public boolean isRetryable() {
-        return this.code == Code.BACKEND_ERROR;
+        return false;
     }
 
     public ApplicationException(String msg, Throwable t) {
