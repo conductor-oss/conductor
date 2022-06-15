@@ -24,8 +24,7 @@ ReactDOM.render(
     <ThemeProvider>
       <BrowserRouter>
         <CssBaseline />
-        <ReactQueryDevtools initialIsOpen={true} />
-
+        <ReactQueryDevtools />
         <App />
       </BrowserRouter>
     </ThemeProvider>
