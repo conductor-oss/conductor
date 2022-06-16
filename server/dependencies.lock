@@ -57,7 +57,7 @@
             "locked": "2.17.1"
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"
@@ -264,25 +264,25 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -479,7 +479,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"
@@ -696,25 +696,25 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -911,7 +911,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"
@@ -986,13 +986,13 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -1013,7 +1013,7 @@
             "locked": "2.17.1"
         },
         "org.springdoc:springdoc-openapi-ui": {
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"
@@ -1223,28 +1223,28 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.46.0"
+            "locked": "1.47.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -1444,7 +1444,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-rest"
             ],
-            "locked": "1.6.8"
+            "locked": "1.6.9"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"

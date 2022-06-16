@@ -12,99 +12,73 @@
  */
 package com.netflix.conductor.client.http;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
-import java.util.function.Function;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exception.ConductorClientException;
+import com.netflix.conductor.client.exception.RequestHandlerException;
+import com.netflix.conductor.client.http.jersey.JerseyRequestHandler;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.validation.ErrorResponse;
 
 import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.common.base.Preconditions;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import com.sun.jersey.api.client.WebResource.Builder;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 
-/** Abstract client for the REST template */
+/** Abstract client for the REST server */
 public abstract class ClientBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientBase.class);
 
-    protected final Client client;
+    private final RequestHandler requestHandler;
 
-    protected String root = "";
+    private String root = "";
 
-    protected ObjectMapper objectMapper;
+    protected final ObjectMapper objectMapper;
 
-    protected PayloadStorage payloadStorage;
+    private final PayloadStorage payloadStorage;
 
-    protected ConductorClientConfiguration conductorClientConfiguration;
-
-    protected ClientBase() {
-        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
-    }
-
-    protected ClientBase(ClientConfig config) {
-        this(config, new DefaultConductorClientConfiguration(), null);
-    }
-
-    protected ClientBase(ClientConfig config, ClientHandler handler) {
-        this(config, new DefaultConductorClientConfiguration(), handler);
-    }
+    protected final ConductorClientConfiguration conductorClientConfiguration;
 
     protected ClientBase(
-            ClientConfig config,
-            ConductorClientConfiguration clientConfiguration,
-            ClientHandler handler) {
-        objectMapper = new ObjectMapperProvider().getObjectMapper();
+            RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
+        this.objectMapper = new ObjectMapperProvider().getObjectMapper();
 
         // https://github.com/FasterXML/jackson-databind/issues/2683
         if (isNewerJacksonVersion()) {
             objectMapper.registerModule(new JavaTimeModule());
         }
 
-        JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
-        config.getSingletons().add(provider);
-
-        if (handler == null) {
-            this.client = Client.create(config);
-        } else {
-            this.client = new Client(handler, config);
-        }
-
-        conductorClientConfiguration = clientConfiguration;
-        payloadStorage = new PayloadStorage(this);
-    }
-
-    private boolean isNewerJacksonVersion() {
-        Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
-        return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
+        this.requestHandler = ObjectUtils.defaultIfNull(requestHandler, new JerseyRequestHandler());
+        this.conductorClientConfiguration =
+                ObjectUtils.defaultIfNull(
+                        clientConfiguration, new DefaultConductorClientConfiguration());
+        this.payloadStorage = new PayloadStorage();
     }
 
     public void setRootURI(String root) {
@@ -112,57 +86,34 @@ public abstract class ClientBase {
     }
 
     protected void delete(String url, Object... uriVariables) {
-        deleteWithUriVariables(null, url, uriVariables);
+        deleteWithUriVariables(url, null, uriVariables);
     }
 
     protected void deleteWithUriVariables(
-            Object[] queryParams, String url, Object... uriVariables) {
-        delete(queryParams, url, uriVariables, null);
-    }
-
-    protected BulkResponse deleteWithRequestBody(Object[] queryParams, String url, Object body) {
-        return delete(queryParams, url, null, body);
-    }
-
-    private BulkResponse delete(
-            Object[] queryParams, String url, Object[] uriVariables, Object body) {
-        URI uri = null;
+            String url, Object[] queryParams, Object... uriVariables) {
+        URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
         try {
-            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            if (body != null) {
-                return client.resource(uri)
-                        .type(MediaType.APPLICATION_JSON_TYPE)
-                        .delete(BulkResponse.class, body);
-            } else {
-                client.resource(uri).delete();
-            }
-        } catch (UniformInterfaceException e) {
-            handleUniformInterfaceException(e, uri);
-        } catch (RuntimeException e) {
-            handleRuntimeException(e, uri);
+            requestHandler.delete(uri);
+        } catch (RequestHandlerException rhe) {
+            throw createClientException(rhe);
         }
-
-        return null;
     }
 
     protected void put(String url, Object[] queryParams, Object request, Object... uriVariables) {
-        URI uri = null;
+        URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
         try {
-            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            getWebResourceBuilder(uri, request).put();
-        } catch (RuntimeException e) {
-            handleException(uri, e);
+            requestHandler.put(uri, request);
+        } catch (RequestHandlerException rhe) {
+            throw createClientException(rhe);
         }
     }
 
-    protected void postForEntityWithRequestOnly(String url, Object request) {
-        Class<?> type = null;
-        postForEntity(url, request, null, type);
+    protected void post(String url, Object request) {
+        postForEntity(url, request, null, null);
     }
 
-    protected void postForEntityWithUriVariablesOnly(String url, Object... uriVariables) {
-        Class<?> type = null;
-        postForEntity(url, null, null, type, uriVariables);
+    protected void postWithUriVariables(String url, Object... uriVariables) {
+        postForEntity(url, null, null, null, uriVariables);
     }
 
     protected <T> T postForEntity(
@@ -171,90 +122,43 @@ public abstract class ClientBase {
             Object[] queryParams,
             Class<T> responseType,
             Object... uriVariables) {
-        return postForEntity(
-                url,
-                request,
-                queryParams,
-                responseType,
-                builder -> builder.post(responseType),
-                uriVariables);
-    }
+        URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
 
-    protected <T> T postForEntity(
-            String url,
-            Object request,
-            Object[] queryParams,
-            GenericType<T> responseType,
-            Object... uriVariables) {
-        return postForEntity(
-                url,
-                request,
-                queryParams,
-                responseType,
-                builder -> builder.post(responseType),
-                uriVariables);
-    }
-
-    private <T> T postForEntity(
-            String url,
-            Object request,
-            Object[] queryParams,
-            Object responseType,
-            Function<Builder, T> postWithEntity,
-            Object... uriVariables) {
-        URI uri = null;
         try {
-            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            Builder webResourceBuilder = getWebResourceBuilder(uri, request);
+            InputStream response = requestHandler.post(uri, request);
             if (responseType == null) {
-                webResourceBuilder.post();
                 return null;
             }
-            return postWithEntity.apply(webResourceBuilder);
-        } catch (UniformInterfaceException e) {
-            handleUniformInterfaceException(e, uri);
-        } catch (RuntimeException e) {
-            handleRuntimeException(e, uri);
+            return convertToType(response, responseType);
+        } catch (RequestHandlerException rhe) {
+            throw createClientException(rhe);
         }
-        return null;
+    }
+
+    protected String postForString(
+            String url, Object request, Object[] queryParams, Object... uriVariables) {
+        URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
+        try {
+            InputStream response = requestHandler.post(uri, request);
+            return convertToString(response);
+        } catch (RequestHandlerException rhe) {
+            throw createClientException(rhe);
+        }
     }
 
     protected <T> T getForEntity(
             String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
-        return getForEntity(
-                url, queryParams, response -> response.getEntity(responseType), uriVariables);
+        InputStream response = getForEntity(url, queryParams, uriVariables);
+        return convertToType(response, responseType);
     }
 
     protected <T> T getForEntity(
-            String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
-        return getForEntity(
-                url, queryParams, response -> response.getEntity(responseType), uriVariables);
-    }
-
-    private <T> T getForEntity(
             String url,
             Object[] queryParams,
-            Function<ClientResponse, T> entityProvider,
+            TypeReference<T> responseType,
             Object... uriVariables) {
-        URI uri = null;
-        ClientResponse clientResponse;
-        try {
-            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            clientResponse =
-                    client.resource(uri)
-                            .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                            .get(ClientResponse.class);
-            if (clientResponse.getStatus() < 300) {
-                return entityProvider.apply(clientResponse);
-            } else {
-                throw new UniformInterfaceException(clientResponse);
-            }
-        } catch (UniformInterfaceException e) {
-            handleUniformInterfaceException(e, uri);
-        } catch (RuntimeException e) {
-            handleRuntimeException(e, uri);
-        }
-        return null;
+        InputStream response = getForEntity(url, queryParams, uriVariables);
+        return convertToType(response, responseType);
     }
 
     /**
@@ -262,14 +166,14 @@ public abstract class ClientBase {
      * payload from the server and then uploads to this location.
      *
      * @param payloadType the {@link
-     *     com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be uploaded
-     * @param payloadBytes the byte array containing the payload
-     * @param payloadSize the size of the payload
-     * @return the path where the payload is stored in external storage
+     *     com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be uploaded.
+     * @param payloadBytes the byte array containing the payload.
+     * @param payloadSize the size of the payload.
+     * @return the path where the payload is stored in external storage.
      */
     protected String uploadToExternalPayloadStorage(
             ExternalPayloadStorage.PayloadType payloadType, byte[] payloadBytes, long payloadSize) {
-        Preconditions.checkArgument(
+        Validate.isTrue(
                 payloadType.equals(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT)
                         || payloadType.equals(ExternalPayloadStorage.PayloadType.TASK_OUTPUT),
                 "Payload type must be workflow input or task output");
@@ -294,7 +198,7 @@ public abstract class ClientBase {
     @SuppressWarnings("unchecked")
     protected Map<String, Object> downloadFromExternalStorage(
             ExternalPayloadStorage.PayloadType payloadType, String path) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(path), "uri cannot be blank");
+        Validate.notBlank(path, "uri cannot be blank");
         ExternalStorageLocation externalStorageLocation =
                 payloadStorage.getLocation(
                         ExternalPayloadStorage.Operation.READ, payloadType, path);
@@ -309,106 +213,13 @@ public abstract class ClientBase {
         }
     }
 
-    private Builder getWebResourceBuilder(URI URI, Object entity) {
-        return client.resource(URI)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(entity)
-                .accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
-    }
-
-    private void handleClientHandlerException(ClientHandlerException exception, URI uri) {
-        String errorMessage =
-                String.format(
-                        "Unable to invoke Conductor API with uri: %s, failure to process request or response",
-                        uri);
-        LOGGER.error(errorMessage, exception);
-        throw new ConductorClientException(errorMessage, exception);
-    }
-
-    private void handleRuntimeException(RuntimeException exception, URI uri) {
-        String errorMessage =
-                String.format(
-                        "Unable to invoke Conductor API with uri: %s, runtime exception occurred",
-                        uri);
-        LOGGER.error(errorMessage, exception);
-        throw new ConductorClientException(errorMessage, exception);
-    }
-
-    private void handleUniformInterfaceException(UniformInterfaceException exception, URI uri) {
-        ClientResponse clientResponse = exception.getResponse();
-        if (clientResponse == null) {
-            throw new ConductorClientException(
-                    String.format("Unable to invoke Conductor API with uri: %s", uri));
-        }
-        try {
-            if (clientResponse.getStatus() < 300) {
-                return;
-            }
-            String errorMessage = clientResponse.getEntity(String.class);
-            LOGGER.warn(
-                    "Unable to invoke Conductor API with uri: {}, unexpected response from server: statusCode={}, responseBody='{}'.",
-                    uri,
-                    clientResponse.getStatus(),
-                    errorMessage);
-            ErrorResponse errorResponse;
-            try {
-                errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);
-            } catch (IOException e) {
-                throw new ConductorClientException(clientResponse.getStatus(), errorMessage);
-            }
-            throw new ConductorClientException(clientResponse.getStatus(), errorResponse);
-        } catch (ConductorClientException e) {
-            throw e;
-        } catch (ClientHandlerException e) {
-            handleClientHandlerException(e, uri);
-        } catch (RuntimeException e) {
-            handleRuntimeException(e, uri);
-        } finally {
-            clientResponse.close();
-        }
-    }
-
-    private void handleException(URI uri, RuntimeException e) {
-        if (e instanceof UniformInterfaceException) {
-            handleUniformInterfaceException(((UniformInterfaceException) e), uri);
-        } else if (e instanceof ClientHandlerException) {
-            handleClientHandlerException((ClientHandlerException) e, uri);
-        } else {
-            handleRuntimeException(e, uri);
-        }
-    }
-
-    /**
-     * Converts ClientResponse object to string with detailed debug information including status
-     * code, media type, response headers, and response body if exists.
-     */
-    private String clientResponseToString(ClientResponse response) {
-        if (response == null) {
-            return null;
-        }
-        StringBuilder builder = new StringBuilder();
-        builder.append("[status: ").append(response.getStatus());
-        builder.append(", media type: ").append(response.getType());
-        if (response.getStatus() != 404) {
-            try {
-                String responseBody = response.getEntity(String.class);
-                if (responseBody != null) {
-                    builder.append(", response body: ").append(responseBody);
-                }
-            } catch (RuntimeException ignore) {
-                // Ignore if there is no response body, or IO error - it may have already been read
-                // in certain scenario.
-            }
-        }
-        builder.append(", response headers: ").append(response.getHeaders());
-        builder.append("]");
-        return builder.toString();
+    private String getFullUrl(String url) {
+        return root + url;
     }
 
     private UriBuilder getURIBuilder(String path, Object[] queryParams) {
-        if (path == null) {
-            path = "";
-        }
+        path = StringUtils.trimToEmpty(path);
+
         UriBuilder builder = UriBuilder.fromPath(path);
         if (queryParams != null) {
             for (int i = 0; i < queryParams.length; i += 2) {
@@ -425,5 +236,210 @@ public abstract class ClientBase {
             }
         }
         return builder;
+    }
+
+    protected boolean isNewerJacksonVersion() {
+        Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
+        return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
+    }
+
+    private InputStream getForEntity(String url, Object[] queryParams, Object... uriVariables) {
+        URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
+        try {
+            return requestHandler.get(uri);
+        } catch (RequestHandlerException rhe) {
+            throw createClientException(rhe);
+        }
+    }
+
+    private ConductorClientException createClientException(RequestHandlerException rhe) {
+        if (rhe.hasResponse()) {
+            ErrorResponse errorResponse = convertToType(rhe.getResponse(), ErrorResponse.class);
+            if (errorResponse != null) {
+                return new ConductorClientException(rhe.getStatus(), errorResponse);
+            }
+        }
+
+        return new ConductorClientException(rhe.getMessage(), rhe.getCause());
+    }
+
+    private String convertToString(InputStream inputStream) {
+        try {
+            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ConductorClientException("Error converting response to String", e);
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                LOGGER.error("Error closing input stream", e);
+            }
+        }
+    }
+
+    private <T> T convertToType(InputStream inputStream, Class<T> responseType) {
+        try {
+            String value = convertToString(inputStream);
+            return StringUtils.isNotBlank(value)
+                    ? objectMapper.readValue(value, responseType)
+                    : null;
+        } catch (IOException e) {
+            throw new ConductorClientException("Error converting response to " + responseType, e);
+        }
+    }
+
+    private <T> T convertToType(InputStream inputStream, TypeReference<T> responseType) {
+        try {
+            String value = convertToString(inputStream);
+            return StringUtils.isNotBlank(value)
+                    ? objectMapper.readValue(value, responseType)
+                    : null;
+        } catch (IOException e) {
+            throw new ConductorClientException("Error converting response to " + responseType, e);
+        }
+    }
+
+    /** An implementation of {@link ExternalPayloadStorage} for storing large JSON payload data. */
+    class PayloadStorage implements ExternalPayloadStorage {
+
+        /**
+         * This method is not intended to be used in the client. The client makes a request to the
+         * server to get the {@link ExternalStorageLocation}
+         */
+        @Override
+        public ExternalStorageLocation getLocation(
+                Operation operation, PayloadType payloadType, String path) {
+            String url;
+            switch (payloadType) {
+                case WORKFLOW_INPUT:
+                case WORKFLOW_OUTPUT:
+                    url = "workflow";
+                    break;
+                case TASK_INPUT:
+                case TASK_OUTPUT:
+                    url = "tasks";
+                    break;
+                default:
+                    throw new ConductorClientException(
+                            String.format(
+                                    "Invalid payload type: %s for operation: %s",
+                                    payloadType, operation.toString()));
+            }
+            return getForEntity(
+                    url + "/externalstoragelocation",
+                    new Object[] {
+                        "path",
+                        path,
+                        "operation",
+                        operation.toString(),
+                        "payloadType",
+                        payloadType.toString()
+                    },
+                    ExternalStorageLocation.class);
+        }
+
+        /**
+         * Uploads the payload to the uri specified.
+         *
+         * @param uri the location to which the object is to be uploaded
+         * @param payload an {@link InputStream} containing the json payload which is to be uploaded
+         * @param payloadSize the size of the json payload in bytes
+         * @throws ConductorClientException if the upload fails due to an invalid path or an error
+         *     from external storage
+         */
+        @Override
+        public void upload(String uri, InputStream payload, long payloadSize) {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URI(uri).toURL();
+
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setDoOutput(true);
+                connection.setRequestMethod("PUT");
+
+                try (BufferedOutputStream bufferedOutputStream =
+                        new BufferedOutputStream(connection.getOutputStream())) {
+                    long count = IOUtils.copy(payload, bufferedOutputStream);
+                    bufferedOutputStream.flush();
+                    // Check the HTTP response code
+                    int responseCode = connection.getResponseCode();
+                    if (Response.Status.fromStatusCode(responseCode).getFamily()
+                            != Response.Status.Family.SUCCESSFUL) {
+                        String errorMsg =
+                                String.format("Unable to upload. Response code: %d", responseCode);
+                        LOGGER.error(errorMsg);
+                        throw new ConductorClientException(errorMsg);
+                    }
+                    LOGGER.debug(
+                            "Uploaded {} bytes to uri: {}, with HTTP response code: {}",
+                            count,
+                            uri,
+                            responseCode);
+                }
+            } catch (URISyntaxException | MalformedURLException e) {
+                String errorMsg = String.format("Invalid path specified: %s", uri);
+                LOGGER.error(errorMsg, e);
+                throw new ConductorClientException(errorMsg, e);
+            } catch (IOException e) {
+                String errorMsg = String.format("Error uploading to path: %s", uri);
+                LOGGER.error(errorMsg, e);
+                throw new ConductorClientException(errorMsg, e);
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+                try {
+                    if (payload != null) {
+                        payload.close();
+                    }
+                } catch (IOException e) {
+                    LOGGER.warn("Unable to close inputstream when uploading to uri: {}", uri);
+                }
+            }
+        }
+
+        /**
+         * Downloads the payload from the given uri.
+         *
+         * @param uri the location from where the object is to be downloaded
+         * @return an inputstream of the payload in the external storage
+         * @throws ConductorClientException if the download fails due to an invalid path or an error
+         *     from external storage
+         */
+        @Override
+        public InputStream download(String uri) {
+            HttpURLConnection connection = null;
+            String errorMsg;
+            try {
+                URL url = new URI(uri).toURL();
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setDoOutput(false);
+
+                // Check the HTTP response code
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    LOGGER.debug(
+                            "Download completed with HTTP response code: {}",
+                            connection.getResponseCode());
+                    return org.apache.commons.io.IOUtils.toBufferedInputStream(
+                            connection.getInputStream());
+                }
+                errorMsg = String.format("Unable to download. Response code: %d", responseCode);
+                LOGGER.error(errorMsg);
+                throw new ConductorClientException(errorMsg);
+            } catch (URISyntaxException | MalformedURLException e) {
+                errorMsg = String.format("Invalid uri specified: %s", uri);
+                LOGGER.error(errorMsg, e);
+                throw new ConductorClientException(errorMsg, e);
+            } catch (IOException e) {
+                errorMsg = String.format("Error downloading from uri: %s", uri);
+                LOGGER.error(errorMsg, e);
+                throw new ConductorClientException(errorMsg, e);
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }
     }
 }

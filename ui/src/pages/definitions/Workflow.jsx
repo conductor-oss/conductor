@@ -3,7 +3,7 @@ import { NavLink, DataTable, Button } from "../../components";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 import { useQueryState } from "react-router-use-location-state";
-import { useWorkflowDefs } from "../../data/workflow";
+import { useLatestWorkflowDefs } from "../../data/workflow";
 import Header from "./Header";
 import sharedStyles from "../styles";
 import { Helmet } from "react-helmet";
@@ -70,7 +70,7 @@ const columns = [
 export default function WorkflowDefinitions() {
   const classes = useStyles();
 
-  const { data, isFetching } = useWorkflowDefs();
+  const { data, isFetching } = useLatestWorkflowDefs();
 
   const [filterParam, setFilterParam] = useQueryState("filter", "");
   const filterObj = filterParam === "" ? undefined : JSON.parse(filterParam);

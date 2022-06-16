@@ -13,7 +13,10 @@ export default function TaskSummary({ taskResult }) {
     { label: "Task Name", value: taskResult.workflowTask.name },
     {
       label: "Task Reference",
-      value: taskResult.workflowTask.taskReferenceName,
+      value:
+        taskResult.referenceTaskName ||
+        taskResult.workflowTask.aliasForRef ||
+        taskResult.workflowTask.taskReferenceName,
     },
   ];
 

@@ -1,10 +1,10 @@
-import React from "react";
 import { useRouteMatch } from "react-router-dom";
 import sharedStyles from "../styles";
-import { useTaskQueueInfo, useTaskNames } from "../../data/task";
+import { usePollData, useQueueSizes, useTaskNames } from "../../data/task";
 import { makeStyles } from "@material-ui/styles";
 import { Helmet } from "react-helmet";
 import { usePushHistory } from "../../components/NavLink";
+import { formatRelative } from "date-fns";
 
 import {
   Paper,
@@ -14,8 +14,19 @@ import {
   Dropdown,
 } from "../../components";
 import _ from "lodash";
+import { timestampRenderer } from "../../utils/helpers";
 
 const useStyles = makeStyles(sharedStyles);
+
+function getSizesMap(sizes) {
+  const retval = new Map();
+  for (let row of sizes) {
+    if (row.isSuccess) {
+      retval.set(row.data.domain, row.data.size);
+    }
+  }
+  return retval;
+}
 
 export default function TaskDefinition() {
   const taskNames = useTaskNames();
@@ -24,10 +35,11 @@ export default function TaskDefinition() {
   const match = useRouteMatch();
   const taskName = match.params.name || "";
 
-  const { data, isFetching } = useTaskQueueInfo(taskName);
-
-  const size = _.get(data, "size");
-  const pollData = _.get(data, "pollData");
+  const { data: pollData, isFetching } = usePollData(taskName);
+  const domains = pollData ? pollData.map((row) => row.domain) : null;
+  const sizes = useQueueSizes(taskName, domains);
+  const sizesMap = getSizesMap(sizes);
+  const now = new Date();
 
   function setTaskName(name) {
     if (name === null) {
@@ -43,7 +55,7 @@ export default function TaskDefinition() {
       </Helmet>
       <div className={classes.header} style={{ paddingBottom: 20 }}>
         <Heading level={3} style={{ marginBottom: 30 }}>
-          Task Queue Info
+          Task Queues
         </Heading>
         <Dropdown
           label="Select a Task Name"
@@ -61,20 +73,38 @@ export default function TaskDefinition() {
       </div>
       {isFetching && <LinearProgress />}
       <div className={classes.tabContent}>
-        {!_.isUndefined(size) && !_.isUndefined(pollData) && (
+        {!_.isUndefined(pollData) && (
           <Paper>
-            <Heading level={0} style={{ paddingLeft: 16, paddingTop: 30 }}>
-              Queue Size: {size}{" "}
-            </Heading>
             <DataTable
-              title={`Workers: ${pollData.length}`}
-              defaultShowColumns={["workerId", "domain", "lastPollTime"]}
+              title="Poll Status by Domain"
+              defaultShowColumns={[
+                "workerId",
+                "domain",
+                "lastPollTime",
+                "queueSize",
+              ]}
               default
               data={pollData}
               columns={[
-                { name: "workerId", label: "Worker ID" },
-                { name: "domain", label: "Domain" },
-                { name: "lastPollTime", label: "Last Poll Time", type: "date" },
+                {
+                  name: "domain",
+                  label: "Domain",
+                  renderer: (domain) =>
+                    _.isEmpty(domain) ? "(Domain not set)" : domain,
+                },
+                { name: "workerId", label: "Last Polled Worker" },
+                {
+                  name: "lastPollTime",
+                  label: "Last Poll Time",
+                  renderer: (time) =>
+                    `${timestampRenderer(time)} (${formatRelative(time, now)})`,
+                },
+                {
+                  name: "domain",
+                  id: "queueSize",
+                  label: "Queue Size",
+                  renderer: (domain) => sizesMap.get(domain),
+                },
               ]}
             />
           </Paper>

@@ -84,7 +84,7 @@ export default function App() {
           <Route exact path="/">
             <WorkflowSearch />
           </Route>
-          <Route exact path="/search/by-tasks">
+          <Route exact path="/search/tasks">
             <TaskSearch />
           </Route>
           <Route path="/execution/:id/:taskId?">

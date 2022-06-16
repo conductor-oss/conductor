@@ -6,14 +6,12 @@ export default function (props) {
   const touchedError = meta.touched && meta.error;
 
   return (
-    <>
-      <Dropdown
-        {...props}
-        {...field}
-        onChange={(e, value) => helper.setValue(value)}
-        error={touchedError}
-        helperText={touchedError}
-      />
-    </>
+    <Dropdown
+      {...props}
+      {...field}
+      onChange={(e, value) => helper.setValue(value)}
+      error={touchedError}
+      helperText={touchedError}
+    />
   );
 }

@@ -286,6 +286,23 @@ public class MetadataMapperServiceTest {
         assertTrue(metadataMapperService.shouldPopulateTaskDefinition(workflowTask));
     }
 
+    @Test
+    public void testMetadataPopulationOnSimpleTaskDefMissing() {
+        String nameTaskDefinition = "task1";
+        WorkflowTask workflowTask = createWorkflowTask(nameTaskDefinition);
+
+        when(metadataDAO.getTaskDef(nameTaskDefinition)).thenReturn(null);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
+        workflowDefinition.setTasks(List.of(workflowTask));
+
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
+
+        assertEquals(1, workflowDefinition.getTasks().size());
+        WorkflowTask populatedWorkflowTask = workflowDefinition.getTasks().get(0);
+        assertNotNull(populatedWorkflowTask.getTaskDefinition());
+    }
+
     private WorkflowDef createWorkflowDefinition(String name) {
         WorkflowDef workflowDefinition = new WorkflowDef();
         workflowDefinition.setName(name);

@@ -40,10 +40,9 @@ export default function TimelineComponent({
     const items = tasks
       .filter((t) => t.startTime > 0 || t.endTime > 0)
       .map((task) => {
-        const predecessors = dag.graph.predecessors(task.referenceTaskName);
-
-        const dfParent = predecessors
-          ?.map((t) => dag.graph.node(t))
+        const dfParent = dag.graph
+          .predecessors(task.referenceTaskName)
+          .map((t) => dag.graph.node(t))
           .find((t) => t.type === "FORK_JOIN_DYNAMIC");
         const startTime =
           task.startTime > 0

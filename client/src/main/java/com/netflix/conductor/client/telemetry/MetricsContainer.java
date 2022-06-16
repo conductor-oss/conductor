@@ -28,8 +28,6 @@ import com.netflix.spectator.api.Tag;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.patterns.PolledMeter;
 
-import com.google.common.base.Joiner;
-
 public class MetricsContainer {
 
     private static final String TASK_TYPE = "taskType";
@@ -73,7 +71,7 @@ public class MetricsContainer {
     }
 
     private static Timer getTimer(String name, String... additionalTags) {
-        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        String key = CLASS_NAME + "." + name + "." + String.join(",", additionalTags);
         return TIMERS.computeIfAbsent(
                 key,
                 k -> {
@@ -99,7 +97,7 @@ public class MetricsContainer {
     }
 
     private static Counter getCounter(String name, String... additionalTags) {
-        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        String key = CLASS_NAME + "." + name + "." + String.join(",", additionalTags);
         return COUNTERS.computeIfAbsent(
                 key,
                 k -> {
@@ -109,7 +107,7 @@ public class MetricsContainer {
     }
 
     private static AtomicLong getGauge(String name, String... additionalTags) {
-        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        String key = CLASS_NAME + "." + name + "." + String.join(",", additionalTags);
         return GAUGES.computeIfAbsent(
                 key,
                 pollTimer -> {
