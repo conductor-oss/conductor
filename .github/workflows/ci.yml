@@ -71,5 +71,9 @@ jobs:
           node-version: '14.x'
       - name: Install dependencies
         run: yarn install
-      - run: yarn run build
+      - name: Cypress run
+        uses: cypress-io/github-action@v4
+        with:
+          build: yarn run build
+          start: yarn run test
 
