@@ -42,6 +42,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
@@ -513,6 +514,9 @@ public class ExecutionDAOFacade {
             if (!properties.isAsyncIndexingEnabled()) {
                 indexDAO.indexTask(new TaskSummary(taskModel.toTask()));
             }
+        } catch (TerminateWorkflowException e) {
+            // re-throw it so we can terminate the workflow
+            throw e;
         } catch (Exception e) {
             String errorMsg =
                     String.format(
