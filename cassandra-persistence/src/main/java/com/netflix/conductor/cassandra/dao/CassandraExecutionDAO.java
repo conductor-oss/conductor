@@ -24,7 +24,7 @@ import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
@@ -520,8 +520,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         TaskModel task = readValue(row.getString(PAYLOAD_KEY), TaskModel.class);
                         tasks.add(task);
                     } else {
-                        throw new ApplicationException(
-                                ApplicationException.Code.INTERNAL_ERROR,
+                        throw new NonTransientException(
                                 String.format(
                                         "Invalid row with entityKey: %s found in datastore for workflow: %s",
                                         entityKey, workflowId));
@@ -840,8 +839,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         .filter(task -> !workflowId.equals(task.getWorkflowInstanceId()))
                         .findAny();
         if (optionalTask.isPresent()) {
-            throw new ApplicationException(
-                    Code.INTERNAL_ERROR,
+            throw new NonTransientException(
                     "Tasks of multiple workflows cannot be created/updated simultaneously");
         }
     }

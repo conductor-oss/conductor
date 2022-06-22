@@ -24,7 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -164,9 +164,7 @@ public class TestSubWorkflow {
                         any(),
                         eq(null),
                         any()))
-                .thenThrow(
-                        new ApplicationException(
-                                ApplicationException.Code.INTERNAL_ERROR, failureReason));
+                .thenThrow(new NonTransientException(failureReason));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());

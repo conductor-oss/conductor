@@ -31,6 +31,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
@@ -71,7 +72,8 @@ public class ExternalPayloadStorageUtils {
                     IOUtils.toString(inputStream, StandardCharsets.UTF_8), Map.class);
         } catch (IOException e) {
             LOGGER.error("Unable to download payload from external storage path: {}", path, e);
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, e);
+            throw new NonTransientException(
+                    "Unable to download payload from external storage path: " + path, e);
         }
     }
 
@@ -187,7 +189,8 @@ public class ExternalPayloadStorageUtils {
         } catch (IOException e) {
             LOGGER.error(
                     "Unable to upload payload to external storage for workflow: {}", workflowId, e);
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, e);
+            throw new NonTransientException(
+                    "Unable to upload payload to external storage for workflow: " + workflowId, e);
         }
     }
 

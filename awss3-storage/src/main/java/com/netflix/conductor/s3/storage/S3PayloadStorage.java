@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.s3.config.S3Properties;
@@ -109,7 +109,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
         } catch (URISyntaxException e) {
             String msg = "Invalid URI Syntax";
             LOGGER.error(msg, e);
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, msg, e);
+            throw new NonTransientException(msg, e);
         }
     }
 

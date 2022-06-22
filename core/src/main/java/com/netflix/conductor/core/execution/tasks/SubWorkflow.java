@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -196,8 +196,7 @@ public class SubWorkflow extends WorkflowSystemTask {
                 task.setStatus(TaskModel.Status.TIMED_OUT);
                 break;
             default:
-                throw new ApplicationException(
-                        ApplicationException.Code.INTERNAL_ERROR,
+                throw new NonTransientException(
                         "Subworkflow status does not conform to relevant task status.");
         }
 

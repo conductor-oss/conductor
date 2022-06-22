@@ -34,8 +34,8 @@ import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -1055,8 +1055,7 @@ public class WorkflowExecutor {
 
             List<String> erroredTasks = cancelNonTerminalTasks(workflow);
             if (!erroredTasks.isEmpty()) {
-                throw new ApplicationException(
-                        Code.INTERNAL_ERROR,
+                throw new NonTransientException(
                         String.format(
                                 "Error canceling system tasks: %s",
                                 String.join(",", erroredTasks)));
@@ -1739,8 +1738,7 @@ public class WorkflowExecutor {
                                         task.getTaskType(),
                                         task.getTaskId(),
                                         task.getTaskDefName());
-                        throw new ApplicationException(
-                                ApplicationException.Code.INTERNAL_ERROR, errorMsg, e);
+                        throw new NonTransientException(errorMsg, e);
                     }
                     startedSystemTasks = true;
                     executionDAOFacade.updateTask(task);
