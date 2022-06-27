@@ -47,6 +47,9 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
+        "org.jetbrains:annotations": {
+            "locked": "23.0.0"
+        },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.36"
         }

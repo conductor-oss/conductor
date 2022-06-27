@@ -17,6 +17,7 @@ import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +97,7 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream put(URI uri, Object body) {
         ClientResponse clientResponse;
         try {
@@ -109,6 +111,7 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream post(URI uri, Object body) {
         ClientResponse clientResponse;
         try {
@@ -123,6 +126,7 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream get(URI uri) {
         ClientResponse clientResponse;
         try {
@@ -130,6 +134,19 @@ public class JerseyRequestHandler implements RequestHandler {
                     client.resource(uri)
                             .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                             .get(ClientResponse.class);
+
+            // this condition mimics what ClientResponse.getEntity() and ClientBase.getForEntity()
+            // did before RequestHandler was introduced.
+            // Previously, ClientBase.getForEntity() called ClientResponse.getEntity()
+            // which threw a UniformInterfaceException for 204. The
+            // handleUniformInterfaceException() method did nothing except call close() on
+            // ClientResponse.
+            // the same is done below
+            if (clientResponse.getStatus() == 204) {
+                clientResponse.close();
+                return null;
+            }
+
             if (clientResponse.getStatus() < 300) {
                 return clientResponse.getEntityInputStream();
             } else {
