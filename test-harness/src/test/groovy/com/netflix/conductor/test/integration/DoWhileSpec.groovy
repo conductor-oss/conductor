@@ -34,7 +34,150 @@ class DoWhileSpec extends AbstractSpecification {
                 "do_while_as_subtask_integration_test.json",
                 'simple_one_task_sub_workflow_integration_test.json',
                 'do_while_iteration_fix_test.json',
-                "do_while_sub_workflow_integration_test.json")
+                "do_while_sub_workflow_integration_test.json",
+        "do_while_five_loop_over_integration_test.json")
+    }
+
+    def "Test workflow with 2 iterations of five tasks"() {
+        given: "Number of iterations of the loop is set to 1"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 2
+
+        when: "A do_while workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow("do_while_five_loop_over_integration_test", 1, "looptest", workflowInput, null, null)
+
+        then: "Verify that the workflow has started"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 4
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].iteration == 1
+            tasks[2].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].iteration == 1
+            tasks[3].taskType == 'integration_task_1'
+            tasks[3].status == Task.Status.SCHEDULED
+            tasks[3].iteration == 1
+        }
+
+        when: "Polling and completing first task"
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask1)
+        verifyTaskIteration(polledAndCompletedTask1[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 6
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_1'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.SCHEDULED
+        }
+
+        when: "Polling and completing second task"
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in completed state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
+        verifyTaskIteration(polledAndCompletedTask2[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 9
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_1'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.COMPLETED
+            tasks[6].taskType == 'LAMBDA'
+            tasks[6].status == Task.Status.COMPLETED
+            tasks[6].iteration == 2
+            tasks[7].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[7].status == Task.Status.COMPLETED
+            tasks[7].iteration == 2
+            tasks[8].taskType == 'integration_task_1'
+            tasks[8].status == Task.Status.SCHEDULED
+            tasks[8].iteration == 2
+        }
+
+        when: "Polling and completing first task"
+        polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask1)
+        verifyTaskIteration(polledAndCompletedTask1[0] as Task, 2)
+
+        when: "Polling and completing second task"
+        polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in completed state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
+        verifyTaskIteration(polledAndCompletedTask2[0] as Task, 2)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 12
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'LAMBDA'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_1'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.COMPLETED
+            tasks[6].taskType == 'LAMBDA'
+            tasks[6].status == Task.Status.COMPLETED
+            tasks[6].iteration == 2
+            tasks[7].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[7].status == Task.Status.COMPLETED
+            tasks[7].iteration == 2
+            tasks[8].taskType == 'integration_task_1'
+            tasks[8].status == Task.Status.COMPLETED
+            tasks[8].iteration == 2
+            tasks[9].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[9].status == Task.Status.COMPLETED
+            tasks[9].iteration == 2
+            tasks[10].taskType == 'integration_task_2'
+            tasks[10].status == Task.Status.COMPLETED
+            tasks[10].iteration == 2
+            tasks[11].taskType == 'integration_task_3'
+            tasks[11].status == Task.Status.SCHEDULED
+            tasks[11].iteration == 0 // this is outside DO_WHILE
+        }
+
+        when: "Polling and completing last task"
+        polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in completed state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 12
+            tasks[11].taskType == 'integration_task_3'
+            tasks[11].status == Task.Status.COMPLETED
+            tasks[11].iteration == 0
+        }
     }
 
     def "Test workflow with a single iteration Do While task"() {

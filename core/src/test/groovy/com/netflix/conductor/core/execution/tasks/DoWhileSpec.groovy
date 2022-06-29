@@ -33,7 +33,6 @@ class DoWhileSpec extends Specification {
     @Subject
     DoWhile doWhile
 
-    ParametersUtils parametersUtils
     WorkflowExecutor workflowExecutor
     TaskModel doWhileTaskModel
 
@@ -42,12 +41,11 @@ class DoWhileSpec extends Specification {
 
     def setup() {
         workflowExecutor = Mock(WorkflowExecutor.class)
-        parametersUtils = new ParametersUtils(new ObjectMapper())
 
         task1 = new WorkflowTask(name: 'task1', taskReferenceName: 'task1')
         task2 = new WorkflowTask(name: 'task2', taskReferenceName: 'task2')
 
-        doWhile = new DoWhile(parametersUtils)
+        doWhile = new DoWhile()
     }
 
     def "first iteration"() {
@@ -73,6 +71,39 @@ class DoWhileSpec extends Specification {
 
         and: "verify whether the first task is scheduled"
         1 * workflowExecutor.scheduleNextIteration(doWhileTaskModel, workflowModel)
+    }
+
+    def "an iteration - one task is complete and other is not scheduled"() {
+        given: "WorkflowModel consists of one iteration of one task inside DO_WHILE already completed"
+        taskModel1 = createTaskModel(task1)
+
+        and: "loop over contains two tasks"
+        WorkflowTask doWhileWorkflowTask = new WorkflowTask(taskReferenceName: 'doWhileTask', type: TASK_TYPE_DO_WHILE)
+        doWhileWorkflowTask.loopCondition = "if (\$.doWhileTask['iteration'] < 2) { true; } else { false; }"
+        doWhileWorkflowTask.loopOver = [task1, task2] // two tasks
+
+        doWhileTaskModel = new TaskModel(workflowTask: doWhileWorkflowTask, taskId: UUID.randomUUID().toString(),
+                taskType: TASK_TYPE_DO_WHILE, referenceTaskName: doWhileWorkflowTask.taskReferenceName)
+        doWhileTaskModel.iteration = 1
+        doWhileTaskModel.outputData['iteration'] = 1
+        doWhileTaskModel.status = TaskModel.Status.IN_PROGRESS
+
+        def workflowModel = new WorkflowModel(workflowDefinition: new WorkflowDef(name: 'test_workflow'))
+        // setup the WorkflowModel
+        workflowModel.tasks = [doWhileTaskModel, taskModel1]
+
+        // this is the expected format of iteration 1's output data
+        def iteration1OutputData = [:]
+        iteration1OutputData[task1.taskReferenceName] = taskModel1.outputData
+
+        when:
+        def retVal = doWhile.execute(workflowModel, doWhileTaskModel, workflowExecutor)
+
+        then: "verify that the return value is false, since the iteration is not complete"
+        !retVal
+
+        and: "verify that the next iteration is NOT scheduled"
+        0 * workflowExecutor.scheduleNextIteration(doWhileTaskModel, workflowModel)
     }
 
     def "next iteration - one iteration of all tasks inside DO_WHILE are complete"() {
@@ -113,9 +144,6 @@ class DoWhileSpec extends Specification {
 
         and: "verify whether the first task in the next iteration is scheduled"
         1 * workflowExecutor.scheduleNextIteration(doWhileTaskModel, workflowModel)
-
-        and: "verify that WorkflowExecutor.getTaskDefinition throws TerminateWorkflowException, execute method is not impacted"
-        1 * workflowExecutor.getTaskDefinition(doWhileTaskModel) >> { throw new TerminateWorkflowException("") }
     }
 
     def "next iteration - a task failed in the previous iteration"() {
