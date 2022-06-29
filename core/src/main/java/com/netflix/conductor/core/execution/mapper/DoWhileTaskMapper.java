@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -38,10 +40,12 @@ public class DoWhileTaskMapper implements TaskMapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(DoWhileTaskMapper.class);
 
     private final MetadataDAO metadataDAO;
+    private final ParametersUtils parametersUtils;
 
     @Autowired
-    public DoWhileTaskMapper(MetadataDAO metadataDAO) {
+    public DoWhileTaskMapper(MetadataDAO metadataDAO, ParametersUtils parametersUtils) {
         this.metadataDAO = metadataDAO;
+        this.parametersUtils = parametersUtils;
     }
 
     @Override
@@ -88,6 +92,13 @@ public class DoWhileTaskMapper implements TaskMapper {
         doWhileTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         doWhileTask.setRetryCount(taskMapperContext.getRetryCount());
 
+        Map<String, Object> taskInput =
+                parametersUtils.getTaskInputV2(
+                        workflowTask.getInputParameters(),
+                        workflowModel,
+                        doWhileTask.getTaskId(),
+                        taskDefinition);
+        doWhileTask.setInputData(taskInput);
         return List.of(doWhileTask);
     }
 }
