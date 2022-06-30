@@ -219,6 +219,9 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.6.9"
         },
@@ -382,6 +385,9 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "2.17.1"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.6.9"

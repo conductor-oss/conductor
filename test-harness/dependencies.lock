@@ -90,6 +90,9 @@
         "com.netflix.dyno-queues:dyno-queues-redis": {
             "locked": "2.0.20"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "junit:junit": {
             "locked": "4.13.2"
         },
@@ -119,6 +122,12 @@
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "6.8.12"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
@@ -459,6 +468,9 @@
             ],
             "locked": "1.3.2"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "javax.ws.rs:jsr311-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-http-task"
@@ -638,6 +650,12 @@
                 "com.netflix.conductor:conductor-server"
             ],
             "locked": "2.3.6"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [

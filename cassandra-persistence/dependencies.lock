@@ -222,6 +222,9 @@
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
         },
@@ -394,6 +397,9 @@
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"

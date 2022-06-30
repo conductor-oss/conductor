@@ -203,6 +203,9 @@
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.powermock:powermock-api-mockito2": {
             "locked": "2.0.9"
         },
@@ -326,6 +329,9 @@
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.powermock:powermock-api-mockito2": {
             "locked": "2.0.9"
