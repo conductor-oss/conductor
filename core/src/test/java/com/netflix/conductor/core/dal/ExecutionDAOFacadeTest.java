@@ -61,6 +61,7 @@ public class ExecutionDAOFacadeTest {
         executionDAO = mock(ExecutionDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
+        externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
         ConcurrentExecutionLimitDAO concurrentExecutionLimitDAO =
                 mock(ConcurrentExecutionLimitDAO.class);

@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -141,7 +142,7 @@ public class MetadataMapperServiceTest {
         verifyNoMoreInteractions(metadataDAO);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test
     public void testMetadataPopulationMissingDefinitions() {
         String nameTaskDefinition1 = "task4";
         WorkflowTask workflowTask1 = createWorkflowTask(nameTaskDefinition1);
@@ -157,7 +158,15 @@ public class MetadataMapperServiceTest {
         when(metadataDAO.getTaskDef(nameTaskDefinition1)).thenReturn(taskDefinition);
         when(metadataDAO.getTaskDef(nameTaskDefinition2)).thenReturn(null);
 
-        metadataMapperService.populateTaskDefinitions(workflowDefinition);
+        try {
+            metadataMapperService.populateTaskDefinitions(workflowDefinition);
+        } catch (ApplicationException ae) {
+            if (ae.getCode() == ApplicationException.Code.INVALID_INPUT) {
+                fail("Missing task definitions are not set to a default TaskDef");
+            } else {
+                throw ae;
+            }
+        }
     }
 
     @Test
