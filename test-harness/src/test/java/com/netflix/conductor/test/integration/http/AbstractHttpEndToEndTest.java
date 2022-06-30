@@ -52,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -357,14 +358,16 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testStartWorkflow() {
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
         try {
             workflowClient.startWorkflow(startWorkflowRequest);
-        } catch (IllegalArgumentException e) {
+            fail("StartWorkflow#name is null but NullPointerException was not thrown");
+        } catch (NullPointerException e) {
             assertEquals("Workflow name cannot be null or empty", e.getMessage());
-            throw e;
+        } catch (Exception e) {
+            fail("StartWorkflow#name is null but NullPointerException was not thrown");
         }
     }
 

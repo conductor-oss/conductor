@@ -36,4 +36,6 @@ dependencies {
     testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
 
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    testImplementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
+    testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
 }
