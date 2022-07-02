@@ -1,11 +1,12 @@
 import React from "react";
 import Button from "@material-ui/core/Button";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
-import ClickAwayListener from "@material-ui/core/ClickAwayListener";
-import Grow from "@material-ui/core/Grow";
-import Popper from "@material-ui/core/Popper";
-import MenuItem from "@material-ui/core/MenuItem";
-import MenuList from "@material-ui/core/MenuList";
+import {
+  ClickAwayListener,
+  Popper,
+  MenuItem,
+  MenuList,
+} from "@material-ui/core";
 import { Paper } from "./";
 
 export default function DropdownButton({ children, options }) {
@@ -38,37 +39,26 @@ export default function DropdownButton({ children, options }) {
       <Popper
         open={open}
         anchorEl={anchorRef.current}
-        role={undefined}
-        transition
         disablePortal
+        placement="bottom-end"
       >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "center top" : "center bottom",
-            }}
-          >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu">
-                  {options.map(({ label, handler }, index) => (
-                    <MenuItem
-                      key={index}
-                      onClick={(event) => {
-                        handler(event, index);
-                        setOpen(false);
-                      }}
-                    >
-                      {label}
-                    </MenuItem>
-                  ))}
-                </MenuList>
-              </ClickAwayListener>
-            </Paper>
-          </Grow>
-        )}
+        <Paper elevation={1}>
+          <ClickAwayListener onClickAway={handleClose}>
+            <MenuList>
+              {options.map(({ label, handler }, index) => (
+                <MenuItem
+                  key={index}
+                  onClick={(event) => {
+                    handler(event, index);
+                    setOpen(false);
+                  }}
+                >
+                  {label}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </ClickAwayListener>
+        </Paper>
       </Popper>
     </React.Fragment>
   );

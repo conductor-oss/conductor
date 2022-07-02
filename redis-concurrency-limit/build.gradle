@@ -2,14 +2,13 @@ plugins {
     id 'groovy'
 }
 
-
 dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.data:spring-data-redis'
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation "redis.clients:jedis:${revJedis}"
+    implementation "redis.clients:jedis:3.6.0" // Jedis version "revJedis=3.3.0" does not play well with Spring Data Redis
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"

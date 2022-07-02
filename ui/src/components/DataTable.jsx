@@ -161,7 +161,7 @@ export default function DataTable(props) {
       pagination
       paginationServer={paginationServer}
       paginationPerPage={paginationPerPage}
-      paginationRowsPerPageOptions={[15, 30, 100]}
+      paginationRowsPerPageOptions={[15, 30, 100, 1000]}
       actions={
         <>
           {!paginationServer && showFilter && (

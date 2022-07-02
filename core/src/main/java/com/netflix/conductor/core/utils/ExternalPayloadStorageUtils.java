@@ -123,7 +123,8 @@ public class ExternalPayloadStorageUtils {
             byte[] payloadBytes = byteArrayOutputStream.toByteArray();
             long payloadSize = payloadBytes.length;
 
-            if (payloadSize > maxThreshold * 1024) {
+            final long maxThresholdInBytes = maxThreshold * 1024;
+            if (payloadSize > maxThresholdInBytes) {
                 if (entity instanceof TaskModel) {
                     String errorMsg =
                             String.format(
@@ -131,15 +132,15 @@ public class ExternalPayloadStorageUtils {
                                     payloadSize,
                                     ((TaskModel) entity).getTaskId(),
                                     ((TaskModel) entity).getWorkflowInstanceId(),
-                                    maxThreshold);
+                                    maxThresholdInBytes);
                     failTask(((TaskModel) entity), payloadType, errorMsg);
                 } else {
                     String errorMsg =
                             String.format(
-                                    "The output payload size: %dB of workflow: %s is greater than the permissible limit: %d bytes",
+                                    "The payload size: %d of workflow: %s is greater than the permissible limit: %d bytes",
                                     payloadSize,
                                     ((WorkflowModel) entity).getWorkflowId(),
-                                    maxThreshold);
+                                    maxThresholdInBytes);
                     failWorkflow(((WorkflowModel) entity), payloadType, errorMsg);
                 }
             } else if (payloadSize > threshold * 1024) {

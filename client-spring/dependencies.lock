@@ -200,6 +200,9 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.6.7"
         },
@@ -341,6 +344,9 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.17.1"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [

@@ -255,6 +255,9 @@
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.6.7"
         },
@@ -430,6 +433,9 @@
         },
         "org.elasticsearch.client:transport": {
             "locked": "6.8.12"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.6.7"

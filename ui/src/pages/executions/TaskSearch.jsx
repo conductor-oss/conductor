@@ -1,21 +1,23 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import _ from "lodash";
 import { FormControl, Grid, InputLabel } from "@material-ui/core";
 import {
   Paper,
-  PrimaryButton,
   Heading,
+  PrimaryButton,
   Dropdown,
   Input,
+  TaskNameInput,
+  WorkflowNameInput,
 } from "../../components";
 
-import { useTaskSearch, useTaskNames } from "../../data/task";
-import { useWorkflowNames } from "../../data/workflow";
-import DateRangePicker from "../../components/DateRangePicker";
+import { TASK_STATUSES, SEARCH_TASK_TYPES_SET } from "../../utils/constants";
 import { useQueryState } from "react-router-use-location-state";
 import SearchTabs from "./SearchTabs";
-import ResultsTable from "./ResultsTable";
+import TaskResultsTable from "./TaskResultsTable";
+import DateRangePicker from "../../components/DateRangePicker";
 import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
+import { useTaskSearch } from "../../data/task";
 
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
@@ -29,93 +31,100 @@ const useStyles = makeStyles({
 
 const DEFAULT_SORT = "startTime:DESC";
 const MS_IN_DAY = 86400000;
+const taskTypeOptions = Array.from(SEARCH_TASK_TYPES_SET.values());
 
-export default function TaskSearchPanel() {
+export default function WorkflowPanel() {
   const classes = useStyles();
 
-  const [workflowType, setWorkflowType] = useQueryState("workflowType", []);
-  const [tasks, setTasks] = useQueryState("tasks", []);
+  const [freeText, setFreeText] = useQueryState("freeText", "");
+  const [status, setStatus] = useQueryState("status", []);
+  const [taskName, setTaskName] = useQueryState("taskName", []);
   const [taskId, setTaskId] = useQueryState("taskId", "");
+  const [taskType, setTaskType] = useQueryState("taskType", []);
   const [startFrom, setStartFrom] = useQueryState("startFrom", "");
   const [startTo, setStartTo] = useQueryState("startTo", "");
-  const [freeText, setFreeText] = useQueryState("taskText", "");
   const [lookback, setLookback] = useQueryState("lookback", "");
+  const [workflowType, setWorkflowType] = useQueryState("workflowType", []);
+
+  const [page, setPage] = useQueryState("page", 1);
+  const [rowsPerPage, setRowsPerPage] = useQueryState(
+    "rowsPerPage",
+    DEFAULT_ROWS_PER_PAGE
+  );
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [queryFT, setQueryFT] = useState(buildQuery);
 
-  // For dropdowns
-  const workflowNames = useWorkflowNames();
-  const taskNames = useTaskNames();
-
-  const searchReady = !(
-    _.isEmpty(workflowType) &&
-    _.isEmpty(tasks) &&
-    _.isEmpty(taskId) &&
-    _.isEmpty(freeText)
-  );
-
-  const { data, isFetching, fetchNextPage, refetch } = useTaskSearch({
+  const {
+    data: resultObj,
+    error,
+    isFetching,
+    refetch,
+  } = useTaskSearch({
+    page,
+    rowsPerPage,
     sort,
     query: queryFT.query,
     freeText: queryFT.freeText,
-    rowsPerPage: DEFAULT_ROWS_PER_PAGE,
-    searchReady,
   });
-  const results = useMemo(
-    () =>
-      data
-        ? [].concat.apply(
-            [],
-            data.pages.map((page) => page.results)
-          )
-        : [],
-    [data]
-  );
 
   function buildQuery() {
     const clauses = [];
-    if (!_.isEmpty(workflowType)) {
-      clauses.push(`workflowType IN (${workflowType.join(",")})`);
+    if (!_.isEmpty(taskName)) {
+      clauses.push(`taskDefName IN (${taskName.join(",")})`);
+    }
+    if (!_.isEmpty(taskType)) {
+      clauses.push(`taskType IN (${taskType.join(",")})`);
     }
     if (!_.isEmpty(taskId)) {
       clauses.push(`taskId="${taskId}"`);
     }
-    if (!_.isEmpty(tasks)) {
-      clauses.push(`taskType IN (${tasks.join(",")})`);
+    if (!_.isEmpty(status)) {
+      clauses.push(`status IN (${status.join(",")})`);
     }
     if (!_.isEmpty(lookback)) {
-      clauses.push(`startTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
+      clauses.push(`updateTime>${new Date().getTime() - lookback * MS_IN_DAY}`);
     }
     if (!_.isEmpty(startFrom)) {
-      clauses.push(`startTime>${new Date(startFrom).getTime()}`);
+      clauses.push(`updateTime>${new Date(startFrom).getTime()}`);
     }
     if (!_.isEmpty(startTo)) {
-      clauses.push(`startTime<${new Date(startTo).getTime()}`);
+      clauses.push(`updateTime<${new Date(startTo).getTime()}`);
     }
-
+    if (!_.isEmpty(workflowType)) {
+      clauses.push(`workflowType IN (${workflowType.join(",")})`);
+    }
     return {
       query: clauses.join(" AND "),
       freeText: _.isEmpty(freeText) ? "*" : freeText,
     };
   }
 
-  function handleSearch() {
-    const oldQuery = queryFT;
-    const newQuery = buildQuery();
-    setQueryFT(newQuery);
+  function doSearch() {
+    setPage(1);
+    const oldQueryFT = queryFT;
+    const newQueryFT = buildQuery();
+    setQueryFT(newQueryFT);
 
-    if (oldQuery === newQuery) {
+    // Only force refetch if query didn't change. Else let react-query detect difference and refetch automatically
+    if (_.isEqual(oldQueryFT, newQueryFT)) {
       refetch();
     }
   }
 
-  function handlePage(page) {
-    fetchNextPage();
-  }
+  const handlePage = (page) => {
+    setPage(page);
+  };
 
-  function handleSort(changedColumn, direction) {
-    setSort(`${changedColumn}:${direction.toUpperCase()}`);
-  }
+  const handleSort = (changedColumn, direction) => {
+    const sort = `${changedColumn}:${direction.toUpperCase()}`;
+    setPage(1);
+    setSort(sort);
+  };
+
+  const handleRowsPerPage = (rowsPerPage) => {
+    setPage(1);
+    setRowsPerPage(rowsPerPage);
+  };
 
   const handleLookback = (val) => {
     setStartFrom("");
@@ -136,47 +145,58 @@ export default function TaskSearchPanel() {
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
       <Heading level={3} className={classes.heading}>
-        Workflow Executions
+        Search Executions
       </Heading>
-
       <Paper className={classes.paper}>
         <SearchTabs tabIndex={1} />
         <Grid container spacing={3} className={classes.controls}>
-          <Grid item xs={5}>
-            <Dropdown
-              label="Workflow Name"
+          <Grid item xs={3}>
+            <TaskNameInput
               fullWidth
-              freeSolo
-              options={workflowNames}
-              multiple
-              onChange={(evt, val) => setWorkflowType(val)}
-              value={workflowType}
+              onChange={(evt, val) => setTaskName(val)}
+              value={taskName}
             />
           </Grid>
           <Grid item xs={3}>
             <Input
               fullWidth
-              label="Includes Task ID"
+              label="Task ID"
               defaultValue={taskId}
               onBlur={setTaskId}
               clearable
             />
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Dropdown
-              label="Includes Task Name"
+              label="Task Status"
               fullWidth
-              freeSolo
-              options={taskNames}
+              options={TASK_STATUSES}
               multiple
-              onChange={(evt, val) => setTasks(val)}
-              value={tasks}
+              onChange={(evt, val) => setStatus(val)}
+              value={status}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <Dropdown
+              label="Task Type (Leave blank to include SIMPLE Tasks)"
+              fullWidth
+              options={taskTypeOptions}
+              multiple
+              onChange={(evt, val) => setTaskType(val)}
+              value={taskType}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <WorkflowNameInput
+              fullWidth
+              onChange={(evt, val) => setWorkflowType(val)}
+              value={workflowType}
             />
           </Grid>
           <Grid item xs={4}>
             <DateRangePicker
               disabled={!_.isEmpty(lookback)}
-              label="Start Time"
+              label="Update Time"
               from={startFrom}
               to={startTo}
               onFromChange={handleStartFrom}
@@ -194,33 +214,34 @@ export default function TaskSearchPanel() {
               disabled={!_.isEmpty(startFrom) || !_.isEmpty(startTo)}
             />
           </Grid>
-          <Grid item xs={6}>
+
+          <Grid item xs={3}>
             <Input
-              label="Lucene-syntax Query (Double-quote strings for Free Text Search)"
-              defaultValue={freeText}
               fullWidth
+              label="Lucene-syntax Query (Double-quote strings for Free Text)"
+              defaultValue={freeText}
               onBlur={setFreeText}
               clearable
             />
           </Grid>
-
           <Grid item xs={1}>
             <FormControl>
               <InputLabel>&nbsp;</InputLabel>
-              <PrimaryButton onClick={handleSearch}>Search</PrimaryButton>
+              <PrimaryButton onClick={doSearch}>Search</PrimaryButton>
             </FormControl>
           </Grid>
         </Grid>
       </Paper>
-      <ResultsTable
-        resultObj={{ results: results }}
+      <TaskResultsTable
+        resultObj={resultObj}
+        error={error}
         busy={isFetching}
-        page={0}
-        setPage={handlePage}
-        setSort={handleSort}
-        rowsPerPage={DEFAULT_ROWS_PER_PAGE}
+        page={page}
+        rowsPerPage={rowsPerPage}
         sort={sort}
-        showMore
+        setPage={handlePage}
+        setRowsPerPage={handleRowsPerPage}
+        setSort={handleSort}
       />
     </div>
   );

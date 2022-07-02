@@ -206,6 +206,9 @@
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.36"
         },
@@ -329,6 +332,9 @@
                 "com.netflix.conductor:conductor-grpc"
             ],
             "locked": "2.17.1"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.36"

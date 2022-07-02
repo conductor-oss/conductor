@@ -1,5 +1,5 @@
 site_name: Conductor Documentation
-
+site_description: Conductor is a platform created by Netflix to orchestrate workflows that span across microservices.
 repo_url: https://github.com/Netflix/conductor
 edit_uri: ''
 strict: true
@@ -87,8 +87,12 @@ nav:
       - Azure Blog Storage: reference-docs/azureblob-storage.md
       - External Payload Storage: externalpayloadstorage.md
       - Redis: reference-docs/redis.md
-    - Polyglot SDKs:
+    - SDKs:
+      - CSharp SDK: how-tos/csharp-sdk.md
+      - Clojure SDK: how-tos/clojure-sdk.md
+      - Go SDK: how-tos/go-sdk.md
       - Python SDK: how-tos/python-sdk.md
+      
     - Best Practices: bestpractices.md
     - FAQ: faq.md
     - Directed Acyclic Graph: reference-docs/directed-acyclic-graph.md

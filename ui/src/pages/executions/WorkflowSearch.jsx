@@ -7,6 +7,7 @@ import {
   PrimaryButton,
   Dropdown,
   Input,
+  WorkflowNameInput,
 } from "../../components";
 
 import { workflowStatuses } from "../../utils/constants";
@@ -15,7 +16,7 @@ import SearchTabs from "./SearchTabs";
 import ResultsTable from "./ResultsTable";
 import DateRangePicker from "../../components/DateRangePicker";
 import { DEFAULT_ROWS_PER_PAGE } from "../../components/DataTable";
-import { useWorkflowSearch, useWorkflowNames } from "../../data/workflow";
+import { useWorkflowSearch } from "../../data/workflow";
 
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
@@ -61,9 +62,6 @@ export default function WorkflowPanel() {
     query: queryFT.query,
     freeText: queryFT.freeText,
   });
-
-  // For dropdown
-  const workflowNames = useWorkflowNames();
 
   function buildQuery() {
     const clauses = [];
@@ -138,18 +136,15 @@ export default function WorkflowPanel() {
   return (
     <div className={clsx([classes.wrapper, classes.padded])}>
       <Heading level={3} className={classes.heading}>
-        Workflow Executions
+        Search Executions
       </Heading>
       <Paper className={classes.paper}>
         <SearchTabs tabIndex={0} />
         <Grid container spacing={3} className={classes.controls}>
           <Grid item xs={5}>
-            <Dropdown
+            <WorkflowNameInput
               fullWidth
               label="Workflow Name"
-              options={workflowNames}
-              multiple
-              freeSolo
               onChange={(evt, val) => setWorkflowType(val)}
               value={workflowType}
             />

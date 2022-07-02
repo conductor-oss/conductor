@@ -4,8 +4,8 @@ import { Tab, Tabs, NavLink } from "../../components";
 export default function SearchTabs({ tabIndex }) {
   return (
     <Tabs value={tabIndex}>
-      <Tab label="Basic Search" component={NavLink} path="/" />
-      <Tab label="Find by Tasks" component={NavLink} path="/search/by-tasks" />
+      <Tab label="Workflows" component={NavLink} path="/" />
+      <Tab label="Tasks" component={NavLink} path="/search/tasks" />
     </Tabs>
   );
 }

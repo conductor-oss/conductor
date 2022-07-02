@@ -36,7 +36,7 @@
             "locked": "2.6.4"
         },
         "redis.clients:jedis": {
-            "locked": "3.3.0"
+            "locked": "3.6.0"
         }
     },
     "runtimeClasspath": {
@@ -185,7 +185,7 @@
             "locked": "2.17.1"
         },
         "redis.clients:jedis": {
-            "locked": "3.3.0"
+            "locked": "3.6.0"
         }
     },
     "testCompileClasspath": {
@@ -222,6 +222,9 @@
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
         },
@@ -244,7 +247,7 @@
             "locked": "1.15.3"
         },
         "redis.clients:jedis": {
-            "locked": "3.3.0"
+            "locked": "3.6.0"
         }
     },
     "testRuntimeClasspath": {
@@ -398,6 +401,9 @@
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
         },
@@ -420,7 +426,7 @@
             "locked": "1.15.3"
         },
         "redis.clients:jedis": {
-            "locked": "3.3.0"
+            "locked": "3.6.0"
         }
     }
 }

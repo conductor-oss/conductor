@@ -2,7 +2,8 @@ import React, { useRef } from "react";
 import { TextField, InputAdornment, IconButton } from "@material-ui/core";
 import ClearIcon from "@material-ui/icons/Clear";
 
-export default function ({ label, clearable, onBlur, onChange, ...props }) {
+export default function (props) {
+  const { label, clearable, onBlur, onChange, InputProps, ...rest } = props;
   const inputRef = useRef();
 
   function handleClear() {
@@ -23,22 +24,24 @@ export default function ({ label, clearable, onBlur, onChange, ...props }) {
     <TextField
       label={label}
       inputRef={inputRef}
-      InputProps={{
-        endAdornment: clearable && (
-          <InputAdornment position="end" style={{ marginRight: -8 }}>
-            <IconButton
-              size="small"
-              onClick={handleClear}
-              disabled={props.disabled}
-            >
-              <ClearIcon />
-            </IconButton>
-          </InputAdornment>
-        ),
-      }}
+      InputProps={
+        InputProps || {
+          endAdornment: clearable && (
+            <InputAdornment position="end" style={{ marginRight: -8 }}>
+              <IconButton
+                size="small"
+                onClick={handleClear}
+                disabled={props.disabled}
+              >
+                <ClearIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }
+      }
       onBlur={handleBlur}
       onChange={handleChange}
-      {...props}
+      {...rest}
     />
   );
 }

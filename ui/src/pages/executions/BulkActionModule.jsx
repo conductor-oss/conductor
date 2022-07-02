@@ -20,6 +20,7 @@ import {
   useBulkTerminateAction,
   useBulkPauseAction,
   useBulkRetryAction,
+  useBulkTerminateWithReasonAction,
 } from "../../data/bulkactions";
 
 const useStyles = makeStyles({
@@ -54,6 +55,10 @@ export default function BulkActionModule({ selectedRows }) {
   });
   const { mutate: terminateAction, isLoading: terminateLoading } =
     useBulkTerminateAction({ onSuccess });
+  const {
+    mutate: terminateWithReasonAction,
+    isLoading: terminateWithReasonLoading,
+  } = useBulkTerminateWithReasonAction({ onSuccess });
 
   const isLoading =
     pauseLoading ||
@@ -61,7 +66,8 @@ export default function BulkActionModule({ selectedRows }) {
     restartCurrentLoading ||
     restartLatestLoading ||
     retryLoading ||
-    terminateLoading;
+    terminateLoading ||
+    terminateWithReasonLoading;
 
   function onSuccess(data, variables, context) {
     const retval = {
@@ -114,6 +120,18 @@ export default function BulkActionModule({ selectedRows }) {
             label: "Terminate",
             handler: () =>
               terminateAction({ body: JSON.stringify(selectedIds) }),
+          },
+          {
+            label: "Terminate with Reason",
+            handler: () => {
+              const reason = window.prompt("Termination Reason", "");
+              if (reason) {
+                terminateWithReasonAction({
+                  body: JSON.stringify(selectedIds),
+                  reason,
+                });
+              }
+            },
           },
         ]}
       >

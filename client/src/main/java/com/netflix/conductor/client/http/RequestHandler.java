@@ -15,14 +15,19 @@ package com.netflix.conductor.client.http;
 import java.io.InputStream;
 import java.net.URI;
 
+import org.jetbrains.annotations.Nullable;
+
 import com.netflix.conductor.client.exception.RequestHandlerException;
 
 public interface RequestHandler {
     void delete(URI uri) throws RequestHandlerException;
 
+    @Nullable
     InputStream put(URI uri, Object body) throws RequestHandlerException;
 
+    @Nullable
     InputStream post(URI uri, Object body) throws RequestHandlerException;
 
+    @Nullable
     InputStream get(URI uri) throws RequestHandlerException;
 }

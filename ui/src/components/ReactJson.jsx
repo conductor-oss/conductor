@@ -19,6 +19,7 @@ const useStyles = makeStyles({
     flex: 1,
     marginLeft: 10,
     position: "relative",
+    minHeight: 0,
   },
   label: {
     marginTop: 13,

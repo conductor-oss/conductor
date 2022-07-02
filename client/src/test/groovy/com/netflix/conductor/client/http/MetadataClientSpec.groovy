@@ -77,6 +77,12 @@ class MetadataClientSpec extends ClientSpecification {
         metadataClient.unregisterWorkflowDef(null, 1)
 
         then:
+        thrown(NullPointerException.class)
+
+        when:
+        metadataClient.unregisterWorkflowDef("   ", 1)
+
+        then:
         thrown(IllegalArgumentException.class)
     }
 }

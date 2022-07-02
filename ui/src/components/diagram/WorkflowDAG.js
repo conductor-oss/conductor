@@ -9,7 +9,6 @@ export default class WorkflowDAG {
     this.graph = new graphlib.Graph({ directed: true, compound: false });
     this.taskResults = new Map();
 
-    this.loopTaskRefs = [];
     this.constructGraph();
   }
 
@@ -40,18 +39,7 @@ export default class WorkflowDAG {
       let isTerminated = false;
       for (let task of execution.tasks) {
         if (task["taskType"] === "TERMINATE") isTerminated = true;
-        if (task["loopOverTask"]) {
-          let refTaskName = task["referenceTaskName"];
-          let refTaskNameSansIter = refTaskName.substring(
-            0,
-            refTaskName.lastIndexOf("__")
-          );
-          let taskModel = {
-            ...task,
-            referenceTaskName: refTaskNameSansIter,
-          };
-          this.addTaskResult(refTaskNameSansIter, taskModel);
-        }
+
         this.addTaskResult(task["referenceTaskName"], task);
       }
 
@@ -124,7 +112,9 @@ export default class WorkflowDAG {
   }
 
   addVertex(taskConfig, antecedents) {
-    const taskResults = this.taskResults.get(taskConfig.taskReferenceName);
+    const taskResults = taskConfig.aliasForRef
+      ? this.taskResults.get(taskConfig.aliasForRef)
+      : this.taskResults.get(taskConfig.taskReferenceName);
     const lastTaskResult = _.last(taskResults);
     const vertex = {
       taskResults: taskResults || [
@@ -135,7 +125,7 @@ export default class WorkflowDAG {
       name: taskConfig.name,
       ref: taskConfig.taskReferenceName,
       type: taskConfig.type,
-      description: taskConfig.description,
+      aliasForRef: taskConfig.aliasForRef,
     };
     if (taskConfig.dfTasks) {
       vertex.dfTasks = taskConfig.dfTasks;
@@ -148,18 +138,14 @@ export default class WorkflowDAG {
     this.graph.setNode(taskConfig.taskReferenceName, vertex);
     for (let antecedent of antecedents) {
       const antecedentExecuted = !!this.getExecutionStatus(
-        antecedent.taskReferenceName
+        antecedent.aliasForRef || antecedent.taskReferenceName
       );
       const edgeParams = {};
 
       // Special case - When the antecedent of an executed node is a SWITCH, the edge may not necessarily be highlighted.
       // E.g. the default edge not taken.
       // SWITCH is the newer version of DECISION and DECISION is deprecated
-      if (
-        antecedent.type === "SWITCH" ||
-        antecedent.type === "DECISION" ||
-        antecedents.type === "DO_WHILE"
-      ) {
+      if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
         edgeParams.caseValue = getCaseValue(
           taskConfig.taskReferenceName,
           antecedent
@@ -265,49 +251,64 @@ export default class WorkflowDAG {
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
 
-    let doWhileTaskResult = _.last(
-      this.taskResults.get(doWhileTask.taskReferenceName)
+    const hasDoWhileExecuted = !!this.getExecutionStatus(
+      doWhileTask.taskReferenceName
     );
-    let startDoWhileTask = {
-      ...doWhileTask,
-      taskReferenceName: doWhileTask.taskReferenceName + "-START",
+
+    this.addVertex(doWhileTask, antecedents);
+
+    // Bottom bar
+    let endDoWhileTask = {
+      type: "DO_WHILE_END",
+      name: doWhileTask.name,
+      taskReferenceName: doWhileTask.taskReferenceName + "-END",
+      aliasForRef: doWhileTask.taskReferenceName,
     };
-    this.addTaskResult(startDoWhileTask.taskReferenceName, {
-      ...doWhileTaskResult,
-    });
-    this.graph.setEdge(
-      doWhileTask.taskReferenceName + "-START",
-      doWhileTask.taskReferenceName,
-      {
-        caseValue: "LOOP",
-        executed: true,
-      }
+
+    const loopOverRefPrefixes = doWhileTask.loopOver.map(
+      (t) => t.taskReferenceName
     );
-    this.addVertex(startDoWhileTask, antecedents);
 
-    antecedents = [startDoWhileTask];
+    if (hasDoWhileExecuted) {
+      const loopOverRefs = Array.from(this.taskResults.keys()).filter((key) => {
+        for (let prefix of loopOverRefPrefixes) {
+          if (key.startsWith(prefix)) return true;
+        }
+        return false;
+      });
 
-    const retval = [];
+      const loopTaskResults = [];
+      for (let ref of loopOverRefs) {
+        const refList = this.taskResults.get(ref);
+        loopTaskResults.push(...refList);
+      }
+      const loopTasks = loopTaskResults.map((task) => ({
+        name: task.taskDefName,
+        taskReferenceName: task.referenceTaskName,
+        type: task.taskType,
+      }));
 
-    if (_.isEmpty(doWhileTask.loopOver)) {
-      retval.push(doWhileTask); // Empty default path
+      for (let task of loopTasks) {
+        this.addVertex(task, [doWhileTask]);
+      }
+      this.addVertex(endDoWhileTask, [...loopTasks]);
     } else {
-      this.loopTaskRefs.push(doWhileTask.taskReferenceName);
-      retval.push(...this.processTaskList(doWhileTask.loopOver, antecedents));
-      this.loopTaskRefs.pop();
+      // Definition view (or not executed)
+      this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
+      this.addVertex(endDoWhileTask, [_.last(doWhileTask.loopOver)]);
     }
-    // Set an edge from the do_while task to the first task
+
+    // Create cosmetic LOOP edges between top and bottom bars
     this.graph.setEdge(
       doWhileTask.taskReferenceName,
-      doWhileTask.taskReferenceName + "-START",
+      doWhileTask.taskReferenceName + "-END",
       {
-        caseValue: "LOOP",
-        executed: true,
+        type: "loop",
+        executed: hasDoWhileExecuted,
       }
     );
-    // Add do_while final state at the end
-    this.addVertex(doWhileTask, retval);
-    return [doWhileTask];
+
+    return [endDoWhileTask];
   }
 
   processForkJoin(forkJoinTask, antecedents) {
@@ -369,13 +370,31 @@ export default class WorkflowDAG {
     // But when parent is FORK_JOIN_DYNAMIC there should only be one.
     if (_.size(predecessors) === 1) {
       const parent = this.graph.node(_.first(predecessors));
-      if (parent && parent.type === "FORK_JOIN_DYNAMIC") {
-        return this.graph
-          .successors(parent.ref)
-          .map((ref) => this.graph.node(ref));
+      if (parent && parent.status) {
+        if (parent.type === "FORK_JOIN_DYNAMIC") {
+          return this.graph
+            .successors(parent.ref)
+            .map((ref) => this.graph.node(ref));
+        } else if (parent.type === "DO_WHILE") {
+          return this.graph
+            .successors(parent.ref)
+            .map((ref) => this.graph.node(ref))
+            .filter((node) => node.type !== "DO_WHILE_END");
+        }
       }
     }
     // Returns undefined
+  }
+
+  findTaskById(id) {
+    for (const [, arr] of this.taskResults) {
+      for (const task of arr) {
+        if (task.taskId === id) {
+          return task;
+        }
+      }
+    }
+    return null;
   }
 }
 

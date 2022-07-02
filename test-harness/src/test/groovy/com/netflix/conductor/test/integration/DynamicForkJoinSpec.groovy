@@ -673,4 +673,93 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         cleanup: "roll back the change made to integration_task_2 definition"
         metadataService.updateTaskDef(persistedTask2Definition)
     }
+
+    def "Test dynamic fork join empty output"() {
+        when: " a dynamic fork join workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(DYNAMIC_FORK_JOIN_WF, 1,
+                'dynamic_fork_join_workflow', [:],
+                null, null, null)
+
+        then: "verify that the workflow has been successfully started and the first task is in scheduled state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+
+        when: " the first task is 'integration_task_1' output has a list of dynamic tasks"
+        WorkflowTask workflowTask2 = new WorkflowTask()
+        workflowTask2.name = 'integration_task_2'
+        workflowTask2.taskReferenceName = 'xdt1'
+
+        WorkflowTask workflowTask3 = new WorkflowTask()
+        workflowTask3.name = 'integration_task_3'
+        workflowTask3.taskReferenceName = 'xdt2'
+
+        def dynamicTasksInput = ['xdt1': ['k1': 'v1'], 'xdt2': ['k2': 'v2']]
+
+        and: "The 'integration_task_1' is polled and completed"
+        def pollAndCompleteTask1Try = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker',
+                ['dynamicTasks': [workflowTask2, workflowTask3], 'dynamicTasksInput': dynamicTasksInput])
+
+        then: "verify that the task was completed"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try)
+
+        and: "verify that workflow has progressed further ahead and new dynamic tasks have been scheduled"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 5
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'FORK'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'integration_task_3'
+            tasks[3].status == Task.Status.SCHEDULED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].status == Task.Status.IN_PROGRESS
+            tasks[4].referenceTaskName == 'dynamicfanouttask_join'
+        }
+
+        when: "Poll and complete 'integration_task_2' and 'integration_task_3'"
+        def pollAndCompleteTask2Try = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
+        def pollAndCompleteTask3Try = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker')
+
+        then: "verify that the tasks were polled and acknowledged"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask3Try, ['k2': 'v2'])
+
+        and: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 6
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_3'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].inputData['joinOn'] == ['xdt1', 'xdt2']
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[4].referenceTaskName == 'dynamicfanouttask_join'
+            tasks[4].outputData.isEmpty()
+            tasks[5].taskType == 'integration_task_4'
+            tasks[5].status == Task.Status.SCHEDULED
+        }
+
+        when: "Poll and complete 'integration_task_4'"
+        def pollAndCompleteTask4Try = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task4.worker')
+
+        then: "verify that the tasks were polled and acknowledged"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask4Try)
+
+        and: "verify that the workflow is complete"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 6
+            tasks[5].taskType == 'integration_task_4'
+            tasks[5].status == Task.Status.COMPLETED
+        }
+    }
 }

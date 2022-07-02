@@ -76,7 +76,11 @@ class WorkflowGraph extends React.Component {
       resolvedRef = selectedRef;
     } else if (dagGraph.hasNode(selectedRef)) {
       const parentRef = _.first(dagGraph.predecessors(selectedRef));
-      console.assert(dagGraph.node(parentRef).type === "FORK_JOIN_DYNAMIC");
+      const parentType = dagGraph.node(parentRef).type;
+      console.assert(
+        parentType === "FORK_JOIN_DYNAMIC" || parentType === "DO_WHILE"
+      );
+
       resolvedRef = this.graph
         .successors(parentRef)
         .find((ref) => ref.includes("DF_TASK_PLACEHOLDER"));
@@ -235,11 +239,34 @@ class WorkflowGraph extends React.Component {
     const dfNodes = dagGraph
       .nodes()
       .filter((nodeId) => dagGraph.node(nodeId).type === "FORK_JOIN_DYNAMIC");
+
     for (const parentRef of dfNodes) {
       const childRefs = dagGraph.successors(parentRef);
 
       if (childRefs.length > 2) {
         this.collapseDfChildren(parentRef, childRefs);
+      }
+    }
+
+    // Collapse Do_while children
+    const doWhileNodes = dagGraph
+      .nodes()
+      .filter((nodeId) => dagGraph.node(nodeId).type === "DO_WHILE");
+
+    for (const parentRef of doWhileNodes) {
+      const parentNode = dagGraph.node(parentRef);
+
+      // Only collapse executed DO_WHILE loops
+      if (_.get(parentNode, "status")) {
+        const childRefs = dagGraph
+          .successors(parentRef)
+          .map((ref) => dagGraph.node(ref))
+          .filter((node) => node.type !== "DO_WHILE_END")
+          .map((node) => node.ref);
+
+        if (childRefs.length > 0) {
+          this.collapseDfChildren(parentRef, childRefs);
+        }
       }
     }
 
@@ -253,16 +280,35 @@ class WorkflowGraph extends React.Component {
       const dagEdge = dagGraph.edge(edgeId) || graph.edge(edgeId);
 
       const caseValue = _.get(dagEdge, "caseValue");
-      const options = {
-        label: caseValue || (caseValue === null ? "default" : ""),
-      };
-      if (this.props.executionMode) {
-        const executed = _.get(dagEdge, "executed");
-        options.class = executed ? "executed" : "dimmed";
-        options.labelStyle = executed ? "" : "fill: #ccc";
+      const type = _.get(dagEdge, "type");
+
+      let classes = [],
+        label,
+        labelStyle;
+
+      if (type === "loop") {
+        label = "LOOP";
+        classes.push("reverse");
+      } else {
+        label = caseValue || (caseValue === null ? "default" : "");
       }
 
-      graph.setEdge(edgeId.v, edgeId.w, options);
+      if (this.props.executionMode) {
+        const executed = _.get(dagEdge, "executed");
+        if (executed) {
+          classes.push("executed");
+          labelStyle = "";
+        } else {
+          classes.push("dimmed");
+          labelStyle = "fill: #ccc";
+        }
+      }
+
+      graph.setEdge(edgeId.v, edgeId.w, {
+        label: label,
+        labelStyle: labelStyle,
+        class: classes.join(" "),
+      });
     }
 
     this.renderer(inner, graph);
@@ -274,6 +320,10 @@ class WorkflowGraph extends React.Component {
 
     // svg.width=100% via CSS
     svg.attr("height", graph.graph().height + BOTTOM_MARGIN);
+
+    // Fix dagre-d3 bug with marker-end. Use css to set marker-end
+    // See: https://github.com/dagrejs/dagre-d3/pull/413
+    d3.selectAll("path.path").attr("marker-end", "");
 
     // Attach click handler
     inner.selectAll("g.node").on("click", this.handleClick);
@@ -351,6 +401,58 @@ class WorkflowGraph extends React.Component {
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+
+            <marker
+              id="endarrow"
+              markerWidth="8"
+              markerHeight="6"
+              refX="8"
+              refY="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <polygon points="0 0, 8 3, 0 6" />
+            </marker>
+
+            <marker
+              id="startarrow"
+              markerWidth="8"
+              markerHeight="6"
+              refX="0"
+              refY="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <polygon points="8 0, 8 6, 0 3" />
+            </marker>
+
+            <marker
+              id="endarrow-dimmed"
+              markerWidth="8"
+              markerHeight="6"
+              refX="8"
+              refY="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+              stroke="#c8c8c8"
+              fill="#c8c8c8"
+            >
+              <polygon points="0 0, 8 3, 0 6" />
+            </marker>
+
+            <marker
+              id="startarrow-dimmed"
+              markerWidth="8"
+              markerHeight="6"
+              refX="0"
+              refY="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+              stroke="#c8c8c8"
+              fill="#c8c8c8"
+            >
+              <polygon points="8 0, 8 6, 0 3" />
+            </marker>
           </defs>
         </svg>
       </div>
@@ -415,7 +517,8 @@ class WorkflowGraph extends React.Component {
         retval.shape = "stack";
         break;
       case "DO_WHILE":
-        retval = composeBarNode(v, "bidir");
+      case "DO_WHILE_END":
+        retval = composeBarNode(v, "down");
         retval.label = `${retval.label} [DO_WHILE]`;
         this.barNodes.push(v.ref);
         break;
@@ -522,7 +625,7 @@ function composeBarNode(v, fanDir) {
     shape: "bar",
     labelStyle: "font-size:11px",
     padding: 4,
-    label: `${v.name} (${v.ref})`,
+    label: `${v.name} (${v.aliasForRef || v.ref})`,
   };
   return retval;
 }
