@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -53,17 +52,6 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(ApplicationException.class)
-    public ResponseEntity<ErrorResponse> handleApplicationException(
-            HttpServletRequest request, ApplicationException ex) {
-        logException(request, ex);
-
-        Monitors.error("error", String.valueOf(ex.getHttpStatusCode()));
-
-        return new ResponseEntity<>(
-                toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
-    }
-
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
@@ -76,7 +64,7 @@ public class ApplicationExceptionMapper {
         errorResponse.setStatus(status.value());
         errorResponse.setMessage(th.getMessage());
         errorResponse.setRetryable(
-                th instanceof TransientException); // set it to true for BACKEND_ERROR
+                th instanceof TransientException); // set it to true for TransientException
 
         Monitors.error("error", String.valueOf(status.value()));
 
@@ -89,14 +77,5 @@ public class ApplicationExceptionMapper {
                 exception.getClass().getSimpleName(),
                 request.getRequestURI(),
                 exception);
-    }
-
-    private ErrorResponse toErrorResponse(ApplicationException ex) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setInstance(host);
-        errorResponse.setStatus(ex.getHttpStatusCode());
-        errorResponse.setMessage(ex.getMessage());
-        errorResponse.setRetryable(ex.isRetryable());
-        return errorResponse;
     }
 }

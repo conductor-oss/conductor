@@ -23,7 +23,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.WorkflowContext
-import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.dao.QueueDAO

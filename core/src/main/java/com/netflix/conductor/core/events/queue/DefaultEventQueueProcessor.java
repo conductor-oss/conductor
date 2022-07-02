@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -158,8 +157,6 @@ public class DefaultEventQueueProcessor {
                                 LOGGER.error(
                                         "Workflow ID specified is not valid for this environment");
                                 queue.ack(Collections.singletonList(msg));
-                            } catch (ApplicationException e) {
-                                LOGGER.error("Error processing message: {}", msg, e);
                             } catch (Exception e) {
                                 LOGGER.error("Error processing message: {}", msg, e);
                             }

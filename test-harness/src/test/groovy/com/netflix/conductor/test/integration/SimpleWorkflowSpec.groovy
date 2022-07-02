@@ -22,14 +22,13 @@ import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.core.exception.ConflictException
+import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 class SimpleWorkflowSpec extends AbstractSpecification {
@@ -943,8 +942,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowExecutor.restart(workflowInstanceId, false)
 
         then: "Ensure that an exception is thrown"
-        def exceptionThrown = thrown(ApplicationException)
-        exceptionThrown
+        thrown(NotFoundException.class)
 
         cleanup: "clean up the changes made to the task and workflow definition during start up"
         metadataService.updateTaskDef(integrationTask1Definition)

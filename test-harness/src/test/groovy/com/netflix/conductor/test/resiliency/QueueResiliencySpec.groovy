@@ -20,7 +20,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
@@ -67,7 +67,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
         then: "Verify that workflow start fails with BACKEND_ERROR"
         1 * queueDAO.push(*_) >> { throw new TransientException("Queue push failed from Spy") }
-        thrown(ApplicationException)
+        thrown(TransientException.class)
     }
 
     def "Verify terminate succeeds when QueueDAO is unavailable"() {
@@ -121,7 +121,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         1 * queueDAO.push(*_) >> { throw new TransientException("Queue push failed from Spy") }
         1 * queueDAO.remove(*_) >> { throw new TransientException("Queue remove failed from Spy") }
         0 * queueDAO._
-        thrown(ApplicationException)
+        thrown(TransientException.class)
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED
             tasks.size() == 0
@@ -153,7 +153,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         then: ""
         1 * queueDAO.push(*_) >> { throw new TransientException("Queue push failed from Spy") }
         0 * queueDAO._
-        thrown(ApplicationException)
+        thrown(TransientException.class)
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED
             tasks.size() == 0
@@ -183,7 +183,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         then: "Verify retry fails"
         1 * queueDAO.push(*_) >> { throw new TransientException("Queue push failed from Spy") }
         0 * queueDAO._
-        thrown(ApplicationException)
+        thrown(TransientException.class)
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED
             tasks.size() == 1
@@ -260,7 +260,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         workflowResource.getExecutionStatus(workflowInstanceId, true)
 
         then:
-        thrown(ApplicationException)
+        thrown(NotFoundException.class)
     }
 
     def "Verify decide succeeds when QueueDAO is unavailable"() {
@@ -342,7 +342,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
         then: "exception is thrown"
         1 * queueDAO.push(*_) >> { throw new TransientException("Queue push failed from Spy") }
-        thrown(ApplicationException)
+        thrown(TransientException.class)
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.PAUSED
             tasks.size() == 1
@@ -377,7 +377,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
         then: "Verify an exception is thrown"
         1 * queueDAO.resetOffsetTime(*_) >> { throw new TransientException("Queue resetOffsetTime failed from Spy") }
-        thrown(ApplicationException)
+        thrown(TransientException.class)
     }
 
     def "Verify search is not impacted by QueueDAO"() {

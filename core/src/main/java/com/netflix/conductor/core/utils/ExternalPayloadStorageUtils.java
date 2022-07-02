@@ -30,7 +30,6 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.metrics.Monitors;
@@ -63,7 +62,7 @@ public class ExternalPayloadStorageUtils {
      *
      * @param path the relative path of the payload in the {@link ExternalPayloadStorage}
      * @return the payload object
-     * @throws ApplicationException in case of JSON parsing errors or download errors
+     * @throws NonTransientException in case of JSON parsing errors or download errors
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> downloadPayload(String path) {
@@ -83,7 +82,7 @@ public class ExternalPayloadStorageUtils {
      * @param entity the task or workflow for which the payload is to be verified and uploaded
      * @param payloadType the {@link PayloadType} of the payload
      * @param <T> {@link TaskModel} or {@link WorkflowModel}
-     * @throws ApplicationException in case of JSON parsing errors or upload errors
+     * @throws NonTransientException in case of JSON parsing errors or upload errors
      * @throws TerminateWorkflowException if the payload size is bigger than permissible limit as
      *     per {@link ConductorProperties}
      */

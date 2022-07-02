@@ -16,7 +16,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.events.EventQueues
 import com.netflix.conductor.core.events.queue.Message
 import com.netflix.conductor.core.events.queue.ObservableQueue
-import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.core.exception.NonTransientException
 import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.core.utils.ParametersUtils

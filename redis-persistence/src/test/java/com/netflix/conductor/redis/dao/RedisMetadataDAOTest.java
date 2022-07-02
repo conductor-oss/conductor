@@ -33,7 +33,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.conductor.redis.jedis.JedisProxy;
@@ -67,7 +68,7 @@ public class RedisMetadataDAOTest {
                 new RedisMetadataDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = ConflictException.class)
     public void testDup() {
         WorkflowDef def = new WorkflowDef();
         def.setName("testDup");
@@ -159,7 +160,7 @@ public class RedisMetadataDAOTest {
         assertEquals(workflow.getVersion(), 3);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = NotFoundException.class)
     public void removeInvalidWorkflowDef() {
         redisMetadataDAO.removeWorkflowDef("hello", 1);
     }
@@ -220,8 +221,8 @@ public class RedisMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = NotFoundException.class)
     public void testRemoveTaskDef() {
-        redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID().toString());
+        redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID());
     }
 }

@@ -32,7 +32,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
@@ -154,7 +154,7 @@ public class MetadataServiceTest {
         fail("metadataService.updateTaskDef did not throw ConstraintViolationException !");
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = NotFoundException.class)
     public void testUpdateTaskDefNotExisting() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");
@@ -163,7 +163,7 @@ public class MetadataServiceTest {
         metadataService.updateTaskDef(taskDef);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = NotFoundException.class)
     public void testUpdateTaskDefDaoException() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");

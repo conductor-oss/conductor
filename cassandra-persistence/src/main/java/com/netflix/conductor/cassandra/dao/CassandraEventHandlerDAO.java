@@ -36,6 +36,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
@@ -153,7 +154,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
                     .map(row -> readValue(row.getString(EVENT_HANDLER_KEY), EventHandler.class))
                     .collect(Collectors.toList());
 
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllEventHandlersFromDB");
             String errorMsg = "Failed to get all event handlers";
             LOGGER.error(errorMsg, e);
@@ -167,7 +168,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             session.execute(insertEventHandlerStatement.bind(eventHandler.getName(), handler));
             recordCassandraDaoRequests("storeEventHandler");
             recordCassandraDaoPayloadSize("storeEventHandler", handler.length(), "n/a", "n/a");
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "insertOrUpdateEventHandler");
             String errorMsg =
                     String.format(

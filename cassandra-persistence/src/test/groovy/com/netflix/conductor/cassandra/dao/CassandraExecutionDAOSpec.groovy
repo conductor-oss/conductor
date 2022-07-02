@@ -16,7 +16,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
-import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.core.exception.NonTransientException
 import com.netflix.conductor.core.utils.IDGenerator
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
@@ -59,7 +59,7 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
         executionDAO.validateTasks(tasks)
 
         then:
-        def ex = thrown(ApplicationException.class)
+        def ex = thrown(NonTransientException.class)
         ex.message == "Tasks of multiple workflows cannot be created/updated simultaneously"
     }
 

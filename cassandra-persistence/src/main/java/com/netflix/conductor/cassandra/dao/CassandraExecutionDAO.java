@@ -23,7 +23,6 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -34,6 +33,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -183,6 +183,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     public List<TaskModel> createTasks(List<TaskModel> tasks) {
         validateTasks(tasks);
         String workflowId = tasks.get(0).getWorkflowInstanceId();
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
         try {
             WorkflowMetadata workflowMetadata = getWorkflowMetadata(workflowId);
             int totalTasks = workflowMetadata.getTotalTasks() + tasks.size();
@@ -194,8 +195,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         task.setScheduledTime(System.currentTimeMillis());
                         session.execute(
                                 updateTaskLookupStatement.bind(
-                                        UUID.fromString(workflowId),
-                                        UUID.fromString(task.getTaskId())));
+                                        workflowUUID, toUUID(task.getTaskId(), "Invalid task id")));
                     });
 
             // update all the tasks in the workflow using batch
@@ -205,7 +205,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         String taskPayload = toJson(task);
                         batchStatement.add(
                                 insertTaskStatement.bind(
-                                        UUID.fromString(workflowId),
+                                        workflowUUID,
                                         DEFAULT_SHARD_ID,
                                         task.getTaskId(),
                                         taskPayload));
@@ -218,19 +218,16 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 task.getWorkflowType());
                     });
             batchStatement.add(
-                    updateTotalTasksStatement.bind(
-                            totalTasks, UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                    updateTotalTasksStatement.bind(totalTasks, workflowUUID, DEFAULT_SHARD_ID));
             session.execute(batchStatement);
 
             // update the total tasks and partitions for the workflow
             session.execute(
                     updateTotalPartitionsStatement.bind(
-                            DEFAULT_TOTAL_PARTITIONS, totalTasks, UUID.fromString(workflowId)));
+                            DEFAULT_TOTAL_PARTITIONS, totalTasks, workflowUUID));
 
             return tasks;
-        } catch (ApplicationException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "createTasks");
             String errorMsg =
                     String.format(
@@ -262,7 +259,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     addTaskToLimit(task);
                 }
             }
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "updateTask");
             String errorMsg =
                     String.format(
@@ -310,7 +307,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                 Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
                 return true;
             }
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "exceedsLimit");
             String errorMsg =
                     String.format(
@@ -360,9 +357,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 return task;
                             })
                     .orElse(null);
-        } catch (ApplicationException | IllegalArgumentException ae) {
-            throw ae;
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getTask");
             String errorMsg = String.format("Error getting task by id: %s", taskId);
             LOGGER.error(errorMsg, e);
@@ -414,7 +409,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
 
             workflow.setTasks(tasks);
             return workflow.getWorkflowId();
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "createWorkflow");
             String errorMsg =
                     String.format("Error creating workflow: %s", workflow.getWorkflowId());
@@ -437,7 +432,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             payload, UUID.fromString(workflow.getWorkflowId())));
             workflow.setTasks(tasks);
             return workflow.getWorkflowId();
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "updateWorkflow");
             String errorMsg =
                     String.format("Failed to update workflow: %s", workflow.getWorkflowId());
@@ -459,7 +454,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 deleteWorkflowStatement.bind(
                                         UUID.fromString(workflowId), DEFAULT_SHARD_ID));
                 removed = resultSet.wasApplied();
-            } catch (Exception e) {
+            } catch (DriverException e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
                 LOGGER.error(errorMsg, e);
@@ -497,14 +492,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
 
     @Override
     public WorkflowModel getWorkflow(String workflowId, boolean includeTasks) {
-        WorkflowModel workflow = null;
+        UUID workflowUUID = toUUID(workflowId, "Invalid workflow id");
         try {
+            WorkflowModel workflow = null;
             ResultSet resultSet;
             if (includeTasks) {
                 resultSet =
                         session.execute(
                                 selectWorkflowWithTasksStatement.bind(
-                                        UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                                        workflowUUID, DEFAULT_SHARD_ID));
                 List<TaskModel> tasks = new ArrayList<>();
 
                 List<Row> rows = resultSet.all();
@@ -533,8 +529,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     workflow.setTasks(tasks);
                 }
             } else {
-                resultSet =
-                        session.execute(selectWorkflowStatement.bind(UUID.fromString(workflowId)));
+                resultSet = session.execute(selectWorkflowStatement.bind(workflowUUID));
                 workflow =
                         Optional.ofNullable(resultSet.one())
                                 .map(
@@ -550,14 +545,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 .orElse(null);
             }
             return workflow;
-        } catch (ApplicationException e) {
-            throw e;
-        } catch (IllegalArgumentException e) {
-            Monitors.error(CLASS_NAME, "getWorkflow");
-            String errorMsg = String.format("Invalid workflow id: %s", workflowId);
-            LOGGER.error(errorMsg, e);
-            throw new IllegalArgumentException(errorMsg, e);
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getWorkflow");
             String errorMsg = String.format("Failed to get workflow: %s", workflowId);
             LOGGER.error(errorMsg, e);
@@ -646,7 +634,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                     eventExecution.getId(),
                                     jsonPayload))
                     .wasApplied();
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "addEventExecution");
             String errorMsg =
                     String.format(
@@ -671,7 +659,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             eventExecution.getMessageId(),
                             eventExecution.getName(),
                             eventExecution.getId()));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "updateEventExecution");
             String errorMsg =
                     String.format(
@@ -691,7 +679,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             eventExecution.getMessageId(),
                             eventExecution.getName(),
                             eventExecution.getId()));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeEventExecution");
             String errorMsg =
                     String.format(
@@ -713,7 +701,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     .filter(row -> !row.isNull(PAYLOAD_KEY))
                     .map(row -> readValue(row.getString(PAYLOAD_KEY), EventExecution.class))
                     .collect(Collectors.toList());
-        } catch (Exception e) {
+        } catch (DriverException e) {
             String errorMsg =
                     String.format(
                             "Failed to fetch event executions for event: %s, handler: %s",
@@ -733,7 +721,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                             UUID.fromString(task.getWorkflowInstanceId()),
                             task.getTaskDefName(),
                             UUID.fromString(task.getTaskId())));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "addTaskToLimit");
             String errorMsg =
                     String.format(
@@ -752,7 +740,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             session.execute(
                     deleteTaskDefLimitStatement.bind(
                             task.getTaskDefName(), UUID.fromString(task.getTaskId())));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeTaskFromLimit");
             String errorMsg =
                     String.format(
@@ -792,7 +780,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                 removeTaskFromLimit(task);
             }
             return resultSet.wasApplied();
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeTask");
             String errorMsg = String.format("Failed to remove task: %s", task.getTaskId());
             LOGGER.error(errorMsg, e);
@@ -809,9 +797,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                 removeTaskFromLimit(task);
             }
             session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
-        } catch (ApplicationException ae) {
-            // no-op
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeTaskLookup");
             String errorMsg = String.format("Failed to remove task lookup: %s", task.getTaskId());
             LOGGER.error(errorMsg, e);
@@ -866,18 +852,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
 
     @VisibleForTesting
     String lookupWorkflowIdFromTaskId(String taskId) {
+        UUID taskUUID = toUUID(taskId, "Invalid task id");
         try {
-            ResultSet resultSet =
-                    session.execute(selectTaskLookupStatement.bind(UUID.fromString(taskId)));
+            ResultSet resultSet = session.execute(selectTaskLookupStatement.bind(taskUUID));
             return Optional.ofNullable(resultSet.one())
                     .map(row -> row.getUUID(WORKFLOW_ID_KEY).toString())
                     .orElse(null);
-        } catch (IllegalArgumentException iae) {
-            Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
-            String errorMsg = String.format("Invalid task id: %s", taskId);
-            LOGGER.error(errorMsg, iae);
-            throw new IllegalArgumentException(errorMsg, iae);
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "lookupWorkflowIdFromTaskId");
             String errorMsg = String.format("Failed to lookup workflowId from taskId: %s", taskId);
             LOGGER.error(errorMsg, e);

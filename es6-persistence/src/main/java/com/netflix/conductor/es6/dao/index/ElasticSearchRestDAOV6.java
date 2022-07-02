@@ -65,7 +65,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es6.config.ElasticSearchProperties;
@@ -292,7 +292,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
             return indexName;
         } catch (IOException e) {
             LOGGER.error("Failed to update log index name: {}", indexName, e);
-            throw new ApplicationException(e.getMessage(), e);
+            throw new NonTransientException("Failed to update log index name: " + indexName, e);
         }
     }
 
