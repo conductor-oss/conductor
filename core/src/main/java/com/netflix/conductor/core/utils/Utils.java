@@ -87,8 +87,7 @@ public class Utils {
      */
     public static boolean isTransientException(Throwable throwable) {
         if (throwable != null) {
-            return !((throwable instanceof UnsupportedOperationException)
-                    || (throwable instanceof TransientException));
+            return throwable instanceof TransientException;
         }
         return true;
     }

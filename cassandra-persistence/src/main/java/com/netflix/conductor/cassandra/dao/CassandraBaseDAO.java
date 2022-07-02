@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.cassandra.config.CassandraProperties;
-import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.datastax.driver.core.DataType;
@@ -236,7 +236,7 @@ public abstract class CassandraBaseDAO {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            throw new TransientException("Error serializing to json", e);
+            throw new NonTransientException("Error serializing to json", e);
         }
     }
 
@@ -244,7 +244,7 @@ public abstract class CassandraBaseDAO {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (IOException e) {
-            throw new TransientException("Error serializing json", e);
+            throw new NonTransientException("Error de-serializing json", e);
         }
     }
 
