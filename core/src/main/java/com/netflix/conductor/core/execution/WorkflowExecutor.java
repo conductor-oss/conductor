@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -416,7 +417,7 @@ public class WorkflowExecutor {
         try {
             createWorkflow(workflow);
             // then decide to see if anything needs to be done as part of the workflow
-            decide(workflowId);
+            _decide(workflowId);
             Monitors.recordWorkflowStartSuccess(
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()),
@@ -611,7 +612,7 @@ public class WorkflowExecutor {
             throw e;
         }
 
-        decide(workflowId);
+        _decide(workflowId);
 
         updateAndPushParents(workflow, "restarted");
     }
@@ -1240,7 +1241,7 @@ public class WorkflowExecutor {
                     task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
 
-        decide(workflowId);
+        _decide(workflowId);
     }
 
     public TaskModel getTask(String taskId) {
@@ -1268,6 +1269,18 @@ public class WorkflowExecutor {
 
     public List<String> getRunningWorkflowIds(String workflowName, int version) {
         return executionDAOFacade.getRunningWorkflowIds(workflowName, version);
+    }
+
+    /** Records a metric for the "decide" process. */
+    private boolean _decide(String workflowId) {
+        StopWatch watch = new StopWatch();
+        watch.start();
+        try {
+            return decide(workflowId);
+        } finally {
+            watch.stop();
+            Monitors.recordWorkflowDecisionTime(watch.getTime());
+        }
     }
 
     /**
@@ -1521,7 +1534,7 @@ public class WorkflowExecutor {
                 workflow.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
-        decide(workflowId);
+        _decide(workflowId);
     }
 
     /**
@@ -1588,7 +1601,7 @@ public class WorkflowExecutor {
             taskToBeSkipped.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
         executionDAOFacade.createTasks(Collections.singletonList(taskToBeSkipped));
-        decide(workflowId);
+        _decide(workflowId);
     }
 
     public WorkflowModel getWorkflow(String workflowId, boolean includeTasks) {
@@ -1859,7 +1872,7 @@ public class WorkflowExecutor {
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
 
-            decide(workflowId);
+            _decide(workflowId);
             return true;
         }
 
@@ -1945,7 +1958,7 @@ public class WorkflowExecutor {
             }
             executionDAOFacade.updateTask(rerunFromTask);
 
-            decide(workflowId);
+            _decide(workflowId);
             return true;
         }
         return false;

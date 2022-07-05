@@ -187,6 +187,10 @@ public class Monitors {
                 .record(duration, TimeUnit.MILLISECONDS);
     }
 
+    public static void recordWorkflowDecisionTime(long duration) {
+        getTimer(classQualifier, "workflow_decision").record(duration, TimeUnit.MILLISECONDS);
+    }
+
     public static void recordTaskPollError(String taskType, String exception) {
         recordTaskPollError(taskType, NO_DOMAIN, exception);
     }
