@@ -24,8 +24,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -682,10 +681,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
             return added;
         } catch (Exception e) {
-            throw new ApplicationException(
-                    Code.BACKEND_ERROR,
-                    "Unable to add event execution for " + eventExecution.getId(),
-                    e);
+            throw new TransientException(
+                    "Unable to add event execution for " + eventExecution.getId(), e);
         }
     }
 
@@ -706,10 +703,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
             recordRedisDaoPayloadSize(
                     "updateEventExecution", json.length(), eventExecution.getEvent(), "n/a");
         } catch (Exception e) {
-            throw new ApplicationException(
-                    Code.BACKEND_ERROR,
-                    "Unable to update event execution for " + eventExecution.getId(),
-                    e);
+            throw new TransientException(
+                    "Unable to update event execution for " + eventExecution.getId(), e);
         }
     }
 
@@ -726,10 +721,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
             jedisProxy.hdel(key, eventExecution.getId());
             recordRedisDaoEventRequests("removeEventExecution", eventExecution.getEvent());
         } catch (Exception e) {
-            throw new ApplicationException(
-                    Code.BACKEND_ERROR,
-                    "Unable to remove event execution for " + eventExecution.getId(),
-                    e);
+            throw new TransientException(
+                    "Unable to remove event execution for " + eventExecution.getId(), e);
         }
     }
 
@@ -754,10 +747,8 @@ public class RedisExecutionDAO extends BaseDynoDAO
             return executions;
 
         } catch (Exception e) {
-            throw new ApplicationException(
-                    Code.BACKEND_ERROR,
-                    "Unable to get event executions for " + eventHandlerName,
-                    e);
+            throw new TransientException(
+                    "Unable to get event executions for " + eventHandlerName, e);
         }
     }
 
@@ -770,7 +761,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
             Preconditions.checkNotNull(
                     task.getReferenceTaskName(), "Task reference name cannot be null");
         } catch (NullPointerException npe) {
-            throw new ApplicationException(Code.INVALID_INPUT, npe.getMessage(), npe);
+            throw new IllegalArgumentException(npe.getMessage(), npe);
         }
     }
 }

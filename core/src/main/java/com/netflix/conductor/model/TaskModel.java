@@ -126,8 +126,6 @@ public class TaskModel {
 
     private Any outputMessage;
 
-    // id 31 is reserved
-
     private int rateLimitPerFrequency;
 
     private int rateLimitFrequencyInSeconds;

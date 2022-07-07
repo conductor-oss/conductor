@@ -13,11 +13,13 @@
 package com.netflix.conductor.cassandra.dao;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.cassandra.config.CassandraProperties;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.datastax.driver.core.DataType;
@@ -108,6 +110,14 @@ public abstract class CassandraBaseDAO {
         this.properties = properties;
 
         init();
+    }
+
+    protected static UUID toUUID(String uuidString, String message) {
+        try {
+            return UUID.fromString(uuidString);
+        } catch (IllegalArgumentException iae) {
+            throw new IllegalArgumentException(message + " " + uuidString, iae);
+        }
     }
 
     private void init() {
@@ -226,7 +236,7 @@ public abstract class CassandraBaseDAO {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new NonTransientException("Error serializing to json", e);
         }
     }
 
@@ -234,7 +244,7 @@ public abstract class CassandraBaseDAO {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new NonTransientException("Error de-serializing json", e);
         }
     }
 

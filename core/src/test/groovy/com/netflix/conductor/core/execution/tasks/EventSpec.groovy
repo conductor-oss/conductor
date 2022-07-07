@@ -16,7 +16,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.events.EventQueues
 import com.netflix.conductor.core.events.queue.Message
 import com.netflix.conductor.core.events.queue.ObservableQueue
-import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.core.exception.NonTransientException
+import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
@@ -227,7 +228,7 @@ class EventSpec extends Specification {
         1 * parametersUtils.getTaskInputV2(_, workflow, task.taskId, _) >> ['sink': sinkValue]
         1 * eventQueues.getQueue(_) >> observableQueue
         // capture the Message object sent to the publish method. Event.start sends a list with one Message object
-        1 * observableQueue.publish(_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "transient error") }
+        1 * observableQueue.publish(_) >> { throw new TransientException("transient error") }
     }
 
     def "publishing to a queue throws a non-retryable ApplicationException"() {
@@ -246,7 +247,7 @@ class EventSpec extends Specification {
         1 * parametersUtils.getTaskInputV2(_, workflow, task.taskId, _) >> ['sink': sinkValue]
         1 * eventQueues.getQueue(_) >> observableQueue
         // capture the Message object sent to the publish method. Event.start sends a list with one Message object
-        1 * observableQueue.publish(_) >> { throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, "fatal error") }
+        1 * observableQueue.publish(_) >> { throw new NonTransientException("fatal error") }
     }
 
     def "event task fails to convert the payload to json"() {

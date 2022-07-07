@@ -23,8 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
@@ -67,8 +66,7 @@ public class MetadataServiceImpl implements MetadataService {
     public void updateTaskDef(TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
+            throw new NotFoundException("No such task by name %s", taskDefinition.getName());
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
@@ -96,8 +94,7 @@ public class MetadataServiceImpl implements MetadataService {
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND, String.format("No such taskType found by name: %s", taskType));
+            throw new NotFoundException("No such taskType found by name: %s", taskType);
         }
         return taskDef;
     }
@@ -135,11 +132,8 @@ public class MetadataServiceImpl implements MetadataService {
 
         return workflowDef.orElseThrow(
                 () ->
-                        new ApplicationException(
-                                Code.NOT_FOUND,
-                                String.format(
-                                        "No such workflow found by name: %s, version: %d",
-                                        name, version)));
+                        new NotFoundException(
+                                "No such workflow found by name: %s, version: %d", name, version));
     }
 
     /**
@@ -156,8 +150,7 @@ public class MetadataServiceImpl implements MetadataService {
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         if (workflowDef.getName().contains(":")) {
-            throw new ApplicationException(
-                    Code.INVALID_INPUT,
+            throw new IllegalArgumentException(
                     "Workflow name cannot contain the following set of characters: ':'");
         }
         if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {

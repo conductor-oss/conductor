@@ -34,8 +34,8 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -43,6 +43,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
@@ -157,11 +158,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         try {
             recordCassandraDaoRequests("removeTaskDef");
             session.execute(deleteTaskDefStatement.bind(name));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeTaskDef");
             String errorMsg = String.format("Failed to remove task definition: %s", name);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshTaskDefsCache();
     }
@@ -176,11 +177,9 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                                     workflowDef.getVersion(),
                                     workflowDefinition))
                     .wasApplied()) {
-                throw new ApplicationException(
-                        Code.CONFLICT,
-                        String.format(
-                                "Workflow: %s, version: %s already exists!",
-                                workflowDef.getName(), workflowDef.getVersion()));
+                throw new ConflictException(
+                        "Workflow: %s, version: %s already exists!",
+                        workflowDef.getName(), workflowDef.getVersion());
             }
             String workflowDefIndex =
                     getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
@@ -190,16 +189,14 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             recordCassandraDaoRequests("createWorkflowDef");
             recordCassandraDaoPayloadSize(
                     "createWorkflowDef", workflowDefinition.length(), "n/a", workflowDef.getName());
-        } catch (ApplicationException ae) {
-            throw ae;
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "createWorkflowDef");
             String errorMsg =
                     String.format(
                             "Error creating workflow definition: %s/%d",
                             workflowDef.getName(), workflowDef.getVersion());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -218,14 +215,14 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             recordCassandraDaoRequests("updateWorkflowDef");
             recordCassandraDaoPayloadSize(
                     "updateWorkflowDef", workflowDefinition.length(), "n/a", workflowDef.getName());
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "updateWorkflowDef");
             String errorMsg =
                     String.format(
                             "Error updating workflow definition: %s/%d",
                             workflowDef.getName(), workflowDef.getVersion());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -253,11 +250,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                                                     WorkflowDef.class))
                             .orElse(null);
             return Optional.ofNullable(workflowDef);
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getTaskDef");
             String errorMsg = String.format("Error fetching workflow def: %s/%d", name, version);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -268,12 +265,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             session.execute(
                     deleteWorkflowDefIndexStatement.bind(
                             WORKFLOW_DEF_INDEX_KEY, getWorkflowDefIndexValue(name, version)));
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "removeWorkflowDef");
             String errorMsg =
                     String.format("Failed to remove workflow definition: %s/%d", name, version);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -299,11 +296,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                             })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefs");
             String errorMsg = "Error retrieving all workflow defs";
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -330,11 +327,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             return Optional.ofNullable(resultSet.one())
                     .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
                     .orElse(null);
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getTaskDef");
             String errorMsg = String.format("Failed to get task def: %s", name);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -350,11 +347,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             return rows.stream()
                     .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
                     .collect(Collectors.toList());
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllTaskDefs");
             String errorMsg = "Failed to get all task defs";
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -375,11 +372,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                                             row.getString(WORKFLOW_DEFINITION_KEY),
                                             WorkflowDef.class))
                     .collect(Collectors.toList());
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefVersions");
             String errorMsg = String.format("Failed to get workflows defs for : %s", name);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -390,12 +387,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             recordCassandraDaoRequests("storeTaskDef");
             recordCassandraDaoPayloadSize(
                     "storeTaskDef", taskDefinition.length(), taskDef.getName(), "n/a");
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "insertOrUpdateTaskDef");
             String errorMsg =
                     String.format("Error creating/updating task definition: %s", taskDef.getName());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshTaskDefsCache();
         return taskDef.getName();

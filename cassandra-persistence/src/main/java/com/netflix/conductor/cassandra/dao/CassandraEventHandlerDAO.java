@@ -28,8 +28,7 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -37,6 +36,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
@@ -96,7 +96,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             Monitors.error(CLASS_NAME, "removeEventHandler");
             String errorMsg = String.format("Failed to remove event handler: %s", name);
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshEventHandlersCache();
     }
@@ -154,11 +154,11 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
                     .map(row -> readValue(row.getString(EVENT_HANDLER_KEY), EventHandler.class))
                     .collect(Collectors.toList());
 
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllEventHandlersFromDB");
             String errorMsg = "Failed to get all event handlers";
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -168,14 +168,14 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             session.execute(insertEventHandlerStatement.bind(eventHandler.getName(), handler));
             recordCassandraDaoRequests("storeEventHandler");
             recordCassandraDaoPayloadSize("storeEventHandler", handler.length(), "n/a", "n/a");
-        } catch (Exception e) {
+        } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "insertOrUpdateEventHandler");
             String errorMsg =
                     String.format(
                             "Error creating/updating event handler: %s/%s",
                             eventHandler.getName(), eventHandler.getEvent());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
         refreshEventHandlersCache();
     }
