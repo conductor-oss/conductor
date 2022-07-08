@@ -569,4 +569,8 @@ public class Monitors {
     public static void recordQueueMessageRepushFromRepairService(String queueName) {
         counter(classQualifier, "queue_message_repushed", "queueName", queueName);
     }
+
+    public static void recordTaskExecLogSize(int val) {
+        gauge(classQualifier, "task_exec_log_size", val);
+    }
 }

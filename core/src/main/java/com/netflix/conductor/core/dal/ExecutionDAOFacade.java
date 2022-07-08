@@ -572,7 +572,17 @@ public class ExecutionDAOFacade {
     }
 
     public void addTaskExecLog(List<TaskExecLog> logs) {
-        if (properties.isTaskExecLogIndexingEnabled()) {
+        if (properties.isTaskExecLogIndexingEnabled() && !logs.isEmpty()) {
+            Monitors.recordTaskExecLogSize(logs.size());
+            int taskExecLogSizeLimit = properties.getTaskExecLogSizeLimit();
+            if (logs.size() > taskExecLogSizeLimit) {
+                LOGGER.warn(
+                        "Task Execution log size: {} for taskId: {} exceeds the limit: {}",
+                        logs.size(),
+                        logs.get(0).getTaskId(),
+                        taskExecLogSizeLimit);
+                logs = logs.stream().limit(taskExecLogSizeLimit).collect(Collectors.toList());
+            }
             if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncAddTaskExecutionLogs(logs);
             } else {
