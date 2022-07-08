@@ -291,7 +291,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     private TaskDef getTaskDefFromDB(String name) {
         try {
             ResultSet resultSet = session.execute(selectTaskDefStatement.bind(name));
-            recordCassandraDaoRequests("getTaskDef");
+            recordCassandraDaoRequests("getTaskDef", name, null);
             return Optional.ofNullable(resultSet.one())
                     .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
                     .orElse(null);
