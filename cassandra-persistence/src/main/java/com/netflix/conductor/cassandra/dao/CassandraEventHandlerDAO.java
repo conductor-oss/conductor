@@ -12,13 +12,8 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -48,8 +43,6 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraEventHandlerDAO.class);
     private static final String CLASS_NAME = CassandraEventHandlerDAO.class.getSimpleName();
 
-    private volatile Map<String, EventHandler> eventHandlerCache = new HashMap<>();
-
     private final PreparedStatement insertEventHandlerStatement;
     private final PreparedStatement selectAllEventHandlersStatement;
     private final PreparedStatement deleteEventHandlerStatement;
@@ -70,11 +63,6 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
         deleteEventHandlerStatement =
                 session.prepare(statements.getDeleteEventHandlerStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
-
-        long cacheRefreshTime = properties.getEventHandlerCacheRefreshInterval().getSeconds();
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(
-                        this::refreshEventHandlersCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }
 
     @Override
@@ -98,15 +86,11 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
-        refreshEventHandlersCache();
     }
 
     @Override
     public List<EventHandler> getAllEventHandlers() {
-        if (eventHandlerCache.size() == 0) {
-            refreshEventHandlersCache();
-        }
-        return new ArrayList<>(eventHandlerCache.values());
+        return getAllEventHandlersFromDB();
     }
 
     @Override
@@ -120,23 +104,6 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             return getAllEventHandlers().stream()
                     .filter(eventHandler -> eventHandler.getEvent().equals(event))
                     .collect(Collectors.toList());
-        }
-    }
-
-    private void refreshEventHandlersCache() {
-        if (session.isClosed()) {
-            LOGGER.warn("session is closed");
-            return;
-        }
-        try {
-            Map<String, EventHandler> map = new HashMap<>();
-            getAllEventHandlersFromDB()
-                    .forEach(eventHandler -> map.put(eventHandler.getName(), eventHandler));
-            this.eventHandlerCache = map;
-            LOGGER.debug("Refreshed event handlers, total num: " + this.eventHandlerCache.size());
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "refreshEventHandlersCache");
-            LOGGER.error("refresh EventHandlers failed", e);
         }
     }
 
@@ -177,6 +144,5 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
-        refreshEventHandlersCache();
     }
 }

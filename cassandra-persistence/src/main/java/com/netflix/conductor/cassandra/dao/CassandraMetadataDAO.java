@@ -12,16 +12,11 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -58,8 +53,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraMetadataDAO.class);
     private static final String CLASS_NAME = CassandraMetadataDAO.class.getSimpleName();
     private static final String INDEX_DELIMITER = "/";
-
-    private Map<String, TaskDef> taskDefCache = new HashMap<>();
 
     private final PreparedStatement insertWorkflowDefStatement;
     private final PreparedStatement insertWorkflowDefVersionIndexStatement;
@@ -123,11 +116,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         this.deleteTaskDefStatement =
                 session.prepare(statements.getDeleteTaskDefStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
-
-        long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(
-                        this::refreshTaskDefsCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }
 
     @Override
@@ -142,15 +130,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     @Override
     public TaskDef getTaskDef(String name) {
-        return Optional.ofNullable(taskDefCache.get(name)).orElseGet(() -> getTaskDefFromDB(name));
+        return getTaskDefFromDB(name);
     }
 
     @Override
     public List<TaskDef> getAllTaskDefs() {
-        if (taskDefCache.size() == 0) {
-            refreshTaskDefsCache();
-        }
-        return new ArrayList<>(taskDefCache.values());
+        return getAllTaskDefsFromDB();
     }
 
     @Override
@@ -164,7 +149,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
-        refreshTaskDefsCache();
     }
 
     @Override
@@ -304,22 +288,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         }
     }
 
-    private void refreshTaskDefsCache() {
-        if (session.isClosed()) {
-            LOGGER.warn("session is closed");
-            return;
-        }
-        try {
-            Map<String, TaskDef> map = new HashMap<>();
-            getAllTaskDefsFromDB().forEach(taskDef -> map.put(taskDef.getName(), taskDef));
-            this.taskDefCache = map;
-            LOGGER.debug("Refreshed task defs, total num: " + this.taskDefCache.size());
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "refreshTaskDefs");
-            LOGGER.error("refresh TaskDefs failed ", e);
-        }
-    }
-
     private TaskDef getTaskDefFromDB(String name) {
         try {
             ResultSet resultSet = session.execute(selectTaskDefStatement.bind(name));
@@ -394,7 +362,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
-        refreshTaskDefsCache();
         return taskDef.getName();
     }
 
