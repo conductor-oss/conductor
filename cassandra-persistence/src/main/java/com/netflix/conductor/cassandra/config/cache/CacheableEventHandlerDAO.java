@@ -12,12 +12,14 @@
  */
 package com.netflix.conductor.cassandra.config.cache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -82,17 +84,28 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
         } finally {
             eventHandlerCache.remove(name);
         }
-        ;
     }
 
     @Override
     public List<EventHandler> getAllEventHandlers() {
-        return cassandraEventHandlerDAO.getAllEventHandlers();
+        if (eventHandlerCache.size() == 0) {
+            refreshEventHandlersCache();
+        }
+        return new ArrayList<>(eventHandlerCache.values());
     }
 
     @Override
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-        return cassandraEventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
+        if (activeOnly) {
+            return getAllEventHandlers().stream()
+                    .filter(eventHandler -> eventHandler.getEvent().equals(event))
+                    .filter(EventHandler::isActive)
+                    .collect(Collectors.toList());
+        } else {
+            return getAllEventHandlers().stream()
+                    .filter(eventHandler -> eventHandler.getEvent().equals(event))
+                    .collect(Collectors.toList());
+        }
     }
 
     private void refreshEventHandlersCache() {
