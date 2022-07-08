@@ -213,7 +213,7 @@ class EventSpec extends Specification {
         1 * eventQueues.getQueue(queueName) >> {throw new IllegalArgumentException() }
     }
 
-    def "publishing to a queue throws a retryable ApplicationException"() {
+    def "publishing to a queue throws a retryable TransientException"() {
         given:
         String sinkValue = 'conductor'
 
@@ -231,7 +231,7 @@ class EventSpec extends Specification {
         1 * observableQueue.publish(_) >> { throw new TransientException("transient error") }
     }
 
-    def "publishing to a queue throws a non-retryable ApplicationException"() {
+    def "publishing to a queue throws a NonTransientException"() {
         given:
         String sinkValue = 'conductor'
 

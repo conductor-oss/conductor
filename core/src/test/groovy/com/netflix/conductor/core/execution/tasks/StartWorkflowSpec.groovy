@@ -94,7 +94,7 @@ class StartWorkflowSpec extends Specification {
         1 * workflowExecutor.startWorkflow(*_) >> { throw new TransientException("") }
     }
 
-    def "WorkflowExecutor throws a non-retryable ApplicationException"() {
+    def "WorkflowExecutor throws a NotFoundException"() {
         when:
         startWorkflow.start(workflowModel, taskModel, workflowExecutor)
 

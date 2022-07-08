@@ -447,7 +447,7 @@ public class TestDefaultEventProcessor {
     }
 
     @Test
-    public void testExecuteNonRetriableApplicationException() {
+    public void testExecuteNonRetriableException() {
         AtomicInteger executeInvoked = new AtomicInteger(0);
         doAnswer(
                         (Answer<Map<String, Object>>)
@@ -483,7 +483,7 @@ public class TestDefaultEventProcessor {
     }
 
     @Test
-    public void testExecuteRetriableApplicationException() {
+    public void testExecuteTransientException() {
         AtomicInteger executeInvoked = new AtomicInteger(0);
         doAnswer(
                         (Answer<Map<String, Object>>)
