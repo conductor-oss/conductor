@@ -1,0 +1,13 @@
+syntax = "proto3";
+package conductor.proto;
+
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "WorkflowDefSummaryPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message WorkflowDefSummary {
+    string name = 1;
+    int32 version = 2;
+    int64 create_time = 3;
+}

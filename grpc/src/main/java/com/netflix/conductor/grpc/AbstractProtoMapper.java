@@ -16,6 +16,7 @@ import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
@@ -35,6 +36,7 @@ import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.proto.TaskResultPb;
 import com.netflix.conductor.proto.TaskSummaryPb;
 import com.netflix.conductor.proto.WorkflowDefPb;
+import com.netflix.conductor.proto.WorkflowDefSummaryPb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 import com.netflix.conductor.proto.WorkflowTaskPb;
@@ -1168,6 +1170,26 @@ public abstract class AbstractProtoMapper {
             case ALERT_ONLY: to = WorkflowDef.TimeoutPolicy.ALERT_ONLY; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
+        return to;
+    }
+
+    public WorkflowDefSummaryPb.WorkflowDefSummary toProto(WorkflowDefSummary from) {
+        WorkflowDefSummaryPb.WorkflowDefSummary.Builder to = WorkflowDefSummaryPb.WorkflowDefSummary.newBuilder();
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        to.setVersion( from.getVersion() );
+        if (from.getCreateTime() != null) {
+            to.setCreateTime( from.getCreateTime() );
+        }
+        return to.build();
+    }
+
+    public WorkflowDefSummary fromProto(WorkflowDefSummaryPb.WorkflowDefSummary from) {
+        WorkflowDefSummary to = new WorkflowDefSummary();
+        to.setName( from.getName() );
+        to.setVersion( from.getVersion() );
+        to.setCreateTime( from.getCreateTime() );
         return to;
     }
 

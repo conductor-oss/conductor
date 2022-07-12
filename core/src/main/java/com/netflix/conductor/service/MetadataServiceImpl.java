@@ -12,8 +12,11 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 
 import org.springframework.stereotype.Service;
 
@@ -21,6 +24,7 @@ import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -204,5 +208,31 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return eventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
+    }
+
+    public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
+        List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
+
+        Map<String, TreeSet<WorkflowDefSummary>> retval = new HashMap<>();
+        for (WorkflowDef def : workflowDefs) {
+            String workflowName = def.getName();
+            WorkflowDefSummary summary = fromWorkflowDef(def);
+
+            retval.putIfAbsent(workflowName, new TreeSet<WorkflowDefSummary>());
+
+            TreeSet<WorkflowDefSummary> versions = retval.get(workflowName);
+            versions.add(summary);
+        }
+
+        return retval;
+    }
+
+    private WorkflowDefSummary fromWorkflowDef(WorkflowDef def) {
+        WorkflowDefSummary summary = new WorkflowDefSummary();
+        summary.setName(def.getName());
+        summary.setVersion(def.getVersion());
+        summary.setCreateTime(def.getCreateTime());
+
+        return summary;
     }
 }
