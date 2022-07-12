@@ -1,0 +1,474 @@
+{
+  "ownerApp": "nq_mwi_conductor_ui_server",
+  "createTime": 1656008463986,
+  "status": "FAILED",
+  "endTime": 1656008464720,
+  "workflowId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+  "tasks": [
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "inputData": {
+        "forkedTaskDefs": [
+          {
+            "name": "first_task",
+            "taskReferenceName": "first_task",
+            "inputParameters": {
+              "number": "${number}",
+              "scriptExpression": "return $.number - 1;"
+            },
+            "type": "LAMBDA",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "second_task",
+            "taskReferenceName": "second_task",
+            "inputParameters": {
+              "number": "${number}",
+              "scriptExpression": null
+            },
+            "type": "LAMBDA",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "third_task",
+            "taskReferenceName": "third_task",
+            "inputParameters": {
+              "number": "${number}",
+              "scriptExpression": "return $.number - 1;"
+            },
+            "type": "LAMBDA",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          }
+        ],
+        "forkedTasks": ["first_task", "second_task", "third_task"]
+      },
+      "referenceTaskName": "dynamic_tasks",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "FORK",
+      "scheduledTime": 1656008464075,
+      "startTime": 1656008464065,
+      "endTime": 1656008464065,
+      "updateTime": 1656008464094,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+      "workflowType": "example_dynamic_tasks",
+      "taskId": "743d552b-a683-473d-831e-bb7fae622e08",
+      "callbackAfterSeconds": 0,
+      "outputData": {},
+      "workflowTask": {
+        "name": "dynamic_tasks",
+        "taskReferenceName": "dynamic_tasks",
+        "inputParameters": {
+          "dynamicTasks": "${workflow.input.tasksJSON}",
+          "dynamicTasksInput": "${workflow.input.tasksInputJSON}"
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "dynamicTasks",
+        "dynamicForkTasksInputParamName": "dynamicTasksInput",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -10,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "LAMBDA",
+      "status": "COMPLETED",
+      "inputData": {
+        "number": 46,
+        "scriptExpression": "return $.number - 1;"
+      },
+      "referenceTaskName": "first_task",
+      "retryCount": 0,
+      "seq": 2,
+      "pollCount": 0,
+      "taskDefName": "first_task",
+      "scheduledTime": 1656008464077,
+      "startTime": 1656008464069,
+      "endTime": 1656008464374,
+      "updateTime": 1656008464148,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+      "workflowType": "example_dynamic_tasks",
+      "taskId": "4ccaa5a8-59d0-40d7-b5f8-918f22c2536f",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "result": 45
+      },
+      "workflowTask": {
+        "name": "first_task",
+        "taskReferenceName": "first_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": "return $.number - 1;"
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -8,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "LAMBDA",
+      "status": "FAILED",
+      "inputData": {
+        "number": 234,
+        "scriptExpression": null
+      },
+      "referenceTaskName": "second_task",
+      "retryCount": 0,
+      "seq": 3,
+      "pollCount": 0,
+      "taskDefName": "second_task",
+      "scheduledTime": 1656008464081,
+      "startTime": 1656008464072,
+      "endTime": 1656008464428,
+      "updateTime": 1656008464202,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+      "workflowType": "example_dynamic_tasks",
+      "taskId": "33e96a6e-5096-4004-ac29-87e0732232f5",
+      "reasonForIncompletion": "Empty 'scriptExpression' in Lambda task's input parameters. A non-empty String value must be provided.",
+      "callbackAfterSeconds": 0,
+      "outputData": {},
+      "workflowTask": {
+        "name": "second_task",
+        "taskReferenceName": "second_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": null
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -9,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "LAMBDA",
+      "status": "COMPLETED",
+      "inputData": {
+        "number": 12,
+        "scriptExpression": "return $.number - 1;"
+      },
+      "referenceTaskName": "third_task",
+      "retryCount": 0,
+      "seq": 4,
+      "pollCount": 0,
+      "taskDefName": "third_task",
+      "scheduledTime": 1656008464083,
+      "startTime": 1656008464073,
+      "endTime": 1656008464482,
+      "updateTime": 1656008464257,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+      "workflowType": "example_dynamic_tasks",
+      "taskId": "951ef8b2-fa61-4896-bdf9-e781fded8e82",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "result": 11
+      },
+      "workflowTask": {
+        "name": "third_task",
+        "taskReferenceName": "third_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": "return $.number - 1;"
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -10,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "JOIN",
+      "status": "FAILED",
+      "inputData": {
+        "joinOn": ["first_task", "second_task", "third_task"]
+      },
+      "referenceTaskName": "join_dynamic",
+      "retryCount": 0,
+      "seq": 5,
+      "pollCount": 0,
+      "taskDefName": "JOIN",
+      "scheduledTime": 1656008464086,
+      "startTime": 1656008464073,
+      "endTime": 1656008464537,
+      "updateTime": 1656008464312,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "d4b14434-73a7-4be9-b085-d4b40b30856e",
+      "workflowType": "example_dynamic_tasks",
+      "taskId": "6471a9e8-3049-40f2-9ab8-c75876c9c1a3",
+      "reasonForIncompletion": "Empty 'scriptExpression' in Lambda task's input parameters. A non-empty String value must be provided. ",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "first_task": {
+          "result": 45
+        }
+      },
+      "workflowTask": {
+        "name": "join",
+        "taskReferenceName": "join_dynamic",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -13,
+      "loopOverTask": false
+    }
+  ],
+  "input": {
+    "tasksJSON": [
+      {
+        "name": "first_task",
+        "taskReferenceName": "first_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": "return $.number - 1;"
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "second_task",
+        "taskReferenceName": "second_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": null
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "third_task",
+        "taskReferenceName": "third_task",
+        "inputParameters": {
+          "number": "${number}",
+          "scriptExpression": "return $.number - 1;"
+        },
+        "type": "LAMBDA",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }
+    ],
+    "tasksInputJSON": {
+      "first_task": {
+        "number": 46
+      },
+      "second_task": {
+        "number": 234
+      },
+      "third_task": {
+        "number": 12
+      }
+    }
+  },
+  "output": {
+    "first_task": {
+      "result": 45
+    }
+  },
+  "reasonForIncompletion": "Empty 'scriptExpression' in Lambda task's input parameters. A non-empty String value must be provided.",
+  "taskToDomain": {},
+  "failedReferenceTaskNames": ["second_task", "join_dynamic"],
+  "workflowDefinition": {
+    "createTime": 1656005417724,
+    "updateTime": 1656005671608,
+    "name": "example_dynamic_tasks",
+    "description": "A workflow that allows dynamic execution of tasks",
+    "version": 2,
+    "tasks": [
+      {
+        "name": "dynamic_tasks",
+        "taskReferenceName": "dynamic_tasks",
+        "inputParameters": {
+          "dynamicTasks": "${workflow.input.tasksJSON}",
+          "dynamicTasksInput": "${workflow.input.tasksInputJSON}"
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "dynamicTasks",
+        "dynamicForkTasksInputParamName": "dynamicTasksInput",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "join",
+        "taskReferenceName": "join_dynamic",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }
+    ],
+    "inputParameters": ["tasksJSON", "tasksInputJSON"],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": true,
+    "ownerEmail": "mwi-workflow-dev@netflix.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  "priority": 0,
+  "variables": {},
+  "lastRetriedTime": 0,
+  "startTime": 1656008463986,
+  "workflowName": "example_dynamic_tasks",
+  "workflowVersion": 2
+}

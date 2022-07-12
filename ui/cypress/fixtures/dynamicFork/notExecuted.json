@@ -1,0 +1,192 @@
+{
+  "ownerApp": "nq_mwi_conductor_ui_server",
+  "createTime": 1656017015654,
+  "status": "COMPLETED",
+  "endTime": 1656017016239,
+  "workflowId": "5daaf83f-e1f4-454f-9293-4d0443c6c729",
+  "tasks": [
+    {
+      "taskType": "SWITCH",
+      "status": "COMPLETED",
+      "inputData": {
+        "case": "false"
+      },
+      "referenceTaskName": "switch_task",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "SWITCH",
+      "scheduledTime": 1656017015966,
+      "startTime": 1656017015955,
+      "endTime": 1656017016105,
+      "updateTime": 1656017015987,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "5daaf83f-e1f4-454f-9293-4d0443c6c729",
+      "workflowType": "example_dynamic_tasks_switch",
+      "taskId": "d0d6ab7b-ac8f-4754-9020-3ea13429d92b",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "evaluationResult": ["false"]
+      },
+      "workflowTask": {
+        "name": "switch_task",
+        "taskReferenceName": "switch_task",
+        "inputParameters": {
+          "switchCaseValue": "${workflow.input.runFork}"
+        },
+        "type": "SWITCH",
+        "decisionCases": {
+          "true": [
+            {
+              "name": "dynamic_tasks",
+              "taskReferenceName": "dynamic_tasks",
+              "inputParameters": {
+                "dynamicTasks": "${workflow.input.tasksJSON}",
+                "dynamicTasksInput": "${workflow.input.tasksInputJSON}"
+              },
+              "type": "FORK_JOIN_DYNAMIC",
+              "decisionCases": {},
+              "dynamicForkTasksParam": "dynamicTasks",
+              "dynamicForkTasksInputParamName": "dynamicTasksInput",
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "join",
+              "taskReferenceName": "join_dynamic",
+              "inputParameters": {},
+              "type": "JOIN",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ]
+        },
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "evaluatorType": "value-param",
+        "expression": "switchCaseValue"
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": -11,
+      "loopOverTask": false
+    }
+  ],
+  "input": {
+    "runFork": false
+  },
+  "output": {
+    "evaluationResult": ["false"]
+  },
+  "taskToDomain": {},
+  "failedReferenceTaskNames": [],
+  "workflowDefinition": {
+    "createTime": 1656015554295,
+    "updateTime": 1656015597435,
+    "name": "example_dynamic_tasks_switch",
+    "description": "A workflow that allows dynamic execution of tasks",
+    "version": 2,
+    "tasks": [
+      {
+        "name": "switch_task",
+        "taskReferenceName": "switch_task",
+        "inputParameters": {
+          "switchCaseValue": "${workflow.input.runFork}"
+        },
+        "type": "SWITCH",
+        "decisionCases": {
+          "true": [
+            {
+              "name": "dynamic_tasks",
+              "taskReferenceName": "dynamic_tasks",
+              "inputParameters": {
+                "dynamicTasks": "${workflow.input.tasksJSON}",
+                "dynamicTasksInput": "${workflow.input.tasksInputJSON}"
+              },
+              "type": "FORK_JOIN_DYNAMIC",
+              "decisionCases": {},
+              "dynamicForkTasksParam": "dynamicTasks",
+              "dynamicForkTasksInputParamName": "dynamicTasksInput",
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "join",
+              "taskReferenceName": "join_dynamic",
+              "inputParameters": {},
+              "type": "JOIN",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ]
+        },
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": [],
+        "evaluatorType": "value-param",
+        "expression": "switchCaseValue"
+      }
+    ],
+    "inputParameters": ["tasksJSON", "tasksInputJSON"],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "peterl@netflix.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  "priority": 0,
+  "variables": {},
+  "lastRetriedTime": 0,
+  "startTime": 1656017015654,
+  "workflowName": "example_dynamic_tasks_switch",
+  "workflowVersion": 2
+}
