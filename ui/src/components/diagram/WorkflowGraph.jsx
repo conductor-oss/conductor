@@ -67,14 +67,23 @@ class WorkflowGraph extends React.Component {
 
   highlightSelectedNode = () => {
     const dagGraph = this.props.dag.graph;
-    const selectedRef = _.get(this.props.selectedTask, "ref");
-    // if ref cannot be found in this.graph, it is captured within placeholder. Look in dagGraph.
+    const taskResult = this.props.dag.resolveTaskResult(
+      this.props.selectedTask
+    );
+
+    const selectedRef =
+      taskResult &&
+      (taskResult.referenceTaskName ||
+        taskResult.workflowTask.taskReferenceName);
+
     let resolvedRef;
     if (!selectedRef) {
       resolvedRef = null;
     } else if (this.graph.hasNode(selectedRef)) {
       resolvedRef = selectedRef;
     } else if (dagGraph.hasNode(selectedRef)) {
+      // if ref cannot be found in this.graph, it may be rendered as a stacked placeholder.
+
       const parentRef = _.first(dagGraph.predecessors(selectedRef));
       const parentType = dagGraph.node(parentRef).type;
       console.assert(
@@ -506,7 +515,7 @@ class WorkflowGraph extends React.Component {
         retval.shape = "stack";
         break;
       case "DF_TASK_PLACEHOLDER":
-        retval.label = `${v.tally.success} of ${v.tally.total} spawned tasks succeeded`;
+        retval.label = `${v.tally.success} of ${v.tally.total} tasks succeeded`;
         if (v.tally.inProgress) {
           retval.label += `\n${v.tally.inProgress} pending`;
         }

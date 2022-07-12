@@ -33,3 +33,4 @@ export { default as StatusBadge } from "./StatusBadge";
 // Conductor Specific
 export { default as WorkflowNameInput } from "./WorkflowNameInput";
 export { default as TaskNameInput } from "./TaskNameInput";
+export { default as TaskLink } from "./TaskLink";
