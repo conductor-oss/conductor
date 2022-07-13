@@ -12,7 +12,7 @@ import {
 import ViewColumnIcon from "@material-ui/icons/ViewColumn";
 import SearchIcon from "@material-ui/icons/Search";
 import { Heading, Select, Input } from "./";
-import { timestampRenderer } from "../utils/helpers";
+import { timestampRenderer, timestampMsRenderer } from "../utils/helpers";
 import { useLocalStorage } from "../utils/localstorage";
 
 import _ from "lodash";
@@ -95,6 +95,8 @@ export default function DataTable(props) {
       const internalOptions = {};
       if (type === "date") {
         internalOptions.format = (row) => timestampRenderer(_.get(row, name));
+      } else if (type === "date-ms") {
+        internalOptions.format = (row) => timestampMsRenderer(_.get(row, name));
       } else if (type === "json") {
         internalOptions.format = (row) => JSON.stringify(_.get(row, name));
       }
@@ -132,6 +134,7 @@ export default function DataTable(props) {
           if (
             column.type === "json" ||
             column.type === "date" ||
+            column.type === "date-ms" ||
             column.searchable === "calculated"
           ) {
             target = column.format(row);

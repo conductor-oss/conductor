@@ -7,7 +7,15 @@ export function timestampRenderer(date) {
   const parsed = new Date(date);
   if (parsed.getTime() === 0) return null; // 0 epoch (UTC 1970-1-1)
 
-  return format(parsed, "yyyy-MM-dd HH:mm:ss"); // could be string or number.
+  return format(parsed, "yyyy-MM-dd HH:mm:ss");
+}
+export function timestampMsRenderer(date) {
+  if (_.isNil(date)) return null;
+
+  const parsed = new Date(date);
+  if (parsed.getTime() === 0) return null; // 0 epoch (UTC 1970-1-1)
+
+  return format(parsed, "yyyy-MM-dd HH:mm:ss.SSS");
 }
 
 export function durationRenderer(durationMs) {
@@ -17,8 +25,6 @@ export function durationRenderer(durationMs) {
   } else {
     return `${durationMs}ms`;
   }
-
-  //return !isNaN(durationMs) && (durationMs > 0? formatDuration({seconds: durationMs/1000}): '0.0 seconds');
 }
 
 export function taskHasResult(task) {
