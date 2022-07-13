@@ -47,8 +47,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "prettier": "prettier --write .",
+    "serve-build": "http-server ./build --port 5000 --proxy http://localhost:8080",
     "cypress:open": "cypress open",
-    "cypress:test": "BROWSER=none start-server-and-test start http-get://localhost:5000 'cypress run'"
+    "cypress:test": "BROWSER=none start-server-and-test serve-build http-get://localhost:5000 'cypress run'"
   },
   "browserslist": {
     "production": [
@@ -76,6 +77,7 @@
     "@cypress/webpack-dev-server": "^1.8.4",
     "cypress": "^10.0.3",
     "eslint-plugin-cypress": "^2.12.1",
+    "http-server": "^14.1.1",
     "js-yaml": "4.1.0",
     "prettier": "^2.2.1",
     "sass": "^1.49.9",
