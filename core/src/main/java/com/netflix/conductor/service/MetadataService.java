@@ -104,6 +104,16 @@ public interface MetadataService {
             @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef);
 
     /**
+     * Validates a {@link WorkflowDef}.
+     *
+     * @param workflowDef The {@link WorkflowDef} object.
+     */
+    default void validateWorkflowDef(
+            @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef) {
+        // do nothing, WorkflowDef is annotated with @Valid and calling this method will validate it
+    }
+
+    /**
      * @param name Name of the workflow definition to be removed
      * @param version Version of the workflow definition to be removed
      */

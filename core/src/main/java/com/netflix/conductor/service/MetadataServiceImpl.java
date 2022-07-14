@@ -64,6 +64,11 @@ public class MetadataServiceImpl implements MetadataService {
         }
     }
 
+    @Override
+    public void validateWorkflowDef(WorkflowDef workflowDef) {
+        // do nothing, WorkflowDef is annotated with @Valid and calling this method will validate it
+    }
+
     /**
      * @param taskDefinition Task Definition to be updated
      */
@@ -153,13 +158,6 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        if (workflowDef.getName().contains(":")) {
-            throw new IllegalArgumentException(
-                    "Workflow name cannot contain the following set of characters: ':'");
-        }
-        if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
-            workflowDef.setSchemaVersion(2);
-        }
         workflowDef.setCreateTime(System.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
     }

@@ -39,13 +39,23 @@ public class MetadataClient extends ClientBase {
     // Workflow Metadata Operations
 
     /**
-     * Register a workflow definition with the server
+     * Register a workflow definition with the server.
      *
      * @param workflowDef the workflow definition
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        Validate.notNull(workflowDef, "Worfklow definition cannot be null");
+        Validate.notNull(workflowDef, "Workflow definition cannot be null");
         post("metadata/workflow", workflowDef);
+    }
+
+    /**
+     * Validates a workflow definition with the server.
+     *
+     * @param workflowDef the workflow definition
+     */
+    public void validateWorkflowDef(WorkflowDef workflowDef) {
+        Validate.notNull(workflowDef, "Workflow definition cannot be null");
+        post("metadata/workflow/validate", workflowDef);
     }
 
     /**
