@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.orchestration;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -361,7 +362,10 @@ public class ExecutionDAOFacade {
      */
     public void updateTask(Task task) {
         try {
-            if (task.getStatus() != null) {
+	    if (task.getStatus() != null) {
+                if (task.getStatus() == IN_PROGRESS && task.getStartTime() == 0) {
+                    task.setStartTime(System.currentTimeMillis());
+                }
                 if (!task.getStatus().isTerminal() || (task.getStatus().isTerminal() && task.getUpdateTime() == 0)) {
                     task.setUpdateTime(System.currentTimeMillis());
                 }
