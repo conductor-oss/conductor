@@ -32,13 +32,13 @@ import ZoomInIcon from "@material-ui/icons/ZoomIn";
 import * as Yup from "yup";
 import EnhancedTable from "./EnhancedTable";
 import DataTableDemo from "./DataTableDemo";
-import top100Films from "./sampleMovieData";
-import Dropdown from "../../components/Dropdown";
+
 import sharedStyles from "../styles";
 import { makeStyles } from "@material-ui/styles";
 import clsx from "clsx";
 import FormikInput from "../../components/formik/FormikInput";
 import FormikJsonInput from "../../components/formik/FormikJsonInput";
+import Dropdown from "./Dropdown";
 
 const useStyles = makeStyles(sharedStyles);
 
@@ -75,7 +75,7 @@ export default function KitchenSink() {
           <Inputs />
         </Grid>
         <Grid item xs={12}>
-          <Selects />
+          <Dropdown />
         </Grid>
         <Grid item xs={12}>
           <ToolbarSection />
@@ -125,7 +125,7 @@ const FormikSection = () => {
 
 const ToolbarSection = () => {
   return (
-    <Paper padded style={{ backgroundColor: "gray" }}>
+    <Paper padded>
       <Heading level={3} gutterBottom>
         Toolbar
       </Heading>
@@ -356,6 +356,8 @@ const Inputs = () => (
       style={{ marginBottom: 20 }}
     />
 
+    <Input label="Disabled" disabled style={{ marginBottom: 20 }} />
+
     <Input label="Fullwidth" fullWidth style={{ marginBottom: 20 }} />
 
     <Input label="Clearable" clearable style={{ marginBottom: 20 }} />
@@ -368,82 +370,3 @@ const Inputs = () => (
     <Input label="DateTime" type="datetime-local" />
   </Paper>
 );
-
-const Selects = () => {
-  const [value, setValue] = useState(10);
-  return (
-    <Paper style={{ padding: 15 }}>
-      <Heading level={3} gutterBottom>
-        Select
-      </Heading>
-
-      <Select
-        style={{ marginBottom: 10 }}
-        value={value}
-        onChange={(evt) => setValue(evt.target.value)}
-      >
-        <MenuItem value={10}>Ten</MenuItem>
-        <MenuItem value={20}>Twenty</MenuItem>
-        <MenuItem value={30}>Thirty</MenuItem>
-      </Select>
-
-      <Select
-        style={{ marginBottom: 20 }}
-        label="With Label"
-        value={value}
-        onChange={(evt) => setValue(evt.target.value)}
-      >
-        <MenuItem value={10}>Ten</MenuItem>
-        <MenuItem value={20}>Twenty</MenuItem>
-        <MenuItem value={30}>Thirty</MenuItem>
-      </Select>
-
-      <Select
-        fullWidth
-        style={{ marginBottom: 20 }}
-        label="Fullwidth"
-        value={value}
-        onChange={(evt) => setValue(evt.target.value)}
-      >
-        <MenuItem value={10}>Ten</MenuItem>
-        <MenuItem value={20}>Twenty</MenuItem>
-        <MenuItem value={30}>Thirty</MenuItem>
-      </Select>
-
-      <Dropdown
-        style={{ marginBottom: 20, width: 300 }}
-        label="Autocomplete"
-        disableClearable
-        options={top100Films}
-        getOptionLabel={(option) => option.title}
-      />
-
-      <Dropdown
-        style={{ marginBottom: 20, width: 300 }}
-        label="Autocomplete Clearable"
-        options={top100Films}
-        getOptionLabel={(option) => option.title}
-      />
-
-      <Dropdown
-        fullWidth
-        debug
-        style={{ marginBottom: 20 }}
-        label="Autocomplete Fullwidth"
-        disableClearable
-        options={top100Films}
-        getOptionLabel={(option) => option.title}
-      />
-
-      <Dropdown
-        multiple
-        label="Multiple Pills"
-        options={top100Films}
-        getOptionLabel={(option) => option.title}
-        defaultValue={[top100Films[13]]}
-        style={{ width: 500 }}
-        filterSelectedOptions
-      />
-    </Paper>
-  );
-};

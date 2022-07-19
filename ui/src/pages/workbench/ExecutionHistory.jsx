@@ -9,7 +9,7 @@ import { StatusBadge, Text, NavLink } from "../../components";
 import { makeStyles } from "@material-ui/styles";
 import { colors } from "../../theme/variables";
 import _ from "lodash";
-import { useInvalidateWorkflows, useWorkflows } from "../../data/workflow";
+import { useInvalidateWorkflows, useWorkflowsByIds } from "../../data/workflow";
 import { formatRelative } from "date-fns";
 import RefreshIcon from "@material-ui/icons/Refresh";
 
@@ -37,7 +37,7 @@ export default function ExecutionHistory({ run }) {
   const workflowRecords = run ? run.workflowRecords : [];
   const workflowIds = workflowRecords.map((record) => `${record.workflowId}`);
   const results =
-    useWorkflows(workflowIds, {
+    useWorkflowsByIds(workflowIds, {
       staleTime: 60000,
     }) || [];
   const resultsMap = new Map(

@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -49,7 +50,6 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 /** Abstract client for the REST server */
 public abstract class ClientBase {
@@ -70,17 +70,14 @@ public abstract class ClientBase {
             RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
 
-        if (requestHandler == null) {
-            // https://github.com/FasterXML/jackson-databind/issues/2683
-            if (isNewerJacksonVersion()) {
-                objectMapper.registerModule(new JavaTimeModule());
-            }
-            this.requestHandler =
-                    new JerseyRequestHandler(new DefaultClientConfig(), null, objectMapper);
-        } else {
-            this.requestHandler = requestHandler;
+        // https://github.com/FasterXML/jackson-databind/issues/2683
+        if (isNewerJacksonVersion()) {
+            objectMapper.registerModule(new JavaTimeModule());
         }
 
+        // we do not want to use defaultIfNull here since creation of JerseyRequestHandler requires
+        // classes that may not be in the classpath
+        this.requestHandler = requestHandler != null ? requestHandler : new JerseyRequestHandler();
         this.conductorClientConfiguration =
                 ObjectUtils.defaultIfNull(
                         clientConfiguration, new DefaultConductorClientConfiguration());
@@ -154,8 +151,9 @@ public abstract class ClientBase {
 
     protected <T> T getForEntity(
             String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
-        InputStream response = getForEntity(url, queryParams, uriVariables);
-        return convertToType(response, responseType);
+        return getForEntity(url, queryParams, uriVariables)
+                .map(inputStream -> convertToType(inputStream, responseType))
+                .orElse(null);
     }
 
     protected <T> T getForEntity(
@@ -163,8 +161,9 @@ public abstract class ClientBase {
             Object[] queryParams,
             TypeReference<T> responseType,
             Object... uriVariables) {
-        InputStream response = getForEntity(url, queryParams, uriVariables);
-        return convertToType(response, responseType);
+        return getForEntity(url, queryParams, uriVariables)
+                .map(inputStream -> convertToType(inputStream, responseType))
+                .orElse(null);
     }
 
     /**
@@ -244,15 +243,16 @@ public abstract class ClientBase {
         return builder;
     }
 
-    private boolean isNewerJacksonVersion() {
+    protected boolean isNewerJacksonVersion() {
         Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
         return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
     }
 
-    private InputStream getForEntity(String url, Object[] queryParams, Object... uriVariables) {
+    private Optional<InputStream> getForEntity(
+            String url, Object[] queryParams, Object... uriVariables) {
         URI uri = getURIBuilder(getFullUrl(url), queryParams).build(uriVariables);
         try {
-            return requestHandler.get(uri);
+            return Optional.ofNullable(requestHandler.get(uri));
         } catch (RequestHandlerException rhe) {
             throw createClientException(rhe);
         }
@@ -275,7 +275,11 @@ public abstract class ClientBase {
         } catch (IOException e) {
             throw new ConductorClientException("Error converting response to String", e);
         } finally {
-            IOUtils.closeQuietly(inputStream, (e) -> LOGGER.error("Error closing input stream", e));
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                LOGGER.error("Error closing input stream", e);
+            }
         }
     }
 

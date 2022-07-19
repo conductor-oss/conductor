@@ -42,7 +42,9 @@ class RedisConcurrentExecutionLimitDAOSpec extends Specification {
 
     def setup() {
         properties = new RedisConcurrentExecutionLimitProperties(namespace: 'conductor')
-        redisTemplate = new StringRedisTemplate(new JedisConnectionFactory(new RedisStandaloneConfiguration(redis.host, redis.firstMappedPort)))
+        def factory = new JedisConnectionFactory(new RedisStandaloneConfiguration(redis.host, redis.firstMappedPort))
+        factory.afterPropertiesSet()
+        redisTemplate = new StringRedisTemplate(factory)
         dao = new RedisConcurrentExecutionLimitDAO(redisTemplate, properties)
     }
 

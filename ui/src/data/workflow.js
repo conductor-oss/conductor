@@ -42,7 +42,7 @@ export function useWorkflow(workflowId) {
   });
 }
 
-export function useWorkflows(workflowIds, reactQueryOptions) {
+export function useWorkflowsByIds(workflowIds, reactQueryOptions) {
   return useFetchParallel(
     workflowIds.map((workflowId) => ["workflow", workflowId]),
     reactQueryOptions
@@ -83,9 +83,13 @@ export function useWorkflowDef(
 }
 
 export function useWorkflowDefs() {
-  const { data, ...rest } = useFetch(["workflowDefs"], "/metadata/workflow", {
+  return useFetch(["workflowDefs"], "/metadata/workflow", {
     staleTime: STALE_TIME_WORKFLOW_DEFS,
   });
+}
+
+export function useLatestWorkflowDefs() {
+  const { data, ...rest } = useWorkflowDefs();
 
   // Filter latest versions only
   const workflows = useMemo(() => {
@@ -128,15 +132,21 @@ export function useSaveWorkflow(callbacks) {
 
 export function useWorkflowNames() {
   const { data } = useWorkflowDefs();
-  return useMemo(() => (data ? data.map((def) => def.name) : []), [data]);
+  // Extract unique names
+  return useMemo(() => {
+    if (data) {
+      const nameSet = new Set(data.map((def) => def.name));
+      return Array.from(nameSet);
+    } else {
+      return [];
+    }
+  }, [data]);
 }
 
 // Version numbers do not necessarily start, or run contiguously from 1. Could be arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
 export function useWorkflowNamesAndVersions() {
-  const { data, ...rest } = useFetch(["workflowDefs"], "/metadata/workflow", {
-    staleTime: STALE_TIME_WORKFLOW_DEFS,
-  });
+  const { data, ...rest } = useWorkflowDefs();
 
   const newData = useMemo(() => {
     const retval = new Map();

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -67,30 +67,21 @@ public class StartWorkflow extends WorkflowSystemTask {
             String workflowId = startWorkflow(request, workflowExecutor);
             taskModel.addOutput(WORKFLOW_ID, workflowId);
             taskModel.setStatus(COMPLETED);
-        } catch (ApplicationException ae) {
-            if (ae.isRetryable()) {
-                LOGGER.info(
-                        "A transient backend error happened when task {} in {} tried to start workflow {}.",
-                        taskModel.getTaskId(),
-                        workflow.toShortString(),
-                        request.getName());
-            } else {
-                taskModel.setStatus(FAILED);
-                taskModel.setReasonForIncompletion(ae.getMessage());
-                LOGGER.error(
-                        "Error starting workflow: {} from workflow: {}",
-                        request.getName(),
-                        workflow.toShortString(),
-                        ae);
-            }
-        } catch (Exception e) {
+        } catch (TransientException te) {
+            LOGGER.info(
+                    "A transient backend error happened when task {} in {} tried to start workflow {}.",
+                    taskModel.getTaskId(),
+                    workflow.toShortString(),
+                    request.getName());
+        } catch (Exception ae) {
+
             taskModel.setStatus(FAILED);
-            taskModel.setReasonForIncompletion(e.getMessage());
+            taskModel.setReasonForIncompletion(ae.getMessage());
             LOGGER.error(
                     "Error starting workflow: {} from workflow: {}",
                     request.getName(),
                     workflow.toShortString(),
-                    e);
+                    ae);
         }
     }
 

@@ -19,11 +19,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.metrics.Monitors;
 
 @Service
+@Trace
 public class ExecutionLockService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);

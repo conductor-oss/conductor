@@ -19,6 +19,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.netflix.conductor.cassandra.config.cache.CacheableEventHandlerDAO;
+import com.netflix.conductor.cassandra.config.cache.CacheableMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.cassandra.dao.CassandraExecutionDAO;
 import com.netflix.conductor.cassandra.dao.CassandraMetadataDAO;
@@ -74,7 +76,9 @@ public class CassandraConfiguration {
             ObjectMapper objectMapper,
             CassandraProperties properties,
             Statements statements) {
-        return new CassandraMetadataDAO(session, objectMapper, properties, statements);
+        CassandraMetadataDAO cassandraMetadataDAO =
+                new CassandraMetadataDAO(session, objectMapper, properties, statements);
+        return new CacheableMetadataDAO(cassandraMetadataDAO, properties);
     }
 
     @Bean
@@ -92,7 +96,9 @@ public class CassandraConfiguration {
             ObjectMapper objectMapper,
             CassandraProperties properties,
             Statements statements) {
-        return new CassandraEventHandlerDAO(session, objectMapper, properties, statements);
+        CassandraEventHandlerDAO cassandraEventHandlerDAO =
+                new CassandraEventHandlerDAO(session, objectMapper, properties, statements);
+        return new CacheableEventHandlerDAO(cassandraEventHandlerDAO, properties);
     }
 
     @Bean

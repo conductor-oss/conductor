@@ -1,0 +1,123 @@
+{
+  "name": "do_while_five_loop_over_integration_test",
+  "description": "do_while with a mix of 5, simple and system tasks",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "loopTask",
+      "taskReferenceName": "loopTask",
+      "inputParameters": {
+        "value": "${workflow.input.loop}"
+      },
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "if ($.loopTask['iteration'] < $.value ) { true;} else {false;} ",
+      "loopOver": [
+        {
+          "name": "LAMBDA_TASK",
+          "taskReferenceName": "lambda_locs",
+          "inputParameters": {
+            "scriptExpression": "return {locationRanId: 'some location id'}"
+          },
+          "type": "LAMBDA",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        },
+        {
+          "name": "jq_add_location",
+          "taskReferenceName": "jq_add_location",
+          "inputParameters": {
+            "locationIdValue": "${lambda_locs.output.result.locationRanId}",
+            "queryExpression": "{ out: ({ \"locationId\": .locationIdValue }) }"
+          },
+          "type": "JSON_JQ_TRANSFORM",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        },
+        {
+          "name": "integration_task_1",
+          "taskReferenceName": "integration_task_1",
+          "inputParameters": {},
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        },
+        {
+          "name": "jq_create_hydrus_input",
+          "taskReferenceName": "jq_create_hydrus_input",
+          "inputParameters": {
+            "locationIdValue": "${lambda_locs.output.result.locationRanId}",
+            "queryExpression": "{ out: ({ \"locationId\": .locationIdValue }) }"
+          },
+          "type": "JSON_JQ_TRANSFORM",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        },
+        {
+          "name": "integration_task_2",
+          "taskReferenceName": "integration_task_2",
+          "inputParameters": {},
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }
+      ]
+    },
+    {
+      "name": "integration_task_3",
+      "taskReferenceName": "integration_task_3",
+      "inputParameters": {},
+      "type": "SIMPLE"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

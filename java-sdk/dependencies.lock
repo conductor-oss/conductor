@@ -233,6 +233,9 @@
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
         },
@@ -395,6 +398,9 @@
         },
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [

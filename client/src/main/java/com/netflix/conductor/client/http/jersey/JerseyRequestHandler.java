@@ -17,13 +17,17 @@ import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.client.exception.RequestHandlerException;
 import com.netflix.conductor.client.http.RequestHandler;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
@@ -32,6 +36,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
 
 /** A {@link RequestHandler} implementation that uses the Jersey HTTP Client. */
@@ -41,14 +46,33 @@ public class JerseyRequestHandler implements RequestHandler {
 
     private final Client client;
 
-    public JerseyRequestHandler(
-            ClientConfig config,
-            ClientHandler handler,
-            ObjectMapper objectMapper,
-            ClientFilter... filters) {
+    public JerseyRequestHandler() {
+        this(new ClientFilter[0]);
+    }
 
-        JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
-        config.getSingletons().add(provider);
+    public JerseyRequestHandler(ClientFilter... filters) {
+        this(null, filters);
+    }
+
+    public JerseyRequestHandler(ClientHandler clientHandler, ClientFilter... filters) {
+        this(null, clientHandler, filters);
+    }
+
+    public JerseyRequestHandler(
+            ClientConfig config, ClientHandler handler, ClientFilter... filters) {
+
+        if (config == null) {
+            config = new DefaultClientConfig();
+            ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+
+            // https://github.com/FasterXML/jackson-databind/issues/2683
+            if (isNewerJacksonVersion()) {
+                objectMapper.registerModule(new JavaTimeModule());
+            }
+
+            JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
+            config.getSingletons().add(provider);
+        }
 
         if (handler == null) {
             this.client = Client.create(config);
@@ -73,11 +97,15 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream put(URI uri, Object body) {
         ClientResponse clientResponse;
         try {
             clientResponse = getWebResourceBuilder(uri, body).put(ClientResponse.class);
-            return clientResponse.getEntityInputStream();
+            if (clientResponse.getStatus() < 300) {
+                return clientResponse.getEntityInputStream();
+            }
+            throw new UniformInterfaceException(clientResponse);
         } catch (RuntimeException e) {
             handleException(uri, e);
         }
@@ -86,11 +114,15 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream post(URI uri, Object body) {
         ClientResponse clientResponse;
         try {
             clientResponse = getWebResourceBuilder(uri, body).post(ClientResponse.class);
-            return clientResponse.getEntityInputStream();
+            if (clientResponse.getStatus() < 300) {
+                return clientResponse.getEntityInputStream();
+            }
+            throw new UniformInterfaceException(clientResponse);
         } catch (UniformInterfaceException e) {
             handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
@@ -100,6 +132,7 @@ public class JerseyRequestHandler implements RequestHandler {
     }
 
     @Override
+    @Nullable
     public InputStream get(URI uri) {
         ClientResponse clientResponse;
         try {
@@ -107,11 +140,24 @@ public class JerseyRequestHandler implements RequestHandler {
                     client.resource(uri)
                             .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                             .get(ClientResponse.class);
+
+            // this condition mimics what ClientResponse.getEntity() and ClientBase.getForEntity()
+            // did before RequestHandler was introduced.
+            // Previously, ClientBase.getForEntity() called ClientResponse.getEntity()
+            // which threw a UniformInterfaceException for 204. The
+            // handleUniformInterfaceException() method did nothing except call close() on
+            // ClientResponse.
+            // the same is done below
+            if (clientResponse.getStatus() == 204) {
+                clientResponse.close();
+                return null;
+            }
+
             if (clientResponse.getStatus() < 300) {
                 return clientResponse.getEntityInputStream();
-            } else {
-                throw new UniformInterfaceException(clientResponse);
             }
+
+            throw new UniformInterfaceException(clientResponse);
         } catch (UniformInterfaceException e) {
             handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
@@ -181,5 +227,10 @@ public class JerseyRequestHandler implements RequestHandler {
                 .type(MediaType.APPLICATION_JSON)
                 .entity(entity)
                 .accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
+    }
+
+    private boolean isNewerJacksonVersion() {
+        Version version = com.fasterxml.jackson.databind.cfg.PackageVersion.VERSION;
+        return version.getMajorVersion() == 2 && version.getMinorVersion() >= 12;
     }
 }

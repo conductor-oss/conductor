@@ -13,20 +13,15 @@ export default function TimelineComponent({
   selectedTask,
 }) {
   const timelineRef = React.useRef();
-
-  let selectedId = null;
-  if (selectedTask) {
-    if (selectedTask.taskId) {
-      selectedId = selectedTask.taskId;
-    } else {
-      const node = dag.graph.node(selectedTask.ref);
-      if (_.isEmpty(node.taskResults)) {
-        selectedId = null;
-      } else {
-        selectedId = _.last(node.taskResults).taskId;
-      }
+  /*
+  const selectedId = useMemo(() => {
+    if(selectedTask){
+      const taskResult = dag.resolveTaskResult(selectedTask);
+      return _.get(taskResult, "taskId")
     }
-  }
+  }, [dag, selectedTask]);
+  */
+  const selectedId = null;
 
   const { items, groups } = useMemo(() => {
     const groupMap = new Map();
@@ -40,10 +35,9 @@ export default function TimelineComponent({
     const items = tasks
       .filter((t) => t.startTime > 0 || t.endTime > 0)
       .map((task) => {
-        const predecessors = dag.graph.predecessors(task.referenceTaskName);
-
-        const dfParent = predecessors
-          ?.map((t) => dag.graph.node(t))
+        const dfParent = dag.graph
+          .predecessors(task.referenceTaskName)
+          .map((t) => dag.graph.node(t))
           .find((t) => t.type === "FORK_JOIN_DYNAMIC");
         const startTime =
           task.startTime > 0

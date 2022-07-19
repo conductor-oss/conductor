@@ -1,0 +1,4286 @@
+{
+  "ownerApp": "",
+  "createTime": 1608153919527,
+  "status": "TERMINATED",
+  "endTime": 1608173713271,
+  "workflowId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+  "parentWorkflowId": "9f9057d0-86c4-464f-b4d0-1606e66798fd",
+  "parentWorkflowTaskId": "1f908fd3-b02f-47f1-b223-7625bc2da1a3",
+  "tasks": [
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "inputData": {
+        "forkedTaskDefs": [
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "processshot",
+            "taskReferenceName": "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2",
+            "inputParameters": {},
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.shotprocessing_v2"
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          }
+        ],
+        "forkedTasks": [
+          "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2",
+          "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+          "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2",
+          "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+          "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2"
+        ]
+      },
+      "referenceTaskName": "shot_processing",
+      "retryCount": 0,
+      "seq": 52,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 0,
+      "taskDefName": "FORK",
+      "scheduledTime": 1608154318377,
+      "startTime": 0,
+      "endTime": 1608154318334,
+      "updateTime": 1608154318402,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "taskId": "1a859277-c27e-4d28-bb57-271ea5a16f96",
+      "callbackAfterSeconds": 0,
+      "outputData": {},
+      "workflowTask": {
+        "name": "asset_processing",
+        "taskReferenceName": "shot_processing",
+        "inputParameters": {
+          "taskDefs": "${prepareShotProcessingTasks.output.result.taskDefs}",
+          "taskInputs": "${prepareShotProcessingTasks.output.result.taskInputs}"
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "taskDefs",
+        "dynamicForkTasksInputParamName": "taskInputs",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 0,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "4cf51bb0-3fe3-11eb-8740-12f4b5a75f47"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "4cf45860-3fe3-11eb-8740-12f4b5a75f47"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "4cf45860-3fe3-11eb-8740-12f4b5a75f47:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2",
+      "retryCount": 0,
+      "seq": 53,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318379,
+      "startTime": 1608154318538,
+      "endTime": 1608173718867,
+      "updateTime": 1608154318720,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "30f507f2-fc34-4123-9ffb-07af344a56b0",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "5f8285f0-72de-4233-a201-1599b558e645"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "5f8285f0-72de-4233-a201-1599b558e645",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211706,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "4f943090-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "4f936d40-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "4f936d40-3fe3-11eb-9af1-12a7f1c641e3:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+      "retryCount": 0,
+      "seq": 54,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318382,
+      "startTime": 1608154318569,
+      "endTime": 1608173719056,
+      "updateTime": 1608154318774,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "fa90e44a-d68c-40b8-84a7-ebbcd21b94e3",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "ef25bcc5-f5e6-4172-99f5-7fb76b1f11f8"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "ef25bcc5-f5e6-4172-99f5-7fb76b1f11f8",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211652,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "52576f40-3fe3-11eb-8a3e-12ffdb69dc47"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "5256abf0-3fe3-11eb-8a3e-12ffdb69dc47"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "5256abf0-3fe3-11eb-8a3e-12ffdb69dc47:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+      "retryCount": 0,
+      "seq": 55,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318384,
+      "startTime": 1608154318582,
+      "endTime": 1608173719208,
+      "updateTime": 1608154318774,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "0cde3f5c-3fb0-4c4e-b74c-3a7bcabf892c",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "28564fa1-c0d3-45fa-948d-969c09f49af5"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "28564fa1-c0d3-45fa-948d-969c09f49af5",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211652,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "54ec9910-3fe3-11eb-bd3b-1230be2091b7"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "54ebd5c0-3fe3-11eb-bd3b-1230be2091b7"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "54ebd5c0-3fe3-11eb-bd3b-1230be2091b7:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2",
+      "retryCount": 0,
+      "seq": 56,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318386,
+      "startTime": 1608154318637,
+      "endTime": 1608173719368,
+      "updateTime": 1608154318882,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "88595b13-34e2-4442-994d-2875f21f44f7",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "ebce2351-2ce2-4920-899d-fffbf66be4f4"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "ebce2351-2ce2-4920-899d-fffbf66be4f4",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211544,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "57784d02-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "57784d00-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "57784d00-3fe3-11eb-9af1-12a7f1c641e3:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+      "retryCount": 0,
+      "seq": 57,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318387,
+      "startTime": 1608154318657,
+      "endTime": 1608173719530,
+      "updateTime": 1608154318987,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "f2e835e5-ce1b-4d9b-91f7-5ffa5b43a40e",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "7e326487-f315-43b6-aab4-279c82155132"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "7e326487-f315-43b6-aab4-279c82155132",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211439,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "59f3ad42-3fe3-11eb-8a3e-12ffdb69dc47"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+      "retryCount": 0,
+      "seq": 58,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318390,
+      "startTime": 1608154318739,
+      "endTime": 1608173719684,
+      "updateTime": 1608154318987,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "74fbb03c-5a2c-46e9-b429-19053cd1a3ec",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "2be7d404-3732-4e90-88e5-b0b221aeeda1"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "2be7d404-3732-4e90-88e5-b0b221aeeda1",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211439,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n��� *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "5c52abe1-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "5c51e890-3fe3-11eb-9af1-12a7f1c641e3"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "5c51e890-3fe3-11eb-9af1-12a7f1c641e3:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+      "retryCount": 0,
+      "seq": 59,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318393,
+      "startTime": 1608154318748,
+      "endTime": 1608173719850,
+      "updateTime": 1608154319021,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "abb3eebf-8430-446a-a5fa-dd26cf367a95",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "8f3e3098-72c7-40b7-8547-4cc2293a6def"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "8f3e3098-72c7-40b7-8547-4cc2293a6def",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211405,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "SUB_WORKFLOW",
+      "status": "CANCELED",
+      "inputData": {
+        "playlistId": 375594,
+        "metadata": {
+          "submission_note": null,
+          "version_name": null,
+          "scope_of_work": null,
+          "reason_for_review": "• *SUBMITTING FOR* - null\n• *SCOPE OF WORK* - null\n• *NOTES* - null",
+          "vendor": null,
+          "link": null,
+          "submitting_for": null,
+          "sort_order": null
+        },
+        "subWorkflowTaskToDomain": null,
+        "subWorkflowName": "vfxmediareview.shotprocessing_v2",
+        "reviewAssetId": {
+          "versionId": "1.4",
+          "id": "5ec02971-3fe3-11eb-bd3b-1230be2091b7"
+        },
+        "vendorId": null,
+        "shotname": null,
+        "topLevelAssetId": {
+          "versionId": "1.2",
+          "id": "5ec00260-3fe3-11eb-bd3b-1230be2091b7"
+        },
+        "vendorName": "Netflix",
+        "reviewProjectId": "222",
+        "subWorkflowVersion": 1,
+        "playlistName": "HUB-3087_20201216_01",
+        "subWorkflowDefinition": null,
+        "workflowInput": {},
+        "sgAmpRefId": "5ec00260-3fe3-11eb-bd3b-1230be2091b7:1.2",
+        "reviewServer": "netflix-review-staging.shotgunstudio.com"
+      },
+      "referenceTaskName": "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2",
+      "retryCount": 0,
+      "seq": 60,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 1,
+      "taskDefName": "processshot",
+      "scheduledTime": 1608154318394,
+      "startTime": 1608154318871,
+      "endTime": 1608173719989,
+      "updateTime": 1608154319182,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "69630514-33df-42ba-805e-af17760ba111",
+      "callbackAfterSeconds": 30,
+      "outputData": {
+        "subWorkflowId": "b53c817d-19a5-436e-b26c-0b57d334b122"
+      },
+      "workflowTask": {
+        "name": "processshot",
+        "taskReferenceName": "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotprocessing_v2"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subWorkflowId": "b53c817d-19a5-436e-b26c-0b57d334b122",
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 47847211244,
+      "loopOverTask": false
+    },
+    {
+      "taskType": "JOIN",
+      "status": "CANCELED",
+      "inputData": {
+        "joinOn": [
+          "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2",
+          "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+          "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2",
+          "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2",
+          "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2",
+          "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2"
+        ]
+      },
+      "referenceTaskName": "shot_processing_join",
+      "retryCount": 0,
+      "seq": 61,
+      "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "pollCount": 0,
+      "taskDefName": "JOIN",
+      "scheduledTime": 1608154318395,
+      "startTime": 1608154318407,
+      "endTime": 1608173719994,
+      "updateTime": 1608154318407,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "637364c4-31bf-4c50-8c81-c04d1dafe27f",
+      "workflowType": "pipelines.vfxmediareview",
+      "taskId": "80a2e505-2f54-4d40-bcee-17f8c6a39b71",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2": {},
+        "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2": {},
+        "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2": {},
+        "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2": {},
+        "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2": {},
+        "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2": {},
+        "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2": {},
+        "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2": {}
+      },
+      "workflowTask": {
+        "name": "shot_processing_join",
+        "taskReferenceName": "shot_processing_join",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 0,
+      "workflowPriority": 0,
+      "iteration": 0,
+      "subworkflowChanged": false,
+      "taskDefinition": null,
+      "queueWaitTime": 12,
+      "loopOverTask": false
+    }
+  ],
+  "input": {
+    "pipelineInput": {
+      "pipelineConfig": {
+        "requestNamespace": "pipelines",
+        "requestType": "vfxmediareview",
+        "type": "vfxmediareview"
+      },
+      "primaryRequestNamespace": "pipelines",
+      "primaryRequestId": "20fa83b7-9b91-406a-9644-4fd62aea8b4b",
+      "user": "jcronk@netflix.com",
+      "inputParameters": {
+        "submissionId": "HUB-3087_20201216_01",
+        "ownerUser": "jcronk@netflix.com",
+        "submissionNodeId": "229590a0-3fe5-11eb-9910-12d0bc41bfa1",
+        "vendorId": null,
+        "reviewType": "PRODUCTION",
+        "movieId": 81112280,
+        "projectId": "92311fe0-5bd7-11e9-b8ed-0e4d3942d506"
+      },
+      "pipelineId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+      "primaryRequestType": "vfxmediareview"
+    }
+  },
+  "output": {
+    "processshot_59f3ad40-3fe3-11eb-8a3e-12ffdb69dc47_1.2": {},
+    "processshot_5c51e890-3fe3-11eb-9af1-12a7f1c641e3_1.2": {},
+    "processshot_54ebd5c0-3fe3-11eb-bd3b-1230be2091b7_1.2": {},
+    "processshot_4cf45860-3fe3-11eb-8740-12f4b5a75f47_1.2": {},
+    "processshot_5ec00260-3fe3-11eb-bd3b-1230be2091b7_1.2": {},
+    "processshot_4f936d40-3fe3-11eb-9af1-12a7f1c641e3_1.2": {},
+    "processshot_5256abf0-3fe3-11eb-8a3e-12ffdb69dc47_1.2": {},
+    "processshot_57784d00-3fe3-11eb-9af1-12a7f1c641e3_1.2": {}
+  },
+  "correlationId": "6980f3f8-9077-45ca-9f0f-5d9545799a61",
+  "reasonForIncompletion": "Parent workflow has been terminated with status TIMED_OUT",
+  "taskToDomain": {},
+  "failedReferenceTaskNames": [],
+  "workflowDefinition": {
+    "updateTime": 1608073180721,
+    "name": "pipelines.vfxmediareview",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "stl.pipeline.init",
+        "taskReferenceName": "initializePipeline",
+        "inputParameters": {
+          "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082385855,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.init",
+          "description": "Initial task for all pipeline workflows",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId"],
+          "outputKeys": ["pipeline"],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.get",
+        "taskReferenceName": "pipelineData",
+        "inputParameters": {
+          "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082385634,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.get",
+          "description": "Read pipeline given pipeline id",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId"],
+          "outputKeys": ["pipeline"],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "reviewType",
+        "inputParameters": {
+          "inputData": "${pipelineData.output.request.request.data.reviewType}",
+          "expression": ". | ascii_downcase"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.getProjectSchema",
+        "taskReferenceName": "reviewServerSchema",
+        "inputParameters": {
+          "schemaGroup": "PIPELINE",
+          "schemaType": "${reviewType.output.result}review",
+          "projectId": "${pipelineData.output.request.request.data.projectId}",
+          "user": "contenthub-system-user@netflix.com"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1588011760479,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.getProjectSchema",
+          "description": "Get Project Schema",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["requestId"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "cpe-che-backend@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "reviewServerConfig",
+        "inputParameters": {
+          "inputData": "${reviewServerSchema.output.output}",
+          "expression": ".[0].schema as $s | if $s.server == null or $s.projectId == null then error(\"Configuration cannot be null\") else $s end"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "vendorDetails",
+        "taskReferenceName": "vendorDetails",
+        "inputParameters": {
+          "vendorId": "${pipelineData.output.request.request.data.vendorId}"
+        },
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.vendordetails",
+          "version": 1
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "cperequest_transition",
+        "taskReferenceName": "processSubmission",
+        "inputParameters": {
+          "namespace": "${pipelineData.output.request.request.namespace}",
+          "type": "${pipelineData.output.request.request.type}",
+          "requestId": "${pipelineData.output.request.request.id}",
+          "transitionName": "process",
+          "details": {
+            "skipPostProcess": true
+          },
+          "skipIfInState": ["IN_PROGRESS"]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "updateTime": 1604373979513,
+          "updatedBy": "cperequest",
+          "name": "cperequest_transition",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": [
+            "namespace",
+            "type",
+            "requestId",
+            "transitionName",
+            "currentState",
+            "currentVersion",
+            "assignee",
+            "clearAssignee",
+            "dueDate",
+            "clearDueDate",
+            "skipIfInState",
+            "transitionDetails"
+          ],
+          "outputKeys": ["request"],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "mce-workflow-infra@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.map",
+        "taskReferenceName": "details",
+        "inputParameters": {
+          "mappings": {
+            "contenthubBaseUrl": "@environment.getProperty('contenthub.url')",
+            "contenthubProjectUrl": "@environment.getProperty('contenthub.url').concat(\"/projects/${pipelineData.output.request.request.data.projectId}\")"
+          }
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082386616,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.map",
+          "description": "General purpose task to apply expression language (SpEL) transforms",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["mappings"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "decide",
+        "taskReferenceName": "assetDiscoveryFlow",
+        "inputParameters": {
+          "status": "${pipelineData.output.request.request.data.skipAssetDiscovery}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "status",
+        "decisionCases": {
+          "true": [
+            {
+              "name": "stl.common.noop",
+              "taskReferenceName": "proceed",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1556082386204,
+                "createdBy": "CPEWORKFLOW",
+                "name": "stl.common.noop",
+                "description": "Do nothing",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "RETRY",
+                "retryLogic": "EXPONENTIAL_BACKOFF",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 300,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ]
+        },
+        "defaultCase": [
+          {
+            "name": "stl.common.jq",
+            "taskReferenceName": "getPipelineResourceIds",
+            "inputParameters": {
+              "inputData": {
+                "pipeline": "${pipelineData.output}"
+              },
+              "expression": "[.pipeline.pipelineId] + (.pipeline.pipelineResources // [] | map(.id))"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1556082387383,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.common.jq",
+              "description": "Run JQ expression",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": ["expression", "inputData"],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 120,
+              "responseTimeoutSeconds": 1800,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "stl.common.manageResourcesToPipelineTask",
+            "taskReferenceName": "detachPipelineResources",
+            "inputParameters": {
+              "pipelineResourceManagementInput": {
+                "detachById": "${getPipelineResourceIds.output.result}"
+              },
+              "pipelineId": "${pipelineData.output.pipelineId}",
+              "contextUser": "pipelineapi"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1575590191136,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.common.manageResourcesToPipelineTask",
+              "description": "Attach / detach resources on a pipeline",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": [
+                "pipelineId",
+                "contextUser",
+                "pipelineResourceManagementInput"
+              ],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 120,
+              "responseTimeoutSeconds": 3000,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "assetdiscovery",
+            "taskReferenceName": "assetdiscovery",
+            "inputParameters": {
+              "pipelineId": "${pipelineData.output.pipelineId}",
+              "folderId": "${pipelineData.output.request.request.data.submissionNodeId}"
+            },
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "vfxmediareview.assetdiscovery",
+              "version": 1
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "decide",
+            "taskReferenceName": "checkDiscoveryOutcome",
+            "inputParameters": {
+              "outcome": "${assetdiscovery.output.outcome}"
+            },
+            "type": "DECISION",
+            "caseValueParam": "outcome",
+            "decisionCases": {
+              "MANIFEST_NOT_FOUND": [
+                {
+                  "name": "stl.common.jq",
+                  "taskReferenceName": "prepareRecipientDomainsForManifestNotFound",
+                  "inputParameters": {
+                    "inputData": {
+                      "reviewServerConfig": "${reviewServerConfig.output.result}",
+                      "domains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        },
+                        {
+                          "domains": ["netflix.amp.domain.production_vfx"],
+                          "partnerId": "${pipelineData.output.request.request.data.vendorId}",
+                          "ignoreIfPartnerNull": true
+                        },
+                        {
+                          "profiles": ["PRODUCTION_VFX_ADMIN"],
+                          "includeUsersWithProfile": true
+                        }
+                      ],
+                      "fallbackDomains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        }
+                      ]
+                    },
+                    "expression": ". as $in | $in.domains"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082387383,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.common.jq",
+                    "description": "Run JQ expression",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["expression", "inputData"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 120,
+                    "responseTimeoutSeconds": 1800,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "sendManifestErrorsEmail",
+                  "taskReferenceName": "sendManifestNotFoundEmail",
+                  "inputParameters": {
+                    "emailType": "SINGLE",
+                    "domains": "${prepareRecipientDomainsForManifestNotFound.output.result}",
+                    "additionalRecipients": [
+                      "vfx-media-review@netflix.com",
+                      "e1u9g2p6u1b8e5x7@netflix.slack.com"
+                    ],
+                    "additionalUsers": [
+                      "${pipelineData.output.request.request.data.ownerUser}"
+                    ],
+                    "eventName": "EVENT_MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "eventType": "MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "movieId": "${pipelineData.output.request.request.data.movieId}",
+                    "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                    "emailPayload": {
+                      "movieId": "${pipelineData.output.request.request.data.movieId}",
+                      "submissionId": "${pipelineData.output.request.request.data.submissionId}",
+                      "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                      "pipelineId": "${pipelineData.output.pipelineId}",
+                      "subject": "Processing of submission ${pipelineData.output.request.request.data.submissionId} failed!",
+                      "manifestName": "${assetDiscovery.output.manifestName}",
+                      "manifestIncluded": false,
+                      "status": "FAILED",
+                      "oldCsv": "${oldCsv.output.result}",
+                      "chProjectId": "${pipelineData.output.request.request.data.projectId}"
+                    }
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "subWorkflowParam": {
+                    "name": "vfxmediareview.notification",
+                    "version": 1
+                  },
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "cperequest_transition",
+                  "taskReferenceName": "requestManifestDelivery",
+                  "inputParameters": {
+                    "namespace": "${pipelineData.output.request.request.namespace}",
+                    "type": "${pipelineData.output.request.request.type}",
+                    "requestId": "${pipelineData.output.request.request.id}",
+                    "transitionName": "redeliver",
+                    "skipIfInState": ["REDELIVERY"]
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "updateTime": 1604373979513,
+                    "updatedBy": "cperequest",
+                    "name": "cperequest_transition",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": [
+                      "namespace",
+                      "type",
+                      "requestId",
+                      "transitionName",
+                      "currentState",
+                      "currentVersion",
+                      "assignee",
+                      "clearAssignee",
+                      "dueDate",
+                      "clearDueDate",
+                      "skipIfInState",
+                      "transitionDetails"
+                    ],
+                    "outputKeys": ["request"],
+                    "timeoutPolicy": "TIME_OUT_WF",
+                    "retryLogic": "FIXED",
+                    "retryDelaySeconds": 60,
+                    "responseTimeoutSeconds": 1800,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "ownerEmail": "mce-workflow-infra@netflix.com",
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "stl.pipeline.complete",
+                  "taskReferenceName": "completePipeline_SubmissionRejected1",
+                  "inputParameters": {
+                    "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082385940,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.pipeline.complete",
+                    "description": "Final task for all pipeline workflows",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["pipelineId"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 60,
+                    "responseTimeoutSeconds": 300,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "terminate",
+                  "taskReferenceName": "SubmissionRejected_1",
+                  "inputParameters": {
+                    "terminationStatus": "COMPLETED",
+                    "workflowOutput": {
+                      "outcome": "SUBMISSION_REJECTED",
+                      "code": "MANIFEST_NOT_FOUND"
+                    }
+                  },
+                  "type": "TERMINATE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                }
+              ],
+              "DISCOVERY_ERROR": [
+                {
+                  "name": "stl.common.jq",
+                  "taskReferenceName": "prepareRecipientDomainsForManifestErrors",
+                  "inputParameters": {
+                    "inputData": {
+                      "reviewServerConfig": "${reviewServerConfig.output.result}",
+                      "domains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        },
+                        {
+                          "domains": ["netflix.amp.domain.production_vfx"],
+                          "partnerId": "${pipelineData.output.request.request.data.vendorId}",
+                          "ignoreIfPartnerNull": true
+                        },
+                        {
+                          "profiles": ["PRODUCTION_VFX_ADMIN"],
+                          "includeUsersWithProfile": true
+                        }
+                      ],
+                      "fallbackDomains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        }
+                      ]
+                    },
+                    "expression": ". as $in | $in.domains"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082387383,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.common.jq",
+                    "description": "Run JQ expression",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["expression", "inputData"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 120,
+                    "responseTimeoutSeconds": 1800,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "sendManifestErrorsEmail",
+                  "taskReferenceName": "sendManifestErrorsEmail",
+                  "inputParameters": {
+                    "emailType": "SINGLE",
+                    "domains": "${prepareRecipientDomainsForManifestErrors.output.result}",
+                    "additionalRecipients": [
+                      "vfx-media-review@netflix.com",
+                      "e1u9g2p6u1b8e5x7@netflix.slack.com"
+                    ],
+                    "additionalUsers": [
+                      "${pipelineData.output.request.request.data.ownerUser}"
+                    ],
+                    "eventName": "EVENT_MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "eventType": "MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "movieId": "${pipelineData.output.request.request.data.movieId}",
+                    "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                    "emailPayload": {
+                      "movieId": "${pipelineData.output.request.request.data.movieId}",
+                      "submissionId": "${pipelineData.output.request.request.data.submissionId}",
+                      "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                      "manifestErrors": "${assetDiscovery.output.displayErrors}",
+                      "pipelineId": "${pipelineData.output.pipelineId}",
+                      "subject": "Processing of submission ${pipelineData.output.request.request.data.submissionId} failed!",
+                      "manifestName": "${assetDiscovery.output.manifestName}",
+                      "manifestIncluded": true,
+                      "manifestLink": "${details.output.submissionUri}&nodeIds=${assetDiscovery.output.manifestNodeId}",
+                      "filesMissingInManifest": "${assetDiscovery.output.filesMissingInManifest}",
+                      "filesMissingInSubmission": "${assetDiscovery.output.filesMissingInSubmission}",
+                      "manifestWarnings": "${assetDiscovery.output.displayWarnings}",
+                      "status": "FAILED",
+                      "oldCsv": "${oldCsv.output.result}",
+                      "chProjectId": "${pipelineData.output.request.request.data.projectId}"
+                    }
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "subWorkflowParam": {
+                    "name": "vfxmediareview.notification",
+                    "version": 1
+                  },
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "cperequest_transition",
+                  "taskReferenceName": "requestManifestRedelivery",
+                  "inputParameters": {
+                    "namespace": "${pipelineData.output.request.request.namespace}",
+                    "type": "${pipelineData.output.request.request.type}",
+                    "requestId": "${pipelineData.output.request.request.id}",
+                    "transitionName": "redeliver",
+                    "skipIfInState": ["REDELIVERY"]
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "updateTime": 1604373979513,
+                    "updatedBy": "cperequest",
+                    "name": "cperequest_transition",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": [
+                      "namespace",
+                      "type",
+                      "requestId",
+                      "transitionName",
+                      "currentState",
+                      "currentVersion",
+                      "assignee",
+                      "clearAssignee",
+                      "dueDate",
+                      "clearDueDate",
+                      "skipIfInState",
+                      "transitionDetails"
+                    ],
+                    "outputKeys": ["request"],
+                    "timeoutPolicy": "TIME_OUT_WF",
+                    "retryLogic": "FIXED",
+                    "retryDelaySeconds": 60,
+                    "responseTimeoutSeconds": 1800,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "ownerEmail": "mce-workflow-infra@netflix.com",
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "stl.pipeline.complete",
+                  "taskReferenceName": "completePipeline_SubmissionRejected2",
+                  "inputParameters": {
+                    "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082385940,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.pipeline.complete",
+                    "description": "Final task for all pipeline workflows",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["pipelineId"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 60,
+                    "responseTimeoutSeconds": 300,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "terminate",
+                  "taskReferenceName": "SubmissionRejected_2",
+                  "inputParameters": {
+                    "terminationStatus": "COMPLETED",
+                    "workflowOutput": {
+                      "outcome": "SUBMISSION_REJECTED",
+                      "code": "MANIFEST_WITH_ERRORS"
+                    }
+                  },
+                  "type": "TERMINATE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                }
+              ],
+              "MULTIPLE_MANIFESTS_FOUND": [
+                {
+                  "name": "stl.common.jq",
+                  "taskReferenceName": "prepareRecipientDomainsForEncodingErrors1",
+                  "inputParameters": {
+                    "inputData": {
+                      "reviewServerConfig": "${reviewServerConfig.output.result}",
+                      "domains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        },
+                        {
+                          "domains": ["netflix.amp.domain.production_vfx"],
+                          "partnerId": "${pipelineData.output.request.request.data.vendorId}",
+                          "ignoreIfPartnerNull": true
+                        },
+                        {
+                          "profiles": ["PRODUCTION_VFX_ADMIN"],
+                          "includeUsersWithProfile": true
+                        }
+                      ],
+                      "fallbackDomains": [
+                        {
+                          "domains": ["netflix.amp.domain.studio_vfx"]
+                        }
+                      ]
+                    },
+                    "expression": ". as $in | $in.domains"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082387383,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.common.jq",
+                    "description": "Run JQ expression",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["expression", "inputData"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 120,
+                    "responseTimeoutSeconds": 1800,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "sendMultipleManifestsEmail",
+                  "taskReferenceName": "sendMultipleManifestsEmail",
+                  "inputParameters": {
+                    "emailType": "SINGLE",
+                    "domains": "${prepareRecipientDomainsForEncodingErrors1.output.result}",
+                    "additionalRecipients": [
+                      "vfx-media-review@netflix.com",
+                      "e1u9g2p6u1b8e5x7@netflix.slack.com"
+                    ],
+                    "additionalUsers": [
+                      "${pipelineData.output.request.request.data.ownerUser}"
+                    ],
+                    "eventName": "EVENT_MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "eventType": "MESSAGE_VFX_REVIEW_SUBMISSION",
+                    "movieId": "${pipelineData.output.request.request.data.movieId}",
+                    "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                    "emailPayload": {
+                      "movieId": "${pipelineData.output.request.request.data.movieId}",
+                      "submissionId": "${pipelineData.output.request.request.data.submissionId}",
+                      "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                      "pipelineId": "${pipelineData.output.pipelineId}",
+                      "subject": "Processing of submission ${pipelineData.output.request.request.data.submissionId} failed!",
+                      "chProjectId": "${pipelineData.output.request.request.data.projectId}",
+                      "multipleManifests": true,
+                      "status": "FAILED",
+                      "oldCsv": "${oldCsv.output.result}"
+                    }
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "subWorkflowParam": {
+                    "name": "vfxmediareview.notification",
+                    "version": 1
+                  },
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "stl.pipeline.complete",
+                  "taskReferenceName": "completePipeline_SubmissionRejected3",
+                  "inputParameters": {
+                    "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+                  },
+                  "type": "SIMPLE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "taskDefinition": {
+                    "createTime": 1556082385940,
+                    "createdBy": "CPEWORKFLOW",
+                    "name": "stl.pipeline.complete",
+                    "description": "Final task for all pipeline workflows",
+                    "retryCount": 3,
+                    "timeoutSeconds": 0,
+                    "inputKeys": ["pipelineId"],
+                    "outputKeys": [],
+                    "timeoutPolicy": "RETRY",
+                    "retryLogic": "EXPONENTIAL_BACKOFF",
+                    "retryDelaySeconds": 60,
+                    "responseTimeoutSeconds": 300,
+                    "inputTemplate": {},
+                    "rateLimitPerFrequency": 0,
+                    "rateLimitFrequencyInSeconds": 1,
+                    "backoffScaleFactor": 1
+                  },
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                },
+                {
+                  "name": "terminate",
+                  "taskReferenceName": "SubmissionRejected_3",
+                  "inputParameters": {
+                    "terminationStatus": "COMPLETED",
+                    "workflowOutput": {
+                      "outcome": "SUBMISSION_REJECTED",
+                      "code": "MULTIPLE_MANIFESTS_FOUND"
+                    }
+                  },
+                  "type": "TERMINATE",
+                  "decisionCases": {},
+                  "defaultCase": [],
+                  "forkTasks": [],
+                  "startDelay": 0,
+                  "joinOn": [],
+                  "optional": false,
+                  "defaultExclusiveJoinTask": [],
+                  "asyncComplete": false,
+                  "loopOver": []
+                }
+              ]
+            },
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "stl.common.jq",
+            "taskReferenceName": "addCdriveNodeIdAsExternalStatus",
+            "inputParameters": {
+              "inputData": "${assetdiscovery.output.assets}",
+              "expression": "[.[] | . as $in | { derivations:.derivations, movieId:.movieId, assetTree: {derivatives: .assetTree.derivatives, assets:.assetTree.assets  | (to_entries | map(  if(.value.payload.file != null) then .value.payload.externalStatuses |= .+{\"originalCDriveNodeId\": {value: $in.derivations.snapshot | to_entries | .[].value.nodeId}} else . end) | from_entries ), rootRefId:.assetTree.rootRefId, relations:.assetTree.relations}}]"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1556082387383,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.common.jq",
+              "description": "Run JQ expression",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": ["expression", "inputData"],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 120,
+              "responseTimeoutSeconds": 1800,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "stl.common.jq",
+            "taskReferenceName": "prepareImportAssetsFork",
+            "inputParameters": {
+              "inputData": {
+                "assetIngestRequests": "${addCdriveNodeIdAsExternalStatus.output.result}",
+                "user": "${workflow.input.pipelineInput.user}",
+                "limit": 20,
+                "partnerId": "${pipelineData.output.request.request.data.vendorId}"
+              },
+              "expression": ". as $in | .assetIngestRequests | {taskDefs: map( {subWorkflowParam:{name:\"vfxmediareview.createandshareassets\"},name:\"createandshareassets\", taskReferenceName :\"createandshareassets_\\(.derivations.snapshot[]|.nodeId)\",\"type\": \"SUB_WORKFLOW\"}), \"taskInputs\":map({key:\"createandshareassets_\\(.derivations.snapshot[]|.nodeId)\", value:{assetIngestRequests:[.], user:$in.user, partnerId:$in.partnerId}})| from_entries}"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1556082387383,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.common.jq",
+              "description": "Run JQ expression",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": ["expression", "inputData"],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 120,
+              "responseTimeoutSeconds": 1800,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "importAsset",
+            "taskReferenceName": "createandshareassets",
+            "inputParameters": {
+              "taskDefs": "${prepareImportAssetsFork.output.result.taskDefs}",
+              "taskInputs": "${prepareImportAssetsFork.output.result.taskInputs}"
+            },
+            "type": "FORK_JOIN_DYNAMIC",
+            "decisionCases": {},
+            "dynamicForkTasksParam": "taskDefs",
+            "dynamicForkTasksInputParamName": "taskInputs",
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "createandshareassets_join",
+            "taskReferenceName": "createandshareassets_join",
+            "inputParameters": {},
+            "type": "JOIN",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "stl.common.manageResourcesToPipelineTask",
+            "taskReferenceName": "managePipelineResources",
+            "inputParameters": {
+              "pipelineResourceManagementInput": "${assetdiscovery.output.pipelineResourceManagementInput}",
+              "pipelineId": "${workflow.input.pipelineInput.pipelineId}",
+              "contextUser": "pipelineapi"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 60,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1575590191136,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.common.manageResourcesToPipelineTask",
+              "description": "Attach / detach resources on a pipeline",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": [
+                "pipelineId",
+                "contextUser",
+                "pipelineResourceManagementInput"
+              ],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 120,
+              "responseTimeoutSeconds": 3000,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "stl.pipeline.get",
+            "taskReferenceName": "pipelineDataAfterParsing",
+            "inputParameters": {
+              "pipelineId": "${pipelineData.output.pipelineId}"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1556082385634,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.pipeline.get",
+              "description": "Read pipeline given pipeline id",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": ["pipelineId"],
+              "outputKeys": ["pipeline"],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 60,
+              "responseTimeoutSeconds": 300,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          }
+        ],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.AwaitStatusMatchPipelineResource",
+        "taskReferenceName": "awaitPipelineResourceState",
+        "inputParameters": {
+          "pipelineId": "${pipelineData.output.pipelineId}",
+          "selector": {
+            "resourceTypes": ["AMP_ASSET"]
+          },
+          "allowedStatuses": ["COMPLETED", "FAILED"],
+          "retryAfterSeconds": "60",
+          "user": "pipelineapi"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1599196237488,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.AwaitStatusMatchPipelineResource",
+          "description": "Wait for Resources to MatchStates",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": [
+            "pipelineId",
+            "selector",
+            "allowedStatuses",
+            "retryAfterSeconds",
+            "user"
+          ],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "cpe-che-backend@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.get",
+        "taskReferenceName": "pipelineDataAndResources",
+        "inputParameters": {
+          "pipelineId": "${pipelineData.output.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082385634,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.get",
+          "description": "Read pipeline given pipeline id",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId"],
+          "outputKeys": ["pipeline"],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "manifestResource",
+        "inputParameters": {
+          "inputData": "${pipelineDataAndResources.output.pipelineResources}",
+          "expression": "map(select(.attachmentType == \"CSV\"))[0]"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "oldCsv",
+        "inputParameters": {
+          "inputData": "${manifestResource.output.result.resourceContext.entries}",
+          "expression": ". // [] | any(has(\"Primary Shot Type\") or has(\"Shot Types\") or has(\"Shot Type\"))"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "manifestNodeDetailsTask",
+        "inputParameters": {
+          "inputData": "${pipelineDataAndResources.output.pipelineResources}",
+          "expression": "map(select(.attachmentType == \"CSV\") | .resourceIdentity.resourceId)[0] as $rid | $rid | if . == null then (\"stl.common.noop\") else (\"stl.cdrive.downloadManifest\") end | { task: ., nodeId: $rid }"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.cdrive.downloadManifest",
+        "taskReferenceName": "manifestNodeDetails",
+        "inputParameters": {
+          "task": "${manifestNodeDetailsTask.output.result.task}",
+          "nodeId": "${manifestNodeDetailsTask.output.result.nodeId}",
+          "userId": "${pipelineData.output.request.request.data.ownerUser}",
+          "useAppAuth": true
+        },
+        "type": "DYNAMIC",
+        "dynamicTaskNameParam": "task",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082388180,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.cdrive.downloadManifest",
+          "description": "get the cdrive manifest of a node.",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["nodeId", "userId"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "manifestDetails",
+        "inputParameters": {
+          "inputData": "${manifestNodeDetails.output.output}",
+          "expression": "if .downloadManifest != null then .assets[0] | { manifestName: .fileName[(.fileName|index(\"/\"))+1:], manifestBagginsUrl: .bagginsUrl, manifestNodeId: .nodeId, manifestIncluded: true  } else {} end"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "getCreatedAssets",
+        "inputParameters": {
+          "inputData": "${pipelineDataAndResources.output.pipelineResources}",
+          "expression": "map(select(.resourceIdentity.resourceType == \"AMP_ASSET\") | .resourceIdentity | { assetId: .resourceId, versionId: .versionId })"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "prepareGetAssetsTasks",
+        "inputParameters": {
+          "inputData": "${getCreatedAssets.output.result}",
+          "expressions": ["map({id: .assetId, version: .versionId})"]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.amp.getAssetsTree",
+        "taskReferenceName": "assets_tree",
+        "inputParameters": {
+          "assetIds": "${prepareGetAssetsTasks.output.result}",
+          "derivatives": ["PROXY"]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1600451428431,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.amp.getAssetsTree",
+          "description": "Get the full asset tree",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["assetIds", "derivatives", "relations"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "cpe-che-backend@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "assetsByType",
+        "inputParameters": {
+          "inputData": "${assets_tree.output.output}",
+          "expressions": [
+            "map( .assets | to_entries | map(.value)) | {proxies: map(select(any(.payload.type == \"PMR_REVIEW_PROXY\")) | map({assetId: .assetId, type: .payload.type})), images: map(select(any(.payload.type == \"IMAGE\")) | map({assetId: .assetId, type: .payload.type}))} "
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "prepareAssetProcessingTasks",
+        "inputParameters": {
+          "inputData": {
+            "assets": "${assetsByType.output.result}",
+            "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+          },
+          "expressions": [
+            ". as $in | [$in.assets.proxies, $in.assets.images] | add | if . | length == 0 then [] else . | add end | map(select(.type == \"PMR_REVIEW_VERSION\") | {assetId: .assetId.id, versionId: .assetId.version}) | {assets: . , pipelineId: $in.pipelineId} as $in |",
+            " $in.assets | { taskDefs: map( {type: \"SUB_WORKFLOW\", name: \"process_asset\", taskReferenceName: \"process_asset_\\(.assetId)_\\(.versionId)\", subWorkflowParam: {name: \"vfxmediareview.assetprocessing\"}}),",
+            " taskInputs: map( { key: \"process_asset_\\(.assetId)_\\(.versionId)\", value: {assetId, versionId, pipelineId: $in.pipelineId}}) | from_entries  }"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "asset_processing",
+        "taskReferenceName": "asset_processing",
+        "inputParameters": {
+          "taskDefs": "${prepareAssetProcessingTasks.output.result.taskDefs}",
+          "taskInputs": "${prepareAssetProcessingTasks.output.result.taskInputs}"
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "taskDefs",
+        "dynamicForkTasksInputParamName": "taskInputs",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "asset_processing_join",
+        "taskReferenceName": "asset_processing_join",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "evaluateAssetProcessingResults",
+        "inputParameters": {
+          "inputData": "${asset_processing_join.output}",
+          "expression": "to_entries | map(.value | { file, message: .description, outcome }) | { encodedFiles: map({ file, message }), outcome: (map(select(.outcome == \"FAILED\")) | if length > 0 then \"REPORT_ERRORS\" else \"PROCESS_SUBMISSION\" end) }"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "decide",
+        "taskReferenceName": "checkDeliveryStatus",
+        "inputParameters": {
+          "outcome": "${evaluateAssetProcessingResults.output.result.outcome}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "outcome",
+        "decisionCases": {
+          "REPORT_ERRORS": [
+            {
+              "name": "stl.common.jq",
+              "taskReferenceName": "assetProcessingResults",
+              "inputParameters": {
+                "inputData": "${asset_processing_join.output}",
+                "expression": "to_entries | map(.value | select(.outcome != \"SUCCESS\") | { file, message: .description, outcome }) | { encodedFiles: map({ file, message }), outcome: (map(select(.outcome == \"FAILED\")) | if length > 0 then \"REPORT_ERRORS\" else \"PROCESS_SUBMISSION\" end) }"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1556082387383,
+                "createdBy": "CPEWORKFLOW",
+                "name": "stl.common.jq",
+                "description": "Run JQ expression",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": ["expression", "inputData"],
+                "outputKeys": [],
+                "timeoutPolicy": "RETRY",
+                "retryLogic": "EXPONENTIAL_BACKOFF",
+                "retryDelaySeconds": 120,
+                "responseTimeoutSeconds": 1800,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "stl.common.jq",
+              "taskReferenceName": "prepareRecipientDomainsForEncodingErrors",
+              "inputParameters": {
+                "inputData": {
+                  "reviewServerConfig": "${reviewServerConfig.output.result}",
+                  "domains": [
+                    {
+                      "domains": ["netflix.amp.domain.studio_vfx"]
+                    },
+                    {
+                      "domains": ["netflix.amp.domain.production_vfx"],
+                      "partnerId": "${pipelineData.output.request.request.data.vendorId}",
+                      "ignoreIfPartnerNull": true
+                    },
+                    {
+                      "profiles": ["PRODUCTION_VFX_ADMIN"],
+                      "includeUsersWithProfile": true
+                    }
+                  ],
+                  "fallbackDomains": [
+                    {
+                      "domains": ["netflix.amp.domain.studio_vfx"]
+                    }
+                  ]
+                },
+                "expression": ". as $in | $in.domains"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1556082387383,
+                "createdBy": "CPEWORKFLOW",
+                "name": "stl.common.jq",
+                "description": "Run JQ expression",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": ["expression", "inputData"],
+                "outputKeys": [],
+                "timeoutPolicy": "RETRY",
+                "retryLogic": "EXPONENTIAL_BACKOFF",
+                "retryDelaySeconds": 120,
+                "responseTimeoutSeconds": 1800,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "notify_sendEncodingErrorsEmail",
+              "taskReferenceName": "sendEncodingErrorsEmail",
+              "inputParameters": {
+                "emailType": "SINGLE",
+                "domains": "${prepareRecipientDomainsForEncodingErrors.output.result}",
+                "additionalRecipients": [
+                  "vfx-media-review@netflix.com",
+                  "e1u9g2p6u1b8e5x7@netflix.slack.com"
+                ],
+                "additionalUsers": [
+                  "${pipelineData.output.request.request.data.ownerUser}"
+                ],
+                "eventName": "EVENT_MESSAGE_VFX_REVIEW_SUBMISSION",
+                "eventType": "MESSAGE_VFX_REVIEW_SUBMISSION",
+                "movieId": "${pipelineData.output.request.request.data.movieId}",
+                "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                "emailPayload": {
+                  "status": "FAILED",
+                  "movieId": "${pipelineData.output.request.request.data.movieId}",
+                  "submissionId": "${pipelineData.output.request.request.data.submissionId}",
+                  "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+                  "filesWithEncodingErrors": "${assetProcessingResults.output.result.encodedFiles}",
+                  "pipelineId": "${pipelineData.output.pipelineId}",
+                  "subject": "Processing of submission ${pipelineData.output.request.request.data.submissionId} failed!",
+                  "chProjectId": "${pipelineData.output.request.request.data.projectId}",
+                  "oldCsv": "${oldCsv.output.result}",
+                  "manifestWarnings": "${assetdiscovery.output.displayWarnings}"
+                }
+              },
+              "type": "SUB_WORKFLOW",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "subWorkflowParam": {
+                "name": "vfxmediareview.notification",
+                "version": 1
+              },
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "cperequest_transition",
+              "taskReferenceName": "requestRedelivery",
+              "inputParameters": {
+                "namespace": "${pipelineData.output.request.request.namespace}",
+                "type": "${pipelineData.output.request.request.type}",
+                "requestId": "${pipelineData.output.request.request.id}",
+                "transitionName": "redeliver",
+                "skipIfInState": ["REDELIVERY"]
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "updateTime": 1604373979513,
+                "updatedBy": "cperequest",
+                "name": "cperequest_transition",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": [
+                  "namespace",
+                  "type",
+                  "requestId",
+                  "transitionName",
+                  "currentState",
+                  "currentVersion",
+                  "assignee",
+                  "clearAssignee",
+                  "dueDate",
+                  "clearDueDate",
+                  "skipIfInState",
+                  "transitionDetails"
+                ],
+                "outputKeys": ["request"],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 1800,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "ownerEmail": "mce-workflow-infra@netflix.com",
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "stl.pipeline.complete",
+              "taskReferenceName": "completePipeline_SubmissionRejected",
+              "inputParameters": {
+                "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1556082385940,
+                "createdBy": "CPEWORKFLOW",
+                "name": "stl.pipeline.complete",
+                "description": "Final task for all pipeline workflows",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": ["pipelineId"],
+                "outputKeys": [],
+                "timeoutPolicy": "RETRY",
+                "retryLogic": "EXPONENTIAL_BACKOFF",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 300,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            },
+            {
+              "name": "terminate",
+              "taskReferenceName": "SubmissionRejected",
+              "inputParameters": {
+                "terminationStatus": "COMPLETED",
+                "workflowOutput": {
+                  "outcome": "SUBMISSION_REJECTED",
+                  "code": "SOURCE_ERRORS"
+                }
+              },
+              "type": "TERMINATE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ],
+          "PROCESS_SUBMISSION": [
+            {
+              "name": "stl.common.noop",
+              "taskReferenceName": "proceedWithShotgunProcessing",
+              "inputParameters": {},
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1556082386204,
+                "createdBy": "CPEWORKFLOW",
+                "name": "stl.common.noop",
+                "description": "Do nothing",
+                "retryCount": 3,
+                "timeoutSeconds": 0,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "RETRY",
+                "retryLogic": "EXPONENTIAL_BACKOFF",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 300,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1,
+                "backoffScaleFactor": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ]
+        },
+        "defaultCase": [
+          {
+            "name": "stl.pipeline.complete",
+            "taskReferenceName": "completePipeline_UnknownError1",
+            "inputParameters": {
+              "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "taskDefinition": {
+              "createTime": 1556082385940,
+              "createdBy": "CPEWORKFLOW",
+              "name": "stl.pipeline.complete",
+              "description": "Final task for all pipeline workflows",
+              "retryCount": 3,
+              "timeoutSeconds": 0,
+              "inputKeys": ["pipelineId"],
+              "outputKeys": [],
+              "timeoutPolicy": "RETRY",
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 60,
+              "responseTimeoutSeconds": 300,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1,
+              "backoffScaleFactor": 1
+            },
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          },
+          {
+            "name": "terminate",
+            "taskReferenceName": "UnknownError1",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "outcome": "UNKNOWN_ERROR",
+                "code": "INTERNAL_ERRORS"
+              }
+            },
+            "type": "TERMINATE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          }
+        ],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "submissionFolderProjection",
+        "taskReferenceName": "submissionFolderProjection",
+        "inputParameters": {
+          "pipelineId": "${pipelineData.output.request.request.data.pipelineId}",
+          "manifest": {
+            "name": "${manifestDetails.output.result.manifestName}",
+            "bagginsUrl": "${manifestDetails.output.result.manifestBagginsUrl}"
+          },
+          "assets": "${getCreatedAssets.output.result}",
+          "vendorName": "${vendorDetails.output.vendorName}"
+        },
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.projectsubmission",
+          "version": 1
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.map",
+        "taskReferenceName": "pipelineDetails",
+        "inputParameters": {
+          "submissionUri": "workspace?workspaceRoot=SHARED&layout=TREE&categoryType=workspace&workspaceFolderId=${submissionFolderProjection.output.sharedSubmissionFolderId}",
+          "mappings": {
+            "submissionUri": "['submissionUri']"
+          }
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082386616,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.map",
+          "description": "General purpose task to apply expression language (SpEL) transforms",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["mappings"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.get",
+        "taskReferenceName": "getPipelineData",
+        "inputParameters": {
+          "pipelineId": "${pipelineData.output.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082385634,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.get",
+          "description": "Read pipeline given pipeline id",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId"],
+          "outputKeys": ["pipeline"],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "updateShotgunProcessingStart",
+        "inputParameters": {
+          "inputData": {
+            "resources": "${getPipelineData.output.pipelineResources}"
+          },
+          "expression": ".resources | map((select(.attachmentType==\"EXPECTED_ASSET\") | . as $r | $r | .resourceContext.progress | map( if .name == \"SHOTGUN_UPLOAD\" then { name, status: \"IN_PROGRESS\" } else . end ) as $p | $r * { resourceContext: ($r.resourceContext * {progress: $p}) }) )"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.updateResource",
+        "taskReferenceName": "updateResourceShotgunStarted",
+        "inputParameters": {
+          "resources": "${updateShotgunProcessingStart.output.result}",
+          "pipelineId": "${pipelineData.output.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1576822186221,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.updateResource",
+          "description": "Update a pipeline resource",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId", "resource"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 3000,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.titus",
+        "taskReferenceName": "getVendors",
+        "inputParameters": {
+          "applicationName": "che/vfx-review-cli",
+          "version": "${NETFLIX_ENVIRONMENT}.latest",
+          "entryPoint": "python cli.py vendors -s \"https://${reviewServerConfig.output.result.server}\" -p ${reviewServerConfig.output.result.projectId} --rc-conductor \"${CPEWF_TASK_ID}\" "
+        },
+        "type": "TITUS",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1580327637347,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.titus",
+          "retryCount": 3,
+          "timeoutSeconds": 3600,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 90,
+          "responseTimeoutSeconds": 1200,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": true,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "playlistVendorParameter",
+        "inputParameters": {
+          "inputData": "${getVendors.output.result}",
+          "expressions": [
+            ".vendors | map(select(.sg_global_vendor.sg_vendor_id == \"${pipelineData.output.request.request.data.vendorId}\"))[0] // null",
+            "| if . then \"--vendor-id \\(.id)\" else \"\" end"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "sgPlaylist",
+        "taskReferenceName": "playlistInfo",
+        "inputParameters": {
+          "pipelineId": "${pipelineData.output.request.request.data.pipelineId}",
+          "playlistName": "${pipelineData.output.request.request.data.submissionId}",
+          "contenthubProjectUrl": "${details.output.contenthubProjectUrl}",
+          "reviewServerConfig": {
+            "server": "${reviewServerConfig.output.result.server}",
+            "projectId": "${reviewServerConfig.output.result.projectId}"
+          },
+          "playlistVendorParameter": "${playlistVendorParameter.output.result}"
+        },
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.shotgunplaylist",
+          "version": 1
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "assetAndComputedMetadata",
+        "inputParameters": {
+          "inputData": {
+            "assets": "${assets_tree.output.output}",
+            "entries": "${manifestResource.output.result.resourceContext.entries}"
+          },
+          "expressions": [
+            "def sf(e): .submitting_for; ",
+            "def desc(e): .submission_note; ",
+            "def sow(e): .scope_of_work; ",
+            ". as $in | ",
+            "$in.entries | to_entries as $entries | ",
+            "$in.assets | map(.assets | to_entries | map(.value)) | add | map(. as $a | $a | .payload.metadata as $meta | ",
+            "$meta | { metadata: { reason_for_review: ([ \"• *SUBMITTING FOR* - \\(sf(.))\", \"• *SCOPE OF WORK* - \\(sow(.))\", \"• *NOTES* - \\(desc(.))\" ] | join(\"\\n\")), sort_order: $entries | map(select($meta.version_name == .value.version_name))[0].key }, assetId: $a.assetId.id, assetVersion: $a.assetId.version })"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.amp.updateMetadataAndAddTypes",
+        "taskReferenceName": "updateAssetComputedMetadata",
+        "inputParameters": {
+          "assets": "${assetAndComputedMetadata.output.result}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1579029014610,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.amp.updateMetadataAndAddTypes",
+          "description": "This will update the metadata and add Type. The needed metadata and type should be the input",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["assets"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.amp.getAssetsTree",
+        "taskReferenceName": "assets_tree_2",
+        "inputParameters": {
+          "assetIds": "${prepareGetAssetsTasks.output.result}",
+          "derivatives": ["PROXY"]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1600451428431,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.amp.getAssetsTree",
+          "description": "Get the full asset tree",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["assetIds", "derivatives", "relations"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "cpe-che-backend@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "assetAndManifest",
+        "inputParameters": {
+          "inputData": {
+            "assets": "${assets_tree_2.output.output}",
+            "entries": "${manifestResource.output.result.resourceContext.entries}"
+          },
+          "expressions": [
+            ". as $in | .assets | ",
+            "map(.assets | to_entries | ",
+            "  { topLevelAssetId: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\") | .value)[0].assetId, ",
+            "    sgAmpRefId: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\") | .value)[0] | \"\\(.assetId.id):\\(.assetId.version)\", ",
+            "    reviewAssetId: map(select(.value.payload.type == \"IMAGE\" or .value.payload.type == \"PMR_REVIEW_PROXY\") | .value)[0].assetId, ",
+            "    shotname: map(select(.value.payload.type == \"IMAGE\" or .value.payload.type == \"PMR_REVIEW_PROXY\") | .value)[0].payload.file.name, ",
+            "    metadata: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\") | .value.payload.metadata)[0] | { submission_note, version_name, scope_of_work, vendor, link, submitting_for, reason_for_review, sort_order}",
+            "  }",
+            ")"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "updateShotgunProcessingInProgress",
+        "inputParameters": {
+          "inputData": {
+            "resources": "${updateShotgunProcessingStart.output.result}"
+          },
+          "expression": ".resources | map(. as $r | $r | .resourceContext.progress | map(if .name == \"SHOTGUN_UPLOAD\" then { name, status: \"IN_PROGRESS\" } else . end) as $p | $r * { resourceContext: ($r.resourceContext * {progress: $p}) })"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.updateResource",
+        "taskReferenceName": "updateResourceShotgunInProgress",
+        "inputParameters": {
+          "resources": "${updateShotgunProcessingInProgress.output.result}",
+          "pipelineId": "${pipelineData.output.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1576822186221,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.updateResource",
+          "description": "Update a pipeline resource",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId", "resource"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 3000,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "prepareShotProcessingAssets",
+        "inputParameters": {
+          "inputData": {
+            "assets": "${assets_tree_2.output.output}"
+          },
+          "expressions": [
+            ".assets | to_entries | ",
+            "map(.value.assets | to_entries | ",
+            "    { topLevelAssetId: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\"))[0].value.assetId | {id, versionId: .version}, ",
+            "      sgAmpRefId: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\"))[0].value.assetId | \"\\(.id):\\(.version)\", ",
+            "      reviewAssetId: map(select(.value.payload.type == \"PMR_REVIEW_PROXY\" or .value.payload.type == \"IMAGE\"))[0].value.assetId | {id, versionId: .version}, ",
+            "      shotname: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\"))[0].value.payload.metadata.version_name, ",
+            "      metadata: map(select(.value.payload.type == \"PMR_REVIEW_VERSION\"))[0].value.payload.metadata | {submission_note, version_name, scope_of_work, reason_for_review, vendor, link, submitting_for, sort_order}",
+            "    }",
+            ")"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "prepareShotProcessingTasks",
+        "inputParameters": {
+          "inputData": {
+            "reviewServer": "${reviewServerConfig.output.result.server}",
+            "reviewProjectId": "${reviewServerConfig.output.result.projectId}",
+            "vendorId": "${workflow.input.sgVendorId}",
+            "playlistId": "${playlistInfo.output.result.id}",
+            "playlistName": "${playlistInfo.output.result.code}",
+            "assetAndManifest": "${prepareShotProcessingAssets.output.result}"
+          },
+          "expressions": [
+            ". as $in | $in.assetAndManifest | map({topLevelAssetId, reviewAssetId, sgAmpRefId, shotname, reviewServer: $in.reviewServer, reviewProjectId: $in.reviewProjectId, vendorId: $in.vendorId, playlistId: $in.playlistId, playlistName: $in.playlistName, vendorName: \"${vendorDetails.output.vendorName}\", metadata: .metadata }) | ",
+            "{ taskDefs: map({type: \"SUB_WORKFLOW\", name: \"processshot\", taskReferenceName: \"processshot_\\(.topLevelAssetId.id)_\\(.topLevelAssetId.versionId)\", subWorkflowParam: { name: \"vfxmediareview.shotprocessing_v2\" }}), ",
+            "  taskInputs: map({ key: \"processshot_\\(.topLevelAssetId.id)_\\(.topLevelAssetId.versionId)\", value: . }) | from_entries}"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "asset_processing",
+        "taskReferenceName": "shot_processing",
+        "inputParameters": {
+          "taskDefs": "${prepareShotProcessingTasks.output.result.taskDefs}",
+          "taskInputs": "${prepareShotProcessingTasks.output.result.taskInputs}"
+        },
+        "type": "FORK_JOIN_DYNAMIC",
+        "decisionCases": {},
+        "dynamicForkTasksParam": "taskDefs",
+        "dynamicForkTasksInputParamName": "taskInputs",
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "shot_processing_join",
+        "taskReferenceName": "shot_processing_join",
+        "inputParameters": {},
+        "type": "JOIN",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "processedFiles",
+        "inputParameters": {
+          "inputData": {
+            "encodingResult": "${asset_processing_join.output}",
+            "uploadResult": "${shot_processing_join.output}"
+          },
+          "expressions": [
+            ". as $in | .uploadResult | to_entries | map(.value.result.upload_shot | { file: .filename, size: .file_size, labels: (if .skipped == true then [\"UPLOAD_SKIPPED\"] else [] end) }) as $ur | $in |  .encodingResult | to_entries | map(.value | { file, message: .description, labels: (if .code == \"ENCODE_SUCCESS\" or .code == \"SUCCESS\" then (.file as $f | $ur | map(select($f == .file) | .labels)[0]) else [.code] + (.file as $f | $ur | map(select($f == .file) | .labels)[0]) end) })"
+          ]
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.titus",
+        "taskReferenceName": "updatePlaylist",
+        "inputParameters": {
+          "applicationName": "che/vfx-review-cli",
+          "version": "${NETFLIX_ENVIRONMENT}.latest",
+          "entryPoint": "python cli.py playlist -s \"https://${reviewServerConfig.output.result.server}\" -p ${reviewServerConfig.output.result.projectId}  --action \"update\" --playlist-id ${playlistInfo.output.result.id} --playlist-status \"rev\" --contenthub-workspace-link \"${details.output.contenthubProjectUrl}/${pipelineDetails.output.submissionUri}\" --rc-conductor \"${CPEWF_TASK_ID}\""
+        },
+        "type": "TITUS",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1580327637347,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.titus",
+          "retryCount": 3,
+          "timeoutSeconds": 3600,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 90,
+          "responseTimeoutSeconds": 1200,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": true,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "updateShotgunProcessingCompleted",
+        "inputParameters": {
+          "inputData": {
+            "resources": "${updateShotgunProcessingStart.output.result}"
+          },
+          "expression": ".resources | map( . as $r | $r | .resourceContext.progress | map( if .name == \"SHOTGUN_UPLOAD\" then { name, status: \"COMPLETED\" } else . end ) as $p | $r * {\"status\":\"COMPLETED\", resourceContext: ($r.resourceContext * {progress: $p}) } )"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.updateResource",
+        "taskReferenceName": "updateResourceShotgunCompleted",
+        "inputParameters": {
+          "resources": "${updateShotgunProcessingCompleted.output.result}",
+          "pipelineId": "${pipelineData.output.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1576822186221,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.updateResource",
+          "description": "Update a pipeline resource",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId", "resource"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 3000,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "cperequest_transition",
+        "taskReferenceName": "submissionProcessed",
+        "inputParameters": {
+          "namespace": "${pipelineData.output.request.request.namespace}",
+          "type": "${pipelineData.output.request.request.type}",
+          "requestId": "${pipelineData.output.request.request.id}",
+          "transitionName": "processed"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "updateTime": 1604373979513,
+          "updatedBy": "cperequest",
+          "name": "cperequest_transition",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": [
+            "namespace",
+            "type",
+            "requestId",
+            "transitionName",
+            "currentState",
+            "currentVersion",
+            "assignee",
+            "clearAssignee",
+            "dueDate",
+            "clearDueDate",
+            "skipIfInState",
+            "transitionDetails"
+          ],
+          "outputKeys": ["request"],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "mce-workflow-infra@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.common.jq",
+        "taskReferenceName": "prepareRecipientDomainsForProcessingComplete",
+        "inputParameters": {
+          "inputData": {
+            "reviewServerConfig": "${reviewServerConfig.output.result}",
+            "domains": [
+              {
+                "domains": ["netflix.amp.domain.studio_vfx"]
+              },
+              {
+                "domains": ["netflix.amp.domain.production_vfx"],
+                "partnerId": "${pipelineData.output.request.request.data.vendorId}",
+                "ignoreIfPartnerNull": true
+              },
+              {
+                "profiles": ["PRODUCTION_VFX_ADMIN"],
+                "includeUsersWithProfile": true
+              }
+            ],
+            "fallbackDomains": [
+              {
+                "domains": ["netflix.amp.domain.studio_vfx"]
+              }
+            ]
+          },
+          "expression": ". as $in | $in.domains"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082387383,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.common.jq",
+          "description": "Run JQ expression",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["expression", "inputData"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 120,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "sendProcessingCompleteEmail",
+        "taskReferenceName": "sendProcessingCompleteEmail",
+        "inputParameters": {
+          "emailType": "INTERNAL_EXTERNAL",
+          "domains": "${prepareRecipientDomainsForProcessingComplete.output.result}",
+          "additionalRecipients": [
+            "vfx-media-review@netflix.com",
+            "e1u9g2p6u1b8e5x7@netflix.slack.com"
+          ],
+          "additionalUsers": [
+            "${pipelineData.output.request.request.data.ownerUser}"
+          ],
+          "eventName": "EVENT_MESSAGE_VFX_REVIEW_SUBMISSION",
+          "eventType": "MESSAGE_VFX_REVIEW_SUBMISSION",
+          "movieId": "${pipelineData.output.request.request.data.movieId}",
+          "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+          "emailPayload": {
+            "movieId": "${pipelineData.output.request.request.data.movieId}",
+            "submissionId": "${pipelineData.output.request.request.data.submissionId}",
+            "submissionNodeId": "${pipelineData.output.request.request.data.submissionNodeId}",
+            "shotgunBaseUrl": "https://${reviewServerConfig.output.result.server}",
+            "shotgunProjectId": "${reviewServerConfig.output.result.projectId}",
+            "pipelineId": "${pipelineData.output.pipelineId}",
+            "subject": "Playlist ${pipelineData.output.request.request.data.submissionId} is ready for review!",
+            "playlistId": "${playlistInfo.output.result.id}",
+            "status": "SUCCESS",
+            "playlistReadyForReview": true,
+            "filesInSubmission": "${processedFiles.output.result}",
+            "manifestName": "${manifestDetails.output.result.manifestName}",
+            "manifestLink": "${pipelineDetails.output.submissionUri}&nodeIds=${manifestDetails.output.result.manifestNodeId}",
+            "manifestIncluded": "${manifestDetails.output.result.manifestIncluded}",
+            "vendorName": "${vendorDetails.output.name}",
+            "chProjectId": "${pipelineData.output.request.request.data.projectId}",
+            "oldCsv": "${oldCsv.output.result}",
+            "manifestWarnings": "${manifestDetails.output.result.displayWarnings}"
+          }
+        },
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "vfxmediareview.notification",
+          "version": 1
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pegasus.processPipelineEvent",
+        "taskReferenceName": "processPipelineEvent",
+        "inputParameters": {
+          "assetType": "PMR_REVIEW_VERSION",
+          "downloadDescription": "Download of submission ${pipelineData.output.request.request.data.submissionId}",
+          "movieId": "${pipelineData.output.request.request.data.movieId}",
+          "pipelineType": "${pipelineData.output.request.request.type}",
+          "nodeIds": ["${submissionFolderProjection.output.downloadFolderId}"],
+          "relativePath": "vfxmediareview/${pipelineData.output.request.request.data.submissionId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1574880092269,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pegasus.processPipelineEvent",
+          "description": "Tell Pegasus Stargate that we have a node that is ready for download",
+          "retryCount": 3,
+          "timeoutSeconds": 300,
+          "inputKeys": [
+            "assetType",
+            "downloadDescription",
+            "movieId",
+            "pipelineType",
+            "nodeId",
+            "relativePath"
+          ],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "cperequest_transition",
+        "taskReferenceName": "completeRequest",
+        "inputParameters": {
+          "namespace": "${pipelineData.output.request.request.namespace}",
+          "type": "${pipelineData.output.request.request.type}",
+          "requestId": "${pipelineData.output.request.request.id}",
+          "transitionName": "complete"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "updateTime": 1604373979513,
+          "updatedBy": "cperequest",
+          "name": "cperequest_transition",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": [
+            "namespace",
+            "type",
+            "requestId",
+            "transitionName",
+            "currentState",
+            "currentVersion",
+            "assignee",
+            "clearAssignee",
+            "dueDate",
+            "clearDueDate",
+            "skipIfInState",
+            "transitionDetails"
+          ],
+          "outputKeys": ["request"],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 1800,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "ownerEmail": "mce-workflow-infra@netflix.com",
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "stl.pipeline.complete",
+        "taskReferenceName": "completePipeline_SubmissionAccepted",
+        "inputParameters": {
+          "pipelineId": "${workflow.input.pipelineInput.pipelineId}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1556082385940,
+          "createdBy": "CPEWORKFLOW",
+          "name": "stl.pipeline.complete",
+          "description": "Final task for all pipeline workflows",
+          "retryCount": 3,
+          "timeoutSeconds": 0,
+          "inputKeys": ["pipelineId"],
+          "outputKeys": [],
+          "timeoutPolicy": "RETRY",
+          "retryLogic": "EXPONENTIAL_BACKOFF",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 300,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "terminate",
+        "taskReferenceName": "SubmissionAccepted",
+        "inputParameters": {
+          "terminationStatus": "COMPLETED",
+          "workflowOutput": {
+            "outcome": "SUBMISSION_ACCEPTED",
+            "code": "SUBMISSION_ACCEPTED"
+          }
+        },
+        "type": "TERMINATE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "failureWorkflow": "pipelines.vfxmediareview.failure",
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "cpe-che-backend@netflix.com",
+    "timeoutPolicy": "TIME_OUT_WF",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  "priority": 0,
+  "variables": {},
+  "lastRetriedTime": 0,
+  "startTime": 1608153919527,
+  "workflowName": "pipelines.vfxmediareview",
+  "workflowVersion": 1
+}

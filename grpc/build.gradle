@@ -60,4 +60,13 @@ idea {
     }
 }
 
+sourceSets {
+  main {
+    java {
+        srcDir 'build/generated/source/proto/main/java'
+        srcDir 'build/generated/source/proto/main/grpc'
+    }
+  }
+}
+
 compileJava.dependsOn(tasks.getByPath(':conductor-common:protogen'))

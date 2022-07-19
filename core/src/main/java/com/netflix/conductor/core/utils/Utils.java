@@ -18,7 +18,7 @@ import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.TransientException;
 
 public class Utils {
 
@@ -56,7 +56,7 @@ public class Utils {
      *
      * @param condition a boolean expression
      * @param errorMessage The exception message use if the input condition is not valid
-     * @throws ApplicationException if input condition is not valid
+     * @throws IllegalArgumentException if input condition is not valid.
      */
     public static void checkArgument(boolean condition, String errorMessage) {
         if (!condition) {
@@ -65,50 +65,11 @@ public class Utils {
     }
 
     /**
-     * This method checks if the collection is null or is empty.
-     *
-     * @param collection input of type {@link Collection}
-     * @param errorMessage The exception message use if the collection is empty or null
-     * @throws ApplicationException if input Collection is not valid
-     */
-    public static void checkNotNullOrEmpty(Collection<?> collection, String errorMessage) {
-        if (collection == null || collection.isEmpty()) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
-        }
-    }
-
-    /**
-     * This method checks if the input map is valid or not.
-     *
-     * @param map input of type {@link Map}
-     * @param errorMessage The exception message use if the map is empty or null
-     * @throws ApplicationException if input map is not valid
-     */
-    public static void checkNotNullOrEmpty(Map<?, ?> map, String errorMessage) {
-        if (map == null || map.isEmpty()) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
-        }
-    }
-
-    /**
-     * This method checks it the input string is null or empty.
-     *
-     * @param input input of type {@link String}
-     * @param errorMessage The exception message use if the string is empty or null
-     * @throws ApplicationException if input string is not valid
-     */
-    public static void checkNotNullOrEmpty(String input, String errorMessage) {
-        if (StringUtils.isEmpty(input)) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
-        }
-    }
-
-    /**
      * This method checks if the object is null or empty.
      *
-     * @param object input of type {@link Object}
-     * @param errorMessage The exception message use if the object is empty or null
-     * @throws ApplicationException if input object is not valid
+     * @param object input of type {@link Object}.
+     * @param errorMessage The exception message use if the object is empty or null.
+     * @throws NullPointerException if input object is not valid.
      */
     public static void checkNotNull(Object object, String errorMessage) {
         if (object == null) {
@@ -126,10 +87,7 @@ public class Utils {
      */
     public static boolean isTransientException(Throwable throwable) {
         if (throwable != null) {
-            return !((throwable instanceof UnsupportedOperationException)
-                    || (throwable instanceof ApplicationException
-                            && ((ApplicationException) throwable).getCode()
-                                    != ApplicationException.Code.BACKEND_ERROR));
+            return throwable instanceof TransientException;
         }
         return true;
     }

@@ -1,14 +1,12 @@
 import _ from "lodash";
 import { useMemo } from "react";
-import {
-  useQuery,
-  useInfiniteQuery,
-  useQueryClient,
-  useMutation,
-} from "react-query";
+import { useQuery, useQueries, useMutation } from "react-query";
 import qs from "qs";
 import { useFetchContext, fetchWithContext } from "../plugins/fetch";
 import { useFetch } from "./common";
+import Path from "../utils/path";
+
+const STALE_TIME_SEARCH = 60000; // 1 min
 
 export function useTask(taskName, defaultTask) {
   let path;
@@ -20,73 +18,100 @@ export function useTask(taskName, defaultTask) {
 
 export function useTaskSearch({ searchReady, ...searchObj }) {
   const fetchContext = useFetchContext();
-  const queryClient = useQueryClient();
+  const pathRoot = "/tasks/search?";
+  const { rowsPerPage, page, sort, freeText, query } = searchObj;
 
-  const pathRoot = "/workflow/search-by-tasks?";
-  const key = [fetchContext.stack, pathRoot, searchObj];
+  const isEmptySearch = _.isEmpty(query) && freeText === "*";
 
-  return {
-    ...useInfiniteQuery(
-      key,
-      ({ pageParam = 0 }) => {
-        const { rowsPerPage, sort, freeText, query } = searchObj;
-
-        if (!searchReady) {
-          console.log("blank query - returning empty result.");
-          return Promise.resolve({ results: [] });
-        }
-
+  return useQuery(
+    [fetchContext.stack, pathRoot, searchObj],
+    () => {
+      if (isEmptySearch) {
+        return {
+          results: [],
+          totalHits: 0,
+        };
+      } else {
         const path =
           pathRoot +
           qs.stringify({
-            start: rowsPerPage * pageParam,
+            start: (page - 1) * rowsPerPage,
             size: rowsPerPage,
             sort: sort,
             freeText: freeText,
             query: query,
           });
         return fetchWithContext(path, fetchContext);
-      },
-      {
-        getNextPageParam: (lastPage, pages) => pages.length,
       }
-    ),
-    refetch: () => {
-      queryClient.refetchQueries(key);
+      // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
-  };
+    {
+      enabled: fetchContext.ready,
+      keepPreviousData: true,
+      staleTime: STALE_TIME_SEARCH,
+    }
+  );
 }
 
-export function useTaskQueueInfo(taskName) {
+export function usePollData(taskName) {
   const fetchContext = useFetchContext();
-
   const pollDataPath = `/tasks/queue/polldata?taskType=${taskName}`;
-  const sizePath = `/tasks/queue/sizes?taskType=${taskName}`;
 
-  const { data: pollData, isFetching: pollDataFetching } = useQuery(
+  return useQuery(
     [fetchContext.stack, pollDataPath],
     () => fetchWithContext(pollDataPath, fetchContext),
     {
       enabled: fetchContext.ready && !_.isEmpty(taskName),
     }
   );
-  const { data: size, isFetching: sizeFetching } = useQuery(
-    [fetchContext.stack, sizePath],
-    () => fetchWithContext(sizePath, fetchContext),
-    {
-      enabled: fetchContext.ready && !_.isEmpty(taskName),
-    }
-  );
+}
 
-  const taskQueueInfo = useMemo(
-    () => ({ size: _.get(size, [taskName]), pollData: pollData }),
-    [taskName, pollData, size]
-  );
+export function useQueueSize(taskName, domain) {
+  const fetchContext = useFetchContext();
+  const path = new Path("/tasks/queue/size");
+  path.search.append("taskType", taskName);
 
-  return {
-    data: taskQueueInfo,
-    isFetching: pollDataFetching || sizeFetching,
-  };
+  if (!_.isUndefined(domain)) {
+    path.search.append("domain", domain);
+  }
+
+  return useQuery([fetchContext.stack, "queueSize", taskName, domain], () =>
+    fetchWithContext(path.toString(), fetchContext, {
+      enabled: fetchContext.ready,
+    })
+  );
+}
+
+export function useQueueSizes(taskName, domains) {
+  const fetchContext = useFetchContext();
+
+  return useQueries(
+    domains
+      ? domains.map((domain) => {
+          const path = new Path("/tasks/queue/size");
+          path.search.append("taskType", taskName);
+
+          if (!_.isUndefined(domain)) {
+            path.search.append("domain", domain);
+          }
+
+          return {
+            queryKey: [fetchContext.stack, "queueSize", taskName, domain],
+            queryFn: async () => {
+              const result = await fetchWithContext(
+                path.toString(),
+                fetchContext
+              );
+              return {
+                domain: domain,
+                size: result,
+              };
+            },
+            enabled: fetchContext.ready && !!domains,
+          };
+        })
+      : []
+  );
 }
 
 export function useTaskNames() {

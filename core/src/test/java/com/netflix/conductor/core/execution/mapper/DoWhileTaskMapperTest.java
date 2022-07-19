@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution.mapper;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -27,9 +28,12 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DO_WHILE;
 
@@ -44,12 +48,14 @@ public class DoWhileTaskMapperTest {
     private WorkflowTask workflowTask1;
     private TaskMapperContext taskMapperContext;
     private MetadataDAO metadataDAO;
+    private ParametersUtils parametersUtils;
 
     @Before
     public void setup() {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setType(TaskType.DO_WHILE.name());
         workflowTask.setTaskReferenceName("Test");
+        workflowTask.setInputParameters(Map.of("value", "${workflow.input.foo}"));
         task1 = new TaskModel();
         task1.setReferenceTaskName("task1");
         TaskModel task2 = new TaskModel();
@@ -69,6 +75,7 @@ public class DoWhileTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(workflowDef);
+        workflow.setInput(Map.of("foo", "bar"));
 
         deciderService = Mockito.mock(DeciderService.class);
         metadataDAO = Mockito.mock(MetadataDAO.class);
@@ -82,6 +89,8 @@ public class DoWhileTaskMapperTest {
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();
+
+        parametersUtils = new ParametersUtils(new ObjectMapper());
     }
 
     @Test
@@ -92,11 +101,14 @@ public class DoWhileTaskMapperTest {
                 .getTasksToBeScheduled(workflow, workflowTask1, 0);
 
         List<TaskModel> mappedTasks =
-                new DoWhileTaskMapper(metadataDAO).getMappedTasks(taskMapperContext);
+                new DoWhileTaskMapper(metadataDAO, parametersUtils)
+                        .getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 1);
         assertEquals(TASK_TYPE_DO_WHILE, mappedTasks.get(0).getTaskType());
+        assertNotNull(mappedTasks.get(0).getInputData());
+        assertEquals(Map.of("value", "bar"), mappedTasks.get(0).getInputData());
     }
 
     @Test
@@ -105,7 +117,8 @@ public class DoWhileTaskMapperTest {
         task1.setStatus(TaskModel.Status.COMPLETED);
 
         List<TaskModel> mappedTasks =
-                new DoWhileTaskMapper(metadataDAO).getMappedTasks(taskMapperContext);
+                new DoWhileTaskMapper(metadataDAO, parametersUtils)
+                        .getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 1);

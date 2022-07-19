@@ -1,0 +1,228 @@
+[
+  {
+    "createTime": 1638226947603,
+    "name": "19test009",
+    "description": "test workflow",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "fetch_data",
+        "taskReferenceName": "fetch_data",
+        "inputParameters": {
+          "http_request": {
+            "connectionTimeOut": "3600",
+            "readTimeOut": "3600",
+            "uri": "${workflow.input.uri}",
+            "method": "GET",
+            "accept": "application/json",
+            "content-Type": "application/json",
+            "headers": {}
+          }
+        },
+        "type": "HTTP",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "name": "fetch_data",
+          "retryCount": 0,
+          "timeoutSeconds": 3600,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 0,
+          "responseTimeoutSeconds": 3000,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1,
+          "backoffScaleFactor": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": true,
+    "ownerEmail": "test@163.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  {
+    "createTime": 1610653237179,
+    "name": "ConditionalTerminateWorkflow",
+    "description": "ConditionalTerminateWorkflow",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "perf_task_1",
+        "taskReferenceName": "t1",
+        "inputParameters": {
+          "tp11": "${workflow.input.param1}",
+          "tp12": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "decision",
+        "taskReferenceName": "decision",
+        "inputParameters": {
+          "case": "${t1.output.case}"
+        },
+        "type": "DECISION",
+        "caseValueParam": "case",
+        "decisionCases": {
+          "one": [
+            {
+              "name": "perf_task_2",
+              "taskReferenceName": "t2",
+              "inputParameters": {
+                "tp21": "${workflow.input.param1}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ],
+          "two": [
+            {
+              "name": "terminate",
+              "taskReferenceName": "terminate0",
+              "inputParameters": {
+                "terminationStatus": "COMPLETED",
+                "workflowOutput": "${t1.output.op}"
+              },
+              "type": "TERMINATE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }
+          ]
+        },
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      },
+      {
+        "name": "perf_task_3",
+        "taskReferenceName": "t3",
+        "inputParameters": {
+          "tp31": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }
+    ],
+    "inputParameters": ["param1", "param2"],
+    "outputParameters": {
+      "o2": "${t1.output.op}"
+    },
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "test@harness.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  },
+  {
+    "createTime": 1654202968736,
+    "name": "Do_While_Workflow_Iteration_Fix",
+    "description": "Do_While_Workflow_Iteration_Fix",
+    "version": 1,
+    "tasks": [
+      {
+        "name": "loopTask",
+        "taskReferenceName": "loopTask",
+        "inputParameters": {
+          "value": "${workflow.input.loop}"
+        },
+        "type": "DO_WHILE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopCondition": "if ($.loopTask['iteration'] < $.value) { true; } else { false;} ",
+        "loopOver": [
+          {
+            "name": "form_uri",
+            "taskReferenceName": "form_uri",
+            "inputParameters": {
+              "index": "${loopTask['iteration']}",
+              "scriptExpression": "return $.index - 1;"
+            },
+            "type": "LAMBDA",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": []
+          }
+        ]
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "ownerEmail": "peterl@netflix.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0,
+    "variables": {},
+    "inputTemplate": {}
+  }
+]

@@ -248,6 +248,9 @@
         "org.glassfish.jaxb:jaxb-runtime": {
             "locked": "2.3.3"
         },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
+        },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
         },
@@ -377,6 +380,9 @@
         },
         "org.glassfish.jaxb:jaxb-runtime": {
             "locked": "2.3.3"
+        },
+        "org.junit.vintage:junit-vintage-engine": {
+            "locked": "5.8.2"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"

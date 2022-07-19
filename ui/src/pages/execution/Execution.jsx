@@ -128,16 +128,21 @@ export default function Execution() {
   const [drawerWidth, setDrawerWidth] = useState(INIT_DRAWER_WIDTH);
 
   const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
-  const [selectedTaskJson, setSelectedTaskJson] = useQueryState("task", "");
+  const [selectedTaskRison, setSelectedTaskRison] = useQueryState("task", "");
 
   const dag = useMemo(
     () => (execution ? new WorkflowDAG(execution) : null),
     [execution]
   );
+
   const selectedTask = useMemo(
-    () => (dag && selectedTaskJson ? rison.decode(selectedTaskJson) : null),
-    [dag, selectedTaskJson]
+    () => selectedTaskRison && rison.decode(selectedTaskRison),
+    [selectedTaskRison]
   );
+
+  const setSelectedTask = (taskPointer) => {
+    setSelectedTaskRison(rison.encode(taskPointer));
+  };
 
   const classes = useStyles({
     isFullWidth,
@@ -166,12 +171,8 @@ export default function Execution() {
 
   const handleMousedown = (e) => setIsResizing(true);
 
-  const handleSelectTask = (task) => {
-    setSelectedTaskJson(rison.encode(task));
-  };
-
   const handleClose = () => {
-    setSelectedTaskJson(null);
+    setSelectedTaskRison(null);
   };
 
   const handleFullScreen = () => {
@@ -254,7 +255,7 @@ export default function Execution() {
                 <TaskDetails
                   dag={dag}
                   execution={execution}
-                  setSelectedTask={handleSelectTask}
+                  setSelectedTask={setSelectedTask}
                   selectedTask={selectedTask}
                 />
               )}
@@ -298,7 +299,7 @@ export default function Execution() {
                 className={classes.rightPanel}
                 selectedTask={selectedTask}
                 dag={dag}
-                onTaskChange={handleSelectTask}
+                onTaskChange={setSelectedTask}
               />
             </div>
           </div>

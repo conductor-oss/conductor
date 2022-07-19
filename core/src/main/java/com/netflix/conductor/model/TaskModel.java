@@ -126,8 +126,6 @@ public class TaskModel {
 
     private Any outputMessage;
 
-    // id 31 is reserved
-
     private int rateLimitPerFrequency;
 
     private int rateLimitFrequencyInSeconds;
@@ -843,7 +841,9 @@ public class TaskModel {
     }
 
     public void addInput(Map<String, Object> inputData) {
-        this.inputData.putAll(inputData);
+        if (inputData != null) {
+            this.inputData.putAll(inputData);
+        }
     }
 
     public void addOutput(String key, Object value) {
@@ -851,6 +851,8 @@ public class TaskModel {
     }
 
     public void addOutput(Map<String, Object> outputData) {
-        this.outputData.putAll(outputData);
+        if (outputData != null) {
+            this.outputData.putAll(outputData);
+        }
     }
 }

@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -23,14 +26,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
 
 @RestControllerAdvice
 @Order(ValidationExceptionMapper.ORDER + 1)
@@ -40,45 +42,40 @@ public class ApplicationExceptionMapper {
 
     private final String host = Utils.getServerId();
 
-    @ExceptionHandler(ApplicationException.class)
-    public ResponseEntity<ErrorResponse> handleApplicationException(
-            HttpServletRequest request, ApplicationException ex) {
-        logException(request, ex);
+    private static final Map<Class<? extends Throwable>, HttpStatus> EXCEPTION_STATUS_MAP =
+            new HashMap<>();
 
-        Monitors.error("error", String.valueOf(ex.getHttpStatusCode()));
-
-        return new ResponseEntity<>(
-                toErrorResponse(ex), HttpStatus.valueOf(ex.getHttpStatusCode()));
+    static {
+        EXCEPTION_STATUS_MAP.put(NotFoundException.class, HttpStatus.NOT_FOUND);
+        EXCEPTION_STATUS_MAP.put(ConflictException.class, HttpStatus.CONFLICT);
+        EXCEPTION_STATUS_MAP.put(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
+        EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
 
-        ApplicationException.Code code =
-                (th instanceof IllegalArgumentException || th instanceof InvalidFormatException)
-                        ? INVALID_INPUT
-                        : INTERNAL_ERROR;
+        HttpStatus status =
+                EXCEPTION_STATUS_MAP.getOrDefault(th.getClass(), HttpStatus.INTERNAL_SERVER_ERROR);
 
-        ApplicationException ex = new ApplicationException(code, th.getMessage(), th);
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setInstance(host);
+        errorResponse.setStatus(status.value());
+        errorResponse.setMessage(th.getMessage());
+        errorResponse.setRetryable(
+                th instanceof TransientException); // set it to true for TransientException
 
-        return handleApplicationException(request, ex);
+        Monitors.error("error", String.valueOf(status.value()));
+
+        return new ResponseEntity<>(errorResponse, status);
     }
 
     private void logException(HttpServletRequest request, Throwable exception) {
         LOGGER.error(
-                String.format(
-                        "Error %s url: '%s'",
-                        exception.getClass().getSimpleName(), request.getRequestURI()),
+                "Error {} url: '{}'",
+                exception.getClass().getSimpleName(),
+                request.getRequestURI(),
                 exception);
-    }
-
-    private ErrorResponse toErrorResponse(ApplicationException ex) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setInstance(host);
-        errorResponse.setStatus(ex.getHttpStatusCode());
-        errorResponse.setMessage(ex.getMessage());
-        errorResponse.setRetryable(ex.isRetryable());
-        return errorResponse;
     }
 }

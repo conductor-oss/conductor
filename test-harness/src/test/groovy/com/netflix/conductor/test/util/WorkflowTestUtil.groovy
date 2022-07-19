@@ -23,7 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.WorkflowContext
-import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.model.WorkflowModel
@@ -204,12 +204,8 @@ class WorkflowTestUtil {
     Optional<TaskDef> getPersistedTaskDefinition(String taskDefName) {
         try {
             return Optional.of(metadataService.getTaskDef(taskDefName))
-        } catch (ApplicationException applicationException) {
-            if (applicationException.code == ApplicationException.Code.NOT_FOUND) {
-                return Optional.empty()
-            } else {
-                throw applicationException
-            }
+        } catch(NotFoundException nfe) {
+            return Optional.empty()
         }
     }
 

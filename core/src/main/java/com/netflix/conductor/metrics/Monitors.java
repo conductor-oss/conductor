@@ -187,6 +187,10 @@ public class Monitors {
                 .record(duration, TimeUnit.MILLISECONDS);
     }
 
+    public static void recordWorkflowDecisionTime(long duration) {
+        getTimer(classQualifier, "workflow_decision").record(duration, TimeUnit.MILLISECONDS);
+    }
+
     public static void recordTaskPollError(String taskType, String exception) {
         recordTaskPollError(taskType, NO_DOMAIN, exception);
     }
@@ -564,5 +568,9 @@ public class Monitors {
 
     public static void recordQueueMessageRepushFromRepairService(String queueName) {
         counter(classQualifier, "queue_message_repushed", "queueName", queueName);
+    }
+
+    public static void recordTaskExecLogSize(int val) {
+        gauge(classQualifier, "task_exec_log_size", val);
     }
 }

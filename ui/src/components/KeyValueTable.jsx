@@ -1,12 +1,14 @@
 import React from "react";
 import { makeStyles } from "@material-ui/styles";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemText from "@material-ui/core/ListItemText";
+import { List, ListItem, ListItemText, Tooltip } from "@material-ui/core";
 import _ from "lodash";
 
 import { useEnv } from "../plugins/env";
-import { timestampRenderer, durationRenderer } from "../utils/helpers";
+import {
+  timestampRenderer,
+  timestampMsRenderer,
+  durationRenderer,
+} from "../utils/helpers";
 import { customTypeRenderers } from "../plugins/customTypeRenderers";
 
 const useStyles = makeStyles((theme) => ({
@@ -28,6 +30,7 @@ export default function KeyValueTable({ data }) {
   return (
     <List>
       {data.map((item, index) => {
+        let tooltipText = "";
         let displayValue;
         const renderer = item.type ? customTypeRenderers[item.type] : null;
         if (renderer) {
@@ -39,6 +42,14 @@ export default function KeyValueTable({ data }) {
                 !isNaN(item.value) && item.value > 0
                   ? timestampRenderer(item.value)
                   : "N/A";
+              tooltipText = new Date(item.value).toISOString();
+              break;
+            case "date-ms":
+              displayValue =
+                !isNaN(item.value) && item.value > 0
+                  ? timestampMsRenderer(item.value)
+                  : "N/A";
+              tooltipText = new Date(item.value).toISOString();
               break;
             case "duration":
               displayValue =
@@ -52,13 +63,20 @@ export default function KeyValueTable({ data }) {
         }
 
         return (
+
           <ListItem key={index} divider alignItems="flex-start">
             <ListItemText
               className={classes.label}
               classes={{ primary: classes.labelText }}
               primary={item.label}
             />
-            <ListItemText className={classes.value} primary={displayValue} />
+
+            <ListItemText className={classes.value} primary={
+            <Tooltip placement="right" title={tooltipText} open={tooltipText ? undefined : false}>
+              <span>{displayValue}</span>
+            </Tooltip>} 
+            />
+
           </ListItem>
         );
       })}

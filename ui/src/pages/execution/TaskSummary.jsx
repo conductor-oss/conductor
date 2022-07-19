@@ -13,7 +13,10 @@ export default function TaskSummary({ taskResult }) {
     { label: "Task Name", value: taskResult.workflowTask.name },
     {
       label: "Task Reference",
-      value: taskResult.workflowTask.taskReferenceName,
+      value:
+        taskResult.referenceTaskName ||
+        taskResult.workflowTask.aliasForRef ||
+        taskResult.workflowTask.taskReferenceName,
     },
   ];
 
@@ -33,18 +36,22 @@ export default function TaskSummary({ taskResult }) {
     data.push({
       label: "Scheduled Time",
       value: taskResult.scheduledTime > 0 && taskResult.scheduledTime,
-      type: "date",
+      type: "date-ms",
     });
   }
   if (taskResult.startTime) {
     data.push({
       label: "Start Time",
       value: taskResult.startTime > 0 && taskResult.startTime,
-      type: "date",
+      type: "date-ms",
     });
   }
   if (taskResult.endTime) {
-    data.push({ label: "End Time", value: taskResult.endTime, type: "date" });
+    data.push({
+      label: "End Time",
+      value: taskResult.endTime,
+      type: "date-ms",
+    });
   }
   if (taskResult.startTime && taskResult.endTime) {
     data.push({
@@ -77,16 +84,12 @@ export default function TaskSummary({ taskResult }) {
       type: "workerId",
     });
   }
-  if (!_.isNil(taskResult.callbackAfterSeconds)) {
-    data.push({ label: "Callback After Seconds", value: taskResult.callbackAfterSeconds });
-  }
-  if (!_.isNil(taskResult.pollCount)) {
-    data.push({ label: "Poll Count", value: taskResult.pollCount });
-  }
   if (taskResult.taskType === "DECISION") {
     data.push({
       label: "Evaluated Case",
-      value: taskResult.outputData.caseOutput[0],
+      value:
+        _.has(taskResult, "outputData.caseOutput[0]") &&
+        taskResult.outputData.caseOutput[0],
     });
   }
   if (taskResult.workflowTask.type === "SUB_WORKFLOW") {
@@ -101,7 +104,7 @@ export default function TaskSummary({ taskResult }) {
         </NavLink>
       ),
     });
-    if (_.get(taskResult, "outputData.subWorkflowId")) {
+    if (_.has(taskResult, "outputData.subWorkflowId")) {
       data.push({
         label: "Subworkflow ID",
         value: (
@@ -116,9 +119,16 @@ export default function TaskSummary({ taskResult }) {
     }
   }
 
+  if (taskResult.externalInputPayloadStoragePath) {
+    data.push({
+      label: "Externalized Input",
+      value: taskResult.externalInputPayloadStoragePath,
+    });
+  }
+
   if (taskResult.externalOutputPayloadStoragePath) {
     data.push({
-      label: "External Output",
+      label: "Externalized Output",
       value: taskResult.externalOutputPayloadStoragePath,
     });
   }
