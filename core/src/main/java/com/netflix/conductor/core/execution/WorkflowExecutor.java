@@ -1039,7 +1039,7 @@ public class WorkflowExecutor {
         }
 
         String workflowId = taskResult.getWorkflowInstanceId();
-        WorkflowModel workflowInstance = executionDAOFacade.getWorkflowModel(workflowId, true);
+        WorkflowModel workflowInstance = executionDAOFacade.getWorkflowModel(workflowId, false);
 
         // FIXME Backwards compatibility for legacy workflows already running.
         // This code will be removed in a future version.
@@ -1168,7 +1168,7 @@ public class WorkflowExecutor {
                 break;
         }
 
-        // Throw an ApplicationException if below operations fail to avoid workflow inconsistencies.
+        // Throw a TransientException if below operations fail to avoid workflow inconsistencies.
         try {
             executionDAOFacade.updateTask(task);
         } catch (Exception e) {

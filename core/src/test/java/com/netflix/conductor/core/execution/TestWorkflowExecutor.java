@@ -2382,8 +2382,8 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
-        workflow.getTasks().addAll(Arrays.asList(simpleTask));
-        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        workflow.getTasks().add(simpleTask);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
 
         TaskResult taskResult = new TaskResult();
@@ -2424,8 +2424,8 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
-        workflow.getTasks().addAll(Arrays.asList(simpleTask));
-        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        workflow.getTasks().add(simpleTask);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
 
         TaskResult taskResult = new TaskResult();
