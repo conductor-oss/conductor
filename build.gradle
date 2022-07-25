@@ -9,7 +9,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:7.0.0'
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.6.7'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.7.2'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
