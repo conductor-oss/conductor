@@ -64,7 +64,7 @@ class PayloadStorage implements ExternalPayloadStorage {
                 throw new ConductorClientException(
                         String.format(
                                 "Invalid payload type: %s for operation: %s",
-                                payloadType.toString(), operation.toString()));
+                                payloadType, operation.toString()));
         }
         return clientBase.getForEntity(
                 String.format("%s/externalstoragelocation", uri),

@@ -12,30 +12,53 @@
  */
 package com.netflix.conductor.core.execution.managed;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-public interface ManagedTask {
+public abstract class ManagedTask {
 
-    String MANAGED_TASKS = "managedTasks";
+    public final static String MANAGED_TASKS = "managedTasks";
+    private final WorkflowExecutor workflowExecutor;
 
-    String getTaskType();
+    public ManagedTask(WorkflowExecutor workflowExecutor) {
+        this.workflowExecutor = workflowExecutor;
+    }
 
     /**
-     * Handles the task invocation by delegating execution to the managed runtime.
+     * An implementation of managed task.
+     *
+     * @return Task type
+     */
+    protected abstract String getTaskType();
+
+    /**
+     * Handle the task invocation by delegating execution to the managed runtime.
      *
      * @param workflow Workflow of which the task is a part of
      * @param task Task instance
      */
-    void invoke(WorkflowModel workflow, TaskModel task);
+    protected abstract void invoke(WorkflowModel workflow, TaskModel task);
 
     /**
      * Ignore the execution result and mark execution as CANCELED.
      *
      * @param workflow Workflow of which the task is a part of
-     * @param task Task Instance
+     * @param task Task instance
      */
-    default void cancel(WorkflowModel workflow, TaskModel task) {
+    protected void cancel(WorkflowModel workflow, TaskModel task) {
         task.setStatus(TaskModel.Status.CANCELED);
+    }
+
+    /**
+     * Fetch the execution results from the managed runtime and implements a callback path to the
+     * invoking workflow and task.
+     */
+    protected abstract TaskResult callback();
+
+    public final void end() {
+        TaskResult taskResult = callback();
+        workflowExecutor.updateTask(taskResult);
     }
 }

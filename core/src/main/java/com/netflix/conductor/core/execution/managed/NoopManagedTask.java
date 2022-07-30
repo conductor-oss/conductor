@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.execution.managed;
 
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import org.slf4j.Logger;
@@ -24,21 +26,31 @@ import org.springframework.stereotype.Component;
         value = "conductor.managed-task-type.noop.enabled",
         havingValue = "true",
         matchIfMissing = true)
-public class NoopManagedTask implements ManagedTask {
+public class NoopManagedTask extends ManagedTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NoopManagedTask.class);
     public static final String NOOP_MANAGED_TASK = "NOOP";
 
+    public NoopManagedTask(WorkflowExecutor workflowExecutor) {
+        super(workflowExecutor);
+    }
+
     @Override
-    public String getTaskType() {
+    protected String getTaskType() {
         return NOOP_MANAGED_TASK;
     }
 
     @Override
-    public void invoke(WorkflowModel workflow, TaskModel task) {
+    protected void invoke(WorkflowModel workflow, TaskModel task) {
         LOGGER.info(
                 "Noop managed task : {} invoked in workflow: {}",
                 task.getTaskId(),
                 workflow.getWorkflowId());
+    }
+
+    @Override
+    protected TaskResult callback() {
+        LOGGER.info("Noop managed task callback");
+        return null;
     }
 }

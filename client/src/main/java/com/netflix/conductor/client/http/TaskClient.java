@@ -273,7 +273,6 @@ public class TaskClient extends ClientBase {
             throw new ConductorClientException(errorMsg, e);
         }
     }
-
     /**
      * Ack for the task poll.
      *
