@@ -24,7 +24,7 @@ plugins {
 }
 
 repositories{
-    maven { url "https://dl.bintray.com/chaos-systems/mvn" }
+    maven { url "https://mvnrepository.com/artifact" }
 }
 
 dependencies {
