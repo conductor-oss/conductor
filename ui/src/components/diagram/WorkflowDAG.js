@@ -146,10 +146,14 @@ export default class WorkflowDAG {
       // E.g. the default edge not taken.
       // SWITCH is the newer version of DECISION and DECISION is deprecated
       if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
-        edgeParams.caseValue = getCaseValue(
-          taskConfig.taskReferenceName,
-          antecedent
-        );
+        // A switch inside a loop in execution won't
+        // have a decisionCases key
+        if (antecedent.decisionCases) {
+          edgeParams.caseValue = getCaseValue(
+            taskConfig.taskReferenceName,
+            antecedent
+          );
+        }
 
         // Highlight edge as executed only after thorough test
         const branchTaken = this.switchBranchTaken(
@@ -295,7 +299,24 @@ export default class WorkflowDAG {
     } else {
       // Definition view (or not executed)
       this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
-      this.addVertex(endDoWhileTask, [_.last(doWhileTask.loopOver)]);
+
+      const lastLoopTask = _.last(doWhileTask.loopOver);
+
+      // Connect the end of each case to the loop end
+      if (
+        lastLoopTask?.type === "SWITCH" ||
+        lastLoopTask?.type === "DECISION"
+      ) {
+        Object.entries(lastLoopTask.decisionCases).forEach(
+          ([caseValue, tasks]) => {
+            const lastTaskInCase = _.last(tasks);
+            this.addVertex(endDoWhileTask, [lastTaskInCase]);
+          }
+        );
+      }
+
+      // Default case
+      this.addVertex(endDoWhileTask, [lastLoopTask]);
     }
 
     // Create cosmetic LOOP edges between top and bottom bars
