@@ -375,6 +375,20 @@ public class ExecutionDAOFacade {
         }
     }
 
+    public void removeWorkflowWithExpiry(
+            String workflowId, boolean archiveWorkflow, int ttlSeconds) {
+        try {
+            WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
+
+            removeWorkflowIndex(workflow, archiveWorkflow);
+            // remove workflow from DAO with TTL
+            executionDAO.removeWorkflowWithExpiry(workflowId, ttlSeconds);
+        } catch (Exception e) {
+            Monitors.recordDaoError("executionDao", "removeWorkflow");
+            throw new TransientException("Error removing workflow: " + workflowId, e);
+        }
+    }
+
     /**
      * Reset the workflow state by removing from the {@link ExecutionDAO} and removing this workflow
      * from the {@link IndexDAO}.
