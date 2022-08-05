@@ -67,7 +67,7 @@
       "taskReferenceName": "thejoin",
       "type": "JOIN",
       "joinOn": [
-        "basicJavaA",
+        "test_terminate_subworkflow",
         "basicJavaB"
       ]
     }

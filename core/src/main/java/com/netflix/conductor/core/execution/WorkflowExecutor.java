@@ -34,11 +34,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.exception.ConflictException;
-import com.netflix.conductor.core.exception.NonTransientException;
-import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
-import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.exception.*;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -64,7 +60,7 @@ import static com.netflix.conductor.model.TaskModel.Status.*;
 public class WorkflowExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
-    private static final int PARENT_WF_PRIORITY = 10;
+    private static final int EXPEDITED_PRIORITY = 10;
 
     private final MetadataDAO metadataDAO;
     private final QueueDAO queueDAO;
@@ -640,7 +636,7 @@ public class WorkflowExecutor {
             parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
-            pushParentWorkflow(parentWorkflowId);
+            expediteLazyWorkflowEvaluation(parentWorkflowId);
 
             workflow = parentWorkflow;
         }
@@ -878,7 +874,7 @@ public class WorkflowExecutor {
                     workflow.toShortString(),
                     workflow.getParentWorkflowId(),
                     workflow.getParentWorkflowTaskId());
-            pushParentWorkflow(workflow.getParentWorkflowId());
+            expediteLazyWorkflowEvaluation(workflow.getParentWorkflowId());
         }
 
         executionLockService.releaseLock(workflow.getWorkflowId());
@@ -965,7 +961,7 @@ public class WorkflowExecutor {
                         workflow.toShortString(),
                         workflow.getParentWorkflowId(),
                         workflow.getParentWorkflowTaskId());
-                pushParentWorkflow(workflow.getParentWorkflowId());
+                expediteLazyWorkflowEvaluation(workflow.getParentWorkflowId());
             }
 
             if (!StringUtils.isBlank(failureWorkflow)) {
@@ -1193,7 +1189,52 @@ public class WorkflowExecutor {
                     task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
 
-        _decide(workflowId);
+        // sync evaluate workflow only if the task is not within a forked branch
+        if (isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
+            expediteLazyWorkflowEvaluation(workflowId);
+        } else {
+            _decide(workflowId);
+        }
+    }
+
+    /**
+     * Determines if a workflow can be lazily evaluated, if it meets any of these criteria
+     *
+     * <ul>
+     *   <li>The task is NOT a loop task within DO_WHILE
+     *   <li>The task is one of the intermediate tasks in a branch within a FORK_JOIN
+     *   <li>The task is forked from a FORK_JOIN_DYNAMIC
+     * </ul>
+     *
+     * @param workflowDef The workflow definition of the workflow for which evaluation decision is
+     *     to be made
+     * @param task The task which is attempting to trigger the evaluation
+     * @return true if workflow can be lazily evaluated, false otherwise
+     */
+    @VisibleForTesting
+    boolean isLazyEvaluateWorkflow(WorkflowDef workflowDef, TaskModel task) {
+        if (task.isLoopOverTask()) {
+            return false;
+        }
+
+        String taskRefName = task.getReferenceTaskName();
+        List<WorkflowTask> workflowTasks = workflowDef.collectTasks();
+
+        List<WorkflowTask> forkTasks =
+                workflowTasks.stream()
+                        .filter(t -> t.getType().equals(TaskType.FORK_JOIN.name()))
+                        .collect(Collectors.toList());
+
+        List<WorkflowTask> joinTasks =
+                workflowTasks.stream()
+                        .filter(t -> t.getType().equals(TaskType.JOIN.name()))
+                        .collect(Collectors.toList());
+
+        if (forkTasks.stream().anyMatch(fork -> fork.has(taskRefName))) {
+            return joinTasks.stream().anyMatch(join -> join.getJoinOn().contains(taskRefName));
+        }
+
+        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName));
     }
 
     public TaskModel getTask(String taskId) {
@@ -1966,14 +2007,18 @@ public class WorkflowExecutor {
         subWorkflowSystemTask.execute(subWorkflow, subWorkflowTask, this);
     }
 
-    /** Pushes parent workflow id into the decider queue with a priority. */
-    private void pushParentWorkflow(String parentWorkflowId) {
-        if (queueDAO.containsMessage(DECIDER_QUEUE, parentWorkflowId)) {
-            queueDAO.postpone(DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
+    /**
+     * Pushes workflow id into the decider queue with a higher priority to expedite evaluation.
+     *
+     * @param workflowId The workflow to be evaluated at higher priority
+     */
+    private void expediteLazyWorkflowEvaluation(String workflowId) {
+        if (queueDAO.containsMessage(DECIDER_QUEUE, workflowId)) {
+            queueDAO.postpone(DECIDER_QUEUE, workflowId, EXPEDITED_PRIORITY, 0);
         } else {
-            queueDAO.push(DECIDER_QUEUE, parentWorkflowId, PARENT_WF_PRIORITY, 0);
+            queueDAO.push(DECIDER_QUEUE, workflowId, EXPEDITED_PRIORITY, 0);
         }
 
-        LOGGER.info("Pushed parent workflow {} to {}", parentWorkflowId, DECIDER_QUEUE);
+        LOGGER.info("Pushed workflow {} to {} for expedited evaluation", workflowId, DECIDER_QUEUE);
     }
 }
