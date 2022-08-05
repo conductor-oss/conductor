@@ -345,13 +345,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             return Optional.ofNullable(resultSet.one())
                     .map(
                             row -> {
-                                TaskModel task =
-                                        readValue(row.getString(PAYLOAD_KEY), TaskModel.class);
+                                String taskRow = row.getString(PAYLOAD_KEY);
+                                TaskModel task = readValue(taskRow, TaskModel.class);
                                 recordCassandraDaoRequests(
                                         "getTask", task.getTaskType(), task.getWorkflowType());
                                 recordCassandraDaoPayloadSize(
                                         "getTask",
-                                        toJson(task).length(),
+                                        taskRow.length(),
                                         task.getTaskType(),
                                         task.getWorkflowType());
                                 return task;

@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.6.7"
+            "locked": "2.7.2"
         }
     },
     "compileClasspath": {
@@ -61,10 +61,10 @@
             "locked": "5.8.2"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.7"
+            "locked": "2.7.2"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.7"
+            "locked": "2.7.2"
         }
     },
     "testRuntimeClasspath": {
@@ -90,10 +90,10 @@
             "locked": "5.8.2"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.6.7"
+            "locked": "2.7.2"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.6.7"
+            "locked": "2.7.2"
         }
     }
 }

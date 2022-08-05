@@ -17,6 +17,7 @@ import com.netflix.conductor.common.jackson.JsonProtoModule;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
 /**
  * A Factory class for creating a customized {@link ObjectMapper}. This is only used by the
@@ -46,6 +47,7 @@ public class ObjectMapperProvider {
                 JsonInclude.Value.construct(
                         JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS));
         objectMapper.registerModule(new JsonProtoModule());
+        objectMapper.registerModule(new AfterburnerModule());
         return objectMapper;
     }
 }

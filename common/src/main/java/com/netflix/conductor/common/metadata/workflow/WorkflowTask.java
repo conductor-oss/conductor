@@ -30,6 +30,8 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in
  * the Workflow definition are saved as part of {@link WorkflowDef#getTasks}
@@ -85,6 +87,7 @@ public class WorkflowTask {
 
     // Populates for the tasks of the decision type
     @ProtoField(id = 9)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, @Valid List<@Valid WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
     @Deprecated private String dynamicForkJoinTasksParam;
@@ -96,9 +99,11 @@ public class WorkflowTask {
     private String dynamicForkTasksInputParamName;
 
     @ProtoField(id = 12)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid WorkflowTask> defaultCase = new LinkedList<>();
 
     @ProtoField(id = 13)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid List<@Valid WorkflowTask>> forkTasks = new LinkedList<>();
 
     @ProtoField(id = 14)
@@ -110,6 +115,7 @@ public class WorkflowTask {
     private SubWorkflowParams subWorkflowParam;
 
     @ProtoField(id = 16)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> joinOn = new LinkedList<>();
 
     @ProtoField(id = 17)
@@ -125,6 +131,7 @@ public class WorkflowTask {
     private Boolean rateLimited;
 
     @ProtoField(id = 21)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
     @ProtoField(id = 23)
@@ -134,6 +141,7 @@ public class WorkflowTask {
     private String loopCondition;
 
     @ProtoField(id = 25)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<WorkflowTask> loopOver = new LinkedList<>();
 
     @ProtoField(id = 26)
