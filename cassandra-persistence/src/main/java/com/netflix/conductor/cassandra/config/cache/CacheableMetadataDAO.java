@@ -13,9 +13,8 @@
 package com.netflix.conductor.cassandra.config.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -25,6 +24,11 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
@@ -33,6 +37,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import static com.netflix.conductor.cassandra.config.cache.CachingConfig.TASK_DEF_CACHE;
 
 @Trace
 public class CacheableMetadataDAO implements MetadataDAO {
@@ -44,12 +50,15 @@ public class CacheableMetadataDAO implements MetadataDAO {
     private final CassandraMetadataDAO cassandraMetadataDAO;
     private final CassandraProperties properties;
 
-    private final Map<String, TaskDef> taskDefCache = new ConcurrentHashMap<>();
+    private final CacheManager cacheManager;
 
     public CacheableMetadataDAO(
-            CassandraMetadataDAO cassandraMetadataDAO, CassandraProperties properties) {
+            CassandraMetadataDAO cassandraMetadataDAO,
+            CassandraProperties properties,
+            CacheManager cacheManager) {
         this.cassandraMetadataDAO = cassandraMetadataDAO;
         this.properties = properties;
+        this.cacheManager = cacheManager;
     }
 
     @PostConstruct
@@ -63,44 +72,45 @@ public class CacheableMetadataDAO implements MetadataDAO {
     }
 
     @Override
-    public void createTaskDef(TaskDef taskDef) {
-        try {
-            cassandraMetadataDAO.createTaskDef(taskDef);
-        } finally {
-            evictTaskDef(taskDef);
-        }
+    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    public TaskDef createTaskDef(TaskDef taskDef) {
+        cassandraMetadataDAO.createTaskDef(taskDef);
+        return taskDef;
     }
 
     @Override
-    public String updateTaskDef(TaskDef taskDef) {
-        try {
-            return cassandraMetadataDAO.updateTaskDef(taskDef);
-        } finally {
-            evictTaskDef(taskDef);
-        }
+    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    public TaskDef updateTaskDef(TaskDef taskDef) {
+        return cassandraMetadataDAO.updateTaskDef(taskDef);
     }
 
     @Override
+    @Cacheable(TASK_DEF_CACHE)
     public TaskDef getTaskDef(String name) {
-        return Optional.ofNullable(taskDefCache.get(name))
-                .orElseGet(() -> cassandraMetadataDAO.getTaskDef(name));
+        return cassandraMetadataDAO.getTaskDef(name);
     }
 
     @Override
     public List<TaskDef> getAllTaskDefs() {
-        if (taskDefCache.size() == 0) {
-            refreshTaskDefsCache();
+        Object nativeCache = cacheManager.getCache(TASK_DEF_CACHE).getNativeCache();
+        if (nativeCache != null && nativeCache instanceof ConcurrentHashMap) {
+            ConcurrentHashMap cacheMap = (ConcurrentHashMap) nativeCache;
+            if (!cacheMap.isEmpty()) {
+                List<TaskDef> taskDefs = new ArrayList<>();
+                cacheMap.values().stream()
+                        .filter(element -> element != null && element instanceof TaskDef)
+                        .forEach(element -> taskDefs.add((TaskDef) element));
+                return taskDefs;
+            }
         }
-        return new ArrayList<>(taskDefCache.values());
+
+        return refreshTaskDefsCache();
     }
 
     @Override
+    @CacheEvict(TASK_DEF_CACHE)
     public void removeTaskDef(String name) {
-        try {
-            cassandraMetadataDAO.removeTaskDef(name);
-        } finally {
-            taskDefCache.remove(name);
-        }
+        cassandraMetadataDAO.removeTaskDef(name);
     }
 
     @Override
@@ -133,23 +143,18 @@ public class CacheableMetadataDAO implements MetadataDAO {
         return cassandraMetadataDAO.getAllWorkflowDefs();
     }
 
-    private void refreshTaskDefsCache() {
+    private List<TaskDef> refreshTaskDefsCache() {
         try {
-            Map<String, TaskDef> map = new HashMap<>();
-            cassandraMetadataDAO
-                    .getAllTaskDefs()
-                    .forEach(taskDef -> map.put(taskDef.getName(), taskDef));
-            this.taskDefCache.putAll(map);
-            LOGGER.debug("Refreshed task defs, total num: " + this.taskDefCache.size());
+            Cache taskDefsCache = cacheManager.getCache(TASK_DEF_CACHE);
+            taskDefsCache.clear();
+            List<TaskDef> taskDefs = cassandraMetadataDAO.getAllTaskDefs();
+            taskDefs.forEach(taskDef -> taskDefsCache.put(taskDef.getName(), taskDef));
+            LOGGER.debug("Refreshed task defs, total num: " + taskDefs.size());
+            return taskDefs;
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "refreshTaskDefs");
             LOGGER.error("refresh TaskDefs failed ", e);
         }
-    }
-
-    private void evictTaskDef(TaskDef taskDef) {
-        if (taskDef != null && taskDef.getName() != null) {
-            taskDefCache.remove(taskDef.getName());
-        }
+        return Collections.emptyList();
     }
 }

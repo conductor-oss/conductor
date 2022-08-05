@@ -13,9 +13,8 @@
 package com.netflix.conductor.cassandra.config.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,10 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
@@ -32,6 +35,8 @@ import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import static com.netflix.conductor.cassandra.config.cache.CachingConfig.EVENT_HANDLER_CACHE;
 
 @Trace
 public class CacheableEventHandlerDAO implements EventHandlerDAO {
@@ -43,12 +48,15 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
     private final CassandraEventHandlerDAO cassandraEventHandlerDAO;
     private final CassandraProperties properties;
 
-    private final Map<String, EventHandler> eventHandlerCache = new ConcurrentHashMap<>();
+    private final CacheManager cacheManager;
 
     public CacheableEventHandlerDAO(
-            CassandraEventHandlerDAO cassandraEventHandlerDAO, CassandraProperties properties) {
+            CassandraEventHandlerDAO cassandraEventHandlerDAO,
+            CassandraProperties properties,
+            CacheManager cacheManager) {
         this.cassandraEventHandlerDAO = cassandraEventHandlerDAO;
         this.properties = properties;
+        this.cacheManager = cacheManager;
     }
 
     @PostConstruct
@@ -60,38 +68,38 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
     }
 
     @Override
+    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
     public void addEventHandler(EventHandler eventHandler) {
-        try {
-            cassandraEventHandlerDAO.addEventHandler(eventHandler);
-        } finally {
-            evictEventHandler(eventHandler);
-        }
+        cassandraEventHandlerDAO.addEventHandler(eventHandler);
     }
 
     @Override
+    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
     public void updateEventHandler(EventHandler eventHandler) {
-        try {
-            cassandraEventHandlerDAO.updateEventHandler(eventHandler);
-        } finally {
-            evictEventHandler(eventHandler);
-        }
+        cassandraEventHandlerDAO.updateEventHandler(eventHandler);
     }
 
     @Override
+    @CacheEvict(EVENT_HANDLER_CACHE)
     public void removeEventHandler(String name) {
-        try {
-            cassandraEventHandlerDAO.removeEventHandler(name);
-        } finally {
-            eventHandlerCache.remove(name);
-        }
+        cassandraEventHandlerDAO.removeEventHandler(name);
     }
 
     @Override
     public List<EventHandler> getAllEventHandlers() {
-        if (eventHandlerCache.size() == 0) {
-            refreshEventHandlersCache();
+        Object nativeCache = cacheManager.getCache(EVENT_HANDLER_CACHE).getNativeCache();
+        if (nativeCache != null && nativeCache instanceof ConcurrentHashMap) {
+            ConcurrentHashMap cacheMap = (ConcurrentHashMap) nativeCache;
+            if (!cacheMap.isEmpty()) {
+                List<EventHandler> eventHandlers = new ArrayList<>();
+                cacheMap.values().stream()
+                        .filter(element -> element != null && element instanceof EventHandler)
+                        .forEach(element -> eventHandlers.add((EventHandler) element));
+                return eventHandlers;
+            }
         }
-        return new ArrayList<>(eventHandlerCache.values());
+
+        return refreshEventHandlersCache();
     }
 
     @Override
@@ -108,23 +116,19 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
         }
     }
 
-    private void refreshEventHandlersCache() {
+    private List<EventHandler> refreshEventHandlersCache() {
         try {
-            Map<String, EventHandler> map = new HashMap<>();
-            cassandraEventHandlerDAO
-                    .getAllEventHandlers()
-                    .forEach(eventHandler -> map.put(eventHandler.getName(), eventHandler));
-            this.eventHandlerCache.putAll(map);
-            LOGGER.debug("Refreshed event handlers, total num: " + this.eventHandlerCache.size());
+            Cache eventHandlersCache = cacheManager.getCache(EVENT_HANDLER_CACHE);
+            eventHandlersCache.clear();
+            List<EventHandler> eventHandlers = cassandraEventHandlerDAO.getAllEventHandlers();
+            eventHandlers.forEach(
+                    eventHandler -> eventHandlersCache.put(eventHandler.getName(), eventHandler));
+            LOGGER.debug("Refreshed event handlers, total num: " + eventHandlers.size());
+            return eventHandlers;
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "refreshEventHandlersCache");
             LOGGER.error("refresh EventHandlers failed", e);
         }
-    }
-
-    private void evictEventHandler(EventHandler eventHandler) {
-        if (eventHandler != null && eventHandler.getName() != null) {
-            eventHandlerCache.remove(eventHandler.getName());
-        }
+        return Collections.emptyList();
     }
 }

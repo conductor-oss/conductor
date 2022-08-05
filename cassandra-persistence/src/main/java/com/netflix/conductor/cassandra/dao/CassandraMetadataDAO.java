@@ -119,12 +119,12 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     }
 
     @Override
-    public void createTaskDef(TaskDef taskDef) {
-        insertOrUpdateTaskDef(taskDef);
+    public TaskDef createTaskDef(TaskDef taskDef) {
+        return insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
-    public String updateTaskDef(TaskDef taskDef) {
+    public TaskDef updateTaskDef(TaskDef taskDef) {
         return insertOrUpdateTaskDef(taskDef);
     }
 
@@ -348,7 +348,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         }
     }
 
-    private String insertOrUpdateTaskDef(TaskDef taskDef) {
+    private TaskDef insertOrUpdateTaskDef(TaskDef taskDef) {
         try {
             String taskDefinition = toJson(taskDef);
             session.execute(insertTaskDefStatement.bind(taskDef.getName(), taskDefinition));
@@ -362,7 +362,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
-        return taskDef.getName();
+        return taskDef;
     }
 
     @VisibleForTesting
