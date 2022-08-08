@@ -584,7 +584,8 @@ class WorkflowGraph extends React.Component {
     }
 
     if (minX < 0) {
-      maxX = maxX - minX;
+      maxX = maxX - minX + BAR_MARGIN;
+      minX = -BAR_MARGIN;
     }
 
     translateX = minX;
