@@ -582,6 +582,11 @@ class WorkflowGraph extends React.Component {
       if (right > maxX) maxX = right;
       if (left < minX) minX = left;
     }
+
+    if (minX < 0) {
+      maxX = maxX - minX;
+    }
+
     translateX = minX;
     barNode.elem.setAttribute(
       "transform",

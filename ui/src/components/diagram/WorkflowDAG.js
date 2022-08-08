@@ -274,6 +274,16 @@ export default class WorkflowDAG {
     );
 
     if (hasDoWhileExecuted) {
+      // Create cosmetic LOOP edges between top and bottom bars
+      this.graph.setEdge(
+        doWhileTask.taskReferenceName,
+        doWhileTask.taskReferenceName + "-END",
+        {
+          type: "loop",
+          executed: hasDoWhileExecuted,
+        }
+      );
+
       const loopOverRefs = Array.from(this.taskResults.keys()).filter((key) => {
         for (let prefix of loopOverRefPrefixes) {
           if (key.startsWith(prefix)) return true;
@@ -297,6 +307,16 @@ export default class WorkflowDAG {
       }
       this.addVertex(endDoWhileTask, [...loopTasks]);
     } else {
+      // Create cosmetic LOOP edges between top and bottom bars
+      this.graph.setEdge(
+        doWhileTask.taskReferenceName,
+        doWhileTask.taskReferenceName + "-END",
+        {
+          type: "loop",
+          executed: hasDoWhileExecuted,
+        }
+      );
+
       // Definition view (or not executed)
       this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
 
@@ -319,10 +339,9 @@ export default class WorkflowDAG {
       this.addVertex(endDoWhileTask, [lastLoopTask]);
     }
 
-    // Create cosmetic LOOP edges between top and bottom bars
     this.graph.setEdge(
-      doWhileTask.taskReferenceName,
       doWhileTask.taskReferenceName + "-END",
+      doWhileTask.taskReferenceName,
       {
         type: "loop",
         executed: hasDoWhileExecuted,
