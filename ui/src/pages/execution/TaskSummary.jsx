@@ -104,15 +104,15 @@ export default function TaskSummary({ taskResult }) {
         </NavLink>
       ),
     });
-    if (_.has(taskResult, "outputData.subWorkflowId")) {
+    if (_.has(taskResult, "subWorkflowId")) {
       data.push({
         label: "Subworkflow ID",
         value: (
           <NavLink
             newTab
-            path={`/execution/${taskResult.outputData.subWorkflowId}`}
+            path={`/execution/${taskResult.subWorkflowId}`}
           >
-            {taskResult.outputData.subWorkflowId}
+            {taskResult.subWorkflowId}
           </NavLink>
         ),
       });
