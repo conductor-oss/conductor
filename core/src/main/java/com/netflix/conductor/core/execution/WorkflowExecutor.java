@@ -514,6 +514,7 @@ public class WorkflowExecutor {
                                                     "Unable to find latest definition for %s",
                                                     workflowId));
             workflow.setWorkflowDefinition(workflowDef);
+            workflowDef = metadataMapperService.populateTaskDefinitions(workflowDef);
         } else {
             workflowDef =
                     Optional.ofNullable(workflow.getWorkflowDefinition())
