@@ -514,6 +514,7 @@ public class WorkflowExecutor {
                                                     "Unable to find latest definition for %s",
                                                     workflowId));
             workflow.setWorkflowDefinition(workflowDef);
+            workflowDef = metadataMapperService.populateTaskDefinitions(workflowDef);
         } else {
             workflowDef =
                     Optional.ofNullable(workflow.getWorkflowDefinition())
@@ -838,11 +839,6 @@ public class WorkflowExecutor {
             throw new ConflictException(msg);
         }
 
-        // FIXME Backwards compatibility for legacy workflows already running.
-        // This code will be removed in a future version.
-        if (workflow.getWorkflowDefinition() == null) {
-            workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
-        }
         deciderService.updateWorkflowOutput(workflow, null);
 
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
@@ -904,12 +900,6 @@ public class WorkflowExecutor {
 
             if (!workflow.getStatus().isTerminal()) {
                 workflow.setStatus(WorkflowModel.Status.TERMINATED);
-            }
-
-            // FIXME Backwards compatibility for legacy workflows already running.
-            // This code will be removed in a future version.
-            if (workflow.getWorkflowDefinition() == null) {
-                workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
             }
 
             try {
@@ -1036,13 +1026,6 @@ public class WorkflowExecutor {
 
         String workflowId = taskResult.getWorkflowInstanceId();
         WorkflowModel workflowInstance = executionDAOFacade.getWorkflowModel(workflowId, false);
-
-        // FIXME Backwards compatibility for legacy workflows already running.
-        // This code will be removed in a future version.
-        if (workflowInstance.getWorkflowDefinition() == null) {
-            workflowInstance =
-                    metadataMapperService.populateWorkflowWithDefinitions(workflowInstance);
-        }
 
         TaskModel task =
                 Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
@@ -1287,10 +1270,6 @@ public class WorkflowExecutor {
 
         // If it is a new workflow, the tasks will be still empty even though include tasks is true
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
-
-        // FIXME Backwards compatibility for legacy workflows already running.
-        // This code will be removed in a future version.
-        workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         if (workflow.getStatus().isTerminal()) {
             if (!workflow.getStatus().isSuccessful()) {
@@ -1538,10 +1517,6 @@ public class WorkflowExecutor {
             String workflowId, String taskReferenceName, SkipTaskRequest skipTaskRequest) {
 
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
-
-        // FIXME Backwards compatibility for legacy workflows already running.
-        // This code will be removed in a future version.
-        workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         // If the workflow is not running then cannot skip any task
         if (!workflow.getStatus().equals(WorkflowModel.Status.RUNNING)) {

@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.common.utils.ExternalPayloadStorage
 import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.rest.controllers.TaskResource
@@ -398,7 +399,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     def "Verify get external storage location is not impacted by QueueDAO"() {
         when:
-        workflowResource.getExternalStorageLocation("", "", "")
+        workflowResource.getExternalStorageLocation("", ExternalPayloadStorage.Operation.READ as String, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT as String)
 
         then: "Verify it doesn't involve QueueDAO"
         0 * queueDAO._
@@ -553,7 +554,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     def "Verify task get external storage location is not impacted by QueueDAO"() {
         when:
-        taskResource.getExternalStorageLocation("", "", "")
+        taskResource.getExternalStorageLocation("", ExternalPayloadStorage.Operation.READ as String, ExternalPayloadStorage.PayloadType.TASK_INPUT as String)
 
         then: "Verify it doesn't involve QueueDAO"
         0 * queueDAO._

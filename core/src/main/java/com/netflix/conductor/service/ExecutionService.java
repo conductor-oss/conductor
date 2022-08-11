@@ -12,33 +12,18 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.metadata.tasks.*;
+import com.netflix.conductor.common.run.*;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
@@ -612,13 +597,25 @@ public class ExecutionService {
     /**
      * Get external uri for the payload
      *
-     * @param operation the type of {@link Operation} to be performed
-     * @param payloadType the {@link PayloadType} at the external uri
      * @param path the path for which the external storage location is to be populated
+     * @param operation the type of {@link Operation} to be performed
+     * @param type the {@link PayloadType} at the external uri
      * @return the external uri at which the payload is stored/to be stored
      */
     public ExternalStorageLocation getExternalStorageLocation(
-            Operation operation, PayloadType payloadType, String path) {
-        return externalPayloadStorage.getLocation(operation, payloadType, path);
+            String path, String operation, String type) {
+        try {
+            ExternalPayloadStorage.Operation payloadOperation =
+                    ExternalPayloadStorage.Operation.valueOf(StringUtils.upperCase(operation));
+            ExternalPayloadStorage.PayloadType payloadType =
+                    ExternalPayloadStorage.PayloadType.valueOf(StringUtils.upperCase(type));
+            return externalPayloadStorage.getLocation(payloadOperation, payloadType, path);
+        } catch (Exception e) {
+            String errorMsg =
+                    String.format(
+                            "Invalid input - Operation: %s, PayloadType: %s", operation, type);
+            LOGGER.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
     }
 }
