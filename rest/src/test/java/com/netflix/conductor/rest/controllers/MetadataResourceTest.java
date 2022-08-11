@@ -51,6 +51,13 @@ public class MetadataResourceTest {
     }
 
     @Test
+    public void testValidateWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        metadataResource.validate(workflowDef);
+        verify(mockMetadataService, times(1)).validateWorkflowDef(any(WorkflowDef.class));
+    }
+
+    @Test
     public void testUpdateWorkflow() {
         WorkflowDef workflowDef = new WorkflowDef();
         List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();

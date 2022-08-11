@@ -13,6 +13,7 @@
 package com.netflix.conductor.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.validation.Valid;
@@ -25,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 
 @Validated
 public interface MetadataService {
@@ -88,10 +90,28 @@ public interface MetadataService {
     Optional<WorkflowDef> getLatestWorkflow(
             @NotEmpty(message = "Workflow name cannot be null or empty") String name);
 
+    /**
+     * @return Returns all workflow defs (all versions)
+     */
     List<WorkflowDef> getWorkflowDefs();
+
+    /**
+     * @return Returns workflow names and versions only (no definition bodies)
+     */
+    Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions();
 
     void registerWorkflowDef(
             @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef);
+
+    /**
+     * Validates a {@link WorkflowDef}.
+     *
+     * @param workflowDef The {@link WorkflowDef} object.
+     */
+    default void validateWorkflowDef(
+            @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef) {
+        // do nothing, WorkflowDef is annotated with @Valid and calling this method will validate it
+    }
 
     /**
      * @param name Name of the workflow definition to be removed

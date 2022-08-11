@@ -168,6 +168,10 @@ public class Monitors {
         gauge(classQualifier, name, count);
     }
 
+    public static void recordCounter(String name, long count, String... additionalTags) {
+        getCounter(classQualifier, name, additionalTags).increment(count);
+    }
+
     public static void recordQueueWaitTime(String taskType, long queueWaitTime) {
         getTimer(classQualifier, "task_queue_wait", "taskType", taskType)
                 .record(queueWaitTime, TimeUnit.MILLISECONDS);
@@ -568,5 +572,9 @@ public class Monitors {
 
     public static void recordQueueMessageRepushFromRepairService(String queueName) {
         counter(classQualifier, "queue_message_repushed", "queueName", queueName);
+    }
+
+    public static void recordTaskExecLogSize(int val) {
+        gauge(classQualifier, "task_exec_log_size", val);
     }
 }

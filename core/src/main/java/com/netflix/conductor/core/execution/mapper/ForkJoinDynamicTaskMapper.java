@@ -197,7 +197,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
             for (TaskModel forkedTask : forkedTasks) {
                 Map<String, Object> forkedTaskInput =
                         tasksInput.get(forkedTask.getReferenceTaskName());
-                forkedTask.getInputData().putAll(forkedTaskInput);
+                forkedTask.addInput(forkedTaskInput);
             }
             mappedTasks.addAll(forkedTasks);
             // Get the last of the dynamic tasks so that the join can be performed once this task is

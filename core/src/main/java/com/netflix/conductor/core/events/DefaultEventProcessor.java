@@ -111,7 +111,7 @@ public class DefaultEventProcessor {
 
     public void handle(ObservableQueue queue, Message msg) {
         List<EventExecution> transientFailures = null;
-        Boolean executionFailed = false;
+        boolean executionFailed = false;
         try {
             if (isEventMessageIndexingEnabled) {
                 executionService.addMessage(queue.getName(), msg);
@@ -155,7 +155,7 @@ public class DefaultEventProcessor {
             String evaluatorType = eventHandler.getEvaluatorType();
             // Set default to true so that if condition is not specified, it falls through
             // to process the event.
-            Boolean success = true;
+            boolean success = true;
             if (StringUtils.isNotEmpty(condition) && evaluators.get(evaluatorType) != null) {
                 Object result =
                         evaluators
@@ -267,6 +267,7 @@ public class DefaultEventProcessor {
                     eventExecution.getMessageId(),
                     payload);
 
+            // TODO: Switch to @Retryable annotation on SimpleActionProcessor.execute()
             Map<String, Object> output =
                     retryTemplate.execute(
                             context ->

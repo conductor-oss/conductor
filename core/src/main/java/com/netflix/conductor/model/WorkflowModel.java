@@ -23,6 +23,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.Utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class WorkflowModel {
@@ -74,6 +75,7 @@ public class WorkflowModel {
 
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<String> failedReferenceTaskNames = new HashSet<>();
 
     private WorkflowDef workflowDefinition;

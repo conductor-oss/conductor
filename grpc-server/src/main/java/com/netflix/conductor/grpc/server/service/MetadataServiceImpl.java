@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
 import com.netflix.conductor.grpc.ProtoMapper;
@@ -56,6 +56,16 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
+    public void validateWorkflow(
+            MetadataServicePb.ValidateWorkflowRequest req,
+            StreamObserver<MetadataServicePb.ValidateWorkflowResponse> response) {
+        WorkflowDef workflow = PROTO_MAPPER.fromProto(req.getWorkflow());
+        service.validateWorkflowDef(workflow);
+        response.onNext(MetadataServicePb.ValidateWorkflowResponse.getDefaultInstance());
+        response.onCompleted();
+    }
+
+    @Override
     public void updateWorkflows(
             MetadataServicePb.UpdateWorkflowsRequest req,
             StreamObserver<MetadataServicePb.UpdateWorkflowsResponse> response) {
@@ -82,7 +92,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
                             .setWorkflow(workflow)
                             .build());
             response.onCompleted();
-        } catch (ApplicationException e) {
+        } catch (NotFoundException e) {
             // TODO replace this with gRPC exception interceptor.
             response.onError(
                     Status.NOT_FOUND

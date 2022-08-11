@@ -41,7 +41,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
@@ -60,7 +61,6 @@ import com.netflix.conductor.service.ExecutionLockService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
 
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
@@ -664,7 +664,7 @@ public class TestWorkflowExecutor {
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = NotFoundException.class)
     public void testRetryNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("testRetryNonTerminalWorkflow");
@@ -674,7 +674,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = ConflictException.class)
     public void testRetryWorkflowNoTasks() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("ApplicationException");
@@ -685,7 +685,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = ConflictException.class)
     public void testRetryWorkflowNoFailedTasks() {
         // setup
         WorkflowModel workflow = new WorkflowModel();
@@ -1243,7 +1243,7 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateTasksCalledCounter.get());
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = ConflictException.class)
     public void testRerunNonTerminalWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("testRetryNonTerminalWorkflow");
@@ -1805,7 +1805,7 @@ public class TestWorkflowExecutor {
         assertEquals(3, workflow.getTasks().size());
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = ConflictException.class)
     public void testTerminateCompletedWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("testTerminateTerminalWorkflow");
@@ -2008,9 +2008,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         try {
             workflowExecutor.pauseWorkflow(workflowId);
-            fail("Expected " + ApplicationException.class);
-        } catch (ApplicationException e) {
-            assertEquals(e.getCode(), CONFLICT);
+            fail("Expected " + ConflictException.class);
+        } catch (ConflictException e) {
             verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
             verify(queueDAO, never()).remove(anyString(), anyString());
         }
@@ -2383,8 +2382,8 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
-        workflow.getTasks().addAll(Arrays.asList(simpleTask));
-        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        workflow.getTasks().add(simpleTask);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
 
         TaskResult taskResult = new TaskResult();
@@ -2425,8 +2424,8 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
-        workflow.getTasks().addAll(Arrays.asList(simpleTask));
-        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        workflow.getTasks().add(simpleTask);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
 
         TaskResult taskResult = new TaskResult();
@@ -2445,6 +2444,75 @@ public class TestWorkflowExecutor {
         assertEquals(
                 taskResult.getWorkflowInstanceId(),
                 argumentCaptor.getAllValues().get(0).getWorkflowInstanceId());
+    }
+
+    @Test
+    public void testIsLazyEvaluateWorkflow() {
+        // setup
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("lazyEvaluate");
+        workflowDef.setVersion(1);
+
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setType(SIMPLE.name());
+        simpleTask.setName("simple");
+        simpleTask.setTaskReferenceName("simple");
+
+        WorkflowTask forkTask = new WorkflowTask();
+        forkTask.setType(FORK_JOIN.name());
+        forkTask.setName("fork");
+        forkTask.setTaskReferenceName("fork");
+
+        WorkflowTask branchTask1 = new WorkflowTask();
+        branchTask1.setType(SIMPLE.name());
+        branchTask1.setName("branchTask1");
+        branchTask1.setTaskReferenceName("branchTask1");
+
+        WorkflowTask branchTask2 = new WorkflowTask();
+        branchTask2.setType(SIMPLE.name());
+        branchTask2.setName("branchTask2");
+        branchTask2.setTaskReferenceName("branchTask2");
+
+        forkTask.getForkTasks().add(Arrays.asList(branchTask1, branchTask2));
+
+        WorkflowTask joinTask = new WorkflowTask();
+        joinTask.setType(JOIN.name());
+        joinTask.setName("join");
+        joinTask.setTaskReferenceName("join");
+        joinTask.setJoinOn(List.of("branchTask2"));
+
+        WorkflowTask doWhile = new WorkflowTask();
+        doWhile.setType(DO_WHILE.name());
+        doWhile.setName("doWhile");
+        doWhile.setTaskReferenceName("doWhile");
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setType(SIMPLE.name());
+        loopTask.setName("loopTask");
+        loopTask.setTaskReferenceName("loopTask");
+
+        doWhile.setLoopOver(List.of(loopTask));
+
+        workflowDef.getTasks().addAll(List.of(simpleTask, forkTask, joinTask, doWhile));
+
+        TaskModel task = new TaskModel();
+
+        // when:
+        task.setReferenceTaskName("dynamic");
+        assertTrue(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("branchTask1");
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("branchTask2");
+        assertTrue(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("simple");
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("loopTask__1");
+        task.setIteration(1);
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
     }
 
     private WorkflowModel generateSampleWorkflow() {

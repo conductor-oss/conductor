@@ -210,6 +210,9 @@ public class ConductorProperties {
     @DataSizeUnit(DataUnit.KILOBYTES)
     private DataSize maxWorkflowVariablesPayloadSizeThreshold = DataSize.ofKilobytes(256L);
 
+    /** Used to limit the size of task execution logs. */
+    private int taskExecLogSizeLimit = 10;
+
     public String getStack() {
         return stack;
     }
@@ -508,6 +511,14 @@ public class ConductorProperties {
     public void setMaxWorkflowVariablesPayloadSizeThreshold(
             DataSize maxWorkflowVariablesPayloadSizeThreshold) {
         this.maxWorkflowVariablesPayloadSizeThreshold = maxWorkflowVariablesPayloadSizeThreshold;
+    }
+
+    public int getTaskExecLogSizeLimit() {
+        return taskExecLogSizeLimit;
+    }
+
+    public void setTaskExecLogSizeLimit(int taskExecLogSizeLimit) {
+        this.taskExecLogSizeLimit = taskExecLogSizeLimit;
     }
 
     /**

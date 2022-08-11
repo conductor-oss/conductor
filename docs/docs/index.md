@@ -33,7 +33,7 @@
         <img src="/img/icons/modular.svg" class="icon"/> Modular
       </div>
       <div class="caption">
-        A fully abstracted backend enables you choose your own database persistance layer and queueing service.
+        A fully abstracted backend enables you choose your own database persistence layer and queueing service.
       </div>
     </div>
     <div class="col-4">

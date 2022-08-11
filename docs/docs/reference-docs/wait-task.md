@@ -4,6 +4,8 @@ sidebar_position: 1
 
 # Wait
 ```json
+"name": "waiting_task",
+"taskReferenceName":"waiting_task_ref",
 "type" : "WAIT"
 ```
 ## Introduction
@@ -38,6 +40,8 @@ format: short: **D**d**H**h**M**m or full:  **D**days**H**hours**M**minutes
 **yyyy-MM-dd HH:mm**, **yyyy-MM-dd HH:mm**, **yyyy-MM-dd**
 ```json
 {
+  "name":"wait_until_date",
+  "taskReferenceName":"wait_until_date_ref",
   "taskType": "WAIT",
   "inputParameters": {
     "until": "2022-12-25 09:00 PST"
@@ -53,3 +57,18 @@ You'll need the  ```workflowId```, ```taskRefName``` or ```taskId``` and the tas
 1. POST ```/api/tasks```
 2. POST ```api/queue/update/{workflowId}/{taskRefName}/{status}``` 
 3. POST ```api/queue/update/{workflowId}/task/{taskId}/{status}``` 
+
+Any parameter that is sent in the body of the POST message will be repeated as the output of the task.  For example, if we send a COMPLETED message as follows:
+
+```bash
+curl -X "POST" "https://play.orkes.io/api/queue/update/{workflowId}/waiting_around_ref/COMPLETED" -H 'Content-Type: application/json' -d '{"data_key":"somedatatoWait1","data_key2":"somedatatoWAit2"}'
+```
+
+The output of the task will be:
+
+```json
+{
+  "data_key":"somedatatoWait1",
+  "data_key2":"somedatatoWAit2"
+}
+```

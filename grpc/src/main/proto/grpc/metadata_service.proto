@@ -12,6 +12,9 @@ service MetadataService {
     // POST /workflow
     rpc CreateWorkflow(CreateWorkflowRequest) returns (CreateWorkflowResponse);
 
+    // POST /workflow/validate
+    rpc ValidateWorkflow(ValidateWorkflowRequest) returns (ValidateWorkflowResponse);
+
     // PUT /workflow
     rpc UpdateWorkflows(UpdateWorkflowsRequest) returns (UpdateWorkflowsResponse);
 
@@ -36,6 +39,12 @@ message CreateWorkflowRequest {
 }
 
 message CreateWorkflowResponse {}
+
+message ValidateWorkflowRequest {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message ValidateWorkflowResponse {}
 
 message UpdateWorkflowsRequest {
     repeated conductor.proto.WorkflowDef defs = 1;

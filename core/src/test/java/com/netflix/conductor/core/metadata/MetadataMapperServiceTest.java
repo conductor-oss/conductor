@@ -33,7 +33,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.dao.MetadataDAO;
 
@@ -160,12 +160,8 @@ public class MetadataMapperServiceTest {
 
         try {
             metadataMapperService.populateTaskDefinitions(workflowDefinition);
-        } catch (ApplicationException ae) {
-            if (ae.getCode() == ApplicationException.Code.INVALID_INPUT) {
-                fail("Missing task definitions are not set to a default TaskDef");
-            } else {
-                throw ae;
-            }
+        } catch (NotFoundException nfe) {
+            fail("Missing TaskDefinitions are not defaulted");
         }
     }
 

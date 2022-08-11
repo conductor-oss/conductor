@@ -13,6 +13,7 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +50,12 @@ public class MetadataResource {
         metadataService.registerWorkflowDef(workflowDef);
     }
 
+    @PostMapping("/workflow/validate")
+    @Operation(summary = "Validates a new workflow definition")
+    public void validate(@RequestBody WorkflowDef workflowDef) {
+        metadataService.validateWorkflowDef(workflowDef);
+    }
+
     @PutMapping("/workflow")
     @Operation(summary = "Create or update workflow definition")
     public void update(@RequestBody List<WorkflowDef> workflowDefs) {
@@ -66,6 +74,12 @@ public class MetadataResource {
     @GetMapping("/workflow")
     public List<WorkflowDef> getAll() {
         return metadataService.getWorkflowDefs();
+    }
+
+    @Operation(summary = "Returns workflow names and versions only (no definition bodies)")
+    @GetMapping("/workflow/names-and-versions")
+    public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
+        return metadataService.getWorkflowNamesAndVersions();
     }
 
     @DeleteMapping("/workflow/{name}/{version}")

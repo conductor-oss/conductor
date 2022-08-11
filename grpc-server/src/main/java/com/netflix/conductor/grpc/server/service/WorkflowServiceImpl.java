@@ -26,8 +26,7 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
@@ -79,16 +78,14 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(
                     WorkflowServicePb.StartWorkflowResponse.newBuilder().setWorkflowId(id).build());
             response.onCompleted();
-        } catch (ApplicationException ae) {
-            if (ae.getCode() == Code.NOT_FOUND) {
-                response.onError(
-                        Status.NOT_FOUND
-                                .withDescription(
-                                        "No such workflow found by name=" + request.getName())
-                                .asRuntimeException());
-            } else {
-                GRPC_HELPER.onError(response, ae);
-            }
+        } catch (NotFoundException nfe) {
+            response.onError(
+                    Status.NOT_FOUND
+                            .withDescription("No such workflow found by name=" + request.getName())
+                            .asRuntimeException());
+        } catch (Exception e) {
+
+            GRPC_HELPER.onError(response, e);
         }
     }
 

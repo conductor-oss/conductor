@@ -12,8 +12,11 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 
 import org.springframework.stereotype.Service;
 
@@ -21,10 +24,10 @@ import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
@@ -61,14 +64,18 @@ public class MetadataServiceImpl implements MetadataService {
         }
     }
 
+    @Override
+    public void validateWorkflowDef(WorkflowDef workflowDef) {
+        // do nothing, WorkflowDef is annotated with @Valid and calling this method will validate it
+    }
+
     /**
      * @param taskDefinition Task Definition to be updated
      */
     public void updateTaskDef(TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
+            throw new NotFoundException("No such task by name %s", taskDefinition.getName());
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
@@ -96,8 +103,7 @@ public class MetadataServiceImpl implements MetadataService {
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null) {
-            throw new ApplicationException(
-                    Code.NOT_FOUND, String.format("No such taskType found by name: %s", taskType));
+            throw new NotFoundException("No such taskType found by name: %s", taskType);
         }
         return taskDef;
     }
@@ -135,11 +141,8 @@ public class MetadataServiceImpl implements MetadataService {
 
         return workflowDef.orElseThrow(
                 () ->
-                        new ApplicationException(
-                                Code.NOT_FOUND,
-                                String.format(
-                                        "No such workflow found by name: %s, version: %d",
-                                        name, version)));
+                        new NotFoundException(
+                                "No such workflow found by name: %s, version: %d", name, version));
     }
 
     /**
@@ -155,14 +158,6 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        if (workflowDef.getName().contains(":")) {
-            throw new ApplicationException(
-                    Code.INVALID_INPUT,
-                    "Workflow name cannot contain the following set of characters: ':'");
-        }
-        if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
-            workflowDef.setSchemaVersion(2);
-        }
         workflowDef.setCreateTime(System.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
     }
@@ -211,5 +206,31 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return eventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
+    }
+
+    public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
+        List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
+
+        Map<String, TreeSet<WorkflowDefSummary>> retval = new HashMap<>();
+        for (WorkflowDef def : workflowDefs) {
+            String workflowName = def.getName();
+            WorkflowDefSummary summary = fromWorkflowDef(def);
+
+            retval.putIfAbsent(workflowName, new TreeSet<WorkflowDefSummary>());
+
+            TreeSet<WorkflowDefSummary> versions = retval.get(workflowName);
+            versions.add(summary);
+        }
+
+        return retval;
+    }
+
+    private WorkflowDefSummary fromWorkflowDef(WorkflowDef def) {
+        WorkflowDefSummary summary = new WorkflowDefSummary();
+        summary.setName(def.getName());
+        summary.setVersion(def.getVersion());
+        summary.setCreateTime(def.getCreateTime());
+
+        return summary;
     }
 }

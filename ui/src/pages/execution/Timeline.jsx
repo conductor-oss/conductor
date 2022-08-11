@@ -13,20 +13,15 @@ export default function TimelineComponent({
   selectedTask,
 }) {
   const timelineRef = React.useRef();
-
-  let selectedId = null;
-  if (selectedTask) {
-    if (selectedTask.taskId) {
-      selectedId = selectedTask.taskId;
-    } else {
-      const node = dag.graph.node(selectedTask.ref);
-      if (_.isEmpty(node.taskResults)) {
-        selectedId = null;
-      } else {
-        selectedId = _.last(node.taskResults).taskId;
-      }
+  /*
+  const selectedId = useMemo(() => {
+    if(selectedTask){
+      const taskResult = dag.resolveTaskResult(selectedTask);
+      return _.get(taskResult, "taskId")
     }
-  }
+  }, [dag, selectedTask]);
+  */
+  const selectedId = null;
 
   const { items, groups } = useMemo(() => {
     const groupMap = new Map();

@@ -74,6 +74,7 @@ nav:
     - System Tasks:
       - Event Task: reference-docs/event-task.md
       - HTTP Task: reference-docs/http-task.md
+      - Human Task: reference-docs/human-task.md
       - Inline Task: reference-docs/inline-task.md
       - JSON JQ Transform Task: reference-docs/json-jq-transform-task.md
       - Kafka Publish Task: reference-docs/kafka-publish-task.md

@@ -52,6 +52,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
         workflowExecutor = Mock(WorkflowExecutor.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class)
+        then:
+        workflowSystemTask.isTaskRetrievalRequired() >> true
 
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
@@ -87,7 +89,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         then:
         1 * executionDAOFacade.getTaskModel(task1Id) >> task1
-        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
         1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
 

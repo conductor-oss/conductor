@@ -13,18 +13,18 @@
 
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.18'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.19'
     }
 }
 
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.8.18"
+    id "com.google.protobuf" version "0.8.19"
 }
 
 repositories{
-    maven { url "https://dl.bintray.com/chaos-systems/mvn" }
+    maven { url "https://mvnrepository.com/artifact" }
 }
 
 dependencies {
@@ -58,6 +58,15 @@ idea {
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/java");
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
     }
+}
+
+sourceSets {
+  main {
+    java {
+        srcDir 'build/generated/source/proto/main/java'
+        srcDir 'build/generated/source/proto/main/grpc'
+    }
+  }
 }
 
 compileJava.dependsOn(tasks.getByPath(':conductor-common:protogen'))

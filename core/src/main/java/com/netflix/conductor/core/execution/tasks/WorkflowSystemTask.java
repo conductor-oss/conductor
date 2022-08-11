@@ -95,6 +95,17 @@ public abstract class WorkflowSystemTask {
         return taskType;
     }
 
+    /**
+     * Default to true for retrieving tasks when retrieving workflow data. Some cases (e.g.
+     * subworkflows) might not need the tasks at all, and by setting this to false in that case, you
+     * can get a solid performance gain.
+     *
+     * @return true for retrieving tasks when getting workflow
+     */
+    public boolean isTaskRetrievalRequired() {
+        return true;
+    }
+
     @Override
     public String toString() {
         return taskType;

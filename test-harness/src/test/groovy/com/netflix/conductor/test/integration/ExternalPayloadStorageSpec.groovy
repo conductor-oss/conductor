@@ -342,6 +342,9 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         when: "the second task of the left fork is polled and completed with external payload storage"
         polledAndAckLargePayloadTask = workflowTestUtil.pollAndCompleteLargePayloadTask('integration_task_3', 'task3.integration.worker', taskOutputPath)
 
+        and: "the workflow is evaluated"
+        sweep(workflowInstanceId)
+
         then: "verify that the 'integration_task_3' was polled and acknowledged"
         verifyPolledAndAcknowledgedLargePayloadTask(polledAndAckLargePayloadTask)
 

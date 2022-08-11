@@ -40,9 +40,9 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.exception.ApplicationException;
-import com.netflix.conductor.core.exception.ApplicationException.Code;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
@@ -146,11 +146,8 @@ public class ExecutionDAOFacade {
      * @param workflowId the id of the workflow to be fetched
      * @param includeTasks if true, fetches the {@link Task} data in the workflow.
      * @return the {@link Workflow} object
-     * @throws ApplicationException if
-     *     <ul>
-     *       <li>no such {@link Workflow} is found
-     *       <li>parsing the {@link Workflow} object fails
-     *     </ul>
+     * @throws NotFoundException no such {@link Workflow} is found.
+     * @throws TransientException parsing the {@link Workflow} object fails.
      */
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
         return getWorkflowModelFromDataStore(workflowId, includeTasks).toWorkflow();
@@ -164,7 +161,7 @@ public class ExecutionDAOFacade {
             if (json == null) {
                 String errorMsg = String.format("No such workflow found by id: %s", workflowId);
                 LOGGER.error(errorMsg);
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND, errorMsg);
+                throw new NotFoundException(errorMsg);
             }
 
             try {
@@ -175,8 +172,7 @@ public class ExecutionDAOFacade {
             } catch (IOException e) {
                 String errorMsg = String.format("Error reading workflow: %s", workflowId);
                 LOGGER.error(errorMsg);
-                throw new ApplicationException(
-                        ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+                throw new TransientException(errorMsg, e);
             }
         }
         return workflow;
@@ -204,7 +200,7 @@ public class ExecutionDAOFacade {
                             workflowId -> {
                                 try {
                                     return getWorkflow(workflowId, includeTasks);
-                                } catch (ApplicationException e) {
+                                } catch (NotFoundException e) {
                                     // This might happen when the workflow archival failed and the
                                     // workflow was removed from primary datastore
                                     LOGGER.error(
@@ -340,25 +336,16 @@ public class ExecutionDAOFacade {
      *     removal from {@link ExecutionDAO}
      */
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
-        try {
-            WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
+        WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
 
+        try {
             removeWorkflowIndex(workflow, archiveWorkflow);
-            // remove workflow from DAO
-            try {
-                executionDAO.removeWorkflow(workflowId);
-            } catch (Exception ex) {
-                Monitors.recordDaoError("executionDao", "removeWorkflow");
-                throw ex;
-            }
-        } catch (ApplicationException ae) {
-            throw ae;
-        } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error removing workflow: " + workflowId,
-                    e);
+        } catch (JsonProcessingException e) {
+            throw new TransientException("Workflow can not be serialized to json", e);
         }
+
+        executionDAO.removeWorkflow(workflowId);
+
         try {
             queueDAO.remove(DECIDER_QUEUE, workflowId);
         } catch (Exception e) {
@@ -377,8 +364,7 @@ public class ExecutionDAOFacade {
                         new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
                         new Object[] {objectMapper.writeValueAsString(workflow), true});
             } else {
-                throw new ApplicationException(
-                        Code.INVALID_INPUT,
+                throw new IllegalArgumentException(
                         String.format(
                                 "Cannot archive workflow: %s with status: %s",
                                 workflow.getWorkflowId(), workflow.getStatus()));
@@ -396,19 +382,10 @@ public class ExecutionDAOFacade {
 
             removeWorkflowIndex(workflow, archiveWorkflow);
             // remove workflow from DAO with TTL
-            try {
-                executionDAO.removeWorkflowWithExpiry(workflowId, ttlSeconds);
-            } catch (Exception ex) {
-                Monitors.recordDaoError("executionDao", "removeWorkflow");
-                throw ex;
-            }
-        } catch (ApplicationException ae) {
-            throw ae;
+            executionDAO.removeWorkflowWithExpiry(workflowId, ttlSeconds);
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error removing workflow: " + workflowId,
-                    e);
+            Monitors.recordDaoError("executionDao", "removeWorkflow");
+            throw new TransientException("Error removing workflow: " + workflowId, e);
         }
     }
 
@@ -419,21 +396,16 @@ public class ExecutionDAOFacade {
      * @param workflowId the workflow id to be reset
      */
     public void resetWorkflow(String workflowId) {
+        getWorkflowModelFromDataStore(workflowId, true);
+        executionDAO.removeWorkflow(workflowId);
         try {
-            getWorkflowModelFromDataStore(workflowId, true);
-            executionDAO.removeWorkflow(workflowId);
             if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncRemoveWorkflow(workflowId);
             } else {
                 indexDAO.removeWorkflow(workflowId);
             }
-        } catch (ApplicationException ae) {
-            throw ae;
         } catch (Exception e) {
-            throw new ApplicationException(
-                    ApplicationException.Code.BACKEND_ERROR,
-                    "Error resetting workflow state: " + workflowId,
-                    e);
+            throw new TransientException("Error resetting workflow state: " + workflowId, e);
         }
     }
 
@@ -490,21 +462,23 @@ public class ExecutionDAOFacade {
      * stores it in the {@link IndexDAO}.
      *
      * @param taskModel the task to be updated in the data store
-     * @throws ApplicationException if the dao operations fail
+     * @throws TransientException if the {@link IndexDAO} or {@link ExecutionDAO} operations fail.
+     * @throws com.netflix.conductor.core.exception.NonTransientException if the externalization of
+     *     payload fails.
      */
     public void updateTask(TaskModel taskModel) {
-        try {
-            if (taskModel.getStatus() != null) {
-                if (!taskModel.getStatus().isTerminal()
-                        || (taskModel.getStatus().isTerminal() && taskModel.getUpdateTime() == 0)) {
-                    taskModel.setUpdateTime(System.currentTimeMillis());
-                }
-                if (taskModel.getStatus().isTerminal() && taskModel.getEndTime() == 0) {
-                    taskModel.setEndTime(System.currentTimeMillis());
-                }
+        if (taskModel.getStatus() != null) {
+            if (!taskModel.getStatus().isTerminal()
+                    || (taskModel.getStatus().isTerminal() && taskModel.getUpdateTime() == 0)) {
+                taskModel.setUpdateTime(System.currentTimeMillis());
             }
-            externalizeTaskData(taskModel);
-            executionDAO.updateTask(taskModel);
+            if (taskModel.getStatus().isTerminal() && taskModel.getEndTime() == 0) {
+                taskModel.setEndTime(System.currentTimeMillis());
+            }
+        }
+        externalizeTaskData(taskModel);
+        executionDAO.updateTask(taskModel);
+        try {
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
              * is enabled and tasks are stored in memory until a block has completed, we would lose a lot
@@ -523,7 +497,7 @@ public class ExecutionDAOFacade {
                             "Error updating task: %s in workflow: %s",
                             taskModel.getTaskId(), taskModel.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+            throw new TransientException(errorMsg, e);
         }
     }
 
@@ -612,7 +586,17 @@ public class ExecutionDAOFacade {
     }
 
     public void addTaskExecLog(List<TaskExecLog> logs) {
-        if (properties.isTaskExecLogIndexingEnabled()) {
+        if (properties.isTaskExecLogIndexingEnabled() && !logs.isEmpty()) {
+            Monitors.recordTaskExecLogSize(logs.size());
+            int taskExecLogSizeLimit = properties.getTaskExecLogSizeLimit();
+            if (logs.size() > taskExecLogSizeLimit) {
+                LOGGER.warn(
+                        "Task Execution log size: {} for taskId: {} exceeds the limit: {}",
+                        logs.size(),
+                        logs.get(0).getTaskId(),
+                        taskExecLogSizeLimit);
+                logs = logs.stream().limit(taskExecLogSizeLimit).collect(Collectors.toList());
+            }
             if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncAddTaskExecutionLogs(logs);
             } else {

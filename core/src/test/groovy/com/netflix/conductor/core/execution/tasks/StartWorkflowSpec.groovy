@@ -12,12 +12,12 @@
  */
 package com.netflix.conductor.core.execution.tasks
 
-
 import javax.validation.ConstraintViolation
 import javax.validation.Validator
 
 import com.netflix.conductor.common.config.ObjectMapperProvider
-import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.core.exception.NotFoundException
+import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
@@ -91,17 +91,17 @@ class StartWorkflowSpec extends Specification {
 
         then:
         taskModel.status == SCHEDULED
-        1 * workflowExecutor.startWorkflow(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "") }
+        1 * workflowExecutor.startWorkflow(*_) >> { throw new TransientException("") }
     }
 
-    def "WorkflowExecutor throws a non-retryable ApplicationException"() {
+    def "WorkflowExecutor throws a NotFoundException"() {
         when:
         startWorkflow.start(workflowModel, taskModel, workflowExecutor)
 
         then:
         taskModel.status == FAILED
         taskModel.reasonForIncompletion != null
-        1 * workflowExecutor.startWorkflow(*_) >> { throw new ApplicationException(ApplicationException.Code.NOT_FOUND, "") }
+        1 * workflowExecutor.startWorkflow(*_) >> { throw new NotFoundException("") }
     }
 
     def "WorkflowExecutor throws a RuntimeException"() {

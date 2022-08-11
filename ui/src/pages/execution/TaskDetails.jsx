@@ -41,6 +41,7 @@ export default function TaskDetails({
         )}
         {tabIndex === 1 && (
           <TaskList
+            workflowId={execution.workflowId}
             selectedTask={selectedTask}
             tasks={execution.tasks}
             dag={dag}

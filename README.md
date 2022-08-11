@@ -53,8 +53,8 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 | conductor-http-task             | Workflow system task implementation to send make requests                                       |
 | conductor-json-jq-task          | Workflow system task implementation to evaluate JSON using [jq](https://stedolan.github.io/jq/) |
 | conductor-grpc                  | Protobuf models used by the server and client                                                   |
-| conductor-grpc-client           | gRPC server Application                                                                         |
-| conductor-grpc-server           | gRPC client to interact with the gRPC server                                                    |
+| conductor-grpc-client           | gRPC client to interact with the gRPC server                                                    |
+| conductor-grpc-server           | gRPC server Application                                                                         |
 | conductor-test-harness          | Integration and regression tests                                                                |
 
 ## Database Requirements

@@ -30,7 +30,7 @@ You can use [Azurite](https://github.com/Azure/Azurite) to simulate an Azure Sto
 
 ### Troubleshoots
 
-* When using **es5 persistance** you will receive an `java.lang.IllegalStateException` because the Netty lib will call `setAvailableProcessors` two times. To resolve this issue you need to set the following system property
+* When using **es5 persistence** you will receive an `java.lang.IllegalStateException` because the Netty lib will call `setAvailableProcessors` two times. To resolve this issue you need to set the following system property
 
 ```
 es.set.netty.runtime.available.processors=false

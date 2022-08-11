@@ -14,7 +14,6 @@ package com.netflix.conductor.core.config;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,14 +28,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
@@ -47,7 +44,6 @@ import com.netflix.conductor.core.sync.noop.NoopLock;
 
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 import static com.netflix.conductor.core.execution.tasks.SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER;
-import static com.netflix.conductor.core.utils.Utils.isTransientException;
 
 import static java.util.function.Function.identity;
 
@@ -120,24 +116,10 @@ public class ConductorCoreConfiguration {
 
     @Bean
     public RetryTemplate onTransientErrorRetryTemplate() {
-        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
-        return retryTemplate;
-    }
-
-    public static class CustomRetryPolicy extends SimpleRetryPolicy {
-
-        @Override
-        public boolean canRetry(final RetryContext context) {
-            final Optional<Throwable> lastThrowable =
-                    Optional.ofNullable(context.getLastThrowable());
-            return lastThrowable
-                    .map(throwable -> super.canRetry(context) && isTransientException(throwable))
-                    .orElseGet(() -> super.canRetry(context));
-        }
+        return RetryTemplate.builder()
+                .retryOn(TransientException.class)
+                .maxAttempts(3)
+                .noBackoff()
+                .build();
     }
 }

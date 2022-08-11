@@ -1045,6 +1045,9 @@ class DoWhileSpec extends AbstractSpecification {
         when: "Polling and completing third task"
         Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
 
+        and: "the workflow is evaluated"
+        sweep(workflowInstanceId)
+
         then: "Verify that the task was polled and acknowledged and workflow is in completed state"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
