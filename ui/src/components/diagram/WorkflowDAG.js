@@ -253,6 +253,7 @@ export default class WorkflowDAG {
 
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
+    console.log(this.taskResults);
 
     const hasDoWhileExecuted = !!this.getExecutionStatus(
       doWhileTask.taskReferenceName
@@ -282,10 +283,11 @@ export default class WorkflowDAG {
         }
       );
 
-      const loopOverRefs = Array.from(this.taskResults.keys()).filter((key) => {
+      const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter((key) => {
         for (let prefix of loopOverRefPrefixes) {
           if (key.startsWith(prefix)) return true;
         }
+        return false
       });
 
       const loopTaskResults = [];
@@ -306,15 +308,6 @@ export default class WorkflowDAG {
 
       this.addVertex(endDoWhileTask, [...loopTasks]);
     } else {
-      // Create cosmetic LOOP edges between top and bottom bars
-      this.graph.setEdge(
-        doWhileTask.taskReferenceName,
-        doWhileTask.taskReferenceName + "-END",
-        {
-          type: "loop",
-          executed: hasDoWhileExecuted,
-        }
-      );
 
       // Definition view (or not executed)
 
@@ -339,9 +332,10 @@ export default class WorkflowDAG {
       this.addVertex(endDoWhileTask, [lastLoopTask]);
     }
 
+    // Create reverse loop edge
     this.graph.setEdge(
-      doWhileTask.taskReferenceName + "-END",
       doWhileTask.taskReferenceName,
+      doWhileTask.taskReferenceName + "-END",
       {
         type: "loop",
         executed: hasDoWhileExecuted,
