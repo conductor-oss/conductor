@@ -145,10 +145,14 @@ export default class WorkflowDAG {
       // E.g. the default edge not taken.
       // SWITCH is the newer version of DECISION and DECISION is deprecated
       if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
-        edgeParams.caseValue = getCaseValue(
-          taskConfig.taskReferenceName,
-          antecedent
-        );
+        // A switch inside a loop in execution won't
+        // have a decisionCases key
+        if (antecedent.decisionCases) {
+          edgeParams.caseValue = getCaseValue(
+            taskConfig.taskReferenceName,
+            antecedent
+          );
+        }
 
         // Highlight edge as executed only after thorough test
         const branchTaken = this.switchBranchTaken(
@@ -249,6 +253,7 @@ export default class WorkflowDAG {
 
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
+    console.log(this.taskResults);
 
     const hasDoWhileExecuted = !!this.getExecutionStatus(
       doWhileTask.taskReferenceName
@@ -268,14 +273,22 @@ export default class WorkflowDAG {
       (t) => t.taskReferenceName
     );
     if (hasDoWhileExecuted) {
-      const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter(
-        (key) => {
-          for (let prefix of loopOverRefPrefixes) {
-            if (key.startsWith(prefix + "__")) return true;
-          }
-          return false;
+      // Create cosmetic LOOP edges between top and bottom bars
+      this.graph.setEdge(
+        doWhileTask.taskReferenceName,
+        doWhileTask.taskReferenceName + "-END",
+        {
+          type: "loop",
+          executed: hasDoWhileExecuted,
         }
       );
+
+      const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter((key) => {
+        for (let prefix of loopOverRefPrefixes) {
+          if (key.startsWith(prefix)) return true;
+        }
+        return false
+      });
 
       const loopTaskResults = [];
       for (let ref of loopOverRefs) {
@@ -295,13 +308,31 @@ export default class WorkflowDAG {
 
       this.addVertex(endDoWhileTask, [...loopTasks]);
     } else {
+
       // Definition view (or not executed)
 
       this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
-      this.addVertex(endDoWhileTask, [_.last(doWhileTask.loopOver)]);
+
+      const lastLoopTask = _.last(doWhileTask.loopOver);
+
+      // Connect the end of each case to the loop end
+      if (
+        lastLoopTask?.type === "SWITCH" ||
+        lastLoopTask?.type === "DECISION"
+      ) {
+        Object.entries(lastLoopTask.decisionCases).forEach(
+          ([caseValue, tasks]) => {
+            const lastTaskInCase = _.last(tasks);
+            this.addVertex(endDoWhileTask, [lastTaskInCase]);
+          }
+        );
+      }
+
+      // Default case
+      this.addVertex(endDoWhileTask, [lastLoopTask]);
     }
 
-    // Create cosmetic LOOP edges between top and bottom bars
+    // Create reverse loop edge
     this.graph.setEdge(
       doWhileTask.taskReferenceName,
       doWhileTask.taskReferenceName + "-END",
