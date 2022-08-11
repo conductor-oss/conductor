@@ -35,7 +35,12 @@ const useStyles = makeStyles({
   },
 });
 
-export default function ReactJson({ className, label, src, lineNumbers=true }) {
+export default function ReactJson({
+  className,
+  label,
+  src,
+  lineNumbers = true,
+}) {
   const classes = useStyles();
   const editorRef = useRef(null);
 
@@ -98,7 +103,7 @@ export default function ReactJson({ className, label, src, lineNumbers=true }) {
             scrollbar: { useShadows: false },
             quickSuggestions: false,
             showFoldingControls: "always",
-            lineNumbers: lineNumbers ? "on": "off",
+            lineNumbers: lineNumbers ? "on" : "off",
 
             // Undocumented see https://github.com/Microsoft/vscode/issues/30795#issuecomment-410998882
             lineDecorationsWidth: 0,

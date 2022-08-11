@@ -63,7 +63,6 @@ export default function KeyValueTable({ data }) {
         }
 
         return (
-
           <ListItem key={index} divider alignItems="flex-start">
             <ListItemText
               className={classes.label}
@@ -71,12 +70,18 @@ export default function KeyValueTable({ data }) {
               primary={item.label}
             />
 
-            <ListItemText className={classes.value} primary={
-            <Tooltip placement="right" title={tooltipText} open={tooltipText ? undefined : false}>
-              <span>{displayValue}</span>
-            </Tooltip>} 
+            <ListItemText
+              className={classes.value}
+              primary={
+                <Tooltip
+                  placement="right"
+                  title={tooltipText}
+                  open={tooltipText ? undefined : false}
+                >
+                  <span>{displayValue}</span>
+                </Tooltip>
+              }
             />
-
           </ListItem>
         );
       })}

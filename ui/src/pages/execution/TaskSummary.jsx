@@ -108,10 +108,7 @@ export default function TaskSummary({ taskResult }) {
       data.push({
         label: "Subworkflow ID",
         value: (
-          <NavLink
-            newTab
-            path={`/execution/${taskResult.subWorkflowId}`}
-          >
+          <NavLink newTab path={`/execution/${taskResult.subWorkflowId}`}>
             {taskResult.subWorkflowId}
           </NavLink>
         ),

@@ -143,16 +143,19 @@ export default class WorkflowDAG {
 
       // Special case - When the antecedent of an executed node is a SWITCH, the edge may not necessarily be highlighted.
       // E.g. the default edge not taken.
+      //
       // SWITCH is the newer version of DECISION and DECISION is deprecated
-      if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
-        // A switch inside a loop in execution won't
-        // have a decisionCases key
-        if (antecedent.decisionCases) {
-          edgeParams.caseValue = getCaseValue(
-            taskConfig.taskReferenceName,
-            antecedent
-          );
-        }
+      //
+      // Skip this if current type is DO_WHILE_END - which means the SWITCH is one of the bundled
+      // loop tasks and the current task is not the result of a decision
+      if (
+        taskConfig.type !== "DO_WHILE_END" &&
+        (antecedent.type === "SWITCH" || antecedent.type === "DECISION")
+      ) {
+        edgeParams.caseValue = getCaseValue(
+          taskConfig.taskReferenceName,
+          antecedent
+        );
 
         // Highlight edge as executed only after thorough test
         const branchTaken = this.switchBranchTaken(
@@ -253,7 +256,6 @@ export default class WorkflowDAG {
 
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
-    console.log(this.taskResults);
 
     const hasDoWhileExecuted = !!this.getExecutionStatus(
       doWhileTask.taskReferenceName
@@ -262,6 +264,7 @@ export default class WorkflowDAG {
     this.addVertex(doWhileTask, antecedents);
 
     // Bottom bar
+    // aliasForRef indicates when the bottom bar is clicked one we should highlight the ref
     let endDoWhileTask = {
       type: "DO_WHILE_END",
       name: doWhileTask.name,
@@ -283,12 +286,14 @@ export default class WorkflowDAG {
         }
       );
 
-      const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter((key) => {
-        for (let prefix of loopOverRefPrefixes) {
-          if (key.startsWith(prefix)) return true;
+      const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter(
+        (key) => {
+          for (let prefix of loopOverRefPrefixes) {
+            if (key.startsWith(prefix + "__")) return true;
+          }
+          return false;
         }
-        return false
-      });
+      );
 
       const loopTaskResults = [];
       for (let ref of loopOverRefs) {
@@ -308,7 +313,6 @@ export default class WorkflowDAG {
 
       this.addVertex(endDoWhileTask, [...loopTasks]);
     } else {
-
       // Definition view (or not executed)
 
       this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
