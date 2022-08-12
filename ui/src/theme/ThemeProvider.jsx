@@ -1,9 +1,8 @@
-import React from "react";
 import { MuiThemeProvider } from "@material-ui/core/styles";
 
-import { theme } from "./";
+import theme from "./theme";
 
-export const Provider = ({ children, ...rest }) => {
+export default ({ children, ...rest }) => {
   return (
     <MuiThemeProvider theme={theme} {...rest}>
       {children}

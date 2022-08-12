@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs as RawTabs, Tab as RawTab } from "@material-ui/core";
 import { makeStyles } from "@material-ui/styles";
 import { colors } from "../theme/variables";
-import { theme } from "../theme";
+import theme from "../theme/theme";
 
 // Override styles for 'Contextual' tabs
 const useContextualTabStyles = makeStyles({
