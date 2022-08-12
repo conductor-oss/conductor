@@ -2,14 +2,12 @@ import React from "react";
 import { makeStyles } from "@material-ui/styles";
 import { List, ListItem, ListItemText, Tooltip } from "@material-ui/core";
 import _ from "lodash";
-
-import { useEnv } from "../plugins/env";
 import {
   timestampRenderer,
   timestampMsRenderer,
   durationRenderer,
 } from "../utils/helpers";
-import { customTypeRenderers } from "../plugins/customTypeRenderers";
+import useAppContext from "../hooks/useAppContext";
 
 const useStyles = makeStyles((theme) => ({
   value: {
@@ -26,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
 
 export default function KeyValueTable({ data }) {
   const classes = useStyles();
-  const env = useEnv();
+  const { customTypeRenderers } = useAppContext();
   return (
     <List>
       {data.map((item, index) => {
@@ -34,7 +32,7 @@ export default function KeyValueTable({ data }) {
         let displayValue;
         const renderer = item.type ? customTypeRenderers[item.type] : null;
         if (renderer) {
-          displayValue = renderer(item.value, data, env);
+          displayValue = renderer(item.value, data);
         } else {
           switch (item.type) {
             case "date":

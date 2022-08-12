@@ -1,17 +1,17 @@
 import _ from "lodash";
 import { useQuery, useQueries, useMutation } from "react-query";
-import { useFetchContext, fetchWithContext } from "../plugins/fetch";
+import useAppContext from "../hooks/useAppContext";
 
 export function useFetchParallel(paths, reactQueryOptions) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack} = useAppContext();
 
   return useQueries(
     paths.map((path) => {
       return {
-        queryKey: [fetchContext.stack, ...path],
-        queryFn: () => fetchWithContext(`/${path.join("/")}`, fetchContext),
+        queryKey: [stack, ...path],
+        queryFn: () => fetchWithContext(`/${path.join("/")}`),
         enabled:
-          fetchContext.ready && _.get(reactQueryOptions, "enabled", true),
+          ready && _.get(reactQueryOptions, "enabled", true),
         keepPreviousData: true,
         ...reactQueryOptions,
       };
@@ -20,19 +20,19 @@ export function useFetchParallel(paths, reactQueryOptions) {
 }
 
 export function useFetch(key, path, reactQueryOptions, defaultResponse) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack } = useAppContext();
 
   return useQuery(
-    [fetchContext.stack, ...key],
+    [stack, ...key],
     () => {
       if (path) {
-        return fetchWithContext(path, fetchContext);
+        return fetchWithContext(path);
       } else {
         return Promise.resolve(defaultResponse);
       }
     },
     {
-      enabled: fetchContext.ready && _.get(reactQueryOptions, "enabled", true),
+      enabled: ready && _.get(reactQueryOptions, "enabled", true),
       keepPreviousData: true,
       ...reactQueryOptions,
     }
@@ -40,10 +40,10 @@ export function useFetch(key, path, reactQueryOptions, defaultResponse) {
 }
 
 export function useAction(path, method = "post", callbacks) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext} = useAppContext();
   return useMutation(
     (mutateParams) =>
-      fetchWithContext(path, fetchContext, {
+      fetchWithContext(path, {
         method,
         headers: {
           "Content-Type": "application/json",

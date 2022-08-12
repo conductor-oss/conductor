@@ -1,7 +1,7 @@
 import { useAction } from "./common";
 import Path from "../utils/path";
-import { useFetchContext, fetchWithContext } from "../plugins/fetch";
 import { useMutation } from "react-query";
+import useAppContext from "../hooks/useAppContext";
 import _ from "lodash";
 
 export const useRestartAction = ({ workflowId, onSuccess }) => {
@@ -36,7 +36,8 @@ export const useRetryResumeSubworkflowTasksAction = ({
 };
 
 export const useTerminateAction = ({ workflowId, onSuccess }) => {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext} = useAppContext();
+  
   return useMutation(
     (mutateParams) => {
       const reason = _.get(mutateParams, "reason");
@@ -45,7 +46,7 @@ export const useTerminateAction = ({ workflowId, onSuccess }) => {
         path.search.append("reason", reason);
       }
 
-      return fetchWithContext(path.toString(), fetchContext, {
+      return fetchWithContext(path.toString(), {
         method: "delete",
         headers: {
           "Content-Type": "application/json",

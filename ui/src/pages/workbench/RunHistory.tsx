@@ -16,7 +16,7 @@ import DeleteIcon from "@material-ui/icons/DeleteForever";
 import { colors } from "../../theme/variables";
 import CloseIcon from "@material-ui/icons/Close";
 import _ from "lodash";
-import { useEnv } from "../../plugins/env";
+import useAppContext from "../../hooks/useAppContext";
 
 const useStyles = makeStyles({
   sidebar: {
@@ -59,7 +59,7 @@ const RUN_HISTORY_SCHEMA_VER = 1;
 
 const RunHistory = forwardRef((props: RunHistoryProps, ref) => {
   const { onRunSelected } = props;
-  const { stack } = useEnv();
+  const { stack } = useAppContext();
   const classes = useStyles();
   const [selectedCreateTime, setSelectedCreateTime] = useState<
     number | undefined

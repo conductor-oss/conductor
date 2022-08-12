@@ -2,7 +2,7 @@ import _ from "lodash";
 import { useMemo } from "react";
 import { useQuery, useQueries, useMutation } from "react-query";
 import qs from "qs";
-import { useFetchContext, fetchWithContext } from "../plugins/fetch";
+import useAppContext from "../hooks/useAppContext";
 import { useFetch } from "./common";
 import Path from "../utils/path";
 
@@ -17,14 +17,15 @@ export function useTask(taskName, defaultTask) {
 }
 
 export function useTaskSearch({ searchReady, ...searchObj }) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack } = useAppContext();
+
   const pathRoot = "/tasks/search?";
   const { rowsPerPage, page, sort, freeText, query } = searchObj;
 
   const isEmptySearch = _.isEmpty(query) && freeText === "*";
 
   return useQuery(
-    [fetchContext.stack, pathRoot, searchObj],
+    [stack, pathRoot, searchObj],
     () => {
       if (isEmptySearch) {
         return {
@@ -41,12 +42,12 @@ export function useTaskSearch({ searchReady, ...searchObj }) {
             freeText: freeText,
             query: query,
           });
-        return fetchWithContext(path, fetchContext);
+        return fetchWithContext(path);
       }
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled: fetchContext.ready,
+      enabled: ready,
       keepPreviousData: true,
       staleTime: STALE_TIME_SEARCH,
     }
@@ -54,20 +55,22 @@ export function useTaskSearch({ searchReady, ...searchObj }) {
 }
 
 export function usePollData(taskName) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack } = useAppContext();
+
   const pollDataPath = `/tasks/queue/polldata?taskType=${taskName}`;
 
   return useQuery(
-    [fetchContext.stack, pollDataPath],
-    () => fetchWithContext(pollDataPath, fetchContext),
+    [stack, pollDataPath],
+    () => fetchWithContext(pollDataPath),
     {
-      enabled: fetchContext.ready && !_.isEmpty(taskName),
+      enabled: ready && !_.isEmpty(taskName),
     }
   );
 }
 
 export function useQueueSize(taskName, domain) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack } = useAppContext();
+
   const path = new Path("/tasks/queue/size");
   path.search.append("taskType", taskName);
 
@@ -75,15 +78,16 @@ export function useQueueSize(taskName, domain) {
     path.search.append("domain", domain);
   }
 
-  return useQuery([fetchContext.stack, "queueSize", taskName, domain], () =>
-    fetchWithContext(path.toString(), fetchContext, {
-      enabled: fetchContext.ready,
+  return useQuery([stack, "queueSize", taskName, domain], () =>
+    fetchWithContext(path.toString(), {
+      enabled: ready,
     })
   );
 }
 
 export function useQueueSizes(taskName, domains) {
-  const fetchContext = useFetchContext();
+
+  const {fetchWithContext, ready, stack } = useAppContext();
 
   return useQueries(
     domains
@@ -96,18 +100,17 @@ export function useQueueSizes(taskName, domains) {
           }
 
           return {
-            queryKey: [fetchContext.stack, "queueSize", taskName, domain],
+            queryKey: [stack, "queueSize", taskName, domain],
             queryFn: async () => {
               const result = await fetchWithContext(
                 path.toString(),
-                fetchContext
               );
               return {
                 domain: domain,
                 size: result,
               };
             },
-            enabled: fetchContext.ready && !!domains,
+            enabled: ready && !!domains,
           };
         })
       : []
@@ -128,10 +131,10 @@ export function useTaskDefs() {
 
 export function useSaveTask(callbacks) {
   const path = "/metadata/taskdefs";
-  const fetchContext = useFetchContext();
+  const {fetchWithContext } = useAppContext();
 
   return useMutation(({ body, isNew }) => {
-    return fetchWithContext(path, fetchContext, {
+    return fetchWithContext(path, {
       method: isNew ? "post" : "put",
       headers: {
         "Content-Type": "application/json",

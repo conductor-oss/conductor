@@ -8,6 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
+import DefaultAppContextProvider from "./components/context/DefaultAppContextProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,18 +20,22 @@ const queryClient = new QueryClient({
 });
 
 ReactDOM.render(
-  //<React.StrictMode>
-  <QueryClientProvider client={queryClient}>
+  <React.StrictMode>
     <ThemeProvider>
       <BrowserRouter>
-        <CssBaseline />
-        <ReactQueryDevtools initialIsOpen={true} />
+        <DefaultAppContextProvider>
+          <QueryClientProvider client={queryClient}>
 
-        <App />
+            <CssBaseline />
+            <ReactQueryDevtools />
+
+            <App />
+
+          </QueryClientProvider>
+        </DefaultAppContextProvider>
       </BrowserRouter>
     </ThemeProvider>
-  </QueryClientProvider>,
-  //</React.StrictMode>
+  </React.StrictMode >,
   document.getElementById("root")
 );
 

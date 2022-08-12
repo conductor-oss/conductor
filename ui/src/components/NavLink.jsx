@@ -3,14 +3,13 @@ import { Link as RouterLink, useHistory } from "react-router-dom";
 import { Link } from "@material-ui/core";
 import LaunchIcon from "@material-ui/icons/Launch";
 import Url from "url-parse";
-import { useEnv } from "../plugins/env";
-
+import useAppContext from "../hooks/useAppContext";
 // 1. Strip `navigate` from props to prevent error
 // 2. Preserve stack param
 
 export default React.forwardRef((props, ref) => {
   const { navigate, path, newTab, ...rest } = props;
-  const { stack, defaultStack } = useEnv();
+  const { stack, defaultStack } = useAppContext();
 
   const url = new Url(path, {}, true);
   if (stack !== defaultStack) {
@@ -36,7 +35,7 @@ export default React.forwardRef((props, ref) => {
 
 export function usePushHistory() {
   const history = useHistory();
-  const { stack, defaultStack } = useEnv();
+  const { stack, defaultStack } = useAppContext();
 
   return (path) => {
     const url = new Url(path, {}, true);

@@ -1,6 +1,6 @@
 import { useAction } from "./common";
 import Path from "../utils/path";
-import { fetchWithContext, useFetchContext } from "../plugins/fetch";
+import useAppContext from "../hooks/useAppContext";
 import { useMutation } from "react-query";
 import _ from "lodash";
 
@@ -31,7 +31,7 @@ export const useBulkTerminateAction = ({ onSuccess }) => {
 };
 
 export const useBulkTerminateWithReasonAction = (callbacks) => {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext} = useAppContext();
 
   return useMutation((mutateParams) => {
     const path = new Path("/workflow/bulk/terminate");
@@ -39,7 +39,7 @@ export const useBulkTerminateWithReasonAction = (callbacks) => {
       path.search.append("reason", mutateParams.reason);
     }
 
-    return fetchWithContext(path, fetchContext, {
+    return fetchWithContext(path, {
       method: "post",
       headers: {
         "Content-Type": "application/json",

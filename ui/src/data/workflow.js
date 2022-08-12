@@ -1,19 +1,19 @@
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { useFetchContext, fetchWithContext } from "../plugins/fetch";
+import useAppContext from "../hooks/useAppContext";
 import { useFetch, useFetchParallel } from "./common";
-import { useEnv } from "../plugins/env";
 import qs from "qs";
 
 const STALE_TIME_WORKFLOW_DEFS = 600000; // 10 mins
 const STALE_TIME_SEARCH = 60000; // 1 min
 
 export function useWorkflowSearch(searchObj) {
-  const fetchContext = useFetchContext();
+  const {fetchWithContext, ready, stack } = useAppContext();
+  
   const pathRoot = "/workflow/search?";
 
   return useQuery(
-    [fetchContext.stack, pathRoot, searchObj],
+    [stack, pathRoot, searchObj],
     () => {
       const { rowsPerPage, page, sort, freeText, query } = searchObj;
       const path =
@@ -25,11 +25,11 @@ export function useWorkflowSearch(searchObj) {
           freeText: freeText,
           query: query,
         });
-      return fetchWithContext(path, fetchContext);
+      return fetchWithContext(path);
       // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
-      enabled: fetchContext.ready,
+      enabled: ready,
       keepPreviousData: true,
       staleTime: STALE_TIME_SEARCH,
     }
@@ -50,7 +50,7 @@ export function useWorkflowsByIds(workflowIds, reactQueryOptions) {
 }
 
 export function useInvalidateWorkflows() {
-  const { stack } = useEnv();
+  const { stack } = useAppContext();
   const client = useQueryClient();
 
   return function (workflowIds) {
@@ -115,11 +115,11 @@ export function useLatestWorkflowDefs() {
 
 export function useSaveWorkflow(callbacks) {
   const path = "/metadata/workflow";
-  const fetchContext = useFetchContext();
+  const {fetchWithContext } = useAppContext();
 
   return useMutation(
     ({ body, isNew }) =>
-      fetchWithContext(path, fetchContext, {
+      fetchWithContext(path, {
         method: isNew ? "post" : "put",
         headers: {
           "Content-Type": "application/json",
@@ -177,13 +177,12 @@ export function useWorkflowNamesAndVersions() {
 
 export function useStartWorkflow(callbacks) {
   const path = "/workflow";
-  const fetchContext = useFetchContext();
+  const {fetchWithContext } = useAppContext();
 
   return useMutation(
     ({ body }) =>
       fetchWithContext(
         path,
-        fetchContext,
         {
           method: "post",
           headers: {

@@ -3,7 +3,7 @@ import React from "react";
 import { Route, Switch } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 import { Button, AppBar, Toolbar } from "@material-ui/core";
-import AppLogo from "./plugins/AppLogo";
+import AppLogo from "./components/AppLogo";
 import NavLink from "./components/NavLink";
 
 import WorkflowSearch from "./pages/executions/WorkflowSearch";
@@ -22,9 +22,6 @@ import DiagramTest from "./pages/kitchensink/DiagramTest";
 import Examples from "./pages/kitchensink/Examples";
 import Gantt from "./pages/kitchensink/Gantt";
 
-import CustomRoutes from "./plugins/CustomRoutes";
-import AppBarModules from "./plugins/AppBarModules";
-import CustomAppBarButtons from "./plugins/CustomAppBarButtons";
 import Workbench from "./pages/workbench/Workbench";
 
 const useStyles = makeStyles((theme) => ({
@@ -47,7 +44,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function App() {
+export default function App({
+  appBarModules,
+  appBarButtons,
+  customAppLogo,
+  customRoutes
+}) {
   const classes = useStyles();
 
   return (
@@ -72,10 +74,11 @@ export default function App() {
           <Button component={NavLink} path="/workbench">
             Workbench
           </Button>
-          <CustomAppBarButtons />
+
+          {appBarButtons}
 
           <div className={classes.toolbarRight}>
-            <AppBarModules />
+            {appBarModules}
           </div>
         </Toolbar>
       </AppBar>
@@ -126,7 +129,8 @@ export default function App() {
           <Route exact path="/kitchen/gantt">
             <Gantt />
           </Route>
-          <CustomRoutes />
+          
+          {customRoutes}
         </Switch>
       </div>
     </div>
