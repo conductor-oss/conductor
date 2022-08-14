@@ -78,6 +78,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
         forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);
         forkTask.setStatus(TaskModel.Status.COMPLETED);
+        forkTask.setExecuted(true);
 
         tasksToBeScheduled.add(forkTask);
         List<List<WorkflowTask>> forkTasks = workflowTask.getForkTasks();
@@ -99,6 +100,12 @@ public class ForkJoinTaskMapper implements TaskMapper {
             throw new TerminateWorkflowException(
                     "Fork task definition is not followed by a join task.  Check the blueprint");
         }
+        List<TaskModel> joinTask =
+                taskMapperContext
+                        .getDeciderService()
+                        .getTasksToBeScheduled(workflowModel, joinWorkflowTask, retryCount);
+
+        tasksToBeScheduled.addAll(joinTask);
         return tasksToBeScheduled;
     }
 }

@@ -1923,8 +1923,6 @@ public class TestWorkflowExecutor {
                 taskToDomain);
 
         verify(executionDAOFacade, times(1)).createWorkflow(any(WorkflowModel.class));
-        verify(executionLockService, times(2)).acquireLock(anyString());
-        verify(executionDAOFacade, times(1)).getWorkflowModel(anyString(), anyBoolean());
     }
 
     @Test
@@ -2402,9 +2400,7 @@ public class TestWorkflowExecutor {
         assertEquals(
                 taskResult.getCallbackAfterSeconds(),
                 argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
-        assertEquals(
-                taskResult.getWorkflowInstanceId(),
-                argumentCaptor.getAllValues().get(0).getWorkflowInstanceId());
+        assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());
     }
 
     @Test
@@ -2441,9 +2437,7 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
-        assertEquals(
-                taskResult.getWorkflowInstanceId(),
-                argumentCaptor.getAllValues().get(0).getWorkflowInstanceId());
+        assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());
     }
 
     @Test

@@ -399,10 +399,11 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[4].status == Task.Status.SCHEDULED
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.IN_PROGRESS
-            tasks[5].inputData['joinOn'] == ['t11', 'join2']
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2']
+
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
@@ -421,24 +422,33 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks.size() == 10
             tasks[0].taskType == 'FORK'
             tasks[0].status == Task.Status.COMPLETED
+
             tasks[1].taskType == 'integration_task_11'
             tasks[1].status == Task.Status.COMPLETED
+
             tasks[2].taskType == 'FORK'
             tasks[2].status == Task.Status.COMPLETED
+
             tasks[3].taskType == 'integration_task_12'
             tasks[3].status == Task.Status.COMPLETED
+
             tasks[4].taskType == 'integration_task_13'
             tasks[4].status == Task.Status.COMPLETED
+
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.IN_PROGRESS
-            tasks[5].inputData['joinOn'] == ['t11', 'join2']
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2']
+
             tasks[7].taskType == 'integration_task_14'
             tasks[7].status == Task.Status.SCHEDULED
+
             tasks[8].taskType == 'DECISION'
             tasks[8].status == Task.Status.COMPLETED
+
             tasks[9].taskType == 'integration_task_16'
             tasks[9].status == Task.Status.SCHEDULED
         }
@@ -457,10 +467,12 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks.size() == 11
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.IN_PROGRESS
-            tasks[5].inputData['joinOn'] == ['t11', 'join2']
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2']
+
             tasks[7].taskType == 'integration_task_14'
             tasks[7].status == Task.Status.COMPLETED
             tasks[8].taskType == 'DECISION'
@@ -483,10 +495,10 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks.size() == 12
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.IN_PROGRESS
-            tasks[5].inputData['joinOn'] == ['t11', 'join2']
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2']
             tasks[10].taskType == 'integration_task_19'
             tasks[10].status == Task.Status.COMPLETED
             tasks[11].taskType == 'integration_task_20'
@@ -508,10 +520,10 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks.size() == 13
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.COMPLETED
-            tasks[5].inputData['joinOn'] == ['t11', 'join2']
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.COMPLETED
-            tasks[6].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2']
             tasks[11].taskType == 'integration_task_20'
             tasks[11].status == Task.Status.COMPLETED
             tasks[12].taskType == 'integration_task_15'
@@ -559,14 +571,17 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[3].status == Task.Status.SCHEDULED
             tasks[4].taskType == 'integration_task_13'
             tasks[4].status == Task.Status.SCHEDULED
-            tasks[5].taskType == 'SUB_WORKFLOW'
-            tasks[5].status == Task.Status.SCHEDULED
-            tasks[6].taskType == 'JOIN'
-            tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+
+            tasks[5].taskType == 'JOIN'
+            tasks[5].status == Task.Status.IN_PROGRESS
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+
+            tasks[6].taskType == 'SUB_WORKFLOW'
+            tasks[6].status == Task.Status.SCHEDULED
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
@@ -595,14 +610,15 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[3].status == Task.Status.COMPLETED
             tasks[4].taskType == 'integration_task_13'
             tasks[4].status == Task.Status.COMPLETED
-            tasks[5].taskType == 'SUB_WORKFLOW'
-            tasks[5].status == Task.Status.SCHEDULED
-            tasks[6].taskType == 'JOIN'
-            tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+            tasks[5].taskType == 'JOIN'
+            tasks[5].status == Task.Status.IN_PROGRESS
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+
+            tasks[6].taskType == 'SUB_WORKFLOW'
+            tasks[6].status == Task.Status.SCHEDULED
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[8].taskType == 'integration_task_14'
             tasks[8].status == Task.Status.SCHEDULED
             tasks[9].taskType == 'DECISION'
@@ -628,14 +644,14 @@ class ForkJoinSpec extends AbstractSpecification {
         with(updatedWorkflow) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 12
-            tasks[5].taskType == 'SUB_WORKFLOW'
+            tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.IN_PROGRESS
-            tasks[6].taskType == 'JOIN'
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].taskType == 'SUB_WORKFLOW'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[8].taskType == 'integration_task_14'
             tasks[8].status == Task.Status.COMPLETED
             tasks[9].taskType == 'DECISION'
@@ -676,14 +692,14 @@ class ForkJoinSpec extends AbstractSpecification {
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 12
-            tasks[5].taskType == 'SUB_WORKFLOW'
-            tasks[5].status == Task.Status.COMPLETED
-            tasks[6].taskType == 'JOIN'
-            tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+            tasks[5].taskType == 'JOIN'
+            tasks[5].status == Task.Status.IN_PROGRESS
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+            tasks[6].taskType == 'SUB_WORKFLOW'
+            tasks[6].status == Task.Status.COMPLETED
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[11].taskType == 'integration_task_19'
             tasks[11].status == Task.Status.SCHEDULED
         }
@@ -698,12 +714,12 @@ class ForkJoinSpec extends AbstractSpecification {
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 13
-            tasks[6].taskType == 'JOIN'
-            tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+            tasks[5].taskType == 'JOIN'
+            tasks[5].status == Task.Status.IN_PROGRESS
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[11].taskType == 'integration_task_19'
             tasks[11].status == Task.Status.COMPLETED
             tasks[12].taskType == 'integration_task_20'
@@ -723,12 +739,14 @@ class ForkJoinSpec extends AbstractSpecification {
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 14
-            tasks[6].taskType == 'JOIN'
-            tasks[6].status == Task.Status.COMPLETED
-            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+            tasks[5].taskType == 'JOIN'
+            tasks[5].status == Task.Status.COMPLETED
+            tasks[5].inputData['joinOn'] == ['t14', 't20']
+
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.COMPLETED
-            tasks[7].inputData['joinOn'] == ['t14', 't20']
+            tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
+
             tasks[12].taskType == 'integration_task_20'
             tasks[12].status == Task.Status.COMPLETED
             tasks[13].taskType == 'integration_task_15'
