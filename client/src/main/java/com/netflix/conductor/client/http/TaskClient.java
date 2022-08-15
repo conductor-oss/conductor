@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -37,42 +38,83 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.sun.jersey.api.client.ClientHandler;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.ClientFilter;
 
 /** Client for conductor task management including polling for task, updating task status etc. */
 public class TaskClient extends ClientBase {
 
-    private static final TypeReference<List<Task>> taskList = new TypeReference<List<Task>>() {};
+    private static final GenericType<List<Task>> taskList = new GenericType<List<Task>>() {};
 
-    private static final TypeReference<List<TaskExecLog>> taskExecLogList =
-            new TypeReference<List<TaskExecLog>>() {};
+    private static final GenericType<List<TaskExecLog>> taskExecLogList =
+            new GenericType<List<TaskExecLog>>() {};
 
-    private static final TypeReference<List<PollData>> pollDataList =
-            new TypeReference<List<PollData>>() {};
+    private static final GenericType<List<PollData>> pollDataList =
+            new GenericType<List<PollData>>() {};
 
-    private static final TypeReference<SearchResult<TaskSummary>> searchResultTaskSummary =
-            new TypeReference<SearchResult<TaskSummary>>() {};
+    private static final GenericType<SearchResult<TaskSummary>> searchResultTaskSummary =
+            new GenericType<SearchResult<TaskSummary>>() {};
 
-    private static final TypeReference<SearchResult<Task>> searchResultTask =
-            new TypeReference<SearchResult<Task>>() {};
+    private static final GenericType<SearchResult<Task>> searchResultTask =
+            new GenericType<SearchResult<Task>>() {};
 
-    private static final TypeReference<Map<String, Integer>> queueSizeMap =
-            new TypeReference<Map<String, Integer>>() {};
+    private static final GenericType<Map<String, Integer>> queueSizeMap =
+            new GenericType<Map<String, Integer>>() {};
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskClient.class);
 
     /** Creates a default task client */
     public TaskClient() {
-        this(null);
+        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
-    public TaskClient(RequestHandler requestHandler) {
-        this(requestHandler, null);
+    /**
+     * @param config REST Client configuration
+     */
+    public TaskClient(ClientConfig config) {
+        this(config, new DefaultConductorClientConfiguration(), null);
     }
 
+    /**
+     * @param config REST Client configuration
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     */
+    public TaskClient(ClientConfig config, ClientHandler handler) {
+        this(config, new DefaultConductorClientConfiguration(), handler);
+    }
+
+    /**
+     * @param config REST Client configuration
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
+    public TaskClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
+        this(config, new DefaultConductorClientConfiguration(), handler, filters);
+    }
+
+    /**
+     * @param config REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link
+     *     ConductorClientConfiguration}
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
     public TaskClient(
-            RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
-        super(requestHandler, clientConfiguration);
+            ClientConfig config,
+            ConductorClientConfiguration clientConfiguration,
+            ClientHandler handler,
+            ClientFilter... filters) {
+        super(new ClientRequestHandler(config, handler, filters), clientConfiguration);
+    }
+
+    TaskClient(ClientRequestHandler requestHandler) {
+        super(requestHandler, null);
     }
 
     /**
@@ -195,7 +237,7 @@ public class TaskClient extends ClientBase {
      */
     public void updateTask(TaskResult taskResult) {
         Validate.notNull(taskResult, "Task result cannot be null");
-        post("tasks", taskResult);
+        postForEntityWithRequestOnly("tasks", taskResult);
     }
 
     public Optional<String> evaluateAndUploadLargePayload(
@@ -246,8 +288,12 @@ public class TaskClient extends ClientBase {
         Validate.notBlank(taskId, "Task id cannot be blank");
 
         String response =
-                postForString(
-                        "tasks/{taskId}/ack", null, new Object[] {"workerid", workerId}, taskId);
+                postForEntity(
+                        "tasks/{taskId}/ack",
+                        null,
+                        new Object[] {"workerid", workerId},
+                        String.class,
+                        taskId);
         return Boolean.valueOf(response);
     }
 
@@ -259,7 +305,7 @@ public class TaskClient extends ClientBase {
      */
     public void logMessageForTask(String taskId, String logMessage) {
         Validate.notBlank(taskId, "Task id cannot be blank");
-        post("tasks/" + taskId + "/log", logMessage);
+        postForEntityWithRequestOnly("tasks/" + taskId + "/log", logMessage);
     }
 
     /**
@@ -303,7 +349,7 @@ public class TaskClient extends ClientBase {
                 getForEntity(
                         "tasks/queue/size",
                         new Object[] {"taskType", taskType},
-                        new TypeReference<Integer>() {});
+                        new GenericType<Integer>() {});
         return queueSize != null ? queueSize : 0;
     }
 
@@ -334,7 +380,7 @@ public class TaskClient extends ClientBase {
                 getForEntity(
                         "tasks/queue/size",
                         params.toArray(new Object[0]),
-                        new TypeReference<Integer>() {});
+                        new GenericType<Integer>() {});
         return queueSize != null ? queueSize : 0;
     }
 
@@ -366,7 +412,7 @@ public class TaskClient extends ClientBase {
      * @return returns the number of tasks that have been requeued
      */
     public String requeueAllPendingTasks() {
-        return postForString("tasks/queue/requeue", null, null);
+        return postForEntity("tasks/queue/requeue", null, null, String.class);
     }
 
     /**
@@ -376,7 +422,7 @@ public class TaskClient extends ClientBase {
      */
     public String requeuePendingTasksByTaskType(String taskType) {
         Validate.notBlank(taskType, "Task type cannot be blank");
-        return postForString("tasks/queue/requeue/{taskType}", null, null, taskType);
+        return postForEntity("tasks/queue/requeue/{taskType}", null, null, String.class, taskType);
     }
 
     /**

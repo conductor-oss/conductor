@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -32,30 +33,71 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.sun.jersey.api.client.ClientHandler;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.ClientFilter;
 
 public class WorkflowClient extends ClientBase {
 
-    private static final TypeReference<SearchResult<WorkflowSummary>> searchResultWorkflowSummary =
-            new TypeReference<SearchResult<WorkflowSummary>>() {};
+    private static final GenericType<SearchResult<WorkflowSummary>> searchResultWorkflowSummary =
+            new GenericType<SearchResult<WorkflowSummary>>() {};
 
-    private static final TypeReference<SearchResult<Workflow>> searchResultWorkflow =
-            new TypeReference<SearchResult<Workflow>>() {};
+    private static final GenericType<SearchResult<Workflow>> searchResultWorkflow =
+            new GenericType<SearchResult<Workflow>>() {};
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowClient.class);
 
     /** Creates a default workflow client */
     public WorkflowClient() {
-        this(null);
+        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
-    public WorkflowClient(RequestHandler requestHandler) {
-        this(requestHandler, null);
+    /**
+     * @param config REST Client configuration
+     */
+    public WorkflowClient(ClientConfig config) {
+        this(config, new DefaultConductorClientConfiguration(), null);
     }
 
+    /**
+     * @param config REST Client configuration
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     */
+    public WorkflowClient(ClientConfig config, ClientHandler handler) {
+        this(config, new DefaultConductorClientConfiguration(), handler);
+    }
+
+    /**
+     * @param config REST Client configuration
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
+    public WorkflowClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
+        this(config, new DefaultConductorClientConfiguration(), handler, filters);
+    }
+
+    /**
+     * @param config REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link
+     *     ConductorClientConfiguration}
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
     public WorkflowClient(
-            RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
-        super(requestHandler, clientConfiguration);
+            ClientConfig config,
+            ConductorClientConfiguration clientConfiguration,
+            ClientHandler handler,
+            ClientFilter... filters) {
+        super(new ClientRequestHandler(config, handler, filters), clientConfiguration);
+    }
+
+    WorkflowClient(ClientRequestHandler requestHandler) {
+        super(requestHandler, null);
     }
 
     /**
@@ -126,8 +168,12 @@ public class WorkflowClient extends ClientBase {
             throw new ConductorClientException(errorMsg, e);
         }
         try {
-            return postForString(
-                    "workflow", startWorkflowRequest, null, startWorkflowRequest.getName());
+            return postForEntity(
+                    "workflow",
+                    startWorkflowRequest,
+                    null,
+                    String.class,
+                    startWorkflowRequest.getName());
         } catch (ConductorClientException e) {
             String errorMsg =
                     String.format(
@@ -178,7 +224,7 @@ public class WorkflowClient extends ClientBase {
                 getForEntity(
                         "workflow/{name}/correlated/{correlationId}",
                         params,
-                        new TypeReference<List<Workflow>>() {},
+                        new GenericType<List<Workflow>>() {},
                         name,
                         correlationId);
         workflows.forEach(this::populateWorkflowOutput);
@@ -214,7 +260,7 @@ public class WorkflowClient extends ClientBase {
         Validate.notBlank(workflowId, "Workflow id cannot be blank");
 
         Object[] params = new Object[] {"archiveWorkflow", archiveWorkflow};
-        deleteWithUriVariables("workflow/{workflowId}/remove", params, workflowId);
+        deleteWithUriVariables(params, "workflow/{workflowId}/remove", workflowId);
     }
 
     /**
@@ -245,7 +291,7 @@ public class WorkflowClient extends ClientBase {
         return getForEntity(
                 "workflow/running/{name}",
                 new Object[] {"version", version},
-                new TypeReference<List<String>>() {},
+                new GenericType<List<String>>() {},
                 workflowName);
     }
 
@@ -269,7 +315,7 @@ public class WorkflowClient extends ClientBase {
         return getForEntity(
                 "workflow/running/{name}",
                 params,
-                new TypeReference<List<String>>() {},
+                new GenericType<List<String>>() {},
                 workflowName);
     }
 
@@ -332,7 +378,12 @@ public class WorkflowClient extends ClientBase {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         Validate.notNull(rerunWorkflowRequest, "RerunWorkflowRequest cannot be null");
 
-        return postForString("workflow/{workflowId}/rerun", rerunWorkflowRequest, null, workflowId);
+        return postForEntity(
+                "workflow/{workflowId}/rerun",
+                rerunWorkflowRequest,
+                null,
+                String.class,
+                workflowId);
     }
 
     /**
@@ -356,7 +407,7 @@ public class WorkflowClient extends ClientBase {
      */
     public void retryLastFailedTask(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
-        postWithUriVariables("workflow/{workflowId}/retry", workflowId);
+        postForEntityWithUriVariablesOnly("workflow/{workflowId}/retry", workflowId);
     }
 
     /**
@@ -366,7 +417,7 @@ public class WorkflowClient extends ClientBase {
      */
     public void resetCallbacksForInProgressTasks(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
-        postWithUriVariables("workflow/{workflowId}/resetcallbacks", workflowId);
+        postForEntityWithUriVariablesOnly("workflow/{workflowId}/resetcallbacks", workflowId);
     }
 
     /**
@@ -378,7 +429,7 @@ public class WorkflowClient extends ClientBase {
     public void terminateWorkflow(String workflowId, String reason) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         deleteWithUriVariables(
-                "workflow/{workflowId}", new Object[] {"reason", reason}, workflowId);
+                new Object[] {"reason", reason}, "workflow/{workflowId}", workflowId);
     }
 
     /**
