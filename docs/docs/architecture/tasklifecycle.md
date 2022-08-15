@@ -20,7 +20,7 @@ Timeout is the maximum amount of time that the task must reach a terminal state 
 
 ![Task Timeout](/img/TimeoutSeconds.png)
 
-**0 seconds** -> Worker polls for task T1 fom the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.  
+**0 seconds** -> Worker polls for task T1 from the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.  
 Worker starts processing the task but is unable to process the task at this time. Worker updates the server with T1 set to IN_PROGRESS status and a callback of 9 seconds.  
 Server puts T1 back in the queue but makes it invisible and the worker continues to poll for the task but does not receive T1 for 9 seconds.  
 
