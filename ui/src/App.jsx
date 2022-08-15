@@ -61,7 +61,8 @@ export default function App({
             regular: classes.toolbarRegular,
           }}
         >
-          <AppLogo />
+          {customAppLogo || <AppLogo />}
+          
           <Button component={NavLink} path="/">
             Executions
           </Button>
