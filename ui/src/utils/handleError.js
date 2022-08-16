@@ -1,6 +1,5 @@
 import JSONbig from "json-bigint-string";
 
-
 export default function handleError(res) {
   return Promise.all([res, res.text()])
     .then(([res, body]) => {
@@ -17,9 +16,8 @@ export default function handleError(res) {
     .then(([res, text]) => {
       if (!text || text.length === 0) {
         return null;
-      }
-      else {
+      } else {
         return JSONbig.parse(text);
       }
-    })
+    });
 }

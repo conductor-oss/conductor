@@ -8,8 +8,8 @@ const STALE_TIME_WORKFLOW_DEFS = 600000; // 10 mins
 const STALE_TIME_SEARCH = 60000; // 1 min
 
 export function useWorkflowSearch(searchObj) {
-  const {fetchWithContext, ready, stack } = useAppContext();
-  
+  const { fetchWithContext, ready, stack } = useAppContext();
+
   const pathRoot = "/workflow/search?";
 
   return useQuery(
@@ -115,7 +115,7 @@ export function useLatestWorkflowDefs() {
 
 export function useSaveWorkflow(callbacks) {
   const path = "/metadata/workflow";
-  const {fetchWithContext } = useAppContext();
+  const { fetchWithContext } = useAppContext();
 
   return useMutation(
     ({ body, isNew }) =>
@@ -177,7 +177,7 @@ export function useWorkflowNamesAndVersions() {
 
 export function useStartWorkflow(callbacks) {
   const path = "/workflow";
-  const {fetchWithContext } = useAppContext();
+  const { fetchWithContext } = useAppContext();
 
   return useMutation(
     ({ body }) =>

@@ -25,17 +25,15 @@ ReactDOM.render(
       <BrowserRouter>
         <DefaultAppContextProvider>
           <QueryClientProvider client={queryClient}>
-
             <CssBaseline />
             <ReactQueryDevtools />
 
             <App />
-
           </QueryClientProvider>
         </DefaultAppContextProvider>
       </BrowserRouter>
     </ThemeProvider>
-  </React.StrictMode >,
+  </React.StrictMode>,
   document.getElementById("root")
 );
 

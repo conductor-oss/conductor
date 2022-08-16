@@ -17,7 +17,7 @@ export function useTask(taskName, defaultTask) {
 }
 
 export function useTaskSearch({ searchReady, ...searchObj }) {
-  const {fetchWithContext, ready, stack } = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   const pathRoot = "/tasks/search?";
   const { rowsPerPage, page, sort, freeText, query } = searchObj;
@@ -55,21 +55,17 @@ export function useTaskSearch({ searchReady, ...searchObj }) {
 }
 
 export function usePollData(taskName) {
-  const {fetchWithContext, ready, stack } = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   const pollDataPath = `/tasks/queue/polldata?taskType=${taskName}`;
 
-  return useQuery(
-    [stack, pollDataPath],
-    () => fetchWithContext(pollDataPath),
-    {
-      enabled: ready && !_.isEmpty(taskName),
-    }
-  );
+  return useQuery([stack, pollDataPath], () => fetchWithContext(pollDataPath), {
+    enabled: ready && !_.isEmpty(taskName),
+  });
 }
 
 export function useQueueSize(taskName, domain) {
-  const {fetchWithContext, ready, stack } = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   const path = new Path("/tasks/queue/size");
   path.search.append("taskType", taskName);
@@ -86,8 +82,7 @@ export function useQueueSize(taskName, domain) {
 }
 
 export function useQueueSizes(taskName, domains) {
-
-  const {fetchWithContext, ready, stack } = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   return useQueries(
     domains
@@ -102,9 +97,7 @@ export function useQueueSizes(taskName, domains) {
           return {
             queryKey: [stack, "queueSize", taskName, domain],
             queryFn: async () => {
-              const result = await fetchWithContext(
-                path.toString(),
-              );
+              const result = await fetchWithContext(path.toString());
               return {
                 domain: domain,
                 size: result,
@@ -131,7 +124,7 @@ export function useTaskDefs() {
 
 export function useSaveTask(callbacks) {
   const path = "/metadata/taskdefs";
-  const {fetchWithContext } = useAppContext();
+  const { fetchWithContext } = useAppContext();
 
   return useMutation(({ body, isNew }) => {
     return fetchWithContext(path, {

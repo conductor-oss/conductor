@@ -120,6 +120,7 @@ export default function TaskSummary({ taskResult }) {
     data.push({
       label: "Externalized Input",
       value: taskResult.externalInputPayloadStoragePath,
+      type: "externalTaskInput",
     });
   }
 
@@ -127,6 +128,7 @@ export default function TaskSummary({ taskResult }) {
     data.push({
       label: "Externalized Output",
       value: taskResult.externalOutputPayloadStoragePath,
+      type: "externalTaskOutput",
     });
   }
 

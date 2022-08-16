@@ -48,7 +48,7 @@ export default function App({
   appBarModules,
   appBarButtons,
   customAppLogo,
-  customRoutes
+  customRoutes,
 }) {
   const classes = useStyles();
 
@@ -62,7 +62,7 @@ export default function App({
           }}
         >
           {customAppLogo || <AppLogo />}
-          
+
           <Button component={NavLink} path="/">
             Executions
           </Button>
@@ -78,9 +78,7 @@ export default function App({
 
           {appBarButtons}
 
-          <div className={classes.toolbarRight}>
-            {appBarModules}
-          </div>
+          <div className={classes.toolbarRight}>{appBarModules}</div>
         </Toolbar>
       </AppBar>
       <div className={classes.body}>
@@ -130,7 +128,7 @@ export default function App({
           <Route exact path="/kitchen/gantt">
             <Gantt />
           </Route>
-          
+
           {customRoutes}
         </Switch>
       </div>

@@ -31,7 +31,7 @@ export const useBulkTerminateAction = ({ onSuccess }) => {
 };
 
 export const useBulkTerminateWithReasonAction = (callbacks) => {
-  const {fetchWithContext} = useAppContext();
+  const { fetchWithContext } = useAppContext();
 
   return useMutation((mutateParams) => {
     const path = new Path("/workflow/bulk/terminate");

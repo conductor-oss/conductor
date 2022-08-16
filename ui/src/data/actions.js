@@ -36,8 +36,8 @@ export const useRetryResumeSubworkflowTasksAction = ({
 };
 
 export const useTerminateAction = ({ workflowId, onSuccess }) => {
-  const {fetchWithContext} = useAppContext();
-  
+  const { fetchWithContext } = useAppContext();
+
   return useMutation(
     (mutateParams) => {
       const reason = _.get(mutateParams, "reason");

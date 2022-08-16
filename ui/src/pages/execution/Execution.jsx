@@ -222,7 +222,12 @@ export default function Execution() {
                   </div>
                 )}
                 <div className={classes.frItem}>
-                  <NavLink newTab path={`/workflowDef/${execution.workflowName}`}>Definition</NavLink>
+                  <NavLink
+                    newTab
+                    path={`/workflowDef/${execution.workflowName}`}
+                  >
+                    Definition
+                  </NavLink>
                 </div>
                 <SecondaryButton onClick={refresh} style={{ marginRight: 10 }}>
                   Refresh

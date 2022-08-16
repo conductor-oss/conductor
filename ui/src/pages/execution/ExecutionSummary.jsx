@@ -53,6 +53,22 @@ export default function ExecutionSummary({ execution }) {
     });
   }
 
+  if (execution.externalInputPayloadStoragePath) {
+    data.push({
+      label: "Externalized Input",
+      value: execution.externalInputPayloadStoragePath,
+      type: "externalWorkflowInput",
+    });
+  }
+
+  if (execution.externalOutputPayloadStoragePath) {
+    data.push({
+      label: "Externalized Output",
+      value: execution.externalOutputPayloadStoragePath,
+      type: "externalWorkflowOutput",
+    });
+  }
+
   return (
     <div className={classes.wrapper}>
       <Paper className={classes.paper}>

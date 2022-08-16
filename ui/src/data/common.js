@@ -3,15 +3,14 @@ import { useQuery, useQueries, useMutation } from "react-query";
 import useAppContext from "../hooks/useAppContext";
 
 export function useFetchParallel(paths, reactQueryOptions) {
-  const {fetchWithContext, ready, stack} = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   return useQueries(
     paths.map((path) => {
       return {
         queryKey: [stack, ...path],
         queryFn: () => fetchWithContext(`/${path.join("/")}`),
-        enabled:
-          ready && _.get(reactQueryOptions, "enabled", true),
+        enabled: ready && _.get(reactQueryOptions, "enabled", true),
         keepPreviousData: true,
         ...reactQueryOptions,
       };
@@ -20,7 +19,7 @@ export function useFetchParallel(paths, reactQueryOptions) {
 }
 
 export function useFetch(key, path, reactQueryOptions, defaultResponse) {
-  const {fetchWithContext, ready, stack } = useAppContext();
+  const { fetchWithContext, ready, stack } = useAppContext();
 
   return useQuery(
     [stack, ...key],
@@ -40,7 +39,7 @@ export function useFetch(key, path, reactQueryOptions, defaultResponse) {
 }
 
 export function useAction(path, method = "post", callbacks) {
-  const {fetchWithContext} = useAppContext();
+  const { fetchWithContext } = useAppContext();
   return useMutation(
     (mutateParams) =>
       fetchWithContext(path, {
