@@ -181,17 +181,13 @@ export function useStartWorkflow(callbacks) {
 
   return useMutation(
     ({ body }) =>
-      fetchWithContext(
-        path,
-        {
-          method: "post",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
+      fetchWithContext(path, {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
         },
-        false
-      ),
+        body: JSON.stringify(body),
+      }),
     callbacks
   );
 }

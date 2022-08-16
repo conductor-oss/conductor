@@ -17,7 +17,12 @@ export default function handleError(res) {
       if (!text || text.length === 0) {
         return null;
       } else {
-        return JSONbig.parse(text);
+        try {
+          return JSONbig.parse(text);
+        } catch (e) {
+          // Fallback if response is not json
+          return text;
+        }
       }
     });
 }
