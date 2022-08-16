@@ -13,13 +13,17 @@
 package com.netflix.conductor.core.reconciliation;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.*;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -29,8 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -169,13 +172,18 @@ public class TestWorkflowRepairService {
     @Test
     public void assertAsyncCompleteInProgressSystemTasksAreNotCheckedAgainstQueue() {
         TaskModel task = new TaskModel();
-        task.setTaskType(TASK_TYPE_SUB_WORKFLOW);
+        task.setTaskType(TASK_TYPE_EVENT);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
+        task.setInputData(Map.of("asyncComplete", true));
 
-        WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
-        when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
+        WorkflowSystemTask workflowSystemTask =
+                new Event(
+                        mock(EventQueues.class),
+                        mock(ParametersUtils.class),
+                        mock(ObjectMapper.class));
+        when(systemTaskRegistry.get(TASK_TYPE_EVENT)).thenReturn(workflowSystemTask);
 
         assertTrue(workflowSystemTask.isAsyncComplete(task));
 
@@ -218,5 +226,35 @@ public class TestWorkflowRepairService {
         workflowRepairService.verifyAndRepairWorkflowTasks("abcd");
         verify(queueDAO, times(1)).containsMessage(anyString(), anyString());
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    public void assertInProgressSubWorkflowSystemTasksAreCheckedAndRepaired() {
+        String subWorkflowId = "subWorkflowId";
+        String taskId = "taskId";
+
+        TaskModel task = new TaskModel();
+        task.setTaskType(TASK_TYPE_SUB_WORKFLOW);
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId(taskId);
+        task.setCallbackAfterSeconds(60);
+        task.setSubWorkflowId(subWorkflowId);
+
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setWorkflowId(subWorkflowId);
+        subWorkflow.setStatus(WorkflowModel.Status.TERMINATED);
+
+        when(executionDAO.getWorkflow(subWorkflowId, false)).thenReturn(subWorkflow);
+
+        assertTrue(workflowRepairService.verifyAndRepairTask(task));
+        // Verify that queue message is never pushed for async complete system tasks
+        verify(queueDAO, never()).containsMessage(anyString(), anyString());
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        // Verify
+        ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
+        verify(executionDAO, times(1)).updateTask(argumentCaptor.capture());
+        assertEquals(taskId, argumentCaptor.getValue().getTaskId());
+        assertEquals(subWorkflowId, argumentCaptor.getValue().getSubWorkflowId());
+        assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getValue().getStatus());
     }
 }
