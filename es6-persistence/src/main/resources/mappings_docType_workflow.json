@@ -19,6 +19,10 @@
         "type": "text",
         "index": false
       },
+      "failedTaskNames": {
+        "type": "text",
+        "index": true
+      },
       "input": {
         "type": "text",
         "index": true

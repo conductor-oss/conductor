@@ -14,7 +14,9 @@ package com.netflix.conductor.common.run;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
@@ -83,6 +85,9 @@ public class WorkflowSummary {
     @ProtoField(id = 17)
     private int priority;
 
+    @ProtoField(id = 18)
+    private Set<String> failedTaskNames = new HashSet<>();
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -118,6 +123,7 @@ public class WorkflowSummary {
         this.event = workflow.getEvent();
         this.failedReferenceTaskNames =
                 workflow.getFailedReferenceTaskNames().stream().collect(Collectors.joining(","));
+        this.failedTaskNames = workflow.getFailedTaskNames();
         if (StringUtils.isNotBlank(workflow.getExternalInputPayloadStoragePath())) {
             this.externalInputPayloadStoragePath = workflow.getExternalInputPayloadStoragePath();
         }
@@ -238,6 +244,14 @@ public class WorkflowSummary {
 
     public void setFailedReferenceTaskNames(String failedReferenceTaskNames) {
         this.failedReferenceTaskNames = failedReferenceTaskNames;
+    }
+
+    public Set<String> getFailedTaskNames() {
+        return failedTaskNames;
+    }
+
+    public void setFailedTaskNames(Set<String> failedTaskNames) {
+        this.failedTaskNames = failedTaskNames;
     }
 
     public void setWorkflowType(String workflowType) {

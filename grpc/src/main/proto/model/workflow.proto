@@ -38,4 +38,5 @@ message Workflow {
     int32 priority = 22;
     map<string, google.protobuf.Value> variables = 23;
     int64 last_retried_time = 24;
+    repeated string failed_task_names = 25;
 }

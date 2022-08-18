@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -34,6 +35,7 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.es6.utils.TestUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
@@ -89,7 +91,7 @@ public class TestElasticSearchRestDAOV6 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
-    public void shouldIndexWorkflow() {
+    public void shouldIndexWorkflow() throws JsonProcessingException {
         WorkflowSummary workflowSummary =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         indexDAO.indexWorkflow(workflowSummary);
@@ -143,7 +145,7 @@ public class TestElasticSearchRestDAOV6 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
-    public void shouldUpdateWorkflow() {
+    public void shouldUpdateWorkflow() throws JsonProcessingException {
         WorkflowSummary workflowSummary =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         indexDAO.indexWorkflow(workflowSummary);
@@ -330,7 +332,8 @@ public class TestElasticSearchRestDAOV6 extends ElasticSearchRestDaoBaseTest {
                 "status=\"" + status + "\" AND workflowType=\"" + workflowName + "\"", "*");
     }
 
-    private void assertWorkflowSummary(String workflowId, WorkflowSummary summary) {
+    private void assertWorkflowSummary(String workflowId, WorkflowSummary summary)
+            throws JsonProcessingException {
         assertEquals(summary.getWorkflowType(), indexDAO.get(workflowId, "workflowType"));
         assertEquals(String.valueOf(summary.getVersion()), indexDAO.get(workflowId, "version"));
         assertEquals(summary.getWorkflowId(), indexDAO.get(workflowId, "workflowId"));
@@ -351,6 +354,9 @@ public class TestElasticSearchRestDAOV6 extends ElasticSearchRestDaoBaseTest {
         assertEquals(
                 summary.getFailedReferenceTaskNames(),
                 indexDAO.get(workflowId, "failedReferenceTaskNames"));
+        assertEquals(
+                summary.getFailedTaskNames(),
+                objectMapper.readValue(indexDAO.get(workflowId, "failedTaskNames"), Set.class));
     }
 
     private <T> List<T> tryFindResults(Supplier<List<T>> searchFunction) {
