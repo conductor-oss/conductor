@@ -158,8 +158,8 @@ class WorkflowTestUtil {
 
         TaskDef eventTaskX = new TaskDef()
         eventTaskX.name = 'eventX'
-        eventTaskX.timeoutSeconds = 1
-        eventTaskX.responseTimeoutSeconds = 1
+        eventTaskX.timeoutSeconds = 10
+        eventTaskX.responseTimeoutSeconds = 10
         eventTaskX.ownerEmail = DEFAULT_EMAIL_ADDRESS
 
         metadataService.registerTaskDef(
