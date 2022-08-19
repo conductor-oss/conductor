@@ -88,6 +88,9 @@ public class TaskSummary {
     @ProtoField(id = 19)
     private int workflowPriority;
 
+    @ProtoField(id = 20)
+    private String domain;
+
     public TaskSummary() {}
 
     public TaskSummary(Task task) {
@@ -109,6 +112,7 @@ public class TaskSummary {
         this.status = task.getStatus();
         this.reasonForIncompletion = task.getReasonForIncompletion();
         this.queueWaitTime = task.getQueueWaitTime();
+        this.domain = task.getDomain();
         if (task.getInputData() != null) {
             this.input = SummaryUtil.serializeInputOutput(task.getInputData());
         }
@@ -397,6 +401,20 @@ public class TaskSummary {
         this.workflowPriority = workflowPriority;
     }
 
+    /**
+     * @return the domain that the task was scheduled in
+     */
+    public String getDomain() {
+        return domain;
+    }
+
+    /**
+     * @param domain The domain that the task was scheduled in
+     */
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -420,7 +438,8 @@ public class TaskSummary {
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
                 && Objects.equals(getTaskDefName(), that.getTaskDefName())
                 && getTaskType().equals(that.getTaskType())
-                && getTaskId().equals(that.getTaskId());
+                && getTaskId().equals(that.getTaskId())
+                && getDomain().equals(that.getDomain());
     }
 
     @Override
@@ -440,6 +459,7 @@ public class TaskSummary {
                 getTaskDefName(),
                 getTaskType(),
                 getTaskId(),
-                getWorkflowPriority());
+                getWorkflowPriority(),
+                getDomain());
     }
 }
