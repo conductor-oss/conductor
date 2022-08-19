@@ -1034,6 +1034,9 @@ public class WorkflowExecutor {
     public void updateTask(TaskResult taskResult) {
         if (taskResult == null) {
             throw new IllegalArgumentException("Task object is null");
+        } else if (taskResult.isExtendLease()) {
+            extendLease(taskResult);
+            return;
         }
 
         String workflowId = taskResult.getWorkflowInstanceId();
@@ -1189,6 +1192,34 @@ public class WorkflowExecutor {
             expediteLazyWorkflowEvaluation(workflowId);
         } else {
             decide(workflowId);
+        }
+    }
+
+    private void extendLease(TaskResult taskResult) {
+        TaskModel task =
+                Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "No such task found by id: %s",
+                                                taskResult.getTaskId()));
+
+        LOGGER.debug(
+                "Extend lease for Task: {} belonging to Workflow: {}",
+                task,
+                task.getWorkflowInstanceId());
+        if (!task.getStatus().isTerminal()) {
+            try {
+                executionDAOFacade.extendLease(task);
+            } catch (Exception e) {
+                String errorMsg =
+                        String.format(
+                                "Error extend lease for Task: %s belonging to Workflow: %s",
+                                task.getTaskId(), task.getWorkflowInstanceId());
+                LOGGER.error(errorMsg, e);
+                Monitors.recordTaskExtendLeaseError(task.getTaskType(), task.getWorkflowType());
+                throw new TransientException(errorMsg, e);
+            }
         }
     }
 

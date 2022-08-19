@@ -362,6 +362,16 @@ public class Monitors {
                 taskType);
     }
 
+    public static void recordTaskExtendLeaseError(String taskType, String workflowType) {
+        counter(
+                classQualifier,
+                "task_extendLease_error",
+                "workflowName",
+                workflowType,
+                "taskType",
+                taskType);
+    }
+
     public static void recordTaskQueueOpError(String taskType, String workflowType) {
         counter(
                 classQualifier,

@@ -45,6 +45,8 @@ public class MetricsContainer {
     private static final String TASK_ACK_FAILED = "task_ack_failed";
     private static final String TASK_ACK_ERROR = "task_ack_error";
     private static final String TASK_UPDATE_ERROR = "task_update_error";
+    private static final String TASK_LEASE_EXTEND_ERROR = "task_lease_extend_error";
+    private static final String TASK_LEASE_EXTEND_COUNTER = "task_lease_extend_counter";
     private static final String TASK_POLL_COUNTER = "task_poll_counter";
     private static final String TASK_EXECUTE_TIME = "task_execute_time";
     private static final String TASK_POLL_TIME = "task_poll_time";
@@ -154,6 +156,19 @@ public class MetricsContainer {
     public static void incrementTaskUpdateErrorCount(String taskType, Throwable t) {
         incrementCount(
                 TASK_UPDATE_ERROR, TASK_TYPE, taskType, EXCEPTION, t.getClass().getSimpleName());
+    }
+
+    public static void incrementTaskLeaseExtendErrorCount(String taskType, Throwable t) {
+        incrementCount(
+                TASK_LEASE_EXTEND_ERROR,
+                TASK_TYPE,
+                taskType,
+                EXCEPTION,
+                t.getClass().getSimpleName());
+    }
+
+    public static void incrementTaskLeaseExtendCount(String taskType, int taskCount) {
+        getCounter(TASK_LEASE_EXTEND_COUNTER, TASK_TYPE, taskType).increment(taskCount);
     }
 
     public static void incrementTaskPollCount(String taskType, int taskCount) {

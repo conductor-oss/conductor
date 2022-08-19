@@ -270,7 +270,8 @@ public class TaskRunnerConfigurer {
      * shutdown of your worker, during process termination.
      */
     public void shutdown() {
-        taskPollExecutor.shutdownExecutorService(
+        taskPollExecutor.shutdownAndAwaitTermination(
                 scheduledExecutorService, shutdownGracePeriodSeconds);
+        taskPollExecutor.shutdown(shutdownGracePeriodSeconds);
     }
 }

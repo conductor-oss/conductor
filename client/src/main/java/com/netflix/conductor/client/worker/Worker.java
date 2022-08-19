@@ -91,6 +91,10 @@ public interface Worker {
         return PropertyFactory.getInteger(getTaskDefName(), "pollInterval", 1000);
     }
 
+    default boolean leaseExtendEnabled() {
+        return PropertyFactory.getBoolean(getTaskDefName(), "leaseExtendEnabled", false);
+    }
+
     static Worker create(String taskType, Function<Task, TaskResult> executor) {
         return new Worker() {
 

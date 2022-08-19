@@ -509,6 +509,11 @@ public class ExecutionDAOFacade {
         executionDAO.removeTask(taskId);
     }
 
+    public void extendLease(TaskModel taskModel) {
+        taskModel.setUpdateTime(System.currentTimeMillis());
+        executionDAO.updateTask(taskModel);
+    }
+
     public List<PollData> getTaskPollData(String taskName) {
         return pollDataDAO.getPollData(taskName);
     }
