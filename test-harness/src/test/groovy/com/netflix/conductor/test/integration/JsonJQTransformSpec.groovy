@@ -24,9 +24,13 @@ class JsonJQTransformSpec extends AbstractSpecification {
     @Shared
     def JSON_JQ_TRANSFORM_WF = 'test_json_jq_transform_wf'
 
+    @Shared
+    def SEQUENTIAL_JSON_JQ_TRANSFORM_WF = 'sequential_json_jq_transform_wf'
+
     def setup() {
         workflowTestUtil.registerWorkflows(
                 'simple_json_jq_transform_integration_test.json',
+                'sequential_json_jq_transform_integration_test.json'
         )
     }
 
@@ -146,6 +150,41 @@ class JsonJQTransformSpec extends AbstractSpecification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'JSON_JQ_TRANSFORM'
             tasks[0].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
+        }
+    }
+
+    def "Test json jq transform task with nested json object succeeds"() {
+        given: "workflow input"
+        def workflowInput = new HashMap()
+        workflowInput["method"] = "POST"
+        workflowInput['body'] = new HashMap()
+        workflowInput['body']['name'] = "Beary Beariston"
+        workflowInput['body']['title'] = "the Brown Bear"
+        workflowInput["requestTransform"] = "{name: (.body.name + \" you are \" + .body.title) }"
+        workflowInput["responseTransform"] = "{result: \"reply: \" + .response.body.message}"
+
+        when: "workflow which has the json jq transform task has started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(SEQUENTIAL_JSON_JQ_TRANSFORM_WF, 1,
+                '', workflowInput, null, null, null)
+
+        then: "verify that the workflow and task are completed with expected output"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 2
+
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[0].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
+            HashMap<String, Object> result1 = (HashMap<String, Object>) tasks[0].outputData.get("result")
+            result1.get("method") == workflowInput["method"]
+            result1.get("requestTransform") == workflowInput["requestTransform"]
+            result1.get("responseTransform") == workflowInput["responseTransform"]
+
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[1].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
+            HashMap<String, Object> result2 = (HashMap<String, Object>) tasks[1].outputData.get("result")
+            result2.get("name") == "Beary Beariston you are the Brown Bear"
         }
     }
 }

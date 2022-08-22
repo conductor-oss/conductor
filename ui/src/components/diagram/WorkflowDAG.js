@@ -143,8 +143,15 @@ export default class WorkflowDAG {
 
       // Special case - When the antecedent of an executed node is a SWITCH, the edge may not necessarily be highlighted.
       // E.g. the default edge not taken.
+      //
       // SWITCH is the newer version of DECISION and DECISION is deprecated
-      if (antecedent.type === "SWITCH" || antecedent.type === "DECISION") {
+      //
+      // Skip this if current type is DO_WHILE_END - which means the SWITCH is one of the bundled
+      // loop tasks and the current task is not the result of a decision
+      if (
+        taskConfig.type !== "DO_WHILE_END" &&
+        (antecedent.type === "SWITCH" || antecedent.type === "DECISION")
+      ) {
         edgeParams.caseValue = getCaseValue(
           taskConfig.taskReferenceName,
           antecedent
@@ -257,6 +264,7 @@ export default class WorkflowDAG {
     this.addVertex(doWhileTask, antecedents);
 
     // Bottom bar
+    // aliasForRef indicates when the bottom bar is clicked one we should highlight the ref
     let endDoWhileTask = {
       type: "DO_WHILE_END",
       name: doWhileTask.name,
@@ -268,6 +276,16 @@ export default class WorkflowDAG {
       (t) => t.taskReferenceName
     );
     if (hasDoWhileExecuted) {
+      // Create cosmetic LOOP edges between top and bottom bars
+      this.graph.setEdge(
+        doWhileTask.taskReferenceName,
+        doWhileTask.taskReferenceName + "-END",
+        {
+          type: "loop",
+          executed: hasDoWhileExecuted,
+        }
+      );
+
       const loopOverRefs = Array.from(this.taskResultsByRef.keys()).filter(
         (key) => {
           for (let prefix of loopOverRefPrefixes) {
@@ -298,10 +316,27 @@ export default class WorkflowDAG {
       // Definition view (or not executed)
 
       this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
-      this.addVertex(endDoWhileTask, [_.last(doWhileTask.loopOver)]);
+
+      const lastLoopTask = _.last(doWhileTask.loopOver);
+
+      // Connect the end of each case to the loop end
+      if (
+        lastLoopTask?.type === "SWITCH" ||
+        lastLoopTask?.type === "DECISION"
+      ) {
+        Object.entries(lastLoopTask.decisionCases).forEach(
+          ([caseValue, tasks]) => {
+            const lastTaskInCase = _.last(tasks);
+            this.addVertex(endDoWhileTask, [lastTaskInCase]);
+          }
+        );
+      }
+
+      // Default case
+      this.addVertex(endDoWhileTask, [lastLoopTask]);
     }
 
-    // Create cosmetic LOOP edges between top and bottom bars
+    // Create reverse loop edge
     this.graph.setEdge(
       doWhileTask.taskReferenceName,
       doWhileTask.taskReferenceName + "-END",

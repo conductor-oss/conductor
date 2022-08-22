@@ -177,6 +177,27 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
+    public void testWorkflowTaskTypeWait() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("WAIT");
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+        workflowTask.setInputParameters(Map.of("duration", "10s", "until", "2022-04-16"));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(
+                validationErrors.contains(
+                        "Both 'duration' and 'until' specified. Please provide only one input"));
+    }
+
+    @Test
     public void testWorkflowTaskTypeDecisionWithCaseParam() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("DECISION");

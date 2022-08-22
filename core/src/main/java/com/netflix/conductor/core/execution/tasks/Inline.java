@@ -82,15 +82,20 @@ public class Inline extends WorkflowSystemTask {
             taskOutput.put("result", evalResult);
             task.setStatus(TaskModel.Status.COMPLETED);
         } catch (Exception e) {
+            String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
             LOGGER.error(
                     "Failed to execute Inline Task: {} in workflow: {}",
                     task.getTaskId(),
                     workflow.getWorkflowId(),
                     e);
-            task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion(e.getMessage());
-            taskOutput.put(
-                    "error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            // TerminateWorkflowException is thrown when the script evaluation fails
+            // Retry will result in the same error, so FAILED_WITH_TERMINAL_ERROR status is used.
+            task.setStatus(
+                    e instanceof TerminateWorkflowException
+                            ? TaskModel.Status.FAILED_WITH_TERMINAL_ERROR
+                            : TaskModel.Status.FAILED);
+            task.setReasonForIncompletion(errorMessage);
+            taskOutput.put("error", errorMessage);
         }
 
         return true;
@@ -98,22 +103,22 @@ public class Inline extends WorkflowSystemTask {
 
     private void checkEvaluatorType(String evaluatorType) {
         if (StringUtils.isBlank(evaluatorType)) {
-            LOGGER.error("Empty {} in Inline task. ", QUERY_EVALUATOR_TYPE);
+            LOGGER.error("Empty {} in INLINE task. ", QUERY_EVALUATOR_TYPE);
             throw new TerminateWorkflowException(
                     "Empty '"
                             + QUERY_EVALUATOR_TYPE
-                            + "' in Inline task's input parameters. A non-empty String value must be provided.");
+                            + "' in INLINE task's input parameters. A non-empty String value must be provided.");
         }
         if (evaluators.get(evaluatorType) == null) {
-            LOGGER.error("Evaluator {} for Inline task not registered", evaluatorType);
+            LOGGER.error("Evaluator {} for INLINE task not registered", evaluatorType);
             throw new TerminateWorkflowException(
-                    "Unknown evaluator '" + evaluatorType + "' in Inline task.");
+                    "Unknown evaluator '" + evaluatorType + "' in INLINE task.");
         }
     }
 
     private void checkExpression(String expression) {
         if (StringUtils.isBlank(expression)) {
-            LOGGER.error("Empty {} in Inline task. ", QUERY_EXPRESSION_PARAMETER);
+            LOGGER.error("Empty {} in INLINE task. ", QUERY_EXPRESSION_PARAMETER);
             throw new TerminateWorkflowException(
                     "Empty '"
                             + QUERY_EXPRESSION_PARAMETER

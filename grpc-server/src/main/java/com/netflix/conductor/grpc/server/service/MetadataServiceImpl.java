@@ -56,6 +56,16 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
+    public void validateWorkflow(
+            MetadataServicePb.ValidateWorkflowRequest req,
+            StreamObserver<MetadataServicePb.ValidateWorkflowResponse> response) {
+        WorkflowDef workflow = PROTO_MAPPER.fromProto(req.getWorkflow());
+        service.validateWorkflowDef(workflow);
+        response.onNext(MetadataServicePb.ValidateWorkflowResponse.getDefaultInstance());
+        response.onCompleted();
+    }
+
+    @Override
     public void updateWorkflows(
             MetadataServicePb.UpdateWorkflowsRequest req,
             StreamObserver<MetadataServicePb.UpdateWorkflowsResponse> response) {

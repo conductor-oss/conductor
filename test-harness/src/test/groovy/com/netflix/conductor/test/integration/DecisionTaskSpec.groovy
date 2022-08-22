@@ -183,6 +183,9 @@ class DecisionTaskSpec extends AbstractSpecification {
         when: "the task 'integration_task_20' is polled and completed"
         def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker')
 
+        and: "the workflow is evaluated"
+        sweep(workflowInstanceId)
+
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTask20Try1)
 

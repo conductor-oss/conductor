@@ -215,6 +215,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
             output['validationErrors'] == 'There was a terminal error'
             getTaskByRefName('t1').retryCount == 0
             failedReferenceTaskNames == ['t1'] as HashSet
+            failedTaskNames == ['integration_task_1'] as HashSet
         }
 
         cleanup:
@@ -599,6 +600,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
             tasks[1].taskId == tasks[2].retriedTaskId
             tasks[2].taskId == tasks[3].retriedTaskId
             failedReferenceTaskNames == ['t2'] as HashSet
+            failedTaskNames == ['integration_task_2'] as HashSet
         }
 
         cleanup:
@@ -700,6 +702,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
             tasks[2].status == Task.Status.COMPLETED
             tasks[3].status == Task.Status.COMPLETED
             failedReferenceTaskNames == ['t1'] as HashSet
+            failedTaskNames == ['integration_task_1'] as HashSet
         }
 
         cleanup:

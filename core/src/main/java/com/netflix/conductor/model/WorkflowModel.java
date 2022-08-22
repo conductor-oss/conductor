@@ -23,6 +23,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.Utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class WorkflowModel {
@@ -74,7 +75,11 @@ public class WorkflowModel {
 
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<String> failedReferenceTaskNames = new HashSet<>();
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Set<String> failedTaskNames = new HashSet<>();
 
     private WorkflowDef workflowDefinition;
 
@@ -279,6 +284,14 @@ public class WorkflowModel {
 
     public void setFailedReferenceTaskNames(Set<String> failedReferenceTaskNames) {
         this.failedReferenceTaskNames = failedReferenceTaskNames;
+    }
+
+    public Set<String> getFailedTaskNames() {
+        return failedTaskNames;
+    }
+
+    public void setFailedTaskNames(Set<String> failedTaskNames) {
+        this.failedTaskNames = failedTaskNames;
     }
 
     public WorkflowDef getWorkflowDefinition() {
@@ -489,6 +502,7 @@ public class WorkflowModel {
                 && Objects.equals(getEvent(), that.getEvent())
                 && Objects.equals(getTaskToDomain(), that.getTaskToDomain())
                 && Objects.equals(getFailedReferenceTaskNames(), that.getFailedReferenceTaskNames())
+                && Objects.equals(getFailedTaskNames(), that.getFailedTaskNames())
                 && Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition())
                 && Objects.equals(
                         getExternalInputPayloadStoragePath(),
@@ -521,6 +535,7 @@ public class WorkflowModel {
                 getEvent(),
                 getTaskToDomain(),
                 getFailedReferenceTaskNames(),
+                getFailedTaskNames(),
                 getWorkflowDefinition(),
                 getExternalInputPayloadStoragePath(),
                 getExternalOutputPayloadStoragePath(),

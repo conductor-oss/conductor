@@ -375,6 +375,20 @@ public class ExecutionDAOFacade {
         }
     }
 
+    public void removeWorkflowWithExpiry(
+            String workflowId, boolean archiveWorkflow, int ttlSeconds) {
+        try {
+            WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
+
+            removeWorkflowIndex(workflow, archiveWorkflow);
+            // remove workflow from DAO with TTL
+            executionDAO.removeWorkflowWithExpiry(workflowId, ttlSeconds);
+        } catch (Exception e) {
+            Monitors.recordDaoError("executionDao", "removeWorkflow");
+            throw new TransientException("Error removing workflow: " + workflowId, e);
+        }
+    }
+
     /**
      * Reset the workflow state by removing from the {@link ExecutionDAO} and removing this workflow
      * from the {@link IndexDAO}.
@@ -493,6 +507,11 @@ public class ExecutionDAOFacade {
 
     public void removeTask(String taskId) {
         executionDAO.removeTask(taskId);
+    }
+
+    public void extendLease(TaskModel taskModel) {
+        taskModel.setUpdateTime(System.currentTimeMillis());
+        executionDAO.updateTask(taskModel);
     }
 
     public List<PollData> getTaskPollData(String taskName) {
@@ -622,7 +641,7 @@ public class ExecutionDAOFacade {
      * @param workflowModel the workflowModel for which the payload data needs to be populated from
      *     external storage (if applicable)
      */
-    private void populateWorkflowAndTaskPayloadData(WorkflowModel workflowModel) {
+    public void populateWorkflowAndTaskPayloadData(WorkflowModel workflowModel) {
         if (StringUtils.isNotBlank(workflowModel.getExternalInputPayloadStoragePath())) {
             Map<String, Object> workflowInputParams =
                     externalPayloadStorageUtils.downloadPayload(
@@ -648,7 +667,7 @@ public class ExecutionDAOFacade {
         workflowModel.getTasks().forEach(this::populateTaskData);
     }
 
-    private void populateTaskData(TaskModel taskModel) {
+    public void populateTaskData(TaskModel taskModel) {
         if (StringUtils.isNotBlank(taskModel.getExternalOutputPayloadStoragePath())) {
             Map<String, Object> outputData =
                     externalPayloadStorageUtils.downloadPayload(

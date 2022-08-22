@@ -14,7 +14,6 @@ package com.netflix.conductor.core.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -32,6 +31,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -69,7 +69,9 @@ public class ExternalPayloadStorageUtils {
         try (InputStream inputStream = externalPayloadStorage.download(path)) {
             return objectMapper.readValue(
                     IOUtils.toString(inputStream, StandardCharsets.UTF_8), Map.class);
-        } catch (IOException e) {
+        } catch (TransientException te) {
+            throw te;
+        } catch (Exception e) {
             LOGGER.error("Unable to download payload from external storage path: {}", path, e);
             throw new NonTransientException(
                     "Unable to download payload from external storage path: " + path, e);
@@ -186,7 +188,9 @@ public class ExternalPayloadStorageUtils {
                         break;
                 }
             }
-        } catch (IOException e) {
+        } catch (TransientException te) {
+            throw te;
+        } catch (Exception e) {
             LOGGER.error(
                     "Unable to upload payload to external storage for workflow: {}", workflowId, e);
             throw new NonTransientException(

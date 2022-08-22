@@ -97,6 +97,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         def pollAndCompleteTask3Try = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker',
                 ['ok1': 'ov1'])
 
+        and: "workflow is evaluated by the reconciler"
+        sweep(workflowInstanceId)
+
         then: "verify that the tasks were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask3Try, ['k2': 'v2'])
@@ -194,6 +197,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         when: "Poll and fail 'integration_task_2'"
         def pollAndCompleteTask2Try = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.worker', 'it is a failure..')
 
+        and: "workflow is evaluated by the reconciler"
+        sweep(workflowInstanceId)
+
         then: "verify that the tasks were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])
 
@@ -275,6 +281,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         when: "Poll and fail 'integration_task_2'"
         def pollAndCompleteTask2Try1 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.worker', 'it is a failure..')
 
+        and: "workflow is evaluated by the reconciler"
+        sweep(workflowInstanceId)
+
         then: "verify that the tasks were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try1, ['k1': 'v1'])
 
@@ -318,6 +327,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
                 ['ok1': 'ov1'])
         def pollAndCompleteTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker',
                 ['ok1': 'ov1'])
+
+        and: "workflow is evaluated by the reconciler"
+        sweep(workflowInstanceId)
 
         then: "verify that the tasks were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try2, ['k1': 'v1'])
@@ -726,6 +738,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         when: "Poll and complete 'integration_task_2' and 'integration_task_3'"
         def pollAndCompleteTask2Try = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
         def pollAndCompleteTask3Try = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker')
+
+        and: "workflow is evaluated by the reconciler"
+        sweep(workflowInstanceId)
 
         then: "verify that the tasks were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])

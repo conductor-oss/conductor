@@ -934,6 +934,9 @@ public abstract class AbstractProtoMapper {
             to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         }
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        if (from.getDomain() != null) {
+            to.setDomain( from.getDomain() );
+        }
         return to.build();
     }
 
@@ -958,6 +961,7 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        to.setDomain( from.getDomain() );
         return to;
     }
 
@@ -1013,6 +1017,7 @@ public abstract class AbstractProtoMapper {
             to.putVariables( pair.getKey(), toProto( pair.getValue() ) );
         }
         to.setLastRetriedTime( from.getLastRetriedTime() );
+        to.addAllFailedTaskNames( from.getFailedTaskNames() );
         return to.build();
     }
 
@@ -1052,6 +1057,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setVariables(variablesMap);
         to.setLastRetriedTime( from.getLastRetriedTime() );
+        to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
         return to;
     }
 
@@ -1240,6 +1246,7 @@ public abstract class AbstractProtoMapper {
             to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         }
         to.setPriority( from.getPriority() );
+        to.addAllFailedTaskNames( from.getFailedTaskNames() );
         return to.build();
     }
 
@@ -1262,6 +1269,7 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         to.setPriority( from.getPriority() );
+        to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
         return to;
     }
 

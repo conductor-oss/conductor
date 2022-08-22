@@ -12,15 +12,11 @@
  */
 package com.netflix.conductor.client.http
 
-
-import java.nio.charset.StandardCharsets
-
-import org.apache.commons.io.IOUtils
-
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.SearchResult
 import com.netflix.conductor.common.run.TaskSummary
 
+import com.sun.jersey.api.client.ClientResponse
 import spock.lang.Subject
 
 class TaskClientSpec extends ClientSpecification {
@@ -40,14 +36,15 @@ class TaskClientSpec extends ClientSpecification {
         result.totalHits = 1
         result.results = [new TaskSummary()]
 
-        InputStream json = toInputStream(result)
         URI uri = createURI("tasks/search?query=$query")
 
         when:
         SearchResult<TaskSummary> searchResult = taskClient.search(query)
 
         then:
-        1 * requestHandler.get(uri) >> json
+        1 * requestHandler.get(uri) >>  Mock(ClientResponse.class) {
+            getEntity(_) >> result
+        }
 
         searchResult.totalHits == result.totalHits
         searchResult.results && searchResult.results.size() == 1
@@ -61,14 +58,15 @@ class TaskClientSpec extends ClientSpecification {
         result.totalHits = 1
         result.results = [new Task()]
 
-        InputStream json = toInputStream(result)
         URI uri = createURI("tasks/search-v2?query=$query")
 
         when:
         SearchResult<Task> searchResult = taskClient.searchV2('my_complex_query')
 
         then:
-        1 * requestHandler.get(uri) >> json
+        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
+            getEntity(_) >> result
+        }
 
         searchResult.totalHits == result.totalHits
         searchResult.results && searchResult.results.size() == 1
@@ -86,14 +84,15 @@ class TaskClientSpec extends ClientSpecification {
         result.totalHits = 1
         result.results = [new TaskSummary()]
 
-        InputStream json = toInputStream(result)
         URI uri = createURI("tasks/search?start=$start&size=$size&sort=$sort&freeText=$freeText&query=$query")
 
         when:
         SearchResult<TaskSummary> searchResult = taskClient.search(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> json
+        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
+            getEntity(_) >> result
+        }
 
         searchResult.totalHits == result.totalHits
         searchResult.results && searchResult.results.size() == 1
@@ -111,14 +110,15 @@ class TaskClientSpec extends ClientSpecification {
         result.totalHits = 1
         result.results = [new Task()]
 
-        InputStream json = toInputStream(result)
         URI uri = createURI("tasks/search-v2?start=$start&size=$size&sort=$sort&freeText=$freeText&query=$query")
 
         when:
         SearchResult<Task> searchResult = taskClient.searchV2(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> json
+        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
+            getEntity(_) >> result
+        }
 
         searchResult.totalHits == result.totalHits
         searchResult.results && searchResult.results.size() == 1

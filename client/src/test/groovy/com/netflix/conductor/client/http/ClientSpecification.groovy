@@ -12,10 +12,6 @@
  */
 package com.netflix.conductor.client.http
 
-import java.nio.charset.StandardCharsets
-
-import org.apache.commons.io.IOUtils
-
 import com.netflix.conductor.common.config.ObjectMapperProvider
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -29,20 +25,12 @@ abstract class ClientSpecification extends Specification {
         URI.create(ROOT_URL + path)
     }
 
-    protected RequestHandler requestHandler
+    protected ClientRequestHandler requestHandler
     protected ObjectMapper objectMapper
 
     def setup() {
-        requestHandler = Mock(RequestHandler.class)
+        requestHandler = Mock(ClientRequestHandler.class)
 
         objectMapper = new ObjectMapperProvider().getObjectMapper()
-    }
-
-    protected InputStream toInputStream(Object value) {
-        return IOUtils.toInputStream(objectMapper.writeValueAsString(value), StandardCharsets.UTF_8)
-    }
-
-    protected static InputStream toInputStream(String value) {
-        return IOUtils.toInputStream(value, StandardCharsets.UTF_8)
     }
 }

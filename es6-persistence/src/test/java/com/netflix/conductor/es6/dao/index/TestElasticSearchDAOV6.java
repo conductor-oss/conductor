@@ -31,6 +31,7 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.es6.utils.TestUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
@@ -98,7 +99,7 @@ public class TestElasticSearchDAOV6 extends ElasticSearchDaoBaseTest {
     }
 
     @Test
-    public void shouldIndexWorkflow() {
+    public void shouldIndexWorkflow() throws JsonProcessingException {
         WorkflowSummary workflow = TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         indexDAO.indexWorkflow(workflow);
 
@@ -146,7 +147,7 @@ public class TestElasticSearchDAOV6 extends ElasticSearchDaoBaseTest {
     }
 
     @Test
-    public void shouldUpdateWorkflow() {
+    public void shouldUpdateWorkflow() throws JsonProcessingException {
         WorkflowSummary workflow = TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         indexDAO.indexWorkflow(workflow);
 
@@ -332,7 +333,8 @@ public class TestElasticSearchDAOV6 extends ElasticSearchDaoBaseTest {
                 "status=\"" + status + "\" AND workflowType=\"" + workflowName + "\"", "*");
     }
 
-    private void assertWorkflowSummary(String workflowId, WorkflowSummary summary) {
+    private void assertWorkflowSummary(String workflowId, WorkflowSummary summary)
+            throws JsonProcessingException {
         assertEquals(summary.getWorkflowType(), indexDAO.get(workflowId, "workflowType"));
         assertEquals(String.valueOf(summary.getVersion()), indexDAO.get(workflowId, "version"));
         assertEquals(summary.getWorkflowId(), indexDAO.get(workflowId, "workflowId"));
@@ -353,6 +355,9 @@ public class TestElasticSearchDAOV6 extends ElasticSearchDaoBaseTest {
         assertEquals(
                 summary.getFailedReferenceTaskNames(),
                 indexDAO.get(workflowId, "failedReferenceTaskNames"));
+        assertEquals(
+                summary.getFailedTaskNames(),
+                objectMapper.readValue(indexDAO.get(workflowId, "failedTaskNames"), Set.class));
     }
 
     private <T> List<T> tryFindResults(Supplier<List<T>> searchFunction) {

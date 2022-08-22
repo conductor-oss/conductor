@@ -27,6 +27,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -73,8 +74,8 @@ public class WorkflowSweeper {
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
             }
 
-            boolean done = workflowExecutor.decide(workflowId);
-            if (done) {
+            WorkflowModel workflow = workflowExecutor.decide(workflowId);
+            if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
             }

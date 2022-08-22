@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
-import com.netflix.conductor.client.http.RequestHandler;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -44,11 +43,11 @@ public class TaskRunnerConfigurerTest {
 
     private static final String TEST_TASK_DEF_NAME = "test";
 
-    private RequestHandler requestHandler;
+    private TaskClient client;
 
     @Before
     public void setup() {
-        requestHandler = Mockito.mock(RequestHandler.class);
+        client = Mockito.mock(TaskClient.class);
     }
 
     @Test(expected = NullPointerException.class)
@@ -63,8 +62,7 @@ public class TaskRunnerConfigurerTest {
         Map<String, Integer> taskThreadCount = new HashMap<>();
         taskThreadCount.put(worker1.getTaskDefName(), 2);
         taskThreadCount.put(worker2.getTaskDefName(), 3);
-        new TaskRunnerConfigurer.Builder(
-                        new TaskClient(requestHandler), Arrays.asList(worker1, worker2))
+        new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
                 .withThreadCount(10)
                 .withTaskThreadCount(taskThreadCount)
                 .build();
@@ -76,8 +74,7 @@ public class TaskRunnerConfigurerTest {
         Worker worker2 = Worker.create("task2", TaskResult::new);
         Map<String, Integer> taskThreadCount = new HashMap<>();
         taskThreadCount.put(worker1.getTaskDefName(), 2);
-        new TaskRunnerConfigurer.Builder(
-                        new TaskClient(requestHandler), Arrays.asList(worker1, worker2))
+        new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
                 .withTaskThreadCount(taskThreadCount)
                 .build();
     }
@@ -90,8 +87,7 @@ public class TaskRunnerConfigurerTest {
         taskThreadCount.put(worker1.getTaskDefName(), 2);
         taskThreadCount.put(worker2.getTaskDefName(), 3);
         TaskRunnerConfigurer configurer =
-                new TaskRunnerConfigurer.Builder(
-                                new TaskClient(requestHandler), Arrays.asList(worker1, worker2))
+                new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
                         .withTaskThreadCount(taskThreadCount)
                         .build();
         configurer.init();
@@ -104,9 +100,7 @@ public class TaskRunnerConfigurerTest {
     public void testSharedThreadPool() {
         Worker worker = Worker.create(TEST_TASK_DEF_NAME, TaskResult::new);
         TaskRunnerConfigurer configurer =
-                new TaskRunnerConfigurer.Builder(
-                                new TaskClient(requestHandler),
-                                Arrays.asList(worker, worker, worker))
+                new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker, worker, worker))
                         .build();
         configurer.init();
         assertEquals(3, configurer.getThreadCount());
@@ -116,8 +110,7 @@ public class TaskRunnerConfigurerTest {
         assertTrue(configurer.getTaskThreadCount().isEmpty());
 
         configurer =
-                new TaskRunnerConfigurer.Builder(
-                                new TaskClient(requestHandler), Collections.singletonList(worker))
+                new TaskRunnerConfigurer.Builder(client, Collections.singletonList(worker))
                         .withThreadCount(100)
                         .withSleepWhenRetry(100)
                         .withUpdateRetryCount(10)

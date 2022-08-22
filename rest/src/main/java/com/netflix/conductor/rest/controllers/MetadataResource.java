@@ -50,6 +50,12 @@ public class MetadataResource {
         metadataService.registerWorkflowDef(workflowDef);
     }
 
+    @PostMapping("/workflow/validate")
+    @Operation(summary = "Validates a new workflow definition")
+    public void validate(@RequestBody WorkflowDef workflowDef) {
+        metadataService.validateWorkflowDef(workflowDef);
+    }
+
     @PutMapping("/workflow")
     @Operation(summary = "Create or update workflow definition")
     public void update(@RequestBody List<WorkflowDef> workflowDefs) {

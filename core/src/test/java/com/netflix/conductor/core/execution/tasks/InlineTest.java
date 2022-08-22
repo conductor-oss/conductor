@@ -44,7 +44,7 @@ public class InlineTest {
         TaskModel task = new TaskModel();
         task.getInputData().putAll(inputObj);
         inline.execute(workflow, task, executor);
-        assertEquals(TaskModel.Status.FAILED, task.getStatus());
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
                 "Empty 'expression' in Inline task's input parameters. A non-empty String value must be provided.",
                 task.getReasonForIncompletion());
@@ -57,9 +57,9 @@ public class InlineTest {
         task = new TaskModel();
         task.getInputData().putAll(inputObj);
         inline.execute(workflow, task, executor);
-        assertEquals(TaskModel.Status.FAILED, task.getStatus());
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
-                "Empty 'evaluatorType' in Inline task's input parameters. A non-empty String value must be provided.",
+                "Empty 'evaluatorType' in INLINE task's input parameters. A non-empty String value must be provided.",
                 task.getReasonForIncompletion());
     }
 

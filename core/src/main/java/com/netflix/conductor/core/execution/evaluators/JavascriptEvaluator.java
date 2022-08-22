@@ -36,9 +36,8 @@ public class JavascriptEvaluator implements Evaluator {
             LOGGER.debug("Javascript evaluator -- result: {}", result);
             return result;
         } catch (ScriptException e) {
-            String errorMsg = String.format("Error while evaluating script: %s", expression);
-            LOGGER.error(errorMsg, e);
-            throw new TerminateWorkflowException(errorMsg);
+            LOGGER.error("Error while evaluating script: {}", expression, e);
+            throw new TerminateWorkflowException(e.getMessage());
         }
     }
 }

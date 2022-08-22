@@ -73,6 +73,8 @@ public class TaskResult {
 
     private String subWorkflowId;
 
+    private boolean extendLease;
+
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
         this.taskId = task.getTaskId();
@@ -254,6 +256,14 @@ public class TaskResult {
         this.subWorkflowId = subWorkflowId;
     }
 
+    public boolean isExtendLease() {
+        return extendLease;
+    }
+
+    public void setExtendLease(boolean extendLease) {
+        this.extendLease = extendLease;
+    }
+
     @Override
     public String toString() {
         return "TaskResult{"
@@ -284,6 +294,9 @@ public class TaskResult {
                 + '\''
                 + ", subWorkflowId='"
                 + subWorkflowId
+                + '\''
+                + ", extendLease='"
+                + extendLease
                 + '\''
                 + '}';
     }

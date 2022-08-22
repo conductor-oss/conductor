@@ -24,13 +24,13 @@ public interface MetadataDAO {
     /**
      * @param taskDef task definition to be created
      */
-    void createTaskDef(TaskDef taskDef);
+    TaskDef createTaskDef(TaskDef taskDef);
 
     /**
      * @param taskDef task definition to be updated.
      * @return name of the task definition
      */
-    String updateTaskDef(TaskDef taskDef);
+    TaskDef updateTaskDef(TaskDef taskDef);
 
     /**
      * @param name Name of the task

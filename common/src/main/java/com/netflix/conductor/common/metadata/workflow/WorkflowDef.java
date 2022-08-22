@@ -76,7 +76,7 @@ public class WorkflowDef extends Auditable {
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
 
-    // By default a workflow is restartable
+    // By default, a workflow is restartable
     @ProtoField(id = 9)
     private boolean restartable = true;
 

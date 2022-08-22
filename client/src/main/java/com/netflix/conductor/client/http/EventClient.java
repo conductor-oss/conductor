@@ -17,44 +17,84 @@ import java.util.List;
 import org.apache.commons.lang3.Validate;
 
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.sun.jersey.api.client.ClientHandler;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.ClientFilter;
 
 // Client class for all Event Handler operations
 public class EventClient extends ClientBase {
-
-    private static final TypeReference<List<EventHandler>> eventHandlerList =
-            new TypeReference<List<EventHandler>>() {};
-
+    private static final GenericType<List<EventHandler>> eventHandlerList =
+            new GenericType<List<EventHandler>>() {};
     /** Creates a default metadata client */
     public EventClient() {
-        this(null);
-    }
-
-    public EventClient(RequestHandler requestHandler) {
-        this(requestHandler, null);
-    }
-
-    public EventClient(
-            RequestHandler requestHandler, ConductorClientConfiguration clientConfiguration) {
-        super(requestHandler, clientConfiguration);
+        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
     /**
-     * Register an event handler with the server.
+     * @param clientConfig REST Client configuration
+     */
+    public EventClient(ClientConfig clientConfig) {
+        this(clientConfig, new DefaultConductorClientConfiguration(), null);
+    }
+
+    /**
+     * @param clientConfig REST Client configuration
+     * @param clientHandler Jersey client handler. Useful when plugging in various http client
+     *     interaction modules (e.g. ribbon)
+     */
+    public EventClient(ClientConfig clientConfig, ClientHandler clientHandler) {
+        this(clientConfig, new DefaultConductorClientConfiguration(), clientHandler);
+    }
+
+    /**
+     * @param config config REST Client configuration
+     * @param handler handler Jersey client handler. Useful when plugging in various http client
+     *     interaction modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
+    public EventClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
+        this(config, new DefaultConductorClientConfiguration(), handler, filters);
+    }
+
+    /**
+     * @param config REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link
+     *     ConductorClientConfiguration}
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction
+     *     modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
+    public EventClient(
+            ClientConfig config,
+            ConductorClientConfiguration clientConfiguration,
+            ClientHandler handler,
+            ClientFilter... filters) {
+        super(new ClientRequestHandler(config, handler, filters), clientConfiguration);
+    }
+
+    EventClient(ClientRequestHandler requestHandler) {
+        super(requestHandler, null);
+    }
+
+    /**
+     * Register an event handler with the server
      *
-     * @param eventHandler the eventHandler definition.
+     * @param eventHandler the eventHandler definition
      */
     public void registerEventHandler(EventHandler eventHandler) {
         Validate.notNull(eventHandler, "Event Handler definition cannot be null");
-        post("event", eventHandler);
+        postForEntityWithRequestOnly("event", eventHandler);
     }
 
     /**
-     * Updates an event handler with the server.
+     * Updates an event handler with the server
      *
-     * @param eventHandler the eventHandler definition.
+     * @param eventHandler the eventHandler definition
      */
     public void updateEventHandler(EventHandler eventHandler) {
         Validate.notNull(eventHandler, "Event Handler definition cannot be null");
@@ -62,9 +102,9 @@ public class EventClient extends ClientBase {
     }
 
     /**
-     * @param event name of the event.
-     * @param activeOnly if true, returns only the active handlers.
-     * @return Returns the list of all the event handlers for a given event.
+     * @param event name of the event
+     * @param activeOnly if true, returns only the active handlers
+     * @return Returns the list of all the event handlers for a given event
      */
     public List<EventHandler> getEventHandlers(String event, boolean activeOnly) {
         Validate.notBlank(event, "Event cannot be blank");

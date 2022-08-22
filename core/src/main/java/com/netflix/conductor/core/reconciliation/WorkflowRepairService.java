@@ -22,6 +22,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -138,6 +139,13 @@ public class WorkflowRepairService {
                 Monitors.recordQueueMessageRepushFromRepairService(task.getTaskDefName());
                 return true;
             }
+        } else if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
+            if (subWorkflow.getStatus().isTerminal()) {
+                repairSubWorkflowTask(task, subWorkflow.getStatus());
+                return true;
+            }
         }
         return false;
     }
@@ -155,5 +163,23 @@ public class WorkflowRepairService {
             return false;
         }
         return false;
+    }
+
+    private void repairSubWorkflowTask(TaskModel task, WorkflowModel.Status subWorkflowStatus) {
+        switch (subWorkflowStatus) {
+            case COMPLETED:
+                task.setStatus(TaskModel.Status.COMPLETED);
+                break;
+            case FAILED:
+                task.setStatus(TaskModel.Status.FAILED);
+                break;
+            case TERMINATED:
+                task.setStatus(TaskModel.Status.CANCELED);
+                break;
+            case TIMED_OUT:
+                task.setStatus(TaskModel.Status.TIMED_OUT);
+                break;
+        }
+        executionDAO.updateTask(task);
     }
 }

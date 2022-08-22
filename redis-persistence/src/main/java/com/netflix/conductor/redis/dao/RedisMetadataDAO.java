@@ -74,23 +74,23 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     @Override
-    public void createTaskDef(TaskDef taskDef) {
-        insertOrUpdateTaskDef(taskDef);
-    }
-
-    @Override
-    public String updateTaskDef(TaskDef taskDef) {
+    public TaskDef createTaskDef(TaskDef taskDef) {
         return insertOrUpdateTaskDef(taskDef);
     }
 
-    private String insertOrUpdateTaskDef(TaskDef taskDef) {
+    @Override
+    public TaskDef updateTaskDef(TaskDef taskDef) {
+        return insertOrUpdateTaskDef(taskDef);
+    }
+
+    private TaskDef insertOrUpdateTaskDef(TaskDef taskDef) {
         // Store all task def in under one key
         String payload = toJson(taskDef);
         jedisProxy.hset(nsKey(ALL_TASK_DEFS), taskDef.getName(), payload);
         recordRedisDaoRequests("storeTaskDef");
         recordRedisDaoPayloadSize("storeTaskDef", payload.length(), taskDef.getName(), "n/a");
         refreshTaskDefs();
-        return taskDef.getName();
+        return taskDef;
     }
 
     private void refreshTaskDefs() {

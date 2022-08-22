@@ -92,4 +92,36 @@ public class JsonJqTransformTest {
                 ((String) task.getOutputData().get("error"))
                         .startsWith("Encountered \" \"[\" \"[ \"\" at line 1"));
     }
+
+    @Test
+    public void mapResultShouldBeCorrectlyExtracted() {
+        final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
+        final WorkflowModel workflow = new WorkflowModel();
+        final TaskModel task = new TaskModel();
+        final Map<String, Object> taskInput = new HashMap<>();
+        Map<String, Object> inputData = new HashMap<>();
+        inputData.put("method", "POST");
+        inputData.put("successExpression", null);
+        inputData.put("requestTransform", "{name: (.body.name + \" you are a \" + .body.title) }");
+        inputData.put("responseTransform", "{result: \"reply: \" + .response.body.message}");
+        taskInput.put("input", inputData);
+        taskInput.put(
+                "queryExpression",
+                "{ requestTransform: .input.requestTransform // \".body\"  , responseTransform: .input.responseTransform // \".response.body\", method: .input.method // \"GET\", document: .input.document // \"rgt_results\", successExpression: .input.successExpression // \"true\"   }");
+        task.setInputData(taskInput);
+        task.setOutputData(new HashMap<>());
+
+        jsonJqTransform.start(workflow, task, null);
+
+        assertNull(task.getOutputData().get("error"));
+        assertTrue(task.getOutputData().get("result") instanceof Map);
+        HashMap<String, Object> result =
+                (HashMap<String, Object>) task.getOutputData().get("result");
+        assertEquals("POST", result.get("method"));
+        assertEquals(
+                "{name: (.body.name + \" you are a \" + .body.title) }",
+                result.get("requestTransform"));
+        assertEquals(
+                "{result: \"reply: \" + .response.body.message}", result.get("responseTransform"));
+    }
 }

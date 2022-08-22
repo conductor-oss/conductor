@@ -12,9 +12,10 @@
  */
 package com.netflix.conductor.client.http
 
-
 import com.netflix.conductor.common.metadata.events.EventHandler
 
+import com.sun.jersey.api.client.ClientResponse
+import com.sun.jersey.api.client.WebResource
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -37,7 +38,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.registerEventHandler(handler)
 
         then:
-        1 * requestHandler.post(uri, handler)
+        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
     }
 
     def "update event handler"() {
@@ -49,7 +50,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.updateEventHandler(handler)
 
         then:
-        1 * requestHandler.put(uri, handler)
+        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
     }
 
     def "unregister event handler"() {
@@ -61,7 +62,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.unregisterEventHandler(eventName)
 
         then:
-        1 * requestHandler.delete(uri)
+        1 * requestHandler.delete(uri, null)
     }
 
     @Unroll
@@ -70,14 +71,15 @@ class EventClientSpec extends ClientSpecification {
         def handlers = [new EventHandler(), new EventHandler()]
         String eventName = "test"
         URI uri = createURI("event/$eventName?activeOnly=$activeOnly")
-        InputStream json = toInputStream(handlers)
 
         when:
         def eventHandlers = eventClient.getEventHandlers(eventName, activeOnly)
 
         then:
         eventHandlers && eventHandlers.size() == 2
-        1 * requestHandler.get(uri) >> json
+        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
+            getEntity(_) >> handlers
+        }
 
         where:
         activeOnly << [true, false]

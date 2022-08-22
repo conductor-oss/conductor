@@ -13,7 +13,6 @@
 package com.netflix.conductor.client.http
 
 import com.netflix.conductor.client.exception.ConductorClientException
-import com.netflix.conductor.client.exception.RequestHandlerException
 
 import spock.lang.Subject
 
@@ -37,31 +36,22 @@ class MetadataClientSpec extends ClientSpecification {
         metadataClient.unregisterWorkflowDef(workflowName, version)
 
         then:
-        1 * requestHandler.delete(uri)
+        1 * requestHandler.delete(uri, null)
     }
 
     def "workflow delete throws exception"() {
         given:
         String workflowName = 'test'
         int version = 1
-        InputStream errorResponse = toInputStream"""
-            {
-              "status": 404,
-              "message": "No such workflow definition: $workflowName version: $version",
-              "instance": "conductor-server",
-              "retryable": false
-            }
-        """
         URI uri = createURI("metadata/workflow/$workflowName/$version")
 
         when:
         metadataClient.unregisterWorkflowDef(workflowName, version)
 
         then:
-        1 * requestHandler.delete(uri) >> { throw new RequestHandlerException(errorResponse, 404) }
+        1 * requestHandler.delete(uri, null) >> { throw new RuntimeException(clientResponse) }
         def ex = thrown(ConductorClientException.class)
-        ex && ex.status == 404
-        ex.message == "No such workflow definition: $workflowName version: $version"
+        ex.message == "Unable to invoke Conductor API with uri: $uri, runtime exception occurred"
     }
 
     def "workflow delete version missing"() {

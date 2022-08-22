@@ -90,6 +90,7 @@ public class DefaultEventProcessor {
         this.objectMapper = objectMapper;
         this.jsonUtils = jsonUtils;
         this.evaluators = evaluators;
+        this.retryTemplate = retryTemplate;
 
         if (properties.getEventProcessorThreadCount() <= 0) {
             throw new IllegalStateException(
@@ -105,7 +106,6 @@ public class DefaultEventProcessor {
                         properties.getEventProcessorThreadCount(), threadFactory);
 
         this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
-        this.retryTemplate = retryTemplate;
         LOGGER.info("Event Processing is ENABLED");
     }
 

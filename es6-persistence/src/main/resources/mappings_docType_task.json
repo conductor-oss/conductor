@@ -62,6 +62,10 @@
       "workflowType": {
         "type": "keyword",
         "index": true
+      },
+      "domain": {
+        "type": "keyword",
+        "index": true
       }
     }
   }

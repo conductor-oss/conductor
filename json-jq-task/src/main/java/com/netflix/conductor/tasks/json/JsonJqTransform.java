@@ -27,6 +27,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
@@ -44,6 +45,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private static final String OUTPUT_RESULT = "result";
     private static final String OUTPUT_RESULT_LIST = "resultList";
     private static final String OUTPUT_ERROR = "error";
+    private static final TypeReference<Map<String, Object>> mapType = new TypeReference<>() {};
     private final Scope rootScope;
     private final ObjectMapper objectMapper;
     private final LoadingCache<String, JsonQuery> queryCache = createQueryCache();
@@ -85,7 +87,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
                 task.addOutput(OUTPUT_RESULT, null);
                 task.addOutput(OUTPUT_RESULT_LIST, result);
             } else {
-                task.addOutput(OUTPUT_RESULT, result.get(0));
+                task.addOutput(OUTPUT_RESULT, extractBody(result.get(0)));
                 task.addOutput(OUTPUT_RESULT_LIST, result);
             }
         } catch (final Exception e) {
@@ -118,5 +120,13 @@ public class JsonJqTransform extends WorkflowSystemTask {
             messages.add(currentStack.getMessage());
         }
         return messages.stream().filter(it -> !it.contains("N/A")).findFirst().orElse("");
+    }
+
+    private Object extractBody(JsonNode node) {
+        if (node.isObject()) {
+            return objectMapper.convertValue(node, mapType);
+        } else {
+            return node;
+        }
     }
 }

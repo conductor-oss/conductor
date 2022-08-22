@@ -168,6 +168,10 @@ public class Monitors {
         gauge(classQualifier, name, count);
     }
 
+    public static void recordCounter(String name, long count, String... additionalTags) {
+        getCounter(classQualifier, name, additionalTags).increment(count);
+    }
+
     public static void recordQueueWaitTime(String taskType, long queueWaitTime) {
         getTimer(classQualifier, "task_queue_wait", "taskType", taskType)
                 .record(queueWaitTime, TimeUnit.MILLISECONDS);
@@ -352,6 +356,16 @@ public class Monitors {
         counter(
                 classQualifier,
                 "task_update_error",
+                "workflowName",
+                workflowType,
+                "taskType",
+                taskType);
+    }
+
+    public static void recordTaskExtendLeaseError(String taskType, String workflowType) {
+        counter(
+                classQualifier,
+                "task_extendLease_error",
                 "workflowName",
                 workflowType,
                 "taskType",

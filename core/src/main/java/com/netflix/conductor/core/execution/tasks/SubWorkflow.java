@@ -216,4 +216,14 @@ public class SubWorkflow extends WorkflowSystemTask {
             }
         }
     }
+
+    /**
+     * We don't need the tasks when retrieving the workflow data.
+     *
+     * @return false
+     */
+    @Override
+    public boolean isTaskRetrievalRequired() {
+        return false;
+    }
 }
