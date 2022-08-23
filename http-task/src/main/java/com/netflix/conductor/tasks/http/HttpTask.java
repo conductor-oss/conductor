@@ -99,7 +99,14 @@ public class HttpTask extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.FAILED);
             return;
         }
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+    }
 
+    @Override
+    public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+
+        Object request = task.getInputData().get(requestParameter);
+        Input input = objectMapper.convertValue(request, Input.class);
         try {
             HttpResponse response = httpCall(input);
             LOGGER.debug(
@@ -110,6 +117,7 @@ public class HttpTask extends WorkflowSystemTask {
             if (response.statusCode > 199 && response.statusCode < 300) {
                 if (isAsyncComplete(task)) {
                     task.setStatus(TaskModel.Status.IN_PROGRESS);
+                    return false;
                 } else {
                     task.setStatus(TaskModel.Status.COMPLETED);
                 }
@@ -121,11 +129,7 @@ public class HttpTask extends WorkflowSystemTask {
                 }
                 task.setStatus(TaskModel.Status.FAILED);
             }
-            //noinspection ConstantConditions
-            if (response != null) {
-                task.getOutputData().put("response", response.asMap());
-            }
-
+            task.getOutputData().put("response", response.asMap());
         } catch (Exception e) {
             LOGGER.error(
                     "Failed to invoke {} task: {} - uri: {}, vipAddress: {} in workflow: {}",
@@ -137,9 +141,10 @@ public class HttpTask extends WorkflowSystemTask {
                     e);
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(
-                    "Failed to invoke " + getTaskType() + " task due to: " + e);
+                    "Failed to invoke " + getTaskType() + " task due to: " + e.getMessage());
             task.getOutputData().put("response", e.toString());
         }
+        return true;
     }
 
     /**
@@ -204,11 +209,6 @@ public class HttpTask extends WorkflowSystemTask {
             LOGGER.error("Error extracting response body", jpe);
             return responseBody;
         }
-    }
-
-    @Override
-    public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        return false;
     }
 
     @Override

@@ -136,6 +136,11 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         assertEquals(task.getReasonForIncompletion(), TaskModel.Status.COMPLETED, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
         Object response = hr.get("body");
@@ -163,6 +168,10 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         assertEquals(task.getReasonForIncompletion(), TaskModel.Status.COMPLETED, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
         Object response = hr.get("body");
@@ -181,6 +190,10 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         assertEquals(
                 "Task output: " + task.getOutputData(), TaskModel.Status.FAILED, task.getStatus());
         assertTrue(task.getReasonForIncompletion().contains(ERROR_RESPONSE));
@@ -209,15 +222,19 @@ public class HttpTaskTest {
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(
                 task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
-        Object response = hr.get("body");
-        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
-        assertTrue("response is: " + response, response instanceof Map);
-        Map<String, Object> map = (Map<String, Object>) response;
-        Set<String> inputKeys = body.keySet();
-        Set<String> responseKeys = map.keySet();
-        inputKeys.containsAll(responseKeys);
-        responseKeys.containsAll(inputKeys);
+        assertNull(hr);
+        //        Object response = hr.get("body");
+        //        assertTrue("response is: " + response, response instanceof Map);
+        //        Map<String, Object> map = (Map<String, Object>) response;
+        //        Set<String> inputKeys = body.keySet();
+        //        Set<String> responseKeys = map.keySet();
+        //        inputKeys.containsAll(responseKeys);
+        //        responseKeys.containsAll(inputKeys);
     }
 
     @Test
@@ -229,6 +246,11 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
+        assertEquals(task.getReasonForIncompletion(), TaskModel.Status.COMPLETED, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
         Object response = hr.get("body");
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
@@ -245,6 +267,11 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
+        assertEquals(task.getReasonForIncompletion(), TaskModel.Status.COMPLETED, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
         Object response = hr.get("body");
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
@@ -262,27 +289,17 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
+        assertEquals(task.getReasonForIncompletion(), TaskModel.Status.COMPLETED, task.getStatus());
         Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
         Object response = hr.get("body");
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertTrue(response instanceof Map);
         Map<String, Object> map = (Map<String, Object>) response;
         assertEquals(JSON_RESPONSE, objectMapper.writeValueAsString(map));
-    }
-
-    @Test
-    public void testExecute() {
-
-        TaskModel task = new TaskModel();
-        HttpTask.Input input = new HttpTask.Input();
-        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/json");
-        input.setMethod("GET");
-        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
-        task.setStatus(TaskModel.Status.SCHEDULED);
-        task.setScheduledTime(0);
-
-        boolean executed = httpTask.execute(workflow, task, workflowExecutor);
-        assertFalse(executed);
     }
 
     @Test
@@ -296,7 +313,12 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
         task.setStatus(TaskModel.Status.SCHEDULED);
         task.setScheduledTime(0);
+
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         Instant end = Instant.now();
         long diff = end.toEpochMilli() - start.toEpochMilli();
         assertEquals(task.getStatus(), TaskModel.Status.FAILED);
@@ -315,6 +337,11 @@ public class HttpTaskTest {
         task.setScheduledTime(0);
 
         httpTask.start(workflow, task, workflowExecutor);
+        httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                task.getReasonForIncompletion(), TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         assertEquals(task.getStatus(), TaskModel.Status.FAILED);
     }
 
@@ -328,6 +355,9 @@ public class HttpTaskTest {
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
         httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+
+        httpTask.execute(workflow, task, workflowExecutor);
         assertEquals(
                 "Task output: " + task.getOutputData(), TaskModel.Status.FAILED, task.getStatus());
         assertTrue(task.getReasonForIncompletion().contains(ERROR_RESPONSE));

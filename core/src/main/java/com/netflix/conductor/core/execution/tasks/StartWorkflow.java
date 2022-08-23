@@ -30,8 +30,7 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_START_WORKFLOW;
-import static com.netflix.conductor.model.TaskModel.Status.COMPLETED;
-import static com.netflix.conductor.model.TaskModel.Status.FAILED;
+import static com.netflix.conductor.model.TaskModel.Status.*;
 
 @Component(TASK_TYPE_START_WORKFLOW)
 public class StartWorkflow extends WorkflowSystemTask {
@@ -51,41 +50,48 @@ public class StartWorkflow extends WorkflowSystemTask {
     }
 
     @Override
-    public void start(
-            WorkflowModel workflow, TaskModel taskModel, WorkflowExecutor workflowExecutor) {
-        StartWorkflowRequest request = getRequest(taskModel);
-        if (request == null) {
-            return;
+    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        if (validateStartWorkflowRequest(task)) {
+            task.setStatus(IN_PROGRESS);
         }
+    }
 
+    @Override
+    public boolean execute(
+            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         // set the correlation id of starter workflow, if its empty in the StartWorkflowRequest
+        StartWorkflowRequest request =
+                objectMapper.convertValue(
+                        task.getInputData().get(START_WORKFLOW_PARAMETER),
+                        StartWorkflowRequest.class);
         request.setCorrelationId(
                 StringUtils.defaultIfBlank(
                         request.getCorrelationId(), workflow.getCorrelationId()));
 
         try {
             String workflowId = startWorkflow(request, workflowExecutor);
-            taskModel.addOutput(WORKFLOW_ID, workflowId);
-            taskModel.setStatus(COMPLETED);
+            task.addOutput(WORKFLOW_ID, workflowId);
+            task.setStatus(COMPLETED);
         } catch (TransientException te) {
             LOGGER.info(
                     "A transient backend error happened when task {} in {} tried to start workflow {}.",
-                    taskModel.getTaskId(),
+                    task.getTaskId(),
                     workflow.toShortString(),
                     request.getName());
+            return false;
         } catch (Exception ae) {
-
-            taskModel.setStatus(FAILED);
-            taskModel.setReasonForIncompletion(ae.getMessage());
+            task.setStatus(FAILED);
+            task.setReasonForIncompletion(ae.getMessage());
             LOGGER.error(
                     "Error starting workflow: {} from workflow: {}",
                     request.getName(),
                     workflow.toShortString(),
                     ae);
         }
+        return true;
     }
 
-    private StartWorkflowRequest getRequest(TaskModel taskModel) {
+    private boolean validateStartWorkflowRequest(TaskModel taskModel) {
         Map<String, Object> taskInput = taskModel.getInputData();
 
         StartWorkflowRequest startWorkflowRequest = null;
@@ -94,6 +100,7 @@ public class StartWorkflow extends WorkflowSystemTask {
             taskModel.setStatus(FAILED);
             taskModel.setReasonForIncompletion(
                     "Missing '" + START_WORKFLOW_PARAMETER + "' in input data.");
+            return false;
         } else {
             try {
                 startWorkflowRequest =
@@ -116,17 +123,18 @@ public class StartWorkflow extends WorkflowSystemTask {
                     }
                     taskModel.setStatus(FAILED);
                     taskModel.setReasonForIncompletion(reasonForIncompletion.toString());
-                    startWorkflowRequest = null;
+                    return false;
                 }
             } catch (IllegalArgumentException e) {
                 LOGGER.error("Error reading StartWorkflowRequest for {}", taskModel, e);
                 taskModel.setStatus(FAILED);
                 taskModel.setReasonForIncompletion(
                         "Error reading StartWorkflowRequest. " + e.getMessage());
+                return false;
             }
         }
 
-        return startWorkflowRequest;
+        return true;
     }
 
     private String startWorkflow(StartWorkflowRequest request, WorkflowExecutor workflowExecutor) {

@@ -72,6 +72,19 @@ class StartWorkflowSpec extends AbstractSpecification {
 
         then: "verify the START_WORKFLOW task and workflow are COMPLETED"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'START_WORKFLOW'
+            tasks[0].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "the START_WORKFLOW task is executed"
+        polledTaskIds = queueDAO.pop("START_WORKFLOW", 1, 200)
+        startWorkflowTaskId = polledTaskIds.get(0)
+        asyncSystemTaskExecutor.execute(startWorkflowTask, startWorkflowTaskId)
+
+        then: "verify the START_WORKFLOW task and workflow are COMPLETED"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 1
             tasks[0].taskType == 'START_WORKFLOW'

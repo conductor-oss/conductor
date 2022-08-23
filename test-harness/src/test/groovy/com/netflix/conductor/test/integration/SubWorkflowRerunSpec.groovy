@@ -91,6 +91,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         List<String> polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         def rootWorkflowInstance = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
         with(rootWorkflowInstance) {
@@ -118,6 +122,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def midLevelWorkflowInstance = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that the leaf-level workflow is RUNNING, and first task is in SCHEDULED state"
         leafWorkflowId = midLevelWorkflowInstance.tasks[1].subWorkflowId
@@ -209,6 +217,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newMidLevelWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
 
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
@@ -225,6 +237,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -311,6 +327,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newMidLevelWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
 
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
@@ -327,6 +347,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -417,6 +441,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -509,6 +537,10 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
         def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+
+        and: "the subworkflow task is polled and is executed"
+        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
+        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId

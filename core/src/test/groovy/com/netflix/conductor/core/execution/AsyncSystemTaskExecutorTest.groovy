@@ -90,15 +90,30 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(task1Id) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
+
         1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
-
-        // SUB_WORKFLOW is asyncComplete so its removed from the queue
-        1 * queueDAO.remove(queueName, task1Id)
+        1 * queueDAO.postpone(queueName, task1Id, _, _)
+        1 * executionDAOFacade.updateTask(task1)
 
         task1.status == TaskModel.Status.IN_PROGRESS
         task1.subWorkflowId == subWorkflowId
         task1.startTime != 0
+        task1.pollCount == 1
+
+        when:
+        executor.execute(subWorkflowTask, task1Id)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(task1Id) >> task1
+        1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
+
+        1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
+        1 * queueDAO.remove(queueName, task1Id)
+        0 * executionDAOFacade.updateTask(task1)
+
+        task1.status == TaskModel.Status.IN_PROGRESS
+        task1.pollCount == 1
     }
 
     def "Execute with a non-existing task id"() {
@@ -328,18 +343,33 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
+        1 * executionDAOFacade.updateTask(task)
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
-        1 * queueDAO.remove(queueName, taskId)
+        1 * queueDAO.postpone(queueName, taskId, _, _)
 
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        0 * workflowExecutor.decide(workflowId) // verify that workflow is decided
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set
         task.endTime == 0 // verify that endTime is not set
         task.pollCount == 1 // verify that poll count is incremented
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * executionDAOFacade.updateTask(task)
+
+        1 * workflowSystemTask.isAsyncComplete(task) >> true
+        1 * workflowSystemTask.execute(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED; return true; }
+        1 * queueDAO.remove(queueName, taskId)
+        task.status == TaskModel.Status.COMPLETED
+        task.endTime != 0 // verify that endTime is set
+        task.pollCount == 1 // verify that poll count is not incremented
     }
 
     def "Execute with a task id that is in IN_PROGRESS state"() {
@@ -380,7 +410,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task) // only one call since pollCount is not incremented
+        0 * executionDAOFacade.updateTask(task)
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         0 * workflowSystemTask.start(workflow, task, workflowExecutor)

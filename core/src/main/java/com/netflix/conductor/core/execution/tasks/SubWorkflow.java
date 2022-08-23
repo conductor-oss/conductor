@@ -134,12 +134,12 @@ public class SubWorkflow extends WorkflowSystemTask {
 
         WorkflowModel subWorkflow = workflowExecutor.getWorkflow(workflowId, false);
         WorkflowModel.Status subWorkflowStatus = subWorkflow.getStatus();
-        if (!subWorkflowStatus.isTerminal()) {
-            return false;
+        if (subWorkflowStatus.isTerminal()) {
+            updateTaskStatus(subWorkflow, task);
+            return true;
         }
 
-        updateTaskStatus(subWorkflow, task);
-        return true;
+        return false;
     }
 
     @Override

@@ -87,7 +87,7 @@ class StartWorkflowSpec extends Specification {
 
     def "WorkflowExecutor throws a retryable exception"() {
         when:
-        startWorkflow.start(workflowModel, taskModel, workflowExecutor)
+        startWorkflow.execute(workflowModel, taskModel, workflowExecutor)
 
         then:
         taskModel.status == SCHEDULED
@@ -96,7 +96,7 @@ class StartWorkflowSpec extends Specification {
 
     def "WorkflowExecutor throws a NotFoundException"() {
         when:
-        startWorkflow.start(workflowModel, taskModel, workflowExecutor)
+        startWorkflow.execute(workflowModel, taskModel, workflowExecutor)
 
         then:
         taskModel.status == FAILED
@@ -106,7 +106,7 @@ class StartWorkflowSpec extends Specification {
 
     def "WorkflowExecutor throws a RuntimeException"() {
         when:
-        startWorkflow.start(workflowModel, taskModel, workflowExecutor)
+        startWorkflow.execute(workflowModel, taskModel, workflowExecutor)
 
         then:
         taskModel.status == FAILED

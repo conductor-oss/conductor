@@ -88,9 +88,11 @@ public class Event extends WorkflowSystemTask {
             Message message = getPopulatedMessage(task);
             queue.publish(List.of(message));
             LOGGER.debug("Published message:{} to queue:{}", message.getId(), queue.getName());
-            if (!isAsyncComplete(task)) {
+            if (isAsyncComplete(task)) {
+                task.setStatus(TaskModel.Status.IN_PROGRESS);
+                return false;
+            } else {
                 task.setStatus(TaskModel.Status.COMPLETED);
-                return true;
             }
         } catch (JsonProcessingException jpe) {
             task.setStatus(TaskModel.Status.FAILED);
@@ -108,7 +110,7 @@ public class Event extends WorkflowSystemTask {
                     workflow.getWorkflowId(),
                     e);
         }
-        return false;
+        return true;
     }
 
     @Override
