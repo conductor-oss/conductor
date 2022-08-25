@@ -82,7 +82,7 @@ The mail_a_box workflow has 2 tasks:
  1. The first task takes the provided account number, and outputs an address.  
  2. The 2nd task takes the address info and generates a shipping label.
  
- Upon completion of the 2 tasks, the workflow outputs the trackking number generated in the 2nd task.  If the workflow fails, a second workflow named ```shipping_issues``` is run.
+ Upon completion of the 2 tasks, the workflow outputs the tracking number generated in the 2nd task.  If the workflow fails, a second workflow named ```shipping_issues``` is run.
 
 ## Fields in a Workflow
 
@@ -109,7 +109,7 @@ The mail_a_box workflow has 2 tasks:
 | taskReferenceName | Alias used to refer the task within the workflow.  MUST be unique within workflow.                                                             ||
 | type              | Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types                                                     ||
 | description       | Description of the task                                                                                                                        | optional                                                                |
-| optional          | true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS` | Defaults to `false`                                                     |
+| optional          | true or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS` | Defaults to `false`                                                     |
 | inputParameters   | JSON template that defines the input given to the task                                                                                         | See [Wiring Inputs and Outputs](#wiring-inputs-and-outputs) for details |
 | domain            | See [Task Domains](/configuration/taskdomains.html) for more information.                                                                 | optional                                                                |
 

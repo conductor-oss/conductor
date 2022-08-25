@@ -26,7 +26,7 @@ See `docker/serverAndUI` for an `nginx` based example.
 
 ### Customization Hooks
 
-For ease of maintanence, a number of touch points for customization have been removed to `/plugins`.
+For ease of maintenance, a number of touch points for customization have been removed to `/plugins`.
 
 - `AppBarModules.jsx`
 - `AppLogo.jsx`
