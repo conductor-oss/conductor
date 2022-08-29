@@ -17,7 +17,7 @@ I want to contribute!
 ------
 
 We welcome Pull Requests and already had many outstanding community contributions!
-Creating and reviewing Pull Requests take considerable time. This section helps you set up for a smooth Pull Request experience.
+Creating and reviewing Pull Requests take considerable time. This section helps you to set up a smooth Pull Request experience.
 
 The stable branch is [main](https://github.com/Netflix/conductor/tree/main).
 

@@ -66,6 +66,9 @@ const useStyles = makeStyles({
     justifyContent: "flex-end",
     gap: 8,
   },
+  editorLineDecorator: {
+    backgroundColor: "rgb(45, 45, 45, 0.1)"
+  }
 });
 
 const actions = {
@@ -108,6 +111,7 @@ export default function Workflow() {
   const [isModified, setIsModified] = useState(false);
   const [dag, setDag] = useState(null);
   const [jsonErrors, setJsonErrors] = useState([]);
+  const [decorations, setDecorations] = useState([]);
 
   const workflowName = _.get(match, "params.name");
   const workflowVersion = _.get(match, "params.version"); // undefined for latest
@@ -235,6 +239,23 @@ export default function Workflow() {
     setIsModified(v !== workflowJson);
   };
 
+  const handleWorkflowNodeClick = (node) => {
+    let editor = editorRef.current.getModel()
+    let searchResult = editor.findMatches(`"taskReferenceName": "${node.ref}"`)
+    if (searchResult.length){
+      editorRef.current.revealLineInCenter(searchResult[0]?.range?.startLineNumber, 0);
+      setDecorations(editorRef.current.deltaDecorations(decorations, [
+        {
+          range: searchResult[0]?.range,
+          options: {
+            isWholeLine: true,
+            inlineClassName: classes.editorLineDecorator
+          }
+        }
+      ]))
+    }
+  }
+
   return (
     <>
       <Helmet>
@@ -335,6 +356,7 @@ export default function Workflow() {
             onValidate={handleValidate}
             onChange={handleChange}
             options={{
+              smoothScrolling: true,
               selectOnLineNumbers: true,
               minimap: {
                 enabled: false,
@@ -348,7 +370,7 @@ export default function Workflow() {
           onMouseDown={(e) => handleMouseDown(e)}
         />
         <div className={classes.workflowGraph}>
-          {dag && <WorkflowGraph dag={dag} />}
+          {dag && <WorkflowGraph dag={dag} onClick={handleWorkflowNodeClick} />}
         </div>
       </div>
     </>

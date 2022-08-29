@@ -78,7 +78,6 @@ public class ForkJoinTaskMapper implements TaskMapper {
         forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);
         forkTask.setStatus(TaskModel.Status.COMPLETED);
-        forkTask.setExecuted(true);
 
         tasksToBeScheduled.add(forkTask);
         List<List<WorkflowTask>> forkTasks = workflowTask.getForkTasks();
