@@ -1619,7 +1619,7 @@ public class WorkflowExecutor {
             taskToBeSkipped.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
         executionDAOFacade.createTasks(Collections.singletonList(taskToBeSkipped));
-        decide(workflow);
+        decide(workflow.getWorkflowId());
     }
 
     public WorkflowModel getWorkflow(String workflowId, boolean includeTasks) {
