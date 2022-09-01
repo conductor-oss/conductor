@@ -376,10 +376,7 @@ public class WorkflowExecutor {
         }
 
         try {
-            createWorkflow(workflow);
-            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-            // then decide to see if anything needs to be done as part of the workflow
-            decide(workflow);
+            createAndDecide(workflow);
             Monitors.recordWorkflowStartSuccess(
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()),
@@ -405,7 +402,7 @@ public class WorkflowExecutor {
      * Acquire and hold the lock till the workflow creation action is completed (in primary and secondary datastores).
      * This is to ensure that workflow creation action precedes any other action on a given workflow.
      */
-    private void createWorkflow(WorkflowModel workflow) {
+    private void createAndDecide(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
@@ -415,6 +412,8 @@ public class WorkflowExecutor {
                     "A new instance of workflow: {} created with id: {}",
                     workflow.getWorkflowName(),
                     workflow.getWorkflowId());
+            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+            decide(workflow);
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
         }
