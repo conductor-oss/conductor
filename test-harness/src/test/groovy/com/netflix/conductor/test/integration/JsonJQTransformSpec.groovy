@@ -27,10 +27,14 @@ class JsonJQTransformSpec extends AbstractSpecification {
     @Shared
     def SEQUENTIAL_JSON_JQ_TRANSFORM_WF = 'sequential_json_jq_transform_wf'
 
+    @Shared
+    def JSON_JQ_TRANSFORM_RESULT_WF = 'json_jq_transform_result_wf'
+
     def setup() {
         workflowTestUtil.registerWorkflows(
                 'simple_json_jq_transform_integration_test.json',
-                'sequential_json_jq_transform_integration_test.json'
+                'sequential_json_jq_transform_integration_test.json',
+                'json_jq_transform_result_integration_test.json'
         )
     }
 
@@ -185,6 +189,41 @@ class JsonJQTransformSpec extends AbstractSpecification {
             tasks[1].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
             HashMap<String, Object> result2 = (HashMap<String, Object>) tasks[1].outputData.get("result")
             result2.get("name") == "Beary Beariston you are the Brown Bear"
+        }
+    }
+
+    def "Test json jq transform task with different json object results succeeds"() {
+        given: "workflow input"
+        def workflowInput = new HashMap()
+        workflowInput["requestedAction"] = "redeliver"
+
+        when: "workflow which has the json jq transform task has started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_RESULT_WF, 1,
+                '', workflowInput, null, null, null)
+
+        then: "verify that the workflow and task are completed with expected output"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 4
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[0].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
+            assert tasks[0].outputData.get("result") == "CREATE"
+
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'DECISION'
+            assert tasks[1].inputData.get("case") == "CREATE"
+
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'JSON_JQ_TRANSFORM'
+            tasks[2].outputData.containsKey("result") && tasks[0].outputData.containsKey("resultList")
+            List<String> result = (List<String>) tasks[2].outputData.get("result")
+            assert result.size() == 3
+            assert result.indexOf("redeliver") >= 0
+
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'DECISION'
+            assert tasks[3].inputData.get("case") == "true"
         }
     }
 }
