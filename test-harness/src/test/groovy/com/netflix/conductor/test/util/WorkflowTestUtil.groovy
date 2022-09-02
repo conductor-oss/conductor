@@ -298,6 +298,23 @@ class WorkflowTestUtil {
         return new Tuple(polledIntegrationTask)
     }
 
+    Tuple pollAndUpdateTask(String taskName, String workerId, String outputPayloadPath, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
+        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        def taskResult = new TaskResult(polledIntegrationTask)
+        taskResult.status = TaskResult.Status.IN_PROGRESS
+        taskResult.callbackAfterSeconds = 1
+        if (outputPayloadPath) {
+            taskResult.outputData = null
+            taskResult.externalOutputPayloadStoragePath = outputPayloadPath
+        } else if (outputParams) {
+            outputParams.forEach { k, v ->
+                taskResult.outputData[k] = v
+            }
+        }
+        workflowExecutionService.updateTask(taskResult)
+        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask)
+    }
+
     /**
      * A helper method intended to be used in the <tt>then:</tt> block of the spock test feature, ideally intended to be called after either:
      * pollAndCompleteTask function or pollAndFailTask function
@@ -321,5 +338,13 @@ class WorkflowTestUtil {
         assert completedTaskAndAck[0]: "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
         assert polledIntegrationTask
+    }
+
+    static void verifyPayload(Map<String, Object> expected,  Map<String, Object> payload) {
+        expected.forEach {
+            k, v ->
+                assert payload.containsKey(k)
+                assert payload[k] == v
+        }
     }
 }

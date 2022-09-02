@@ -155,4 +155,17 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
         }
         return dynamicForkLargePayload;
     }
+
+    public Map<String, Object> downloadPayload(String path) {
+        InputStream inputStream = download(path);
+        if (inputStream != null) {
+            try {
+                Map<String, Object> largePayload = objectMapper.readValue(inputStream, Map.class);
+                return largePayload;
+            } catch (IOException e) {
+                LOGGER.error("Error in downloading payload for path {}", path, e);
+            }
+        }
+        return new HashMap<>();
+    }
 }

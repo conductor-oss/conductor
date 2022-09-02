@@ -179,7 +179,15 @@ public class TaskModel {
 
     @JsonIgnore
     public Map<String, Object> getInputData() {
-        return externalInputPayloadStoragePath != null ? inputPayload : inputData;
+        if (!inputPayload.isEmpty() && !inputData.isEmpty()) {
+            inputData.putAll(inputPayload);
+            inputPayload = new HashMap<>();
+            return inputData;
+        } else if (inputPayload.isEmpty()) {
+            return inputData;
+        } else {
+            return inputPayload;
+        }
     }
 
     @JsonIgnore
@@ -389,7 +397,15 @@ public class TaskModel {
 
     @JsonIgnore
     public Map<String, Object> getOutputData() {
-        return externalOutputPayloadStoragePath != null ? outputPayload : outputData;
+        if (!outputPayload.isEmpty() && !outputData.isEmpty()) {
+            outputData.putAll(outputPayload);
+            outputPayload = new HashMap<>();
+            return outputData;
+        } else if (outputPayload.isEmpty()) {
+            return outputData;
+        } else {
+            return outputPayload;
+        }
     }
 
     @JsonIgnore
