@@ -178,7 +178,15 @@ public class WorkflowModel {
 
     @JsonIgnore
     public Map<String, Object> getInput() {
-        return externalInputPayloadStoragePath != null ? inputPayload : input;
+        if (!inputPayload.isEmpty() && !input.isEmpty()) {
+            input.putAll(inputPayload);
+            inputPayload = new HashMap<>();
+            return input;
+        } else if (inputPayload.isEmpty()) {
+            return input;
+        } else {
+            return inputPayload;
+        }
     }
 
     @JsonIgnore
@@ -191,7 +199,15 @@ public class WorkflowModel {
 
     @JsonIgnore
     public Map<String, Object> getOutput() {
-        return externalOutputPayloadStoragePath != null ? outputPayload : output;
+        if (!outputPayload.isEmpty() && !output.isEmpty()) {
+            output.putAll(outputPayload);
+            outputPayload = new HashMap<>();
+            return output;
+        } else if (outputPayload.isEmpty()) {
+            return output;
+        } else {
+            return outputPayload;
+        }
     }
 
     @JsonIgnore

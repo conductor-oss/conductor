@@ -25,6 +25,7 @@ import com.netflix.conductor.test.utils.UserTask
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPayload
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedLargePayloadTask
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
@@ -751,6 +752,103 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
             tasks[3].taskType == 'JOIN'
             tasks[3].status == Task.Status.IN_PROGRESS
             tasks[3].referenceTaskName == 'dynamicfanouttask_join'
+        }
+    }
+
+    def "Test update task output multiple times using external payload storage"() {
+        given: "An existing simple workflow definition"
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
+
+        when: "the workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, 'multi_task_update_external_storage', new HashMap<String, Object>(), null, null, null)
+
+        then: "verify that the workflow is in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+
+        when: "poll and update 'integration_task_1' with external payload storage output"
+        String taskOutputPath = uploadLargeTaskOutput()
+        workflowTestUtil.pollAndUpdateTask('integration_task_1', 'task1.integration.worker', taskOutputPath, null, 1)
+
+        then: "verify that 'integration_task1's output is updated correctly"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].outputData.isEmpty()
+            tasks[0].externalOutputPayloadStoragePath == taskOutputPath
+        }
+
+        when: "poll and update 'integration_task_1' with no additional output"
+        workflowTestUtil.pollAndUpdateTask('integration_task_1', 'task1.integration.worker', null, null, 1)
+
+        then: "verify that 'integration_task1's output is updated correctly"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].outputData.isEmpty()
+            // no duplicate upload
+            tasks[0].externalOutputPayloadStoragePath == taskOutputPath
+        }
+
+        when: "poll and complete 'integration_task_1' with additional output"
+        Map<String, Object> output = ['k1': 'v1', 'k2': 'v2']
+        workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', output, 1)
+
+        then: "verify that 'integration_task1 is complete and output is updated correctly"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].outputData.isEmpty()
+            // upload again with additional output
+            tasks[0].externalOutputPayloadStoragePath != taskOutputPath
+            verifyPayload(output, mockExternalPayloadStorage.downloadPayload(tasks[0].externalOutputPayloadStoragePath))
+
+            tasks[1].taskType == 'integration_task_2'
+            tasks[1].status == Task.Status.SCHEDULED
+        }
+
+        when: "poll and update 'integration_task_2' with output"
+        Map<String, Object> output1 = ['k1': 'v1', 'k2': 'v2']
+        workflowTestUtil.pollAndUpdateTask('integration_task_2', 'task1.integration.worker', null, output1, 1)
+
+        then: "verify that 'integration_task2's output is updated correctly"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[1].taskType == 'integration_task_2'
+            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].externalOutputPayloadStoragePath == null
+            verifyPayload(output1, tasks[1].outputData)
+        }
+
+        when: "poll and complete 'integration_task_2' with additional output"
+        Map<String, Object> output2 = ['k3': 'v3', 'k4': 'v4']
+        workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', output2, 1)
+
+        then: "verify that 'integration_task2 is complete and output is updated correctly"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 2
+
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].outputData.isEmpty()
+
+            tasks[1].taskType == 'integration_task_2'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].externalOutputPayloadStoragePath == null
+            output1.putAll(output2)
+            verifyPayload(output1, tasks[1].outputData)
         }
     }
 

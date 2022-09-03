@@ -46,6 +46,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private static final String OUTPUT_RESULT_LIST = "resultList";
     private static final String OUTPUT_ERROR = "error";
     private static final TypeReference<Map<String, Object>> mapType = new TypeReference<>() {};
+    private final TypeReference<List<Object>> listType = new TypeReference<>() {};
     private final Scope rootScope;
     private final ObjectMapper objectMapper;
     private final LoadingCache<String, JsonQuery> queryCache = createQueryCache();
@@ -125,8 +126,18 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private Object extractBody(JsonNode node) {
         if (node.isObject()) {
             return objectMapper.convertValue(node, mapType);
+        } else if (node.isArray()) {
+            return objectMapper.convertValue(node, listType);
+        } else if (node.isBoolean()) {
+            return node.asBoolean();
+        } else if (node.isNumber()) {
+            if (node.isIntegralNumber()) {
+                return node.asLong();
+            } else {
+                return node.asDouble();
+            }
         } else {
-            return node;
+            return node.asText();
         }
     }
 }

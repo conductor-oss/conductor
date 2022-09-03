@@ -243,4 +243,32 @@ public class ExternalPayloadStorageUtilsTest {
         assertTrue(workflow.getOutput().isEmpty());
         assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
     }
+
+    @Test
+    public void testShouldUpload() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("key1", "value1");
+        payload.put("key2", "value2");
+
+        TaskModel task = new TaskModel();
+        task.setInputData(payload);
+        task.setOutputData(payload);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setInput(payload);
+        workflow.setOutput(payload);
+
+        assertTrue(
+                externalPayloadStorageUtils.shouldUpload(
+                        task, ExternalPayloadStorage.PayloadType.TASK_INPUT));
+        assertTrue(
+                externalPayloadStorageUtils.shouldUpload(
+                        task, ExternalPayloadStorage.PayloadType.TASK_OUTPUT));
+        assertTrue(
+                externalPayloadStorageUtils.shouldUpload(
+                        task, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT));
+        assertTrue(
+                externalPayloadStorageUtils.shouldUpload(
+                        task, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT));
+    }
 }

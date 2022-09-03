@@ -10,6 +10,7 @@ nav:
     - Running Conductor:
       - From Source: gettingstarted/source.md
       - Using Docker: gettingstarted/docker.md
+      - Hosted Solutions: gettingstarted/hosted.md
     - Basic Concepts: gettingstarted/basicconcepts.md
     - High Level Steps: gettingstarted/steps.md
     - Using the Client: gettingstarted/client.md
