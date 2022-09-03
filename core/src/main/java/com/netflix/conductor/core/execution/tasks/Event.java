@@ -57,17 +57,17 @@ public class Event extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        Map<String, Object> payload = new HashMap<>(task.getInputData());
+        Map<String, Object> payload = new HashMap<>(task.getInput());
         payload.put("workflowInstanceId", workflow.getWorkflowId());
         payload.put("workflowType", workflow.getWorkflowName());
         payload.put("workflowVersion", workflow.getWorkflowVersion());
         payload.put("correlationId", workflow.getCorrelationId());
 
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.getOutputData().putAll(payload);
+        task.getOutput().putAll(payload);
 
         try {
-            task.getOutputData().put(EVENT_PRODUCED, computeQueueName(workflow, task));
+            task.getOutput().put(EVENT_PRODUCED, computeQueueName(workflow, task));
         } catch (Exception e) {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
@@ -83,7 +83,7 @@ public class Event extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         try {
-            String queueName = (String) task.getOutputData().get(EVENT_PRODUCED);
+            String queueName = (String) task.getOutput().get(EVENT_PRODUCED);
             ObservableQueue queue = getQueue(queueName, task.getTaskId());
             Message message = getPopulatedMessage(task);
             queue.publish(List.of(message));
@@ -121,7 +121,7 @@ public class Event extends WorkflowSystemTask {
 
     @VisibleForTesting
     String computeQueueName(WorkflowModel workflow, TaskModel task) {
-        String sinkValueRaw = (String) task.getInputData().get("sink");
+        String sinkValueRaw = (String) task.getInput().get("sink");
         Map<String, Object> input = new HashMap<>();
         input.put("sink", sinkValueRaw);
         Map<String, Object> replaced =
@@ -169,7 +169,7 @@ public class Event extends WorkflowSystemTask {
     }
 
     Message getPopulatedMessage(TaskModel task) throws JsonProcessingException {
-        String payloadJson = objectMapper.writeValueAsString(task.getOutputData());
+        String payloadJson = objectMapper.writeValueAsString(task.getOutput());
         return new Message(task.getTaskId(), payloadJson, task.getTaskId());
     }
 }

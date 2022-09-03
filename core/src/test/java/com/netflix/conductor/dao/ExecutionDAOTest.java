@@ -229,7 +229,7 @@ public abstract class ExecutionDAOTest {
         for (int i = 0; i < 3; i++) {
             TaskModel found = getExecutionDAO().getTask(workflowId + "_t" + i);
             assertNotNull(found);
-            found.getOutputData().put("updated", true);
+            found.getOutput().put("updated", true);
             found.setStatus(TaskModel.Status.COMPLETED);
             getExecutionDAO().updateTask(found);
         }
@@ -240,8 +240,8 @@ public abstract class ExecutionDAOTest {
         assertEquals(taskIds.size(), found.size());
         found.forEach(
                 task -> {
-                    assertTrue(task.getOutputData().containsKey("updated"));
-                    assertEquals(true, task.getOutputData().get("updated"));
+                    assertTrue(task.getOutput().containsKey("updated"));
+                    assertEquals(true, task.getOutput().get("updated"));
                     boolean removed = getExecutionDAO().removeTask(task.getTaskId());
                     assertTrue(removed);
                 });

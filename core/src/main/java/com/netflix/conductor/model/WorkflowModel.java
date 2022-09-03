@@ -22,11 +22,10 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.Utils;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class WorkflowModel {
+public class WorkflowModel extends BaseModel {
 
     public enum Status {
         RUNNING(false, false),
@@ -108,14 +107,6 @@ public class WorkflowModel {
 
     private Status previousStatus;
 
-    @JsonIgnore private Map<String, Object> input = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> output = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
-
     public Status getPreviousStatus() {
         return previousStatus;
     }
@@ -174,48 +165,6 @@ public class WorkflowModel {
 
     public void setTasks(List<TaskModel> tasks) {
         this.tasks = tasks;
-    }
-
-    @JsonIgnore
-    public Map<String, Object> getInput() {
-        if (!inputPayload.isEmpty() && !input.isEmpty()) {
-            input.putAll(inputPayload);
-            inputPayload = new HashMap<>();
-            return input;
-        } else if (inputPayload.isEmpty()) {
-            return input;
-        } else {
-            return inputPayload;
-        }
-    }
-
-    @JsonIgnore
-    public void setInput(Map<String, Object> input) {
-        if (input == null) {
-            input = new HashMap<>();
-        }
-        this.input = input;
-    }
-
-    @JsonIgnore
-    public Map<String, Object> getOutput() {
-        if (!outputPayload.isEmpty() && !output.isEmpty()) {
-            output.putAll(outputPayload);
-            outputPayload = new HashMap<>();
-            return output;
-        } else if (outputPayload.isEmpty()) {
-            return output;
-        } else {
-            return outputPayload;
-        }
-    }
-
-    @JsonIgnore
-    public void setOutput(Map<String, Object> output) {
-        if (output == null) {
-            output = new HashMap<>();
-        }
-        this.output = output;
     }
 
     /**
@@ -466,28 +415,6 @@ public class WorkflowModel {
             return null;
         }
         return found.getLast();
-    }
-
-    public void externalizeInput(String path) {
-        this.inputPayload = this.input;
-        this.input = new HashMap<>();
-        this.externalInputPayloadStoragePath = path;
-    }
-
-    public void externalizeOutput(String path) {
-        this.outputPayload = this.output;
-        this.output = new HashMap<>();
-        this.externalOutputPayloadStoragePath = path;
-    }
-
-    public void internalizeInput(Map<String, Object> data) {
-        this.input = new HashMap<>();
-        this.inputPayload = data;
-    }
-
-    public void internalizeOutput(Map<String, Object> data) {
-        this.output = new HashMap<>();
-        this.outputPayload = data;
     }
 
     @Override

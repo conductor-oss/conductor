@@ -77,7 +77,7 @@ public class SetVariable extends WorkflowSystemTask {
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor provider) {
         Map<String, Object> variables = workflow.getVariables();
-        Map<String, Object> input = task.getInputData();
+        Map<String, Object> input = task.getInput();
         String taskId = task.getTaskId();
         ArrayList<String> newKeys;
         Map<String, Object> previousValues;

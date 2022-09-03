@@ -245,7 +245,7 @@ public class TestWorkflowExecutor {
         task1.setCorrelationId(workflow.getCorrelationId());
         task1.setScheduledTime(System.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
-        task1.setInputData(new HashMap<>());
+        task1.setInput(new HashMap<>());
         task1.setStatus(TaskModel.Status.SCHEDULED);
         task1.setRetryCount(0);
         task1.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
@@ -258,7 +258,7 @@ public class TestWorkflowExecutor {
         task2.setWorkflowInstanceId(workflow.getWorkflowId());
         task2.setCorrelationId(workflow.getCorrelationId());
         task2.setScheduledTime(System.currentTimeMillis());
-        task2.setInputData(new HashMap<>());
+        task2.setInput(new HashMap<>());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.IN_PROGRESS);
         task2.setWorkflowTask(taskToSchedule);
@@ -271,7 +271,7 @@ public class TestWorkflowExecutor {
         task3.setCorrelationId(workflow.getCorrelationId());
         task3.setScheduledTime(System.currentTimeMillis());
         task3.setTaskId(idGenerator.generate());
-        task3.setInputData(new HashMap<>());
+        task3.setInput(new HashMap<>());
         task3.setStatus(TaskModel.Status.SCHEDULED);
         task3.setRetryCount(0);
         task3.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
@@ -1064,7 +1064,7 @@ public class TestWorkflowExecutor {
         joinTask.setRetryCount(1);
         joinTask.setStatus(TaskModel.Status.CANCELED);
         joinTask.setReferenceTaskName("task_join");
-        joinTask.getInputData()
+        joinTask.getInput()
                 .put(
                         "joinOn",
                         Arrays.asList(
@@ -1101,7 +1101,7 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setRetryCount(0);
         task.setWorkflowTask(new WorkflowTask());
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(id);
         task.setSeq(1);
 
@@ -1115,7 +1115,7 @@ public class TestWorkflowExecutor {
         task1.setStatus(TaskModel.Status.FAILED);
         task1.setRetryCount(0);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
         task1.setSubWorkflowId(id);
         task1.setSeq(2);
 
@@ -1135,7 +1135,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setRetryCount(0);
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
         task2.setSubWorkflowId(id);
         task2.setTaskType(TaskType.SUB_WORKFLOW.name());
 
@@ -1343,7 +1343,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.SIMPLE.name());
@@ -1354,7 +1354,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.COMPLETED);
         task2.setWorkflowTask(new WorkflowTask());
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setParentWorkflowId(parentWorkflowId);
@@ -1373,7 +1373,7 @@ public class TestWorkflowExecutor {
         task.setScheduledTime(System.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED);
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(subWorkflowId);
         task.setTaskType(TaskType.SUB_WORKFLOW.name());
         task.setWorkflowTask(new WorkflowTask());
@@ -1497,7 +1497,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.JSON_JQ_TRANSFORM.name());
@@ -1566,7 +1566,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.SIMPLE.name());
@@ -1577,7 +1577,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.COMPLETED);
         task2.setWorkflowTask(new WorkflowTask());
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setParentWorkflowId(parentWorkflowId);
@@ -1596,7 +1596,7 @@ public class TestWorkflowExecutor {
         task.setScheduledTime(System.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED);
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(subWorkflowId);
         task.setTaskType(TaskType.SUB_WORKFLOW.name());
         task.setWorkflowTask(new WorkflowTask());
@@ -2146,7 +2146,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.SIMPLE.name());
@@ -2157,7 +2157,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setParentWorkflowId(parentWorkflowId);
@@ -2176,7 +2176,7 @@ public class TestWorkflowExecutor {
         task.setScheduledTime(System.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(subWorkflowId);
         task.setTaskType(TaskType.SUB_WORKFLOW.name());
         WorkflowTask workflowTask = new WorkflowTask();
@@ -2232,7 +2232,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.SIMPLE.name());
@@ -2243,7 +2243,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setParentWorkflowId(parentWorkflowId);
@@ -2262,7 +2262,7 @@ public class TestWorkflowExecutor {
         task.setScheduledTime(System.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(subWorkflowId);
         task.setTaskType(TaskType.SUB_WORKFLOW.name());
         WorkflowTask workflowTask = new WorkflowTask();
@@ -2316,7 +2316,7 @@ public class TestWorkflowExecutor {
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
-        task1.setOutputData(new HashMap<>());
+        task1.setOutput(new HashMap<>());
 
         TaskModel task2 = new TaskModel();
         task2.setTaskType(TaskType.SIMPLE.name());
@@ -2327,7 +2327,7 @@ public class TestWorkflowExecutor {
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
-        task2.setOutputData(new HashMap<>());
+        task2.setOutput(new HashMap<>());
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setParentWorkflowId(parentWorkflowId);
@@ -2346,7 +2346,7 @@ public class TestWorkflowExecutor {
         task.setScheduledTime(System.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setSubWorkflowId(subWorkflowId);
         task.setTaskType(TaskType.SUB_WORKFLOW.name());
         WorkflowTask workflowTask = new WorkflowTask();

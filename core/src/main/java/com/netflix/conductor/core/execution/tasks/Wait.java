@@ -43,9 +43,8 @@ public class Wait extends WorkflowSystemTask {
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
 
         String duration =
-                Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
-        String until =
-                Optional.ofNullable(task.getInputData().get(UNTIL_INPUT)).orElse("").toString();
+                Optional.ofNullable(task.getInput().get(DURATION_INPUT)).orElse("").toString();
+        String until = Optional.ofNullable(task.getInput().get(UNTIL_INPUT)).orElse("").toString();
 
         if (StringUtils.isNotBlank(duration) && StringUtils.isNotBlank(until)) {
             task.setReasonForIncompletion(

@@ -42,7 +42,7 @@ public class InlineTest {
         inputObj.put("evaluatorType", "value-param");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
@@ -55,7 +55,7 @@ public class InlineTest {
         inputObj.put("evaluatorType", "");
 
         task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(
@@ -73,12 +73,12 @@ public class InlineTest {
         inputObj.put("evaluatorType", "value-param");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
 
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(101, task.getOutputData().get("result"));
+        assertEquals(101, task.getOutput().get("result"));
 
         inputObj = new HashMap<>();
         inputObj.put("value", "StringValue");
@@ -86,12 +86,12 @@ public class InlineTest {
         inputObj.put("evaluatorType", "value-param");
 
         task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
 
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals("StringValue", task.getOutputData().get("result"));
+        assertEquals("StringValue", task.getOutput().get("result"));
     }
 
     @SuppressWarnings("unchecked")
@@ -107,13 +107,13 @@ public class InlineTest {
         inputObj.put("evaluatorType", "javascript");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
 
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
         assertEquals(
-                true, ((Map<String, Object>) task.getOutputData().get("result")).get("evalResult"));
+                true, ((Map<String, Object>) task.getOutput().get("result")).get("evalResult"));
 
         inputObj = new HashMap<>();
         inputObj.put("value", "StringValue");
@@ -123,13 +123,13 @@ public class InlineTest {
         inputObj.put("evaluatorType", "javascript");
 
         task = new TaskModel();
-        task.getInputData().putAll(inputObj);
+        task.getInput().putAll(inputObj);
 
         inline.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
         assertEquals(
-                true, ((Map<String, Object>) task.getOutputData().get("result")).get("evalResult"));
+                true, ((Map<String, Object>) task.getOutput().get("result")).get("evalResult"));
     }
 
     private Map<String, Evaluator> getStringEvaluatorMap() {

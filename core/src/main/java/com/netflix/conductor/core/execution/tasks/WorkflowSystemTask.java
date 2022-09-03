@@ -77,8 +77,8 @@ public abstract class WorkflowSystemTask {
      *     message.
      */
     public boolean isAsyncComplete(TaskModel task) {
-        if (task.getInputData().containsKey("asyncComplete")) {
-            return Optional.ofNullable(task.getInputData().get("asyncComplete"))
+        if (task.getInput().containsKey("asyncComplete")) {
+            return Optional.ofNullable(task.getInput().get("asyncComplete"))
                     .map(result -> (Boolean) result)
                     .orElse(false);
         } else {

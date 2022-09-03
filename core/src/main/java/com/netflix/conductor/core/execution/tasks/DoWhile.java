@@ -99,14 +99,12 @@ public class DoWhile extends WorkflowSystemTask {
             }
             output.put(
                     TaskUtils.removeIterationFromTaskRefName(loopOverTask.getReferenceTaskName()),
-                    loopOverTask.getOutputData());
+                    loopOverTask.getOutput());
             if (hasFailures) {
                 break;
             }
         }
-        doWhileTaskModel
-                .getOutputData()
-                .put(String.valueOf(doWhileTaskModel.getIteration()), output);
+        doWhileTaskModel.getOutput().put(String.valueOf(doWhileTaskModel.getIteration()), output);
 
         if (hasFailures) {
             LOGGER.debug(
@@ -133,7 +131,7 @@ public class DoWhile extends WorkflowSystemTask {
                     shouldContinue);
             if (shouldContinue) {
                 doWhileTaskModel.setIteration(doWhileTaskModel.getIteration() + 1);
-                doWhileTaskModel.getOutputData().put("iteration", doWhileTaskModel.getIteration());
+                doWhileTaskModel.getOutput().put("iteration", doWhileTaskModel.getIteration());
                 return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
             } else {
                 LOGGER.debug(
@@ -214,8 +212,8 @@ public class DoWhile extends WorkflowSystemTask {
 
     @VisibleForTesting
     boolean evaluateCondition(WorkflowModel workflow, TaskModel task) throws ScriptException {
-        Map<String, Object> conditionInput = new HashMap<>(task.getInputData());
-        conditionInput.put(task.getReferenceTaskName(), task.getOutputData());
+        Map<String, Object> conditionInput = new HashMap<>(task.getInput());
+        conditionInput.put(task.getReferenceTaskName(), task.getOutput());
         List<TaskModel> loopOver =
                 workflow.getTasks().stream()
                         .filter(
@@ -233,7 +231,7 @@ public class DoWhile extends WorkflowSystemTask {
         for (TaskModel loopOverTask : loopOver) {
             conditionInput.put(
                     TaskUtils.removeIterationFromTaskRefName(loopOverTask.getReferenceTaskName()),
-                    loopOverTask.getOutputData());
+                    loopOverTask.getOutput());
         }
 
         String condition = task.getWorkflowTask().getLoopCondition();

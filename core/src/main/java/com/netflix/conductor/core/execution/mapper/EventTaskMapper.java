@@ -66,9 +66,9 @@ public class EventTaskMapper implements TaskMapper {
         eventTask.setTaskType(TASK_TYPE_EVENT);
         eventTask.setStatus(TaskModel.Status.SCHEDULED);
 
-        eventTask.setInputData(eventTaskInput);
-        eventTask.getInputData().put("sink", sink);
-        eventTask.getInputData().put("asyncComplete", asynComplete);
+        eventTask.setInput(eventTaskInput);
+        eventTask.getInput().put("sink", sink);
+        eventTask.getInput().put("asyncComplete", asynComplete);
 
         return List.of(eventTask);
     }

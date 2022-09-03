@@ -176,7 +176,7 @@ public class TestWorkflowRepairService {
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
-        task.setInputData(Map.of("asyncComplete", true));
+        task.setInput(Map.of("asyncComplete", true));
 
         WorkflowSystemTask workflowSystemTask =
                 new Event(

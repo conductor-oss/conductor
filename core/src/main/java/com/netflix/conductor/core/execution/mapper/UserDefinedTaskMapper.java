@@ -95,7 +95,7 @@ public class UserDefinedTaskMapper implements TaskMapper {
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel userDefinedTask = taskMapperContext.createTaskModel();
-        userDefinedTask.setInputData(input);
+        userDefinedTask.setInput(input);
         userDefinedTask.setStatus(TaskModel.Status.SCHEDULED);
         userDefinedTask.setRetryCount(retryCount);
         userDefinedTask.setCallbackAfterSeconds(workflowTask.getStartDelay());

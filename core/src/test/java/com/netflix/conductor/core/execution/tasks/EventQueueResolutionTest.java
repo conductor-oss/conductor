@@ -78,17 +78,17 @@ public class EventQueueResolutionTest {
 
         TaskModel task1 = new TaskModel();
         task1.setReferenceTaskName("t1");
-        task1.getOutputData().put("q", "t1_queue");
+        task1.getOutput().put("q", "t1_queue");
         workflow.getTasks().add(task1);
 
         TaskModel task2 = new TaskModel();
         task2.setReferenceTaskName("t2");
-        task2.getOutputData().put("q", "task2_queue");
+        task2.getOutput().put("q", "task2_queue");
         workflow.getTasks().add(task2);
 
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("event");
-        task.getInputData().put("sink", sink);
+        task.getInput().put("sink", sink);
         task.setTaskType(TaskType.EVENT.name());
         workflow.getTasks().add(task);
 
@@ -100,7 +100,7 @@ public class EventQueueResolutionTest {
         assertEquals("sqs", queue.getType());
 
         sink = "sqs:${t1.output.q}";
-        task.getInputData().put("sink", sink);
+        task.getInput().put("sink", sink);
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertNotNull(queue);
@@ -108,7 +108,7 @@ public class EventQueueResolutionTest {
         assertEquals("sqs", queue.getType());
 
         sink = "sqs:${t2.output.q}";
-        task.getInputData().put("sink", sink);
+        task.getInput().put("sink", sink);
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertNotNull(queue);
@@ -116,7 +116,7 @@ public class EventQueueResolutionTest {
         assertEquals("sqs", queue.getType());
 
         sink = "conductor";
-        task.getInputData().put("sink", sink);
+        task.getInput().put("sink", sink);
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertNotNull(queue);
@@ -125,7 +125,7 @@ public class EventQueueResolutionTest {
         assertEquals("conductor", queue.getType());
 
         sink = "sqs:static_value";
-        task.getInputData().put("sink", sink);
+        task.getInput().put("sink", sink);
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertNotNull(queue);
@@ -143,7 +143,7 @@ public class EventQueueResolutionTest {
         task.setReferenceTaskName("task0");
         task.setTaskId("task_id_0");
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.getInputData().put("sink", "conductor:some_arbitary_queue");
+        task.getInput().put("sink", "conductor:some_arbitary_queue");
 
         String queueName = event.computeQueueName(workflow, task);
         ObservableQueue queue = event.getQueue(queueName, task.getTaskId());
@@ -153,7 +153,7 @@ public class EventQueueResolutionTest {
         assertEquals("testWorkflow:some_arbitary_queue", queue.getURI());
         assertEquals("conductor", queue.getType());
 
-        task.getInputData().put("sink", "conductor");
+        task.getInput().put("sink", "conductor");
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertEquals(
@@ -163,7 +163,7 @@ public class EventQueueResolutionTest {
         assertNotNull(queue);
         assertEquals("testWorkflow:task0", queue.getName());
 
-        task.getInputData().put("sink", "sqs:my_sqs_queue_name");
+        task.getInput().put("sink", "sqs:my_sqs_queue_name");
         queueName = event.computeQueueName(workflow, task);
         queue = event.getQueue(queueName, task.getTaskId());
         assertEquals(

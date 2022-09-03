@@ -98,7 +98,7 @@ public class DoWhileTaskMapper implements TaskMapper {
                         workflowModel,
                         doWhileTask.getTaskId(),
                         taskDefinition);
-        doWhileTask.setInputData(taskInput);
+        doWhileTask.setInput(taskInput);
         return List.of(doWhileTask);
     }
 }

@@ -375,8 +375,8 @@ public class DeciderService {
                         terminateTask.getTaskDefName(),
                         Operation.READ.toString(),
                         PayloadType.TASK_OUTPUT.toString());
-            } else if (!terminateTask.getOutputData().isEmpty()) {
-                output = terminateTask.getOutputData();
+            } else if (!terminateTask.getOutput().isEmpty()) {
+                output = terminateTask.getOutput();
             }
         } else {
             TaskModel last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
@@ -395,7 +395,7 @@ public class DeciderService {
                         Operation.READ.toString(),
                         PayloadType.TASK_OUTPUT.toString());
             } else {
-                output = last.getOutputData();
+                output = last.getOutput();
             }
         }
         workflow.setOutput(output);
@@ -462,7 +462,7 @@ public class DeciderService {
         if (systemTaskRegistry.isSystemTask(task.getTaskType())
                 && (TaskType.TASK_TYPE_DECISION.equals(task.getTaskType())
                         || TaskType.TASK_TYPE_SWITCH.equals(task.getTaskType()))) {
-            if (task.getInputData().get("hasChildren") != null) {
+            if (task.getInput().get("hasChildren") != null) {
                 return Collections.emptyList();
             }
         }
@@ -585,7 +585,7 @@ public class DeciderService {
         rescheduled.setRetriedTaskId(task.getTaskId());
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
-        rescheduled.setInputData(new HashMap<>(task.getInputData()));
+        rescheduled.setInput(new HashMap<>(task.getInput()));
         rescheduled.setReasonForIncompletion(null);
         rescheduled.setSubWorkflowId(null);
         rescheduled.setSeq(0);
@@ -598,7 +598,7 @@ public class DeciderService {
             rescheduled.setExternalInputPayloadStoragePath(
                     task.getExternalInputPayloadStoragePath());
         } else {
-            rescheduled.addInput(task.getInputData());
+            rescheduled.addInput(task.getInput());
         }
         if (workflowTask != null && workflow.getWorkflowDefinition().getSchemaVersion() > 1) {
             Map<String, Object> taskInput =

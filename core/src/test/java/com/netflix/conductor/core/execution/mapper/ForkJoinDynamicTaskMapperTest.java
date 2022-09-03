@@ -238,7 +238,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
         assertEquals(TASK_TYPE_FORK, mappedTasks.get(0).getTaskType());
         assertEquals(TASK_TYPE_JOIN, mappedTasks.get(3).getTaskType());
-        List<String> joinTaskNames = (List<String>) mappedTasks.get(3).getInputData().get("joinOn");
+        List<String> joinTaskNames = (List<String>) mappedTasks.get(3).getInput().get("joinOn");
         assertEquals("xdt1, xdt2", String.join(", ", joinTaskNames));
     }
 

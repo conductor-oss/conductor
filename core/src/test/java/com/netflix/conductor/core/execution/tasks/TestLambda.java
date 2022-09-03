@@ -42,22 +42,22 @@ public class TestLambda {
 
         // test for scriptExpression == null
         TaskModel task = new TaskModel();
-        task.getInputData().put("input", inputObj);
+        task.getInput().put("input", inputObj);
         lambda.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
 
         // test for normal
         task = new TaskModel();
-        task.getInputData().put("input", inputObj);
-        task.getInputData().put("scriptExpression", "if ($.input.a==1){return 1}else{return 0 } ");
+        task.getInput().put("input", inputObj);
+        task.getInput().put("scriptExpression", "if ($.input.a==1){return 1}else{return 0 } ");
         lambda.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals(task.getOutputData().toString(), "{result=1}");
+        assertEquals(task.getOutput().toString(), "{result=1}");
 
         // test for scriptExpression ScriptException
         task = new TaskModel();
-        task.getInputData().put("input", inputObj);
-        task.getInputData().put("scriptExpression", "if ($.a.size==1){return 1}else{return 0 } ");
+        task.getInput().put("input", inputObj);
+        task.getInput().put("scriptExpression", "if ($.a.size==1){return 1}else{return 0 } ");
         lambda.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }

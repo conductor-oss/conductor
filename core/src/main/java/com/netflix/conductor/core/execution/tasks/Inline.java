@@ -69,8 +69,8 @@ public class Inline extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        Map<String, Object> taskInput = task.getInputData();
-        Map<String, Object> taskOutput = task.getOutputData();
+        Map<String, Object> taskInput = task.getInput();
+        Map<String, Object> taskOutput = task.getOutput();
         String evaluatorType = (String) taskInput.get(QUERY_EVALUATOR_TYPE);
         String expression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 

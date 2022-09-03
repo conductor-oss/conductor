@@ -66,7 +66,7 @@ class EventSpec extends Specification {
     def "event cancel calls ack on the queue"() {
         given:
         // status is intentionally left as null
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': 'conductor'])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': 'conductor'])
 
         String queueName = "conductor:${workflow.workflowName}:${task.referenceTaskName}"
 
@@ -84,7 +84,7 @@ class EventSpec extends Specification {
 
     def "event task with 'conductor' as sink"() {
         given:
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': 'conductor'])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': 'conductor'])
 
         String queueName = "conductor:${workflow.workflowName}:${task.referenceTaskName}"
         Message expectedMessage
@@ -114,7 +114,7 @@ class EventSpec extends Specification {
         String eventName = 'testEvent'
         String sinkValue = "conductor:$eventName".toString()
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': sinkValue])
 
         String queueName = "conductor:${workflow.workflowName}:$eventName"
         Message expectedMessage
@@ -144,7 +144,7 @@ class EventSpec extends Specification {
         String eventName = 'testEvent'
         String sinkValue = "sqs:$eventName".toString()
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': sinkValue])
 
         // for non conductor queues, queueName is the same as the value of the 'sink' field in the inputData
         String queueName = sinkValue
@@ -172,7 +172,7 @@ class EventSpec extends Specification {
 
     def "event task with 'conductor' as sink and async complete"() {
         given:
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': 'conductor', 'asyncComplete': true])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': 'conductor', 'asyncComplete': true])
 
         String queueName = "conductor:${workflow.workflowName}:${task.referenceTaskName}"
         Message expectedMessage
@@ -202,7 +202,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'conductorinvalidsink'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': sinkValue])
 
         when:
         event.start(workflow, task, null)
@@ -218,7 +218,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'rabbitmq:abc_123'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', input: ['sink': sinkValue])
 
         // for non conductor queues, queueName is the same as the value of the 'sink' field in the inputData
         String queueName = sinkValue
@@ -243,7 +243,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'conductor'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, input: ['sink': sinkValue])
 
         when:
         event.start(workflow, task, null)
@@ -266,7 +266,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'conductor'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, input: ['sink': sinkValue])
 
         when:
         event.start(workflow, task, null)
@@ -290,7 +290,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'conductor'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, input: ['sink': sinkValue])
 
         when:
         event.start(workflow, task, null)
@@ -312,7 +312,7 @@ class EventSpec extends Specification {
         given:
         String sinkValue = 'conductor'
 
-        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, inputData: ['sink': sinkValue])
+        TaskModel task = new TaskModel(referenceTaskName: 'task0', taskId: 'task_id_0', status: TaskModel.Status.SCHEDULED, input: ['sink': sinkValue])
 
         when:
         event.start(workflow, task, null)
@@ -331,12 +331,12 @@ class EventSpec extends Specification {
     }
 
     private void verifyOutputData(TaskModel task, String queueName) {
-        assert task.outputData != null
-        assert task.outputData['event_produced'] == queueName
-        assert task.outputData['workflowInstanceId'] == workflow.workflowId
-        assert task.outputData['workflowVersion'] == workflow.workflowVersion
-        assert task.outputData['workflowType'] == workflow.workflowName
-        assert task.outputData['correlationId'] == workflow.correlationId
+        assert task.output != null
+        assert task.output['event_produced'] == queueName
+        assert task.output['workflowInstanceId'] == workflow.workflowId
+        assert task.output['workflowVersion'] == workflow.workflowVersion
+        assert task.output['workflowType'] == workflow.workflowName
+        assert task.output['correlationId'] == workflow.correlationId
     }
 
     private void verifyMessage(Message expectedMessage, TaskModel task) {

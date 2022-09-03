@@ -84,8 +84,8 @@ public class HTTPTaskMapper implements TaskMapper {
         Boolean asynComplete = (Boolean) input.get("asyncComplete");
 
         TaskModel httpTask = taskMapperContext.createTaskModel();
-        httpTask.setInputData(input);
-        httpTask.getInputData().put("asyncComplete", asynComplete);
+        httpTask.setInput(input);
+        httpTask.getInput().put("asyncComplete", asynComplete);
         httpTask.setStatus(TaskModel.Status.SCHEDULED);
         httpTask.setRetryCount(retryCount);
         httpTask.setCallbackAfterSeconds(workflowTask.getStartDelay());

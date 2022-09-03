@@ -42,7 +42,7 @@ public class TestTerminate {
         input.put(getTerminationStatusParameter(), "PAUSED");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
@@ -56,7 +56,7 @@ public class TestTerminate {
         input.put(getTerminationStatusParameter(), "");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
@@ -70,7 +70,7 @@ public class TestTerminate {
         input.put(getTerminationStatusParameter(), null);
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
@@ -93,10 +93,10 @@ public class TestTerminate {
         input.put(getTerminationWorkflowOutputParameter(), "${task0.output.value}");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals(expectedOutput, task.getOutputData());
+        assertEquals(expectedOutput, task.getOutput());
     }
 
     @Test
@@ -117,10 +117,10 @@ public class TestTerminate {
         input.put(getTerminationWorkflowOutputParameter(), "${task0.output.value}");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertEquals(expectedOutput, task.getOutputData());
+        assertEquals(expectedOutput, task.getOutput());
     }
 
     @Test
@@ -132,10 +132,10 @@ public class TestTerminate {
         input.put(getTerminationStatusParameter(), "FAILED");
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-        assertTrue(task.getOutputData().isEmpty());
+        assertTrue(task.getOutput().isEmpty());
     }
 
     @Test
@@ -155,7 +155,7 @@ public class TestTerminate {
         input.put(getTerminationWorkflowOutputParameter(), expectedOutput);
 
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(input);
+        task.getInput().putAll(input);
         terminateTask.execute(workflow, task, executor);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
     }

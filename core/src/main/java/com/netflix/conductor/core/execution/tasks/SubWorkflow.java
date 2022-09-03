@@ -46,7 +46,7 @@ public class SubWorkflow extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        Map<String, Object> input = task.getInputData();
+        Map<String, Object> input = task.getInput();
         String name = input.get("subWorkflowName").toString();
         int version = (int) input.get("subWorkflowVersion");
 
@@ -205,7 +205,7 @@ public class SubWorkflow extends WorkflowSystemTask {
                 task.setExternalOutputPayloadStoragePath(
                         subworkflow.getExternalOutputPayloadStoragePath());
             } else {
-                task.getOutputData().putAll(subworkflow.getOutput());
+                task.getOutput().putAll(subworkflow.getOutput());
             }
             if (!status.isSuccessful()) {
                 task.setReasonForIncompletion(

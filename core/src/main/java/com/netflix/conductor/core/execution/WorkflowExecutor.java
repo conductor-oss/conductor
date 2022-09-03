@@ -762,7 +762,7 @@ public class WorkflowExecutor {
                         workflow,
                         taskToBeRetried.getWorkflowTask().getTaskDefinition(),
                         taskToBeRetried.getTaskId());
-        taskToBeRetried.getInputData().putAll(taskInput);
+        taskToBeRetried.getInput().putAll(taskInput);
 
         task.setRetried(true);
         // since this task is being retried and a retry has been computed, task lifecycle is
@@ -1095,7 +1095,7 @@ public class WorkflowExecutor {
         task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
         task.setWorkerId(taskResult.getWorkerId());
         task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
-        task.setOutputData(taskResult.getOutputData());
+        task.setOutput(taskResult.getOutputData());
         task.setSubWorkflowId(taskResult.getSubWorkflowId());
 
         if (StringUtils.isNotBlank(taskResult.getExternalOutputPayloadStoragePath())) {
@@ -1613,8 +1613,8 @@ public class WorkflowExecutor {
         taskToBeSkipped.setTaskType(workflowTask.getName());
         taskToBeSkipped.setCorrelationId(workflow.getCorrelationId());
         if (skipTaskRequest != null) {
-            taskToBeSkipped.setInputData(skipTaskRequest.getTaskInput());
-            taskToBeSkipped.setOutputData(skipTaskRequest.getTaskOutput());
+            taskToBeSkipped.setInput(skipTaskRequest.getTaskInput());
+            taskToBeSkipped.setOutput(skipTaskRequest.getTaskOutput());
             taskToBeSkipped.setInputMessage(skipTaskRequest.getTaskInputMessage());
             taskToBeSkipped.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
@@ -1960,7 +1960,7 @@ public class WorkflowExecutor {
             rerunFromTask.setStartTime(0);
             rerunFromTask.setUpdateTime(0);
             rerunFromTask.setEndTime(0);
-            rerunFromTask.getOutputData().clear();
+            rerunFromTask.getOutput().clear();
             rerunFromTask.setRetried(false);
             rerunFromTask.setExecuted(false);
             rerunFromTask.setExternalOutputPayloadStoragePath(null);
@@ -1970,7 +1970,7 @@ public class WorkflowExecutor {
                 rerunFromTask.setStartTime(System.currentTimeMillis());
             } else {
                 if (taskInput != null) {
-                    rerunFromTask.setInputData(taskInput);
+                    rerunFromTask.setInput(taskInput);
                 }
                 if (systemTaskRegistry.isSystemTask(rerunFromTask.getTaskType())
                         && !systemTaskRegistry.get(rerunFromTask.getTaskType()).isAsync()) {

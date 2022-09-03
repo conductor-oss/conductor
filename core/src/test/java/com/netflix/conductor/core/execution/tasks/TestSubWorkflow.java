@@ -64,12 +64,12 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 3);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         String workflowId = "workflow_1";
         WorkflowModel workflow = new WorkflowModel();
@@ -112,13 +112,13 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 3);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -135,7 +135,7 @@ public class TestSubWorkflow {
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
-        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+        assertTrue("Output data should be empty", task.getOutput().isEmpty());
     }
 
     @Test
@@ -145,13 +145,13 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
         task.setStatus(TaskModel.Status.SCHEDULED);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 3);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         String failureReason = "non transient failure";
         when(workflowExecutor.startWorkflow(
@@ -170,7 +170,7 @@ public class TestSubWorkflow {
         assertNull("subWorkflowId should be null", task.getSubWorkflowId());
         assertEquals(TaskModel.Status.FAILED, task.getStatus());
         assertEquals(failureReason, task.getReasonForIncompletion());
-        assertTrue("Output data should be empty", task.getOutputData().isEmpty());
+        assertTrue("Output data should be empty", task.getOutput().isEmpty());
     }
 
     @Test
@@ -180,7 +180,7 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -188,7 +188,7 @@ public class TestSubWorkflow {
 
         Map<String, Object> workflowInput = new HashMap<>();
         inputData.put("workflowInput", workflowInput);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -213,7 +213,7 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -222,7 +222,7 @@ public class TestSubWorkflow {
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("test", "value");
         inputData.put("workflowInput", workflowInput);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -253,13 +253,13 @@ public class TestSubWorkflow {
                 };
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
         inputData.put("subWorkflowTaskToDomain", taskToDomain);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -284,12 +284,12 @@ public class TestSubWorkflow {
         workflowInstance.setWorkflowDefinition(workflowDef);
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -321,14 +321,14 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         Map<String, Object> outputData = new HashMap<>();
-        task.setOutputData(outputData);
+        task.setOutput(outputData);
         task.setSubWorkflowId("sub-workflow-id");
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
         inputData.put("subWorkflowTaskToDomain", taskToDomain);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -391,7 +391,7 @@ public class TestSubWorkflow {
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -422,12 +422,12 @@ public class TestSubWorkflow {
 
         TaskModel task = new TaskModel();
         Map<String, Object> outputData = new HashMap<>();
-        task.setOutputData(outputData);
+        task.setOutput(outputData);
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq("UnitWorkFlow"),
@@ -463,13 +463,13 @@ public class TestSubWorkflow {
         subWorkflowDef.setName("subWorkflow_1");
 
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
         inputData.put("subWorkflowVersion", 2);
         inputData.put("subWorkflowDefinition", subWorkflowDef);
-        task.setInputData(inputData);
+        task.setInput(inputData);
 
         when(workflowExecutor.startWorkflow(
                         eq(subWorkflowDef),

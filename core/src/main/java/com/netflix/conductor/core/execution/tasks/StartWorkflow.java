@@ -86,7 +86,7 @@ public class StartWorkflow extends WorkflowSystemTask {
     }
 
     private StartWorkflowRequest getRequest(TaskModel taskModel) {
-        Map<String, Object> taskInput = taskModel.getInputData();
+        Map<String, Object> taskInput = taskModel.getInput();
 
         StartWorkflowRequest startWorkflowRequest = null;
 

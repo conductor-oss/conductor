@@ -38,7 +38,7 @@ public class TestWait {
 
         wait.start(model, task, null);
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
-        assertTrue(task.getOutputData().isEmpty());
+        assertTrue(task.getOutput().isEmpty());
     }
 
     @Test
@@ -55,7 +55,7 @@ public class TestWait {
         String formatted = formatter.format(now);
         System.out.println(formatted);
 
-        task.getInputData().put(Wait.UNTIL_INPUT, formatted);
+        task.getInput().put(Wait.UNTIL_INPUT, formatted);
         Date parsed = DateUtils.parseDate(formatted, dateFormat);
 
         wait.start(model, task, null);
@@ -75,7 +75,7 @@ public class TestWait {
         TaskModel task = new TaskModel();
         task.setStatus(TaskModel.Status.SCHEDULED);
 
-        task.getInputData().put(Wait.DURATION_INPUT, "1s");
+        task.getInput().put(Wait.DURATION_INPUT, "1s");
         wait.start(model, task, null);
         long now = System.currentTimeMillis();
 
@@ -100,8 +100,8 @@ public class TestWait {
         TaskModel task = new TaskModel();
         task.setStatus(TaskModel.Status.SCHEDULED);
 
-        task.getInputData().put(Wait.DURATION_INPUT, "1s");
-        task.getInputData().put(Wait.UNTIL_INPUT, "2022-12-12");
+        task.getInput().put(Wait.DURATION_INPUT, "1s");
+        task.getInput().put(Wait.UNTIL_INPUT, "2022-12-12");
         wait.start(model, task, null);
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertTrue(!task.getReasonForIncompletion().isEmpty());

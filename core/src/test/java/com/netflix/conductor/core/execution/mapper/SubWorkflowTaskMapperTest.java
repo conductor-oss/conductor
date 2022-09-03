@@ -107,7 +107,7 @@ public class SubWorkflowTaskMapperTest {
         assertEquals(TaskModel.Status.SCHEDULED, subWorkFlowTask.getStatus());
         assertEquals(TASK_TYPE_SUB_WORKFLOW, subWorkFlowTask.getTaskType());
         assertEquals(30, subWorkFlowTask.getCallbackAfterSeconds());
-        assertEquals(taskToDomain, subWorkFlowTask.getInputData().get("subWorkflowTaskToDomain"));
+        assertEquals(taskToDomain, subWorkFlowTask.getInput().get("subWorkflowTaskToDomain"));
     }
 
     @Test

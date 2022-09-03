@@ -43,14 +43,14 @@ public class JsonJqTransformTest {
         final Map<String, Object> inputJson = new HashMap<>();
         inputJson.put("key", Collections.singletonList("VALUE"));
         inputData.put("inputJson", inputJson);
-        task.setInputData(inputData);
-        task.setOutputData(new HashMap<>());
+        task.setInput(inputData);
+        task.setOutput(new HashMap<>());
 
         jsonJqTransform.start(workflow, task, null);
 
-        assertNull(task.getOutputData().get("error"));
-        assertEquals("VALUE", task.getOutputData().get("result").toString());
-        assertEquals("[\"VALUE\"]", task.getOutputData().get("resultList").toString());
+        assertNull(task.getOutput().get("error"));
+        assertEquals("VALUE", task.getOutput().get("result").toString());
+        assertEquals("[\"VALUE\"]", task.getOutput().get("resultList").toString());
     }
 
     @Test
@@ -60,13 +60,13 @@ public class JsonJqTransformTest {
         final TaskModel task = new TaskModel();
         final Map<String, Object> inputData = new HashMap<>();
         inputData.put("queryExpression", "{");
-        task.setInputData(inputData);
-        task.setOutputData(new HashMap<>());
+        task.setInput(inputData);
+        task.setOutput(new HashMap<>());
 
         jsonJqTransform.start(workflow, task, null);
 
         assertTrue(
-                ((String) task.getOutputData().get("error"))
+                ((String) task.getOutput().get("error"))
                         .startsWith("Encountered \"<EOF>\" at line 1, column 1."));
     }
 
@@ -86,13 +86,13 @@ public class JsonJqTransformTest {
         indicatorList.put("value", false);
         inputJson.put("requestedindicatorList", Collections.singletonList(indicatorList));
         inputData.put("inputJson", inputJson);
-        task.setInputData(inputData);
-        task.setOutputData(new HashMap<>());
+        task.setInput(inputData);
+        task.setOutput(new HashMap<>());
 
         jsonJqTransform.start(workflow, task, null);
 
         assertTrue(
-                ((String) task.getOutputData().get("error"))
+                ((String) task.getOutput().get("error"))
                         .startsWith("Encountered \" \"[\" \"[ \"\" at line 1"));
     }
 
@@ -111,15 +111,14 @@ public class JsonJqTransformTest {
         taskInput.put(
                 "queryExpression",
                 "{ requestTransform: .input.requestTransform // \".body\"  , responseTransform: .input.responseTransform // \".response.body\", method: .input.method // \"GET\", document: .input.document // \"rgt_results\", successExpression: .input.successExpression // \"true\"   }");
-        task.setInputData(taskInput);
-        task.setOutputData(new HashMap<>());
+        task.setInput(taskInput);
+        task.setOutput(new HashMap<>());
 
         jsonJqTransform.start(workflow, task, null);
 
-        assertNull(task.getOutputData().get("error"));
-        assertTrue(task.getOutputData().get("result") instanceof Map);
-        HashMap<String, Object> result =
-                (HashMap<String, Object>) task.getOutputData().get("result");
+        assertNull(task.getOutput().get("error"));
+        assertTrue(task.getOutput().get("result") instanceof Map);
+        HashMap<String, Object> result = (HashMap<String, Object>) task.getOutput().get("result");
         assertEquals("POST", result.get("method"));
         assertEquals(
                 "{name: (.body.name + \" you are a \" + .body.title) }",
@@ -138,13 +137,13 @@ public class JsonJqTransformTest {
         taskInput.put(
                 "queryExpression", "if(.data | length >0) then \"EXISTS\" else \"CREATE\" end");
 
-        task.setInputData(taskInput);
+        task.setInput(taskInput);
 
         jsonJqTransform.start(workflow, task, null);
 
-        assertNull(task.getOutputData().get("error"));
-        assertTrue(task.getOutputData().get("result") instanceof String);
-        String result = (String) task.getOutputData().get("result");
+        assertNull(task.getOutput().get("error"));
+        assertTrue(task.getOutput().get("result") instanceof String);
+        String result = (String) task.getOutput().get("result");
         assertEquals("CREATE", result);
     }
 
@@ -161,13 +160,13 @@ public class JsonJqTransformTest {
         taskInput.put("inputData", inputData);
         taskInput.put("queryExpression", ".inputData.request.transitions | map(.name)");
 
-        task.setInputData(taskInput);
+        task.setInput(taskInput);
 
         jsonJqTransform.start(workflow, task, null);
 
-        assertNull(task.getOutputData().get("error"));
-        assertTrue(task.getOutputData().get("result") instanceof List);
-        List<Object> result = (List<Object>) task.getOutputData().get("result");
+        assertNull(task.getOutput().get("error"));
+        assertTrue(task.getOutput().get("result") instanceof List);
+        List<Object> result = (List<Object>) task.getOutput().get("result");
         assertEquals(3, result.size());
     }
 }

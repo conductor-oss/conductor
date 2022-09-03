@@ -291,8 +291,8 @@ public class TestDeciderService {
         workflow.getInput().put("requestId", "request id 001");
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
-        task.getOutputData().put("isPersonActive", true);
+        task.getOutput().put("location", "http://location");
+        task.getOutput().put("isPersonActive", true);
         workflow.getTasks().add(task);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
 
@@ -324,8 +324,8 @@ public class TestDeciderService {
         workflow.getInput().put("requestId", "request id 001");
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
-        task.getOutputData().put("isPersonActive", true);
+        task.getOutput().put("location", "http://location");
+        task.getOutput().put("isPersonActive", true);
         workflow.getTasks().add(task);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
 
@@ -676,7 +676,7 @@ public class TestDeciderService {
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInput(inputParams, workflow, null, "t1");
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(taskInput);
+        task.getInput().putAll(taskInput);
         task.setStatus(TaskModel.Status.FAILED);
         task.setTaskId("t1");
 
@@ -686,18 +686,17 @@ public class TestDeciderService {
         workflowTask.getInputParameters().put("env", env);
 
         Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
-        assertEquals("t1", task.getInputData().get("task_id"));
-        assertEquals(
-                "t1", ((Map<String, Object>) task.getInputData().get("env")).get("env_task_id"));
+        assertEquals("t1", task.getInput().get("task_id"));
+        assertEquals("t1", ((Map<String, Object>) task.getInput().get("env")).get("env_task_id"));
 
         assertNotSame(task.getTaskId(), task2.get().getTaskId());
-        assertEquals(task2.get().getTaskId(), task2.get().getInputData().get("task_id"));
+        assertEquals(task2.get().getTaskId(), task2.get().getInput().get("task_id"));
         assertEquals(
                 task2.get().getTaskId(),
-                ((Map<String, Object>) task2.get().getInputData().get("env")).get("env_task_id"));
+                ((Map<String, Object>) task2.get().getInput().get("env")).get("env_task_id"));
 
         TaskModel task3 = new TaskModel();
-        task3.getInputData().putAll(taskInput);
+        task3.getInput().putAll(taskInput);
         task3.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
         task3.setTaskId("t1");
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
@@ -731,7 +730,7 @@ public class TestDeciderService {
 
         // Create a first failed task
         TaskModel task = new TaskModel();
-        task.getInputData().putAll(taskInput);
+        task.getInput().putAll(taskInput);
         task.setStatus(TaskModel.Status.FAILED);
         task.setTaskId("t1");
 
@@ -745,15 +744,14 @@ public class TestDeciderService {
 
         // Retry the failed task and assert that a new one has been created
         Optional<TaskModel> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
-        assertEquals("t1", task.getInputData().get("task_id"));
-        assertEquals(
-                "t1", ((Map<String, Object>) task.getInputData().get("env")).get("env_task_id"));
+        assertEquals("t1", task.getInput().get("task_id"));
+        assertEquals("t1", ((Map<String, Object>) task.getInput().get("env")).get("env_task_id"));
 
         assertNotSame(task.getTaskId(), task2.get().getTaskId());
-        assertEquals(task2.get().getTaskId(), task2.get().getInputData().get("task_id"));
+        assertEquals(task2.get().getTaskId(), task2.get().getInput().get("task_id"));
         assertEquals(
                 task2.get().getTaskId(),
-                ((Map<String, Object>) task2.get().getInputData().get("env")).get("env_task_id"));
+                ((Map<String, Object>) task2.get().getInput().get("env")).get("env_task_id"));
 
         // Set the retried task to FAILED, retry it again and assert that the workflow failed
         task2.get().setStatus(TaskModel.Status.FAILED);
@@ -1061,7 +1059,7 @@ public class TestDeciderService {
         TaskModel task = new TaskModel();
         Map<String, Object> taskOutput = new HashMap<>();
         taskOutput.put("taskKey", "taskValue");
-        task.setOutputData(taskOutput);
+        task.setOutput(taskOutput);
         workflow.getTasks().add(task);
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
@@ -1086,7 +1084,7 @@ public class TestDeciderService {
         workflow.setWorkflowDefinition(workflowDef);
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("test_task");
-        task.setOutputData(
+        task.setOutput(
                 new HashMap() {
                     {
                         put("taskKey", "taskValue");
@@ -1104,7 +1102,7 @@ public class TestDeciderService {
         TaskModel task = new TaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
         task.setStatus(TaskModel.Status.COMPLETED);
-        task.setOutputData(
+        task.setOutput(
                 new HashMap<String, Object>() {
                     {
                         put("taskKey", "taskValue");
@@ -1118,7 +1116,7 @@ public class TestDeciderService {
 
         // when terminate task has output in external payload storage
         String externalOutputPayloadStoragePath = "/task/output/terminate.json";
-        workflow.getTasks().get(0).setOutputData(null);
+        workflow.getTasks().get(0).setOutput(null);
         workflow.getTasks()
                 .get(0)
                 .setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
@@ -1372,12 +1370,12 @@ public class TestDeciderService {
 
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
+        task.getOutput().put("location", "http://location");
         task.setStatus(TaskModel.Status.COMPLETED);
 
         TaskModel task2 = new TaskModel();
         task2.setReferenceTaskName("task3");
-        task2.getOutputData().put("refId", "abcddef_1234_7890_aaffcc");
+        task2.getOutput().put("refId", "abcddef_1234_7890_aaffcc");
         task2.setStatus(TaskModel.Status.SCHEDULED);
 
         workflow.getTasks().add(task);

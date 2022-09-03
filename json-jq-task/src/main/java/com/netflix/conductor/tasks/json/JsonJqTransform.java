@@ -61,7 +61,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        final Map<String, Object> taskInput = task.getInputData();
+        final Map<String, Object> taskInput = task.getInput();
 
         final String queryExpression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 

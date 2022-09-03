@@ -229,7 +229,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
     /**
      * This method creates a FORK task and adds the list of dynamic fork tasks keyed by
-     * "forkedTaskDefs" and their names keyed by "forkedTasks" into {@link TaskModel#getInputData()}
+     * "forkedTaskDefs" and their names keyed by "forkedTasks" into {@link TaskModel#getInput()}
      *
      * @param taskMapperContext: The {@link TaskMapperContext} which wraps workflowTask, workflowDef
      *     and workflowModel
@@ -249,9 +249,9 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                 dynForkTasks.stream()
                         .map(WorkflowTask::getTaskReferenceName)
                         .collect(Collectors.toList());
-        forkDynamicTask.getInputData().put("forkedTasks", forkedTaskNames);
+        forkDynamicTask.getInput().put("forkedTasks", forkedTaskNames);
         forkDynamicTask
-                .getInputData()
+                .getInput()
                 .put(
                         "forkedTaskDefs",
                         dynForkTasks); // TODO: Remove this parameter in the later releases
@@ -268,7 +268,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      *     being executed.
      * @param joinWorkflowTask: A instance of {@link WorkflowTask} which is of type {@link
      *     TaskType#JOIN}
-     * @param joinInput: The input which is set in the {@link TaskModel#setInputData(Map)}
+     * @param joinInput: The input which is set in the {@link TaskModel#setInput(Map)}
      * @return a new instance of {@link TaskModel} representing a {@link TaskType#JOIN}
      */
     @VisibleForTesting
@@ -285,7 +285,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         joinTask.setCorrelationId(workflowModel.getCorrelationId());
         joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setStartTime(System.currentTimeMillis());
-        joinTask.setInputData(joinInput);
+        joinTask.setInput(joinInput);
         joinTask.setTaskId(idGenerator.generate());
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
         joinTask.setWorkflowTask(joinWorkflowTask);

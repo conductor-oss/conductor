@@ -104,8 +104,8 @@ public class ParametersUtils {
                 .forEach(
                         task -> {
                             Map<String, Object> taskParams = new HashMap<>();
-                            taskParams.put("input", task.getInputData());
-                            taskParams.put("output", task.getOutputData());
+                            taskParams.put("input", task.getInput());
+                            taskParams.put("output", task.getOutput());
                             taskParams.put("taskType", task.getTaskType());
                             if (task.getStatus() != null) {
                                 taskParams.put("status", task.getStatus().toString());
@@ -304,9 +304,9 @@ public class ParametersUtils {
                         TaskModel task = workflow.getTaskByRefName(source);
                         if (task != null) {
                             if ("input".equals(type)) {
-                                input.put(paramName, task.getInputData().get(name));
+                                input.put(paramName, task.getInput().get(name));
                             } else {
-                                input.put(paramName, task.getOutputData().get(name));
+                                input.put(paramName, task.getOutput().get(name));
                             }
                         }
                     }

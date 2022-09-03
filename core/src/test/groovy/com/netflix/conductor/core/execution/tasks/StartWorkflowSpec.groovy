@@ -50,7 +50,7 @@ class StartWorkflowSpec extends Specification {
 
         def inputData = [:]
         inputData[START_WORKFLOW_PARAMETER] = ['name': 'some_workflow']
-        taskModel = new TaskModel(status: SCHEDULED, inputData: inputData)
+        taskModel = new TaskModel(status: SCHEDULED, input: inputData)
         workflowModel = new WorkflowModel()
 
         startWorkflow = new StartWorkflow(new ObjectMapperProvider().getObjectMapper(), validator)
@@ -63,7 +63,7 @@ class StartWorkflowSpec extends Specification {
 
     def "startWorkflow parameter is missing"() {
         given: "a task with no start_workflow in input"
-        taskModel.inputData = [:]
+        taskModel.input = [:]
 
         when:
         startWorkflow.start(workflowModel, taskModel, workflowExecutor)
@@ -75,7 +75,7 @@ class StartWorkflowSpec extends Specification {
 
     def "ObjectMapper throws an IllegalArgumentException"() {
         given: "a task with no start_workflow in input"
-        taskModel.inputData[START_WORKFLOW_PARAMETER] = "I can't be converted to StartWorkflowRequest"
+        taskModel.input[START_WORKFLOW_PARAMETER] = "I can't be converted to StartWorkflowRequest"
 
         when:
         startWorkflow.start(workflowModel, taskModel, workflowExecutor)

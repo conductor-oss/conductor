@@ -99,13 +99,13 @@ public class ExternalPayloadStorageUtils {
             case TASK_INPUT:
                 threshold = properties.getTaskInputPayloadSizeThreshold().toKilobytes();
                 maxThreshold = properties.getMaxTaskInputPayloadSizeThreshold().toKilobytes();
-                payload = ((TaskModel) entity).getInputData();
+                payload = ((TaskModel) entity).getInput();
                 workflowId = ((TaskModel) entity).getWorkflowInstanceId();
                 break;
             case TASK_OUTPUT:
                 threshold = properties.getTaskOutputPayloadSizeThreshold().toKilobytes();
                 maxThreshold = properties.getMaxTaskOutputPayloadSizeThreshold().toKilobytes();
-                payload = ((TaskModel) entity).getOutputData();
+                payload = ((TaskModel) entity).getOutput();
                 workflowId = ((TaskModel) entity).getWorkflowInstanceId();
                 break;
             case WORKFLOW_INPUT:
@@ -217,9 +217,9 @@ public class ExternalPayloadStorageUtils {
         task.setReasonForIncompletion(errorMsg);
         task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
         if (payloadType == PayloadType.TASK_INPUT) {
-            task.setInputData(new HashMap<>());
+            task.setInput(new HashMap<>());
         } else {
-            task.setOutputData(new HashMap<>());
+            task.setOutput(new HashMap<>());
         }
         throw new TerminateWorkflowException(errorMsg, WorkflowModel.Status.FAILED, task);
     }

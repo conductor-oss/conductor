@@ -46,7 +46,7 @@ public class ExclusiveJoin extends WorkflowSystemTask {
         boolean hasFailures = false;
         StringBuilder failureReason = new StringBuilder();
         TaskModel.Status taskStatus;
-        List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
+        List<String> joinOn = (List<String>) task.getInput().get("joinOn");
         if (task.isLoopOverTask()) {
             // If exclusive join is part of loop over task, wait for specific iteration to get
             // complete
@@ -75,7 +75,7 @@ public class ExclusiveJoin extends WorkflowSystemTask {
 
         if (!foundExlusiveJoinOnTask) {
             List<String> defaultExclusiveJoinTasks =
-                    (List<String>) task.getInputData().get(DEFAULT_EXCLUSIVE_JOIN_TASKS);
+                    (List<String>) task.getInput().get(DEFAULT_EXCLUSIVE_JOIN_TASKS);
             LOGGER.info(
                     "Could not perform exclusive on Join Task(s). Performing now on default exclusive join task(s) {}, workflow: {}",
                     defaultExclusiveJoinTasks,
@@ -115,7 +115,7 @@ public class ExclusiveJoin extends WorkflowSystemTask {
                 task.setReasonForIncompletion(failureReason.toString());
                 task.setStatus(TaskModel.Status.FAILED);
             } else {
-                task.setOutputData(exclusiveTask.getOutputData());
+                task.setOutput(exclusiveTask.getOutput());
                 task.setStatus(TaskModel.Status.COMPLETED);
             }
             LOGGER.debug("Task: {} status is: {}", task.getTaskId(), task.getStatus());

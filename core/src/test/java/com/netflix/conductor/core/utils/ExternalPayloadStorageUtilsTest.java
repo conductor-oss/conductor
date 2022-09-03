@@ -125,11 +125,11 @@ public class ExternalPayloadStorageUtilsTest {
                 .upload(anyString(), any(), anyLong());
 
         TaskModel task = new TaskModel();
-        task.setInputData(payload);
+        task.setInput(payload);
         externalPayloadStorageUtils.verifyAndUpload(
                 task, ExternalPayloadStorage.PayloadType.TASK_INPUT);
         assertTrue(StringUtils.isNotEmpty(task.getExternalInputPayloadStoragePath()));
-        assertFalse(task.getInputData().isEmpty());
+        assertFalse(task.getInput().isEmpty());
         assertEquals(1, uploadCount.get());
         assertNotNull(task.getExternalInputPayloadStoragePath());
     }
@@ -197,25 +197,25 @@ public class ExternalPayloadStorageUtilsTest {
     @Test
     public void testFailTaskWithInputPayload() {
         TaskModel task = new TaskModel();
-        task.setInputData(new HashMap<>());
+        task.setInput(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
         externalPayloadStorageUtils.failTask(
                 task, ExternalPayloadStorage.PayloadType.TASK_INPUT, "error");
         assertNotNull(task);
-        assertTrue(task.getInputData().isEmpty());
+        assertTrue(task.getInput().isEmpty());
     }
 
     @Test
     public void testFailTaskWithOutputPayload() {
         TaskModel task = new TaskModel();
-        task.setOutputData(new HashMap<>());
+        task.setOutput(new HashMap<>());
 
         expectedException.expect(TerminateWorkflowException.class);
         externalPayloadStorageUtils.failTask(
                 task, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, "error");
         assertNotNull(task);
-        assertTrue(task.getOutputData().isEmpty());
+        assertTrue(task.getOutput().isEmpty());
     }
 
     @Test
@@ -251,8 +251,8 @@ public class ExternalPayloadStorageUtilsTest {
         payload.put("key2", "value2");
 
         TaskModel task = new TaskModel();
-        task.setInputData(payload);
-        task.setOutputData(payload);
+        task.setInput(payload);
+        task.setOutput(payload);
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setInput(payload);

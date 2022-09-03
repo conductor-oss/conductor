@@ -59,14 +59,14 @@ public class UserTask extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.IN_PROGRESS);
         } else {
             Map<String, Map<String, List<Object>>> map =
-                    objectMapper.convertValue(task.getInputData(), mapStringListObjects);
+                    objectMapper.convertValue(task.getInput(), mapStringListObjects);
             Map<String, Object> output = new HashMap<>();
             Map<String, List<Object>> defaultLargeInput = new HashMap<>();
             defaultLargeInput.put("TEST_SAMPLE", Collections.singletonList("testDefault"));
             output.put(
                     "size",
                     map.getOrDefault("largeInput", defaultLargeInput).get("TEST_SAMPLE").size());
-            task.setOutputData(output);
+            task.setOutput(output);
             task.setStatus(TaskModel.Status.COMPLETED);
         }
     }

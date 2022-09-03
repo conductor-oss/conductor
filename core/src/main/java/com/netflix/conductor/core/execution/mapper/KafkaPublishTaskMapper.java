@@ -81,7 +81,7 @@ public class KafkaPublishTaskMapper implements TaskMapper {
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel kafkaPublishTask = taskMapperContext.createTaskModel();
-        kafkaPublishTask.setInputData(input);
+        kafkaPublishTask.setInput(input);
         kafkaPublishTask.setStatus(TaskModel.Status.SCHEDULED);
         kafkaPublishTask.setRetryCount(retryCount);
         kafkaPublishTask.setCallbackAfterSeconds(workflowTask.getStartDelay());

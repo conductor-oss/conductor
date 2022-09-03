@@ -75,9 +75,9 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task1.setWorkflowInstanceId(workflowId)
         task1.setScheduledTime(System.currentTimeMillis())
         task1.setTaskId(task1Id)
-        task1.getInputData().put("asyncComplete", true)
-        task1.getInputData().put("subWorkflowName", "junit1")
-        task1.getInputData().put("subWorkflowVersion", 1)
+        task1.getInput().put("asyncComplete", true)
+        task1.getInput().put("subWorkflowName", "junit1")
+        task1.getInput().put("subWorkflowVersion", 1)
         task1.setStatus(TaskModel.Status.SCHEDULED)
 
         String queueName = QueueUtils.getQueueName(task1)

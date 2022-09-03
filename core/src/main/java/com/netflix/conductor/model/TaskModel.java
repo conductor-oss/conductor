@@ -24,11 +24,10 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.protobuf.Any;
 
-public class TaskModel {
+public class TaskModel extends BaseModel {
 
     public enum Status {
         IN_PROGRESS(false, true, true),
@@ -130,10 +129,6 @@ public class TaskModel {
 
     private int rateLimitFrequencyInSeconds;
 
-    private String externalInputPayloadStoragePath;
-
-    private String externalOutputPayloadStoragePath;
-
     private int workflowPriority;
 
     private String executionNameSpace;
@@ -153,14 +148,6 @@ public class TaskModel {
      */
     private boolean subworkflowChanged;
 
-    @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> inputData = new HashMap<>();
-
-    @JsonIgnore private Map<String, Object> outputData = new HashMap<>();
-
     public String getTaskType() {
         return taskType;
     }
@@ -177,34 +164,13 @@ public class TaskModel {
         this.status = status;
     }
 
-    @JsonIgnore
-    public Map<String, Object> getInputData() {
-        if (!inputPayload.isEmpty() && !inputData.isEmpty()) {
-            inputData.putAll(inputPayload);
-            inputPayload = new HashMap<>();
-            return inputData;
-        } else if (inputPayload.isEmpty()) {
-            return inputData;
-        } else {
-            return inputPayload;
-        }
-    }
-
-    @JsonIgnore
-    public void setInputData(Map<String, Object> inputData) {
-        if (inputData == null) {
-            inputData = new HashMap<>();
-        }
-        this.inputData = inputData;
-    }
-
     /**
      * @deprecated Used only for JSON serialization and deserialization.
      */
     @JsonProperty("inputData")
     @Deprecated
     public void setRawInputData(Map<String, Object> inputData) {
-        setInputData(inputData);
+        setInput(inputData);
     }
 
     /**
@@ -213,7 +179,7 @@ public class TaskModel {
     @JsonProperty("inputData")
     @Deprecated
     public Map<String, Object> getRawInputData() {
-        return inputData;
+        return input;
     }
 
     public String getReferenceTaskName() {
@@ -395,34 +361,13 @@ public class TaskModel {
         this.workerId = workerId;
     }
 
-    @JsonIgnore
-    public Map<String, Object> getOutputData() {
-        if (!outputPayload.isEmpty() && !outputData.isEmpty()) {
-            outputData.putAll(outputPayload);
-            outputPayload = new HashMap<>();
-            return outputData;
-        } else if (outputPayload.isEmpty()) {
-            return outputData;
-        } else {
-            return outputPayload;
-        }
-    }
-
-    @JsonIgnore
-    public void setOutputData(Map<String, Object> outputData) {
-        if (outputData == null) {
-            outputData = new HashMap<>();
-        }
-        this.outputData = outputData;
-    }
-
     /**
      * @deprecated Used only for JSON serialization and deserialization.
      */
     @JsonProperty("outputData")
     @Deprecated
     public void setRawOutputData(Map<String, Object> inputData) {
-        setOutputData(inputData);
+        setOutput(inputData);
     }
 
     /**
@@ -431,7 +376,7 @@ public class TaskModel {
     @JsonProperty("outputData")
     @Deprecated
     public Map<String, Object> getRawOutputData() {
-        return outputData;
+        return output;
     }
 
     public WorkflowTask getWorkflowTask() {
@@ -482,22 +427,6 @@ public class TaskModel {
         this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
     }
 
-    public String getExternalInputPayloadStoragePath() {
-        return externalInputPayloadStoragePath;
-    }
-
-    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
-        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
-    }
-
-    public String getExternalOutputPayloadStoragePath() {
-        return externalOutputPayloadStoragePath;
-    }
-
-    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
-        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
-    }
-
     public int getWorkflowPriority() {
         return workflowPriority;
     }
@@ -535,10 +464,10 @@ public class TaskModel {
         if (StringUtils.isNotBlank(subWorkflowId)) {
             return subWorkflowId;
         } else {
-            return this.getOutputData() != null && this.getOutputData().get("subWorkflowId") != null
-                    ? (String) this.getOutputData().get("subWorkflowId")
-                    : this.getInputData() != null
-                            ? (String) this.getInputData().get("subWorkflowId")
+            return this.getOutput() != null && this.getOutput().get("subWorkflowId") != null
+                    ? (String) this.getOutput().get("subWorkflowId")
+                    : this.getInput() != null
+                            ? (String) this.getInput().get("subWorkflowId")
                             : null;
         }
     }
@@ -546,8 +475,8 @@ public class TaskModel {
     public void setSubWorkflowId(String subWorkflowId) {
         this.subWorkflowId = subWorkflowId;
         // For backwards compatibility
-        if (this.outputData != null && this.outputData.containsKey("subWorkflowId")) {
-            this.outputData.put("subWorkflowId", subWorkflowId);
+        if (this.output != null && this.output.containsKey("subWorkflowId")) {
+            this.output.put("subWorkflowId", subWorkflowId);
         }
     }
 
@@ -608,28 +537,6 @@ public class TaskModel {
         return copy;
     }
 
-    public void externalizeInput(String path) {
-        this.inputPayload = this.inputData;
-        this.inputData = new HashMap<>();
-        this.externalInputPayloadStoragePath = path;
-    }
-
-    public void externalizeOutput(String path) {
-        this.outputPayload = this.outputData;
-        this.outputData = new HashMap<>();
-        this.externalOutputPayloadStoragePath = path;
-    }
-
-    public void internalizeInput(Map<String, Object> data) {
-        this.inputData = new HashMap<>();
-        this.inputPayload = data;
-    }
-
-    public void internalizeOutput(Map<String, Object> data) {
-        this.outputData = new HashMap<>();
-        this.outputPayload = data;
-    }
-
     @Override
     public String toString() {
         return "TaskModel{"
@@ -639,7 +546,7 @@ public class TaskModel {
                 + ", status="
                 + status
                 + ", inputData="
-                + inputData
+                + input
                 + ", referenceTaskName='"
                 + referenceTaskName
                 + '\''
@@ -694,7 +601,7 @@ public class TaskModel {
                 + workerId
                 + '\''
                 + ", outputData="
-                + outputData
+                + output
                 + ", workflowTask="
                 + workflowTask
                 + ", domain='"
@@ -760,7 +667,7 @@ public class TaskModel {
                 && isSubworkflowChanged() == taskModel.isSubworkflowChanged()
                 && Objects.equals(getTaskType(), taskModel.getTaskType())
                 && getStatus() == taskModel.getStatus()
-                && Objects.equals(getInputData(), taskModel.getInputData())
+                && Objects.equals(getInput(), taskModel.getInput())
                 && Objects.equals(getReferenceTaskName(), taskModel.getReferenceTaskName())
                 && Objects.equals(getCorrelationId(), taskModel.getCorrelationId())
                 && Objects.equals(getTaskDefName(), taskModel.getTaskDefName())
@@ -771,7 +678,7 @@ public class TaskModel {
                 && Objects.equals(getReasonForIncompletion(), taskModel.getReasonForIncompletion())
                 && Objects.equals(getWorkerId(), taskModel.getWorkerId())
                 && Objects.equals(getWaitTimeout(), taskModel.getWaitTimeout())
-                && Objects.equals(getOutputData(), taskModel.getOutputData())
+                && Objects.equals(getOutput(), taskModel.getOutput())
                 && Objects.equals(getWorkflowTask(), taskModel.getWorkflowTask())
                 && Objects.equals(getDomain(), taskModel.getDomain())
                 && Objects.equals(getInputMessage(), taskModel.getInputMessage())
@@ -792,7 +699,7 @@ public class TaskModel {
         return Objects.hash(
                 getTaskType(),
                 getStatus(),
-                getInputData(),
+                getInput(),
                 getReferenceTaskName(),
                 getRetryCount(),
                 getSeq(),
@@ -816,7 +723,7 @@ public class TaskModel {
                 getCallbackAfterSeconds(),
                 getWorkerId(),
                 getWaitTimeout(),
-                getOutputData(),
+                getOutput(),
                 getWorkflowTask(),
                 getDomain(),
                 getInputMessage(),
@@ -837,6 +744,8 @@ public class TaskModel {
         Task task = new Task();
         BeanUtils.copyProperties(this, task);
         task.setStatus(Task.Status.valueOf(status.name()));
+        task.setInputData(getInput());
+        task.setOutputData(getOutput());
 
         // ensure that input/output is properly represented
         if (externalInputPayloadStoragePath != null) {
@@ -850,25 +759,5 @@ public class TaskModel {
 
     public static Task.Status mapToTaskStatus(TaskModel.Status status) {
         return Task.Status.valueOf(status.name());
-    }
-
-    public void addInput(String key, Object value) {
-        this.inputData.put(key, value);
-    }
-
-    public void addInput(Map<String, Object> inputData) {
-        if (inputData != null) {
-            this.inputData.putAll(inputData);
-        }
-    }
-
-    public void addOutput(String key, Object value) {
-        this.outputData.put(key, value);
-    }
-
-    public void addOutput(Map<String, Object> outputData) {
-        if (outputData != null) {
-            this.outputData.putAll(outputData);
-        }
     }
 }

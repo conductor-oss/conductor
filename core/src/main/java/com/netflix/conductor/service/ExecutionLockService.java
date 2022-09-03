@@ -39,6 +39,7 @@ public class ExecutionLockService {
         this.properties = properties;
         this.lock = lock;
         this.lockLeaseTime = properties.getLockLeaseTime().toMillis();
+        LOGGER.info(">>>>>>>> Lock Lease Time: {}", lockLeaseTime);
         this.lockTimeToTry = properties.getLockTimeToTry().toMillis();
     }
 

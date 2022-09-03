@@ -89,7 +89,7 @@ public class SimpleTaskMapper implements TaskMapper {
         TaskModel simpleTask = taskMapperContext.createTaskModel();
         simpleTask.setTaskType(workflowTask.getName());
         simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());
-        simpleTask.setInputData(input);
+        simpleTask.setInput(input);
         simpleTask.setStatus(TaskModel.Status.SCHEDULED);
         simpleTask.setRetryCount(retryCount);
         simpleTask.setCallbackAfterSeconds(workflowTask.getStartDelay());

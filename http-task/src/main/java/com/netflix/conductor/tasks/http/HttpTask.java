@@ -76,7 +76,7 @@ public class HttpTask extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        Object request = task.getInputData().get(requestParameter);
+        Object request = task.getInput().get(requestParameter);
         task.setWorkerId(Utils.getServerId());
         if (request == null) {
             task.setReasonForIncompletion(MISSING_REQUEST);
@@ -123,7 +123,7 @@ public class HttpTask extends WorkflowSystemTask {
             }
             //noinspection ConstantConditions
             if (response != null) {
-                task.getOutputData().put("response", response.asMap());
+                task.getOutput().put("response", response.asMap());
             }
 
         } catch (Exception e) {
@@ -138,7 +138,7 @@ public class HttpTask extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(
                     "Failed to invoke " + getTaskType() + " task due to: " + e);
-            task.getOutputData().put("response", e.toString());
+            task.getOutput().put("response", e.toString());
         }
     }
 

@@ -265,8 +265,8 @@ public class TestDeciderOutcomes {
                 outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 
         String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
-        assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
-        assertEquals(123, outcome.tasksToBeScheduled.get(0).getInputData().get("requestId"));
+        assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInput().get("taskId"));
+        assertEquals(123, outcome.tasksToBeScheduled.get(0).getInput().get("requestId"));
 
         outcome.tasksToBeScheduled.get(0).setStatus(TaskModel.Status.FAILED);
         workflow.getTasks().addAll(outcome.tasksToBeScheduled);
@@ -280,9 +280,9 @@ public class TestDeciderOutcomes {
         assertNotSame(task1Id, outcome.tasksToBeScheduled.get(0).getTaskId());
         assertEquals(
                 outcome.tasksToBeScheduled.get(0).getTaskId(),
-                outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+                outcome.tasksToBeScheduled.get(0).getInput().get("taskId"));
         assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getRetriedTaskId());
-        assertEquals(123, outcome.tasksToBeScheduled.get(0).getInputData().get("requestId"));
+        assertEquals(123, outcome.tasksToBeScheduled.get(0).getInput().get("requestId"));
 
         WorkflowTask fork = new WorkflowTask();
         fork.setName("fork0");
@@ -332,11 +332,11 @@ public class TestDeciderOutcomes {
         assertEquals(3, outcome.tasksToBeScheduled.size());
         assertEquals(0, outcome.tasksToBeUpdated.size());
 
-        assertEquals("v", outcome.tasksToBeScheduled.get(1).getInputData().get("k"));
-        assertEquals(1, outcome.tasksToBeScheduled.get(1).getInputData().get("k1"));
+        assertEquals("v", outcome.tasksToBeScheduled.get(1).getInput().get("k"));
+        assertEquals(1, outcome.tasksToBeScheduled.get(1).getInput().get("k1"));
         assertEquals(
                 outcome.tasksToBeScheduled.get(1).getTaskId(),
-                outcome.tasksToBeScheduled.get(1).getInputData().get("taskId"));
+                outcome.tasksToBeScheduled.get(1).getInput().get("taskId"));
         task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
 
         outcome.tasksToBeScheduled.get(1).setStatus(TaskModel.Status.FAILED);
@@ -356,9 +356,9 @@ public class TestDeciderOutcomes {
                         .findFirst();
         assertTrue(optionalTask.isPresent());
         TaskModel task = optionalTask.get();
-        assertEquals("v", task.getInputData().get("k"));
-        assertEquals(1, task.getInputData().get("k1"));
-        assertEquals(task.getTaskId(), task.getInputData().get("taskId"));
+        assertEquals("v", task.getInput().get("k"));
+        assertEquals(1, task.getInput().get("k1"));
+        assertEquals(task.getTaskId(), task.getInput().get("taskId"));
         assertNotSame(task1Id, task.getTaskId());
         assertEquals(task1Id, task.getRetriedTaskId());
     }
@@ -398,7 +398,7 @@ public class TestDeciderOutcomes {
 
         for (int i = 0; i < 3; i++) {
             String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
-            assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+            assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInput().get("taskId"));
 
             workflow.getTasks().clear();
             workflow.getTasks().addAll(outcome.tasksToBeScheduled);
@@ -573,7 +573,7 @@ public class TestDeciderOutcomes {
                 outcome.tasksToBeScheduled.get(1).getReferenceTaskName()); // default
         assertEquals(
                 Collections.singletonList("bad input"),
-                outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+                outcome.tasksToBeScheduled.get(0).getOutput().get("caseOutput"));
 
         workflow.getInput().put("Id", 9);
         workflow.getInput().put("location", "usa");
@@ -589,7 +589,7 @@ public class TestDeciderOutcomes {
                         .getReferenceTaskName()); // even because of location == usa
         assertEquals(
                 Collections.singletonList("even"),
-                outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+                outcome.tasksToBeScheduled.get(0).getOutput().get("caseOutput"));
 
         workflow.getInput().put("Id", 9);
         workflow.getInput().put("location", "canada");
@@ -603,6 +603,6 @@ public class TestDeciderOutcomes {
                 outcome.tasksToBeScheduled.get(1).getReferenceTaskName()); // odd
         assertEquals(
                 Collections.singletonList("odd"),
-                outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+                outcome.tasksToBeScheduled.get(0).getOutput().get("caseOutput"));
     }
 }

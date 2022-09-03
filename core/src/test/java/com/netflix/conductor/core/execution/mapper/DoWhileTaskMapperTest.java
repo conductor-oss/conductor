@@ -107,8 +107,8 @@ public class DoWhileTaskMapperTest {
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 1);
         assertEquals(TASK_TYPE_DO_WHILE, mappedTasks.get(0).getTaskType());
-        assertNotNull(mappedTasks.get(0).getInputData());
-        assertEquals(Map.of("value", "bar"), mappedTasks.get(0).getInputData());
+        assertNotNull(mappedTasks.get(0).getInput());
+        assertEquals(Map.of("value", "bar"), mappedTasks.get(0).getInput());
     }
 
     @Test

@@ -40,7 +40,7 @@ public class Join extends WorkflowSystemTask {
         boolean hasFailures = false;
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
-        List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
+        List<String> joinOn = (List<String>) task.getInput().get("joinOn");
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get complete
             joinOn =
@@ -61,8 +61,8 @@ public class Join extends WorkflowSystemTask {
                 failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
             }
             // Only add to task output if it's not empty
-            if (!forkedTask.getOutputData().isEmpty()) {
-                task.addOutput(joinOnRef, forkedTask.getOutputData());
+            if (!forkedTask.getOutput().isEmpty()) {
+                task.addOutput(joinOnRef, forkedTask.getOutput());
             }
             if (!taskStatus.isTerminal()) {
                 allDone = false;
