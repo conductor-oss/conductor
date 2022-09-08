@@ -16,11 +16,19 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.dao.query.TaskPayloadQuery;
+import com.netflix.conductor.dao.query.TaskPayloadResponse;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 /** Data access layer for storing workflow executions */
 public interface ExecutionDAO {
+
+    enum PayloadType {
+        ALL,
+        INPUT,
+        OUTPUT
+    }
 
     /**
      * @param taskName Name of the task
@@ -52,6 +60,8 @@ public interface ExecutionDAO {
      */
     void updateTask(TaskModel task);
 
+    default void updateTaskPayload(TaskModel task, PayloadType payloadType) {}
+
     /**
      * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the
      * task is scheduled to be in progress (given to the worker or for system tasks start() method
@@ -79,6 +89,8 @@ public interface ExecutionDAO {
      * @return Task
      */
     TaskModel getTask(String taskId);
+
+    default TaskPayloadResponse getTaskPayload(TaskPayloadQuery query) { return null;}
 
     /**
      * @param taskIds Task instance ids
@@ -110,6 +122,8 @@ public interface ExecutionDAO {
      */
     String updateWorkflow(WorkflowModel workflow);
 
+    default void updateWorkflowPayload(WorkflowModel workflow, PayloadType payloadType) {}
+
     /**
      * @param workflowId workflow instance id
      * @return true if the deletion is successful, false otherwise
@@ -136,6 +150,8 @@ public interface ExecutionDAO {
      * @return Workflow
      */
     WorkflowModel getWorkflow(String workflowId);
+
+    default void getWorkflowPayload(String workflowId) {}
 
     /**
      * @param workflowId workflow instance id

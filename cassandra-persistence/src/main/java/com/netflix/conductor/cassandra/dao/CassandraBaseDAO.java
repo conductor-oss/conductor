@@ -29,36 +29,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import static com.netflix.conductor.cassandra.util.Constants.DAO_NAME;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_EXECUTION_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_VALUE;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.*;
 
 /**
  * Creates the keyspace and tables.
@@ -92,6 +63,13 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  * <p>CREATE TABLE IF NOT EXISTS conductor.event_executions( message_id text, event_handler_name
  * text, event_execution_id text, payload text, PRIMARY KEY ((message_id, event_handler_name),
  * event_execution_id) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_payloads( workflow_id uuid, payload_type text,
+ * payload text, PRIMARY KEY ((workflow_id), payload_type) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_payloads( workflow_id uuid, task_ref_name text,
+ * task_id uuid, payload_type text, seq int, PRIMARY KEY ((workflow_id, task_ref_name), task_id,
+ * payload_type, seq) );
  */
 public abstract class CassandraBaseDAO {
 
@@ -132,6 +110,8 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateTaskDefsTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
                 session.execute(getCreateEventExecutionsTableStatement());
+                session.execute(getCreateWorkflowPayloadsTableStatement());
+                session.execute(getCreateTaskPayloadsTableStatement());
                 LOGGER.info(
                         "{} initialization complete! Tables created!", getClass().getSimpleName());
                 initialized = true;
@@ -228,6 +208,27 @@ public abstract class CassandraBaseDAO {
                 .addPartitionKey(MESSAGE_ID_KEY, DataType.text())
                 .addPartitionKey(EVENT_HANDLER_NAME_KEY, DataType.text())
                 .addClusteringColumn(EVENT_EXECUTION_ID_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    private String getCreateWorkflowPayloadsTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_PAYLOADS)
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
+                .addClusteringColumn(PAYLOAD_TYPE_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    private String getCreateTaskPayloadsTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_PAYLOADS)
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
+                .addPartitionKey(TASK_REF_NAME_KEY, DataType.text())
+                .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
+                .addClusteringColumn(PAYLOAD_TYPE_KEY, DataType.text())
+                .addClusteringColumn(SEQ_KEY, DataType.cint())
                 .addColumn(PAYLOAD_KEY, DataType.text())
                 .getQueryString();
     }

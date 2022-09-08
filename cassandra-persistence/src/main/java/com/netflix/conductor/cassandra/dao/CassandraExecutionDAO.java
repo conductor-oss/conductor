@@ -28,6 +28,8 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.query.TaskPayloadQuery;
+import com.netflix.conductor.dao.query.TaskPayloadResponse;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -58,6 +60,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     private final PreparedStatement selectTaskLookupStatement;
     private final PreparedStatement selectTasksFromTaskDefLimitStatement;
     private final PreparedStatement selectEventExecutionsStatement;
+    private final PreparedStatement selectTaskPayloadByTaskRefNameStatement;
+    private final PreparedStatement selectTaskPayloadByTaskIdStatement;
+    private final PreparedStatement selectTaskPayloadByPayloadTypeStatement;
+    private final PreparedStatement selectWorkflowPayloadByWorkflowIdStatement;
+    private final PreparedStatement selectWorkflowPayloadByPayloadTypeStatement;
 
     private final PreparedStatement updateWorkflowStatement;
     private final PreparedStatement updateTotalTasksStatement;
@@ -65,6 +72,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     private final PreparedStatement updateTaskLookupStatement;
     private final PreparedStatement updateTaskDefLimitStatement;
     private final PreparedStatement updateEventExecutionStatement;
+    private final PreparedStatement updateWorkflowPayloadStatement;
+    private final PreparedStatement updateTaskPayloadStatement;
 
     private final PreparedStatement deleteWorkflowStatement;
     private final PreparedStatement deleteTaskStatement;
@@ -116,6 +125,21 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                 statements
                                         .getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectTaskPayloadByTaskRefNameStatement =
+                session.prepare(statements.getTaskPayloadByTaskRefNameStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectTaskPayloadByTaskIdStatement =
+                session.prepare(statements.getTaskPayloadByTaskIdStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectTaskPayloadByPayloadTypeStatement =
+                session.prepare(statements.getTaskPayloadByPayloadTypeStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectWorkflowPayloadByWorkflowIdStatement =
+                session.prepare(statements.getWorkflowPayloadByWorkflowIdStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectWorkflowPayloadByPayloadTypeStatement =
+                session.prepare(statements.getWorkflowPayloadByPayloadTypeStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
 
         this.updateWorkflowStatement =
                 session.prepare(statements.getUpdateWorkflowStatement())
@@ -134,6 +158,12 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateEventExecutionStatement =
                 session.prepare(statements.getUpdateEventExecutionStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.updateWorkflowPayloadStatement =
+                session.prepare(statements.getUpdateWorkflowPayloadStatement())
+                        .setConsistencyLevel(properties.getWriteConsistencyLevel());
+        this.updateTaskPayloadStatement =
+                session.prepare(statements.getUpdateTaskPayloadStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
         this.deleteWorkflowStatement =
@@ -270,6 +300,39 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
+    //    @Override
+    //    public void updateTaskPayload(TaskModel task, PayloadType payloadType) {
+    //        try {
+    //            String payload =
+    //                    payloadType == PayloadType.INPUT
+    //                            ? toJson(task.getInputData())
+    //                            : toJson(task.getOutputData());
+    //            recordCassandraDaoRequests(
+    //                    "updateTaskPayload", task.getTaskType(), task.getWorkflowType());
+    //            recordCassandraDaoPayloadSize(
+    //                    "updateTaskPayload",
+    //                    payload.length(),
+    //                    task.getTaskType(),
+    //                    task.getWorkflowType());
+    //            session.execute(
+    //                    updateTaskPayloadStatement.bind(
+    //                            payload,
+    //                            task.getWorkflowInstanceId(),
+    //                            task.getReferenceTaskName(),
+    //                            task.getTaskId(),
+    //                            payloadType,
+    //                            task.getSeq()));
+    //        } catch (DriverException e) {
+    //            Monitors.error(CLASS_NAME, "updateTaskPayload");
+    //            String errorMsg =
+    //                    String.format(
+    //                            "Error updating payload for task: %s in workflow: %s",
+    //                            task.getTaskId(), task.getWorkflowInstanceId());
+    //            LOGGER.error(errorMsg, e);
+    //            throw new TransientException(errorMsg, e);
+    //        }
+    //    }
+
     /**
      * This is a dummy implementation and this feature is not implemented for Cassandra backed
      * Conductor
@@ -365,6 +428,57 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
+//    @SuppressWarnings("unchecked")
+//    @Override
+//    public TaskPayloadResponse getTaskPayload(TaskPayloadQuery query) {
+//        try {
+//            ResultSet resultSet;
+//            TaskPayloadResponse response = new TaskPayloadResponse();
+//            if (!query.getPayloadType().equals(PayloadType.ALL)) {
+//                resultSet =
+//                        session.execute(
+//                                selectTaskPayloadByPayloadTypeStatement.bind(
+//                                        UUID.fromString(query.getWorkflowId()),
+//                                                query.getTaskReferenceName(),
+//                                        UUID.fromString(query.getTaskId()),
+//                                                query.getPayloadType()));
+//            } else if (!query.getTaskId().isEmpty()) {
+//                resultSet =
+//                        session.execute(
+//                                selectTaskPayloadByTaskIdStatement.bind(
+//                                        UUID.fromString(query.getWorkflowId()),
+//                                        query.getTaskReferenceName(),
+//                                        UUID.fromString(query.getTaskId())));
+//            } else {
+//                resultSet =
+//                        session.execute(
+//                                selectTaskPayloadByTaskRefNameStatement.bind(
+//                                        query.getWorkflowId(), query.getTaskReferenceName()));
+//            }
+//
+//            for (Row row : resultSet.all()) {
+//                String payloadType = row.getString(PAYLOAD_TYPE_KEY);
+//                if (PAYLOAD_TYPE_INPUT.equals(payloadType)) {
+//                    response.setInput(readValue(row.getString(PAYLOAD_KEY), Map.class));
+//                } else if (PAYLOAD_TYPE_OUTPUT.equals(payloadType)) {
+//                    response.setOutput(readValue(row.getString(PAYLOAD_KEY), Map.class));
+//                } else {
+//                    throw new NonTransientException(
+//                            String.format(
+//                                    "Invalid row with payloadType: %s found in datastore for task: %s",
+//                                    payloadType, query.getTaskId()));
+//                }
+//            }
+//            return response;
+//        } catch (DriverException e) {
+//            Monitors.error(CLASS_NAME, "getTaskPayload");
+//            String errorMsg =
+//                    String.format("Error getting payload for task: %s", query.getTaskId());
+//            LOGGER.error(errorMsg, e);
+//            throw new TransientException(errorMsg);
+//        }
+//    }
+
     @Override
     public List<TaskModel> getTasks(List<String> taskIds) {
         Preconditions.checkNotNull(taskIds);
@@ -440,6 +554,32 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             throw new TransientException(errorMsg);
         }
     }
+
+    //    @Override
+    //    public void updateWorkflowPayload(WorkflowModel workflow, PayloadType payloadType) {
+    //        try {
+    //            String payload =
+    //                    payloadType == PayloadType.INPUT
+    //                            ? toJson(workflow.getInput())
+    //                            : toJson(workflow.getOutput());
+    //            recordCassandraDaoRequests("updateWorkflowPayload", "n/a",
+    // workflow.getWorkflowName());
+    //            recordCassandraDaoPayloadSize(
+    //                    "updateWorkflowPayload", payload.length(), "n/a",
+    // workflow.getWorkflowName());
+    //            session.execute(
+    //                    updateWorkflowPayloadStatement.bind(
+    //                            payload, workflow.getWorkflowId(), payloadType));
+    //        } catch (DriverException e) {
+    //            Monitors.error(CLASS_NAME, "updateWorkflowPayload");
+    //            String errorMsg =
+    //                    String.format(
+    //                            "Error updating payload for workflow: %s",
+    // workflow.getWorkflowId());
+    //            LOGGER.error(errorMsg, e);
+    //            throw new TransientException(errorMsg, e);
+    //        }
+    //    }
 
     @Override
     public boolean removeWorkflow(String workflowId) {
@@ -551,6 +691,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg);
         }
+    }
+
+    @Override
+    public void getWorkflowPayload(String workflowId) {
+
     }
 
     /**

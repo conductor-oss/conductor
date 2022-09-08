@@ -14,37 +14,7 @@ package com.netflix.conductor.cassandra.util;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_TASK;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_WORKFLOW;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_EXECUTION_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_VALUE;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.*;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
@@ -107,6 +77,9 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
  *   <li>UPDATE conductor.task_def_limit SET workflow_id=? WHERE task_def_name=? AND task_id=?;
  *   <li>UPDATE conductor.event_executions USING TTL ? SET payload=? WHERE message_id=? AND
  *       event_handler_name=? AND event_execution_id=?;
+ *   <li>UPDATE conductor.workflow_payloads SET payload=? WHERE workflow_id=? AND payload_type=?;
+ *   <li>UPDATE conductor.task_payloads SET payload=? WHERE workflow_id=? AND task_ref_name=? AND
+ *       task_id=? AND payload_type=? AND seq=?;
  *   <li>DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=?;
  *   <li>DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND
  *       task_id=?;
@@ -418,6 +391,70 @@ public class Statements {
                 .getQueryString();
     }
 
+    /**
+     * @return cql query statement to retrieve input AND output task payloads by task reference name
+     *     from the "task_payloads" table
+     */
+    public String getTaskPayloadByTaskRefNameStatement() {
+        return QueryBuilder.select(PAYLOAD_KEY)
+                .from(keyspace, TABLE_TASK_PAYLOADS)
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(TASK_REF_NAME_KEY, bindMarker()))
+                .orderBy(QueryBuilder.desc(SEQ_KEY))
+                .limit(1)
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve input AND output task payloads by task id from the
+     *     "task_payloads" table
+     */
+    public String getTaskPayloadByTaskIdStatement() {
+        return QueryBuilder.select(PAYLOAD_KEY)
+                .from(keyspace, TABLE_TASK_PAYLOADS)
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(TASK_REF_NAME_KEY, bindMarker()))
+                .and(eq(TASK_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve input OR output task payloads by a task id from the
+     *     "task_payloads" table
+     */
+    public String getTaskPayloadByPayloadTypeStatement() {
+        return QueryBuilder.select(PAYLOAD_KEY)
+                .from(keyspace, TABLE_TASK_PAYLOADS)
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(TASK_REF_NAME_KEY, bindMarker()))
+                .and(eq(TASK_ID_KEY, bindMarker()))
+                .and(eq(PAYLOAD_TYPE_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve input AND output workflow payloads by workflow id
+     *     from the "workflow_payloads" table
+     */
+    public String getWorkflowPayloadByWorkflowIdStatement() {
+        return QueryBuilder.select(PAYLOAD_KEY)
+                .from(keyspace, TABLE_WORKFLOW_PAYLOADS)
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql statement to retrieve input OR output workflow payload by workflow id from the
+     *     "workflow_payloads" table
+     */
+    public String getWorkflowPayloadByPayloadTypeStatement() {
+        return QueryBuilder.select(PAYLOAD_KEY)
+                .from(keyspace, TABLE_WORKFLOW_PAYLOADS)
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(PAYLOAD_TYPE_KEY, bindMarker()))
+                .getQueryString();
+    }
+
     // Update Statements
 
     /**
@@ -490,6 +527,31 @@ public class Statements {
                 .where(eq(MESSAGE_ID_KEY, bindMarker()))
                 .and(eq(EVENT_HANDLER_NAME_KEY, bindMarker()))
                 .and(eq(EVENT_EXECUTION_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to update a workflow payload in the "workflow_payloads" table
+     */
+    public String getUpdateWorkflowPayloadStatement() {
+        return QueryBuilder.update(keyspace, TABLE_WORKFLOW_PAYLOADS)
+                .with(set(PAYLOAD_KEY, bindMarker()))
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(PAYLOAD_TYPE_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to update a new task payload in the "task_payloads" table
+     */
+    public String getUpdateTaskPayloadStatement() {
+        return QueryBuilder.update(keyspace, TABLE_TASK_PAYLOADS)
+                .with(set(PAYLOAD_KEY, bindMarker()))
+                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+                .and(eq(TASK_REF_NAME_KEY, bindMarker()))
+                .and(eq(TASK_ID_KEY, bindMarker()))
+                .and(eq(PAYLOAD_TYPE_KEY, bindMarker()))
+                .and(eq(SEQ_KEY, bindMarker()))
                 .getQueryString();
     }
 

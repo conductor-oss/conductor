@@ -25,6 +25,10 @@ public interface Constants {
     String TABLE_EVENT_HANDLERS = "event_handlers";
     String TABLE_EVENT_EXECUTIONS = "event_executions";
 
+    String TABLE_WORKFLOW_PAYLOADS = "workflow_payloads";
+
+    String TABLE_TASK_PAYLOADS = "task_payloads";
+
     String WORKFLOW_ID_KEY = "workflow_id";
     String SHARD_ID_KEY = "shard_id";
     String TASK_ID_KEY = "task_id";
@@ -47,8 +51,16 @@ public interface Constants {
     String MESSAGE_ID_KEY = "message_id";
     String EVENT_EXECUTION_ID_KEY = "event_execution_id";
 
+    String TASK_REF_NAME_KEY = "task_ref_name";
+
+    String PAYLOAD_TYPE_KEY = "payload_type";
+
+    String SEQ_KEY = "seq";
+
     String ENTITY_TYPE_WORKFLOW = "workflow";
     String ENTITY_TYPE_TASK = "task";
+    String PAYLOAD_TYPE_INPUT = "input";
+    String PAYLOAD_TYPE_OUTPUT = "output";
 
     int DEFAULT_SHARD_ID = 1;
     int DEFAULT_TOTAL_PARTITIONS = 1;
