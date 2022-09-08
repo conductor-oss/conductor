@@ -124,7 +124,9 @@ public class JsonJqTransform extends WorkflowSystemTask {
     }
 
     private Object extractBody(JsonNode node) {
-        if (node.isObject()) {
+        if (node.isNull()) {
+            return null;
+        } else if (node.isObject()) {
             return objectMapper.convertValue(node, mapType);
         } else if (node.isArray()) {
             return objectMapper.convertValue(node, listType);

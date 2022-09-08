@@ -148,6 +148,7 @@ public class JsonJqTransformTest {
         assertEquals("CREATE", result);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void listResultShouldBeCorrectlyExtracted() throws JsonProcessingException {
         final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
@@ -169,5 +170,20 @@ public class JsonJqTransformTest {
         assertTrue(task.getOutputData().get("result") instanceof List);
         List<Object> result = (List<Object>) task.getOutputData().get("result");
         assertEquals(3, result.size());
+    }
+
+    @Test
+    public void nullResultShouldBeCorrectlyExtracted() throws JsonProcessingException {
+        final JsonJqTransform jsonJqTransform = new JsonJqTransform(objectMapper);
+        final WorkflowModel workflow = new WorkflowModel();
+        final TaskModel task = new TaskModel();
+        final Map<String, Object> taskInput = new HashMap<>();
+        taskInput.put("queryExpression", "null");
+        task.setInputData(taskInput);
+
+        jsonJqTransform.start(workflow, task, null);
+
+        assertNull(task.getOutputData().get("error"));
+        assertNull(task.getOutputData().get("result"));
     }
 }
