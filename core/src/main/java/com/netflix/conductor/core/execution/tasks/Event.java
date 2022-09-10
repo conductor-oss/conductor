@@ -64,10 +64,10 @@ public class Event extends WorkflowSystemTask {
         payload.put("correlationId", workflow.getCorrelationId());
 
         task.setStatus(TaskModel.Status.IN_PROGRESS);
-        task.getOutputData().putAll(payload);
+        task.addOutput(payload);
 
         try {
-            task.getOutputData().put(EVENT_PRODUCED, computeQueueName(workflow, task));
+            task.addOutput(EVENT_PRODUCED, computeQueueName(workflow, task));
         } catch (Exception e) {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());

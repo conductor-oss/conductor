@@ -157,8 +157,8 @@ public class SimpleActionProcessor implements ActionProcessor {
         taskModel.setStatus(status);
         taskModel.setOutputData(replaced);
         taskModel.setOutputMessage(taskDetails.getOutputMessage());
-        taskModel.getOutputData().put("conductor.event.messageId", messageId);
-        taskModel.getOutputData().put("conductor.event.name", event);
+        taskModel.addOutput("conductor.event.messageId", messageId);
+        taskModel.addOutput("conductor.event.name", event);
 
         try {
             workflowExecutor.updateTask(new TaskResult(taskModel.toTask()));

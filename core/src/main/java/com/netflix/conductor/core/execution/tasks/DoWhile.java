@@ -104,9 +104,7 @@ public class DoWhile extends WorkflowSystemTask {
                 break;
             }
         }
-        doWhileTaskModel
-                .getOutputData()
-                .put(String.valueOf(doWhileTaskModel.getIteration()), output);
+        doWhileTaskModel.addOutput(String.valueOf(doWhileTaskModel.getIteration()), output);
 
         if (hasFailures) {
             LOGGER.debug(
@@ -133,7 +131,7 @@ public class DoWhile extends WorkflowSystemTask {
                     shouldContinue);
             if (shouldContinue) {
                 doWhileTaskModel.setIteration(doWhileTaskModel.getIteration() + 1);
-                doWhileTaskModel.getOutputData().put("iteration", doWhileTaskModel.getIteration());
+                doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
                 return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
             } else {
                 LOGGER.debug(
