@@ -205,7 +205,7 @@ public class SubWorkflow extends WorkflowSystemTask {
                 task.setExternalOutputPayloadStoragePath(
                         subworkflow.getExternalOutputPayloadStoragePath());
             } else {
-                task.getOutputData().putAll(subworkflow.getOutput());
+                task.addOutput(subworkflow.getOutput());
             }
             if (!status.isSuccessful()) {
                 task.setReasonForIncompletion(
