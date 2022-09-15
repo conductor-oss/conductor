@@ -10,17 +10,12 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.common.metadata;
+package com.netflix.conductor.common.metadata.acl;
 
-public abstract class BaseDefinition extends Auditable {
+import com.netflix.conductor.annotations.protogen.ProtoEnum;
 
-    private AccessPolicy accessPolicy;
-
-    public AccessPolicy getAccessPolicy() {
-        return accessPolicy;
-    }
-
-    public void setAccessPolicy(AccessPolicy accessPolicy) {
-        this.accessPolicy = accessPolicy;
-    }
+@ProtoEnum
+public enum Permission {
+    OWNER,
+    OPERATOR
 }
