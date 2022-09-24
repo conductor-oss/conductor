@@ -20,8 +20,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -95,19 +92,14 @@ public class TestDeciderService {
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
-            return new SystemTaskRegistry(tasks);
+        public SystemTaskRegistry systemTaskRegistry(
+                Set<WorkflowSystemTask> tasks, Set<TaskMapper> taskMappers) {
+            return new SystemTaskRegistry(tasks, taskMappers);
         }
 
         @Bean
         public MetadataDAO mockMetadataDAO() {
             return mock(MetadataDAO.class);
-        }
-
-        @Bean
-        public Map<TaskType, TaskMapper> taskMapperMap(Collection<TaskMapper> taskMappers) {
-            return taskMappers.stream()
-                    .collect(Collectors.toMap(TaskMapper::getTaskType, Function.identity()));
         }
 
         @Bean
@@ -129,10 +121,6 @@ public class TestDeciderService {
     @Autowired private ObjectMapper objectMapper;
 
     @Autowired private SystemTaskRegistry systemTaskRegistry;
-
-    @Autowired
-    @Qualifier("taskMapperMap")
-    private Map<TaskType, TaskMapper> taskMappers;
 
     @Autowired private ParametersUtils parametersUtils;
 
@@ -164,7 +152,6 @@ public class TestDeciderService {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        taskMappers,
                         Duration.ofMinutes(60));
     }
 

@@ -15,6 +15,8 @@ package com.netflix.conductor.core.execution.tasks;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -26,6 +28,11 @@ public class Switch extends WorkflowSystemTask {
 
     public Switch() {
         super(TASK_TYPE_SWITCH);
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return SwitchTaskMapper.class;
     }
 
     @Override

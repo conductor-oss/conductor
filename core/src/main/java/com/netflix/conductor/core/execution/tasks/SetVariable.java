@@ -25,6 +25,8 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.SetVariableTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -72,6 +74,11 @@ public class SetVariable extends WorkflowSystemTask {
             throw new NonTransientException(
                     "Unable to validate variables payload size of workflow: " + workflowId, e);
         }
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return SetVariableTaskMapper.class;
     }
 
     @Override

@@ -14,20 +14,20 @@ package com.netflix.conductor.core.execution.tasks;
 
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
 
-@Component(TASK_TYPE_FORK)
-public class Fork extends WorkflowSystemTask {
+@Component(TASK_TYPE_FORK_JOIN_DYNAMIC)
+public class DynamicFork extends WorkflowSystemTask {
 
-    public Fork() {
-        super(TASK_TYPE_FORK);
+    public DynamicFork() {
+        super(TASK_TYPE_FORK_JOIN_DYNAMIC);
     }
 
     @Override
     public Class<? extends TaskMapper> getTaskMapperType() {
-        return ForkJoinTaskMapper.class;
+        return ForkJoinDynamicTaskMapper.class;
     }
 }

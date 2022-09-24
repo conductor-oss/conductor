@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -29,6 +31,11 @@ public class Join extends WorkflowSystemTask {
 
     public Join() {
         super(TASK_TYPE_JOIN);
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return JoinTaskMapper.class;
     }
 
     @Override

@@ -43,19 +43,13 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
-import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
-import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
-import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
-import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Decision;
+import com.netflix.conductor.core.execution.tasks.DynamicFork;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -69,22 +63,11 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DECISION;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.EVENT;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYNAMIC;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SWITCH;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SWITCH;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.WAIT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -93,6 +76,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(
@@ -111,6 +95,10 @@ public class TestDeciderOutcomes {
 
     @Autowired private SystemTaskRegistry systemTaskRegistry;
 
+    @Autowired private ParametersUtils parametersUtils;
+
+    @Autowired private MetadataDAO metadataDAO;
+
     @Configuration
     @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans.
     public static class TestConfiguration {
@@ -120,9 +108,19 @@ public class TestDeciderOutcomes {
             return new Decision();
         }
 
+        @Bean
+        public DecisionTaskMapper decisionTaskMapper() {
+            return new DecisionTaskMapper();
+        }
+
         @Bean(TASK_TYPE_SWITCH)
         public Switch switchTask() {
             return new Switch();
+        }
+
+        @Bean
+        public SwitchTaskMapper switchTaskMapper(Map<String, Evaluator> evaluators) {
+            return new SwitchTaskMapper(evaluators);
         }
 
         @Bean(TASK_TYPE_JOIN)
@@ -131,14 +129,49 @@ public class TestDeciderOutcomes {
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
-            return new SystemTaskRegistry(tasks);
+        public JoinTaskMapper joinTaskMapper() {
+            return new JoinTaskMapper();
+        }
+
+        @Bean
+        public SimpleTaskMapper simpleTaskMapper(ParametersUtils parametersUtils) {
+            return new SimpleTaskMapper(parametersUtils);
+        }
+
+        @Bean(TASK_TYPE_FORK_JOIN_DYNAMIC)
+        public DynamicFork dynamicFork() {
+            return new DynamicFork();
+        }
+
+        @Bean
+        public ForkJoinDynamicTaskMapper forkJoinDynamicTaskMapper(
+                ParametersUtils parametersUtils,
+                ObjectMapper objectMapper,
+                MetadataDAO metadataDAO) {
+            return new ForkJoinDynamicTaskMapper(
+                    new IDGenerator(), parametersUtils, objectMapper, metadataDAO);
+        }
+
+        @Bean
+        public ParametersUtils parametersUtils(ObjectMapper objectMapper) {
+            return new ParametersUtils(objectMapper);
+        }
+
+        @Bean
+        public MetadataDAO metadataDAO() {
+            return mock(MetadataDAO.class);
+        }
+
+        @Bean
+        public SystemTaskRegistry systemTaskRegistry(
+                Set<WorkflowSystemTask> tasks, Set<TaskMapper> taskMappers) {
+            return new SystemTaskRegistry(tasks, taskMappers);
         }
     }
 
     @Before
     public void init() {
-        MetadataDAO metadataDAO = mock(MetadataDAO.class);
+        reset(metadataDAO);
 
         ExternalPayloadStorageUtils externalPayloadStorageUtils =
                 mock(ExternalPayloadStorageUtils.class);
@@ -152,23 +185,24 @@ public class TestDeciderOutcomes {
         taskDef.setName("mockTaskDef");
         taskDef.setResponseTimeoutSeconds(60 * 60);
         when(metadataDAO.getTaskDef(anyString())).thenReturn(taskDef);
-        ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
-        Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
-        taskMappers.put(DECISION, new DecisionTaskMapper());
-        taskMappers.put(SWITCH, new SwitchTaskMapper(evaluators));
-        taskMappers.put(DYNAMIC, new DynamicTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(FORK_JOIN, new ForkJoinTaskMapper());
-        taskMappers.put(JOIN, new JoinTaskMapper());
-        taskMappers.put(
-                FORK_JOIN_DYNAMIC,
-                new ForkJoinDynamicTaskMapper(
-                        new IDGenerator(), parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put(USER_DEFINED, new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(SIMPLE, new SimpleTaskMapper(parametersUtils));
-        taskMappers.put(SUB_WORKFLOW, new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(EVENT, new EventTaskMapper(parametersUtils));
-        taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
-        taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
+        //        Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
+        //        taskMappers.put(DECISION, new DecisionTaskMapper());
+        //        taskMappers.put(SWITCH, new SwitchTaskMapper(evaluators));
+        //        taskMappers.put(DYNAMIC, new DynamicTaskMapper(parametersUtils, metadataDAO));
+        //        taskMappers.put(FORK_JOIN, new ForkJoinTaskMapper());
+        //        taskMappers.put(JOIN, new JoinTaskMapper());
+        //        taskMappers.put(
+        //                FORK_JOIN_DYNAMIC,
+        //                new ForkJoinDynamicTaskMapper(
+        //                        new IDGenerator(), parametersUtils, objectMapper, metadataDAO));
+        //        taskMappers.put(USER_DEFINED, new UserDefinedTaskMapper(parametersUtils,
+        // metadataDAO));
+        //        taskMappers.put(SIMPLE, new SimpleTaskMapper(parametersUtils));
+        //        taskMappers.put(SUB_WORKFLOW, new SubWorkflowTaskMapper(parametersUtils,
+        // metadataDAO));
+        //        taskMappers.put(EVENT, new EventTaskMapper(parametersUtils));
+        //        taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
+        //        taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.deciderService =
                 new DeciderService(
@@ -177,7 +211,6 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        taskMappers,
                         Duration.ofMinutes(60));
     }
 
@@ -243,7 +276,7 @@ public class TestDeciderOutcomes {
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("test_task");
-        workflowTask.setType("USER_TASK");
+        workflowTask.setType("SIMPLE");
         workflowTask.setTaskReferenceName("t0");
         workflowTask.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
         workflowTask.getInputParameters().put("requestId", "${workflow.input.requestId}");

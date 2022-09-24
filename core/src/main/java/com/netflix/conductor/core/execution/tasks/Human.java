@@ -15,6 +15,8 @@ package com.netflix.conductor.core.execution.tasks;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.HumanTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -26,6 +28,11 @@ public class Human extends WorkflowSystemTask {
 
     public Human() {
         super(TASK_TYPE_HUMAN);
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return HumanTaskMapper.class;
     }
 
     @Override

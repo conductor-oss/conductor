@@ -136,8 +136,9 @@ public class TestWorkflowExecutor {
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
-            return new SystemTaskRegistry(tasks);
+        public SystemTaskRegistry systemTaskRegistry(
+                Set<WorkflowSystemTask> tasks, Set<TaskMapper> taskMappers) {
+            return new SystemTaskRegistry(tasks, taskMappers);
         }
     }
 
@@ -185,7 +186,6 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        taskMappers,
                         Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 

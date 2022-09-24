@@ -30,11 +30,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.exception.TransientException;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
@@ -90,12 +88,6 @@ public class ConductorCoreConfiguration {
                         .build();
         return Executors.newFixedThreadPool(
                 conductorProperties.getExecutorServiceMaxThreadCount(), threadFactory);
-    }
-
-    @Bean
-    @Qualifier("taskMappersByTaskType")
-    public Map<TaskType, TaskMapper> getTaskMappers(List<TaskMapper> taskMappers) {
-        return taskMappers.stream().collect(Collectors.toMap(TaskMapper::getTaskType, identity()));
     }
 
     @Bean

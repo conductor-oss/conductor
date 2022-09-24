@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +32,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
@@ -65,21 +63,17 @@ public class DeciderService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
-    private final Map<TaskType, TaskMapper> taskMappers;
-
     public DeciderService(
             IDGenerator idGenerator,
             ParametersUtils parametersUtils,
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
-            @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
-        this.taskMappers = taskMappers;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
@@ -832,7 +826,6 @@ public class DeciderService {
                         taskToSchedule.getInputParameters(), workflow, null, null);
 
         String type = taskToSchedule.getType();
-        TaskType taskType = TaskType.of(type);
 
         // get tasks already scheduled (in progress/terminal) for  this workflow instance
         List<String> tasksInWorkflow =
@@ -862,7 +855,7 @@ public class DeciderService {
         // fork.
         // A new task must only be scheduled if a task, with the same reference name is not already
         // in this workflow instance
-        return taskMappers.get(taskType).getMappedTasks(taskMapperContext).stream()
+        return systemTaskRegistry.getTaskMapper(type).getMappedTasks(taskMapperContext).stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
     }

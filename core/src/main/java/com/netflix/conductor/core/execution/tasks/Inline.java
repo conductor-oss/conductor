@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.mapper.InlineTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -64,6 +66,11 @@ public class Inline extends WorkflowSystemTask {
     public Inline(Map<String, Evaluator> evaluators) {
         super(TASK_TYPE_INLINE);
         this.evaluators = evaluators;
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return InlineTaskMapper.class;
     }
 
     @Override

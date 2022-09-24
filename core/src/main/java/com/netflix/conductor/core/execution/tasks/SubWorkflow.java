@@ -23,6 +23,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -41,6 +43,11 @@ public class SubWorkflow extends WorkflowSystemTask {
     public SubWorkflow(ObjectMapper objectMapper) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return SubWorkflowTaskMapper.class;
     }
 
     @SuppressWarnings("unchecked")

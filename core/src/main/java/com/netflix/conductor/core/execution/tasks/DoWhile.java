@@ -27,6 +27,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -43,6 +45,11 @@ public class DoWhile extends WorkflowSystemTask {
     public DoWhile(ParametersUtils parametersUtils) {
         super(TASK_TYPE_DO_WHILE);
         this.parametersUtils = parametersUtils;
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return DoWhileTaskMapper.class;
     }
 
     @Override

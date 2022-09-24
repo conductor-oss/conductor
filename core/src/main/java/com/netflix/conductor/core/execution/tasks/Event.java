@@ -26,6 +26,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -53,6 +55,11 @@ public class Event extends WorkflowSystemTask {
         this.parametersUtils = parametersUtils;
         this.eventQueues = eventQueues;
         this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return EventTaskMapper.class;
     }
 
     @Override

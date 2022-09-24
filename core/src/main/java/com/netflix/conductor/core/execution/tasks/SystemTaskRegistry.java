@@ -13,12 +13,17 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 
 /**
  * A container class that holds a mapping of system task types {@link
@@ -30,13 +35,17 @@ public class SystemTaskRegistry {
     public static final String ASYNC_SYSTEM_TASKS_QUALIFIER = "asyncSystemTasks";
 
     private final Map<String, WorkflowSystemTask> registry;
+    private final Map<Class<? extends TaskMapper>, TaskMapper> taskMappers;
 
-    public SystemTaskRegistry(Set<WorkflowSystemTask> tasks) {
+    public SystemTaskRegistry(Set<WorkflowSystemTask> tasks, Set<TaskMapper> taskMappers) {
         this.registry =
                 tasks.stream()
                         .collect(
                                 Collectors.toMap(
                                         WorkflowSystemTask::getTaskType, Function.identity()));
+        this.taskMappers =
+                taskMappers.stream()
+                        .collect(Collectors.toMap(TaskMapper::getClass, Function.identity()));
     }
 
     public WorkflowSystemTask get(String taskType) {
@@ -44,7 +53,25 @@ public class SystemTaskRegistry {
                 .orElseThrow(
                         () ->
                                 new IllegalStateException(
-                                        taskType + "not found in " + getClass().getSimpleName()));
+                                        taskType + " not found in " + getClass().getSimpleName()));
+    }
+
+    public TaskMapper getTaskMapper(String taskType) {
+        if (TaskType.TASK_TYPE_SIMPLE.equals(taskType)) {
+            return taskMappers.get(SimpleTaskMapper.class);
+        }
+
+        WorkflowSystemTask workflowSystemTask = get(taskType);
+        Class<? extends TaskMapper> taskMapperType = workflowSystemTask.getTaskMapperType();
+        Objects.requireNonNull(
+                taskMapperType,
+                workflowSystemTask.getClass()
+                        + ".getTaskMapperType() for "
+                        + taskType
+                        + " should return a non-null type.");
+        return Optional.ofNullable(this.taskMappers.get(taskMapperType))
+                .orElseThrow(
+                        () -> new IllegalStateException(taskMapperType + " bean is not found."));
     }
 
     public boolean isSystemTask(String taskType) {

@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.LambdaTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -60,6 +62,11 @@ public class Lambda extends WorkflowSystemTask {
 
     public Lambda() {
         super(TASK_TYPE_LAMBDA);
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return LambdaTaskMapper.class;
     }
 
     @Override

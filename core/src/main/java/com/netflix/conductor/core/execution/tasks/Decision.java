@@ -15,6 +15,8 @@ package com.netflix.conductor.core.execution.tasks;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -31,6 +33,11 @@ public class Decision extends WorkflowSystemTask {
 
     public Decision() {
         super(TASK_TYPE_DECISION);
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return DecisionTaskMapper.class;
     }
 
     @Override

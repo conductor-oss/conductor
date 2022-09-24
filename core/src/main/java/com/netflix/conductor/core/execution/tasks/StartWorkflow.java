@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.StartWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -48,6 +50,11 @@ public class StartWorkflow extends WorkflowSystemTask {
         super(TASK_TYPE_START_WORKFLOW);
         this.objectMapper = objectMapper;
         this.validator = validator;
+    }
+
+    @Override
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return StartWorkflowTaskMapper.class;
     }
 
     @Override

@@ -16,6 +16,8 @@ import java.util.Optional;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -25,6 +27,10 @@ public abstract class WorkflowSystemTask {
 
     public WorkflowSystemTask(String taskType) {
         this.taskType = taskType;
+    }
+
+    public Class<? extends TaskMapper> getTaskMapperType() {
+        return UserDefinedTaskMapper.class;
     }
 
     /**
