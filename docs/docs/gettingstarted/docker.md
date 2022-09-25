@@ -137,13 +137,13 @@ This image at `/docker/serverAndUI` is provided to illustrate starting both the 
 
     1. When you run Elasticsearch, sometimes the health remains in Yellow state. Conductor server by default requires
        Green state to run when indexing is enabled. To work around this, you can use the following property: 
-       `conductor.elasticsearch.clusteHealthColor=yellow` Reference: [Issue 2262](https://github.com/Netflix/conductor/issues/2262)
+       `conductor.elasticsearch.clusterHealthColor=yellow` Reference: [Issue 2262](https://github.com/Netflix/conductor/issues/2262)
 
 
 
 #### Elasticsearch timeout
 Standalone(single node) elasticsearch has a yellow status which will cause timeout for conductor server (Required: Green).
-Spin up a cluster (more than one) to prevent timeout or use config option `conductor.elasticsearch.clusteHealthColor=yellow`.
+Spin up a cluster (more than one) to prevent timeout or use config option `conductor.elasticsearch.clusterHealthColor=yellow`.
 
 See issue: https://github.com/Netflix/conductor/issues/2262
 
