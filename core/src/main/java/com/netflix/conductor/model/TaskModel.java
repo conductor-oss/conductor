@@ -771,7 +771,8 @@ public class TaskModel {
                 && Objects.equals(getReasonForIncompletion(), taskModel.getReasonForIncompletion())
                 && Objects.equals(getWorkerId(), taskModel.getWorkerId())
                 && Objects.equals(getWaitTimeout(), taskModel.getWaitTimeout())
-                && Objects.equals(getOutputData(), taskModel.getOutputData())
+                && Objects.equals(outputData, taskModel.outputData)
+                && Objects.equals(outputPayload, taskModel.outputPayload)
                 && Objects.equals(getWorkflowTask(), taskModel.getWorkflowTask())
                 && Objects.equals(getDomain(), taskModel.getDomain())
                 && Objects.equals(getInputMessage(), taskModel.getInputMessage())
@@ -816,7 +817,8 @@ public class TaskModel {
                 getCallbackAfterSeconds(),
                 getWorkerId(),
                 getWaitTimeout(),
-                getOutputData(),
+                outputData,
+                outputPayload,
                 getWorkflowTask(),
                 getDomain(),
                 getInputMessage(),
@@ -870,5 +872,11 @@ public class TaskModel {
         if (outputData != null) {
             this.outputData.putAll(outputData);
         }
+    }
+
+    public void clearOutput() {
+        this.outputData.clear();
+        this.outputPayload.clear();
+        this.externalOutputPayloadStoragePath = null;
     }
 }

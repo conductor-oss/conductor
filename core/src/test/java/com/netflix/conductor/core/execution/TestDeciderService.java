@@ -291,8 +291,8 @@ public class TestDeciderService {
         workflow.getInput().put("requestId", "request id 001");
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
-        task.getOutputData().put("isPersonActive", true);
+        task.addOutput("location", "http://location");
+        task.addOutput("isPersonActive", true);
         workflow.getTasks().add(task);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
 
@@ -324,8 +324,8 @@ public class TestDeciderService {
         workflow.getInput().put("requestId", "request id 001");
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
-        task.getOutputData().put("isPersonActive", true);
+        task.addOutput("location", "http://location");
+        task.addOutput("isPersonActive", true);
         workflow.getTasks().add(task);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
 
@@ -1366,18 +1366,18 @@ public class TestDeciderService {
         names.add(name);
         names.add(name2);
 
-        workflow.getOutput().put("name", name);
-        workflow.getOutput().put("names", names);
-        workflow.getOutput().put("awards", 200);
+        workflow.addOutput("name", name);
+        workflow.addOutput("names", names);
+        workflow.addOutput("awards", 200);
 
         TaskModel task = new TaskModel();
         task.setReferenceTaskName("task2");
-        task.getOutputData().put("location", "http://location");
+        task.addOutput("location", "http://location");
         task.setStatus(TaskModel.Status.COMPLETED);
 
         TaskModel task2 = new TaskModel();
         task2.setReferenceTaskName("task3");
-        task2.getOutputData().put("refId", "abcddef_1234_7890_aaffcc");
+        task2.addOutput("refId", "abcddef_1234_7890_aaffcc");
         task2.setStatus(TaskModel.Status.SCHEDULED);
 
         workflow.getTasks().add(task);

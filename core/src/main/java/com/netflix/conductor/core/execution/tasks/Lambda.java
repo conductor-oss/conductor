@@ -66,7 +66,6 @@ public class Lambda extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         Map<String, Object> taskInput = task.getInputData();
-        Map<String, Object> taskOutput = task.getOutputData();
         String scriptExpression;
         try {
             scriptExpression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
@@ -79,7 +78,7 @@ public class Lambda extends WorkflowSystemTask {
                         scriptExpressionBuilder,
                         task.getTaskId());
                 Object returnValue = ScriptEvaluator.eval(scriptExpressionBuilder, taskInput);
-                taskOutput.put("result", returnValue);
+                task.addOutput("result", returnValue);
                 task.setStatus(TaskModel.Status.COMPLETED);
             } else {
                 LOGGER.error("Empty {} in Lambda task. ", QUERY_EXPRESSION_PARAMETER);
@@ -97,7 +96,7 @@ public class Lambda extends WorkflowSystemTask {
                     e);
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
-            taskOutput.put(
+            task.addOutput(
                     "error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
         }
         return true;
