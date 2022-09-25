@@ -78,12 +78,12 @@ public class EventQueueResolutionTest {
 
         TaskModel task1 = new TaskModel();
         task1.setReferenceTaskName("t1");
-        task1.getOutputData().put("q", "t1_queue");
+        task1.addOutput("q", "t1_queue");
         workflow.getTasks().add(task1);
 
         TaskModel task2 = new TaskModel();
         task2.setReferenceTaskName("t2");
-        task2.getOutputData().put("q", "task2_queue");
+        task2.addOutput("q", "task2_queue");
         workflow.getTasks().add(task2);
 
         TaskModel task = new TaskModel();

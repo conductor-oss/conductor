@@ -773,7 +773,7 @@ public class WorkflowExecutor {
 
                     String failureWFId = startWorkflow(startWorkflowInput);
 
-                    workflow.getOutput().put("conductor.failure_workflow", failureWFId);
+                    workflow.addOutput("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {
                     LOGGER.error("Failed to start error workflow", e);
                     workflow.getOutput()
@@ -1740,10 +1740,9 @@ public class WorkflowExecutor {
             rerunFromTask.setStartTime(0);
             rerunFromTask.setUpdateTime(0);
             rerunFromTask.setEndTime(0);
-            rerunFromTask.getOutputData().clear();
+            rerunFromTask.clearOutput();
             rerunFromTask.setRetried(false);
             rerunFromTask.setExecuted(false);
-            rerunFromTask.setExternalOutputPayloadStoragePath(null);
             if (rerunFromTask.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
                 // if task is sub workflow set task as IN_PROGRESS and reset start time
                 rerunFromTask.setStatus(IN_PROGRESS);

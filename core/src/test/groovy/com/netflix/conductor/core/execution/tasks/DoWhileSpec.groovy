@@ -34,18 +34,22 @@ class DoWhileSpec extends Specification {
     DoWhile doWhile
 
     WorkflowExecutor workflowExecutor
+    ObjectMapper objectMapper
+    ParametersUtils parametersUtils
     TaskModel doWhileTaskModel
 
     WorkflowTask task1, task2
     TaskModel taskModel1, taskModel2
 
     def setup() {
+        objectMapper = new ObjectMapper();
         workflowExecutor = Mock(WorkflowExecutor.class)
+        parametersUtils = new ParametersUtils(objectMapper)
 
         task1 = new WorkflowTask(name: 'task1', taskReferenceName: 'task1')
         task2 = new WorkflowTask(name: 'task2', taskReferenceName: 'task2')
 
-        doWhile = new DoWhile()
+        doWhile = new DoWhile(parametersUtils)
     }
 
     def "first iteration"() {
