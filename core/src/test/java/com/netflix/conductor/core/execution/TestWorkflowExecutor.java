@@ -1931,16 +1931,12 @@ public class TestWorkflowExecutor {
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
 
-        workflowExecutor.startWorkflow(
-                def,
-                workflowInput,
-                externalInputPayloadStoragePath,
-                correlationId,
-                priority,
-                parentWorkflowId,
-                parentWorkflowTaskId,
-                event,
-                taskToDomain);
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setWorkflowDefinition(def);
+        startWorkflowInput.setWorkflowInput(workflowInput);
+        startWorkflowInput.setPriority(priority);
+
+        workflowExecutor.startWorkflow(startWorkflowInput);
 
         verify(executionDAOFacade, times(1)).createWorkflow(any(WorkflowModel.class));
     }

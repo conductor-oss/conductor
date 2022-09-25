@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -130,26 +131,7 @@ public class StartWorkflow extends WorkflowSystemTask {
     }
 
     private String startWorkflow(StartWorkflowRequest request, WorkflowExecutor workflowExecutor) {
-        if (request.getWorkflowDef() == null) {
-            return workflowExecutor.startWorkflow(
-                    request.getName(),
-                    request.getVersion(),
-                    request.getCorrelationId(),
-                    request.getPriority(),
-                    request.getInput(),
-                    request.getExternalInputPayloadStoragePath(),
-                    null,
-                    request.getTaskToDomain());
-        } else {
-            return workflowExecutor.startWorkflow(
-                    request.getWorkflowDef(),
-                    request.getInput(),
-                    request.getExternalInputPayloadStoragePath(),
-                    request.getCorrelationId(),
-                    request.getPriority(),
-                    null,
-                    request.getTaskToDomain());
-        }
+        return workflowExecutor.startWorkflow(new StartWorkflowInput(request));
     }
 
     @Override

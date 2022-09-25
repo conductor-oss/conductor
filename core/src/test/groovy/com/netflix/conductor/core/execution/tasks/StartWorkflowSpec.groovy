@@ -53,7 +53,7 @@ class StartWorkflowSpec extends Specification {
         taskModel = new TaskModel(status: SCHEDULED, inputData: inputData)
         workflowModel = new WorkflowModel()
 
-        startWorkflow = new StartWorkflow(new ObjectMapperProvider().getObjectMapper(), validator)
+        startWorkflow = new StartWorkflow(new ObjectMapperProvider().getObjectMapper(), validator, workflowService)
     }
 
     def "StartWorkflow task is asynchronous"() {
