@@ -31,6 +31,7 @@ public class StartWorkflowInput {
     private String parentWorkflowTaskId;
     private String event;
     private Map<String, String> taskToDomain;
+    private String workflowId;
 
     public StartWorkflowInput() {}
 
@@ -134,6 +135,14 @@ public class StartWorkflowInput {
         this.taskToDomain = taskToDomain;
     }
 
+    public String getWorkflowId() {
+        return workflowId;
+    }
+
+    public void setWorkflowId(String workflowId) {
+        this.workflowId = workflowId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -150,7 +159,8 @@ public class StartWorkflowInput {
                 && Objects.equals(parentWorkflowId, that.parentWorkflowId)
                 && Objects.equals(parentWorkflowTaskId, that.parentWorkflowTaskId)
                 && Objects.equals(event, that.event)
-                && Objects.equals(taskToDomain, that.taskToDomain);
+                && Objects.equals(taskToDomain, that.taskToDomain)
+                && Objects.equals(workflowId, that.workflowId);
     }
 
     @Override
@@ -166,6 +176,7 @@ public class StartWorkflowInput {
                 parentWorkflowId,
                 parentWorkflowTaskId,
                 event,
-                taskToDomain);
+                taskToDomain,
+                workflowId);
     }
 }

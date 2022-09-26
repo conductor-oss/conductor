@@ -79,8 +79,8 @@ class SubWorkflowSpec extends AbstractSpecification {
         input['subwf'] = 'sub_workflow'
 
         when: "the workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
-                correlationId, input, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
+                correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -226,9 +226,9 @@ class SubWorkflowSpec extends AbstractSpecification {
         input['subwf'] = 'sub_workflow'
 
         when: "Start a workflow with subworkflow based on the registered definition"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -327,8 +327,8 @@ class SubWorkflowSpec extends AbstractSpecification {
         input['subwf'] = 'integration_test_wf'
 
         when: "the workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
-                correlationId, input, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
+                correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

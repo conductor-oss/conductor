@@ -55,8 +55,8 @@ class JsonJQTransformSpec extends AbstractSpecification {
         workflowInput['in2']['array'] = ["c", "d"]
 
         when: "workflow which has the json jq transform task has started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow and task are completed with expected output"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -82,8 +82,8 @@ class JsonJQTransformSpec extends AbstractSpecification {
         workflowInput['in2'] = "b"
 
         when: "workflow which has the json jq transform task has started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow and task failed with expected error"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -126,8 +126,8 @@ class JsonJQTransformSpec extends AbstractSpecification {
         validInput['queryExpression'] = '.input as $_ | { out: ($_.in1.array + $_.in2.array) }'
 
         when: "workflow which has the json jq transform task started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
-                '', invalidInput, null, null, null)
+        def workflowInstanceId = startWorkflow(JSON_JQ_TRANSFORM_WF, 1,
+                '', invalidInput, null)
 
         then: "verify that the workflow and task failed with expected error"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -168,8 +168,8 @@ class JsonJQTransformSpec extends AbstractSpecification {
         workflowInput["responseTransform"] = "{result: \"reply: \" + .response.body.message}"
 
         when: "workflow which has the json jq transform task has started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SEQUENTIAL_JSON_JQ_TRANSFORM_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(SEQUENTIAL_JSON_JQ_TRANSFORM_WF, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow and task are completed with expected output"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -198,8 +198,8 @@ class JsonJQTransformSpec extends AbstractSpecification {
         workflowInput["requestedAction"] = "redeliver"
 
         when: "workflow which has the json jq transform task has started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(JSON_JQ_TRANSFORM_RESULT_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(JSON_JQ_TRANSFORM_RESULT_WF, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow and task are completed with expected output"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

@@ -89,8 +89,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             Map<String, String> taskToDomain,
             WorkflowDef workflowDef) {
         StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
-        startWorkflowInput.setName(workflowDef.getName());
-        startWorkflowInput.setVersion(workflowDef.getVersion());
+        startWorkflowInput.setName(name);
+        startWorkflowInput.setVersion(version);
         startWorkflowInput.setCorrelationId(correlationId);
         startWorkflowInput.setPriority(priority);
         startWorkflowInput.setWorkflowInput(input);

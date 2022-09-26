@@ -70,8 +70,8 @@ class SubWorkflowRerunSpec extends AbstractSpecification {
                 'nextSubwf': SIMPLE_WORKFLOW]
 
         when: "the workflow is started"
-        rootWorkflowId = workflowExecutor.startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
-                correlationId, input, null, null, null)
+        rootWorkflowId = startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
+                correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {

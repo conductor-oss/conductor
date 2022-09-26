@@ -53,8 +53,8 @@ class SystemTaskSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
 
         when: "the workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(ASYNC_COMPLETE_SYSTEM_TASK_WORKFLOW, 1,
-                correlationId, input, null, null, null)
+        def workflowInstanceId = startWorkflow(ASYNC_COMPLETE_SYSTEM_TASK_WORKFLOW, 1,
+                correlationId, input, null)
 
         then: "ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
