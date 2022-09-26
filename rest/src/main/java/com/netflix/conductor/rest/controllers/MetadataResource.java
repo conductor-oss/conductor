@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,8 +59,8 @@ public class MetadataResource {
 
     @PutMapping("/workflow")
     @Operation(summary = "Create or update workflow definition")
-    public void update(@RequestBody List<WorkflowDef> workflowDefs) {
-        metadataService.updateWorkflowDef(workflowDefs);
+    public BulkResponse update(@RequestBody List<WorkflowDef> workflowDefs) {
+        return metadataService.updateWorkflowDef(workflowDefs);
     }
 
     @Operation(summary = "Retrieves workflow definition along with blueprint")
