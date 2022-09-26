@@ -1920,13 +1920,6 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowDefinition(def);
 
         Map<String, Object> workflowInput = new HashMap<>();
-        String externalInputPayloadStoragePath = null;
-        String correlationId = null;
-        Integer priority = null;
-        String parentWorkflowId = null;
-        String parentWorkflowTaskId = null;
-        String event = null;
-        Map<String, String> taskToDomain = null;
 
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
@@ -1934,7 +1927,6 @@ public class TestWorkflowExecutor {
         StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
         startWorkflowInput.setWorkflowDefinition(def);
         startWorkflowInput.setWorkflowInput(workflowInput);
-        startWorkflowInput.setPriority(priority);
 
         workflowExecutor.startWorkflow(startWorkflowInput);
 
