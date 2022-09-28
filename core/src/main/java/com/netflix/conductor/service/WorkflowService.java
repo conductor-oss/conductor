@@ -46,43 +46,6 @@ public interface WorkflowService {
                     StartWorkflowRequest startWorkflowRequest);
 
     /**
-     * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
-     *
-     * @param name Name of the workflow you want to start.
-     * @param version Version of the workflow you want to start.
-     * @param correlationId CorrelationID of the workflow you want to start.
-     * @param input Input to the workflow you want to start.
-     * @param externalInputPayloadStoragePath
-     * @param taskToDomain
-     * @param workflowDef - workflow definition
-     * @return the id of the workflow instance that can be use for tracking.
-     */
-    String startWorkflow(
-            @NotEmpty(message = "Workflow name cannot be null or empty") String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            Map<String, String> taskToDomain,
-            WorkflowDef workflowDef);
-
-    /**
-     * Start a new workflow. Returns the ID of the workflow instance that can be later used for
-     * tracking.
-     *
-     * @param name Name of the workflow you want to start.
-     * @param version Version of the workflow you want to start.
-     * @param correlationId CorrelationID of the workflow you want to start.
-     * @param input Input to the workflow you want to start.
-     * @return the id of the workflow instance that can be use for tracking.
-     */
-    String startWorkflow(
-            @NotEmpty(message = "Workflow name cannot be null or empty") String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input);
-
-    /**
      * Start a new workflow. Returns the ID of the workflow instance that can be later used for
      * tracking.
      *

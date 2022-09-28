@@ -48,8 +48,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
 
         when: "Start the workflow which has the failed task"
         def testId = 'testId'
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_TERMINATE_TASK_FAILED, 1,
-                testId, workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_TERMINATE_TASK_FAILED, 1,
+                testId, workflowInput, null)
 
         then: "Verify that the workflow has failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -83,8 +83,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
         workflowInput['a'] = 1
 
         when: "Start the workflow which has the subworkflow task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(PARENT_WORKFLOW_WITH_FAILURE_TASK, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_FAILURE_TASK, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow has started and the tasks are as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

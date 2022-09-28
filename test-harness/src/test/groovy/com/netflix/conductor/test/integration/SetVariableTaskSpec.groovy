@@ -35,8 +35,8 @@ class SetVariableTaskSpec extends AbstractSpecification {
         workflowInput['var'] = "var_test_value"
 
         when: "Start the workflow which has the set variable task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SET_VARIABLE_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(SET_VARIABLE_WF, 1,
+                '', workflowInput, null)
 
         then: "verify that the task is completed and variables were set"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -57,8 +57,8 @@ class SetVariableTaskSpec extends AbstractSpecification {
                 Collections.nCopies(1 + ((int) (maxThreshold * 1024 / 8)), "01234567"))
 
         when: "Start the workflow which has the set variable task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SET_VARIABLE_WF, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(SET_VARIABLE_WF, 1,
+                '', workflowInput, null)
         def EXTRA_HASHMAP_SIZE = 17
         def expectedErrorMessage =
                 String.format(

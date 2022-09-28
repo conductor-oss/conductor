@@ -51,9 +51,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['case'] = 'c'
 
         when: "A switch workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SWITCH_WF, 1,
+        def workflowInstanceId = startWorkflow(SWITCH_WF, 1,
                 'switch_workflow', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -122,9 +122,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['case'] = 'c'
 
         when: "A switch workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_SWITCH_WF, 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_SWITCH_WF, 1,
                 'switch_forkjoin', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -212,9 +212,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['param2'] = 'two'
 
         when: "A conditional workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(COND_TASK_WF, 1,
+        def workflowInstanceId = startWorkflow(COND_TASK_WF, 1,
                 'conditional_default', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is running and the default condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -253,9 +253,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['param2'] = caseValue
 
         when: "A conditional workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(COND_TASK_WF, 1,
+        def workflowInstanceId = startWorkflow(COND_TASK_WF, 1,
                 workflowCorrelationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is running and the 'nested' and '#caseValue' condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -302,9 +302,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['finalCase'] = 'notify'
 
         when: "A conditional workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(COND_TASK_WF, 1,
+        def workflowInstanceId = startWorkflow(COND_TASK_WF, 1,
                 'conditional_three', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is running and the 'three' condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -363,9 +363,9 @@ class SwitchTaskSpec extends AbstractSpecification {
         input['param2'] = 'p2'
 
         when: "A switch workflow is started with the workflow input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SWITCH_NODEFAULT_WF, 1,
+        def workflowInstanceId = startWorkflow(SWITCH_NODEFAULT_WF, 1,
                 'switch_no_default_workflow', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

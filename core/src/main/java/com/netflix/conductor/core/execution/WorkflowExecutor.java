@@ -117,234 +117,22 @@ public class WorkflowExecutor {
         this.systemTaskRegistry = systemTaskRegistry;
     }
 
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath) {
-        return startWorkflow(
-                name, version, correlationId, input, externalInputPayloadStoragePath, null);
-    }
+    public String startWorkflow(StartWorkflowInput input) {
+        WorkflowDef workflowDefinition;
 
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Integer priority,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath) {
-        return startWorkflow(
-                name,
-                version,
-                correlationId,
-                priority,
-                input,
-                externalInputPayloadStoragePath,
-                null);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            String event) {
-        return startWorkflow(
-                name,
-                version,
-                input,
-                externalInputPayloadStoragePath,
-                correlationId,
-                null,
-                null,
-                event);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Integer priority,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            String event) {
-        return startWorkflow(
-                name,
-                version,
-                input,
-                externalInputPayloadStoragePath,
-                correlationId,
-                priority,
-                null,
-                null,
-                event,
-                null);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            String event,
-            Map<String, String> taskToDomain) {
-        return startWorkflow(
-                name,
-                version,
-                correlationId,
-                0,
-                input,
-                externalInputPayloadStoragePath,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Integer priority,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            String event,
-            Map<String, String> taskToDomain) {
-        return startWorkflow(
-                name,
-                version,
-                input,
-                externalInputPayloadStoragePath,
-                correlationId,
-                priority,
-                null,
-                null,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            String parentWorkflowId,
-            String parentWorkflowTaskId,
-            String event) {
-        return startWorkflow(
-                name,
-                version,
-                input,
-                externalInputPayloadStoragePath,
-                correlationId,
-                parentWorkflowId,
-                parentWorkflowTaskId,
-                event,
-                null);
-    }
-
-    public String startWorkflow(
-            WorkflowDef workflowDefinition,
-            Map<String, Object> workflowInput,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            String event,
-            Map<String, String> taskToDomain) {
-        return startWorkflow(
-                workflowDefinition,
-                workflowInput,
-                externalInputPayloadStoragePath,
-                correlationId,
-                0,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            WorkflowDef workflowDefinition,
-            Map<String, Object> workflowInput,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            Integer priority,
-            String event,
-            Map<String, String> taskToDomain) {
-        return startWorkflow(
-                workflowDefinition,
-                workflowInput,
-                externalInputPayloadStoragePath,
-                correlationId,
-                priority,
-                null,
-                null,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            Map<String, Object> workflowInput,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            String parentWorkflowId,
-            String parentWorkflowTaskId,
-            String event,
-            Map<String, String> taskToDomain) {
-        return startWorkflow(
-                name,
-                version,
-                workflowInput,
-                externalInputPayloadStoragePath,
-                correlationId,
-                0,
-                parentWorkflowId,
-                parentWorkflowTaskId,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            String name,
-            Integer version,
-            Map<String, Object> workflowInput,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            Integer priority,
-            String parentWorkflowId,
-            String parentWorkflowTaskId,
-            String event,
-            Map<String, String> taskToDomain) {
-        WorkflowDef workflowDefinition =
-                metadataMapperService.lookupForWorkflowDefinition(name, version);
-
-        return startWorkflow(
-                workflowDefinition,
-                workflowInput,
-                externalInputPayloadStoragePath,
-                correlationId,
-                priority,
-                parentWorkflowId,
-                parentWorkflowTaskId,
-                event,
-                taskToDomain);
-    }
-
-    public String startWorkflow(
-            WorkflowDef workflowDefinition,
-            Map<String, Object> workflowInput,
-            String externalInputPayloadStoragePath,
-            String correlationId,
-            Integer priority,
-            String parentWorkflowId,
-            String parentWorkflowTaskId,
-            String event,
-            Map<String, String> taskToDomain) {
+        if (input.getWorkflowDefinition() == null) {
+            workflowDefinition =
+                    metadataMapperService.lookupForWorkflowDefinition(
+                            input.getName(), input.getVersion());
+        } else {
+            workflowDefinition = input.getWorkflowDefinition();
+        }
 
         workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
         // perform validations
+        Map<String, Object> workflowInput = input.getWorkflowInput();
+        String externalInputPayloadStoragePath = input.getExternalInputPayloadStoragePath();
         validateWorkflow(workflowDefinition, workflowInput, externalInputPayloadStoragePath);
 
         // A random UUID is assigned to the work flow instance
@@ -353,18 +141,18 @@ public class WorkflowExecutor {
         // Persist the Workflow
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
-        workflow.setCorrelationId(correlationId);
-        workflow.setPriority(priority == null ? 0 : priority);
+        workflow.setCorrelationId(input.getCorrelationId());
+        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
         workflow.setWorkflowDefinition(workflowDefinition);
         workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setParentWorkflowId(parentWorkflowId);
-        workflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        workflow.setParentWorkflowId(input.getParentWorkflowId());
+        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
         workflow.setOwnerApp(WorkflowContext.get().getClientApp());
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setUpdatedBy(null);
         workflow.setUpdatedTime(null);
-        workflow.setEvent(event);
-        workflow.setTaskToDomain(taskToDomain);
+        workflow.setEvent(input.getEvent());
+        workflow.setTaskToDomain(input.getTaskToDomain());
         workflow.setVariables(workflowDefinition.getVariables());
 
         if (workflowInput != null && !workflowInput.isEmpty()) {
@@ -975,23 +763,13 @@ public class WorkflowExecutor {
                 }
 
                 try {
-                    WorkflowDef latestFailureWorkflow =
-                            metadataDAO
-                                    .getLatestWorkflowDef(failureWorkflow)
-                                    .orElseThrow(
-                                            () ->
-                                                    new RuntimeException(
-                                                            "Failure Workflow Definition not found for: "
-                                                                    + failureWorkflow));
+                    StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+                    startWorkflowInput.setName(failureWorkflow);
+                    startWorkflowInput.setWorkflowInput(input);
+                    startWorkflowInput.setCorrelationId(workflow.getCorrelationId());
+                    startWorkflowInput.setTaskToDomain(workflow.getTaskToDomain());
 
-                    String failureWFId =
-                            startWorkflow(
-                                    latestFailureWorkflow,
-                                    input,
-                                    null,
-                                    workflow.getCorrelationId(),
-                                    null,
-                                    workflow.getTaskToDomain());
+                    String failureWFId = startWorkflow(startWorkflowInput);
 
                     workflow.addOutput("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {

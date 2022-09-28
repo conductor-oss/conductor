@@ -73,8 +73,8 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
                 'nextSubwf': SIMPLE_WORKFLOW]
 
         when: "the workflow is started"
-        rootWorkflowId = workflowExecutor.startWorkflow(FORK_JOIN_HIERARCHICAL_SUB_WF, 1,
-                correlationId, input, null, null, null)
+        rootWorkflowId = startWorkflow(FORK_JOIN_HIERARCHICAL_SUB_WF, 1,
+                correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {

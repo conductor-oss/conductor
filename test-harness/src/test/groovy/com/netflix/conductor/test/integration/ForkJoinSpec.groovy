@@ -73,9 +73,9 @@ class ForkJoinSpec extends AbstractSpecification {
      */
     def "Test a simple workflow with fork join success flow"() {
         when: "A fork join workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_WF, 1,
                 'fanoutTest', [:],
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started and the starting nodes of the each fork are in scheduled state"
         workflowInstanceId
@@ -175,9 +175,9 @@ class ForkJoinSpec extends AbstractSpecification {
         metadataService.updateTaskDef(modifiedIntegrationTask2Definition)
 
         when: "A fork join workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_WF, 1,
                 'fanoutTest', [:],
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started and the starting nodes of the each fork are in scheduled state"
         workflowInstanceId
@@ -245,9 +245,9 @@ class ForkJoinSpec extends AbstractSpecification {
     def "Test retrying a failed fork join workflow"() {
 
         when: "A fork join workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_WF + '_2', 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_WF + '_2', 1,
                 'fanoutTest', [:],
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started and the starting nodes of the each fork are in scheduled state"
         workflowInstanceId
@@ -377,9 +377,9 @@ class ForkJoinSpec extends AbstractSpecification {
         input["case"] = "a"
 
         when: "A nested workflow is started with the input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_NESTED_WF, 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_NESTED_WF, 1,
                 'fork_join_nested_test', input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -551,9 +551,9 @@ class ForkJoinSpec extends AbstractSpecification {
         input["case"] = "a"
 
         when: "A nested workflow is started with the input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_NESTED_SUB_WF, 1,
+        def workflowInstanceId = startWorkflow(FORK_JOIN_NESTED_SUB_WF, 1,
                 'fork_join_nested_test', input,
-                null, null, null)
+                null)
 
         then: "The workflow is in the running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -774,9 +774,9 @@ class ForkJoinSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "A workflow that has forks of sub workflows with an optional task is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_FORK_JOIN_OPTIONAL_SW, 1,
+        def workflowInstanceId = startWorkflow(WORKFLOW_FORK_JOIN_OPTIONAL_SW, 1,
                 '', workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -905,8 +905,7 @@ class ForkJoinSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "A workflow that has fork with sub workflow task is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_SUB_WORKFLOW, 1, '', workflowInput, null,
-                null, null)
+        def workflowInstanceId = startWorkflow(FORK_JOIN_SUB_WORKFLOW, 1, '', workflowInput, null)
 
         then: "verify that the workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

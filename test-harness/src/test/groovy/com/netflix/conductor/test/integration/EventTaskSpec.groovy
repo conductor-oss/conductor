@@ -41,8 +41,8 @@ class EventTaskSpec extends AbstractSpecification {
 
     def "Verify that a event based simple workflow is executed"() {
         when: "Start a event based workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(EVENT_BASED_WORKFLOW, 1,
-                '', [:], null, null, null)
+        def workflowInstanceId = startWorkflow(EVENT_BASED_WORKFLOW, 1,
+                '', [:], null)
 
         then: "Retrieve the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -82,8 +82,8 @@ class EventTaskSpec extends AbstractSpecification {
         metadataService.updateWorkflowDef([modifiedWorkflowDefinition])
 
         when: "The event task workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(EVENT_BASED_WORKFLOW, 1,
-                '', [:], null, null, null)
+        def workflowInstanceId = startWorkflow(EVENT_BASED_WORKFLOW, 1,
+                '', [:], null)
 
         then: "Retrieve the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

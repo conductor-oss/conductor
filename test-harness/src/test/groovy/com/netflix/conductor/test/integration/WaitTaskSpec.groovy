@@ -93,8 +93,8 @@ class WaitTaskSpec extends AbstractSpecification {
 
     def "Verify that a wait based simple workflow is executed"() {
         when: "Start a wait task based workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WAIT_BASED_WORKFLOW, 1,
-                '', [:], null, null, null)
+        def workflowInstanceId = startWorkflow(WAIT_BASED_WORKFLOW, 1,
+                '', [:], null)
 
         then: "Retrieve the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

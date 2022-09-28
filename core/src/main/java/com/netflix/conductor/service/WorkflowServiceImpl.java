@@ -32,6 +32,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.Utils;
 
@@ -61,47 +62,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
-        return startWorkflow(
-                startWorkflowRequest.getName(),
-                startWorkflowRequest.getVersion(),
-                startWorkflowRequest.getCorrelationId(),
-                startWorkflowRequest.getPriority(),
-                startWorkflowRequest.getInput(),
-                startWorkflowRequest.getExternalInputPayloadStoragePath(),
-                startWorkflowRequest.getTaskToDomain(),
-                startWorkflowRequest.getWorkflowDef());
-    }
-
-    /**
-     * Start a new workflow.
-     *
-     * @param name Name of the workflow you want to start.
-     * @param version Version of the workflow you want to start.
-     * @param correlationId CorrelationID of the workflow you want to start.
-     * @param input Input to the workflow you want to start.
-     * @param externalInputPayloadStoragePath the relative path in external storage where input
-     *     payload is located
-     * @param taskToDomain the task to domain mapping
-     * @param workflowDef - workflow definition
-     * @return the id of the workflow instance that can be use for tracking.
-     */
-    public String startWorkflow(
-            String name,
-            Integer version,
-            String correlationId,
-            Map<String, Object> input,
-            String externalInputPayloadStoragePath,
-            Map<String, String> taskToDomain,
-            WorkflowDef workflowDef) {
-        return startWorkflow(
-                name,
-                version,
-                correlationId,
-                0,
-                input,
-                externalInputPayloadStoragePath,
-                taskToDomain,
-                workflowDef);
+        return workflowExecutor.startWorkflow(new StartWorkflowInput(startWorkflowRequest));
     }
 
     /**
@@ -127,43 +88,17 @@ public class WorkflowServiceImpl implements WorkflowService {
             String externalInputPayloadStoragePath,
             Map<String, String> taskToDomain,
             WorkflowDef workflowDef) {
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setName(name);
+        startWorkflowInput.setVersion(version);
+        startWorkflowInput.setCorrelationId(correlationId);
+        startWorkflowInput.setPriority(priority);
+        startWorkflowInput.setWorkflowInput(input);
+        startWorkflowInput.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
+        startWorkflowInput.setTaskToDomain(taskToDomain);
+        startWorkflowInput.setWorkflowDefinition(workflowDef);
 
-        if (workflowDef == null) {
-            return workflowExecutor.startWorkflow(
-                    name,
-                    version,
-                    correlationId,
-                    priority,
-                    input,
-                    externalInputPayloadStoragePath,
-                    null,
-                    taskToDomain);
-        } else {
-            return workflowExecutor.startWorkflow(
-                    workflowDef,
-                    input,
-                    externalInputPayloadStoragePath,
-                    correlationId,
-                    priority,
-                    null,
-                    taskToDomain);
-        }
-    }
-
-    /**
-     * Start a new workflow. Returns the ID of the workflow instance that can be later used for
-     * tracking.
-     *
-     * @param name Name of the workflow you want to start.
-     * @param version Version of the workflow you want to start.
-     * @param correlationId CorrelationID of the workflow you want to start.
-     * @param input Input to the workflow you want to start.
-     * @return the id of the workflow instance that can be use for tracking.
-     */
-    public String startWorkflow(
-            String name, Integer version, String correlationId, Map<String, Object> input) {
-        metadataService.getWorkflowDef(name, version);
-        return startWorkflow(name, version, correlationId, 0, input);
+        return workflowExecutor.startWorkflow(startWorkflowInput);
     }
 
     /**
@@ -188,13 +123,15 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new NotFoundException(
                     "No such workflow found by name: %s, version: %d", name, version);
         }
-        return workflowExecutor.startWorkflow(
-                workflowDef.getName(),
-                workflowDef.getVersion(),
-                correlationId,
-                priority,
-                input,
-                null);
+
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setName(workflowDef.getName());
+        startWorkflowInput.setVersion(workflowDef.getVersion());
+        startWorkflowInput.setCorrelationId(correlationId);
+        startWorkflowInput.setPriority(priority);
+        startWorkflowInput.setWorkflowInput(input);
+
+        return workflowExecutor.startWorkflow(startWorkflowInput);
     }
 
     /**
