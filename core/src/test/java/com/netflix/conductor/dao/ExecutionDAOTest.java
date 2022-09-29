@@ -229,7 +229,7 @@ public abstract class ExecutionDAOTest {
         for (int i = 0; i < 3; i++) {
             TaskModel found = getExecutionDAO().getTask(workflowId + "_t" + i);
             assertNotNull(found);
-            found.getOutputData().put("updated", true);
+            found.addOutput("updated", true);
             found.setStatus(TaskModel.Status.COMPLETED);
             getExecutionDAO().updateTask(found);
         }

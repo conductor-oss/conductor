@@ -40,6 +40,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
@@ -151,6 +152,13 @@ public class TestDefaultEventProcessor {
         when(executionService.addEventExecution(any())).thenReturn(true);
         when(queue.rePublishIfNoAck()).thenReturn(false);
 
+        StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+        startWorkflowInput.setName(startWorkflowAction.getStart_workflow().getName());
+        startWorkflowInput.setVersion(startWorkflowAction.getStart_workflow().getVersion());
+        startWorkflowInput.setCorrelationId(
+                startWorkflowAction.getStart_workflow().getCorrelationId());
+        startWorkflowInput.setEvent(event);
+
         String id = UUID.randomUUID().toString();
         AtomicBoolean started = new AtomicBoolean(false);
         doAnswer(
@@ -161,13 +169,17 @@ public class TestDefaultEventProcessor {
                                 })
                 .when(workflowExecutor)
                 .startWorkflow(
-                        eq(startWorkflowAction.getStart_workflow().getName()),
-                        eq(startWorkflowAction.getStart_workflow().getVersion()),
-                        eq(startWorkflowAction.getStart_workflow().getCorrelationId()),
-                        anyMap(),
-                        eq(null),
-                        eq(event),
-                        anyMap());
+                        argThat(
+                                argument ->
+                                        startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getName()
+                                                        .equals(argument.getName())
+                                                && startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getVersion()
+                                                        .equals(argument.getVersion())
+                                                && event.equals(argument.getEvent())));
 
         AtomicBoolean completed = new AtomicBoolean(false);
         doAnswer(
@@ -217,16 +229,16 @@ public class TestDefaultEventProcessor {
         eventHandler.setCondition(
                 "$.Message.testKey1 == 'level1' && $.Message.metadata.testKey2 == 123456");
 
-        Map<String, Object> startWorkflowInput = new LinkedHashMap<>();
-        startWorkflowInput.put("param1", "${Message.metadata.testKey2}");
-        startWorkflowInput.put("param2", "SQS-${MessageId}");
+        Map<String, Object> workflowInput = new LinkedHashMap<>();
+        workflowInput.put("param1", "${Message.metadata.testKey2}");
+        workflowInput.put("param2", "SQS-${MessageId}");
 
         Action startWorkflowAction = new Action();
         startWorkflowAction.setAction(Type.start_workflow);
         startWorkflowAction.setStart_workflow(new StartWorkflow());
         startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
         startWorkflowAction.getStart_workflow().setVersion(1);
-        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
+        startWorkflowAction.getStart_workflow().setInput(workflowInput);
         startWorkflowAction.setExpandInlineJSON(true);
         eventHandler.getActions().add(startWorkflowAction);
 
@@ -247,13 +259,17 @@ public class TestDefaultEventProcessor {
                                 })
                 .when(workflowExecutor)
                 .startWorkflow(
-                        eq(startWorkflowAction.getStart_workflow().getName()),
-                        eq(startWorkflowAction.getStart_workflow().getVersion()),
-                        eq(startWorkflowAction.getStart_workflow().getCorrelationId()),
-                        anyMap(),
-                        eq(null),
-                        eq(event),
-                        eq(null));
+                        argThat(
+                                argument ->
+                                        startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getName()
+                                                        .equals(argument.getName())
+                                                && startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getVersion()
+                                                        .equals(argument.getVersion())
+                                                && event.equals(argument.getEvent())));
 
         SimpleActionProcessor actionProcessor =
                 new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
@@ -282,16 +298,16 @@ public class TestDefaultEventProcessor {
         eventHandler.setCondition(
                 "$.Message.testKey1 == 'level1' && $.Message.metadata.testKey2 == 123456");
 
-        Map<String, Object> startWorkflowInput = new LinkedHashMap<>();
-        startWorkflowInput.put("param1", "${Message.metadata.testKey2}");
-        startWorkflowInput.put("param2", "SQS-${MessageId}");
+        Map<String, Object> workflowInput = new LinkedHashMap<>();
+        workflowInput.put("param1", "${Message.metadata.testKey2}");
+        workflowInput.put("param2", "SQS-${MessageId}");
 
         Action startWorkflowAction = new Action();
         startWorkflowAction.setAction(Type.start_workflow);
         startWorkflowAction.setStart_workflow(new StartWorkflow());
         startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
         startWorkflowAction.getStart_workflow().setVersion(1);
-        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
+        startWorkflowAction.getStart_workflow().setInput(workflowInput);
         startWorkflowAction.setExpandInlineJSON(true);
         eventHandler.getActions().add(startWorkflowAction);
 
@@ -312,13 +328,17 @@ public class TestDefaultEventProcessor {
                                 })
                 .when(workflowExecutor)
                 .startWorkflow(
-                        eq(startWorkflowAction.getStart_workflow().getName()),
-                        eq(startWorkflowAction.getStart_workflow().getVersion()),
-                        eq(startWorkflowAction.getStart_workflow().getCorrelationId()),
-                        anyMap(),
-                        eq(null),
-                        eq(event),
-                        eq(null));
+                        argThat(
+                                argument ->
+                                        startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getName()
+                                                        .equals(argument.getName())
+                                                && startWorkflowAction
+                                                        .getStart_workflow()
+                                                        .getVersion()
+                                                        .equals(argument.getVersion())
+                                                && event.equals(argument.getEvent())));
 
         SimpleActionProcessor actionProcessor =
                 new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);

@@ -22,10 +22,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -36,8 +38,11 @@ public class DoWhile extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DoWhile.class);
 
-    public DoWhile() {
+    private final ParametersUtils parametersUtils;
+
+    public DoWhile(ParametersUtils parametersUtils) {
         super(TASK_TYPE_DO_WHILE);
+        this.parametersUtils = parametersUtils;
     }
 
     @Override
@@ -104,9 +109,7 @@ public class DoWhile extends WorkflowSystemTask {
                 break;
             }
         }
-        doWhileTaskModel
-                .getOutputData()
-                .put(String.valueOf(doWhileTaskModel.getIteration()), output);
+        doWhileTaskModel.addOutput(String.valueOf(doWhileTaskModel.getIteration()), output);
 
         if (hasFailures) {
             LOGGER.debug(
@@ -133,7 +136,7 @@ public class DoWhile extends WorkflowSystemTask {
                     shouldContinue);
             if (shouldContinue) {
                 doWhileTaskModel.setIteration(doWhileTaskModel.getIteration() + 1);
-                doWhileTaskModel.getOutputData().put("iteration", doWhileTaskModel.getIteration());
+                doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
                 return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
             } else {
                 LOGGER.debug(
@@ -214,7 +217,14 @@ public class DoWhile extends WorkflowSystemTask {
 
     @VisibleForTesting
     boolean evaluateCondition(WorkflowModel workflow, TaskModel task) throws ScriptException {
-        Map<String, Object> conditionInput = new HashMap<>(task.getInputData());
+        TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
+        // Use paramUtils to compute the task input
+        Map<String, Object> conditionInput =
+                parametersUtils.getTaskInputV2(
+                        task.getWorkflowTask().getInputParameters(),
+                        workflow,
+                        task.getTaskId(),
+                        taskDefinition);
         conditionInput.put(task.getReferenceTaskName(), task.getOutputData());
         List<TaskModel> loopOver =
                 workflow.getTasks().stream()

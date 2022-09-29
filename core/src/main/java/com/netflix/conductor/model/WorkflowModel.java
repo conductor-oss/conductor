@@ -511,7 +511,8 @@ public class WorkflowModel {
                 && Objects.equals(getParentWorkflowTaskId(), that.getParentWorkflowTaskId())
                 && Objects.equals(getTasks(), that.getTasks())
                 && Objects.equals(getInput(), that.getInput())
-                && Objects.equals(getOutput(), that.getOutput())
+                && Objects.equals(output, that.output)
+                && Objects.equals(outputPayload, that.outputPayload)
                 && Objects.equals(getCorrelationId(), that.getCorrelationId())
                 && Objects.equals(getReRunFromWorkflowId(), that.getReRunFromWorkflowId())
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
@@ -544,7 +545,8 @@ public class WorkflowModel {
                 getParentWorkflowTaskId(),
                 getTasks(),
                 getInput(),
-                getOutput(),
+                output,
+                outputPayload,
                 getCorrelationId(),
                 getReRunFromWorkflowId(),
                 getReasonForIncompletion(),
@@ -570,6 +572,7 @@ public class WorkflowModel {
         BeanUtils.copyProperties(this, workflow);
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
         workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
+        workflow.setUpdateTime(this.updatedTime);
 
         // ensure that input/output is properly represented
         if (externalInputPayloadStoragePath != null) {
@@ -579,5 +582,25 @@ public class WorkflowModel {
             workflow.setOutput(new HashMap<>());
         }
         return workflow;
+    }
+
+    public void addInput(String key, Object value) {
+        this.input.put(key, value);
+    }
+
+    public void addInput(Map<String, Object> inputData) {
+        if (inputData != null) {
+            this.input.putAll(inputData);
+        }
+    }
+
+    public void addOutput(String key, Object value) {
+        this.output.put(key, value);
+    }
+
+    public void addOutput(Map<String, Object> outputData) {
+        if (outputData != null) {
+            this.output.putAll(outputData);
+        }
     }
 }

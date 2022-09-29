@@ -36,7 +36,8 @@ class DoWhileSpec extends AbstractSpecification {
                 'do_while_iteration_fix_test.json',
                 "do_while_sub_workflow_integration_test.json",
         "do_while_five_loop_over_integration_test.json",
-        "do_while_system_tasks.json")
+        "do_while_system_tasks.json",
+                "do_while_set_variable_fix.json")
     }
 
     def "Test workflow with 2 iterations of five tasks"() {
@@ -45,7 +46,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 2
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("do_while_five_loop_over_integration_test", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("do_while_five_loop_over_integration_test", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -187,7 +188,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 2
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("do_while_system_tasks", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("do_while_system_tasks", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -238,7 +239,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 1
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -326,7 +327,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 1
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Sub_Workflow", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Sub_Workflow", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -491,7 +492,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop2'] = 1
 
         when: "A workflow with multiple do while tasks with multiple iterations is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Multiple", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Multiple", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -727,7 +728,7 @@ class DoWhileSpec extends AbstractSpecification {
         when: "A do while workflow is started"
         def workflowInput = new HashMap()
         workflowInput['loop'] = 1
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -861,7 +862,7 @@ class DoWhileSpec extends AbstractSpecification {
         when: "A do while workflow is started"
         def workflowInput = new HashMap()
         workflowInput['loop'] = 1
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -978,7 +979,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 1
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_SubTask", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_SubTask", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1074,7 +1075,7 @@ class DoWhileSpec extends AbstractSpecification {
         workflowInput['loop'] = 2
 
         when: "A do_while workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow_Iteration_Fix", 1, "looptest", workflowInput, null, null)
+        def workflowInstanceId = startWorkflow("Do_While_Workflow_Iteration_Fix", 1, "looptest", workflowInput, null)
 
         then: "Verify that the workflow has competed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1088,6 +1089,26 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[2].taskType == 'LAMBDA'
             tasks[2].status == Task.Status.COMPLETED
             tasks[2].outputData.get("result") == 1
+        }
+    }
+
+    def "Test workflow with Do While task contains set variable task"() {
+        given: "The loop condition is set to use set variable"
+        def workflowInput = new HashMap()
+        workflowInput['value'] = 2
+
+        when: "A do_while workflow is started"
+        def workflowInstanceId = startWorkflow("do_while_Set_variable_fix", 1, "looptest", workflowInput, null)
+
+        then: "Verify that the workflow has competed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 2
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SET_VARIABLE'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].inputData.get("value") == "0"
         }
     }
 

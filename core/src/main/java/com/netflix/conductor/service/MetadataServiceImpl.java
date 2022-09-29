@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
@@ -25,6 +27,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -34,7 +37,7 @@ import com.netflix.conductor.validations.ValidationContext;
 
 @Service
 public class MetadataServiceImpl implements MetadataService {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataServiceImpl.class);
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
 
@@ -119,11 +122,18 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+    public BulkResponse updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        BulkResponse bulkResponse = new BulkResponse();
         for (WorkflowDef workflowDef : workflowDefList) {
-            workflowDef.setUpdateTime(System.currentTimeMillis());
-            metadataDAO.updateWorkflowDef(workflowDef);
+            try {
+                updateWorkflowDef(workflowDef);
+                bulkResponse.appendSuccessResponse(workflowDef.getName());
+            } catch (Exception e) {
+                LOGGER.error("bulk update workflow def failed, name {} ", workflowDef.getName(), e);
+                bulkResponse.appendFailedResponse(workflowDef.getName(), e.getMessage());
+            }
         }
+        return bulkResponse;
     }
 
     /**

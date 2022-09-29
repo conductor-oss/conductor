@@ -143,7 +143,12 @@ public class WorkflowRepairService {
                 && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
             WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
             if (subWorkflow.getStatus().isTerminal()) {
-                repairSubWorkflowTask(task, subWorkflow.getStatus());
+                LOGGER.info(
+                        "Repairing sub workflow task {} for sub workflow {} in workflow {}",
+                        task.getTaskId(),
+                        task.getSubWorkflowId(),
+                        task.getWorkflowInstanceId());
+                repairSubWorkflowTask(task, subWorkflow);
                 return true;
             }
         }
@@ -165,8 +170,8 @@ public class WorkflowRepairService {
         return false;
     }
 
-    private void repairSubWorkflowTask(TaskModel task, WorkflowModel.Status subWorkflowStatus) {
-        switch (subWorkflowStatus) {
+    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
+        switch (subWorkflow.getStatus()) {
             case COMPLETED:
                 task.setStatus(TaskModel.Status.COMPLETED);
                 break;
@@ -180,6 +185,7 @@ public class WorkflowRepairService {
                 task.setStatus(TaskModel.Status.TIMED_OUT);
                 break;
         }
+        task.addOutput(subWorkflow.getOutput());
         executionDAO.updateTask(task);
     }
 }

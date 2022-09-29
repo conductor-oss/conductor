@@ -13,8 +13,6 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.ClassPathResource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
@@ -54,8 +52,8 @@ class StartWorkflowSpec extends AbstractSpecification {
         def correlationId = UUID.randomUUID().toString()
 
         when: "starter workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_THAT_STARTS_ANOTHER_WORKFLOW, 1,
-                correlationId, testCase.workflowInput, testCase.workflowInputPath, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_THAT_STARTS_ANOTHER_WORKFLOW, 1,
+                correlationId, testCase.workflowInput, testCase.workflowInputPath)
 
         then: "verify that the starter workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -106,8 +104,8 @@ class StartWorkflowSpec extends AbstractSpecification {
         def workflowInput = ['start_workflow': startWorkflowParam]
 
         when: "starter workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_THAT_STARTS_ANOTHER_WORKFLOW, 1,
-                null, workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_THAT_STARTS_ANOTHER_WORKFLOW, 1,
+                null, workflowInput, null)
 
         then: "verify that the starter workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

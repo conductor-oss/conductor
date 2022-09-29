@@ -40,8 +40,8 @@ class TaskResiliencySpec extends AbstractResiliencySpecification {
 
     def "Verify that a workflow recovers and completes on schedule task failure from queue push failure"() {
         when: "Start a simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SIMPLE_TWO_TASK_WORKFLOW, 1,
-                '', [:], null, null, null)
+        def workflowInstanceId = startWorkflow(SIMPLE_TWO_TASK_WORKFLOW, 1,
+                '', [:], null)
 
         then: "Retrieve the workflow"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)

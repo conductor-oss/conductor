@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.utils.Utils
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -69,9 +70,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "An optional task workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_OPTIONAL_TASK, 1,
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_OPTIONAL_TASK, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started and the optional task is in a scheduled state"
         workflowInstanceId
@@ -140,9 +141,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         workflowInput['param3'] = 'external string'
 
         when: "Is executed and completes"
-        def workflowInstanceId = workflowExecutor.startWorkflow(TEMPLATED_LINEAR_WORKFLOW, 1,
+        def workflowInstanceId = startWorkflow(TEMPLATED_LINEAR_WORKFLOW, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
         workflowExecutor.decide(workflowInstanceId)
         def pollAndCompleteTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
 
@@ -177,9 +178,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
         input['failureWfName'] = 'FanInOutTest'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -256,9 +257,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
         input['failureWfName'] = 'FanInOutTest'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(TEST_WORKFLOW, 1,
+        def workflowInstanceId = startWorkflow(TEST_WORKFLOW, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -307,8 +308,8 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param1'] = inputParam1
         input['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(TEST_WORKFLOW, 1,
-                correlationId, input, null, null, null)
+        def workflowInstanceId = startWorkflow(TEST_WORKFLOW, 1,
+                correlationId, input, null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -372,8 +373,8 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param1'] = inputParam1
         input['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(TEST_WORKFLOW, 1,
-                correlationId, input, null, null, null)
+        def workflowInstanceId = startWorkflow(TEST_WORKFLOW, 1,
+                correlationId, input, null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -434,9 +435,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
 
         when: "Start a workflow based on the registered simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -564,9 +565,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param1'] = inputParam1
         input['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(TEST_WORKFLOW, 1,
+        def workflowInstanceId = startWorkflow(TEST_WORKFLOW, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -630,9 +631,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
 
         when: "Start a workflow based on the registered simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -705,8 +706,8 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
     def "Test wait time out task based simple workflow"() {
         when: "Start a workflow based on a task that has a registered wait time out"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WAIT_TIME_OUT_WORKFLOW, 1,
-                '', [:], null, null, null)
+        def workflowInstanceId = startWorkflow(WAIT_TIME_OUT_WORKFLOW, 1,
+                '', [:], null)
 
         then: "verify that the workflow is running and the first task scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -772,9 +773,9 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
 
         when: "Start a workflow based on the registered simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "Ensure that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -880,7 +881,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         when: "a workflow is started with this definition"
         def input = new HashMap()
         def correlationId = 'empty_workflow'
-        def workflowInstanceId = workflowExecutor.startWorkflow(emptyWorkflowDef, input, null, correlationId, null, null)
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: emptyWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -935,7 +936,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_template'
-        def workflowInstanceId = workflowExecutor.startWorkflow(templateWorkflowDef, input, null, correlationId, null, null)
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: templateWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -973,7 +974,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_not_registered'
-        def workflowInstanceId = workflowExecutor.startWorkflow(testWorkflowDef, new HashMap(), null, correlationId, null, null)
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: testWorkflowDef, workflowInput: [:], correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

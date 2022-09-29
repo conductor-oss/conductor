@@ -123,7 +123,7 @@ public class HttpTask extends WorkflowSystemTask {
             }
             //noinspection ConstantConditions
             if (response != null) {
-                task.getOutputData().put("response", response.asMap());
+                task.addOutput("response", response.asMap());
             }
 
         } catch (Exception e) {
@@ -138,7 +138,7 @@ public class HttpTask extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion(
                     "Failed to invoke " + getTaskType() + " task due to: " + e);
-            task.getOutputData().put("response", e.toString());
+            task.addOutput("response", e.toString());
         }
     }
 

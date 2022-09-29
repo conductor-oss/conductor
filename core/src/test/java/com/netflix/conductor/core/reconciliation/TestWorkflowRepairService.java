@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.reconciliation;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
@@ -239,10 +240,14 @@ public class TestWorkflowRepairService {
         task.setTaskId(taskId);
         task.setCallbackAfterSeconds(60);
         task.setSubWorkflowId(subWorkflowId);
+        Map<String, Object> outputMap = new HashMap<>();
+        outputMap.put("subWorkflowId", subWorkflowId);
+        task.setOutputData(outputMap);
 
         WorkflowModel subWorkflow = new WorkflowModel();
         subWorkflow.setWorkflowId(subWorkflowId);
         subWorkflow.setStatus(WorkflowModel.Status.TERMINATED);
+        subWorkflow.setOutput(Map.of("k1", "v1", "k2", "v2"));
 
         when(executionDAO.getWorkflow(subWorkflowId, false)).thenReturn(subWorkflow);
 
@@ -256,5 +261,9 @@ public class TestWorkflowRepairService {
         assertEquals(taskId, argumentCaptor.getValue().getTaskId());
         assertEquals(subWorkflowId, argumentCaptor.getValue().getSubWorkflowId());
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getValue().getStatus());
+        assertNotNull(argumentCaptor.getValue().getOutputData());
+        assertEquals(subWorkflowId, argumentCaptor.getValue().getOutputData().get("subWorkflowId"));
+        assertEquals("v1", argumentCaptor.getValue().getOutputData().get("k1"));
+        assertEquals("v2", argumentCaptor.getValue().getOutputData().get("k2"));
     }
 }

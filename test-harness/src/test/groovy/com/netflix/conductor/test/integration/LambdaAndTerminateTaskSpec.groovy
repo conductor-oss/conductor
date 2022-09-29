@@ -62,8 +62,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         workflowInput['a'] = 1
 
         when: "Start the workflow which has the terminate task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_TERMINATE_TASK, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_TERMINATE_TASK, 1,
+                '', workflowInput, null)
 
         then: "Ensure that the workflow has started and the first task is in scheduled state and workflow output should be terminate task's output"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -87,8 +87,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         workflowInput['a'] = 1
 
         when: "Start the workflow which has the terminate task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_TERMINATE_TASK_FAILED, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_TERMINATE_TASK_FAILED, 1,
+                '', workflowInput, null)
 
         then: "Verify that the workflow has failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -118,8 +118,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         workflowInput['a'] = 1
 
         when: "Start the workflow which has the terminate task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(PARENT_WORKFLOW_WITH_TERMINATE_TASK, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_TERMINATE_TASK, 1,
+                '', workflowInput, null)
 
         then: "verify that the workflow has started and the tasks are as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -216,8 +216,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         workflowInput['case'] = 'two'
 
         when: "The workflow is started"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_DECISION_AND_TERMINATE, 1, '',
-                workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_DECISION_AND_TERMINATE, 1, '',
+                workflowInput, null)
 
         then: "verify that the workflow is in RUNNING state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -260,8 +260,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         workflowInput['a'] = 1
 
         when: "Start the workflow which has the terminate task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_LAMBDA_TASK, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_LAMBDA_TASK, 1,
+                '', workflowInput, null)
 
         then: "verify that the task is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

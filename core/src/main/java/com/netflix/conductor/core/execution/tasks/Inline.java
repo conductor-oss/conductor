@@ -70,7 +70,6 @@ public class Inline extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         Map<String, Object> taskInput = task.getInputData();
-        Map<String, Object> taskOutput = task.getOutputData();
         String evaluatorType = (String) taskInput.get(QUERY_EVALUATOR_TYPE);
         String expression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 
@@ -79,7 +78,7 @@ public class Inline extends WorkflowSystemTask {
             checkExpression(expression);
             Evaluator evaluator = evaluators.get(evaluatorType);
             Object evalResult = evaluator.evaluate(expression, taskInput);
-            taskOutput.put("result", evalResult);
+            task.addOutput("result", evalResult);
             task.setStatus(TaskModel.Status.COMPLETED);
         } catch (Exception e) {
             String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
@@ -95,7 +94,7 @@ public class Inline extends WorkflowSystemTask {
                             ? TaskModel.Status.FAILED_WITH_TERMINAL_ERROR
                             : TaskModel.Status.FAILED);
             task.setReasonForIncompletion(errorMessage);
-            taskOutput.put("error", errorMessage);
+            task.addOutput("error", errorMessage);
         }
 
         return true;

@@ -30,12 +30,12 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
-import com.netflix.conductor.common.metadata.Auditable;
+import com.netflix.conductor.common.metadata.BaseDef;
 
 @ProtoMessage
 @TaskTimeoutConstraint
 @Valid
-public class TaskDef extends Auditable {
+public class TaskDef extends BaseDef {
 
     @ProtoEnum
     public enum TimeoutPolicy {

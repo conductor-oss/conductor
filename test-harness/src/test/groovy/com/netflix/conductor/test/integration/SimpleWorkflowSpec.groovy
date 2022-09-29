@@ -62,9 +62,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         input['param2'] = 'p2 value'
 
         when: "Start a workflow based on the registered simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -120,9 +120,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         input.put("param1", "p1 value")
         input.put("param2", null)
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify the workflow has started and the input params have propagated"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -174,9 +174,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         input.put("param1", "p1 value")
         input.put("param2", "p2 value")
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, input,
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -233,8 +233,8 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "Start a workflow that has a response time out"
-        def workflowInstanceId = workflowExecutor.startWorkflow('RTOWF', 1, correlationId, workflowInput,
-                null, null, null)
+        def workflowInstanceId = startWorkflow('RTOWF', 1, correlationId, workflowInput,
+                null)
 
 
         then: "Workflow is in running state and the task 'task_rt' is ready to be polled"
@@ -376,9 +376,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param1'] = inputParam1
         workflowInput['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "A workflow instance has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -454,9 +454,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param1'] = inputParam1
         workflowInput['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "A workflow instance has started"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -544,9 +544,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         def workflowInput = new HashMap()
         workflowInput['param1'] = 'p1 value'
         workflowInput['param2'] = 'p2 value'
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started"
         workflowInstanceId
@@ -624,9 +624,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         and: "start a simple workflow with input params"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow has started and the next task is scheduled"
         workflowInstanceId
@@ -717,9 +717,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "start a new workflow with the input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state and the task queue has an entry for the first task of the workflow"
         workflowInstanceId
@@ -795,9 +795,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "start a new workflow with the input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state and the task queue has an entry for the first task of the workflow"
         workflowInstanceId
@@ -893,9 +893,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param1'] = 'p1 value'
         workflowInput['param2'] = 'p2 value'
 
-        def workflowInstanceId = workflowExecutor.startWorkflow(INTEGRATION_TEST_WF_NON_RESTARTABLE, 1,
+        def workflowInstanceId = startWorkflow(INTEGRATION_TEST_WF_NON_RESTARTABLE, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         and: "the 'integration_task_1' is polled and failed"
         Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('integration_task_1',
@@ -963,9 +963,9 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         workflowInput['param2'] = 'p2 value'
 
         when: "start a new workflow with the input"
-        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+        def workflowInstanceId = startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
-                null, null, null)
+                null)
 
         then: "verify that the workflow is in running state and the task queue has an entry for the first task of the workflow"
         workflowInstanceId

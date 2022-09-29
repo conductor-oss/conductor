@@ -1,0 +1,59 @@
+{
+  "name": "set_variable_workflow_integration_test",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "simple",
+      "taskReferenceName": "simple",
+      "description": "simple",
+      "inputParameters": {
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false
+    },
+    {
+      "name": "set_variable",
+      "taskReferenceName": "set_variable_1",
+      "inputParameters": {
+        "var": "${workflow.input.var}"
+      },
+      "type": "SET_VARIABLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "wait",
+      "taskReferenceName": "wait0",
+      "inputParameters": {},
+      "type": "WAIT",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "variables": "${workflow.variables}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

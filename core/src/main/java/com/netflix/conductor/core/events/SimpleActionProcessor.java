@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -157,8 +158,8 @@ public class SimpleActionProcessor implements ActionProcessor {
         taskModel.setStatus(status);
         taskModel.setOutputData(replaced);
         taskModel.setOutputMessage(taskDetails.getOutputMessage());
-        taskModel.getOutputData().put("conductor.event.messageId", messageId);
-        taskModel.getOutputData().put("conductor.event.name", event);
+        taskModel.addOutput("conductor.event.messageId", messageId);
+        taskModel.addOutput("conductor.event.name", event);
 
         try {
             workflowExecutor.updateTask(new TaskResult(taskModel.toTask()));
@@ -202,17 +203,19 @@ public class SimpleActionProcessor implements ActionProcessor {
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
 
-            String workflowId =
-                    workflowExecutor.startWorkflow(
-                            params.getName(),
-                            params.getVersion(),
-                            Optional.ofNullable(replaced.get("correlationId"))
-                                    .map(Object::toString)
-                                    .orElse(params.getCorrelationId()),
-                            workflowInput,
-                            null,
-                            event,
-                            params.getTaskToDomain());
+            StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
+            startWorkflowInput.setName(params.getName());
+            startWorkflowInput.setVersion(params.getVersion());
+            startWorkflowInput.setCorrelationId(
+                    Optional.ofNullable(replaced.get("correlationId"))
+                            .map(Object::toString)
+                            .orElse(params.getCorrelationId()));
+            startWorkflowInput.setWorkflowInput(workflowInput);
+            startWorkflowInput.setEvent(event);
+            startWorkflowInput.setTaskToDomain(params.getTaskToDomain());
+
+            String workflowId = workflowExecutor.startWorkflow(startWorkflowInput);
+
             output.put("workflowId", workflowId);
             LOGGER.debug(
                     "Started workflow: {}/{}/{} for event: {} for message:{}",
