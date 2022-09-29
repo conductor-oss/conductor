@@ -40,8 +40,8 @@ class WaitTaskSpec extends AbstractSpecification {
         workflowInput['var'] = "var_test_value"
 
         when: "Start the workflow which has the set variable task"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SET_VARIABLE_WORKFLOW, 1,
-                '', workflowInput, null, null, null)
+        def workflowInstanceId = startWorkflow(SET_VARIABLE_WORKFLOW, 1,
+                '', workflowInput, null)
 
         then: "verify that the simple task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
