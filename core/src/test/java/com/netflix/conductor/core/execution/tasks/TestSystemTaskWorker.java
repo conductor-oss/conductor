@@ -59,7 +59,6 @@ public class TestSystemTaskWorker {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(10);
         when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
-        when(properties.getSystemTaskMaxPollCount()).thenReturn(1);
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofSeconds(30));
 
         systemTaskWorker =
@@ -118,7 +117,6 @@ public class TestSystemTaskWorker {
 
     @Test
     public void testBatchPollAndExecuteSystemTask() throws Exception {
-        when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t1"));
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -170,7 +168,6 @@ public class TestSystemTaskWorker {
     @Test
     public void testBatchPollException() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(2);
-        when(properties.getSystemTaskMaxPollCount()).thenReturn(2);
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenThrow(RuntimeException.class);
 
         systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);

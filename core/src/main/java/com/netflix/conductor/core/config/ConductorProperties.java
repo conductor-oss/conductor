@@ -109,9 +109,6 @@ public class ConductorProperties {
      */
     private int isolatedSystemTaskWorkerThreadCount = 1;
 
-    /** The max number of system tasks to be polled in a single request. */
-    private int systemTaskMaxPollCount = 1;
-
     /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow
      * when async indexing to elasticsearch is enabled.
@@ -371,14 +368,6 @@ public class ConductorProperties {
 
     public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
         this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
-    }
-
-    public int getSystemTaskMaxPollCount() {
-        return systemTaskMaxPollCount;
-    }
-
-    public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
-        this.systemTaskMaxPollCount = systemTaskMaxPollCount;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {

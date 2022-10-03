@@ -51,7 +51,6 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     ExecutionConfig defaultExecutionConfig;
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
-    private final int maxPollCount;
     private final ExecutionService executionService;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
@@ -66,7 +65,6 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.defaultExecutionConfig = new ExecutionConfig(threadCount, "system-task-worker-%d");
         this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
-        this.maxPollCount = properties.getSystemTaskMaxPollCount();
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.executionService = executionService;
 
@@ -94,40 +92,32 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
             return;
         }
 
-        // get the remaining capacity of worker queue to prevent queue full exception
         ExecutionConfig executionConfig = getExecutionConfig(queueName);
         SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
 
-        if (!semaphoreUtil.acquireSlots(1)) {
-            // no available permits, do not poll
-            Monitors.recordSystemTaskWorkerPollingLimited(queueName);
-            return;
-        }
-
-        int acquiredSlots = 1;
+        int messagesToAcquire = semaphoreUtil.availableSlots();
 
         try {
-            // Since already one slot is acquired, now try if maxSlot-1 is available
-            int slotsToAcquire = Math.min(semaphoreUtil.availableSlots(), maxPollCount - 1);
-
-            // Try to acquire remaining permits to achieve maxPollCount
-            if (slotsToAcquire > 0 && semaphoreUtil.acquireSlots(slotsToAcquire)) {
-                acquiredSlots += slotsToAcquire;
+            if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
+                // no available slots, do not poll
+                Monitors.recordSystemTaskWorkerPollingLimited(queueName);
+                return;
             }
-            LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, acquiredSlots);
 
-            List<String> polledTaskIds = queueDAO.pop(queueName, acquiredSlots, 200);
+            LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
+
+            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, 200);
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
 
             if (polledTaskIds.size() > 0) {
-                // Immediately release unused permits when polled no. of messages are less than
-                // acquired permits
-                if (polledTaskIds.size() < acquiredSlots) {
-                    semaphoreUtil.completeProcessing(acquiredSlots - polledTaskIds.size());
+                // Immediately release unused slots when number of messages acquired is less than
+                // acquired slots
+                if (polledTaskIds.size() < messagesToAcquire) {
+                    semaphoreUtil.completeProcessing(messagesToAcquire - polledTaskIds.size());
                 }
 
                 for (String taskId : polledTaskIds) {
@@ -154,12 +144,12 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                 }
             } else {
                 // no task polled, release permit
-                semaphoreUtil.completeProcessing(acquiredSlots);
+                semaphoreUtil.completeProcessing(messagesToAcquire);
             }
         } catch (Exception e) {
             // release the permit if exception is thrown during polling, because the thread would
             // not be busy
-            semaphoreUtil.completeProcessing(acquiredSlots);
+            semaphoreUtil.completeProcessing(messagesToAcquire);
             Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
         }
