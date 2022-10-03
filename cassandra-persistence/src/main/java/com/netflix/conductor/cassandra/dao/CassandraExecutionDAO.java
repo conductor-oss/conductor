@@ -47,32 +47,32 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
 
-    private final PreparedStatement insertWorkflowStatement;
-    private final PreparedStatement insertTaskStatement;
-    private final PreparedStatement insertEventExecutionStatement;
+    protected final PreparedStatement insertWorkflowStatement;
+    protected final PreparedStatement insertTaskStatement;
+    protected final PreparedStatement insertEventExecutionStatement;
 
-    private final PreparedStatement selectTotalStatement;
-    private final PreparedStatement selectTaskStatement;
-    private final PreparedStatement selectWorkflowStatement;
-    private final PreparedStatement selectWorkflowWithTasksStatement;
-    private final PreparedStatement selectTaskLookupStatement;
-    private final PreparedStatement selectTasksFromTaskDefLimitStatement;
-    private final PreparedStatement selectEventExecutionsStatement;
+    protected final PreparedStatement selectTotalStatement;
+    protected final PreparedStatement selectTaskStatement;
+    protected final PreparedStatement selectWorkflowStatement;
+    protected final PreparedStatement selectWorkflowWithTasksStatement;
+    protected final PreparedStatement selectTaskLookupStatement;
+    protected final PreparedStatement selectTasksFromTaskDefLimitStatement;
+    protected final PreparedStatement selectEventExecutionsStatement;
 
-    private final PreparedStatement updateWorkflowStatement;
-    private final PreparedStatement updateTotalTasksStatement;
-    private final PreparedStatement updateTotalPartitionsStatement;
-    private final PreparedStatement updateTaskLookupStatement;
-    private final PreparedStatement updateTaskDefLimitStatement;
-    private final PreparedStatement updateEventExecutionStatement;
+    protected final PreparedStatement updateWorkflowStatement;
+    protected final PreparedStatement updateTotalTasksStatement;
+    protected final PreparedStatement updateTotalPartitionsStatement;
+    protected final PreparedStatement updateTaskLookupStatement;
+    protected final PreparedStatement updateTaskDefLimitStatement;
+    protected final PreparedStatement updateEventExecutionStatement;
 
-    private final PreparedStatement deleteWorkflowStatement;
-    private final PreparedStatement deleteTaskStatement;
-    private final PreparedStatement deleteTaskLookupStatement;
-    private final PreparedStatement deleteTaskDefLimitStatement;
-    private final PreparedStatement deleteEventExecutionStatement;
+    protected final PreparedStatement deleteWorkflowStatement;
+    protected final PreparedStatement deleteTaskStatement;
+    protected final PreparedStatement deleteTaskLookupStatement;
+    protected final PreparedStatement deleteTaskDefLimitStatement;
+    protected final PreparedStatement deleteEventExecutionStatement;
 
-    private final int eventExecutionsTTL;
+    protected final int eventExecutionsTTL;
 
     public CassandraExecutionDAO(
             Session session,
@@ -751,7 +751,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
-    private boolean removeTask(TaskModel task) {
+    protected boolean removeTask(TaskModel task) {
         // TODO: calculate shard number based on seq and maxTasksPerShard
         try {
             // get total tasks for this workflow
@@ -788,7 +788,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         }
     }
 
-    private void removeTaskLookup(TaskModel task) {
+    protected void removeTaskLookup(TaskModel task) {
         try {
             recordCassandraDaoRequests(
                     "removeTaskLookup", task.getTaskType(), task.getWorkflowType());
