@@ -88,6 +88,16 @@ export function useWorkflowDefs() {
   });
 }
 
+export function useWorkflowNamesAndVersions() {
+  return useFetch(
+    ["workflowNamesAndVersions"],
+    "/metadata/workflow/names-and-versions",
+    {
+      staleTime: STALE_TIME_WORKFLOW_DEFS,
+    }
+  );
+}
+
 export function useLatestWorkflowDefs() {
   const { data, ...rest } = useWorkflowDefs();
 
@@ -131,48 +141,15 @@ export function useSaveWorkflow(callbacks) {
 }
 
 export function useWorkflowNames() {
-  const { data } = useWorkflowDefs();
+  const { data } = useWorkflowNamesAndVersions();
   // Extract unique names
   return useMemo(() => {
     if (data) {
-      const nameSet = new Set(data.map((def) => def.name));
-      return Array.from(nameSet);
+      return Object.keys(data).sort();
     } else {
       return [];
     }
   }, [data]);
-}
-
-// Version numbers do not necessarily start, or run contiguously from 1. Could be arbitrary integers e.g. 52335678.
-// By convention they should be monotonic (ever increasing) wrt time.
-export function useWorkflowNamesAndVersions() {
-  const { data, ...rest } = useWorkflowDefs();
-
-  const newData = useMemo(() => {
-    const retval = new Map();
-    if (data) {
-      for (let def of data) {
-        let arr;
-        if (!retval.has(def.name)) {
-          arr = [];
-          retval.set(def.name, arr);
-        } else {
-          arr = retval.get(def.name);
-        }
-        arr.push({
-          version: def.version,
-          createTime: def.createTime,
-          updateTime: def.updateTime,
-        });
-      }
-
-      // Sort arrays in place
-      retval.forEach((val) => val.sort());
-    }
-    return retval;
-  }, [data]);
-
-  return { ...rest, data: newData };
 }
 
 export function useStartWorkflow(callbacks) {

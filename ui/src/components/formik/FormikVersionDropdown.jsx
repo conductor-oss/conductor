@@ -12,7 +12,7 @@ export default function FormikVersionDropdown(props) {
   } = useFormikContext();
 
   useEffect(() => {
-    if (workflowVersion && namesAndVersions.has(workflowName)) {
+    if (workflowVersion && namesAndVersions[workflowName]) {
       const found = namesAndVersions
         .get(workflowName)
         .find((row) => row.version.toString() === workflowVersion);
@@ -27,8 +27,8 @@ export default function FormikVersionDropdown(props) {
   }, [namesAndVersions, workflowName, workflowVersion]);
 
   const versions =
-    workflowName && namesAndVersions.has(workflowName)
-      ? namesAndVersions.get(workflowName).map((row) => "" + row.version)
+    workflowName && namesAndVersions[workflowName]
+      ? namesAndVersions[workflowName].map((row) => "" + row.version)
       : [];
 
   return <FormikDropdown options={versions} {...props} />;

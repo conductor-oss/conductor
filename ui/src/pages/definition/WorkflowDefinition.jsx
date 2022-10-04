@@ -138,7 +138,7 @@ export default function Workflow() {
   const { data: namesAndVersions, refetch: refetchNamesAndVersions } =
     useWorkflowNamesAndVersions();
   const versions = useMemo(
-    () => namesAndVersions.get(workflowName) || [],
+    () => _.get(namesAndVersions, workflowName, []),
     [namesAndVersions, workflowName]
   );
 

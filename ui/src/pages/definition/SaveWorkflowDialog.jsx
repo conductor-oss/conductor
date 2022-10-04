@@ -43,7 +43,7 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
 
     const parsedModified = JSON.parse(document.modified);
     const latestVersion = _.get(
-      _.last(namesAndVersions.get(parsedModified.name)),
+      _.last(namesAndVersions[parsedModified.name]),
       "version",
       0
     );
@@ -54,7 +54,7 @@ export default function SaveWorkflowDialog({ onSuccess, onCancel, document }) {
         : 1;
     }
     const isNew = _.get(document, "originalObj.name") !== parsedModified.name;
-    const isClash = isNew && namesAndVersions.has(parsedModified.name);
+    const isClash = isNew && namesAndVersions[parsedModified.name];
 
     return {
       text: JSON.stringify(parsedModified, null, 2),
