@@ -339,7 +339,9 @@ class WorkflowGraph extends React.Component {
   };
 
   handleClick = (e) => {
-    const taskRef = e.path[1].id || e.path[2].id; // could be 2 layers down
+    const path = e.path || (e.composedPath && e.composedPath());
+
+    const taskRef = path[1].id || path[2].id; // could be 2 layers down
     const node = this.graph.node(taskRef);
     if (node.type === "DF_TASK_PLACEHOLDER") {
       if (this.props.onClick) this.props.onClick({ ref: node.firstDfRef });
