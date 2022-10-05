@@ -2,6 +2,7 @@ import { useFormikContext } from "formik";
 import { useWorkflowNamesAndVersions } from "../../data/workflow";
 import FormikDropdown from "./FormikDropdown";
 import { useEffect } from "react";
+import _ from "lodash";
 
 export default function FormikVersionDropdown(props) {
   const { name } = props;
@@ -12,13 +13,14 @@ export default function FormikVersionDropdown(props) {
   } = useFormikContext();
 
   useEffect(() => {
-    if (workflowVersion && namesAndVersions[workflowName]) {
-      const found = namesAndVersions
-        .get(workflowName)
-        .find((row) => row.version.toString() === workflowVersion);
+    if (workflowVersion && workflowName) {
+      const found = _.get(namesAndVersions, workflowName).find(
+        (row) => row.version.toString() === workflowVersion
+      );
+
       if (!found) {
         console.log(
-          `Version ${workflowVersion} not found for new workflowName. Clearing dropdown.`
+          `Version ${workflowVersion} not found for new workflowName ${workflowName}. Clearing version dropdown.`
         );
         setFieldValue(name, null, false);
       }
@@ -26,10 +28,9 @@ export default function FormikVersionDropdown(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [namesAndVersions, workflowName, workflowVersion]);
 
-  const versions =
-    workflowName && namesAndVersions[workflowName]
-      ? namesAndVersions[workflowName].map((row) => "" + row.version)
-      : [];
+  const versions = _.get(namesAndVersions, workflowName, []).map(
+    (row) => "" + row.version
+  );
 
   return <FormikDropdown options={versions} {...props} />;
 }
