@@ -14,7 +14,7 @@ export default function FormikVersionDropdown(props) {
 
   useEffect(() => {
     if (workflowVersion && workflowName) {
-      const found = _.get(namesAndVersions, workflowName).find(
+      const found = _.get(namesAndVersions, workflowName, []).find(
         (row) => row.version.toString() === workflowVersion
       );
 
