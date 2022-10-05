@@ -28,6 +28,7 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -48,13 +49,15 @@ public class TestSubWorkflow {
 
     private WorkflowExecutor workflowExecutor;
     private SubWorkflow subWorkflow;
+    private StartWorkflowOperation startWorkflowOperation;
 
     @Autowired private ObjectMapper objectMapper;
 
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
-        subWorkflow = new SubWorkflow(objectMapper);
+        startWorkflowOperation = mock(StartWorkflowOperation.class);
+        subWorkflow = new SubWorkflow(objectMapper, startWorkflowOperation);
     }
 
     @Test
@@ -81,7 +84,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn(workflowId);
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn(workflowId);
 
         when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(workflow);
 
@@ -122,7 +125,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput))
+        when(startWorkflowOperation.execute(startWorkflowInput))
                 .thenThrow(new TransientException("QueueDAO failure"));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
@@ -153,7 +156,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
         String failureReason = "non transient failure";
-        when(workflowExecutor.startWorkflow(startWorkflowInput))
+        when(startWorkflowOperation.execute(startWorkflowInput))
                 .thenThrow(new NonTransientException(failureReason));
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
@@ -186,7 +189,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -216,7 +219,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(workflowInput);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -249,7 +252,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(taskToDomain);
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
@@ -275,7 +278,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
 
         assertFalse(subWorkflow.execute(workflowInstance, task, workflowExecutor));
     }
@@ -310,7 +313,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(taskToDomain);
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
                 .thenReturn(subWorkflowInstance);
 
@@ -369,7 +372,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(true)))
                 .thenReturn(subWorkflowInstance);
 
@@ -401,7 +404,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowInput(inputData);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
         when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
                 .thenReturn(subWorkflowInstance);
 
@@ -440,7 +443,7 @@ public class TestSubWorkflow {
         startWorkflowInput.setWorkflowDefinition(subWorkflowDef);
         startWorkflowInput.setTaskToDomain(workflowInstance.getTaskToDomain());
 
-        when(workflowExecutor.startWorkflow(startWorkflowInput)).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(startWorkflowInput)).thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());

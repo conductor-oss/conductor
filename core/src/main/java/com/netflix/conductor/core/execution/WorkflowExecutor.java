@@ -20,6 +20,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.Trace;
@@ -34,6 +36,8 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.event.WorkflowCreationEvent;
+import com.netflix.conductor.core.event.WorkflowEvaluationEvent;
 import com.netflix.conductor.core.exception.*;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
@@ -72,6 +76,7 @@ public class WorkflowExecutor {
     private final IDGenerator idGenerator;
     private final WorkflowStatusListener workflowStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
+    private final ApplicationEventPublisher eventPublisher;
 
     private long activeWorkerLastPollMs;
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
@@ -102,7 +107,8 @@ public class WorkflowExecutor {
             ExecutionLockService executionLockService,
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
-            IDGenerator idGenerator) {
+            IDGenerator idGenerator,
+            ApplicationEventPublisher eventPublisher) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -115,119 +121,7 @@ public class WorkflowExecutor {
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
-    }
-
-    public String startWorkflow(StartWorkflowInput input) {
-        WorkflowDef workflowDefinition;
-
-        if (input.getWorkflowDefinition() == null) {
-            workflowDefinition =
-                    metadataMapperService.lookupForWorkflowDefinition(
-                            input.getName(), input.getVersion());
-        } else {
-            workflowDefinition = input.getWorkflowDefinition();
-        }
-
-        workflowDefinition = metadataMapperService.populateTaskDefinitions(workflowDefinition);
-
-        // perform validations
-        Map<String, Object> workflowInput = input.getWorkflowInput();
-        String externalInputPayloadStoragePath = input.getExternalInputPayloadStoragePath();
-        validateWorkflow(workflowDefinition, workflowInput, externalInputPayloadStoragePath);
-
-        // A random UUID is assigned to the work flow instance
-        String workflowId = idGenerator.generate();
-
-        // Persist the Workflow
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId(workflowId);
-        workflow.setCorrelationId(input.getCorrelationId());
-        workflow.setPriority(input.getPriority() == null ? 0 : input.getPriority());
-        workflow.setWorkflowDefinition(workflowDefinition);
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setParentWorkflowId(input.getParentWorkflowId());
-        workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
-        workflow.setOwnerApp(WorkflowContext.get().getClientApp());
-        workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setUpdatedBy(null);
-        workflow.setUpdatedTime(null);
-        workflow.setEvent(input.getEvent());
-        workflow.setTaskToDomain(input.getTaskToDomain());
-        workflow.setVariables(workflowDefinition.getVariables());
-
-        if (workflowInput != null && !workflowInput.isEmpty()) {
-            Map<String, Object> parsedInput =
-                    parametersUtils.getWorkflowInput(workflowDefinition, workflowInput);
-            workflow.setInput(parsedInput);
-        } else {
-            workflow.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
-        }
-
-        try {
-            createAndDecide(workflow);
-            Monitors.recordWorkflowStartSuccess(
-                    workflow.getWorkflowName(),
-                    String.valueOf(workflow.getWorkflowVersion()),
-                    workflow.getOwnerApp());
-            return workflowId;
-        } catch (Exception e) {
-            Monitors.recordWorkflowStartError(
-                    workflowDefinition.getName(), WorkflowContext.get().getClientApp());
-            LOGGER.error("Unable to start workflow: {}", workflowDefinition.getName(), e);
-
-            // It's possible the remove workflow call hits an exception as well, in that case we
-            // want to log both errors to help diagnosis.
-            try {
-                executionDAOFacade.removeWorkflow(workflowId, false);
-            } catch (Exception rwe) {
-                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
-            }
-            throw e;
-        }
-    }
-
-    /*
-     * Acquire and hold the lock till the workflow creation action is completed (in primary and secondary datastores).
-     * This is to ensure that workflow creation action precedes any other action on a given workflow.
-     */
-    private void createAndDecide(WorkflowModel workflow) {
-        if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
-            throw new TransientException("Error acquiring lock when creating workflow: {}");
-        }
-        try {
-            executionDAOFacade.createWorkflow(workflow);
-            LOGGER.debug(
-                    "A new instance of workflow: {} created with id: {}",
-                    workflow.getWorkflowName(),
-                    workflow.getWorkflowId());
-            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-            decide(workflow);
-        } finally {
-            executionLockService.releaseLock(workflow.getWorkflowId());
-        }
-    }
-
-    /**
-     * Performs validations for starting a workflow
-     *
-     * @throws IllegalArgumentException if the validation fails.
-     */
-    private void validateWorkflow(
-            WorkflowDef workflowDef,
-            Map<String, Object> workflowInput,
-            String externalStoragePath) {
-        try {
-            // Check if the input to the workflow is not null
-            if (workflowInput == null && StringUtils.isBlank(externalStoragePath)) {
-                LOGGER.error(
-                        "The input for the workflow '{}' cannot be NULL", workflowDef.getName());
-                throw new IllegalArgumentException("NULL input passed when starting workflow");
-            }
-        } catch (Exception e) {
-            Monitors.recordWorkflowStartError(
-                    workflowDef.getName(), WorkflowContext.get().getClientApp());
-            throw e;
-        }
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -763,13 +657,15 @@ public class WorkflowExecutor {
                 }
 
                 try {
+                    String failureWFId = idGenerator.generate();
                     StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
                     startWorkflowInput.setName(failureWorkflow);
                     startWorkflowInput.setWorkflowInput(input);
                     startWorkflowInput.setCorrelationId(workflow.getCorrelationId());
                     startWorkflowInput.setTaskToDomain(workflow.getTaskToDomain());
+                    startWorkflowInput.setWorkflowId(failureWFId);
 
-                    String failureWFId = startWorkflow(startWorkflowInput);
+                    eventPublisher.publishEvent(new WorkflowCreationEvent(startWorkflowInput));
 
                     workflow.addOutput("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {
@@ -1067,6 +963,11 @@ public class WorkflowExecutor {
         return executionDAOFacade.getRunningWorkflowIds(workflowName, version);
     }
 
+    @EventListener(WorkflowEvaluationEvent.class)
+    public void handleWorkflowEvaluationEvent(WorkflowEvaluationEvent wee) {
+        decide(wee.getWorkflowModel());
+    }
+
     /** Records a metric for the "decide" process. */
     public WorkflowModel decide(String workflowId) {
         StopWatch watch = new StopWatch();
@@ -1096,7 +997,7 @@ public class WorkflowExecutor {
      *     method does not acquire the lock on the workflow and should ony be called / overridden if
      *     No locking is required or lock is acquired externally
      */
-    WorkflowModel decide(WorkflowModel workflow) {
+    public WorkflowModel decide(WorkflowModel workflow) {
         if (workflow.getStatus().isTerminal()) {
             if (!workflow.getStatus().isSuccessful()) {
                 cancelNonTerminalTasks(workflow);

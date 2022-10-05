@@ -19,6 +19,7 @@ import com.netflix.conductor.core.config.ConductorProperties
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
+import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.core.utils.IDGenerator
 import com.netflix.conductor.core.utils.QueueUtils
 import com.netflix.conductor.dao.MetadataDAO
@@ -38,6 +39,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
+    StartWorkflowOperation startWorkflowOperation
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -50,10 +52,11 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
+        startWorkflowOperation = Mock(StartWorkflowOperation.class)
 
-        workflowSystemTask = Mock(WorkflowSystemTask.class)
-        then:
-        workflowSystemTask.isTaskRetrievalRequired() >> true
+        workflowSystemTask = Mock(WorkflowSystemTask.class) {
+            isTaskRetrievalRequired() >> true
+        }
 
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
@@ -66,7 +69,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         given:
         String workflowId = "workflowId"
         String subWorkflowId = "subWorkflowId"
-        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper())
+        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper(), startWorkflowOperation)
 
         String task1Id = new IDGenerator().generate()
         TaskModel task1 = new TaskModel()
@@ -90,7 +93,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(task1Id) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
-        1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
+        1 * startWorkflowOperation.execute(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue

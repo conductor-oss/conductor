@@ -33,6 +33,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -52,6 +53,7 @@ public class TestSimpleActionProcessor {
     private WorkflowExecutor workflowExecutor;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private SimpleActionProcessor actionProcessor;
+    private StartWorkflowOperation startWorkflowOperation;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -60,12 +62,14 @@ public class TestSimpleActionProcessor {
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
 
         workflowExecutor = mock(WorkflowExecutor.class);
+        startWorkflowOperation = mock(StartWorkflowOperation.class);
 
         actionProcessor =
                 new SimpleActionProcessor(
                         workflowExecutor,
                         new ParametersUtils(objectMapper),
-                        new JsonUtils(objectMapper));
+                        new JsonUtils(objectMapper),
+                        startWorkflowOperation);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -92,7 +96,7 @@ public class TestSimpleActionProcessor {
         workflowDef.setName("testWorkflow");
         workflowDef.setVersion(1);
 
-        when(workflowExecutor.startWorkflow(any())).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(any())).thenReturn("workflow_1");
 
         Map<String, Object> output =
                 actionProcessor.execute(action, payload, "testEvent", "testMessage");
@@ -103,7 +107,7 @@ public class TestSimpleActionProcessor {
         ArgumentCaptor<StartWorkflowInput> startWorkflowInputArgumentCaptor =
                 ArgumentCaptor.forClass(StartWorkflowInput.class);
 
-        verify(workflowExecutor).startWorkflow(startWorkflowInputArgumentCaptor.capture());
+        verify(startWorkflowOperation).execute(startWorkflowInputArgumentCaptor.capture());
         StartWorkflowInput capturedValue = startWorkflowInputArgumentCaptor.getValue();
 
         assertEquals("test_1", capturedValue.getWorkflowInput().get("testInput"));
@@ -135,7 +139,7 @@ public class TestSimpleActionProcessor {
         workflowDef.setName("testWorkflow");
         workflowDef.setVersion(1);
 
-        when(workflowExecutor.startWorkflow(any())).thenReturn("workflow_1");
+        when(startWorkflowOperation.execute(any())).thenReturn("workflow_1");
 
         Map<String, Object> output =
                 actionProcessor.execute(action, payload, "testEvent", "testMessage");
@@ -146,7 +150,7 @@ public class TestSimpleActionProcessor {
         ArgumentCaptor<StartWorkflowInput> startWorkflowInputArgumentCaptor =
                 ArgumentCaptor.forClass(StartWorkflowInput.class);
 
-        verify(workflowExecutor).startWorkflow(startWorkflowInputArgumentCaptor.capture());
+        verify(startWorkflowOperation).execute(startWorkflowInputArgumentCaptor.capture());
         StartWorkflowInput capturedArgument = startWorkflowInputArgumentCaptor.getValue();
         assertEquals("test_1", capturedArgument.getWorkflowInput().get("testInput"));
         assertNull(capturedArgument.getCorrelationId());

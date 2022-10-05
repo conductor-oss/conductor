@@ -24,6 +24,7 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -38,10 +39,12 @@ public class SubWorkflow extends WorkflowSystemTask {
     private static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
     private final ObjectMapper objectMapper;
+    private final StartWorkflowOperation startWorkflowOperation;
 
-    public SubWorkflow(ObjectMapper objectMapper) {
+    public SubWorkflow(ObjectMapper objectMapper, StartWorkflowOperation startWorkflowOperation) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
+        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     @SuppressWarnings("unchecked")
@@ -82,7 +85,7 @@ public class SubWorkflow extends WorkflowSystemTask {
             startWorkflowInput.setParentWorkflowTaskId(task.getTaskId());
             startWorkflowInput.setTaskToDomain(taskToDomain);
 
-            String subWorkflowId = workflowExecutor.startWorkflow(startWorkflowInput);
+            String subWorkflowId = startWorkflowOperation.execute(startWorkflowInput);
 
             task.setSubWorkflowId(subWorkflowId);
             // For backwards compatibility
