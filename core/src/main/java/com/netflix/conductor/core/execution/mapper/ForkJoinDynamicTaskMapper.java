@@ -195,9 +195,17 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
             }
 
             for (TaskModel forkedTask : forkedTasks) {
-                Map<String, Object> forkedTaskInput =
-                        tasksInput.get(forkedTask.getReferenceTaskName());
-                forkedTask.addInput(forkedTaskInput);
+                try {
+                    Map<String, Object> forkedTaskInput =
+                            tasksInput.get(forkedTask.getReferenceTaskName());
+                    forkedTask.addInput(forkedTaskInput);
+                } catch (Exception e) {
+                    String reason =
+                            String.format(
+                                    "Tasks could not be dynamically forked due to invalid input: %s",
+                                    e.getMessage());
+                    throw new TerminateWorkflowException(reason);
+                }
             }
             mappedTasks.addAll(forkedTasks);
             // Get the last of the dynamic tasks so that the join can be performed once this task is
