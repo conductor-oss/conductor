@@ -51,7 +51,9 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
         TaskModel joinTask = taskMapperContext.createTaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
-        joinTask.setStartTime(System.currentTimeMillis());
+        final long currentTimeMillis = System.currentTimeMillis();
+        joinTask.setScheduledTime(currentTimeMillis);
+        joinTask.setStartTime(currentTimeMillis);
         joinTask.setInputData(joinInput);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

@@ -58,7 +58,9 @@ public class TerminateTaskMapper implements TaskMapper {
 
         TaskModel task = taskMapperContext.createTaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
-        task.setStartTime(System.currentTimeMillis());
+        final long currentTimeMillis = System.currentTimeMillis();
+        task.setScheduledTime(currentTimeMillis);
+        task.setStartTime(currentTimeMillis);
         task.setInputData(taskInput);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         return List.of(task);

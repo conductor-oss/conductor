@@ -63,7 +63,9 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel jsonJQTransformTask = taskMapperContext.createTaskModel();
-        jsonJQTransformTask.setStartTime(System.currentTimeMillis());
+        final long currentTimeMillis = System.currentTimeMillis();
+        jsonJQTransformTask.setScheduledTime(currentTimeMillis);
+        jsonJQTransformTask.setStartTime(currentTimeMillis);
         jsonJQTransformTask.setInputData(taskInput);
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

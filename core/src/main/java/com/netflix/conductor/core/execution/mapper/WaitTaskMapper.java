@@ -67,7 +67,9 @@ public class WaitTaskMapper implements TaskMapper {
         TaskModel waitTask = taskMapperContext.createTaskModel();
         waitTask.setTaskType(TASK_TYPE_WAIT);
         waitTask.setInputData(waitTaskInput);
-        waitTask.setStartTime(System.currentTimeMillis());
+        final long currentTimeMillis = System.currentTimeMillis();
+        waitTask.setScheduledTime(currentTimeMillis);
+        waitTask.setStartTime(currentTimeMillis);
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
         return List.of(waitTask);
     }
