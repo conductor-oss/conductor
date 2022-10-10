@@ -192,7 +192,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             // update the task_lookup table
             tasks.forEach(
                     task -> {
-                        task.setScheduledTime(System.currentTimeMillis());
+                        if (task.getScheduledTime() == 0) {
+                            task.setScheduledTime(System.currentTimeMillis());
+                        }
                         session.execute(
                                 updateTaskLookupStatement.bind(
                                         workflowUUID, toUUID(task.getTaskId(), "Invalid task id")));
