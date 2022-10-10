@@ -12,7 +12,7 @@
  */
 
 // Contains overrides for Spring Boot Dependency Management plugin
-// Dependency version override properties can be found at https://docs.spring.io/spring-boot/docs/2.6.7/reference/htmlsingle/#appendix.dependency-versions.properties
+// Dependency version override properties can be found at https://docs.spring.io/spring-boot/docs/2.7.3/reference/htmlsingle/#appendix.dependency-versions.properties
 
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch6
