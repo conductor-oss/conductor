@@ -74,9 +74,7 @@ public class LambdaTaskMapper implements TaskMapper {
 
         TaskModel lambdaTask = taskMapperContext.createTaskModel();
         lambdaTask.setTaskType(TaskType.TASK_TYPE_LAMBDA);
-        final long currentTimeMillis = System.currentTimeMillis();
-        lambdaTask.setScheduledTime(currentTimeMillis);
-        lambdaTask.setStartTime(currentTimeMillis);
+        lambdaTask.setStartTime(System.currentTimeMillis());
         lambdaTask.setInputData(taskInput);
         lambdaTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

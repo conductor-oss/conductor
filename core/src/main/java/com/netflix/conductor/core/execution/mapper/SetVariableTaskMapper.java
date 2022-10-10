@@ -38,9 +38,7 @@ public class SetVariableTaskMapper implements TaskMapper {
         LOGGER.debug("TaskMapperContext {} in SetVariableMapper", taskMapperContext);
 
         TaskModel varTask = taskMapperContext.createTaskModel();
-        final long currentTimeMillis = System.currentTimeMillis();
-        varTask.setScheduledTime(currentTimeMillis);
-        varTask.setStartTime(currentTimeMillis);
+        varTask.setStartTime(System.currentTimeMillis());
         varTask.setInputData(taskMapperContext.getTaskInput());
         varTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

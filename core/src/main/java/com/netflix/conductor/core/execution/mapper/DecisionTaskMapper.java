@@ -88,9 +88,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setTaskDefName(TaskType.TASK_TYPE_DECISION);
         decisionTask.addInput("case", caseValue);
         decisionTask.addOutput("caseOutput", Collections.singletonList(caseValue));
-        final long currentTimeMillis = System.currentTimeMillis();
-        decisionTask.setScheduledTime(currentTimeMillis);
-        decisionTask.setStartTime(currentTimeMillis);
+        decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(decisionTask);
 

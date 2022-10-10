@@ -65,9 +65,7 @@ public class HumanTaskMapper implements TaskMapper {
         TaskModel humanTask = taskMapperContext.createTaskModel();
         humanTask.setTaskType(TASK_TYPE_HUMAN);
         humanTask.setInputData(humanTaskInput);
-        final long currentTimeMillis = System.currentTimeMillis();
-        humanTask.setScheduledTime(currentTimeMillis);
-        humanTask.setStartTime(currentTimeMillis);
+        humanTask.setStartTime(System.currentTimeMillis());
         humanTask.setStatus(TaskModel.Status.IN_PROGRESS);
         return List.of(humanTask);
     }

@@ -87,9 +87,7 @@ public class DoWhileTaskMapper implements TaskMapper {
         TaskModel doWhileTask = taskMapperContext.createTaskModel();
         doWhileTask.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
         doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        final long currentTimeMillis = System.currentTimeMillis();
-        doWhileTask.setScheduledTime(currentTimeMillis);
-        doWhileTask.setStartTime(currentTimeMillis);
+        doWhileTask.setStartTime(System.currentTimeMillis());
         doWhileTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         doWhileTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         doWhileTask.setRetryCount(taskMapperContext.getRetryCount());

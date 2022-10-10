@@ -74,7 +74,6 @@ public class ForkJoinTaskMapper implements TaskMapper {
         forkTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
         long epochMillis = System.currentTimeMillis();
-        forkTask.setScheduledTime(epochMillis);
         forkTask.setStartTime(epochMillis);
         forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);

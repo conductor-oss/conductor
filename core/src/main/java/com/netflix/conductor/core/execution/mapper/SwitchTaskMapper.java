@@ -94,9 +94,7 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.getInputData().put("case", evalResult);
         switchTask.addOutput("evaluationResult", List.of(evalResult));
-        final long currentTimeMillis = System.currentTimeMillis();
-        switchTask.setScheduledTime(currentTimeMillis);
-        switchTask.setStartTime(currentTimeMillis);
+        switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
 
