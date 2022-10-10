@@ -37,8 +37,8 @@ public class TerminateTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.TERMINATE;
+    public String getTaskType() {
+        return TaskType.TERMINATE.name();
     }
 
     @Override

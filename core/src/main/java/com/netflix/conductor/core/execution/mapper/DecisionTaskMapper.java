@@ -50,8 +50,8 @@ public class DecisionTaskMapper implements TaskMapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(DecisionTaskMapper.class);
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.DECISION;
+    public String getTaskType() {
+        return TaskType.DECISION.name();
     }
 
     /**

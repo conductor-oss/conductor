@@ -53,8 +53,8 @@ public class DynamicTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.DYNAMIC;
+    public String getTaskType() {
+        return TaskType.DYNAMIC.name();
     }
 
     /**

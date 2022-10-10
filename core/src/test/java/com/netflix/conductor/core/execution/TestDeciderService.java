@@ -105,7 +105,7 @@ public class TestDeciderService {
         }
 
         @Bean
-        public Map<TaskType, TaskMapper> taskMapperMap(Collection<TaskMapper> taskMappers) {
+        public Map<String, TaskMapper> taskMapperMap(Collection<TaskMapper> taskMappers) {
             return taskMappers.stream()
                     .collect(Collectors.toMap(TaskMapper::getTaskType, Function.identity()));
         }
@@ -132,7 +132,7 @@ public class TestDeciderService {
 
     @Autowired
     @Qualifier("taskMapperMap")
-    private Map<TaskType, TaskMapper> taskMappers;
+    private Map<String, TaskMapper> taskMappers;
 
     @Autowired private ParametersUtils parametersUtils;
 

@@ -49,8 +49,8 @@ public class HTTPTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.HTTP;
+    public String getTaskType() {
+        return TaskType.HTTP.name();
     }
 
     /**

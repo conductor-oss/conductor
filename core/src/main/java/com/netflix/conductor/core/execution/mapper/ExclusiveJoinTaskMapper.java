@@ -30,8 +30,8 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
     public static final Logger LOGGER = LoggerFactory.getLogger(ExclusiveJoinTaskMapper.class);
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.EXCLUSIVE_JOIN;
+    public String getTaskType() {
+        return TaskType.EXCLUSIVE_JOIN.name();
     }
 
     @Override

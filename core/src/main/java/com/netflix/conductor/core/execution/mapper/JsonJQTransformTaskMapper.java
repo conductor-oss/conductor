@@ -41,8 +41,8 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.JSON_JQ_TRANSFORM;
+    public String getTaskType() {
+        return TaskType.JSON_JQ_TRANSFORM.name();
     }
 
     @Override

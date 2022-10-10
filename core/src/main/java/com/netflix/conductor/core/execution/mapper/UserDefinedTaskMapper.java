@@ -49,8 +49,8 @@ public class UserDefinedTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.USER_DEFINED;
+    public String getTaskType() {
+        return TaskType.USER_DEFINED.name();
     }
 
     /**

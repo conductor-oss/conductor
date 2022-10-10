@@ -41,8 +41,8 @@ public class EventTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.EVENT;
+    public String getTaskType() {
+        return TaskType.EVENT.name();
     }
 
     @Override

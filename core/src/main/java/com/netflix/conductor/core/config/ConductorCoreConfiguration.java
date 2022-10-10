@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.exception.TransientException;
@@ -94,7 +93,7 @@ public class ConductorCoreConfiguration {
 
     @Bean
     @Qualifier("taskMappersByTaskType")
-    public Map<TaskType, TaskMapper> getTaskMappers(List<TaskMapper> taskMappers) {
+    public Map<String, TaskMapper> getTaskMappers(List<TaskMapper> taskMappers) {
         return taskMappers.stream().collect(Collectors.toMap(TaskMapper::getTaskType, identity()));
     }
 

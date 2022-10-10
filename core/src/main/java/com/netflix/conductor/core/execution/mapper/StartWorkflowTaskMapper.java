@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
@@ -32,8 +31,8 @@ public class StartWorkflowTaskMapper implements TaskMapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartWorkflowTaskMapper.class);
 
     @Override
-    public TaskType getTaskType() {
-        return START_WORKFLOW;
+    public String getTaskType() {
+        return START_WORKFLOW.name();
     }
 
     @Override

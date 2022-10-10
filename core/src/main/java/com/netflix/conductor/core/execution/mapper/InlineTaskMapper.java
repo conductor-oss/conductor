@@ -47,8 +47,8 @@ public class InlineTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.INLINE;
+    public String getTaskType() {
+        return TaskType.INLINE.name();
     }
 
     @Override

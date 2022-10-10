@@ -28,8 +28,8 @@ public class SetVariableTaskMapper implements TaskMapper {
     public static final Logger LOGGER = LoggerFactory.getLogger(SetVariableTaskMapper.class);
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.SET_VARIABLE;
+    public String getTaskType() {
+        return TaskType.SET_VARIABLE.name();
     }
 
     @Override

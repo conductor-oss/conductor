@@ -153,22 +153,24 @@ public class TestDeciderOutcomes {
         taskDef.setResponseTimeoutSeconds(60 * 60);
         when(metadataDAO.getTaskDef(anyString())).thenReturn(taskDef);
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
-        Map<TaskType, TaskMapper> taskMappers = new HashMap<>();
-        taskMappers.put(DECISION, new DecisionTaskMapper());
-        taskMappers.put(SWITCH, new SwitchTaskMapper(evaluators));
-        taskMappers.put(DYNAMIC, new DynamicTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(FORK_JOIN, new ForkJoinTaskMapper());
-        taskMappers.put(JOIN, new JoinTaskMapper());
+        Map<String, TaskMapper> taskMappers = new HashMap<>();
+        taskMappers.put(DECISION.name(), new DecisionTaskMapper());
+        taskMappers.put(SWITCH.name(), new SwitchTaskMapper(evaluators));
+        taskMappers.put(DYNAMIC.name(), new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(FORK_JOIN.name(), new ForkJoinTaskMapper());
+        taskMappers.put(JOIN.name(), new JoinTaskMapper());
         taskMappers.put(
-                FORK_JOIN_DYNAMIC,
+                FORK_JOIN_DYNAMIC.name(),
                 new ForkJoinDynamicTaskMapper(
                         new IDGenerator(), parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put(USER_DEFINED, new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(SIMPLE, new SimpleTaskMapper(parametersUtils));
-        taskMappers.put(SUB_WORKFLOW, new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(EVENT, new EventTaskMapper(parametersUtils));
-        taskMappers.put(WAIT, new WaitTaskMapper(parametersUtils));
-        taskMappers.put(HTTP, new HTTPTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(
+                USER_DEFINED.name(), new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(SIMPLE.name(), new SimpleTaskMapper(parametersUtils));
+        taskMappers.put(
+                SUB_WORKFLOW.name(), new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
+        taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
+        taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.deciderService =
                 new DeciderService(

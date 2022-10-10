@@ -36,8 +36,8 @@ public class JoinTaskMapper implements TaskMapper {
     public static final Logger LOGGER = LoggerFactory.getLogger(JoinTaskMapper.class);
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.JOIN;
+    public String getTaskType() {
+        return TaskType.JOIN.name();
     }
 
     /**

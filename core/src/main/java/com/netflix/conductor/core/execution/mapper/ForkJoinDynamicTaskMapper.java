@@ -74,8 +74,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     }
 
     @Override
-    public TaskType getTaskType() {
-        return TaskType.FORK_JOIN_DYNAMIC;
+    public String getTaskType() {
+        return TaskType.FORK_JOIN_DYNAMIC.name();
     }
 
     /**

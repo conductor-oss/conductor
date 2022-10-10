@@ -45,6 +45,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
 /**
@@ -65,7 +66,7 @@ public class DeciderService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
-    private final Map<TaskType, TaskMapper> taskMappers;
+    private final Map<String, TaskMapper> taskMappers;
 
     public DeciderService(
             IDGenerator idGenerator,
@@ -73,7 +74,7 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
-            @Qualifier("taskMappersByTaskType") Map<TaskType, TaskMapper> taskMappers,
+            @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
@@ -832,7 +833,6 @@ public class DeciderService {
                         taskToSchedule.getInputParameters(), workflow, null, null);
 
         String type = taskToSchedule.getType();
-        TaskType taskType = TaskType.of(type);
 
         // get tasks already scheduled (in progress/terminal) for  this workflow instance
         List<String> tasksInWorkflow =
@@ -862,7 +862,10 @@ public class DeciderService {
         // fork.
         // A new task must only be scheduled if a task, with the same reference name is not already
         // in this workflow instance
-        return taskMappers.get(taskType).getMappedTasks(taskMapperContext).stream()
+        return taskMappers
+                .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))
+                .getMappedTasks(taskMapperContext)
+                .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
     }
