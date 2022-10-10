@@ -664,6 +664,7 @@ public class WorkflowExecutor {
                     startWorkflowInput.setCorrelationId(workflow.getCorrelationId());
                     startWorkflowInput.setTaskToDomain(workflow.getTaskToDomain());
                     startWorkflowInput.setWorkflowId(failureWFId);
+                    startWorkflowInput.setTriggeringWorkflowId(workflowId);
 
                     eventPublisher.publishEvent(new WorkflowCreationEvent(startWorkflowInput));
 

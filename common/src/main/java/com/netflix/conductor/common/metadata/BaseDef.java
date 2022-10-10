@@ -30,6 +30,10 @@ public abstract class BaseDef extends Auditable {
         this.accessPolicy.put(permission, allowedAuthority);
     }
 
+    public void addPermissionIfAbsent(Permission permission, String allowedAuthority) {
+        this.accessPolicy.putIfAbsent(permission, allowedAuthority);
+    }
+
     public void removePermission(Permission permission) {
         this.accessPolicy.remove(permission);
     }

@@ -71,7 +71,7 @@ public class StartWorkflow extends WorkflowSystemTask {
                         request.getCorrelationId(), workflow.getCorrelationId()));
 
         try {
-            String workflowId = startWorkflow(request);
+            String workflowId = startWorkflow(request, workflow.getWorkflowId());
             taskModel.addOutput(WORKFLOW_ID, workflowId);
             taskModel.setStatus(COMPLETED);
         } catch (TransientException te) {
@@ -136,8 +136,10 @@ public class StartWorkflow extends WorkflowSystemTask {
         return startWorkflowRequest;
     }
 
-    private String startWorkflow(StartWorkflowRequest request) {
-        return startWorkflowOperation.execute(new StartWorkflowInput(request));
+    private String startWorkflow(StartWorkflowRequest request, String workflowId) {
+        StartWorkflowInput input = new StartWorkflowInput(request);
+        input.setTriggeringWorkflowId(workflowId);
+        return startWorkflowOperation.execute(input);
     }
 
     @Override
