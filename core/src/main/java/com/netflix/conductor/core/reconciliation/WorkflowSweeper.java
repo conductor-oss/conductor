@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -106,10 +107,18 @@ public class WorkflowSweeper {
         long postponeDurationSeconds = 0;
         for (TaskModel taskModel : workflowModel.getTasks()) {
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
-                postponeDurationSeconds =
-                        (taskModel.getResponseTimeoutSeconds() != 0)
-                                ? taskModel.getResponseTimeoutSeconds() + 1
-                                : properties.getWorkflowOffsetTimeout().getSeconds();
+                if (taskModel.getTaskType() == TaskType.TASK_TYPE_WAIT
+                        || taskModel.getTaskType() == TaskType.TASK_TYPE_HUMAN) {
+                    postponeDurationSeconds =
+                            (taskModel.getWaitTimeout() != 0)
+                                    ? taskModel.getWaitTimeout() + 1
+                                    : properties.getWorkflowOffsetTimeout().getSeconds();
+                } else {
+                    postponeDurationSeconds =
+                            (taskModel.getResponseTimeoutSeconds() != 0)
+                                    ? taskModel.getResponseTimeoutSeconds() + 1
+                                    : properties.getWorkflowOffsetTimeout().getSeconds();
+                }
                 break;
             }
             if (taskModel.getStatus() == Status.SCHEDULED) {

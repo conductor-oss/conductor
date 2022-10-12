@@ -157,7 +157,9 @@ public class TaskDef extends BaseDef {
         this.ownerEmail = ownerEmail;
         this.retryCount = retryCount;
         this.timeoutSeconds = timeoutSeconds;
-        this.responseTimeoutSeconds = responseTimeoutSeconds;
+        if (responseTimeoutSeconds != 0) {
+            this.responseTimeoutSeconds = responseTimeoutSeconds;
+        }
     }
 
     /**
@@ -291,7 +293,9 @@ public class TaskDef extends BaseDef {
      *     task will be re-queued
      */
     public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
-        this.responseTimeoutSeconds = responseTimeoutSeconds;
+        if (responseTimeoutSeconds != 0) {
+            this.responseTimeoutSeconds = responseTimeoutSeconds;
+        }
     }
 
     /**
