@@ -192,6 +192,8 @@ public class ExternalPayloadStorageUtils {
             }
         } catch (TransientException te) {
             throw te;
+        } catch (TerminateWorkflowException twe) {
+            throw twe;
         } catch (Exception e) {
             LOGGER.error(
                     "Unable to upload payload to external storage for workflow: {}", workflowId, e);
