@@ -225,4 +225,34 @@ public class RedisMetadataDAOTest {
     public void testRemoveTaskDef() {
         redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID());
     }
+
+    @Test
+    public void testDefaultsAreSetForResponseTimeout() {
+        TaskDef def = new TaskDef("taskA");
+        def.setDescription("description");
+        def.setCreatedBy("unit_test");
+        def.setCreateTime(1L);
+        def.setInputKeys(Arrays.asList("a", "b", "c"));
+        def.setOutputKeys(Arrays.asList("01", "o2"));
+        def.setOwnerApp("ownerApp");
+        def.setRetryCount(3);
+        def.setRetryDelaySeconds(100);
+        def.setRetryLogic(RetryLogic.FIXED);
+        def.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
+        def.setUpdatedBy("unit_test2");
+        def.setUpdateTime(2L);
+        def.setRateLimitPerFrequency(50);
+        def.setRateLimitFrequencyInSeconds(1);
+        def.setResponseTimeoutSeconds(0);
+
+        redisMetadataDAO.createTaskDef(def);
+
+        TaskDef found = redisMetadataDAO.getTaskDef(def.getName());
+        assertEquals(found.getResponseTimeoutSeconds(), 3600);
+        found.setTimeoutSeconds(200);
+        found.setResponseTimeoutSeconds(0);
+        redisMetadataDAO.updateTaskDef(found);
+        TaskDef foundNew = redisMetadataDAO.getTaskDef(def.getName());
+        assertEquals(foundNew.getResponseTimeoutSeconds(), 199);
+    }
 }

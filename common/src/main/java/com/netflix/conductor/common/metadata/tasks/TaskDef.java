@@ -51,7 +51,7 @@ public class TaskDef extends BaseDef {
         LINEAR_BACKOFF
     }
 
-    private static final int ONE_HOUR = 60 * 60;
+    public static final int ONE_HOUR = 60 * 60;
 
     /** Unique name identifying the task. The name is unique across */
     @NotEmpty(message = "TaskDef name cannot be null or empty")

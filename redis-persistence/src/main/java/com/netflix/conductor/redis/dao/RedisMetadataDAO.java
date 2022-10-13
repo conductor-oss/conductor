@@ -43,6 +43,8 @@ import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskDef.ONE_HOUR;
+
 @Component
 @Conditional(AnyRedisCondition.class)
 public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
@@ -121,7 +123,15 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             recordRedisDaoPayloadSize(
                     "getTaskDef", taskDefJsonStr.length(), taskDef.getName(), "n/a");
         }
+        setDefaults(taskDef);
         return taskDef;
+    }
+
+    private void setDefaults(TaskDef taskDef) {
+        if (taskDef != null && taskDef.getResponseTimeoutSeconds() == 0) {
+            taskDef.setResponseTimeoutSeconds(
+                    taskDef.getTimeoutSeconds() == 0 ? ONE_HOUR : taskDef.getTimeoutSeconds() - 1);
+        }
     }
 
     @Override
@@ -134,7 +144,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         if (taskDefs.size() > 0) {
             for (String taskDefJsonStr : taskDefs.values()) {
                 if (taskDefJsonStr != null) {
-                    allTaskDefs.add(readValue(taskDefJsonStr, TaskDef.class));
+                    TaskDef taskDef = readValue(taskDefJsonStr, TaskDef.class);
+                    setDefaults(taskDef);
+                    allTaskDefs.add(taskDef);
                     size += taskDefJsonStr.length();
                 }
             }
