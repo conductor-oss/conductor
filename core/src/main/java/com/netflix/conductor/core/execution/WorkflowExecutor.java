@@ -154,7 +154,8 @@ public class WorkflowExecutor {
                         });
     }
 
-    @PreAuthorize("hasPermission(#request, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#request, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public String rerun(RerunWorkflowRequest request) {
         Utils.checkNotNull(request.getReRunFromWorkflowId(), "reRunFromWorkflowId is missing");
         if (!rerunWF(
@@ -177,7 +178,8 @@ public class WorkflowExecutor {
      * @throws NotFoundException Workflow definition is not found or Workflow is deemed
      *     non-restartable as per workflow definition.
      */
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void restart(String workflowId, boolean useLatestDefinitions) {
         final WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
 
@@ -263,7 +265,8 @@ public class WorkflowExecutor {
      *
      * @param workflowId the id of the workflow to be retried
      */
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void retry(String workflowId, boolean resumeSubworkflowTasks) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
@@ -565,7 +568,8 @@ public class WorkflowExecutor {
         return workflow;
     }
 
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void terminateWorkflow(String workflowId, String reason) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (WorkflowModel.Status.COMPLETED.equals(workflow.getStatus())) {
@@ -1187,7 +1191,8 @@ public class WorkflowExecutor {
     /**
      * @throws ConflictException if the workflow is in terminal state.
      */
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void pauseWorkflow(String workflowId) {
         try {
             executionLockService.acquireLock(workflowId, 60000);
@@ -1223,7 +1228,8 @@ public class WorkflowExecutor {
      * @param workflowId the workflow to be resumed
      * @throws IllegalStateException if the workflow is not in PAUSED state
      */
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void resumeWorkflow(String workflowId) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
         if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
@@ -1252,7 +1258,8 @@ public class WorkflowExecutor {
      * @param skipTaskRequest the {@link SkipTaskRequest} object
      * @throws IllegalStateException
      */
-    @PreAuthorize("hasPermission(#workflowId, 'OPERATOR')")
+    @PreAuthorize(
+            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void skipTaskFromWorkflow(
             String workflowId, String taskReferenceName, SkipTaskRequest skipTaskRequest) {
 
