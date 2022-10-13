@@ -139,6 +139,33 @@ class CassandraMetadataDAOSpec extends CassandraSpec {
         metadataDAO.getTaskDef(task2Name) == null
     }
 
+    def "set default response timeout when not set"() {
+        given:
+        String task1Name = "task1"
+
+        when: // register a task definition
+        TaskDef taskDef = new TaskDef()
+        taskDef.setName(task1Name)
+        taskDef.setResponseTimeoutSeconds(0)
+        metadataDAO.createTaskDef(taskDef)
+        def returnTaskDef = metadataDAO.getTaskDef(task1Name)
+
+        then:
+        returnTaskDef.getResponseTimeoutSeconds() == 3600
+
+        when: // register another task definition
+        taskDef.setTimeoutSeconds(200)
+        taskDef.setResponseTimeoutSeconds(0)
+        metadataDAO.updateTaskDef(taskDef)
+        // fetch all task defs
+        def taskDefList = metadataDAO.getAllTaskDefs()
+
+        then:
+        taskDefList && taskDefList.size() == 1
+        taskDefList.get(0).getResponseTimeoutSeconds() == 199
+
+    }
+
     def "parse index string"() {
         expect:
         def pair = metadataDAO.getWorkflowNameAndVersion(nameVersionStr)

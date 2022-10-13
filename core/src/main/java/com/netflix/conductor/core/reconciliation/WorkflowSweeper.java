@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -103,12 +104,13 @@ public class WorkflowSweeper {
         }
     }
 
+    @VisibleForTesting
     void unack(WorkflowModel workflowModel) {
         long postponeDurationSeconds = 0;
         for (TaskModel taskModel : workflowModel.getTasks()) {
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
-                if (taskModel.getTaskType() == TaskType.TASK_TYPE_WAIT
-                        || taskModel.getTaskType() == TaskType.TASK_TYPE_HUMAN) {
+                if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)
+                        || taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     postponeDurationSeconds =
                             (taskModel.getWaitTimeout() != 0)
                                     ? taskModel.getWaitTimeout() + 1
@@ -141,12 +143,13 @@ public class WorkflowSweeper {
                         postponeDurationSeconds =
                                 (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
                                         ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
+                                                + 1
                                         : properties.getWorkflowOffsetTimeout().getSeconds();
                     }
                 } else {
                     postponeDurationSeconds =
                             (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
-                                    ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
+                                    ? workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1
                                     : properties.getWorkflowOffsetTimeout().getSeconds();
                 }
                 break;

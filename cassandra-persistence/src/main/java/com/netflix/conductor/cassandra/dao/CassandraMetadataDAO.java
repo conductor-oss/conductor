@@ -46,6 +46,7 @@ import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
+import static com.netflix.conductor.common.metadata.tasks.TaskDef.ONE_HOUR;
 
 @Trace
 public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDAO {
@@ -292,9 +293,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         try {
             ResultSet resultSet = session.execute(selectTaskDefStatement.bind(name));
             recordCassandraDaoRequests("getTaskDef", name, null);
-            return Optional.ofNullable(resultSet.one())
-                    .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
-                    .orElse(null);
+            return Optional.ofNullable(resultSet.one()).map(this::setDefaults).orElse(null);
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getTaskDef");
             String errorMsg = String.format("Failed to get task def: %s", name);
@@ -312,9 +311,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                 LOGGER.info("No task definitions were found.");
                 return Collections.EMPTY_LIST;
             }
-            return rows.stream()
-                    .map(row -> readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class))
-                    .collect(Collectors.toList());
+            return rows.stream().map(this::setDefaults).collect(Collectors.toList());
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllTaskDefs");
             String errorMsg = "Failed to get all task defs";
@@ -391,5 +388,14 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             throw new IllegalStateException(
                     versionStr + " in " + nameVersionStr + " is not a valid number.");
         }
+    }
+
+    private TaskDef setDefaults(Row row) {
+        TaskDef taskDef = readValue(row.getString(TASK_DEFINITION_KEY), TaskDef.class);
+        if (taskDef != null && taskDef.getResponseTimeoutSeconds() == 0) {
+            taskDef.setResponseTimeoutSeconds(
+                    taskDef.getTimeoutSeconds() == 0 ? ONE_HOUR : taskDef.getTimeoutSeconds() - 1);
+        }
+        return taskDef;
     }
 }

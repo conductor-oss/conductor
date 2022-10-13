@@ -129,6 +129,25 @@ public class MetadataServiceTest {
     }
 
     @Test(expected = ConstraintViolationException.class)
+    public void testRegisterTaskDefNoResponseTimeout() {
+        try {
+            TaskDef taskDef = new TaskDef();
+            taskDef.setName("somename");
+            taskDef.setOwnerEmail("sample@test.com");
+            taskDef.setResponseTimeoutSeconds(0);
+            metadataService.registerTaskDef(Collections.singletonList(taskDef));
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(
+                    messages.contains(
+                            "TaskDef responseTimeoutSeconds: 0 should be minimum 1 second"));
+            throw ex;
+        }
+        fail("metadataService.registerTaskDef did not throw ConstraintViolationException !");
+    }
+
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateTaskDefNameNull() {
         try {
             TaskDef taskDef = new TaskDef();
