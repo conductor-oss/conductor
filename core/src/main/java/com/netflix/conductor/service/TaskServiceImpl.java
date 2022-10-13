@@ -225,6 +225,11 @@ public class TaskServiceImpl implements TaskService {
         return executionService.getTask(taskId);
     }
 
+    public Task getTask(
+            String workflowId, String taskRefName, boolean includeInput, boolean includeOutput) {
+        return executionService.getTask(workflowId, taskRefName, includeInput, includeOutput);
+    }
+
     /**
      * Remove Task from a Task type queue.
      *

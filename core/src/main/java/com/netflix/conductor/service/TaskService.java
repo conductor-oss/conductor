@@ -139,6 +139,12 @@ public interface TaskService {
      */
     Task getTask(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
+    Task getTask(
+            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+            @NotEmpty(message = "Task reference name cannot be null or empty.") String taskRefName,
+            boolean includeInput,
+            boolean includeOutput);
+
     /**
      * Remove Task from a Task type queue.
      *

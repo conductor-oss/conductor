@@ -16,11 +16,21 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.dao.query.TaskQuery;
+import com.netflix.conductor.dao.query.TaskResponse;
+import com.netflix.conductor.dao.query.WorkflowQuery;
+import com.netflix.conductor.dao.query.WorkflowResponse;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 /** Data access layer for storing workflow executions */
 public interface ExecutionDAO {
+
+    enum PayloadType {
+        METADATA,
+        INPUT,
+        OUTPUT
+    }
 
     /**
      * @param taskName Name of the task
@@ -80,6 +90,10 @@ public interface ExecutionDAO {
      */
     TaskModel getTask(String taskId);
 
+    default TaskResponse getTaskPayload(TaskQuery taskQuery) {
+        return null;
+    }
+
     /**
      * @param taskIds Task instance ids
      * @return List of tasks
@@ -136,6 +150,10 @@ public interface ExecutionDAO {
      * @return Workflow
      */
     WorkflowModel getWorkflow(String workflowId);
+
+    default WorkflowResponse getWorkflowPayload(WorkflowQuery workflowQuery) {
+        return null;
+    }
 
     /**
      * @param workflowId workflow instance id

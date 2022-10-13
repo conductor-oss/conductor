@@ -130,6 +130,11 @@ public interface WorkflowService {
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
             boolean includeTasks);
 
+    Workflow getWorkflow(
+            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+            boolean includeInput,
+            boolean includeOutput);
+
     /**
      * Removes the workflow from the system.
      *

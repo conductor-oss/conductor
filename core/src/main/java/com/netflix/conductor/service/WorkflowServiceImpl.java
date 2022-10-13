@@ -185,6 +185,14 @@ public class WorkflowServiceImpl implements WorkflowService {
         return workflow;
     }
 
+    public Workflow getWorkflow(String workflowId, boolean includeInput, boolean includeOutput) {
+        Workflow workflow = executionService.getWorkflow(workflowId, includeInput, includeOutput);
+        if (workflow == null) {
+            throw new NotFoundException("Workflow with id: %s not found.", workflowId);
+        }
+        return workflow;
+    }
+
     /**
      * Removes the workflow from the system.
      *

@@ -251,6 +251,11 @@ public class ExecutionService {
         return executionDAOFacade.getTask(taskId);
     }
 
+    public Task getTask(
+            String workflowId, String taskRefName, boolean includeInput, boolean includeOutput) {
+        return executionDAOFacade.getTask(workflowId, taskRefName, includeInput, includeOutput);
+    }
+
     public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
         return executionDAOFacade.getTasksForWorkflow(workflowId).stream()
                 .filter(task -> !task.getStatus().isTerminal())
@@ -372,6 +377,10 @@ public class ExecutionService {
 
     public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
         return executionDAOFacade.getWorkflow(workflowId, includeTasks);
+    }
+
+    public Workflow getWorkflow(String workflowId, boolean includeInput, boolean includeOutput) {
+        return executionDAOFacade.getWorkflow(workflowId, includeInput, includeOutput);
     }
 
     public List<String> getRunningWorkflows(String workflowName, int version) {

@@ -13,10 +13,8 @@
 package com.netflix.conductor.core.dal;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -45,6 +43,9 @@ import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
+import com.netflix.conductor.dao.ExecutionDAO.PayloadType;
+import com.netflix.conductor.dao.query.TaskQuery;
+import com.netflix.conductor.dao.query.WorkflowQuery;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -176,6 +177,56 @@ public class ExecutionDAOFacade {
             }
         }
         return workflow;
+    }
+
+    public Workflow getWorkflow(String workflowId, boolean includeInput, boolean includeOutput) {
+        CompletableFuture<WorkflowModel> workflowFuture =
+                CompletableFuture.supplyAsync(() -> getWorkflowMetadata(workflowId));
+
+        CompletableFuture<Map<String, Object>> inputFuture;
+        if (includeInput) {
+            inputFuture = CompletableFuture.supplyAsync(() -> getWorkflowInput(workflowId));
+        } else {
+            inputFuture = CompletableFuture.completedFuture(new HashMap<>());
+        }
+
+        CompletableFuture<Map<String, Object>> outputFuture;
+        if (includeOutput) {
+            outputFuture = CompletableFuture.supplyAsync(() -> getWorkflowOutput(workflowId));
+        } else {
+            outputFuture = CompletableFuture.completedFuture(new HashMap<>());
+        }
+
+        try {
+            WorkflowModel workflowModel = workflowFuture.get();
+            if (workflowModel != null) {
+                Workflow workflow = workflowModel.toWorkflow();
+                workflow.setInput(inputFuture.get());
+                workflow.setOutput(outputFuture.get());
+                return workflow;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed fetching workflow: {}", workflowId, e);
+        }
+        return null;
+    }
+
+    public WorkflowModel getWorkflowMetadata(String workflowId) {
+        WorkflowQuery workflowQuery =
+                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.METADATA).build();
+        return executionDAO.getWorkflowPayload(workflowQuery).getWorkflowModel();
+    }
+
+    public Map<String, Object> getWorkflowInput(String workflowId) {
+        WorkflowQuery workflowQuery =
+                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.INPUT).build();
+        return executionDAO.getWorkflowPayload(workflowQuery).getPayload();
+    }
+
+    public Map<String, Object> getWorkflowOutput(String workflowId) {
+        WorkflowQuery workflowQuery =
+                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.OUTPUT).build();
+        return executionDAO.getWorkflowPayload(workflowQuery).getPayload();
     }
 
     /**
@@ -438,6 +489,84 @@ public class ExecutionDAOFacade {
 
     private TaskModel getTaskFromDatastore(String taskId) {
         return executionDAO.getTask(taskId);
+    }
+
+    public Task getTask(
+            String workflowId, String taskRefName, boolean includeInput, boolean includeOutput) {
+        CompletableFuture<TaskModel> taskFuture =
+                CompletableFuture.supplyAsync(() -> getTaskMetadata(workflowId, taskRefName));
+
+        CompletableFuture<Map<String, Object>> inputFuture;
+        if (includeInput) {
+            inputFuture =
+                    CompletableFuture.supplyAsync(() -> getTaskInput(workflowId, taskRefName));
+        } else {
+            inputFuture = CompletableFuture.completedFuture(new HashMap<>());
+        }
+
+        CompletableFuture<Map<String, Object>> outputFuture;
+        if (includeOutput) {
+            outputFuture =
+                    CompletableFuture.supplyAsync(() -> getTaskOutput(workflowId, taskRefName));
+        } else {
+            outputFuture = CompletableFuture.completedFuture(new HashMap<>());
+        }
+
+        try {
+            TaskModel taskModel = taskFuture.get();
+            if (taskModel != null) {
+                Task task = taskModel.toTask();
+                task.setInputData(inputFuture.get());
+                task.setOutputData(outputFuture.get());
+                return task;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed fetching task: {} in workflow: {}", taskRefName, workflowId, e);
+        }
+        return null;
+    }
+
+    public TaskModel getTaskMetadata(String workflowId, String taskRefName) {
+        return getTaskMetadata(workflowId, taskRefName, null);
+    }
+
+    public TaskModel getTaskMetadata(String workflowId, String taskRefName, String taskId) {
+        return getTaskModelFromDB(workflowId, taskRefName, taskId);
+    }
+
+    private TaskModel getTaskModelFromDB(String workflowId, String taskRefName, String taskId) {
+        TaskQuery taskQuery =
+                new TaskQuery.Builder(workflowId, taskRefName)
+                        .withPayloadType(PayloadType.METADATA)
+                        .withTaskId(taskId)
+                        .build();
+        return executionDAO.getTaskPayload(taskQuery).getTaskModel();
+    }
+
+    public Map<String, Object> getTaskInput(String workflowId, String taskRefName) {
+        return getTaskInput(workflowId, taskRefName, null);
+    }
+
+    public Map<String, Object> getTaskInput(String workflowId, String taskRefName, String taskId) {
+        TaskQuery taskQuery =
+                new TaskQuery.Builder(workflowId, taskRefName)
+                        .withPayloadType(PayloadType.INPUT)
+                        .withTaskId(taskId)
+                        .build();
+        return executionDAO.getTaskPayload(taskQuery).getPayload();
+    }
+
+    public Map<String, Object> getTaskOutput(String workflowId, String taskRefName) {
+        return getTaskOutput(workflowId, taskRefName, null);
+    }
+
+    public Map<String, Object> getTaskOutput(String workflowId, String taskRefName, String taskId) {
+        TaskQuery taskQuery =
+                new TaskQuery.Builder(workflowId, taskRefName)
+                        .withPayloadType(PayloadType.OUTPUT)
+                        .withTaskId(taskId)
+                        .build();
+        return executionDAO.getTaskPayload(taskQuery).getPayload();
     }
 
     public List<Task> getTasksByName(String taskName, String startKey, int count) {

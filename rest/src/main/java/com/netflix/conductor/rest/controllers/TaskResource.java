@@ -104,6 +104,22 @@ public class TaskResource {
                 .orElse(ResponseEntity.noContent().build());
     }
 
+    @GetMapping("/{workflowId}/{taskReferenceName}")
+    @Operation(summary = "Get task by workflow id and task reference name")
+    public ResponseEntity<Task> getTask(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("taskReferenceName") String taskReferenceName,
+            @RequestParam(value = "includeInput", defaultValue = "false", required = false)
+                    boolean includeInput,
+            @RequestParam(value = "includeOutput", defaultValue = "false", required = false)
+                    boolean includeOutput) {
+        return Optional.ofNullable(
+                        taskService.getTask(
+                                workflowId, taskReferenceName, includeInput, includeOutput))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/queue/sizes")
     @Operation(summary = "Deprecated. Please use /tasks/queue/size endpoint")
     @Deprecated
