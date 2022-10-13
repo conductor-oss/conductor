@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -99,6 +98,9 @@ public class WorkflowSweeper {
         if (workflow != null) {
             unack(workflow);
         } else {
+            LOGGER.warn(
+                    "Workflow with {} id can not be found. Attempting to unack using the id",
+                    workflowId);
             queueDAO.setUnackTimeout(
                     DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().toMillis());
         }
@@ -125,15 +127,6 @@ public class WorkflowSweeper {
             }
             if (taskModel.getStatus() == Status.SCHEDULED) {
                 Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
-                if (taskDefinition.isEmpty()) {
-                    taskDefinition =
-                            Optional.ofNullable(
-                                            workflowModel
-                                                    .getWorkflowDefinition()
-                                                    .getTaskByRefName(
-                                                            taskModel.getReferenceTaskName()))
-                                    .map(WorkflowTask::getTaskDefinition);
-                }
                 if (taskDefinition.isPresent()) {
                     TaskDef taskDef = taskDefinition.get();
                     if (taskDef.getPollTimeoutSeconds() != null
