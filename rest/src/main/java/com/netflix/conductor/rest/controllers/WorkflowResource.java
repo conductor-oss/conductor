@@ -107,12 +107,12 @@ public class WorkflowResource {
     }
 
     @GetMapping("/{workflowId}")
-    @Operation(summary = "Gets the workflow by workflow id")
+    @Operation(summary = "Gets the workflow by id")
     public Workflow getWorkflow(
             @PathVariable("workflowId") String workflowId,
-            @RequestParam(value = "includeInput", defaultValue = "true", required = false)
+            @RequestParam(value = "includeInput", defaultValue = "false", required = false)
                     boolean includeInput,
-            @RequestParam(value = "includeOutput", defaultValue = "true", required = false)
+            @RequestParam(value = "includeOutput", defaultValue = "false", required = false)
                     boolean includeOutput) {
         return workflowService.getWorkflow(workflowId, includeInput, includeOutput);
     }
