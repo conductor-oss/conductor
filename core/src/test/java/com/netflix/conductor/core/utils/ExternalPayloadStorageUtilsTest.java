@@ -41,6 +41,8 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.model.TaskModel.Status.FAILED_WITH_TERMINAL_ERROR;
+
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -199,11 +201,11 @@ public class ExternalPayloadStorageUtilsTest {
         TaskModel task = new TaskModel();
         task.setInputData(new HashMap<>());
 
-        expectedException.expect(TerminateWorkflowException.class);
         externalPayloadStorageUtils.failTask(
                 task, ExternalPayloadStorage.PayloadType.TASK_INPUT, "error");
         assertNotNull(task);
         assertTrue(task.getInputData().isEmpty());
+        assertEquals(FAILED_WITH_TERMINAL_ERROR, task.getStatus());
     }
 
     @Test
@@ -211,11 +213,11 @@ public class ExternalPayloadStorageUtilsTest {
         TaskModel task = new TaskModel();
         task.setOutputData(new HashMap<>());
 
-        expectedException.expect(TerminateWorkflowException.class);
         externalPayloadStorageUtils.failTask(
                 task, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, "error");
         assertNotNull(task);
         assertTrue(task.getOutputData().isEmpty());
+        assertEquals(FAILED_WITH_TERMINAL_ERROR, task.getStatus());
     }
 
     @Test

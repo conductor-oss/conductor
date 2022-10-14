@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -37,6 +38,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
     @Autowired
     QueueDAO queueDAO
+
+    @Autowired
+    Join joinTask
 
     @Autowired
     SubWorkflow subWorkflowTask
@@ -97,7 +101,7 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', ['op': 'task1.done'])
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', ['op': 'task1.done'])
 
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
+        and: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds.get(0))
 
@@ -216,6 +220,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         }
 
         when: "the parent workflow is swept"
+        def workflow = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+        def outerJoinId = workflow.getTaskByRefName("outer_join").taskId
+        def innerJoinId = workflow.getTaskByRefName("inner_join").taskId
         sweep(parentWorkflowId)
 
         then: "verify that the flag is reset and JOIN is updated"
@@ -277,6 +284,10 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         when: "the parent workflow is swept"
         sweep(parentWorkflowId)
 
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
+
         then: "verify that the parent workflow reaches COMPLETED with all tasks completed"
         assertParentWorkflowIsComplete()
     }
@@ -319,6 +330,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds.get(0))
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
+        def workflow = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+        def outerJoinId = workflow.getTaskByRefName("outer_join").taskId
+        def innerJoinId = workflow.getTaskByRefName("inner_join").taskId
 
         then: "verify that SUB_WORKFLOW task in in progress"
         def parentWorkflowInstance = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
@@ -388,6 +402,10 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the parent workflow is swept"
         sweep(parentWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
 
         then: "verify that the parent workflow reaches COMPLETED with all tasks completed"
         assertParentWorkflowIsComplete()
@@ -470,6 +488,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         }
 
         when: "poll and complete both tasks in the sub workflow"
+        def workflow = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+        def outerJoinId = workflow.getTaskByRefName("outer_join").taskId
+        def innerJoinId = workflow.getTaskByRefName("inner_join").taskId
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
@@ -509,6 +530,10 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the parent workflow is swept"
         sweep(parentWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
 
         then: "verify that the parent workflow reaches COMPLETED with all tasks completed"
         with(workflowExecutionService.getExecutionStatus(parentWorkflowId, true)) {
@@ -608,6 +633,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         }
 
         when: "poll and complete the failed task in the sub workflow"
+        def workflow = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+        def outerJoinId = workflow.getTaskByRefName("outer_join").taskId
+        def innerJoinId = workflow.getTaskByRefName("inner_join").taskId
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
         then: "verify that the subworkflow completed"
@@ -646,6 +674,10 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the parent workflow is swept"
         sweep(parentWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
 
         then: "verify the parent workflow reaches COMPLETED state"
         assertParentWorkflowIsComplete()
@@ -724,6 +756,9 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
         }
 
         when: "poll and complete the failed task in the sub workflow"
+        def workflow = workflowExecutionService.getExecutionStatus(parentWorkflowId, true)
+        def outerJoinId = workflow.getTaskByRefName("outer_join").taskId
+        def innerJoinId = workflow.getTaskByRefName("inner_join").taskId
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
         then: "verify that the subworkflow completed"
@@ -762,6 +797,10 @@ class NestedForkJoinSubWorkflowSpec extends AbstractSpecification {
 
         when: "the parent workflow is swept"
         sweep(parentWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
 
         then: "verify the parent workflow reaches COMPLETED state"
         assertParentWorkflowIsComplete()

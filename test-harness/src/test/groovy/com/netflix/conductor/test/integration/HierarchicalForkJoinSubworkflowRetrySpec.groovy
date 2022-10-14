@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -41,6 +42,9 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
     @Autowired
     SubWorkflow subWorkflowTask
+
+    @Autowired
+    Join joinTask
 
     String rootWorkflowId, midLevelWorkflowId, leafWorkflowId
 
@@ -229,6 +233,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
         asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def newMidLevelWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -247,6 +252,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
 
         when: "poll and complete the integration_task_1 task in the mid-level workflow"
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
+        def midJoinId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         and: "poll and execute the sub workflow task"
         polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
@@ -279,6 +285,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the new mid level and root workflows are 'decided'"
         sweep(newMidLevelWorkflowId)
         sweep(rootWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
 
         then: "the new mid level workflow is in COMPLETED state"
         assertWorkflowIsCompleted(newMidLevelWorkflowId)
@@ -350,6 +360,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         when: "poll and complete the 2 tasks in the leaf workflow"
+        def midJoinId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', ['op': 'task1.done'])
 
@@ -366,6 +378,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
 
         then: "verify that the mid level and root workflows reach COMPLETED state"
         assertSubWorkflowTaskIsRetriedAndWorkflowCompleted(midLevelWorkflowId)
@@ -434,6 +450,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+        def midJoinId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         then: "verify that the mid-level workflow's JOIN task is updated"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -486,6 +504,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
 
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
+
         then: "verify that the mid level and root workflows reach COMPLETED state"
         assertWorkflowIsCompleted(midLevelWorkflowId)
         assertWorkflowIsCompleted(rootWorkflowId)
@@ -496,7 +518,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
      * On a 3-level workflow where all workflows reach FAILED state because of a FAILED task
      * in the leaf workflow.
      *
-     * A retry is executed with resume flag on the mid-level workflow.
+     * A retry is executed with resume flag on the root workflow.
      *
      * Expectation: The leaf workflow is retried and both its parent (mid-level) and grand parent (root) workflows are also retried.
      * When the leaf workflow completes successfully, both the mid-level and root workflows also complete successfully.
@@ -551,6 +573,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+        def midJoinId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         then: "verify the mid level workflow's JOIN is updated"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -600,6 +624,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
 
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
+
         then: "the new mid level workflow is in COMPLETED state"
         assertWorkflowIsCompleted(midLevelWorkflowId)
 
@@ -612,7 +640,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
      * On a 3-level workflow where all workflows reach FAILED state because of a FAILED task
      * in the leaf workflow.
      *
-     * A retry is executed on the leaf workflow.
+     * A retry is executed on the mid-level workflow.
      *
      * Expectation: The leaf workflow resumes its FAILED task and updates both its parent (mid-level) and grandparent (root).
      * When the leaf workflow completes successfully, both the mid-level and root workflows also complete successfully.
@@ -667,6 +695,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+        def midJoinId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         then: "verify the mid level workflow's JOIN is updated"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -715,6 +745,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
 
         then: "the new mid level workflow is in COMPLETED state"
         assertWorkflowIsCompleted(midLevelWorkflowId)
@@ -783,6 +817,8 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+        def midJoinId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
+        def rootJoinId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTaskByRefName("fanouttask_join").taskId
 
         then: "verify the mid level workflow's JOIN is updated"
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
@@ -833,6 +869,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         when: "the mid level and root workflows are 'decided'"
         sweep(midLevelWorkflowId)
         sweep(rootWorkflowId)
+
+        and: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, midJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, rootJoinId)
 
         then: "the new mid level workflow is in COMPLETED state"
         assertWorkflowIsCompleted(midLevelWorkflowId)

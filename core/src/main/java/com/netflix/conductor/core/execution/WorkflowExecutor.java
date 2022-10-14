@@ -66,7 +66,13 @@ public class WorkflowExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutor.class);
     private static final int EXPEDITED_PRIORITY = 10;
-
+    private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
+    private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
+            task -> !task.getStatus().isSuccessful() && task.getStatus().isTerminal();
+    private static final Predicate<TaskModel> UNSUCCESSFUL_JOIN_TASK =
+            UNSUCCESSFUL_TERMINAL_TASK.and(t -> TaskType.TASK_TYPE_JOIN.equals(t.getTaskType()));
+    private static final Predicate<TaskModel> NON_TERMINAL_TASK =
+            task -> !task.getStatus().isTerminal();
     private final MetadataDAO metadataDAO;
     private final QueueDAO queueDAO;
     private final DeciderService deciderService;
@@ -78,19 +84,8 @@ public class WorkflowExecutor {
     private final WorkflowStatusListener workflowStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
     private final ApplicationEventPublisher eventPublisher;
-
     private long activeWorkerLastPollMs;
-    private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private final ExecutionLockService executionLockService;
-
-    private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
-            task -> !task.getStatus().isSuccessful() && task.getStatus().isTerminal();
-
-    private static final Predicate<TaskModel> UNSUCCESSFUL_JOIN_TASK =
-            UNSUCCESSFUL_TERMINAL_TASK.and(t -> TaskType.TASK_TYPE_JOIN.equals(t.getTaskType()));
-
-    private static final Predicate<TaskModel> NON_TERMINAL_TASK =
-            task -> !task.getStatus().isTerminal();
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -352,6 +347,7 @@ public class WorkflowExecutor {
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
                             || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
                         task.setStatus(IN_PROGRESS);
+                        addTaskToQueue(task);
                         // Task doesn't have to be updated yet. Will be updated along with other
                         // Workflow tasks downstream.
                     } else {
@@ -870,10 +866,7 @@ public class WorkflowExecutor {
                     task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
 
-        // sync evaluate workflow only if the task is not within a forked branch
-        if (isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
-            expediteLazyWorkflowEvaluation(workflowId);
-        } else {
+        if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
         }
     }
@@ -1094,7 +1087,11 @@ public class WorkflowExecutor {
                 // and the JOIN task(s) needs to be evaluated again, set them to IN_PROGRESS
                 workflow.getTasks().stream()
                         .filter(UNSUCCESSFUL_JOIN_TASK)
-                        .peek(t -> t.setStatus(TaskModel.Status.IN_PROGRESS))
+                        .peek(
+                                task -> {
+                                    task.setStatus(TaskModel.Status.IN_PROGRESS);
+                                    addTaskToQueue(task);
+                                })
                         .forEach(executionDAOFacade::updateTask);
             }
         }
@@ -1305,6 +1302,7 @@ public class WorkflowExecutor {
         taskToBeSkipped.setWorkflowInstanceId(workflowId);
         taskToBeSkipped.setWorkflowPriority(workflow.getPriority());
         taskToBeSkipped.setStatus(SKIPPED);
+        taskToBeSkipped.setEndTime(System.currentTimeMillis());
         taskToBeSkipped.setTaskType(workflowTask.getName());
         taskToBeSkipped.setCorrelationId(workflow.getCorrelationId());
         if (skipTaskRequest != null) {

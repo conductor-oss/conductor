@@ -97,4 +97,8 @@ public class Join extends WorkflowSystemTask {
         }
         return false;
     }
+
+    public boolean isAsync() {
+        return true;
+    }
 }

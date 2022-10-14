@@ -190,10 +190,8 @@ public class ExternalPayloadStorageUtils {
                         break;
                 }
             }
-        } catch (TransientException te) {
+        } catch (TransientException | TerminateWorkflowException te) {
             throw te;
-        } catch (TerminateWorkflowException twe) {
-            throw twe;
         } catch (Exception e) {
             LOGGER.error(
                     "Unable to upload payload to external storage for workflow: {}", workflowId, e);
@@ -223,7 +221,6 @@ public class ExternalPayloadStorageUtils {
         } else {
             task.setOutputData(new HashMap<>());
         }
-        throw new TerminateWorkflowException(errorMsg, WorkflowModel.Status.FAILED, task);
     }
 
     @VisibleForTesting

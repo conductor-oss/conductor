@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.StartWorkflowInput
+import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -32,6 +33,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
 
     @Autowired
     QueueDAO queueDAO
+
+    @Autowired
+    Join joinTask
 
     @Autowired
     SubWorkflow subWorkflowTask
@@ -94,6 +98,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         }
 
         when: "Poll and complete 'integration_task_2' and 'integration_task_3'"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("dynamicfanouttask_join").taskId
         def pollAndCompleteTask2Try = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker',
                 ['ok1': 'ov1'])
         def pollAndCompleteTask3Try = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker',
@@ -106,7 +111,10 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask3Try, ['k2': 'v2'])
 
-        and: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
+        when: "JOIN task is executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        then: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 6
@@ -281,6 +289,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         }
 
         when: "Poll and fail 'integration_task_2'"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("dynamicfanouttask_join").taskId
         def pollAndCompleteTask2Try1 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.worker', 'it is a failure..')
 
         and: "workflow is evaluated by the reconciler"
@@ -337,7 +346,10 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try2, ['k1': 'v1'])
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask3Try1, ['k2': 'v2'])
 
-        and: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
+        when: "JOIN task is polled and executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        then: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 8
@@ -433,6 +445,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         }
 
         when: "the subworkflow is started by issuing a system task call"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("dynamicfanouttask_join").taskId
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
         String subworkflowTaskId = polledTaskIds.get(0)
         asyncSystemTaskExecutor.execute(subWorkflowTask, subworkflowTaskId)
@@ -638,6 +651,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         when: "the workflow is evaluated"
         sweep(workflowInstanceId)
 
+        and: "JOIN task is executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
         then: "the workflow has progressed beyond the join task"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -738,6 +754,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         }
 
         when: "Poll and complete 'integration_task_2' and 'integration_task_3'"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("dynamicfanouttask_join").taskId
         def pollAndCompleteTask2Try = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
         def pollAndCompleteTask3Try = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task3.worker')
 
@@ -748,7 +765,10 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask2Try, ['k1': 'v1'])
         workflowTestUtil.verifyPolledAndAcknowledgedTask(pollAndCompleteTask3Try, ['k2': 'v2'])
 
-        and: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
+        when: "JOIN task is executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        then: "verify that the workflow has progressed and the 'integration_task_2' and 'integration_task_3' are complete"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 6
@@ -849,7 +869,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowDef.ownerEmail = 'test@harness.com'
 
         def startWorkflowInput = new StartWorkflowInput(name: workflowDef.name, version: workflowDef.version, workflowInput: workflowInput, workflowDefinition: workflowDef)
-        def workflowInstanceId = workflowExecutor.startWorkflow(startWorkflowInput)
+        def workflowInstanceId = startWorkflowOperation.execute(startWorkflowInput)
 
         then: "verify that workflow failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

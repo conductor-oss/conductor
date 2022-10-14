@@ -18,12 +18,17 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
 class ForkJoinSpec extends AbstractSpecification {
+
+    @Autowired
+    Join joinTask
 
     @Shared
     def FORK_JOIN_WF = 'FanInOutTest'
@@ -93,6 +98,7 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         when: "The first task of the fork is polled and completed"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("fanouttask_join").getTaskId()
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
@@ -139,7 +145,10 @@ class ForkJoinSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try1)
 
-        and: "The workflow has been updated with the task status and task list"
+        when: "JOIN task executed by the async executor"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        then: "The workflow has been updated with the task status and task list"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 6
@@ -265,6 +274,7 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         when: "The first task of the fork is polled and completed"
+        def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("fanouttask_join").getTaskId()
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_1', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_1' was polled and acknowledged"
@@ -344,13 +354,16 @@ class ForkJoinSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try2)
 
-        when: "The last task of the workflow is then polled and completed integration_task_0_RT_4'"
+        when: "JOIN task is polled and executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        and: "The last task of the workflow is then polled and completed integration_task_0_RT_4'"
         def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_4', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_4' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask4Try1)
 
-        and: "Then verify that the workflow is completed and the task list of execution is as expected"
+        then: "Then verify that the workflow is completed and the task list of execution is as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 8
@@ -407,6 +420,8 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
+        def outerJoinId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("join1").getTaskId()
+        def innerJoinId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("join2").getTaskId()
         def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker')
         def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker')
         def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker')
@@ -511,10 +526,14 @@ class ForkJoinSpec extends AbstractSpecification {
         and: "workflow is evaluated"
         sweep(workflowInstanceId)
 
-        then: "verify that tasks 'integration_task_20'polled and acknowledged"
+        then: "verify that task 'integration_task_20' is polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask20Try1)
 
-        and: "verify the state of the workflow"
+        when: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
+
+        then: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 13
@@ -585,6 +604,8 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
+        def outerJoinId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("join1").getTaskId()
+        def innerJoinId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("join2").getTaskId()
         def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker')
         def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker')
         def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker')
@@ -735,7 +756,11 @@ class ForkJoinSpec extends AbstractSpecification {
         then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask20Try1)
 
-        and: "verify that the integration_task_20 is completed and the next task is scheduled"
+        when: "JOIN tasks are executed"
+        asyncSystemTaskExecutor.execute(joinTask, innerJoinId)
+        asyncSystemTaskExecutor.execute(joinTask, outerJoinId)
+
+        then: "verify that the integration_task_20 is completed and the next task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 14
@@ -798,6 +823,7 @@ class ForkJoinSpec extends AbstractSpecification {
         asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId1)
         def subWorkflowTaskId2 = workflowWithScheduledSubWorkflows.getTaskByRefName('st2').taskId
         asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId2)
+        def joinTaskId = workflowWithScheduledSubWorkflows.getTaskByRefName("fanouttask_join").taskId
 
         then: "verify that the sub workflow tasks are in a IN PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -856,7 +882,10 @@ class ForkJoinSpec extends AbstractSpecification {
         }
         sweep(workflowInstanceId)
 
-        and: "verify that the workflow is in a COMPLETED state and the join task is also marked as COMPLETED_WITH_ERRORS"
+        when: "JOIN task is executed"
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+
+        then: "verify that the workflow is in a COMPLETED state and the join task is also marked as COMPLETED_WITH_ERRORS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 4
@@ -925,6 +954,7 @@ class ForkJoinSpec extends AbstractSpecification {
         when: "the subworkflow is started by issuing a system task call"
         def parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1').taskId
+        def jointaskId = parentWorkflow.getTaskByRefName("fanouttask_join").taskId
         asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
@@ -1061,7 +1091,10 @@ class ForkJoinSpec extends AbstractSpecification {
         then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndCompletedSimpleTask)
 
-        and: "verify that the workflow is in a COMPLETED state"
+        when: "JOIN task is executed"
+        asyncSystemTaskExecutor.execute(joinTask, jointaskId)
+
+        then: "verify that the workflow is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 5
