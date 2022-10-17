@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -65,15 +64,11 @@ public class StartWorkflowOperation implements WorkflowOperation<StartWorkflowIn
     }
 
     @Override
-    @PreAuthorize(
-            "hasPermission(#input, T(com.netflix.conductor.common.metadata.acl.Permission).OWNER)")
     public String execute(StartWorkflowInput input) {
         return startWorkflow(input);
     }
 
     @EventListener(WorkflowCreationEvent.class)
-    @PreAuthorize(
-            "hasPermission(#workflowCreationEvent.startWorkflowInput, T(com.netflix.conductor.common.metadata.acl.Permission).OWNER)")
     public void handleWorkflowCreationEvent(WorkflowCreationEvent workflowCreationEvent) {
         startWorkflow(workflowCreationEvent.getStartWorkflowInput());
     }
