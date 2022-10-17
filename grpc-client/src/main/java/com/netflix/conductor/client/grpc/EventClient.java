@@ -23,6 +23,7 @@ import com.netflix.conductor.proto.EventHandlerPb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import io.grpc.ManagedChannelBuilder;
 
 public class EventClient extends ClientBase {
 
@@ -30,6 +31,11 @@ public class EventClient extends ClientBase {
 
     public EventClient(String address, int port) {
         super(address, port);
+        this.stub = EventServiceGrpc.newBlockingStub(this.channel);
+    }
+
+    public EventClient(ManagedChannelBuilder<?> builder) {
+        super(builder);
         this.stub = EventServiceGrpc.newBlockingStub(this.channel);
     }
 

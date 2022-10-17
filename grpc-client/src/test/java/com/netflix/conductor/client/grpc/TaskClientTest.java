@@ -29,6 +29,8 @@ import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.proto.TaskSummaryPb;
 
+import io.grpc.ManagedChannelBuilder;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -131,5 +133,31 @@ public class TaskClientTest {
         SearchResult<Task> searchResult = taskClient.searchV2(1, 5, "*", "*", "test query");
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(task, searchResult.getResults().get(0));
+    }
+
+    @Test
+    public void testSearchWithChannelBuilder() {
+        TaskClient taskClient = createClientWithManagedChannel();
+        TaskSummary taskSummary = mock(TaskSummary.class);
+        TaskSummaryPb.TaskSummary taskSummaryPB = mock(TaskSummaryPb.TaskSummary.class);
+        when(mockedProtoMapper.fromProto(taskSummaryPB)).thenReturn(taskSummary);
+        TaskServicePb.TaskSummarySearchResult result =
+                TaskServicePb.TaskSummarySearchResult.newBuilder()
+                        .addResults(taskSummaryPB)
+                        .setTotalHits(1)
+                        .build();
+        SearchPb.Request searchRequest =
+                SearchPb.Request.newBuilder().setQuery("test query").build();
+        when(mockedStub.search(searchRequest)).thenReturn(result);
+        SearchResult<TaskSummary> searchResult = taskClient.search("test query");
+        assertEquals(1, searchResult.getTotalHits());
+        assertEquals(taskSummary, searchResult.getResults().get(0));
+    }
+
+    private TaskClient createClientWithManagedChannel() {
+        TaskClient taskClient = new TaskClient(ManagedChannelBuilder.forAddress("test", 0));
+        ReflectionTestUtils.setField(taskClient, "stub", mockedStub);
+        ReflectionTestUtils.setField(taskClient, "protoMapper", mockedProtoMapper);
+        return taskClient;
     }
 }

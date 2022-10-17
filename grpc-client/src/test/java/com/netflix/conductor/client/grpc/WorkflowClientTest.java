@@ -29,6 +29,8 @@ import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.proto.WorkflowSummaryPb;
 
+import io.grpc.ManagedChannelBuilder;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -134,5 +136,38 @@ public class WorkflowClientTest {
         SearchResult<Workflow> searchResult = workflowClient.searchV2(1, 5, "*", "*", "test query");
         assertEquals(1, searchResult.getTotalHits());
         assertEquals(workflow, searchResult.getResults().get(0));
+    }
+
+    @Test
+    public void testSearchV2WithParamsWithManagedChannel() {
+        WorkflowClient workflowClient = createClientWithManagedChannel();
+        Workflow workflow = mock(Workflow.class);
+        WorkflowPb.Workflow workflowPB = mock(WorkflowPb.Workflow.class);
+        when(mockedProtoMapper.fromProto(workflowPB)).thenReturn(workflow);
+        WorkflowServicePb.WorkflowSearchResult result =
+                WorkflowServicePb.WorkflowSearchResult.newBuilder()
+                        .addResults(workflowPB)
+                        .setTotalHits(1)
+                        .build();
+        SearchPb.Request searchRequest =
+                SearchPb.Request.newBuilder()
+                        .setStart(1)
+                        .setSize(5)
+                        .setSort("*")
+                        .setFreeText("*")
+                        .setQuery("test query")
+                        .build();
+        when(mockedStub.searchV2(searchRequest)).thenReturn(result);
+        SearchResult<Workflow> searchResult = workflowClient.searchV2(1, 5, "*", "*", "test query");
+        assertEquals(1, searchResult.getTotalHits());
+        assertEquals(workflow, searchResult.getResults().get(0));
+    }
+
+    public WorkflowClient createClientWithManagedChannel() {
+        WorkflowClient workflowClient =
+                new WorkflowClient(ManagedChannelBuilder.forAddress("test", 0));
+        ReflectionTestUtils.setField(workflowClient, "stub", mockedStub);
+        ReflectionTestUtils.setField(workflowClient, "protoMapper", mockedProtoMapper);
+        return workflowClient;
     }
 }

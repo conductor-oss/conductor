@@ -99,9 +99,25 @@ public class EventClientTest {
 
     @Test
     public void testUnregisterEventHandler() {
+        EventClient eventClient = createClientWithManagedChannel();
         EventServicePb.RemoveEventHandlerRequest request =
                 EventServicePb.RemoveEventHandlerRequest.newBuilder().setName("test").build();
         eventClient.unregisterEventHandler("test");
         verify(mockedStub, times(1)).removeEventHandler(request);
+    }
+
+    @Test
+    public void testUnregisterEventHandlerWithManagedChannel() {
+        EventServicePb.RemoveEventHandlerRequest request =
+                EventServicePb.RemoveEventHandlerRequest.newBuilder().setName("test").build();
+        eventClient.unregisterEventHandler("test");
+        verify(mockedStub, times(1)).removeEventHandler(request);
+    }
+
+    public EventClient createClientWithManagedChannel() {
+        EventClient eventClient = new EventClient("test", 0);
+        ReflectionTestUtils.setField(eventClient, "stub", mockedStub);
+        ReflectionTestUtils.setField(eventClient, "protoMapper", mockedProtoMapper);
+        return eventClient;
     }
 }

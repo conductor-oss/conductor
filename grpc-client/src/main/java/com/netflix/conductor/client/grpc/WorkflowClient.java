@@ -31,6 +31,7 @@ import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.WorkflowPb;
 
 import com.google.common.base.Preconditions;
+import io.grpc.ManagedChannelBuilder;
 
 public class WorkflowClient extends ClientBase {
 
@@ -38,6 +39,11 @@ public class WorkflowClient extends ClientBase {
 
     public WorkflowClient(String address, int port) {
         super(address, port);
+        this.stub = WorkflowServiceGrpc.newBlockingStub(this.channel);
+    }
+
+    public WorkflowClient(ManagedChannelBuilder<?> builder) {
+        super(builder);
         this.stub = WorkflowServiceGrpc.newBlockingStub(this.channel);
     }
 
