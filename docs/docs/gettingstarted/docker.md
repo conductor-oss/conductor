@@ -111,7 +111,10 @@ Go to [http://127.0.0.1:9090](http://127.0.0.1:9090).
 This image at `/docker/serverAndUI` is provided to illustrate starting both the server & UI within the same container. The UI is hosted using nginx.
 
 ### Building the combined image
-`docker build -t conductor:serverAndUI .`
+From the `docker` directory,
+```
+docker build -t conductor:serverAndUI -f serverAndUI/Dockerfile ../
+```
 
 ### Running the combined image
  - With interal DB: `docker run -p 8080:8080 -p 80:5000 -d -t conductor:serverAndUI`

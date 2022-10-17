@@ -44,8 +44,8 @@ LABEL maintainer="Netflix OSS <conductor@netflix.com>"
 RUN mkdir -p /app/config /app/logs /app/libs
 
 # Copy the compiled output to new image
-COPY --from=builder /conductor/docker/server/bin /app
-COPY --from=builder /conductor/docker/server/config /app/config
+COPY --from=builder /conductor/docker/serverAndUI/bin /app
+COPY --from=builder /conductor/docker/serverAndUI/config /app/config
 COPY --from=builder /conductor/server/build/libs/conductor-server-*-boot.jar /app/libs
 
 # Copy compiled UI assets to nginx www directory
