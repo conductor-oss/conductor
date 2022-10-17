@@ -7,8 +7,8 @@ sidebar_position: 1
 Conductor UI is a tool that we can leverage for debugging issues. Refer to the following articles to search and view
 your workflow execution.
 
-1. Searching Workflows (coming soon!)
-2. View Workflow Executions  (coming soon!)
+1. [Searching Workflows](/how-tos/Workflows/searching-workflows.html)
+2. [View Workflow Executions](/how-tos/Workflows/view-workflow-executions.html)
 
 
 ## Debugging Executions
