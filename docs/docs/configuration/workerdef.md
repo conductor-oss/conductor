@@ -3,7 +3,7 @@
 A worker is responsible for executing a task.  Operator and System tasks are handled by the Conductor server, while user 
 defined tasks needs to have a worker created that awaits the work to be scheduled by the server for it to be executed.
 Workers can be implemented in any language, and Conductor provides support for Java, Golang and Python worker framework that provides features such as 
-polling threads, metrics and server communication that makes creating workers each.
+polling threads, metrics and server communication that makes creating workers easy.
 
 Each worker embodies Microservice design pattern and follows certain basic principles:
 
