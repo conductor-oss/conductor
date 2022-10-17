@@ -86,12 +86,13 @@ public class ExecutionServiceTest {
 
     @Test
     public void workflowSearchTest() {
-        when(executionDAOFacade.searchWorkflows("query", "*", 0, 2, sort))
+        when(executionDAOFacade.searchWorkflowSummary("query", "*", 0, 2, sort))
                 .thenReturn(
                         new SearchResult<>(
                                 2,
                                 Arrays.asList(
-                                        workflow1.getWorkflowId(), workflow2.getWorkflowId())));
+                                        new WorkflowSummary(workflow1),
+                                        new WorkflowSummary(workflow2))));
         when(executionDAOFacade.getWorkflow(workflow1.getWorkflowId(), false))
                 .thenReturn(workflow1);
         when(executionDAOFacade.getWorkflow(workflow2.getWorkflowId(), false))
@@ -102,25 +103,6 @@ public class ExecutionServiceTest {
         assertEquals(2, searchResult.getResults().size());
         assertEquals(workflow1.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
         assertEquals(workflow2.getWorkflowId(), searchResult.getResults().get(1).getWorkflowId());
-    }
-
-    @Test
-    public void workflowSearchExceptionTest() {
-        when(executionDAOFacade.searchWorkflows("query", "*", 0, 2, sort))
-                .thenReturn(
-                        new SearchResult<>(
-                                2,
-                                Arrays.asList(
-                                        workflow1.getWorkflowId(), workflow2.getWorkflowId())));
-        when(executionDAOFacade.getWorkflow(workflow1.getWorkflowId(), false))
-                .thenReturn(workflow1);
-        when(executionDAOFacade.getWorkflow(workflow2.getWorkflowId(), false))
-                .thenThrow(new RuntimeException());
-        SearchResult<WorkflowSummary> searchResult =
-                executionService.search("query", "*", 0, 2, sort);
-        assertEquals(1, searchResult.getTotalHits());
-        assertEquals(1, searchResult.getResults().size());
-        assertEquals(workflow1.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
     }
 
     @Test
@@ -159,14 +141,13 @@ public class ExecutionServiceTest {
 
     @Test
     public void workflowSearchByTasksTest() {
-        when(executionDAOFacade.searchTasks("query", "*", 0, 2, sort))
+        when(executionDAOFacade.searchTaskSummary("query", "*", 0, 2, sort))
                 .thenReturn(
                         new SearchResult<>(
                                 2,
                                 Arrays.asList(
-                                        taskWorkflow1.getTaskId(), taskWorkflow2.getTaskId())));
-        when(executionDAOFacade.getTask(taskWorkflow1.getTaskId())).thenReturn(taskWorkflow1);
-        when(executionDAOFacade.getTask(taskWorkflow2.getTaskId())).thenReturn(taskWorkflow2);
+                                        new TaskSummary(taskWorkflow1),
+                                        new TaskSummary(taskWorkflow2))));
         when(executionDAOFacade.getWorkflow(workflow1.getWorkflowId(), false))
                 .thenReturn(workflow1);
         when(executionDAOFacade.getWorkflow(workflow2.getWorkflowId(), false))
@@ -181,17 +162,17 @@ public class ExecutionServiceTest {
 
     @Test
     public void workflowSearchByTasksExceptionTest() {
-        when(executionDAOFacade.searchTasks("query", "*", 0, 2, sort))
+        when(executionDAOFacade.searchTaskSummary("query", "*", 0, 2, sort))
                 .thenReturn(
                         new SearchResult<>(
                                 2,
                                 Arrays.asList(
-                                        taskWorkflow1.getTaskId(), taskWorkflow2.getTaskId())));
-        when(executionDAOFacade.getTask(taskWorkflow1.getTaskId())).thenReturn(taskWorkflow1);
-        when(executionDAOFacade.getTask(taskWorkflow2.getTaskId()))
-                .thenThrow(new RuntimeException());
+                                        new TaskSummary(taskWorkflow1),
+                                        new TaskSummary(taskWorkflow2))));
         when(executionDAOFacade.getWorkflow(workflow1.getWorkflowId(), false))
                 .thenReturn(workflow1);
+        when(executionDAOFacade.getTask(workflow2.getWorkflowId()))
+                .thenThrow(new RuntimeException());
         SearchResult<WorkflowSummary> searchResult =
                 executionService.searchWorkflowByTasks("query", "*", 0, 2, sort);
         assertEquals(1, searchResult.getTotalHits());
@@ -240,32 +221,16 @@ public class ExecutionServiceTest {
 
     @Test
     public void TaskSearchTest() {
-        List<String> taskList = Arrays.asList(taskWorkflow1.getTaskId(), taskWorkflow2.getTaskId());
-        when(executionDAOFacade.searchTasks("query", "*", 0, 2, sort))
+        List<TaskSummary> taskList =
+                Arrays.asList(new TaskSummary(taskWorkflow1), new TaskSummary(taskWorkflow2));
+        when(executionDAOFacade.searchTaskSummary("query", "*", 0, 2, sort))
                 .thenReturn(new SearchResult<>(2, taskList));
-        when(executionDAOFacade.getTask(taskWorkflow1.getTaskId())).thenReturn(taskWorkflow1);
-        when(executionDAOFacade.getTask(taskWorkflow2.getTaskId())).thenReturn(taskWorkflow2);
         SearchResult<TaskSummary> searchResult =
                 executionService.getSearchTasks("query", "*", 0, 2, "Sort");
         assertEquals(2, searchResult.getTotalHits());
         assertEquals(2, searchResult.getResults().size());
         assertEquals(taskWorkflow1.getTaskId(), searchResult.getResults().get(0).getTaskId());
         assertEquals(taskWorkflow2.getTaskId(), searchResult.getResults().get(1).getTaskId());
-    }
-
-    @Test
-    public void TaskSearchExceptionTest() {
-        List<String> taskList = Arrays.asList(taskWorkflow1.getTaskId(), taskWorkflow2.getTaskId());
-        when(executionDAOFacade.searchTasks("query", "*", 0, 2, sort))
-                .thenReturn(new SearchResult<>(2, taskList));
-        when(executionDAOFacade.getTask(taskWorkflow1.getTaskId())).thenReturn(taskWorkflow1);
-        when(executionDAOFacade.getTask(taskWorkflow2.getTaskId()))
-                .thenThrow(new RuntimeException());
-        SearchResult<TaskSummary> searchResult =
-                executionService.getSearchTasks("query", "*", 0, 2, "Sort");
-        assertEquals(1, searchResult.getTotalHits());
-        assertEquals(1, searchResult.getResults().size());
-        assertEquals(taskWorkflow1.getTaskId(), searchResult.getResults().get(0).getTaskId());
     }
 
     @Test

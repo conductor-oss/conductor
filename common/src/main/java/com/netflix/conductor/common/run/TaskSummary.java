@@ -439,7 +439,7 @@ public class TaskSummary {
                 && Objects.equals(getTaskDefName(), that.getTaskDefName())
                 && getTaskType().equals(that.getTaskType())
                 && getTaskId().equals(that.getTaskId())
-                && getDomain().equals(that.getDomain());
+                && Objects.equals(getDomain(), that.getDomain());
     }
 
     @Override

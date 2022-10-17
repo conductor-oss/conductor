@@ -56,7 +56,19 @@ public class NoopIndexDAO implements IndexDAO {
     }
 
     @Override
+    public SearchResult<WorkflowSummary> searchWorkflowSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return new SearchResult<>(0, Collections.emptyList());
+    }
+
+    @Override
     public SearchResult<String> searchTasks(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return new SearchResult<>(0, Collections.emptyList());
+    }
+
+    @Override
+    public SearchResult<TaskSummary> searchTaskSummary(
             String query, String freeText, int start, int count, List<String> sort) {
         return new SearchResult<>(0, Collections.emptyList());
     }

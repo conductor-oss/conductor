@@ -69,6 +69,7 @@ import com.netflix.conductor.es6.config.ElasticSearchProperties;
 import com.netflix.conductor.es6.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -657,7 +658,21 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     @Override
     public SearchResult<String> searchWorkflows(
             String query, String freeText, int start, int count, List<String> sort) {
-        return search(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
+        return search(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE, true, String.class);
+    }
+
+    @Override
+    public SearchResult<WorkflowSummary> searchWorkflowSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return search(
+                query,
+                start,
+                count,
+                sort,
+                freeText,
+                WORKFLOW_DOC_TYPE,
+                false,
+                WorkflowSummary.class);
     }
 
     @Override
@@ -668,7 +683,13 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     @Override
     public SearchResult<String> searchTasks(
             String query, String freeText, int start, int count, List<String> sort) {
-        return search(query, start, count, sort, freeText, TASK_DOC_TYPE);
+        return search(query, start, count, sort, freeText, TASK_DOC_TYPE, true, String.class);
+    }
+
+    @Override
+    public SearchResult<TaskSummary> searchTaskSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return search(query, start, count, sort, freeText, TASK_DOC_TYPE, false, TaskSummary.class);
     }
 
     @Override
@@ -776,13 +797,15 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         }
     }
 
-    private SearchResult<String> search(
+    private <T> SearchResult<T> search(
             String structuredQuery,
             int start,
             int size,
             List<String> sortOptions,
             String freeTextQuery,
-            String docType) {
+            String docType,
+            boolean idOnly,
+            Class<T> clazz) {
         try {
             docType = StringUtils.isBlank(docTypeOverride) ? docType : docTypeOverride;
             BoolQueryBuilder fq = boolQueryBuilder(structuredQuery, freeTextQuery);
@@ -791,13 +814,13 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                             .prepareSearch(getIndexName(docType))
                             .setQuery(fq)
                             .setTypes(docType)
-                            .storedFields("_id")
                             .setFrom(start)
                             .setSize(size);
-
+            if (idOnly) {
+                srb.storedFields("_id");
+            }
             addSortOptions(srb, sortOptions);
-
-            return mapSearchResult(srb.get());
+            return mapSearchResult(srb.get(), idOnly, clazz);
         } catch (ParserException e) {
             throw new TransientException(e.getMessage(), e);
         }
@@ -820,10 +843,34 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         }
     }
 
-    private SearchResult<String> mapSearchResult(SearchResponse response) {
-        List<String> result = new LinkedList<>();
-        response.getHits().forEach(hit -> result.add(hit.getId()));
-        long count = response.getHits().getTotalHits();
+    private <T> SearchResult<T> mapSearchResult(
+            SearchResponse response, boolean idOnly, Class<T> clazz) {
+        SearchHits searchHits = response.getHits();
+        long count = searchHits.getTotalHits();
+        List<T> result;
+        if (idOnly) {
+            result =
+                    Arrays.stream(searchHits.getHits())
+                            .map(hit -> clazz.cast(hit.getId()))
+                            .collect(Collectors.toList());
+        } else {
+            result =
+                    Arrays.stream(searchHits.getHits())
+                            .map(
+                                    hit -> {
+                                        try {
+                                            return objectMapper.readValue(
+                                                    hit.getSourceAsString(), clazz);
+                                        } catch (JsonProcessingException e) {
+                                            LOGGER.error(
+                                                    "Failed to de-serialize elasticsearch from source: {}",
+                                                    hit.getSourceAsString(),
+                                                    e);
+                                        }
+                                        return null;
+                                    })
+                            .collect(Collectors.toList());
+        }
         return new SearchResult<>(count, result);
     }
 
