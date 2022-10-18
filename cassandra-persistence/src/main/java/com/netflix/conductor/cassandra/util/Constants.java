@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.cassandra.util;
 
+import com.netflix.conductor.dao.ExecutionDAO.PayloadType;
+
 public interface Constants {
 
     String DAO_NAME = "cassandra";
@@ -53,8 +55,9 @@ public interface Constants {
     String MESSAGE_ID_KEY = "message_id";
     String EVENT_EXECUTION_ID_KEY = "event_execution_id";
 
-    String ENTITY_TYPE_WORKFLOW = "workflow";
-    String ENTITY_TYPE_TASK = "task";
+    String PAYLOAD_TYPE_METADATA = PayloadType.METADATA.toString();
+    String PAYLOAD_TYPE_INPUT = PayloadType.INPUT.toString();
+    String PAYLOAD_TYPE_OUTPUT = PayloadType.OUTPUT.toString();
 
     int DEFAULT_SHARD_ID = 1;
     int DEFAULT_TOTAL_PARTITIONS = 1;

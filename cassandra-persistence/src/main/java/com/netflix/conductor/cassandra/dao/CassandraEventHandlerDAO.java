@@ -131,7 +131,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
 
     private void insertOrUpdateEventHandler(EventHandler eventHandler) {
         try {
-            String handler = toJson(eventHandler);
+            String handler = toJsonString(eventHandler);
             session.execute(insertEventHandlerStatement.bind(eventHandler.getName(), handler));
             recordCassandraDaoRequests("storeEventHandler");
             recordCassandraDaoPayloadSize("storeEventHandler", handler.length(), "n/a", "n/a");

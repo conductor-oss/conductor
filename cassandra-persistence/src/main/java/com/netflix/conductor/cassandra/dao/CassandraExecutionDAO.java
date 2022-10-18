@@ -15,6 +15,7 @@ package com.netflix.conductor.cassandra.dao;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.dao.query.WorkflowQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
 
-    protected final PreparedStatement insertWorkflowStatement;
+    protected final PreparedStatement insertWorkflowDataStatement;
     protected final PreparedStatement insertTaskStatement;
     protected final PreparedStatement insertEventExecutionStatement;
 
@@ -59,7 +60,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement selectTasksFromTaskDefLimitStatement;
     protected final PreparedStatement selectEventExecutionsStatement;
 
-    protected final PreparedStatement updateWorkflowStatement;
+    protected final PreparedStatement updateWorkflowDataStatement;
     protected final PreparedStatement updateTotalTasksStatement;
     protected final PreparedStatement updateTotalPartitionsStatement;
     protected final PreparedStatement updateTaskLookupStatement;
@@ -83,8 +84,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
 
         eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTtl().getSeconds();
 
-        this.insertWorkflowStatement =
-                session.prepare(statements.getInsertWorkflowStatement())
+        this.insertWorkflowDataStatement =
+                session.prepare(statements.getInsertWorkflowDataStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.insertTaskStatement =
                 session.prepare(statements.getInsertTaskStatement())
@@ -117,8 +118,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                                         .getSelectAllEventExecutionsForMessageFromEventExecutionsStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
 
-        this.updateWorkflowStatement =
-                session.prepare(statements.getUpdateWorkflowStatement())
+        this.updateWorkflowDataStatement =
+                session.prepare(statements.getUpdateWorkflowDataStatement())
                         .setConsistencyLevel(properties.getWriteConsistencyLevel());
         this.updateTotalTasksStatement =
                 session.prepare(statements.getUpdateTotalTasksStatement())
@@ -154,22 +155,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     @Override
-    public List<TaskModel> getPendingTasksByWorkflow(String taskName, String workflowId) {
-        List<TaskModel> tasks = getTasksForWorkflow(workflowId);
-        return tasks.stream()
-                .filter(task -> taskName.equals(task.getTaskType()))
-                .filter(task -> TaskModel.Status.IN_PROGRESS.equals(task.getStatus()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * This is a dummy implementation and this feature is not implemented for Cassandra backed
-     * Conductor
-     */
-    @Override
-    public List<TaskModel> getTasks(String taskType, String startKey, int count) {
-        throw new UnsupportedOperationException(
-                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+    public List<TaskModel> getPendingTasksForWorkflow(String workflowId) {
+        // TODO: implement
+       return null;
     }
 
     /**
@@ -189,22 +177,14 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             int totalTasks = workflowMetadata.getTotalTasks() + tasks.size();
             // TODO: write into multiple shards based on number of tasks
 
-            // update the task_lookup table
+            // update all the tasks in the workflow using batch
+            BatchStatement batchStatement = new BatchStatement();
             tasks.forEach(
                     task -> {
                         if (task.getScheduledTime() == 0) {
                             task.setScheduledTime(System.currentTimeMillis());
                         }
-                        session.execute(
-                                updateTaskLookupStatement.bind(
-                                        workflowUUID, toUUID(task.getTaskId(), "Invalid task id")));
-                    });
-
-            // update all the tasks in the workflow using batch
-            BatchStatement batchStatement = new BatchStatement();
-            tasks.forEach(
-                    task -> {
-                        String taskPayload = toJson(task);
+                        String taskPayload = toJsonString(task);
                         batchStatement.add(
                                 insertTaskStatement.bind(
                                         workflowUUID,
@@ -243,7 +223,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     public void updateTask(TaskModel task) {
         try {
             // TODO: calculate the shard number the task belongs to
-            String taskPayload = toJson(task);
+            String taskPayload = toJsonString(task);
             recordCassandraDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
             recordCassandraDaoPayloadSize(
                     "updateTask", taskPayload.length(), task.getTaskType(), task.getWorkflowType());
@@ -396,21 +376,35 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     @Override
-    public String createWorkflow(WorkflowModel workflow) {
+    public void createWorkflow(WorkflowModel workflow) {
         try {
             List<TaskModel> tasks = workflow.getTasks();
             workflow.setTasks(new LinkedList<>());
-            String payload = toJson(workflow);
+            Map<String, Object> inputPayload = workflow.getInput();
+            Map<String, Object> outputPayload = workflow.getOutput();
+            workflow.setInput(new HashMap<>());
+            workflow.setOutput(new HashMap<>());
+
+            String metadata = toJsonString(workflow);
+            String input = toJsonString(inputPayload);
+            String output = toJsonString(outputPayload);
 
             recordCassandraDaoRequests("createWorkflow", "n/a", workflow.getWorkflowName());
-            recordCassandraDaoPayloadSize(
-                    "createWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
-            session.execute(
-                    insertWorkflowStatement.bind(
-                            UUID.fromString(workflow.getWorkflowId()), 1, "", payload, 0, 1));
+            // TODO: add payload size metrics
+//            recordCassandraDaoPayloadSize(
+//                    "createWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
+            BatchStatement batchStatement = new BatchStatement();
+            batchStatement.add(insertWorkflowDataStatement.bind(
+                    UUID.fromString(workflow.getWorkflowId()), PAYLOAD_TYPE_METADATA, metadata));
+            batchStatement.add(insertWorkflowDataStatement.bind(
+                    UUID.fromString(workflow.getWorkflowId()), PAYLOAD_TYPE_INPUT, input));
+            batchStatement.add(insertWorkflowDataStatement.bind(
+                    UUID.fromString(workflow.getWorkflowId()), PAYLOAD_TYPE_OUTPUT, output));
+            session.execute(batchStatement);
 
             workflow.setTasks(tasks);
-            return workflow.getWorkflowId();
+            workflow.setInput(inputPayload);
+            workflow.setOutput(outputPayload);
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "createWorkflow");
             String errorMsg =
@@ -421,23 +415,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     @Override
-    public String updateWorkflow(WorkflowModel workflow) {
+    public void updateWorkflowData(WorkflowQuery workflowQuery) {
         try {
-            List<TaskModel> tasks = workflow.getTasks();
-            workflow.setTasks(new LinkedList<>());
-            String payload = toJson(workflow);
-            recordCassandraDaoRequests("updateWorkflow", "n/a", workflow.getWorkflowName());
-            recordCassandraDaoPayloadSize(
-                    "updateWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
-            session.execute(
-                    updateWorkflowStatement.bind(
-                            payload, UUID.fromString(workflow.getWorkflowId())));
-            workflow.setTasks(tasks);
-            return workflow.getWorkflowId();
+            //TODO: metrics
+
+
         } catch (DriverException e) {
-            Monitors.error(CLASS_NAME, "updateWorkflow");
+            Monitors.error(CLASS_NAME, "updateWorkflowData");
             String errorMsg =
-                    String.format("Failed to update workflow: %s", workflow.getWorkflowId());
+                    String.format("Failed to update workflow data: %s, %s", workflowQuery.getWorkflowId(), workflowQuery.getPayloadType().toString());
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg);
         }
@@ -625,7 +611,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     @Override
     public boolean addEventExecution(EventExecution eventExecution) {
         try {
-            String jsonPayload = toJson(eventExecution);
+            String jsonPayload = toJsonString(eventExecution);
             recordCassandraDaoEventRequests("addEventExecution", eventExecution.getEvent());
             recordCassandraDaoPayloadSize(
                     "addEventExecution", jsonPayload.length(), eventExecution.getEvent(), "n/a");
@@ -650,7 +636,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     @Override
     public void updateEventExecution(EventExecution eventExecution) {
         try {
-            String jsonPayload = toJson(eventExecution);
+            String jsonPayload = toJsonString(eventExecution);
             recordCassandraDaoEventRequests("updateEventExecution", eventExecution.getEvent());
             recordCassandraDaoPayloadSize(
                     "updateEventExecution", jsonPayload.length(), eventExecution.getEvent(), "n/a");
@@ -814,7 +800,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
         tasks.forEach(
                 task -> {
                     Preconditions.checkNotNull(task, "task object cannot be null");
-                    Preconditions.checkNotNull(task.getTaskId(), "Task id cannot be null");
+                    Preconditions.checkArgument(!task.getTaskId().isBlank(), "task id must be blank");
                     Preconditions.checkNotNull(
                             task.getWorkflowInstanceId(), "Workflow instance id cannot be null");
                     Preconditions.checkNotNull(

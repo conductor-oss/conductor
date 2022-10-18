@@ -14,41 +14,12 @@ package com.netflix.conductor.cassandra.util;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_TASK;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_TYPE_WORKFLOW;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_EXECUTION_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_VALUE;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KEY;
+import javax.management.Query;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
+import static com.netflix.conductor.cassandra.util.Constants.*;
 
 /**
  * DML statements
@@ -81,6 +52,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
  * <em>ExecutionDAO</em>
  *
  * <ul>
+ *   <li>INSERT INTO conductor.workflow_data (workflow_id,payload_type,payload) VALUES (?,?,?);
  *   <li>INSERT INTO conductor.workflows
  *       (workflow_id,shard_id,task_id,entity,payload,total_tasks,total_partitions) VALUES
  *       (?,?,?,'workflow',?,?,?);
@@ -290,17 +262,13 @@ public class Statements {
     // Insert Statements
 
     /**
-     * @return cql query statement to insert a new workflow into the "workflows" table
+     * @return cql query statement to insert data into the "workflow_data" table
      */
-    public String getInsertWorkflowStatement() {
-        return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOWS)
+    public String getInsertWorkflowDataStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOW_DATA)
                 .value(WORKFLOW_ID_KEY, bindMarker())
-                .value(SHARD_ID_KEY, bindMarker())
-                .value(TASK_ID_KEY, bindMarker())
-                .value(ENTITY_KEY, ENTITY_TYPE_WORKFLOW)
+                .value(PAYLOAD_TYPE_KEY, bindMarker())
                 .value(PAYLOAD_KEY, bindMarker())
-                .value(TOTAL_TASKS_KEY, bindMarker())
-                .value(TOTAL_PARTITIONS_KEY, bindMarker())
                 .getQueryString();
     }
 
@@ -421,15 +389,13 @@ public class Statements {
     // Update Statements
 
     /**
-     * @return cql query statement to update a workflow in the "workflows" table
+     * @return cql query statement to update data for a workflow in the "workflow_data" table
      */
-    public String getUpdateWorkflowStatement() {
-        return QueryBuilder.update(keyspace, TABLE_WORKFLOWS)
+    public String getUpdateWorkflowDataStatement() {
+        return QueryBuilder.update(keyspace, TABLE_WORKFLOW_DATA)
                 .with(set(PAYLOAD_KEY, bindMarker()))
                 .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, 1))
-                .and(eq(ENTITY_KEY, ENTITY_TYPE_WORKFLOW))
-                .and(eq(TASK_ID_KEY, ""))
+                .and(eq(PAYLOAD_TYPE_KEY, bindMarker()))
                 .getQueryString();
     }
 

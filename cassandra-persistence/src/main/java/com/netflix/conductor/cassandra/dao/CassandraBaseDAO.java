@@ -49,9 +49,6 @@ import static com.netflix.conductor.cassandra.util.Constants.*;
  * task_id timeuuid, payload_type text, payload text, PRIMARY KEY((worklow_id, task_ref_name),
  * task_id, payload_type) );
  *
- * <p>CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid,
- * workflow_id uuid, PRIMARY KEY ((task_def_name), task_id_key) );
- *
  * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_definitions( workflow_def_name text, version
  * int, workflow_definition text, PRIMARY KEY ((workflow_def_name), version) );
  *
@@ -101,7 +98,6 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateWorkflowDataStatement());
                 session.execute(getCreateTasksByWorkflowStatement());
                 session.execute(getCreateTaskPayloadsStatement());
-                session.execute(getCreateTaskDefLimitTableStatement());
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
@@ -166,15 +162,6 @@ public abstract class CassandraBaseDAO {
                 .getQueryString();
     }
 
-    private String getCreateTaskDefLimitTableStatement() {
-        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_DEF_LIMIT)
-                .ifNotExists()
-                .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
-                .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
-                .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
-                .getQueryString();
-    }
-
     private String getCreateWorkflowDefsTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DEFS)
                 .ifNotExists()
@@ -221,7 +208,7 @@ public abstract class CassandraBaseDAO {
                 .getQueryString();
     }
 
-    String toJson(Object value) {
+    String toJsonString(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {

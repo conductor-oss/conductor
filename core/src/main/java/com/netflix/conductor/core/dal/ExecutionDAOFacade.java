@@ -213,20 +213,20 @@ public class ExecutionDAOFacade {
 
     public WorkflowModel getWorkflowMetadata(String workflowId) {
         WorkflowQuery workflowQuery =
-                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.METADATA).build();
-        return executionDAO.getWorkflowPayload(workflowQuery).getWorkflowModel();
+                new WorkflowQuery.Builder(workflowId, PayloadType.METADATA).build();
+        return executionDAO.getWorkflowData(workflowQuery).getWorkflowModel();
     }
 
     public Map<String, Object> getWorkflowInput(String workflowId) {
         WorkflowQuery workflowQuery =
-                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.INPUT).build();
-        return executionDAO.getWorkflowPayload(workflowQuery).getPayload();
+                new WorkflowQuery.Builder(workflowId, PayloadType.INPUT).build();
+        return executionDAO.getWorkflowData(workflowQuery).getPayload();
     }
 
     public Map<String, Object> getWorkflowOutput(String workflowId) {
         WorkflowQuery workflowQuery =
-                new WorkflowQuery.Builder(workflowId).withPayloadType(PayloadType.OUTPUT).build();
-        return executionDAO.getWorkflowPayload(workflowQuery).getPayload();
+                new WorkflowQuery.Builder(workflowId, PayloadType.OUTPUT).build();
+        return executionDAO.getWorkflowData(workflowQuery).getPayload();
     }
 
     /**
@@ -567,12 +567,6 @@ public class ExecutionDAOFacade {
                         .withTaskId(taskId)
                         .build();
         return executionDAO.getTaskPayload(taskQuery).getPayload();
-    }
-
-    public List<Task> getTasksByName(String taskName, String startKey, int count) {
-        return executionDAO.getTasks(taskName, startKey, count).stream()
-                .map(TaskModel::toTask)
-                .collect(Collectors.toList());
     }
 
     public List<Task> getPendingTasksForTaskType(String taskType) {

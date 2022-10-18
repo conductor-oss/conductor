@@ -154,7 +154,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     @Override
     public void createWorkflowDef(WorkflowDef workflowDef) {
         try {
-            String workflowDefinition = toJson(workflowDef);
+            String workflowDefinition = toJsonString(workflowDef);
             if (!session.execute(
                             insertWorkflowDefStatement.bind(
                                     workflowDef.getName(),
@@ -187,7 +187,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     @Override
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         try {
-            String workflowDefinition = toJson(workflowDef);
+            String workflowDefinition = toJsonString(workflowDef);
             session.execute(
                     updateWorkflowDefStatement.bind(
                             workflowDefinition, workflowDef.getName(), workflowDef.getVersion()));
@@ -350,7 +350,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     private TaskDef insertOrUpdateTaskDef(TaskDef taskDef) {
         try {
-            String taskDefinition = toJson(taskDef);
+            String taskDefinition = toJsonString(taskDef);
             session.execute(insertTaskDefStatement.bind(taskDef.getName(), taskDefinition));
             recordCassandraDaoRequests("storeTaskDef");
             recordCassandraDaoPayloadSize(

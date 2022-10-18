@@ -33,19 +33,10 @@ public interface ExecutionDAO {
     }
 
     /**
-     * @param taskName Name of the task
      * @param workflowId Workflow instance id
      * @return List of pending tasks (in_progress)
      */
-    List<TaskModel> getPendingTasksByWorkflow(String taskName, String workflowId);
-
-    /**
-     * @param taskType Type of task
-     * @param startKey start
-     * @param count number of tasks to return
-     * @return List of tasks starting from startKey
-     */
-    List<TaskModel> getTasks(String taskType, String startKey, int count);
+    List<TaskModel> getPendingTasksForWorkflow(String workflowId);
 
     /**
      * @param tasks tasks to be created
@@ -114,15 +105,10 @@ public interface ExecutionDAO {
 
     /**
      * @param workflow Workflow to be created
-     * @return Id of the newly created workflow
      */
-    String createWorkflow(WorkflowModel workflow);
+    void createWorkflow(WorkflowModel workflow);
 
-    /**
-     * @param workflow Workflow to be updated
-     * @return Id of the updated workflow
-     */
-    String updateWorkflow(WorkflowModel workflow);
+    void updateWorkflowData(WorkflowQuery workflowQuery);
 
     /**
      * @param workflowId workflow instance id
@@ -151,7 +137,7 @@ public interface ExecutionDAO {
      */
     WorkflowModel getWorkflow(String workflowId);
 
-    default WorkflowResponse getWorkflowPayload(WorkflowQuery workflowQuery) {
+    default WorkflowResponse getWorkflowData(WorkflowQuery workflowQuery) {
         return null;
     }
 
