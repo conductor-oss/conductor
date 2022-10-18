@@ -29,36 +29,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import static com.netflix.conductor.cassandra.util.Constants.DAO_NAME;
-import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_EXECUTION_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
-import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEFS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEFINITION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_INDEX_VALUE;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_ID_KEY;
-import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.*;
 
 /**
  * Creates the keyspace and tables.
@@ -66,12 +37,17 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  * <p>CREATE KEYSPACE IF NOT EXISTS conductor WITH replication = { 'class' :
  * 'NetworkTopologyStrategy', 'us-east': '3'};
  *
- * <p>CREATE TABLE IF NOT EXISTS conductor.workflows ( workflow_id uuid, shard_id int, task_id text,
- * entity text, payload text, total_tasks int STATIC, total_partitions int STATIC, PRIMARY
- * KEY((workflow_id, shard_id), entity, task_id) );
+ * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_data ( workflow_id uuid, payload_type text,
+ * payload text, PRIMARY KEY(workflow_id) );
  *
- * <p>CREATE TABLE IF NOT EXISTS conductor.task_lookup( task_id uuid, workflow_id uuid, PRIMARY KEY
- * (task_id) );
+ * <p>CREATE TABLE IF NOT EXISTS conductor.tasks_by_workflow ( workflow_id uuid, shard_id int,
+ * evaluation_status text, task_ref_name text, task_id timeuuid, status text, metadata text,
+ * total_tasks int STATIC, total_partitions int STATIC, PRIMARY KEY((workflow_id, shard_id,
+ * evaluation_status), task_ref_name, task_id) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_payloads ( workflow_id uuid, task_ref_name text,
+ * task_id timeuuid, payload_type text, payload text, PRIMARY KEY((worklow_id, task_ref_name),
+ * task_id, payload_type) );
  *
  * <p>CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid,
  * workflow_id uuid, PRIMARY KEY ((task_def_name), task_id_key) );
@@ -96,11 +72,9 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
 public abstract class CassandraBaseDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraBaseDAO.class);
-
-    private final ObjectMapper objectMapper;
     protected final Session session;
     protected final CassandraProperties properties;
-
+    private final ObjectMapper objectMapper;
     private boolean initialized = false;
 
     public CassandraBaseDAO(
@@ -124,8 +98,9 @@ public abstract class CassandraBaseDAO {
         try {
             if (!initialized) {
                 session.execute(getCreateKeyspaceStatement());
-                session.execute(getCreateWorkflowsTableStatement());
-                session.execute(getCreateTaskLookupTableStatement());
+                session.execute(getCreateWorkflowDataStatement());
+                session.execute(getCreateTasksByWorkflowStatement());
+                session.execute(getCreateTaskPayloadsStatement());
                 session.execute(getCreateTaskDefLimitTableStatement());
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
@@ -156,24 +131,38 @@ public abstract class CassandraBaseDAO {
                 .getQueryString();
     }
 
-    private String getCreateWorkflowsTableStatement() {
-        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOWS)
+    private String getCreateWorkflowDataStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DATA)
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
+                .addClusteringColumn(PAYLOAD_TYPE_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    private String getCreateTasksByWorkflowStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASKS_BY_WORKFLOW)
                 .ifNotExists()
                 .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
                 .addPartitionKey(SHARD_ID_KEY, DataType.cint())
-                .addClusteringColumn(ENTITY_KEY, DataType.text())
-                .addClusteringColumn(TASK_ID_KEY, DataType.text())
-                .addColumn(PAYLOAD_KEY, DataType.text())
+                .addPartitionKey(EVALUATION_STATUS_KEY, DataType.text())
+                .addClusteringColumn(TASK_REF_NAME_KEY, DataType.text())
+                .addClusteringColumn(TASK_ID_KEY, DataType.timeuuid())
+                .addColumn(STATUS_KEY, DataType.text())
+                .addColumn(METADATA_KEY, DataType.text())
                 .addStaticColumn(TOTAL_TASKS_KEY, DataType.cint())
                 .addStaticColumn(TOTAL_PARTITIONS_KEY, DataType.cint())
                 .getQueryString();
     }
 
-    private String getCreateTaskLookupTableStatement() {
-        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_LOOKUP)
+    private String getCreateTaskPayloadsStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_PAYLOADS)
                 .ifNotExists()
-                .addPartitionKey(TASK_ID_KEY, DataType.uuid())
-                .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
+                .addPartitionKey(TASK_REF_NAME_KEY, DataType.text())
+                .addClusteringColumn(TASK_ID_KEY, DataType.timeuuid())
+                .addClusteringColumn(PAYLOAD_TYPE_KEY, DataType.text())
+                .addColumn(PAYLOAD_KEY, DataType.text())
                 .getQueryString();
     }
 

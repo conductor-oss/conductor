@@ -15,8 +15,9 @@ package com.netflix.conductor.cassandra.util;
 public interface Constants {
 
     String DAO_NAME = "cassandra";
-
-    String TABLE_WORKFLOWS = "workflows";
+    String TABLE_WORKFLOW_DATA = "workflow_data";
+    String TABLE_TASKS_BY_WORKFLOW = "tasks_by_workflow";
+    String TABLE_TASK_PAYLOADS = "task_payloads";
     String TABLE_TASK_LOOKUP = "task_lookup";
     String TABLE_TASK_DEF_LIMIT = "task_def_limit";
     String TABLE_WORKFLOW_DEFS = "workflow_definitions";
@@ -29,7 +30,12 @@ public interface Constants {
     String SHARD_ID_KEY = "shard_id";
     String TASK_ID_KEY = "task_id";
     String ENTITY_KEY = "entity";
+    String PAYLOAD_TYPE_KEY = "payload_type";
     String PAYLOAD_KEY = "payload";
+    String EVALUATION_STATUS_KEY = "evaluation_status";
+    String TASK_REF_NAME_KEY = "task_ref_name";
+    String STATUS_KEY = "status";
+    String METADATA_KEY = "metadata";
     String TOTAL_TASKS_KEY = "total_tasks";
     String TOTAL_PARTITIONS_KEY = "total_partitions";
     String TASK_DEF_NAME_KEY = "task_def_name";
