@@ -86,7 +86,7 @@ nav:
       - Extending Conductor: extend.md
       - Annotation Processor: reference-docs/annotation-processor.md
       - Archival of Workflows: reference-docs/archival-of-workflows.md
-      - Azure Blog Storage: reference-docs/azureblob-storage.md
+      - Azure Blob Storage: reference-docs/azureblob-storage.md
       - External Payload Storage: externalpayloadstorage.md
       - Redis: reference-docs/redis.md
     - SDKs:
