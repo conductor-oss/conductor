@@ -15,7 +15,7 @@ buildscript {
 }
 
 plugins {
-    id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+    id 'io.spring.dependency-management' version '1.1.0'
     id 'java'
     id 'application'
     id 'jacoco'
