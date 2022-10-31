@@ -95,6 +95,10 @@ public interface Worker {
         return PropertyFactory.getBoolean(getTaskDefName(), "leaseExtendEnabled", false);
     }
 
+    default int getBatchPollTimeoutInMS() {
+        return PropertyFactory.getInteger(getTaskDefName(), "batchPollTimeoutInMS", 1000);
+    }
+
     static Worker create(String taskType, Function<Task, TaskResult> executor) {
         return new Worker() {
 

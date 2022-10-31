@@ -31,21 +31,10 @@ class PollingSemaphore {
         semaphore = new Semaphore(numSlots);
     }
 
-    /**
-     * Signals if polling is allowed based on whether a permit can be acquired.
-     *
-     * @return {@code true} - if permit is acquired {@code false} - if permit could not be acquired
-     */
-    boolean canPoll() {
-        boolean acquired = semaphore.tryAcquire();
-        LOGGER.debug("Trying to acquire permit: {}", acquired);
-        return acquired;
-    }
-
-    /** Signals that processing is complete and the permit can be released. */
-    void complete() {
+    /** Signals that processing is complete and the specified number of permits can be released. */
+    void complete(int numSlots) {
         LOGGER.debug("Completed execution; releasing permit");
-        semaphore.release();
+        semaphore.release(numSlots);
     }
 
     /**
@@ -53,9 +42,22 @@ class PollingSemaphore {
      *
      * @return number of available permits
      */
-    int availableThreads() {
+    int availableSlots() {
         int available = semaphore.availablePermits();
         LOGGER.debug("Number of available permits: {}", available);
         return available;
+    }
+
+    /**
+     * Signals if processing is allowed based on whether specified number of permits can be
+     * acquired.
+     *
+     * @param numSlots the number of permits to acquire
+     * @return {@code true} - if permit is acquired {@code false} - if permit could not be acquired
+     */
+    public boolean acquireSlots(int numSlots) {
+        boolean acquired = semaphore.tryAcquire(numSlots);
+        LOGGER.debug("Trying to acquire {} permit: {}", numSlots, acquired);
+        return acquired;
     }
 }
