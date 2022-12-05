@@ -23,6 +23,9 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.1"
         },
@@ -37,6 +40,9 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.1"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
         }
     },
     "runtimeClasspath": {
@@ -127,6 +133,9 @@
             ],
             "locked": "2.7"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -179,6 +188,9 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.17.1"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [

@@ -9,6 +9,8 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
     implementation "cglib:cglib:3.3.0"
     implementation "com.sun.jersey:jersey-client:${revJersey}"
+    implementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
+    implementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
 
     testImplementation "org.springframework:spring-web"
     testImplementation "org.spockframework:spock-core:${revSpock}"
@@ -18,8 +20,7 @@ dependencies {
     testImplementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
-    testImplementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
-    testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
+
 }
 
 test {
