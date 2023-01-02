@@ -35,6 +35,8 @@ public class AnnotatedWorkerExecutor {
 
     private Map<String, Method> workerExecutors = new HashMap<>();
 
+    private Map<String, Integer> workerToThreadCount = new HashMap<>();
+
     private Map<String, Object> workerClassObjs = new HashMap<>();
 
     private static Set<String> scannedPackages = new HashSet<>();
@@ -131,7 +133,9 @@ public class AnnotatedWorkerExecutor {
                 continue;
             }
             String name = annotation.value();
+            int threadCount = annotation.threadCount();
             workerExecutors.put(name, method);
+            workerToThreadCount.put(name, threadCount);
             workerClassObjs.put(name, obj);
             LOGGER.info("Adding worker for task {}, method {}", name, method);
         }
@@ -151,9 +155,11 @@ public class AnnotatedWorkerExecutor {
             return;
         }
 
+        LOGGER.info("Starting workers with threadCount {}", workerToThreadCount);
+
         taskRunner =
                 new TaskRunnerConfigurer.Builder(taskClient, executors)
-                        .withThreadCount(executors.size())
+                        .withTaskThreadCount(workerToThreadCount)
                         .build();
 
         taskRunner.init();
