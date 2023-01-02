@@ -19,8 +19,14 @@ services:
       retries: 12
     links:
       - elasticsearch:es
+      - redis:rs
+      - rabbitmq:amqp
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -43,8 +49,17 @@ services:
       - conductor-server
     stdin_open: true
 
+  redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+
   elasticsearch:
-    image: elasticsearch:6.8.15
+    image: elasticsearch:7.17.6
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
       - transport.host=0.0.0.0
@@ -67,6 +82,24 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    volumes:
+      - ./.docker/rabbitmq/etc/:/etc/rabbitmq/
+      - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - 5672:5672
+      - 15672:15672
 
 volumes:
   esdata-conductor:
