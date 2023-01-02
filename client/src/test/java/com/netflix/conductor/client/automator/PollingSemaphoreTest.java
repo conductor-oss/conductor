@@ -39,7 +39,8 @@ public class PollingSemaphoreTest {
                         t ->
                                 futuresList.add(
                                         CompletableFuture.runAsync(
-                                                pollingSemaphore::canPoll, executorService)));
+                                                () -> pollingSemaphore.acquireSlots(1),
+                                                executorService)));
 
         CompletableFuture<Void> allFutures =
                 CompletableFuture.allOf(
@@ -47,8 +48,8 @@ public class PollingSemaphoreTest {
 
         allFutures.get();
 
-        assertEquals(0, pollingSemaphore.availableThreads());
-        assertFalse(pollingSemaphore.canPoll());
+        assertEquals(0, pollingSemaphore.availableSlots());
+        assertFalse(pollingSemaphore.acquireSlots(1));
 
         executorService.shutdown();
     }
@@ -65,18 +66,19 @@ public class PollingSemaphoreTest {
                         t ->
                                 futuresList.add(
                                         CompletableFuture.runAsync(
-                                                pollingSemaphore::canPoll, executorService)));
+                                                () -> pollingSemaphore.acquireSlots(1),
+                                                executorService)));
 
         CompletableFuture<Void> allFutures =
                 CompletableFuture.allOf(
                         futuresList.toArray(new CompletableFuture[futuresList.size()]));
         allFutures.get();
 
-        assertEquals(0, pollingSemaphore.availableThreads());
-        pollingSemaphore.complete();
+        assertEquals(0, pollingSemaphore.availableSlots());
+        pollingSemaphore.complete(1);
 
-        assertTrue(pollingSemaphore.availableThreads() > 0);
-        assertTrue(pollingSemaphore.canPoll());
+        assertTrue(pollingSemaphore.availableSlots() > 0);
+        assertTrue(pollingSemaphore.acquireSlots(1));
 
         executorService.shutdown();
     }

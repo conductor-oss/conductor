@@ -384,28 +384,7 @@ public class ExecutionService {
 
     public SearchResult<WorkflowSummary> search(
             String query, String freeText, int start, int size, List<String> sortOptions) {
-
-        SearchResult<String> result =
-                executionDAOFacade.searchWorkflows(query, freeText, start, size, sortOptions);
-        List<WorkflowSummary> workflows =
-                result.getResults().stream()
-                        .parallel()
-                        .map(
-                                workflowId -> {
-                                    try {
-                                        return new WorkflowSummary(
-                                                executionDAOFacade.getWorkflow(workflowId, false));
-                                    } catch (Exception e) {
-                                        LOGGER.error(
-                                                "Error fetching workflow by id: {}", workflowId, e);
-                                        return null;
-                                    }
-                                })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-        int missing = result.getResults().size() - workflows.size();
-        long totalHits = result.getTotalHits() - missing;
-        return new SearchResult<>(totalHits, workflows);
+        return executionDAOFacade.searchWorkflowSummary(query, freeText, start, size, sortOptions);
     }
 
     public SearchResult<Workflow> searchV2(
@@ -436,7 +415,7 @@ public class ExecutionService {
     public SearchResult<WorkflowSummary> searchWorkflowByTasks(
             String query, String freeText, int start, int size, List<String> sortOptions) {
         SearchResult<TaskSummary> taskSummarySearchResult =
-                searchTasks(query, freeText, start, size, sortOptions);
+                searchTaskSummary(query, freeText, start, size, sortOptions);
         List<WorkflowSummary> workflowSummaries =
                 taskSummarySearchResult.getResults().stream()
                         .parallel()
@@ -514,6 +493,11 @@ public class ExecutionService {
         return new SearchResult<>(totalHits, workflows);
     }
 
+    public SearchResult<TaskSummary> searchTaskSummary(
+            String query, String freeText, int start, int size, List<String> sortOptions) {
+        return executionDAOFacade.searchTaskSummary(query, freeText, start, size, sortOptions);
+    }
+
     public SearchResult<TaskSummary> getSearchTasks(
             String query,
             String freeText,
@@ -521,7 +505,8 @@ public class ExecutionService {
             /*@Max(value = MAX_SEARCH_SIZE, message = "Cannot return more than {value} workflows." +
             " Please use pagination.")*/ int size,
             String sortString) {
-        return searchTasks(query, freeText, start, size, Utils.convertStringToList(sortString));
+        return searchTaskSummary(
+                query, freeText, start, size, Utils.convertStringToList(sortString));
     }
 
     public SearchResult<Task> getSearchTasksV2(

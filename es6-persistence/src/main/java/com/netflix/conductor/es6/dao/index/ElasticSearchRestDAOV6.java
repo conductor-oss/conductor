@@ -51,6 +51,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -723,8 +724,26 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     public SearchResult<String> searchWorkflows(
             String query, String freeText, int start, int count, List<String> sort) {
         try {
-            return searchObjectIdsViaExpression(
-                    query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
+            return searchObjectsViaExpression(
+                    query, start, count, sort, freeText, WORKFLOW_DOC_TYPE, true, String.class);
+        } catch (Exception e) {
+            throw new TransientException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public SearchResult<WorkflowSummary> searchWorkflowSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        try {
+            return searchObjectsViaExpression(
+                    query,
+                    start,
+                    count,
+                    sort,
+                    freeText,
+                    WORKFLOW_DOC_TYPE,
+                    false,
+                    WorkflowSummary.class);
         } catch (Exception e) {
             throw new TransientException(e.getMessage(), e);
         }
@@ -734,7 +753,19 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     public SearchResult<String> searchTasks(
             String query, String freeText, int start, int count, List<String> sort) {
         try {
-            return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
+            return searchObjectsViaExpression(
+                    query, start, count, sort, freeText, TASK_DOC_TYPE, true, String.class);
+        } catch (Exception e) {
+            throw new TransientException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public SearchResult<TaskSummary> searchTaskSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        try {
+            return searchObjectsViaExpression(
+                    query, start, count, sort, freeText, TASK_DOC_TYPE, false, TaskSummary.class);
         } catch (Exception e) {
             throw new TransientException(e.getMessage(), e);
         }
@@ -842,27 +873,37 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         return null;
     }
 
-    private SearchResult<String> searchObjectIdsViaExpression(
+    private <T> SearchResult<T> searchObjectsViaExpression(
             String structuredQuery,
             int start,
             int size,
             List<String> sortOptions,
             String freeTextQuery,
-            String docType)
+            String docType,
+            boolean idOnly,
+            Class<T> clazz)
             throws ParserException, IOException {
         QueryBuilder queryBuilder = boolQueryBuilder(structuredQuery, freeTextQuery);
-        return searchObjectIds(
-                getIndexName(docType), queryBuilder, start, size, sortOptions, docType);
+        return searchObjects(
+                getIndexName(docType),
+                queryBuilder,
+                start,
+                size,
+                sortOptions,
+                docType,
+                idOnly,
+                clazz);
     }
 
     private SearchResult<String> searchObjectIds(
             String indexName, QueryBuilder queryBuilder, int start, int size, String docType)
             throws IOException {
-        return searchObjectIds(indexName, queryBuilder, start, size, null, docType);
+        return searchObjects(
+                indexName, queryBuilder, start, size, null, docType, true, String.class);
     }
 
     /**
-     * Tries to find object ids for a given query in an index.
+     * Tries to find objects for a given query in an index.
      *
      * @param indexName The name of the index.
      * @param queryBuilder The query to use for searching.
@@ -871,22 +912,26 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
      * @param sortOptions A list of string options to sort in the form VALUE:ORDER; where ORDER is
      *     optional and can be either ASC OR DESC.
      * @param docType The document type to searchObjectIdsViaExpression for.
-     * @return The SearchResults which includes the count and IDs that were found.
+     * @return The SearchResults which includes the count and objects that were found.
      * @throws IOException If we cannot communicate with ES.
      */
-    private SearchResult<String> searchObjectIds(
+    private <T> SearchResult<T> searchObjects(
             String indexName,
             QueryBuilder queryBuilder,
             int start,
             int size,
             List<String> sortOptions,
-            String docType)
+            String docType,
+            boolean idOnly,
+            Class<T> clazz)
             throws IOException {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(queryBuilder);
         searchSourceBuilder.from(start);
         searchSourceBuilder.size(size);
-        searchSourceBuilder.fetchSource(false);
+        if (idOnly) {
+            searchSourceBuilder.fetchSource(false);
+        }
 
         if (sortOptions != null && !sortOptions.isEmpty()) {
 
@@ -909,10 +954,37 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         searchRequest.source(searchSourceBuilder);
 
         SearchResponse response = elasticSearchClient.search(searchRequest);
+        return mapSearchResult(response, idOnly, clazz);
+    }
 
-        List<String> result = new LinkedList<>();
-        response.getHits().forEach(hit -> result.add(hit.getId()));
-        long count = response.getHits().getTotalHits();
+    private <T> SearchResult<T> mapSearchResult(
+            SearchResponse response, boolean idOnly, Class<T> clazz) {
+        SearchHits searchHits = response.getHits();
+        long count = searchHits.getTotalHits();
+        List<T> result;
+        if (idOnly) {
+            result =
+                    Arrays.stream(searchHits.getHits())
+                            .map(hit -> clazz.cast(hit.getId()))
+                            .collect(Collectors.toList());
+        } else {
+            result =
+                    Arrays.stream(searchHits.getHits())
+                            .map(
+                                    hit -> {
+                                        try {
+                                            return objectMapper.readValue(
+                                                    hit.getSourceAsString(), clazz);
+                                        } catch (JsonProcessingException e) {
+                                            LOGGER.error(
+                                                    "Failed to de-serialize elasticsearch from source: {}",
+                                                    hit.getSourceAsString(),
+                                                    e);
+                                        }
+                                        return null;
+                                    })
+                            .collect(Collectors.toList());
+        }
         return new SearchResult<>(count, result);
     }
 

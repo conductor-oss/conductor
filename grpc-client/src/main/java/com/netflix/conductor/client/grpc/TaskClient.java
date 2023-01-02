@@ -33,6 +33,7 @@ import com.netflix.conductor.proto.TaskPb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import io.grpc.ManagedChannelBuilder;
 
 public class TaskClient extends ClientBase {
 
@@ -40,6 +41,11 @@ public class TaskClient extends ClientBase {
 
     public TaskClient(String address, int port) {
         super(address, port);
+        this.stub = TaskServiceGrpc.newBlockingStub(this.channel);
+    }
+
+    public TaskClient(ManagedChannelBuilder<?> builder) {
+        super(builder);
         this.stub = TaskServiceGrpc.newBlockingStub(this.channel);
     }
 

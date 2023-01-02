@@ -24,7 +24,7 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 public class ShipmentWorkers {
 
-    @WorkerTask("generateDynamicFork")
+    @WorkerTask(value = "generateDynamicFork", threadCount = 3)
     public DynamicForkInput generateDynamicFork(
             @InputParam("orderDetails") List<Order> orderDetails,
             @InputParam("userDetails") User userDetails) {
@@ -46,7 +46,7 @@ public class ShipmentWorkers {
         return input;
     }
 
-    @WorkerTask("get_order_details")
+    @WorkerTask(value = "get_order_details", threadCount = 5)
     public List<Order> getOrderDetails(@InputParam("orderNo") String orderNo) {
         int lineItemCount = new Random().nextInt(10);
         List<Order> orderDetails = new ArrayList<>();

@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.core.reconciliation;
 
+import java.time.Instant;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -95,19 +97,23 @@ public class WorkflowSweeper {
             Monitors.error(CLASS_NAME, "sweep");
             LOGGER.error("Error running sweep for " + workflowId, e);
         }
+        long workflowOffsetTimeout =
+                workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
         if (workflow != null) {
-            unack(workflow);
+            long startTime = Instant.now().toEpochMilli();
+            unack(workflow, workflowOffsetTimeout);
+            long endTime = Instant.now().toEpochMilli();
+            Monitors.recordUnackTime(workflow.getWorkflowName(), endTime - startTime);
         } else {
             LOGGER.warn(
                     "Workflow with {} id can not be found. Attempting to unack using the id",
                     workflowId);
-            queueDAO.setUnackTimeout(
-                    DECIDER_QUEUE, workflowId, properties.getWorkflowOffsetTimeout().toMillis());
+            queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId, workflowOffsetTimeout * 1000);
         }
     }
 
     @VisibleForTesting
-    void unack(WorkflowModel workflowModel) {
+    void unack(WorkflowModel workflowModel, long workflowOffsetTimeout) {
         long postponeDurationSeconds = 0;
         for (TaskModel taskModel : workflowModel.getTasks()) {
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
@@ -116,16 +122,15 @@ public class WorkflowSweeper {
                     postponeDurationSeconds =
                             (taskModel.getWaitTimeout() != 0)
                                     ? taskModel.getWaitTimeout() + 1
-                                    : properties.getWorkflowOffsetTimeout().getSeconds();
+                                    : workflowOffsetTimeout;
                 } else {
                     postponeDurationSeconds =
                             (taskModel.getResponseTimeoutSeconds() != 0)
                                     ? taskModel.getResponseTimeoutSeconds() + 1
-                                    : properties.getWorkflowOffsetTimeout().getSeconds();
+                                    : workflowOffsetTimeout;
                 }
                 break;
-            }
-            if (taskModel.getStatus() == Status.SCHEDULED) {
+            } else if (taskModel.getStatus() == Status.SCHEDULED) {
                 Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
                 if (taskDefinition.isPresent()) {
                     TaskDef taskDef = taskDefinition.get();
@@ -137,18 +142,32 @@ public class WorkflowSweeper {
                                 (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
                                         ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
                                                 + 1
-                                        : properties.getWorkflowOffsetTimeout().getSeconds();
+                                        : workflowOffsetTimeout;
                     }
                 } else {
                     postponeDurationSeconds =
                             (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
                                     ? workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1
-                                    : properties.getWorkflowOffsetTimeout().getSeconds();
+                                    : workflowOffsetTimeout;
                 }
                 break;
             }
         }
         queueDAO.setUnackTimeout(
                 DECIDER_QUEUE, workflowModel.getWorkflowId(), postponeDurationSeconds * 1000);
+    }
+
+    /**
+     * jitter will be +- (1/3) workflowOffsetTimeout for example, if workflowOffsetTimeout is 45
+     * seconds, this function returns values between [30-60] seconds
+     *
+     * @param workflowOffsetTimeout
+     * @return
+     */
+    @VisibleForTesting
+    long workflowOffsetWithJitter(long workflowOffsetTimeout) {
+        long range = workflowOffsetTimeout / 3;
+        long jitter = new Random().nextInt((int) (2 * range + 1)) - range;
+        return workflowOffsetTimeout + jitter;
     }
 }

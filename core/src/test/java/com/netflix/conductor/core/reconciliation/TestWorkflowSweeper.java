@@ -31,6 +31,7 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,7 +68,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
@@ -88,7 +89,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout + 1) * 1000);
@@ -105,7 +106,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
@@ -126,7 +127,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (responseTimeout + 1) * 1000);
@@ -146,7 +147,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
@@ -169,7 +170,7 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (workflowTimeout + 1) * 1000);
@@ -190,7 +191,7 @@ public class TestWorkflowSweeper {
         when(taskModel.getStatus()).thenReturn(Status.SCHEDULED);
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (workflowTimeout + 1) * 1000);
@@ -209,7 +210,7 @@ public class TestWorkflowSweeper {
         when(taskModel.getStatus()).thenReturn(Status.SCHEDULED);
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
@@ -230,7 +231,7 @@ public class TestWorkflowSweeper {
         when(taskModel.getTaskDefinition()).thenReturn(Optional.of(taskDef));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
@@ -252,9 +253,19 @@ public class TestWorkflowSweeper {
         when(taskModel.getTaskDefinition()).thenReturn(Optional.of(taskDef));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
-        workflowSweeper.unack(workflowModel);
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (pollTimeout + 1) * 1000);
+    }
+
+    @Test
+    public void testWorkflowOffsetJitter() {
+        long offset = 45;
+        for (int i = 0; i < 10; i++) {
+            long offsetWithJitter = workflowSweeper.workflowOffsetWithJitter(offset);
+            assertTrue(offsetWithJitter >= 30);
+            assertTrue(offsetWithJitter <= 60);
+        }
     }
 }

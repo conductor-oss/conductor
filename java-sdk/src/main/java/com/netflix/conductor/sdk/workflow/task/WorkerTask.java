@@ -22,4 +22,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface WorkerTask {
     String value();
+
+    int threadCount() default 1;
 }

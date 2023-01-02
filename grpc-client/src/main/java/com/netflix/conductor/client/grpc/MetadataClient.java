@@ -24,6 +24,7 @@ import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
 
 import com.google.common.base.Preconditions;
+import io.grpc.ManagedChannelBuilder;
 
 public class MetadataClient extends ClientBase {
 
@@ -31,6 +32,11 @@ public class MetadataClient extends ClientBase {
 
     public MetadataClient(String address, int port) {
         super(address, port);
+        this.stub = MetadataServiceGrpc.newBlockingStub(this.channel);
+    }
+
+    public MetadataClient(ManagedChannelBuilder<?> builder) {
+        super(builder);
         this.stub = MetadataServiceGrpc.newBlockingStub(this.channel);
     }
 

@@ -623,9 +623,19 @@ public class ExecutionDAOFacade {
         return indexDAO.searchWorkflows(query, freeText, start, count, sort);
     }
 
+    public SearchResult<WorkflowSummary> searchWorkflowSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return indexDAO.searchWorkflowSummary(query, freeText, start, count, sort);
+    }
+
     public SearchResult<String> searchTasks(
             String query, String freeText, int start, int count, List<String> sort) {
         return indexDAO.searchTasks(query, freeText, start, count, sort);
+    }
+
+    public SearchResult<TaskSummary> searchTaskSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
+        return indexDAO.searchTaskSummary(query, freeText, start, count, sort);
     }
 
     public List<TaskExecLog> getTaskExecutionLogs(String taskId) {
