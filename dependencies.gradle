@@ -41,6 +41,7 @@ ext {
     revJsr311Api = '1.1.1'
     revMockServerClient = '5.12.0'
     revOpenapi = '1.6.+'
+    revOrkesQueues = '1.0.3'
     revPowerMock = '2.0.9'
     revProtoBuf = '3.13.0'
     revProtogenAnnotations = '1.0.0'
