@@ -20,15 +20,15 @@ The latest version is [![Github release](https://img.shields.io/github/v/release
 ## Community Contributions
 The modules contributed by the community are housed at [conductor-community](https://github.com/Netflix/conductor-community). Compatible versions of the community modules are released simultaneously with releases of the main modules.
 
-[Discussion Forum](https://github.com/Netflix/conductor/discussions) Please use the forum for questions and discussing ideas and join the community.
+[Discussion Forum](https://github.com/Netflix/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
 
-[List of Conductor community projects](/docs/docs/resources/related.md) - Backup tool, Cron like workflow starter, Docker containers...
+[List of Conductor community projects](/docs/docs/resources/related.md): Backup tool, Cron like workflow starter, Docker containers and more.
 
 ## Getting Started - Building & Running Conductor
-### Docker
+###  Using Docker:
 The easiest way to get started is with Docker containers. Please follow the instructions [here](https://conductor.netflix.com/gettingstarted/docker.html). 
 
-###  From Source
+###  From Source:
 Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. See instructions [here](http://conductor.netflix.com/gettingstarted/source.html).
 
 
@@ -68,10 +68,10 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 * UI requires Node 14 to build. Earlier Node versions may work but is untested.
 
 ## Get Support
-Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use Github issue tracking for filing issues and [Discussion Forum](https://github.com/Netflix/conductor/discussions) for any other questions, ideas or support requests. 
+Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use Github issue tracking for filing issues and the [Discussion Forum](https://github.com/Netflix/conductor/discussions) for any other questions, ideas or support requests. 
 
 ## Contributions
-Whether it is a small documentation correction, bug fix or new features, contributions are highly appreciated. We just ask to follow standard oss guidelines. [Discussion Forum](https://github.com/Netflix/conductor/discussions) is a good place to ask questions, discuss new features and explore ideas. Please check with us before spending too much time, only to find later that someone else is already working on a similar feature.
+Whether it is a small documentation correction, bug fix or a new feature, contributions are highly appreciated. We just ask you to follow standard OSS guidelines. The [Discussion Forum](https://github.com/Netflix/conductor/discussions) is a good place to ask questions, discuss new features and explore ideas. Please check with us before spending too much time, only to find out later that someone else is already working on a similar feature.
 
 `main` branch is the current working branch. Please send your PR's to `main` branch, making sure that it builds on your local system successfully. Also, please make sure all the conflicts are resolved.
 
