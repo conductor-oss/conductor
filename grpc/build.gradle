@@ -36,9 +36,22 @@ dependencies {
     implementation "javax.annotation:javax.annotation-api:1.3.2"
 }
 
+def artifactName = 'com.google.protobuf:protoc:3.14.0:osx-x86_64'
+switch (org.gradle.internal.os.OperatingSystem.current()) {
+    case org.gradle.internal.os.OperatingSystem.LINUX:
+        artifactName = "com.google.protobuf:protoc:3.13.0"
+        break;
+    case org.gradle.internal.os.OperatingSystem.MAC_OS:
+        artifactName = "com.google.protobuf:protoc:3.14.0:osx-x86_64"
+        break;
+    case org.gradle.internal.os.OperatingSystem.WINDOWS:
+        artifactName = "com.google.protobuf:protoc:3.13.0"
+        break;
+}
+
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${revProtoBuf}"
+        artifact = artifactName
     }
     plugins {
         grpc {
