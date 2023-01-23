@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.amazonaws.services.sqs.AmazonSQS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,6 @@ import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.auth.policy.Statement;
 import com.amazonaws.auth.policy.Statement.Effect;
 import com.amazonaws.auth.policy.actions.SQSActions;
-import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.BatchResultErrorEntry;
 import com.amazonaws.services.sqs.model.ChangeMessageVisibilityRequest;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
@@ -64,7 +64,7 @@ public class SQSObservableQueue implements ObservableQueue {
     private final String queueName;
     private final int visibilityTimeoutInSeconds;
     private final int batchSize;
-    private final AmazonSQSClient client;
+    private final AmazonSQS client;
     private final long pollTimeInMS;
     private final String queueURL;
     private final Scheduler scheduler;
@@ -72,7 +72,7 @@ public class SQSObservableQueue implements ObservableQueue {
 
     private SQSObservableQueue(
             String queueName,
-            AmazonSQSClient client,
+            AmazonSQS client,
             int visibilityTimeoutInSeconds,
             int batchSize,
             long pollTimeInMS,
@@ -176,7 +176,7 @@ public class SQSObservableQueue implements ObservableQueue {
         private int visibilityTimeout = 30; // seconds
         private int batchSize = 5;
         private long pollTimeInMS = 100;
-        private AmazonSQSClient client;
+        private AmazonSQS client;
         private List<String> accountsToAuthorize = new LinkedList<>();
         private Scheduler scheduler;
 
@@ -199,7 +199,7 @@ public class SQSObservableQueue implements ObservableQueue {
             return this;
         }
 
-        public Builder withClient(AmazonSQSClient client) {
+        public Builder withClient(AmazonSQS client) {
             this.client = client;
             return this;
         }
