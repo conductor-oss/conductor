@@ -37,6 +37,9 @@ public class SQSEventQueueProperties {
     /** The AWS account Ids authorized to send messages to the queues */
     private String authorizedAccounts = "";
 
+    /** The endpoint to use to connect to a local SQS server for testing */
+    private String endpoint = "";
+
     public int getBatchSize() {
         return batchSize;
     }
@@ -75,5 +78,13 @@ public class SQSEventQueueProperties {
 
     public void setAuthorizedAccounts(String authorizedAccounts) {
         this.authorizedAccounts = authorizedAccounts;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 }
