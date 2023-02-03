@@ -32,6 +32,7 @@ import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue.Builder;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
@@ -45,6 +46,11 @@ public class SQSEventQueueConfiguration {
     @Autowired private SQSEventQueueProperties sqsProperties;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SQSEventQueueConfiguration.class);
+
+    @Bean
+    AWSCredentialsProvider createAWSCredentialsProvider() {
+        return new DefaultAWSCredentialsProviderChain();
+    }
 
     @ConditionalOnMissingBean
     @Bean
