@@ -23,6 +23,7 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.ClassPath;
 
 public class AnnotatedWorkerExecutor {
@@ -33,23 +34,33 @@ public class AnnotatedWorkerExecutor {
 
     private TaskRunnerConfigurer taskRunner;
 
+    private List<Worker> executors = new ArrayList<>();
+
     private Map<String, Method> workerExecutors = new HashMap<>();
 
     private Map<String, Integer> workerToThreadCount = new HashMap<>();
+
+    private Map<String, Integer> workerToPollingInterval = new HashMap<>();
 
     private Map<String, Object> workerClassObjs = new HashMap<>();
 
     private static Set<String> scannedPackages = new HashSet<>();
 
-    private int pollingInteralInMS = 100;
+    private WorkerConfiguration workerConfiguration;
 
     public AnnotatedWorkerExecutor(TaskClient taskClient) {
         this.taskClient = taskClient;
+        this.workerConfiguration = new WorkerConfiguration();
     }
 
-    public AnnotatedWorkerExecutor(TaskClient taskClient, int pollingInteralInMS) {
+    public AnnotatedWorkerExecutor(TaskClient taskClient, int pollingIntervalInMillis) {
         this.taskClient = taskClient;
-        this.pollingInteralInMS = pollingInteralInMS;
+        this.workerConfiguration = new WorkerConfiguration(pollingIntervalInMillis);
+    }
+
+    public AnnotatedWorkerExecutor(TaskClient taskClient, WorkerConfiguration workerConfiguration) {
+        this.taskClient = taskClient;
+        this.workerConfiguration = workerConfiguration;
     }
 
     /**
@@ -100,7 +111,7 @@ public class AnnotatedWorkerExecutor {
                                 try {
                                     Class<?> clazz = classMeta.load();
                                     Object obj = clazz.getConstructor().newInstance();
-                                    scanClass(clazz, obj);
+                                    addBean(obj);
                                 } catch (Throwable t) {
                                     // trace because many classes won't have a default no-args
                                     // constructor and will fail
@@ -126,28 +137,48 @@ public class AnnotatedWorkerExecutor {
         return false;
     }
 
-    private void scanClass(Class<?> clazz, Object obj) {
+    public void addBean(Object bean) {
+        Class<?> clazz = bean.getClass();
         for (Method method : clazz.getMethods()) {
             WorkerTask annotation = method.getAnnotation(WorkerTask.class);
             if (annotation == null) {
                 continue;
             }
-            String name = annotation.value();
-            int threadCount = annotation.threadCount();
-            workerExecutors.put(name, method);
-            workerToThreadCount.put(name, threadCount);
-            workerClassObjs.put(name, obj);
-            LOGGER.info("Adding worker for task {}, method {}", name, method);
+            addMethod(annotation, method, bean);
         }
     }
 
-    private void startPolling() {
-        List<Worker> executors = new ArrayList<>();
+    private void addMethod(WorkerTask annotation, Method method, Object bean) {
+        String name = annotation.value();
+
+        int threadCount = workerConfiguration.getThreadCount(name);
+        if (threadCount == 0) {
+            threadCount = annotation.threadCount();
+        }
+        workerToThreadCount.put(name, threadCount);
+
+        int pollingInterval = workerConfiguration.getPollingInterval(name);
+        if (pollingInterval == 0) {
+            pollingInterval = annotation.pollingInterval();
+        }
+        workerToPollingInterval.put(name, pollingInterval);
+
+        workerClassObjs.put(name, bean);
+        workerExecutors.put(name, method);
+        LOGGER.info(
+                "Adding worker for task {}, method {} with threadCount {} and polling interval set to {} ms",
+                name,
+                method,
+                threadCount,
+                pollingInterval);
+    }
+
+    public void startPolling() {
         workerExecutors.forEach(
                 (taskName, method) -> {
                     Object obj = workerClassObjs.get(taskName);
                     AnnotatedWorker executor = new AnnotatedWorker(taskName, method, obj);
-                    executor.setPollingInterval(pollingInteralInMS);
+                    executor.setPollingInterval(workerToPollingInterval.get(taskName));
                     executors.add(executor);
                 });
 
@@ -163,5 +194,15 @@ public class AnnotatedWorkerExecutor {
                         .build();
 
         taskRunner.init();
+    }
+
+    @VisibleForTesting
+    List<Worker> getExecutors() {
+        return executors;
+    }
+
+    @VisibleForTesting
+    TaskRunnerConfigurer getTaskRunner() {
+        return taskRunner;
     }
 }

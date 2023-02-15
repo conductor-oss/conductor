@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2023 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,21 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.sdk.workflow.task;
+package com.netflix.conductor.sdk.workflow.executor.task;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public class WorkerConfiguration {
 
-/** Identifies a simple worker task. */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface WorkerTask {
-    String value();
+    private int defaultPollingInterval = 0;
 
-    // No. of threads to use for executing the task
-    int threadCount() default 1;
+    public WorkerConfiguration(int defaultPollingInterval) {
+        this.defaultPollingInterval = defaultPollingInterval;
+    }
 
-    int pollingInterval() default 100;
+    public WorkerConfiguration() {}
+
+    public int getPollingInterval(String taskName) {
+        return defaultPollingInterval;
+    }
+
+    public int getThreadCount(String taskName) {
+        return 0;
+    }
 }

@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
+import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
 import com.netflix.discovery.EurekaClient;
 
 @Configuration(proxyBeanMethods = false)
@@ -42,6 +43,12 @@ public class ConductorClientAutoConfiguration {
         TaskClient taskClient = new TaskClient();
         taskClient.setRootURI(clientProperties.getRootUri());
         return taskClient;
+    }
+
+    @ConditionalOnMissingBean
+    @Bean
+    public AnnotatedWorkerExecutor annotatedWorkerExecutor(TaskClient taskClient) {
+        return new AnnotatedWorkerExecutor(taskClient);
     }
 
     @ConditionalOnMissingBean
