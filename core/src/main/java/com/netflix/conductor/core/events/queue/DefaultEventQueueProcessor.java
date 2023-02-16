@@ -14,7 +14,6 @@ package com.netflix.conductor.core.events.queue;
 
 import java.util.*;
 
-import com.netflix.conductor.common.utils.TaskUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -125,8 +125,10 @@ public class DefaultEventQueueProcessor {
                                                     .filter(
                                                             task ->
                                                                     !task.getStatus().isTerminal()
-                                                                            && TaskUtils.removeIterationFromTaskRefName(
-                                                                                    task.getReferenceTaskName())
+                                                                            && TaskUtils
+                                                                                    .removeIterationFromTaskRefName(
+                                                                                            task
+                                                                                                    .getReferenceTaskName())
                                                                                     .equals(
                                                                                             taskRefName))
                                                     .findFirst();
