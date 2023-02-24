@@ -1,0 +1,20 @@
+{
+  "fetch_user_details": [{
+    "status": "COMPLETED",
+    "output": {
+      "userAccount": 12345
+    }
+  }],
+  "get_credit_score": [{
+    "status": "COMPLETED",
+    "output": {
+      "creditRating": 750
+    }
+  }],
+  "calculate_loan_amount": [{
+    "status": "COMPLETED",
+    "output": {
+      "authorizedLoanAmount": 10000
+    }
+  }]
+}
