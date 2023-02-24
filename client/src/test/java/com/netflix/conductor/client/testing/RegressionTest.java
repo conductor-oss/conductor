@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Test;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -40,7 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class RegressionTest extends AbstractWorkflowTests {
 
-    @Test
+    // @Test
+    // Tests are commented out since it requires a running server
     // Uses a previously executed successful run to verify the workflow execution, and it's output.
     public void verifyWorkflowOutput()
             throws IOException, ExecutionException, InterruptedException, TimeoutException {

@@ -17,8 +17,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
@@ -31,7 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class LoanWorkflowTest extends AbstractWorkflowTests {
 
     /** Uses mock inputs to verify the workflow execution and input/outputs of the tasks */
-    @Test
+    // Tests are commented out since it requires a running server
+    // @Test
     public void verifyWorkflowExecutionWithMockInputs() throws IOException {
         WorkflowDef def = getWorkflowDef("/workflows/calculate_loan_workflow.json");
         assertNotNull(def);
