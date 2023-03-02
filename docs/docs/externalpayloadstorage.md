@@ -33,21 +33,21 @@ Set the following properties to the desired values in the JVM system properties:
 
 | Property | Description | default value |
 | -- | -- | -- |
-| conductor.workflow.input.payload.threshold.kb | Soft barrier for workflow input payload in KB | 5120 |
-| conductor.max.workflow.input.payload.threshold.kb | Hard barrier for workflow input payload in KB | 10240 |
-| conductor.workflow.output.payload.threshold.kb | Soft barrier for workflow output payload in KB | 5120 |
-| conductor.max.workflow.output.payload.threshold.kb | Hard barrier for workflow output payload in KB | 10240 |
-| conductor.task.input.payload.threshold.kb | Soft barrier for task input payload in KB | 3072 |
-| conductor.max.task.input.payload.threshold.kb | Hard barrier for task input payload in KB | 10240 |
-| conductor.task.output.payload.threshold.kb | Soft barrier for task output payload in KB | 3072 |
-| conductor.max.task.output.payload.threshold.kb | Hard barrier for task output payload in KB | 10240 |
+| conductor.app.workflowInputPayloadSizeThreshold | Soft barrier for workflow input payload in KB | 5120 |
+| conductor.app.maxWorkflowInputPayloadSizeThreshold | Hard barrier for workflow input payload in KB | 10240 |
+| conductor.app.workflowOutputPayloadSizeThreshold | Soft barrier for workflow output payload in KB | 5120 |
+| conductor.app.maxWorkflowOutputPayloadSizeThreshold | Hard barrier for workflow output payload in KB | 10240 |
+| conductor.app.taskInputPayloadSizeThreshold | Soft barrier for task input payload in KB | 3072 |
+| conductor.app.maxTaskInputPayloadSizeThreshold | Hard barrier for task input payload in KB | 10240 |
+| conductor.app.taskOutputPayloadSizeThreshold | Soft barrier for task output payload in KB | 3072 |
+| conductor.app.maxTaskOutputPayloadSizeThreshold | Hard barrier for task output payload in KB | 10240 |
 
 ### Amazon S3
 
 Conductor provides an implementation of [Amazon S3](https://aws.amazon.com/s3/) used to externalize large payload storage.  
 Set the following property in the JVM system properties:
 ```
-workflow.external.payload.storage=S3
+conductor.external-payload-storage.type=S3
 ```
 
 !!!note
@@ -57,8 +57,8 @@ Set the following properties to the desired values in the JVM system properties:
 
 | Property | Description | default value |
 | --- | --- | --- |
-| workflow.external.payload.storage.s3.bucket | S3 bucket where the payloads will be stored | |
-| workflow.external.payload.storage.s3.signedurlexpirationseconds | The expiration time in seconds of the signed url for the payload | 5 |
+| conductor.external-payload-storage.s3.bucketName | S3 bucket where the payloads will be stored | |
+| conductor.external-payload-storage.s3.signedUrlExpirationDuration | The expiration time in seconds of the signed url for the payload | 5 |
 
 The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See [here](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
 

@@ -15,29 +15,26 @@ package com.netflix.conductor.sqs.config;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import rx.Scheduler;
 
 public class SQSEventQueueProvider implements EventQueueProvider {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SQSEventQueueProvider.class);
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-    private final AmazonSQSClient client;
+    private final AmazonSQS client;
     private final int batchSize;
     private final long pollTimeInMS;
     private final int visibilityTimeoutInSeconds;
     private final Scheduler scheduler;
 
     public SQSEventQueueProvider(
-            AmazonSQSClient client, SQSEventQueueProperties properties, Scheduler scheduler) {
+            AmazonSQS client, SQSEventQueueProperties properties, Scheduler scheduler) {
         this.client = client;
         this.batchSize = properties.getBatchSize();
         this.pollTimeInMS = properties.getPollTimeDuration().toMillis();

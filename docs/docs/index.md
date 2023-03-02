@@ -132,7 +132,7 @@
         <div class="caption">        
           <p>Workflow definitions are decoupled from task implementations. This allows the creation of process flows in which each individual task can be implemented 
           by an encapsulated microservice.</p>
-          <p>Desiging a workflow orchestrator that is resilient and horizontally scalable is not a simple problem. At Netflix we have developed a solution in  <b>Conductor</b>.</p>
+          <p>Designing a workflow orchestrator that is resilient and horizontally scalable is not a simple problem. At Netflix we have developed a solution in <b>Conductor</b>.</p>
         </div>
         </div>
       </div>

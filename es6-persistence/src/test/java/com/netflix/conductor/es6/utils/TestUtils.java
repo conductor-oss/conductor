@@ -52,6 +52,18 @@ public class TestUtils {
         }
     }
 
+    public static TaskSummary loadTaskSnapshot(
+            ObjectMapper objectMapper, String resourceFileName, String workflowId) {
+        try {
+            String content = loadJsonResource(resourceFileName);
+            content = content.replace(WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowId);
+
+            return objectMapper.readValue(content, TaskSummary.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
     public static String loadJsonResource(String resourceFileName) {
         try {
             return FileUtils.readFileToString(

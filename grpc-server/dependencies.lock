@@ -15,28 +15,28 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "2.7.3"
@@ -127,22 +127,22 @@
             "locked": "2.7"
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -189,7 +189,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
@@ -198,7 +198,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
@@ -207,7 +207,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
@@ -216,7 +216,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
@@ -225,7 +225,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         }
     },
     "testCompileClasspath": {
@@ -239,13 +239,13 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -254,19 +254,19 @@
             "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -366,25 +366,25 @@
             "locked": "2.7"
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -434,7 +434,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
@@ -443,7 +443,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
@@ -452,7 +452,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
@@ -461,7 +461,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
@@ -470,7 +470,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"

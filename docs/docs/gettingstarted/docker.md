@@ -134,21 +134,21 @@ docker build -t conductor:serverAndUI -f serverAndUI/Dockerfile ../
 
     1. As of writing this article, Conductor relies on 6.8.x version of Elasticsearch. This version doesn't have an
        arm64 based Docker image. You will need to use Elasticsearch 7.x which requires a bit of customization to get up
-       and running 
+       and running
 
-####  Elasticsearch remains in Yellow health
+#### Elasticsearch remains in yellow health state
 
-    1. When you run Elasticsearch, sometimes the health remains in Yellow state. Conductor server by default requires
-       Green state to run when indexing is enabled. To work around this, you can use the following property: 
-       `conductor.elasticsearch.clusterHealthColor=yellow` Reference: [Issue 2262](https://github.com/Netflix/conductor/issues/2262)
+When you run Elasticsearch, sometimes the health remains in the *yellow* state. Conductor server by default requires
+*green* state to run when indexing is enabled. To work around this, you can use the following property: `conductor.elasticsearch.clusterHealthColor=yellow`.
 
-
+Reference: [Issue 2262][issue2262]
 
 #### Elasticsearch timeout
-Standalone(single node) elasticsearch has a yellow status which will cause timeout for conductor server (Required: Green).
-Spin up a cluster (more than one) to prevent timeout or use config option `conductor.elasticsearch.clusterHealthColor=yellow`.
 
-See issue: https://github.com/Netflix/conductor/issues/2262
+By default, a standalone (single node) Elasticsearch has a *yellow* status which will cause timeout (`java.net.SocketTimeoutException`) for Conductor server (required status is *green*).
+Spin up a cluster (more than one node) to prevent the timeout or use config option `conductor.elasticsearch.clusterHealthColor=yellow`.
+
+Reference: [Issue 2262][issue2262]
 
 #### Changes in config-*.properties do not take effect
 Config is copy into image during docker build. You have to rebuild the image or better, link a volume to it to reflect new changes.
@@ -172,3 +172,4 @@ Elasticsearch is optional, please be aware that disable it will make most of the
 * Comment out all the config related to elasticsearch
 E.g.: `conductor.elasticsearch.url=http://es:9200`
 
+[issue2262]: https://github.com/Netflix/conductor/issues/2262

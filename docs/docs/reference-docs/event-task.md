@@ -10,7 +10,7 @@ sidebar_position: 4
 
 ### Introduction
 EVENT is a task used to publish an event into one of the supported eventing systems in Conductor.
-Conductor supports the the following eventing models:
+Conductor supports the following eventing models:
 
 1. Conductor internal events (type: conductor)
 2. SQS (type: sqs)
@@ -29,7 +29,7 @@ Consider an example where we want to publish an event into SQS to notify an exte
 }
 ```
 
-An example where we want to publish a messase to conductor's internal queuing system.
+An example where we want to publish a message to conductor's internal queuing system.
 ```json
 {
     "type": "EVENT",
@@ -56,7 +56,7 @@ An example where we want to publish a messase to conductor's internal queuing sy
 * ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. 
 
 #### Output Configuration
-Tasks's output are sent as a payload to the external event. In case of SQS the task's output is sent to the SQS message a a payload.
+Tasks's output are sent as a payload to the external event. In case of SQS the task's output is sent to the SQS message a payload.
 
 
 | name               | type    | description                           |

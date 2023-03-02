@@ -134,7 +134,7 @@ public interface WorkflowService {
      * Removes the workflow from the system.
      *
      * @param workflowId WorkflowID of the workflow you want to remove from system.
-     * @param archiveWorkflow Archives the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      */
     void deleteWorkflow(
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
