@@ -113,7 +113,8 @@ public class JsonJqTransform extends WorkflowSystemTask {
     }
 
     @Override
-    public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+    public boolean execute(
+            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         this.start(workflow, task, workflowExecutor);
         return true;
     }
