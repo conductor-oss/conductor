@@ -8,6 +8,9 @@ Conductor is a platform created by Netflix to orchestrate workflows that span ac
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
+## Workflow Creation in Code
+Conductor supports creating workflows using JSON and Code.  
+SDK support for creating workflows using code is available in multiple languages and can be found at https://github.com/conductor-sdk
 
 ## Documentation
 [Main Documentation Site](http://conductor.netflix.com/)  
