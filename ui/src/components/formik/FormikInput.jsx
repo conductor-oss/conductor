@@ -8,7 +8,7 @@ export default function (props) {
   return (
     <TextField
       error={!!(meta.touched && meta.error)}
-      helperText={meta.tocuhed && meta.error}
+      helperText={meta.touched && meta.error}
       {...field}
       {...props}
     />

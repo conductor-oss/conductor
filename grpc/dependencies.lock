@@ -12,28 +12,28 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         }
     },
     "compileProtoPath": {
@@ -71,10 +71,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -96,40 +96,40 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         }
     },
     "protobufToolsLocator_grpc": {
         "io.grpc:protoc-gen-grpc-java": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         }
     },
     "protobufToolsLocator_protoc": {
@@ -172,10 +172,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -197,35 +197,35 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         }
     },
     "testCompileClasspath": {
@@ -236,10 +236,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -248,19 +248,19 @@
             "locked": "4.13.2"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -307,10 +307,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -335,35 +335,35 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -410,10 +410,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.0"
+            "locked": "1.50.2"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -438,35 +438,35 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"

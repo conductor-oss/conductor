@@ -139,11 +139,21 @@ public class ExecutionDAOFacadeTest {
     @Test
     public void testRemoveWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
         when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
         executionDAOFacade.removeWorkflow("workflowId", false);
-        verify(indexDAO, never()).updateWorkflow(any(), any(), any());
-        verify(indexDAO, times(1)).asyncRemoveWorkflow(workflow.getWorkflowId());
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        verify(executionDAO, never()).removeTask(anyString());
+        verify(indexDAO, never()).updateWorkflow(anyString(), any(), any());
+        verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
+        verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
+        verify(indexDAO, times(1)).asyncRemoveTask(anyString(), anyString());
     }
 
     @Test
@@ -153,8 +163,12 @@ public class ExecutionDAOFacadeTest {
 
         when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
         executionDAOFacade.removeWorkflow("workflowId", true);
-        verify(indexDAO, times(1)).updateWorkflow(any(), any(), any());
-        verify(indexDAO, never()).removeWorkflow(any());
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+        verify(executionDAO, never()).removeTask(anyString());
+        verify(indexDAO, times(1)).updateWorkflow(anyString(), any(), any());
+        verify(indexDAO, times(15)).updateTask(anyString(), anyString(), any(), any());
+        verify(indexDAO, never()).removeWorkflow(anyString());
+        verify(indexDAO, never()).removeTask(anyString(), anyString());
     }
 
     @Test

@@ -254,7 +254,8 @@ public class WorkflowClient extends ClientBase {
      * Removes a workflow from the system
      *
      * @param workflowId the id of the workflow to be deleted
-     * @param archiveWorkflow flag to indicate if the workflow should be archived before deletion
+     * @param archiveWorkflow flag to indicate if the workflow and associated tasks should be
+     *     archived before deletion
      */
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
         Validate.notBlank(workflowId, "Workflow id cannot be blank");

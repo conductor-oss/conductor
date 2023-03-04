@@ -12,19 +12,19 @@
             "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.redisson:redisson": {
             "locked": "3.13.3"
@@ -150,7 +150,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
@@ -158,7 +158,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
@@ -166,7 +166,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
@@ -174,7 +174,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
@@ -182,7 +182,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.redisson:redisson": {
             "locked": "3.13.3"
@@ -202,19 +202,19 @@
             "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -352,7 +352,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
@@ -360,7 +360,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
@@ -368,7 +368,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
@@ -376,7 +376,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
@@ -384,7 +384,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.17.1"
+            "locked": "2.17.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
