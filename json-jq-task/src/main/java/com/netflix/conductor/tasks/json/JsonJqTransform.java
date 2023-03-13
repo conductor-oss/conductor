@@ -112,6 +112,13 @@ public class JsonJqTransform extends WorkflowSystemTask {
                 .build(loader);
     }
 
+    @Override
+    public boolean execute(
+            WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        this.start(workflow, task, workflowExecutor);
+        return true;
+    }
+
     private String extractFirstValidMessage(final Exception e) {
         Throwable currentStack = e;
         final List<String> messages = new ArrayList<>();
