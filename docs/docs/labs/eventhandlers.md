@@ -43,7 +43,8 @@ Send `POST` requests to `/metadata/workflow` endpoint with below payloads:
       "taskReferenceName": "test_task_tobe_completed_by_eventHandler",
       "type": "WAIT"
     }
-  ]
+  ],
+  "ownerEmail": "example@email.com"
 }
 ```
 
@@ -62,7 +63,8 @@ Send `POST` requests to `/metadata/workflow` endpoint with below payloads:
       "type": "EVENT",
       "sink": "conductor"
     }
-  ]
+  ],
+  "ownerEmail": "example@email.com"
 }
 ```
 
