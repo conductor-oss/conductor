@@ -5,6 +5,7 @@ services:
     environment:
       - CONFIG_PROP=config-local.properties
     image: conductor:server
+    container_name: conductor-server
     build:
       context: ../
       dockerfile: docker/server/Dockerfile
@@ -32,6 +33,7 @@ services:
     environment:
       - WF_SERVER=http://conductor-server:8080
     image: conductor:ui
+    container_name: conductor-ui
     build:
       context: ../
       dockerfile: docker/ui/Dockerfile
@@ -44,7 +46,8 @@ services:
     stdin_open: true
 
   elasticsearch:
-    image: elasticsearch:6.8.15
+    image: elasticsearch:8.6.2
+    container_name: elasticsearch
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
       - transport.host=0.0.0.0
