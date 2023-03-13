@@ -14,10 +14,7 @@ package com.netflix.conductor.sdk.workflow.executor.task;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -44,6 +41,9 @@ public class AnnotatedWorker implements Worker {
 
     private int pollingInterval = 100;
 
+    private Set<TaskResult.Status> failedStatuses =
+            Set.of(TaskResult.Status.FAILED, TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+
     public AnnotatedWorker(String name, Method workerMethod, Object obj) {
         this.name = name;
         this.workerMethod = workerMethod;
@@ -58,11 +58,40 @@ public class AnnotatedWorker implements Worker {
 
     @Override
     public TaskResult execute(Task task) {
-        TaskResult result;
+        TaskResult result = null;
         try {
+            TaskContext context = TaskContext.set(task);
             Object[] parameters = getInvocationParameters(task);
             Object invocationResult = workerMethod.invoke(obj, parameters);
-            result = setValue(invocationResult, task);
+            result = setValue(invocationResult, context.getTaskResult());
+            if (!failedStatuses.contains(result.getStatus())
+                    && result.getCallbackAfterSeconds() > 0) {
+                result.setStatus(TaskResult.Status.IN_PROGRESS);
+            }
+        } catch (InvocationTargetException invocationTargetException) {
+            if (result == null) {
+                result = new TaskResult(task);
+            }
+            Throwable e = invocationTargetException.getCause();
+            e.printStackTrace();
+            if (e instanceof NonRetryableException) {
+                result.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+            } else {
+                result.setStatus(TaskResult.Status.FAILED);
+            }
+
+            result.setReasonForIncompletion(e.getMessage());
+            StringBuilder stackTrace = new StringBuilder();
+            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                String className = stackTraceElement.getClassName();
+                if (className.startsWith("jdk.")
+                        || className.startsWith(AnnotatedWorker.class.getName())) {
+                    break;
+                }
+                stackTrace.append(stackTraceElement);
+                stackTrace.append("\n");
+            }
+            result.log(stackTrace.toString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -141,11 +170,11 @@ public class AnnotatedWorker implements Worker {
                         .orElse(null);
     }
 
-    private TaskResult setValue(Object invocationResult, Task task) {
+    private TaskResult setValue(Object invocationResult, TaskResult result) {
 
         if (invocationResult == null) {
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
         }
 
         OutputParam opAnnotation =
@@ -153,9 +182,9 @@ public class AnnotatedWorker implements Worker {
         if (opAnnotation != null) {
 
             String name = opAnnotation.value();
-            task.getOutputData().put(name, invocationResult);
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().put(name, invocationResult);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
 
         } else if (invocationResult instanceof TaskResult) {
 
@@ -163,21 +192,21 @@ public class AnnotatedWorker implements Worker {
 
         } else if (invocationResult instanceof Map) {
             Map resultAsMap = (Map) invocationResult;
-            task.getOutputData().putAll(resultAsMap);
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().putAll(resultAsMap);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
         } else if (invocationResult instanceof String
                 || invocationResult instanceof Number
                 || invocationResult instanceof Boolean) {
-            task.getOutputData().put("result", invocationResult);
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().put("result", invocationResult);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
         } else if (invocationResult instanceof List) {
 
             List resultAsList = om.convertValue(invocationResult, List.class);
-            task.getOutputData().put("result", resultAsList);
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().put("result", resultAsList);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
 
         } else if (invocationResult instanceof DynamicForkInput) {
             DynamicForkInput forkInput = (DynamicForkInput) invocationResult;
@@ -186,25 +215,28 @@ public class AnnotatedWorker implements Worker {
             for (com.netflix.conductor.sdk.workflow.def.tasks.Task<?> sdkTask : tasks) {
                 workflowTasks.addAll(sdkTask.getWorkflowDefTasks());
             }
-            task.getOutputData().put(DynamicFork.FORK_TASK_PARAM, workflowTasks);
-            task.getOutputData().put(DynamicFork.FORK_TASK_INPUT_PARAM, forkInput.getInputs());
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().put(DynamicFork.FORK_TASK_PARAM, workflowTasks);
+            result.getOutputData().put(DynamicFork.FORK_TASK_INPUT_PARAM, forkInput.getInputs());
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
 
         } else {
             Map resultAsMap = om.convertValue(invocationResult, Map.class);
-            task.getOutputData().putAll(resultAsMap);
-            task.setStatus(Task.Status.COMPLETED);
-            return new TaskResult(task);
+            result.getOutputData().putAll(resultAsMap);
+            result.setStatus(TaskResult.Status.COMPLETED);
+            return result;
         }
     }
 
     public void setPollingInterval(int pollingInterval) {
+        System.out.println(
+                "Setting the polling interval for " + getTaskDefName() + ", to " + pollingInterval);
         this.pollingInterval = pollingInterval;
     }
 
     @Override
     public int getPollingInterval() {
+        System.out.println("Sending the polling interval to " + pollingInterval);
         return pollingInterval;
     }
 }

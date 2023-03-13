@@ -164,11 +164,11 @@ allprojects {
     }
 }
 
-// all client and their related modules are published with Java 8 compatibility
+// all client and their related modules are published with Java 11 compatibility
 ["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
-            options.release = 8
+            options.release = 11
         }
     }
 }

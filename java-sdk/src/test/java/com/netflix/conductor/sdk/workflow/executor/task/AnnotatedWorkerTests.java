@@ -23,12 +23,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
+import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 public class AnnotatedWorkerTests {
 
@@ -202,7 +206,7 @@ public class AnnotatedWorkerTests {
     public @interface AnotherAnnotation {}
 
     static class AnotherAnnotationInput {
-        @WorkerTask("test_1")
+        @WorkerTask("test_2")
         public @OutputParam("result") Bike doWork(@AnotherAnnotation Bike input) {
             return input;
         }
@@ -229,7 +233,7 @@ public class AnnotatedWorkerTests {
     }
 
     static class MultipleInputParams {
-        @WorkerTask("test_1")
+        @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
         public Map<String, Object> doWork(
                 @InputParam("bike") Bike bike, @InputParam("car") Car car) {
             return Map.of("bike", bike, "car", car);
@@ -259,5 +263,81 @@ public class AnnotatedWorkerTests {
 
         var car = (Car) outputData.get("car");
         assertEquals("BMW", car.getBrand());
+    }
+
+    @Test
+    @DisplayName("it should honor the polling interval from annotations and config")
+    void pollingIntervalTest() throws NoSuchMethodException {
+        var config = new TestWorkerConfig();
+
+        var worker = new MultipleInputParams();
+
+        AnnotatedWorkerExecutor annotatedWorkerExecutor =
+                new AnnotatedWorkerExecutor(mock(TaskClient.class));
+        annotatedWorkerExecutor.addBean(worker);
+        annotatedWorkerExecutor.startPolling();
+        List<Worker> workers = annotatedWorkerExecutor.getExecutors();
+        assertNotNull(workers);
+        assertEquals(1, workers.size());
+        Worker taskWorker = workers.get(0);
+        assertEquals(333, taskWorker.getPollingInterval());
+
+        var worker2 = new AnotherAnnotationInput();
+        annotatedWorkerExecutor = new AnnotatedWorkerExecutor(mock(TaskClient.class));
+        annotatedWorkerExecutor.addBean(worker2);
+        annotatedWorkerExecutor.startPolling();
+        workers = annotatedWorkerExecutor.getExecutors();
+        assertNotNull(workers);
+        assertEquals(1, workers.size());
+        taskWorker = workers.get(0);
+        assertEquals(100, taskWorker.getPollingInterval());
+
+        config.setPollingInterval("test_2", 123);
+        annotatedWorkerExecutor = new AnnotatedWorkerExecutor(mock(TaskClient.class), config);
+        annotatedWorkerExecutor.addBean(worker2);
+        annotatedWorkerExecutor.startPolling();
+        workers = annotatedWorkerExecutor.getExecutors();
+        assertNotNull(workers);
+        assertEquals(1, workers.size());
+        taskWorker = workers.get(0);
+        assertEquals(123, taskWorker.getPollingInterval());
+    }
+
+    @Test
+    @DisplayName("it should honor the polling interval from annotations and config")
+    void threadCountTest() throws NoSuchMethodException {
+        var config = new TestWorkerConfig();
+
+        var worker = new MultipleInputParams();
+        var worker2 = new AnotherAnnotationInput();
+
+        AnnotatedWorkerExecutor annotatedWorkerExecutor =
+                new AnnotatedWorkerExecutor(mock(TaskClient.class), config);
+        annotatedWorkerExecutor.addBean(worker);
+        annotatedWorkerExecutor.addBean(worker2);
+
+        annotatedWorkerExecutor.startPolling();
+        TaskRunnerConfigurer runner = annotatedWorkerExecutor.getTaskRunner();
+        assertNotNull(runner);
+        Map<String, Integer> taskThreadCount = runner.getTaskThreadCount();
+
+        assertNotNull(taskThreadCount);
+        assertEquals(3, taskThreadCount.get("test_1"));
+        assertEquals(1, taskThreadCount.get("test_2"));
+
+        annotatedWorkerExecutor.shutdown();
+        config.setThreadCount("test_2", 2);
+        annotatedWorkerExecutor = new AnnotatedWorkerExecutor(mock(TaskClient.class), config);
+        annotatedWorkerExecutor.addBean(worker);
+        annotatedWorkerExecutor.addBean(worker2);
+
+        annotatedWorkerExecutor.startPolling();
+        runner = annotatedWorkerExecutor.getTaskRunner();
+
+        taskThreadCount = runner.getTaskThreadCount();
+
+        assertNotNull(taskThreadCount);
+        assertEquals(3, taskThreadCount.get("test_1"));
+        assertEquals(2, taskThreadCount.get("test_2"));
     }
 }
