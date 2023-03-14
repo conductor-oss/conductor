@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.WorkflowService;
+import com.netflix.conductor.service.WorkflowTestService;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,12 +45,16 @@ public class WorkflowResourceTest {
 
     @Mock private WorkflowService mockWorkflowService;
 
+    @Mock private WorkflowTestService mockWorkflowTestService;
+
     private WorkflowResource workflowResource;
 
     @Before
     public void before() {
         this.mockWorkflowService = mock(WorkflowService.class);
-        this.workflowResource = new WorkflowResource(this.mockWorkflowService);
+        this.mockWorkflowTestService = mock(WorkflowTestService.class);
+        this.workflowResource =
+                new WorkflowResource(this.mockWorkflowService, this.mockWorkflowTestService);
     }
 
     @Test

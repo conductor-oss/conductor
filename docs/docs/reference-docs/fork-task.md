@@ -54,7 +54,7 @@ are the corresponding outputs of those tasks.
 
 ### Example
 
-Imagine a workflow that sends 3 notifications: email, SMS and HTTP. Since none of these steps are dependant on the others, they can be run in parallel with a fork.
+Imagine a workflow that sends 3 notifications: email, SMS and HTTP. Since none of these steps are dependent on the others, they can be run in parallel with a fork.
 
 The diagram will appear as:
 

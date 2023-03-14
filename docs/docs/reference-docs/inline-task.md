@@ -58,7 +58,7 @@ like: `"${inline_test.output.result}"`
 
 ### Example 2 
 
-Perhaps a weather API sometimes returns Celcius, and sometimes returns Farenheit temperature values.  This task ensures that the downstream tasks ONLY receive Celcius values:
+Perhaps a weather API sometimes returns Celcius, and sometimes returns Fahrenheit temperature values.  This task ensures that the downstream tasks ONLY receive Celcius values:
 
 ```
 {

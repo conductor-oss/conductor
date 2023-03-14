@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -124,7 +125,10 @@ public class DefaultEventQueueProcessor {
                                                     .filter(
                                                             task ->
                                                                     !task.getStatus().isTerminal()
-                                                                            && task.getReferenceTaskName()
+                                                                            && TaskUtils
+                                                                                    .removeIterationFromTaskRefName(
+                                                                                            task
+                                                                                                    .getReferenceTaskName())
                                                                                     .equals(
                                                                                             taskRefName))
                                                     .findFirst();

@@ -29,6 +29,9 @@
         "commons-io:commons-io": {
             "locked": "2.7"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
@@ -46,6 +49,9 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.2"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
         },
         "org.jetbrains:annotations": {
             "locked": "23.0.0"
@@ -109,6 +115,9 @@
         "commons-io:commons-io": {
             "locked": "2.7"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -156,6 +165,9 @@
             ],
             "locked": "2.17.2"
         },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
+        },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.36"
         }
@@ -185,6 +197,9 @@
         "commons-io:commons-io": {
             "locked": "2.7"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "junit:junit": {
             "locked": "4.13.2"
         },
@@ -208,6 +223,9 @@
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -289,6 +307,9 @@
         "commons-io:commons-io": {
             "locked": "2.7"
         },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "locked": "2.1.1"
+        },
         "junit:junit": {
             "locked": "4.13.2"
         },
@@ -341,6 +362,9 @@
         },
         "org.codehaus.groovy:groovy-all": {
             "locked": "2.5.13"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "locked": "2.22.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"

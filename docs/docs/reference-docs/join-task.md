@@ -61,10 +61,10 @@ and `my_task_ref_2` as specified by the `joinOn` attribute.
 
 #### Example - ignoring one fork
 Here is an example of a `JOIN` task used in conjunction with a `FORK_JOIN` task. The 'FORK_JOIN' spawns 3 tasks.
-An `email_notification` task, a `sms_notification` task and a  `http_notification` task. Email and SMS are usually best
+An `email_notification` task, a `sms_notification` task, and a `http_notification` task. Email and SMS are usually best
 effort delivery systems. However, in case of a http based notification you get a return code and you can retry until it
-succeeds or eventually give up. When you setup a notification workflow, you may decide to continue ,if you kicked off an
-email and sms notification. Im that case, you can decide to `joinOn` those specific tasks. However,
+succeeds or eventually give up. When you setup a notification workflow, you may decide to continue, if you kicked off an
+email and sms notification. In that case, you can decide to `joinOn` those specific tasks. However,
 the `http_notification` task will still continue to execute, but it will not block the rest of the workflow from
 proceeding.
 
