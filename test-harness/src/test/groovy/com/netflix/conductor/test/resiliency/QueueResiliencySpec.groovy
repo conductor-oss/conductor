@@ -23,6 +23,8 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.common.utils.ExternalPayloadStorage
 import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.exception.TransientException
+import com.netflix.conductor.core.utils.QueueUtils
+import com.netflix.conductor.core.utils.Utils
 import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
@@ -255,10 +257,16 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         workflowResource.delete(workflowInstanceId, false)
 
         then: "Verify queueDAO is called to remove from _deciderQueue"
-        1 * queueDAO._
+        1 * queueDAO.remove(Utils.DECIDER_QUEUE, _)
 
-        when: "We try to get deleted workflow"
-        workflowResource.getExecutionStatus(workflowInstanceId, true)
+        when: "We try to get deleted workflow, verify the status and check if tasks are not removed from queue"
+        with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.CANCELED
+            0 * queueDAO.remove(QueueUtils.getQueueName(tasks[0]), _)
+        }
 
         then:
         thrown(NotFoundException.class)

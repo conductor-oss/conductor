@@ -29,7 +29,8 @@ import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue.Builder;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import rx.Scheduler;
 
 @Configuration
@@ -39,13 +40,13 @@ public class SQSEventQueueConfiguration {
 
     @ConditionalOnMissingBean
     @Bean
-    public AmazonSQSClient getSQSClient(AWSCredentialsProvider credentialsProvider) {
-        return new AmazonSQSClient(credentialsProvider);
+    public AmazonSQS getSQSClient(AWSCredentialsProvider credentialsProvider) {
+        return AmazonSQSClientBuilder.standard().withCredentials(credentialsProvider).build();
     }
 
     @Bean
     public EventQueueProvider sqsEventQueueProvider(
-            AmazonSQSClient sqsClient, SQSEventQueueProperties properties, Scheduler scheduler) {
+            AmazonSQS sqsClient, SQSEventQueueProperties properties, Scheduler scheduler) {
         return new SQSEventQueueProvider(sqsClient, properties, scheduler);
     }
 
@@ -57,7 +58,7 @@ public class SQSEventQueueConfiguration {
     public Map<Status, ObservableQueue> getQueues(
             ConductorProperties conductorProperties,
             SQSEventQueueProperties properties,
-            AmazonSQSClient sqsClient) {
+            AmazonSQS sqsClient) {
         String stack = "";
         if (conductorProperties.getStack() != null && conductorProperties.getStack().length() > 0) {
             stack = conductorProperties.getStack() + "_";

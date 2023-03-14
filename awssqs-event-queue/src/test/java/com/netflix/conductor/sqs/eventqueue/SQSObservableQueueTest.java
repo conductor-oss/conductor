@@ -22,7 +22,7 @@ import org.mockito.stubbing.Answer;
 
 import com.netflix.conductor.core.events.queue.Message;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.ListQueuesRequest;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
@@ -74,7 +74,7 @@ public class SQSObservableQueueTest {
                         .withReceiptHandle("receiptHandle");
         Answer<?> answer = (Answer<ReceiveMessageResult>) invocation -> new ReceiveMessageResult();
 
-        AmazonSQSClient client = mock(AmazonSQSClient.class);
+        AmazonSQS client = mock(AmazonSQS.class);
         when(client.listQueues(any(ListQueuesRequest.class)))
                 .thenReturn(new ListQueuesResult().withQueueUrls("junit_queue_url"));
         when(client.receiveMessage(any(ReceiveMessageRequest.class)))

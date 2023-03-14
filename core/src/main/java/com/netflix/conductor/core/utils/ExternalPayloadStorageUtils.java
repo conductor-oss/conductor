@@ -205,7 +205,7 @@ public class ExternalPayloadStorageUtils {
             byte[] payloadBytes, long payloadSize, ExternalPayloadStorage.PayloadType payloadType) {
         ExternalStorageLocation location =
                 externalPayloadStorage.getLocation(
-                        ExternalPayloadStorage.Operation.WRITE, payloadType, "");
+                        ExternalPayloadStorage.Operation.WRITE, payloadType, "", payloadBytes);
         externalPayloadStorage.upload(
                 location.getPath(), new ByteArrayInputStream(payloadBytes), payloadSize);
         return location.getPath();
