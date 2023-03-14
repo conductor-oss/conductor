@@ -39,6 +39,7 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-web'
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
 

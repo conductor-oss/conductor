@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertTrue;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @RunWith(SpringRunner.class)
+@TestPropertySource(properties = "conductor.queue.type=")
 public class ConductorObjectMapperTest {
 
     @Autowired ObjectMapper objectMapper;
