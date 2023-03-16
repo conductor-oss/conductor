@@ -47,6 +47,14 @@ public interface ObservableQueue extends Lifecycle {
     List<String> ack(List<Message> messages);
 
     /**
+     * @param messages to be Nack'ed
+     */
+    default void nack(List<Message> messages)
+    {
+
+    }
+
+    /**
      * @param messages Messages to be published
      */
     void publish(List<Message> messages);
