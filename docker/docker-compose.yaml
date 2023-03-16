@@ -96,7 +96,7 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      test: [ "CMD", "wget", "http://localhost:15672", "-O", "/dev/null" ]
       interval: 30s
       timeout: 10s
       retries: 5
