@@ -15,8 +15,6 @@ package com.netflix.conductor.sdk.workflow.executor.task;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import com.google.common.base.Strings;
-import com.netflix.conductor.common.utils.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +24,7 @@ import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 
 public class AnnotatedWorkerExecutor {
@@ -168,10 +167,10 @@ public class AnnotatedWorkerExecutor {
         workerToPollingInterval.put(name, pollingInterval);
 
         String domain = workerConfiguration.getDomain(name);
-        if(Strings.isNullOrEmpty(domain)) {
+        if (Strings.isNullOrEmpty(domain)) {
             domain = annotation.domain();
         }
-        if(!Strings.isNullOrEmpty(domain)) {
+        if (!Strings.isNullOrEmpty(domain)) {
             workerDomains.put(name, domain);
         }
 
