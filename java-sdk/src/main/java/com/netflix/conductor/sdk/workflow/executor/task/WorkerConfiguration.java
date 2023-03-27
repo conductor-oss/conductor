@@ -29,4 +29,8 @@ public class WorkerConfiguration {
     public int getThreadCount(String taskName) {
         return 0;
     }
+
+    public String getDomain(String taskName) {
+        return null;
+    }
 }

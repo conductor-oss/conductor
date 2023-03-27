@@ -15,6 +15,8 @@ package com.netflix.conductor.sdk.workflow.executor.task;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import com.google.common.base.Strings;
+import com.netflix.conductor.common.utils.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,8 @@ public class AnnotatedWorkerExecutor {
     private Map<String, Integer> workerToThreadCount = new HashMap<>();
 
     private Map<String, Integer> workerToPollingInterval = new HashMap<>();
+
+    private Map<String, String> workerDomains = new HashMap<>();
 
     private Map<String, Object> workerClassObjs = new HashMap<>();
 
@@ -163,6 +167,14 @@ public class AnnotatedWorkerExecutor {
         }
         workerToPollingInterval.put(name, pollingInterval);
 
+        String domain = workerConfiguration.getDomain(name);
+        if(Strings.isNullOrEmpty(domain)) {
+            domain = annotation.domain();
+        }
+        if(!Strings.isNullOrEmpty(domain)) {
+            workerDomains.put(name, domain);
+        }
+
         workerClassObjs.put(name, bean);
         workerExecutors.put(name, method);
         LOGGER.info(
@@ -187,10 +199,12 @@ public class AnnotatedWorkerExecutor {
         }
 
         LOGGER.info("Starting workers with threadCount {}", workerToThreadCount);
+        LOGGER.info("Worker domains {}", workerDomains);
 
         taskRunner =
                 new TaskRunnerConfigurer.Builder(taskClient, executors)
                         .withTaskThreadCount(workerToThreadCount)
+                        .withTaskToDomain(workerDomains)
                         .build();
 
         taskRunner.init();
