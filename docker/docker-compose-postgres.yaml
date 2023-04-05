@@ -4,11 +4,36 @@ services:
   conductor-server:
     environment:
       - CONFIG_PROP=config-postgres.properties
+    image: conductor:server
+    container_name: conductor-server
+    build:
+      context: ../
+      dockerfile: docker/server/Dockerfile
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
+      interval: 60s
+      timeout: 30s
+      retries: 12
     links:
+      - elasticsearch:es
+      - redis:rs
       - postgres:postgresdb
     depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
 
   postgres:
     image: postgres
@@ -23,6 +48,41 @@ services:
       - 5432:5432
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+
+  elasticsearch:
+    image: elasticsearch:6.8.15
+    container_name: elasticsearch
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - transport.host=0.0.0.0
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    networks:
+      - internal
+    ports:
+      - 9200:9200
+      - 9300:9300
+    healthcheck:
+      test: wget http://localhost:9200/ -O /dev/null
       interval: 5s
       timeout: 5s
       retries: 12
