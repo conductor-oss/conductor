@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import com.netflix.conductor.core.exception.TransientException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
@@ -124,10 +125,10 @@ public class DefaultEventProcessor {
             LOGGER.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
             Monitors.recordEventQueueMessagesError(queue.getType(), queue.getName());
         } finally {
-            if (executionFailed || CollectionUtils.isEmpty(transientFailures)) {
+            if (!executionFailed && CollectionUtils.isEmpty(transientFailures)) {
                 queue.ack(Collections.singletonList(msg));
                 LOGGER.debug("Message: {} acked on queue: {}", msg.getId(), queue.getName());
-            } else if (queue.rePublishIfNoAck()) {
+            } else if (queue.rePublishIfNoAck() || !CollectionUtils.isEmpty(transientFailures)) {
                 // re-submit this message to the queue, to be retried later
                 // This is needed for queues with no unack timeout, since messages are removed
                 // from the queue
@@ -149,10 +150,18 @@ public class DefaultEventProcessor {
      * @return a list of {@link EventExecution} that failed due to transient failures.
      */
     protected List<EventExecution> executeEvent(String event, Message msg) throws Exception {
-        List<EventHandler> eventHandlerList = metadataService.getEventHandlersForEvent(event, true);
-        Object payloadObject = getPayloadObject(msg.getPayload());
-
+        List<EventHandler> eventHandlerList;
         List<EventExecution> transientFailures = new ArrayList<>();
+
+        try {
+            eventHandlerList = metadataService.getEventHandlersForEvent(event, true);
+        }
+        catch (TransientException transientException) {
+            transientFailures.add(new EventExecution(event, msg.getId()));
+            return transientFailures;
+        }
+
+        Object payloadObject = getPayloadObject(msg.getPayload());
         for (EventHandler eventHandler : eventHandlerList) {
             String condition = eventHandler.getCondition();
             String evaluatorType = eventHandler.getEvaluatorType();

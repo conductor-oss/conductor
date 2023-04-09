@@ -221,7 +221,8 @@ public class TestDefaultEventProcessor {
         assertTrue(started.get());
         assertTrue(completed.get());
         verify(queue, atMost(1)).ack(any());
-        verify(queue, never()).publish(any());
+        verify(queue, never()).nack(any());
+        verify(queue, atLeastOnce()).publish(any());
     }
 
     @Test
