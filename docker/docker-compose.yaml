@@ -21,13 +21,10 @@ services:
     links:
       - elasticsearch:es
       - redis:rs
-      - rabbitmq:amqp
     depends_on:
       elasticsearch:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -55,13 +52,15 @@ services:
     image: redis:6.2.3-alpine
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
     ports:
       - 6379:6379
     healthcheck:
       test: [ "CMD", "redis-cli","ping" ]
 
   elasticsearch:
-    image: elasticsearch:8.6.2
+    image: elasticsearch:6.8.15
     container_name: elasticsearch
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
@@ -76,7 +75,7 @@ services:
       - 9200:9200
       - 9300:9300
     healthcheck:
-      test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/9300'
+      test: wget http://localhost:9200/ -O /dev/null
       interval: 5s
       timeout: 5s
       retries: 12
@@ -85,24 +84,6 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: rabbitmq
-    volumes:
-      - ./.docker/rabbitmq/etc/:/etc/rabbitmq/
-      - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
-      - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    healthcheck:
-      test: [ "CMD", "wget", "http://localhost:15672", "-O", "/dev/null" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    ports:
-      - 5672:5672
-      - 15672:15672
 
 volumes:
   esdata-conductor:
