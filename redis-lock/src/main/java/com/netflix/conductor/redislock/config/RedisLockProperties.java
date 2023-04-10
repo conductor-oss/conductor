@@ -113,7 +113,8 @@ public class RedisLockProperties {
         return clusterReplicaConnectionMinIdleSize;
     }
 
-    public void setClusterReplicaConnectionMinIdleSize(Integer clusterReplicaConnectionMinIdleSize) {
+    public void setClusterReplicaConnectionMinIdleSize(
+            Integer clusterReplicaConnectionMinIdleSize) {
         this.clusterReplicaConnectionMinIdleSize = clusterReplicaConnectionMinIdleSize;
     }
 
@@ -129,7 +130,8 @@ public class RedisLockProperties {
         return clusterPrimaryConnectionMinIdleSize;
     }
 
-    public void setClusterPrimaryConnectionMinIdleSize(Integer clusterPrimaryConnectionMinIdleSize) {
+    public void setClusterPrimaryConnectionMinIdleSize(
+            Integer clusterPrimaryConnectionMinIdleSize) {
         this.clusterPrimaryConnectionMinIdleSize = clusterPrimaryConnectionMinIdleSize;
     }
 

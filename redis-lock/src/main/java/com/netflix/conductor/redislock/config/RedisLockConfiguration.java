@@ -12,9 +12,8 @@
  */
 package com.netflix.conductor.redislock.config;
 
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
-import com.netflix.conductor.redislock.lock.RedisLock;
+import java.util.Arrays;
+
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
@@ -24,7 +23,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
+import com.netflix.conductor.redislock.lock.RedisLock;
 
 @Configuration
 @EnableConfigurationProperties(RedisLockProperties.class)
@@ -74,10 +75,14 @@ public class RedisLockConfiguration {
                         .addNodeAddress(redisServerAddress.split(","))
                         .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout)
-                        .setSlaveConnectionMinimumIdleSize(properties.getClusterReplicaConnectionMinIdleSize())
-                        .setSlaveConnectionPoolSize(properties.getClusterReplicaConnectionPoolSize())
-                        .setMasterConnectionMinimumIdleSize(properties.getClusterPrimaryConnectionMinIdleSize())
-                        .setMasterConnectionPoolSize(properties.getClusterPrimaryConnectionPoolSize());
+                        .setSlaveConnectionMinimumIdleSize(
+                                properties.getClusterReplicaConnectionMinIdleSize())
+                        .setSlaveConnectionPoolSize(
+                                properties.getClusterReplicaConnectionPoolSize())
+                        .setMasterConnectionMinimumIdleSize(
+                                properties.getClusterPrimaryConnectionMinIdleSize())
+                        .setMasterConnectionPoolSize(
+                                properties.getClusterPrimaryConnectionPoolSize());
                 break;
             case SENTINEL:
                 LOGGER.info("Setting up Redis Sentinel Servers for RedisLockConfiguration");
