@@ -44,7 +44,7 @@ https://clojars.org/io.orkes/conductor-clojure
 ;; Will Register a workflow that uses the above task returns nil
 (metadata/register-workflow-def options {
                                               :name "cool_clj_workflow"
-                                              :description "created programatically from clj"
+                                              :description "created programmatically from clj"
                                               :version 1
                                               :tasks [ {
                                                        :name "cool_clj_task"
@@ -69,7 +69,7 @@ https://clojars.org/io.orkes/conductor-clojure
                (list {
                       :name "cool_clj_task"
                       :execute (fn [someData]
-                                 [:completed {:message "Hi From Clj i was created programatically"}])
+                                 [:completed {:message "Hi From Clj i was created programmatically"}])
                       })
                options ))
 
@@ -126,7 +126,7 @@ Takes the option map and a list/vector of tasks to register. on success it will 
 ```clojure 
 (metadata/register-workflow-def options {
                                                         :name "cool_clj_workflow_2"
-                                                        :description "created programatically from clj"
+                                                        :description "created programmatically from clj"
                                                         :version 1
                                                         :tasks [ {
                                                                   :name "cool_clj_task_b"
@@ -186,7 +186,7 @@ The client namespace holds the function to start a workflow and running a worker
                (list {
                       :name "cool_clj_task"
                       :execute (fn [someData]
-                                 [:completed {:message "Hi From Clj i was created programatically"}])
+                                 [:completed {:message "Hi From Clj i was created programmatically"}])
                       })
                options ))
 
@@ -205,7 +205,7 @@ Will map a java map to a clojure map which may come in handy for workers impleme
 
 ``` clojure
 (metadata/register-workflow-def options {:name "simple_wf"
-                                         :description "created programatically from clj"
+                                         :description "created programmatically from clj"
                                          :version 1
                                          :tasks [{:name "simplest_task"
                                                   :taskReferenceName "repl_task_ref"
