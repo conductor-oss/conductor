@@ -155,8 +155,7 @@ public class DefaultEventProcessor {
 
         try {
             eventHandlerList = metadataService.getEventHandlersForEvent(event, true);
-        }
-        catch (TransientException transientException) {
+        } catch (TransientException transientException) {
             transientFailures.add(new EventExecution(event, msg.getId()));
             return transientFailures;
         }
