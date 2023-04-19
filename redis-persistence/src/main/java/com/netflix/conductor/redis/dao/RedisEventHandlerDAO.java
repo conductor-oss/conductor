@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.netflix.conductor.core.exception.TransientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -27,6 +26,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.redis.config.AnyRedisCondition;
 import com.netflix.conductor.redis.config.RedisProperties;
@@ -139,10 +139,8 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
         String json;
         try {
             json = jedisProxy.hget(nsKey(EVENT_HANDLERS), name);
-        }
-        catch (Exception e) {
-            throw new TransientException(
-                    "Unable to get event handler named " + name, e);
+        } catch (Exception e) {
+            throw new TransientException("Unable to get event handler named " + name, e);
         }
         if (json != null) {
             eventHandler = readValue(json, EventHandler.class);
