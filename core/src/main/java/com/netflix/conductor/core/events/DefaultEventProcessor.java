@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
 import com.netflix.conductor.core.exception.TransientException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -31,7 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -44,7 +42,6 @@ import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.futures.CompletableFutures;
 
