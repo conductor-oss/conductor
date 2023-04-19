@@ -133,6 +133,9 @@ public class DefaultEventProcessor {
                 // from the queue
                 queue.publish(Collections.singletonList(msg));
                 LOGGER.debug("Message: {} published to queue: {}", msg.getId(), queue.getName());
+            } else {
+                queue.nack(Collections.singletonList(msg));
+                LOGGER.debug("Message: {} nacked on queue: {}", msg.getId(), queue.getName());
             }
             Monitors.recordEventQueueMessagesHandled(queue.getType(), queue.getName());
         }

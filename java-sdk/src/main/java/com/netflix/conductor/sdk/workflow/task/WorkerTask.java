@@ -23,5 +23,8 @@ import java.lang.annotation.Target;
 public @interface WorkerTask {
     String value();
 
+    // No. of threads to use for executing the task
     int threadCount() default 1;
+
+    int pollingInterval() default 100;
 }

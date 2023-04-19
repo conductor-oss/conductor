@@ -20,7 +20,7 @@ Following are the task configuration parameters :
 | evaluatorType | String                  | [evaluatortType values](#evaluator-types)                                                                                                            |
 | expression    | String                  | Depends on the [evaluatortType value](#evaluator-types)                                                                                              |
 | decisionCases | Map[String, List[task]] | Map where key is possible values that can result from `expression` being evaluated by `evaluatorType` with value being list of tasks to be executed. |
-| defaultCase   | List[task]              | List of tasks to be executed when no matching value if found in decision case (default condition)                                                    |
+| defaultCase   | List[task]              | List of tasks to be executed when no matching value is found in decision case (default condition)                                                    |
 
 
 #### Evaluator Types

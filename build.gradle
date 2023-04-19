@@ -98,27 +98,47 @@ allprojects {
     dependencies {
         implementation('org.apache.logging.log4j:log4j-core') {
             version {
-                strictly '2.17.1'
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
             }
         }
         implementation('org.apache.logging.log4j:log4j-api') {
             version {
-                strictly '2.17.1'
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
             }
         }
         implementation('org.apache.logging.log4j:log4j-slf4j-impl') {
             version {
-                strictly '2.17.1'
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
             }
         }
         implementation('org.apache.logging.log4j:log4j-jul') {
             version {
-                strictly '2.17.1'
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
             }
         }
         implementation('org.apache.logging.log4j:log4j-web') {
             version {
-                strictly '2.17.1'
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
             }
         }
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
@@ -144,11 +164,11 @@ allprojects {
     }
 }
 
-// all client and their related modules are published with Java 8 compatibility
+// all client and their related modules are published with Java 11 compatibility
 ["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
-            options.release = 8
+            options.release = 11
         }
     }
 }

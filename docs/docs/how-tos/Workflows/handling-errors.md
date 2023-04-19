@@ -54,6 +54,6 @@ Here is a sample failure workflow that sends a message to Slack when the workflo
 }
 ```
 
-##  Set ```workfowStatusListenerEnabled``` 
+##  Set ```workflowStatusListenerEnabled``` 
 
 When this is enabled, notifications are now possible, and by building a custom implementation of the Workflow Status Listener, a notification can be sent to an external service. [More details.](https://github.com/Netflix/conductor/issues/1017#issuecomment-468869173)

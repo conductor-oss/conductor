@@ -13,8 +13,13 @@
 package com.netflix.conductor.metrics;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -78,14 +84,13 @@ public class WorkflowMonitor {
                 refreshCounter = metadataRefreshInterval;
             }
 
-            workflowDefs.forEach(
-                    workflowDef -> {
-                        String name = workflowDef.getName();
-                        String version = String.valueOf(workflowDef.getVersion());
-                        String ownerApp = workflowDef.getOwnerApp();
-                        long count = executionDAOFacade.getPendingWorkflowCount(name);
-                        Monitors.recordRunningWorkflows(count, name, version, ownerApp);
-                    });
+            getPendingWorkflowToOwnerAppMap(workflowDefs)
+                    .forEach(
+                            (workflowName, ownerApp) -> {
+                                long count =
+                                        executionDAOFacade.getPendingWorkflowCount(workflowName);
+                                Monitors.recordRunningWorkflows(count, workflowName, ownerApp);
+                            });
 
             taskDefs.forEach(
                     taskDef -> {
@@ -114,5 +119,27 @@ public class WorkflowMonitor {
         } catch (Exception e) {
             LOGGER.error("Error while publishing scheduled metrics", e);
         }
+    }
+
+    /**
+     * Pending workflow data does not contain information about version. We only need the owner app
+     * and workflow name, and we only need to query for the workflow once.
+     */
+    @VisibleForTesting
+    Map<String, String> getPendingWorkflowToOwnerAppMap(List<WorkflowDef> workflowDefs) {
+        final Map<String, List<WorkflowDef>> groupedWorkflowDefs =
+                workflowDefs.stream().collect(Collectors.groupingBy(WorkflowDef::getName));
+
+        Map<String, String> workflowNameToOwnerMap = new HashMap<>();
+        groupedWorkflowDefs.forEach(
+                (key, value) -> {
+                    final WorkflowDef workflowDef =
+                            value.stream()
+                                    .max(Comparator.comparing(WorkflowDef::getVersion))
+                                    .orElseThrow(NoSuchElementException::new);
+
+                    workflowNameToOwnerMap.put(key, workflowDef.getOwnerApp());
+                });
+        return workflowNameToOwnerMap;
     }
 }

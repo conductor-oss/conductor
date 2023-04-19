@@ -16,9 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,16 +34,10 @@ public class LocalOnlyLock implements Lock {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalOnlyLock.class);
 
-    private static final CacheLoader<String, Semaphore> LOADER =
-            new CacheLoader<String, Semaphore>() {
-                @Override
-                public Semaphore load(String key) {
-                    return new Semaphore(1, true);
-                }
-            };
+    private static final CacheLoader<String, ReentrantLock> LOADER = key -> new ReentrantLock(true);
     private static final ConcurrentHashMap<String, ScheduledFuture<?>> SCHEDULEDFUTURES =
             new ConcurrentHashMap<>();
-    private static final LoadingCache<String, Semaphore> LOCKIDTOSEMAPHOREMAP =
+    private static final LoadingCache<String, ReentrantLock> LOCKIDTOSEMAPHOREMAP =
             Caffeine.newBuilder().build(LOADER);
     private static final ThreadGroup THREAD_GROUP = new ThreadGroup("LocalOnlyLock-scheduler");
     private static final ThreadFactory THREAD_FACTORY =
@@ -54,14 +48,14 @@ public class LocalOnlyLock implements Lock {
     @Override
     public void acquireLock(String lockId) {
         LOGGER.trace("Locking {}", lockId);
-        LOCKIDTOSEMAPHOREMAP.get(lockId).acquireUninterruptibly();
+        LOCKIDTOSEMAPHOREMAP.get(lockId).lock();
     }
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, TimeUnit unit) {
         try {
             LOGGER.trace("Locking {} with timeout {} {}", lockId, timeToTry, unit);
-            return LOCKIDTOSEMAPHOREMAP.get(lockId).tryAcquire(timeToTry, unit);
+            return LOCKIDTOSEMAPHOREMAP.get(lockId).tryLock(timeToTry, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -80,7 +74,7 @@ public class LocalOnlyLock implements Lock {
         if (acquireLock(lockId, timeToTry, unit)) {
             LOGGER.trace("Releasing {} automatically after {} {}", lockId, leaseTime, unit);
             SCHEDULEDFUTURES.put(
-                    lockId, SCHEDULER.schedule(() -> releaseLock(lockId), leaseTime, unit));
+                    lockId, SCHEDULER.schedule(() -> deleteLock(lockId), leaseTime, unit));
             return true;
         }
         return false;
@@ -97,14 +91,13 @@ public class LocalOnlyLock implements Lock {
     @Override
     public void releaseLock(String lockId) {
         // Synchronized to prevent race condition between semaphore check and actual release
-        // The check is here to prevent semaphore getting above 1
-        // e.g. in case when lease runs out but release is also called
         synchronized (LOCKIDTOSEMAPHOREMAP) {
-            if (LOCKIDTOSEMAPHOREMAP.get(lockId).availablePermits() == 0) {
-                LOGGER.trace("Releasing {}", lockId);
-                LOCKIDTOSEMAPHOREMAP.get(lockId).release();
-                removeLeaseExpirationJob(lockId);
+            if (LOCKIDTOSEMAPHOREMAP.getIfPresent(lockId) == null) {
+                return;
             }
+            LOGGER.trace("Releasing {}", lockId);
+            LOCKIDTOSEMAPHOREMAP.get(lockId).unlock();
+            removeLeaseExpirationJob(lockId);
         }
     }
 
@@ -115,7 +108,7 @@ public class LocalOnlyLock implements Lock {
     }
 
     @VisibleForTesting
-    LoadingCache<String, Semaphore> cache() {
+    LoadingCache<String, ReentrantLock> cache() {
         return LOCKIDTOSEMAPHOREMAP;
     }
 

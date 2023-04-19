@@ -32,6 +32,21 @@ public class RedisLockProperties {
     /** The namespace to use to prepend keys used for locking in redis */
     private String namespace = "";
 
+    /** The number of natty threads to use */
+    private Integer numNettyThreads;
+
+    /** If using Cluster Mode, you can use this to set num of min idle connections for replica */
+    private int clusterReplicaConnectionMinIdleSize = 24;
+
+    /** If using Cluster Mode, you can use this to set num of min idle connections for replica */
+    private int clusterReplicaConnectionPoolSize = 64;
+
+    /** If using Cluster Mode, you can use this to set num of min idle connections for replica */
+    private int clusterPrimaryConnectionMinIdleSize = 24;
+
+    /** If using Cluster Mode, you can use this to set num of min idle connections for replica */
+    private int clusterPrimaryConnectionPoolSize = 64;
+
     /**
      * Enable to otionally continue without a lock to not block executions until the locking service
      * becomes available
@@ -84,6 +99,48 @@ public class RedisLockProperties {
 
     public void setIgnoreLockingExceptions(boolean ignoreLockingExceptions) {
         this.ignoreLockingExceptions = ignoreLockingExceptions;
+    }
+
+    public Integer getNumNettyThreads() {
+        return numNettyThreads;
+    }
+
+    public void setNumNettyThreads(Integer numNettyThreads) {
+        this.numNettyThreads = numNettyThreads;
+    }
+
+    public Integer getClusterReplicaConnectionMinIdleSize() {
+        return clusterReplicaConnectionMinIdleSize;
+    }
+
+    public void setClusterReplicaConnectionMinIdleSize(
+            Integer clusterReplicaConnectionMinIdleSize) {
+        this.clusterReplicaConnectionMinIdleSize = clusterReplicaConnectionMinIdleSize;
+    }
+
+    public Integer getClusterReplicaConnectionPoolSize() {
+        return clusterReplicaConnectionPoolSize;
+    }
+
+    public void setClusterReplicaConnectionPoolSize(Integer clusterReplicaConnectionPoolSize) {
+        this.clusterReplicaConnectionPoolSize = clusterReplicaConnectionPoolSize;
+    }
+
+    public Integer getClusterPrimaryConnectionMinIdleSize() {
+        return clusterPrimaryConnectionMinIdleSize;
+    }
+
+    public void setClusterPrimaryConnectionMinIdleSize(
+            Integer clusterPrimaryConnectionMinIdleSize) {
+        this.clusterPrimaryConnectionMinIdleSize = clusterPrimaryConnectionMinIdleSize;
+    }
+
+    public Integer getClusterPrimaryConnectionPoolSize() {
+        return clusterPrimaryConnectionPoolSize;
+    }
+
+    public void setClusterPrimaryConnectionPoolSize(Integer clusterPrimaryConnectionPoolSize) {
+        this.clusterPrimaryConnectionPoolSize = clusterPrimaryConnectionPoolSize;
     }
 
     public enum REDIS_SERVER_TYPE {

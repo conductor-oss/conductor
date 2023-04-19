@@ -53,10 +53,14 @@ public class RedisLockConfiguration {
         String masterName = properties.getServerMasterName();
 
         Config redisConfig = new Config();
+        if (properties.getNumNettyThreads() != null && properties.getNumNettyThreads() > 0) {
+            redisConfig.setNettyThreads(properties.getNumNettyThreads());
+        }
 
         int connectionTimeout = 10000;
         switch (redisServerType) {
             case SINGLE:
+                LOGGER.info("Setting up Redis Single Server for RedisLockConfiguration");
                 redisConfig
                         .useSingleServer()
                         .setAddress(redisServerAddress)
@@ -64,14 +68,24 @@ public class RedisLockConfiguration {
                         .setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
+                LOGGER.info("Setting up Redis Cluster for RedisLockConfiguration");
                 redisConfig
                         .useClusterServers()
                         .setScanInterval(2000) // cluster state scan interval in milliseconds
                         .addNodeAddress(redisServerAddress.split(","))
                         .setPassword(redisServerPassword)
-                        .setTimeout(connectionTimeout);
+                        .setTimeout(connectionTimeout)
+                        .setSlaveConnectionMinimumIdleSize(
+                                properties.getClusterReplicaConnectionMinIdleSize())
+                        .setSlaveConnectionPoolSize(
+                                properties.getClusterReplicaConnectionPoolSize())
+                        .setMasterConnectionMinimumIdleSize(
+                                properties.getClusterPrimaryConnectionMinIdleSize())
+                        .setMasterConnectionPoolSize(
+                                properties.getClusterPrimaryConnectionPoolSize());
                 break;
             case SENTINEL:
+                LOGGER.info("Setting up Redis Sentinel Servers for RedisLockConfiguration");
                 redisConfig
                         .useSentinelServers()
                         .setScanInterval(2000)
