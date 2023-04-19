@@ -222,7 +222,7 @@ public class TestDefaultEventProcessor {
         assertTrue(completed.get());
         verify(queue, atMost(1)).ack(any());
         verify(queue, never()).nack(any());
-        verify(queue, atLeastOnce()).publish(any());
+        verify(queue, never()).publish(any());
     }
 
     @Test
@@ -398,7 +398,8 @@ public class TestDefaultEventProcessor {
                         retryTemplate);
         eventProcessor.handle(queue, message);
         verify(queue, never()).ack(any());
-        verify(queue, never()).publish(any());
+        verify(queue, never()).nack(any());
+        verify(queue, atLeastOnce()).publish(any());
     }
 
     @Test
