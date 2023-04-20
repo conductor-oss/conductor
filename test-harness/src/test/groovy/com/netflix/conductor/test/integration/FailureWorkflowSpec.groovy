@@ -73,6 +73,7 @@ class FailureWorkflowSpec extends AbstractSpecification {
                 input['failureTaskId'] == workflowFailureTaskId
                 tasks.size() == 1
                 tasks[0].taskType == 'LAMBDA'
+                input['failedWorkflow'] != null
             }
         }
     }
@@ -140,6 +141,7 @@ class FailureWorkflowSpec extends AbstractSpecification {
                 input['failureTaskId'] == workflowFailureTaskId
                 tasks.size() == 1
                 tasks[0].taskType == 'LAMBDA'
+                input['failedWorkflow'] != null
             }
         }
     }
