@@ -27,4 +27,6 @@ public @interface WorkerTask {
     int threadCount() default 1;
 
     int pollingInterval() default 100;
+
+    String domain() default "";
 }

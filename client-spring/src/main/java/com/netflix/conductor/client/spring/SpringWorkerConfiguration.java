@@ -35,4 +35,10 @@ public class SpringWorkerConfiguration extends WorkerConfiguration {
         String key = "conductor.worker." + taskName + ".threadCount";
         return environment.getProperty(key, Integer.class, 0);
     }
+
+    @Override
+    public String getDomain(String taskName) {
+        String key = "conductor.worker." + taskName + ".domain";
+        return environment.getProperty(key, String.class, null);
+    }
 }
