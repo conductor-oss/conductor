@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.validation.Validator;
@@ -63,6 +64,13 @@ public class StartWorkflow extends WorkflowSystemTask {
         StartWorkflowRequest request = getRequest(taskModel);
         if (request == null) {
             return;
+        }
+
+        if (request.getTaskToDomain() == null || request.getTaskToDomain().isEmpty()) {
+            Map<String, String> workflowTaskToDomainMap = workflow.getTaskToDomain();
+            if (workflowTaskToDomainMap != null) {
+                request.setTaskToDomain(new HashMap<>(workflowTaskToDomainMap));
+            }
         }
 
         // set the correlation id of starter workflow, if its empty in the StartWorkflowRequest
