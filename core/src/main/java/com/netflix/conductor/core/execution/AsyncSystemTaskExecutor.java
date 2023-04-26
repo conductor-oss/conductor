@@ -153,11 +153,14 @@ public class AsyncSystemTaskExecutor {
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             } else {
                 task.setCallbackAfterSeconds(systemTaskCallbackTime);
+                systemTask.getEvaluationOffset(task, systemTaskCallbackTime)
+                        .ifPresentOrElse(task::setCallbackAfterSeconds,
+                                () -> task.setCallbackAfterSeconds(systemTaskCallbackTime));
                 queueDAO.postpone(
                         queueName,
                         task.getTaskId(),
                         task.getWorkflowPriority(),
-                        systemTaskCallbackTime);
+                        task.getCallbackAfterSeconds());
                 LOGGER.debug("{} postponed in queue: {}", task, queueName);
             }
 
