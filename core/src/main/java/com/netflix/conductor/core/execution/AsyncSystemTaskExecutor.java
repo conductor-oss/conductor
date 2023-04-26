@@ -153,8 +153,10 @@ public class AsyncSystemTaskExecutor {
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             } else {
                 task.setCallbackAfterSeconds(systemTaskCallbackTime);
-                systemTask.getEvaluationOffset(task, systemTaskCallbackTime)
-                        .ifPresentOrElse(task::setCallbackAfterSeconds,
+                systemTask
+                        .getEvaluationOffset(task, systemTaskCallbackTime)
+                        .ifPresentOrElse(
+                                task::setCallbackAfterSeconds,
                                 () -> task.setCallbackAfterSeconds(systemTaskCallbackTime));
                 queueDAO.postpone(
                         queueName,
