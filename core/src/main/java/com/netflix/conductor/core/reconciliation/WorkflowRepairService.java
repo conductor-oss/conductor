@@ -16,7 +16,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
-import com.netflix.conductor.core.exception.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +25,7 @@ import org.springframework.stereotype.Service;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -103,8 +103,12 @@ public class WorkflowRepairService {
 
     /** Verify and repair tasks in a workflow. */
     public void verifyAndRepairWorkflowTasks(String workflowId) {
-        WorkflowModel workflow = Optional.ofNullable(executionDAO.getWorkflow(workflowId, true))
-                .orElseThrow(() -> new NotFoundException("Could not find workflow: " + workflowId));
+        WorkflowModel workflow =
+                Optional.ofNullable(executionDAO.getWorkflow(workflowId, true))
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "Could not find workflow: " + workflowId));
         workflow.getTasks().forEach(this::verifyAndRepairTask);
         // repair the parent workflow if needed
         verifyAndRepairWorkflow(workflow.getParentWorkflowId());
