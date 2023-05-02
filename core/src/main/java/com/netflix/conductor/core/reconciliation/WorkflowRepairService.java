@@ -12,9 +12,11 @@
  */
 package com.netflix.conductor.core.reconciliation;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
+import com.netflix.conductor.core.exception.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +103,8 @@ public class WorkflowRepairService {
 
     /** Verify and repair tasks in a workflow. */
     public void verifyAndRepairWorkflowTasks(String workflowId) {
-        WorkflowModel workflow = executionDAO.getWorkflow(workflowId, true);
+        WorkflowModel workflow = Optional.ofNullable(executionDAO.getWorkflow(workflowId, true))
+                .orElseThrow(() -> new NotFoundException("Could not find workflow: " + workflowId));
         workflow.getTasks().forEach(this::verifyAndRepairTask);
         // repair the parent workflow if needed
         verifyAndRepairWorkflow(workflow.getParentWorkflowId());
