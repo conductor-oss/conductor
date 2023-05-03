@@ -338,6 +338,19 @@ class WorkflowGraph extends React.Component {
     inner.selectAll("g.node").on("click", this.handleClick);
   };
 
+  /**
+   * Get the taskRef id base on browsers
+   * @param e
+   * @returns {string | undefined} The id of the task ref
+   */
+  getTaskRef = (e) => {
+    const flag = navigator.userAgent.toLowerCase().indexOf("firefox") > -1 || navigator.userAgent.toLowerCase().indexOf("chrome") > -1;
+    if (flag) {
+      return e.target?.parentNode?.id;
+    }
+    return e?.path[1]?.id || e?.path[2]?.id; // could be 2 layers down
+  };
+
   handleClick = (e) => {
     const taskRef = e.composedPath()[1].id || e.composedPath()[2].id; // could be 2 layers down
     const node = this.graph.node(taskRef);
@@ -667,7 +680,7 @@ function barRenderer(parent, bbox, node) {
     return {
       x:
         (node.fanDir === "down" && point.y > node.y) ||
-        (node.fanDir === "up" && point.y < node.y)
+          (node.fanDir === "up" && point.y < node.y)
           ? point.x
           : intersect.rect(node, point).x,
       y: point.y < node.y ? node.y - bbox.height / 2 : node.y + bbox.height / 2,
@@ -687,8 +700,7 @@ function stackRenderer(parent, bbox, node) {
     .attr("height", bbox.height)
     .attr(
       "transform",
-      `translate(${-bbox.width / 2 - STACK_OFFSET * 2}, ${
-        -bbox.height / 2 - STACK_OFFSET * 2
+      `translate(${-bbox.width / 2 - STACK_OFFSET * 2}, ${-bbox.height / 2 - STACK_OFFSET * 2
       })`
     );
   group
@@ -697,8 +709,7 @@ function stackRenderer(parent, bbox, node) {
     .attr("height", bbox.height)
     .attr(
       "transform",
-      `translate(${-bbox.width / 2 - STACK_OFFSET}, ${
-        -bbox.height / 2 - STACK_OFFSET
+      `translate(${-bbox.width / 2 - STACK_OFFSET}, ${-bbox.height / 2 - STACK_OFFSET
       })`
     );
   group
