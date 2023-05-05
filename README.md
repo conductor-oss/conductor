@@ -13,7 +13,7 @@ Conductor supports creating workflows using JSON and Code.
 SDK support for creating workflows using code is available in multiple languages and can be found at https://github.com/conductor-sdk
 
 ## Documentation
-[Main Documentation Site](http://conductor.netflix.com/)  
+[Main Documentation Site](https://conductor.netflix.com/)  
 
 ## Releases
 The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
