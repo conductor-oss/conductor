@@ -63,7 +63,7 @@ public class TaskDef extends BaseDef {
 
     @ProtoField(id = 3)
     @Min(value = 0, message = "TaskDef retryCount: {value} must be >= 0")
-    @Max(value = 10, message = "TaskDef retryCount: {value} must be <=10")
+    @Max(value = 10, message = "TaskDef retryCount: ${validatedValue} must be <= {value}")
     private int retryCount = 3; // Default
 
     @ProtoField(id = 4)
