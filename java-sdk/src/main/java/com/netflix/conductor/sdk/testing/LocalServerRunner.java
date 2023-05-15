@@ -65,6 +65,7 @@ public class LocalServerRunner {
     public String getServerAPIUrl() {
         return this.serverURL + "api/";
     }
+
     /**
      * Starts the local server. Downloads the latest conductor build from the maven repo If you want
      * to start the server from a specific download location, set `repositoryURL` system property
