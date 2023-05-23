@@ -42,8 +42,8 @@ import com.netflix.conductor.core.exception.*;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -1504,7 +1504,7 @@ public class WorkflowExecutor {
     private void addTaskToQueue(final List<TaskModel> tasks) {
         for (TaskModel task : tasks) {
             addTaskToQueue(task);
-            //notify TaskStatusListener
+            // notify TaskStatusListener
             taskStatusListener.onTaskScheduled(task);
         }
     }
