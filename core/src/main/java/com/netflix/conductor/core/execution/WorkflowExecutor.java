@@ -43,6 +43,7 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -81,6 +82,7 @@ public class WorkflowExecutor {
     private final ParametersUtils parametersUtils;
     private final IDGenerator idGenerator;
     private final WorkflowStatusListener workflowStatusListener;
+    private final TaskStatusListener taskStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private long activeWorkerLastPollMs;
@@ -97,6 +99,7 @@ public class WorkflowExecutor {
             QueueDAO queueDAO,
             MetadataMapperService metadataMapperService,
             WorkflowStatusListener workflowStatusListener,
+            TaskStatusListener taskStatusListener,
             ExecutionDAOFacade executionDAOFacade,
             ConductorProperties properties,
             ExecutionLockService executionLockService,
@@ -112,6 +115,7 @@ public class WorkflowExecutor {
         this.executionDAOFacade = executionDAOFacade;
         this.activeWorkerLastPollMs = properties.getActiveWorkerLastPollTimeout().toMillis();
         this.workflowStatusListener = workflowStatusListener;
+        this.taskStatusListener = taskStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
@@ -1500,6 +1504,8 @@ public class WorkflowExecutor {
     private void addTaskToQueue(final List<TaskModel> tasks) {
         for (TaskModel task : tasks) {
             addTaskToQueue(task);
+            //notify TaskStatusListener
+            taskStatusListener.onTaskScheduled(task);
         }
     }
 
