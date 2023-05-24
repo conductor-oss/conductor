@@ -30,6 +30,7 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 public class EventClient extends ClientBase {
     private static final GenericType<List<EventHandler>> eventHandlerList =
             new GenericType<List<EventHandler>>() {};
+
     /** Creates a default metadata client */
     public EventClient() {
         this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
