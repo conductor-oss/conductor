@@ -850,6 +850,8 @@ public class WorkflowExecutor {
             throw new TransientException(errorMsg, e);
         }
 
+        notifyTaskStatusListener(task);
+
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
 
@@ -864,6 +866,33 @@ public class WorkflowExecutor {
 
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
+        }
+    }
+
+    private void notifyTaskStatusListener(TaskModel task) {
+        switch (task.getStatus()) {
+            case COMPLETED:
+                taskStatusListener.onTaskCompleted(task);
+                break;
+            case CANCELED:
+                taskStatusListener.onTaskCanceled(task);
+                break;
+            case FAILED:
+                taskStatusListener.onTaskFailed(task);
+                break;
+            case FAILED_WITH_TERMINAL_ERROR:
+                taskStatusListener.onTaskFailedWithTerminalError(task);
+                break;
+            case TIMED_OUT:
+                taskStatusListener.onTaskTimedOut(task);
+                break;
+            case IN_PROGRESS:
+                taskStatusListener.onTaskInProgress(task);
+                break;
+            case SCHEDULED:
+                // no-op, already done in addTaskToQueue
+            default:
+                break;
         }
     }
 
