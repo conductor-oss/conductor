@@ -850,7 +850,15 @@ public class WorkflowExecutor {
             throw new TransientException(errorMsg, e);
         }
 
-        notifyTaskStatusListener(task);
+        try {
+            notifyTaskStatusListener(task);
+        } catch (Exception e) {
+            String errorMsg =
+                    String.format(
+                            "Error while notifying TaskStatusListener: %s for workflow: %s",
+                            task.getTaskId(), workflowId);
+            LOGGER.error(errorMsg, e);
+        }
 
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
@@ -1534,7 +1542,15 @@ public class WorkflowExecutor {
         for (TaskModel task : tasks) {
             addTaskToQueue(task);
             // notify TaskStatusListener
-            taskStatusListener.onTaskScheduled(task);
+            try {
+                taskStatusListener.onTaskScheduled(task);
+            } catch (Exception e) {
+                String errorMsg =
+                        String.format(
+                                "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                task.getTaskId(), task.getWorkflowInstanceId());
+                LOGGER.error(errorMsg, e);
+            }
         }
     }
 
