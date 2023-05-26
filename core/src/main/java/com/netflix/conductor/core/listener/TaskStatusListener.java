@@ -14,14 +14,27 @@ package com.netflix.conductor.core.listener;
 
 import com.netflix.conductor.model.TaskModel;
 
-/** Listener for the Task status change */
+/**
+ * Listener for the Task status change. All methods have default implementation so that
+ * Implementation can choose to override a subset of interested Task statuses.
+ */
 public interface TaskStatusListener {
 
-    void onTaskScheduled(TaskModel task);
+    default void onTaskScheduled(TaskModel task) {}
 
-    /*
-     * TBD - to be added later
-     * onTaskCompleted
-     */
+    default void onTaskInProgress(TaskModel task) {}
 
+    default void onTaskCanceled(TaskModel task) {}
+
+    default void onTaskFailed(TaskModel task) {}
+
+    default void onTaskFailedWithTerminalError(TaskModel task) {}
+
+    default void onTaskCompleted(TaskModel task) {}
+
+    default void onTaskCompletedWithErrors(TaskModel task) {}
+
+    default void onTaskTimedOut(TaskModel task) {}
+
+    default void onTaskSkipped(TaskModel task) {}
 }
