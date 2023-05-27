@@ -545,7 +545,11 @@ public class DeciderService {
                     break;
             }
             updateWorkflowOutput(workflow, task);
-            throw new TerminateWorkflowException(task.getReasonForIncompletion(), status, task);
+            final String errMsg =
+                    String.format(
+                            "Task %s failed with status: %s and reason: '%s'",
+                            task.getTaskId(), status, task.getReasonForIncompletion());
+            throw new TerminateWorkflowException(errMsg, status, task);
         }
 
         // retry... - but not immediately - put a delay...
