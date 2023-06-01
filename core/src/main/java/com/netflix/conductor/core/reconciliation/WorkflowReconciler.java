@@ -42,6 +42,7 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
     private final WorkflowSweeper workflowSweeper;
     private final QueueDAO queueDAO;
     private final int sweeperThreadCount;
+    private final int sweeperWorkflowPollTimeout;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowReconciler.class);
 
@@ -50,6 +51,8 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
         this.sweeperThreadCount = properties.getSweeperThreadCount();
+        this.sweeperWorkflowPollTimeout =
+                (int) properties.getSweeperWorkflowPollTimeout().toMillis();
         LOGGER.info(
                 "WorkflowReconciler initialized with {} sweeper threads",
                 properties.getSweeperThreadCount());
@@ -63,7 +66,8 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
             if (!isRunning()) {
                 LOGGER.debug("Component stopped, skip workflow sweep");
             } else {
-                List<String> workflowIds = queueDAO.pop(DECIDER_QUEUE, sweeperThreadCount, 2000);
+                List<String> workflowIds =
+                        queueDAO.pop(DECIDER_QUEUE, sweeperThreadCount, sweeperWorkflowPollTimeout);
                 if (workflowIds != null) {
                     // wait for all workflow ids to be "swept"
                     CompletableFuture.allOf(

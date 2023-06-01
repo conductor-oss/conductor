@@ -131,6 +131,7 @@ Changes to configurations:
 | workflow.executor.service.max.threads | conductor.app.executorServiceMaxThreadCount | 50 |
 | decider.sweep.frequency.seconds | conductor.app.sweepFrequency | 30s |
 | workflow.sweeper.thread.count | conductor.app.sweeperThreadCount | 5 |
+| - | conductor.app.sweeperWorkflowPollTimeout | 2000ms |
 | workflow.event.processor.thread.count | conductor.app.eventProcessorThreadCount | 2 |
 | workflow.event.message.indexing.enabled | conductor.app.eventMessageIndexingEnabled | true |
 | workflow.event.execution.indexing.enabled | conductor.app.eventExecutionIndexingEnabled | true |
