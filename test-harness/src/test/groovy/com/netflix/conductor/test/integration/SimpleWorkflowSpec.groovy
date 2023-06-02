@@ -210,10 +210,12 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         and: "verify that the workflow is in a failed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
-            reasonForIncompletion == 'NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down'
+            def t1 = getTaskByRefName('t1')
+            reasonForIncompletion == "Task ${t1.taskId} failed with status: FAILED and reason: " +
+                    "'NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down'"
             output['o1'] == 'p1 value'
             output['validationErrors'] == 'There was a terminal error'
-            getTaskByRefName('t1').retryCount == 0
+            t1.retryCount == 0
             failedReferenceTaskNames == ['t1'] as HashSet
             failedTaskNames == ['integration_task_1'] as HashSet
         }
