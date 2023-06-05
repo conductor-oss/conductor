@@ -58,12 +58,12 @@ public class TestWorkflowSweeper {
     }
 
     @Test
-    public void testPostponeDurationForWaitTaskType() {
+    public void testPostponeDurationForHumanTaskType() {
         WorkflowModel workflowModel = new WorkflowModel();
         workflowModel.setWorkflowId("1");
         TaskModel taskModel = new TaskModel();
         taskModel.setTaskId("task1");
-        taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
+        taskModel.setTaskType(TaskType.TASK_TYPE_HUMAN);
         taskModel.setStatus(Status.IN_PROGRESS);
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
@@ -77,6 +77,42 @@ public class TestWorkflowSweeper {
     }
 
     @Test
+    public void testPostponeDurationForWaitTaskType() {
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("task1");
+        taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
+        taskModel.setStatus(Status.IN_PROGRESS);
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+        verify(queueDAO).setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), 1000);
+    }
+
+    @Test
+    public void testPostponeDurationForWaitTaskTypeWithLongWaitTime() {
+        long waitTimeout = 65845;
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("task1");
+        taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
+        taskModel.setStatus(Status.IN_PROGRESS);
+        taskModel.setWaitTimeout(System.currentTimeMillis() + waitTimeout);
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        (waitTimeout / 1000L + 1L) * 1000L);
+    }
+
+    @Test
     public void testPostponeDurationForWaitTaskTypeWithWaitTime() {
         long waitTimeout = 180;
         WorkflowModel workflowModel = new WorkflowModel();
@@ -85,14 +121,16 @@ public class TestWorkflowSweeper {
         taskModel.setTaskId("task1");
         taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
         taskModel.setStatus(Status.IN_PROGRESS);
-        taskModel.setWaitTimeout(waitTimeout);
+        taskModel.setWaitTimeout(System.currentTimeMillis() + waitTimeout);
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
-                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout + 1) * 1000);
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        (waitTimeout / 1000 + 1) * 1000);
     }
 
     @Test

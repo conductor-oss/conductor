@@ -119,7 +119,7 @@ public class WorkflowSweeper {
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
                 if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)) {
                     long deltaInSeconds =
-                            (System.currentTimeMillis() - taskModel.getWaitTimeout()) / 1000;
+                            (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
                     postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds + 1 : 1;
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     postponeDurationSeconds = properties.getWorkflowOffsetTimeout().getSeconds();
