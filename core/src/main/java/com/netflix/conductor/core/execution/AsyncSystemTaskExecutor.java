@@ -65,10 +65,16 @@ public class AsyncSystemTaskExecutor {
         if (task == null) {
             LOGGER.error("TaskId: {} could not be found while executing {}", taskId, systemTask);
             try {
-                LOGGER.debug("Cleaning up dead task from queue message: taskQueue={}, taskId={}", systemTask.getTaskType(), taskId);
+                LOGGER.debug(
+                        "Cleaning up dead task from queue message: taskQueue={}, taskId={}",
+                        systemTask.getTaskType(),
+                        taskId);
                 queueDAO.remove(systemTask.getTaskType(), taskId);
             } catch (Exception e) {
-                LOGGER.error("Failed to remove dead task from queue message: taskQueue={}, taskId={}", systemTask.getTaskType(), taskId);
+                LOGGER.error(
+                        "Failed to remove dead task from queue message: taskQueue={}, taskId={}",
+                        systemTask.getTaskType(),
+                        taskId);
             }
             return;
         }
