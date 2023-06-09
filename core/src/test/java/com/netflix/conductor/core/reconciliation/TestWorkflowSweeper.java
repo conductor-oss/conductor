@@ -88,7 +88,11 @@ public class TestWorkflowSweeper {
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
-        verify(queueDAO).setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), 1000);
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        defaultPostPoneOffSetSeconds * 1000);
     }
 
     @Test

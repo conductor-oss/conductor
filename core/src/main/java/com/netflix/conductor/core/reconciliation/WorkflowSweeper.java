@@ -118,11 +118,15 @@ public class WorkflowSweeper {
         for (TaskModel taskModel : workflowModel.getTasks()) {
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
                 if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)) {
-                    long deltaInSeconds =
-                            (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
-                    postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds + 1 : 1;
+                    if (taskModel.getWaitTimeout() == 0) {
+                        postponeDurationSeconds = workflowOffsetTimeout;
+                    } else {
+                        long deltaInSeconds =
+                                (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
+                        postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds + 1 : 1;
+                    }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
-                    postponeDurationSeconds = properties.getWorkflowOffsetTimeout().getSeconds();
+                    postponeDurationSeconds = workflowOffsetTimeout;
                 } else {
                     postponeDurationSeconds =
                             (taskModel.getResponseTimeoutSeconds() != 0)
