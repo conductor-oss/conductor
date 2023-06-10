@@ -64,6 +64,18 @@ public class AsyncSystemTaskExecutor {
         TaskModel task = loadTaskQuietly(taskId);
         if (task == null) {
             LOGGER.error("TaskId: {} could not be found while executing {}", taskId, systemTask);
+            try {
+                LOGGER.debug(
+                        "Cleaning up dead task from queue message: taskQueue={}, taskId={}",
+                        systemTask.getTaskType(),
+                        taskId);
+                queueDAO.remove(systemTask.getTaskType(), taskId);
+            } catch (Exception e) {
+                LOGGER.error(
+                        "Failed to remove dead task from queue message: taskQueue={}, taskId={}",
+                        systemTask.getTaskType(),
+                        taskId);
+            }
             return;
         }
 
@@ -153,11 +165,16 @@ public class AsyncSystemTaskExecutor {
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             } else {
                 task.setCallbackAfterSeconds(systemTaskCallbackTime);
+                systemTask
+                        .getEvaluationOffset(task, systemTaskCallbackTime)
+                        .ifPresentOrElse(
+                                task::setCallbackAfterSeconds,
+                                () -> task.setCallbackAfterSeconds(systemTaskCallbackTime));
                 queueDAO.postpone(
                         queueName,
                         task.getTaskId(),
                         task.getWorkflowPriority(),
-                        systemTaskCallbackTime);
+                        task.getCallbackAfterSeconds());
                 LOGGER.debug("{} postponed in queue: {}", task, queueName);
             }
 

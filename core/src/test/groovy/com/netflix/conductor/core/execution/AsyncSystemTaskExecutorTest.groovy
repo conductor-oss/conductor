@@ -238,6 +238,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty();
+
 
         when:
         executor.execute(workflowSystemTask, taskId)

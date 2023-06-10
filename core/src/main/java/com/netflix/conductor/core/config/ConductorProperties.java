@@ -45,6 +45,9 @@ public class ConductorProperties {
     /** The number of threads to use to do background sweep on active workflows. */
     private int sweeperThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
+    /** The timeout (in milliseconds) for the polling of workflows to be swept. */
+    private Duration sweeperWorkflowPollTimeout = Duration.ofMillis(2000);
+
     /** The number of threads to configure the threadpool in the event processor. */
     private int eventProcessorThreadCount = 2;
 
@@ -248,6 +251,14 @@ public class ConductorProperties {
 
     public void setSweeperThreadCount(int sweeperThreadCount) {
         this.sweeperThreadCount = sweeperThreadCount;
+    }
+
+    public Duration getSweeperWorkflowPollTimeout() {
+        return sweeperWorkflowPollTimeout;
+    }
+
+    public void setSweeperWorkflowPollTimeout(Duration sweeperWorkflowPollTimeout) {
+        this.sweeperWorkflowPollTimeout = sweeperWorkflowPollTimeout;
     }
 
     public int getEventProcessorThreadCount() {
