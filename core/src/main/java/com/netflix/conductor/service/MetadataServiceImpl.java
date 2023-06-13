@@ -218,6 +218,11 @@ public class MetadataServiceImpl implements MetadataService {
         return eventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
     }
 
+    @Override
+    public List<WorkflowDef> getWorkflowDefsLatestVersions() {
+        return metadataDAO.getAllWorkflowDefsLatestVersions();
+    }
+
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
         List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
 
