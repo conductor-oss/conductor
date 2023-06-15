@@ -111,9 +111,7 @@ public class TestWorkflowSweeper {
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
-                        DECIDER_QUEUE,
-                        workflowModel.getWorkflowId(),
-                        (waitTimeout / 1000L) * 1000L);
+                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout / 1000) * 1000);
     }
 
     @Test
