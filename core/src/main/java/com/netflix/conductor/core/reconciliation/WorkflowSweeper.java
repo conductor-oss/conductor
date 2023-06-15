@@ -123,7 +123,7 @@ public class WorkflowSweeper {
                     } else {
                         long deltaInSeconds =
                                 (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
-                        postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds + 1 : 1;
+                        postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     postponeDurationSeconds = workflowOffsetTimeout;
