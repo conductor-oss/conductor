@@ -925,10 +925,10 @@ public class WorkflowExecutor {
                         .collect(Collectors.toList());
 
         if (forkTasks.stream().anyMatch(fork -> fork.has(taskRefName))) {
-            return joinTasks.stream().anyMatch(join -> join.getJoinOn().contains(taskRefName));
+            return joinTasks.stream().anyMatch(join -> join.getJoinOn().contains(taskRefName)) && task.getStatus().isSuccessful();
         }
 
-        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName));
+        return workflowTasks.stream().noneMatch(t -> t.getTaskReferenceName().equals(taskRefName)) && task.getStatus().isSuccessful();
     }
 
     public TaskModel getTask(String taskId) {
