@@ -35,6 +35,8 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.listener.TaskStatusListenerStub;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListenerStub;
 import com.netflix.conductor.core.storage.DummyPayloadStorage;
@@ -78,6 +80,15 @@ public class ConductorCoreConfiguration {
     @Bean
     public WorkflowStatusListener workflowStatusListener() {
         return new WorkflowStatusListenerStub();
+    }
+
+    @ConditionalOnProperty(
+            name = "conductor.task-status-listener.type",
+            havingValue = "stub",
+            matchIfMissing = true)
+    @Bean
+    public TaskStatusListener taskStatusListener() {
+        return new TaskStatusListenerStub();
     }
 
     @Bean

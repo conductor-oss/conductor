@@ -42,6 +42,7 @@ import com.netflix.conductor.core.exception.*;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
@@ -81,6 +82,7 @@ public class WorkflowExecutor {
     private final ParametersUtils parametersUtils;
     private final IDGenerator idGenerator;
     private final WorkflowStatusListener workflowStatusListener;
+    private final TaskStatusListener taskStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private long activeWorkerLastPollMs;
@@ -97,6 +99,7 @@ public class WorkflowExecutor {
             QueueDAO queueDAO,
             MetadataMapperService metadataMapperService,
             WorkflowStatusListener workflowStatusListener,
+            TaskStatusListener taskStatusListener,
             ExecutionDAOFacade executionDAOFacade,
             ConductorProperties properties,
             ExecutionLockService executionLockService,
@@ -112,6 +115,7 @@ public class WorkflowExecutor {
         this.executionDAOFacade = executionDAOFacade;
         this.activeWorkerLastPollMs = properties.getActiveWorkerLastPollTimeout().toMillis();
         this.workflowStatusListener = workflowStatusListener;
+        this.taskStatusListener = taskStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
@@ -846,6 +850,16 @@ public class WorkflowExecutor {
             throw new TransientException(errorMsg, e);
         }
 
+        try {
+            notifyTaskStatusListener(task);
+        } catch (Exception e) {
+            String errorMsg =
+                    String.format(
+                            "Error while notifying TaskStatusListener: %s for workflow: %s",
+                            task.getTaskId(), workflowId);
+            LOGGER.error(errorMsg, e);
+        }
+
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
 
@@ -860,6 +874,33 @@ public class WorkflowExecutor {
 
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
+        }
+    }
+
+    private void notifyTaskStatusListener(TaskModel task) {
+        switch (task.getStatus()) {
+            case COMPLETED:
+                taskStatusListener.onTaskCompleted(task);
+                break;
+            case CANCELED:
+                taskStatusListener.onTaskCanceled(task);
+                break;
+            case FAILED:
+                taskStatusListener.onTaskFailed(task);
+                break;
+            case FAILED_WITH_TERMINAL_ERROR:
+                taskStatusListener.onTaskFailedWithTerminalError(task);
+                break;
+            case TIMED_OUT:
+                taskStatusListener.onTaskTimedOut(task);
+                break;
+            case IN_PROGRESS:
+                taskStatusListener.onTaskInProgress(task);
+                break;
+            case SCHEDULED:
+                // no-op, already done in addTaskToQueue
+            default:
+                break;
         }
     }
 
@@ -1500,6 +1541,16 @@ public class WorkflowExecutor {
     private void addTaskToQueue(final List<TaskModel> tasks) {
         for (TaskModel task : tasks) {
             addTaskToQueue(task);
+            // notify TaskStatusListener
+            try {
+                taskStatusListener.onTaskScheduled(task);
+            } catch (Exception e) {
+                String errorMsg =
+                        String.format(
+                                "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                task.getTaskId(), task.getWorkflowInstanceId());
+                LOGGER.error(errorMsg, e);
+            }
         }
     }
 
