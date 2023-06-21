@@ -2491,6 +2491,7 @@ public class TestWorkflowExecutor {
         workflowDef.getTasks().addAll(List.of(simpleTask, forkTask, joinTask, doWhile));
 
         TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.COMPLETED);
 
         // when:
         task.setReferenceTaskName("dynamic");
@@ -2507,6 +2508,10 @@ public class TestWorkflowExecutor {
 
         task.setReferenceTaskName("loopTask__1");
         task.setIteration(1);
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("branchTask1");
+        task.setStatus(TaskModel.Status.FAILED);
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
     }
 
