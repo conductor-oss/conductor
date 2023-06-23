@@ -49,6 +49,7 @@ import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
 import com.netflix.conductor.core.execution.tasks.*;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.operation.StartWorkflowOperation;
@@ -85,6 +86,7 @@ public class TestWorkflowExecutor {
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
+    private TaskStatusListener taskStatusListener;
     private ExecutionLockService executionLockService;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
@@ -160,6 +162,7 @@ public class TestWorkflowExecutor {
         metadataDAO = mock(MetadataDAO.class);
         queueDAO = mock(QueueDAO.class);
         workflowStatusListener = mock(WorkflowStatusListener.class);
+        taskStatusListener = mock(TaskStatusListener.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         executionLockService = mock(ExecutionLockService.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
@@ -210,6 +213,7 @@ public class TestWorkflowExecutor {
                         queueDAO,
                         metadataMapperService,
                         workflowStatusListener,
+                        taskStatusListener,
                         executionDAOFacade,
                         properties,
                         executionLockService,
@@ -2487,6 +2491,7 @@ public class TestWorkflowExecutor {
         workflowDef.getTasks().addAll(List.of(simpleTask, forkTask, joinTask, doWhile));
 
         TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.COMPLETED);
 
         // when:
         task.setReferenceTaskName("dynamic");
@@ -2503,6 +2508,10 @@ public class TestWorkflowExecutor {
 
         task.setReferenceTaskName("loopTask__1");
         task.setIteration(1);
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("branchTask1");
+        task.setStatus(TaskModel.Status.FAILED);
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
     }
 

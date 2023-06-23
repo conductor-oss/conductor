@@ -97,6 +97,11 @@
       "description": "The implementation of the workflow status listener to be used."
     },
     {
+      "name": "conductor.task-status-listener.type",
+      "type": "java.lang.String",
+      "description": "The implementation of the task status listener to be used."
+    },
+    {
       "name": "conductor.workflow-execution-lock.type",
       "type": "java.lang.String",
       "description": "The implementation of the workflow execution lock to be used.",

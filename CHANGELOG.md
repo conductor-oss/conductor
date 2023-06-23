@@ -355,6 +355,7 @@ Changes to configurations:
 | workflow.default.event.processor.enabled | conductor.default-event-processor.enabled | true |
 | workflow.events.default.queue.type | conductor.default-event-queue.type | sqs |
 | workflow.status.listener.type | conductor.workflow-status-listener.type | stub |
+| - | conductor.task-status-listener.type | stub |
 | workflow.decider.locking.server | conductor.workflow-execution-lock.type | noop_lock |
 |  |  |  |
 | workflow.default.event.queue.enabled | conductor.event-queues.default.enabled | true |
