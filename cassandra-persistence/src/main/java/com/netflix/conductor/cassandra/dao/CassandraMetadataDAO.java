@@ -331,19 +331,6 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             return allWorkflowDefs.values().stream()
                     .map(PriorityQueue::poll)
                     .collect(Collectors.toList());
-            //            return rows.stream()
-            //                    .map(
-            //                            row -> {
-            //                                String defNameVersion =
-            //                                        row.getString(WORKFLOW_DEF_NAME_VERSION_KEY);
-            //                                var nameVersion =
-            // getWorkflowNameAndVersion(defNameVersion);
-            //                                return getWorkflowDef(nameVersion.getLeft(),
-            // nameVersion.getRight())
-            //                                        .orElse(null);
-            //                            })
-            //                    .filter(Objects::nonNull)
-            //                    .collect(Collectors.toList());
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefsLatestVersions");
             String errorMsg = "Error retrieving all workflow defs latest versions";
