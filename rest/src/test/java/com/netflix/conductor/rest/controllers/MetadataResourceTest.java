@@ -102,7 +102,7 @@ public class MetadataResourceTest {
         listOfWorkflowDef.add(workflowDef);
 
         when(mockMetadataService.getWorkflowDefsLatestVersions()).thenReturn(listOfWorkflowDef);
-        assertEquals(listOfWorkflowDef, metadataResource.getAllWithLatestVersions());
+        assertEquals(listOfWorkflowDef, metadataResource.getAllWorkflowsWithLatestVersions());
     }
 
     @Test
