@@ -242,4 +242,66 @@ public class SwitchTaskMapperTest {
         assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
         assertEquals("Foo", mappedTasks.get(1).getReferenceTaskName());
     }
+
+    @Test
+    public void getMappedTasksWhenEvaluatorThrowsException() {
+
+        // Given
+        // Task Definition
+        TaskDef taskDef = new TaskDef();
+        Map<String, Object> inputMap = new HashMap<>();
+        List<Map<String, Object>> taskDefinitionInput = new LinkedList<>();
+        taskDefinitionInput.add(inputMap);
+
+        // Switch task instance
+        WorkflowTask switchTask = new WorkflowTask();
+        switchTask.setType(TaskType.SWITCH.name());
+        switchTask.setName("Switch");
+        switchTask.setTaskReferenceName("switchTask");
+        switchTask.setDefaultCase(Collections.singletonList(task1));
+        switchTask.setEvaluatorType(JavascriptEvaluator.NAME);
+        switchTask.setExpression("undefinedVariable");
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("even", Collections.singletonList(task2));
+        switchTask.setDecisionCases(decisionCases);
+        // Workflow instance
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("input", taskDefinitionInput);
+        taskDef.getInputTemplate().putAll(body);
+
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        switchTask.getInputParameters(), workflowModel, null, null);
+
+        TaskModel theTask = new TaskModel();
+        theTask.setReferenceTaskName("Foo");
+        theTask.setTaskId(idGenerator.generate());
+
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
+                .thenReturn(Collections.singletonList(theTask));
+
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(switchTask)
+                        .withTaskInput(input)
+                        .withRetryCount(0)
+                        .withTaskId(idGenerator.generate())
+                        .withDeciderService(deciderService)
+                        .build();
+
+        // When
+        List<TaskModel> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
+
+        // Then
+        assertEquals(1, mappedTasks.size());
+        assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
+        assertEquals(TaskModel.Status.FAILED, mappedTasks.get(0).getStatus());
+    }
 }
