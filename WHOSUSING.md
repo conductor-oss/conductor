@@ -13,3 +13,4 @@ We would like to keep track of whose using Conductor. Please send a pull request
 *  [313X](https://313x.com.br)[[@dalmoveras](https://github.com/dalmoveras)]
 *  [Supercharge](https://supercharge.io)[[@team-supercharge](https://github.com/team-supercharge)]
 *  [GE Healthcare](https://www.gehealthcare.com/) [[@flavioschuindt](https://github.com/flavioschuindt)]
+* [Clari](https://www.clari.com/) [[@TeamJOF](https://github.com/clari)]
