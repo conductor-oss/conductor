@@ -13,7 +13,9 @@
 package com.netflix.conductor.client.http
 
 import com.netflix.conductor.client.exception.ConductorClientException
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 
+import com.sun.jersey.api.client.ClientResponse
 import spock.lang.Subject
 
 class MetadataClientSpec extends ClientSpecification {
@@ -74,5 +76,19 @@ class MetadataClientSpec extends ClientSpecification {
 
         then:
         thrown(IllegalArgumentException.class)
+    }
+
+    def "workflow get all definitions latest version"() {
+        given:
+        List<WorkflowDef> result = new ArrayList<WorkflowDef>()
+        URI uri = createURI("metadata/workflow/latest-versions")
+
+        when:
+        metadataClient.getAllWorkflowsWithLatestVersions()
+
+        then:
+        1 * requestHandler.get(uri) >>  Mock(ClientResponse.class) {
+            getEntity(_) >> result
+        }
     }
 }
