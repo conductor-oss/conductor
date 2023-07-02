@@ -86,7 +86,22 @@ public class SwitchTaskMapper implements TaskMapper {
             LOGGER.error(errorMsg);
             throw new TerminateWorkflowException(errorMsg);
         }
-        String evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
+
+        String evalResult = "";
+        try {
+            evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
+        } catch (Exception exception) {
+            TaskModel switchTask = taskMapperContext.createTaskModel();
+            switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
+            switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
+            switchTask.getInputData().putAll(taskInput);
+            switchTask.setStartTime(System.currentTimeMillis());
+            switchTask.setStatus(TaskModel.Status.FAILED);
+            switchTask.setReasonForIncompletion(exception.getMessage());
+            tasksToBeScheduled.add(switchTask);
+
+            return tasksToBeScheduled;
+        }
 
         // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
         TaskModel switchTask = taskMapperContext.createTaskModel();
