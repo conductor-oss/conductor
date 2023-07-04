@@ -8,6 +8,10 @@ Conductor is a platform created by Netflix to orchestrate workflows that span ac
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
+[![GitHub stars](https://img.shields.io/github/stars/Netflix/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/Netflix/conductor/stargazers/)
+[![GitHub forks](https://img.shields.io/github/forks/Netflix/conductor.svg?style=social&label=Fork&maxAge=2592000)](https://GitHub.com/Netflix/conductor/network/)
+
+
 ## Workflow Creation in Code
 Conductor supports creating workflows using JSON and Code.  
 SDK support for creating workflows using code is available in multiple languages and can be found at https://github.com/conductor-sdk
@@ -62,8 +66,7 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 
 ## Database Requirements
 
-* The default persistence used is [Dynomite](https://github.com/Netflix/dynomite)
-* For queues, we are relying on [dyno-queues](https://github.com/Netflix/dyno-queues)
+* The default persistence used is Redis
 * The indexing backend is [Elasticsearch](https://www.elastic.co/) (6.x)
 
 ## Other Requirements
