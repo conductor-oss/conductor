@@ -22,9 +22,9 @@ The latest version is [![Github release](https://img.shields.io/github/v/release
 [2.31.8](https://github.com/Netflix/conductor/releases/tag/v2.31.8) is the **final** release of `2.31` branch. As of Feb 2022, `1.x` & `2.x` versions are no longer supported.
 
 ## Resources
-### [Slack Community](https://app.slack.com/client/T02KG20GJ1Z)
-We have an active [community](https://app.slack.com/client/T02KG20GJ1Z) of Conductor users and contributors on the channel.
-### [Documentation Site](https://conductor.netflix.com/)
+#### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
+We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg) of Conductor users and contributors on the channel.
+#### [Documentation Site](https://conductor.netflix.com/)
 [Documentation](https://conductor.netflix.com/) and tutorial on how to use Conductor
 
 ## Workflow Creation in Code
@@ -82,7 +82,7 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 
 ## Get Support
 There are several ways to get in touch with us:
-* [Slack Community](https://app.slack.com/client/T02KG20GJ1Z)
+* [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
 * [GitHub Discussion Forum](https://github.com/Netflix/conductor/discussions)
 
 ## Contributions
