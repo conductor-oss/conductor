@@ -143,6 +143,11 @@ public class CacheableMetadataDAO implements MetadataDAO {
         return cassandraMetadataDAO.getAllWorkflowDefs();
     }
 
+    @Override
+    public List<WorkflowDef> getAllWorkflowDefsLatestVersions() {
+        return cassandraMetadataDAO.getAllWorkflowDefsLatestVersions();
+    }
+
     private List<TaskDef> refreshTaskDefsCache() {
         try {
             Cache taskDefsCache = cacheManager.getCache(TASK_DEF_CACHE);

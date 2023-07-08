@@ -14,9 +14,12 @@ package com.netflix.conductor.cassandra.dao;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -60,8 +63,10 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     private final PreparedStatement insertTaskDefStatement;
 
     private final PreparedStatement selectWorkflowDefStatement;
+
     private final PreparedStatement selectAllWorkflowDefVersionsByNameStatement;
     private final PreparedStatement selectAllWorkflowDefsStatement;
+    private final PreparedStatement selectAllWorkflowDefsLatestVersionsStatement;
     private final PreparedStatement selectTaskDefStatement;
     private final PreparedStatement selectAllTaskDefsStatement;
 
@@ -96,6 +101,9 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectAllWorkflowDefsStatement =
                 session.prepare(statements.getSelectAllWorkflowDefsStatement())
+                        .setConsistencyLevel(properties.getReadConsistencyLevel());
+        this.selectAllWorkflowDefsLatestVersionsStatement =
+                session.prepare(statements.getSelectAllWorkflowDefsLatestVersionsStatement())
                         .setConsistencyLevel(properties.getReadConsistencyLevel());
         this.selectTaskDefStatement =
                 session.prepare(statements.getSelectTaskDefStatement())
@@ -284,6 +292,48 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "getAllWorkflowDefs");
             String errorMsg = "Error retrieving all workflow defs";
+            LOGGER.error(errorMsg, e);
+            throw new TransientException(errorMsg, e);
+        }
+    }
+
+    @Override
+    public List<WorkflowDef> getAllWorkflowDefsLatestVersions() {
+        try {
+            ResultSet resultSet =
+                    session.execute(
+                            selectAllWorkflowDefsLatestVersionsStatement.bind(
+                                    WORKFLOW_DEF_INDEX_KEY));
+            List<Row> rows = resultSet.all();
+            if (rows.size() == 0) {
+                LOGGER.info("No workflow definitions were found.");
+                return Collections.EMPTY_LIST;
+            }
+            Map<String, PriorityQueue<WorkflowDef>> allWorkflowDefs = new HashMap<>();
+
+            for (Row row : rows) {
+                String defNameVersion = row.getString(WORKFLOW_DEF_NAME_VERSION_KEY);
+                var nameVersion = getWorkflowNameAndVersion(defNameVersion);
+                WorkflowDef def =
+                        getWorkflowDef(nameVersion.getLeft(), nameVersion.getRight()).orElse(null);
+                if (def == null) {
+                    continue;
+                }
+                if (allWorkflowDefs.get(def.getName()) == null) {
+                    allWorkflowDefs.put(
+                            def.getName(),
+                            new PriorityQueue<>(
+                                    (WorkflowDef w1, WorkflowDef w2) ->
+                                            Integer.compare(w2.getVersion(), w1.getVersion())));
+                }
+                allWorkflowDefs.get(def.getName()).add(def);
+            }
+            return allWorkflowDefs.values().stream()
+                    .map(PriorityQueue::poll)
+                    .collect(Collectors.toList());
+        } catch (DriverException e) {
+            Monitors.error(CLASS_NAME, "getAllWorkflowDefsLatestVersions");
+            String errorMsg = "Error retrieving all workflow defs latest versions";
             LOGGER.error(errorMsg, e);
             throw new TransientException(errorMsg, e);
         }
