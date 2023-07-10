@@ -81,4 +81,9 @@ public interface MetadataDAO {
      * @return List of all the workflow definitions
      */
     List<WorkflowDef> getAllWorkflowDefs();
+
+    /**
+     * @return List the latest versions of the workflow definitions
+     */
+    List<WorkflowDef> getAllWorkflowDefsLatestVersions();
 }

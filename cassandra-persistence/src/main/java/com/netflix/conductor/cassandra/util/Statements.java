@@ -210,6 +210,14 @@ public class Statements {
                 .getQueryString();
     }
 
+    public String getSelectAllWorkflowDefsLatestVersionsStatement() {
+        return QueryBuilder.select()
+                .all()
+                .from(keyspace, TABLE_WORKFLOW_DEFS_INDEX)
+                .where(eq(WORKFLOW_DEF_INDEX_KEY, bindMarker()))
+                .getQueryString();
+    }
+
     /**
      * @return cql query statement to fetch a task definition by name from the "task_definitions"
      *     table

@@ -83,6 +83,12 @@ public class MetadataResource {
         return metadataService.getWorkflowNamesAndVersions();
     }
 
+    @Operation(summary = "Returns only the latest version of all workflow definitions")
+    @GetMapping("/workflow/latest-versions")
+    public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
+        return metadataService.getWorkflowDefsLatestVersions();
+    }
+
     @DeleteMapping("/workflow/{name}/{version}")
     @Operation(
             summary =

@@ -154,4 +154,6 @@ public interface MetadataService {
     List<EventHandler> getEventHandlersForEvent(
             @NotEmpty(message = "EventName cannot be null or empty") String event,
             boolean activeOnly);
+
+    List<WorkflowDef> getWorkflowDefsLatestVersions();
 }
