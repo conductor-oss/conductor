@@ -56,7 +56,6 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
         this.s3Client = s3Client;
         bucketName = properties.getBucketName();
         expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
-        String region = properties.getRegion();
     }
 
     /**

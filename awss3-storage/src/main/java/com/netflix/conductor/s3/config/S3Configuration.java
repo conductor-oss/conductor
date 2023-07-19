@@ -40,7 +40,7 @@ public class S3Configuration {
             havingValue = "true",
             matchIfMissing = true)
     @Bean
-    public AmazonS3 amazonS3() {
-        return AmazonS3ClientBuilder.standard().withRegion(region).build();
+    public AmazonS3 amazonS3(S3Properties properties) {
+        return AmazonS3ClientBuilder.standard().withRegion(properties.getRegion()).build();
     }
 }
