@@ -19,9 +19,9 @@ import java.util.Map;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +100,7 @@ public class Javascript extends Task<Javascript> {
      * @return
      */
     public Javascript validate() {
-        ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName(ENGINE);
+        ScriptEngine scriptEngine = new NashornScriptEngineFactory().getScriptEngine();
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
             return this;
@@ -128,7 +128,7 @@ public class Javascript extends Task<Javascript> {
      */
     public Object test(Map<String, Object> input) {
 
-        ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName(ENGINE);
+        ScriptEngine scriptEngine = new NashornScriptEngineFactory().getScriptEngine();
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
             return this;

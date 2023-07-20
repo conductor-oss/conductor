@@ -11,6 +11,7 @@ dependencies {
     implementation "com.sun.jersey:jersey-client:${revJersey}"
     implementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
     implementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
+    implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
     testImplementation "org.springframework:spring-web"
     testImplementation "org.spockframework:spock-core:${revSpock}"
