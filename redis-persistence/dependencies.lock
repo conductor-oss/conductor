@@ -15,7 +15,7 @@
             "locked": "2.0.20"
         },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
+            "locked": "1.4.20"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.2"
@@ -119,7 +119,7 @@
             "locked": "0.3.3"
         },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
+            "locked": "1.4.20"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -217,7 +217,7 @@
             "locked": "2.0.20"
         },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
+            "locked": "1.4.20"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -330,7 +330,7 @@
             "locked": "0.3.3"
         },
         "com.thoughtworks.xstream:xstream": {
-            "locked": "1.4.19"
+            "locked": "1.4.20"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [

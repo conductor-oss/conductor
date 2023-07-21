@@ -11,6 +11,9 @@
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
+        "com.netflix.conductor:conductor-java-sdk": {
+            "project": true
+        },
         "com.netflix.eureka:eureka-client": {
             "locked": "1.10.10"
         },
@@ -34,6 +37,12 @@
         }
     },
     "runtimeClasspath": {
+        "cglib:cglib": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "3.3.0"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
@@ -48,7 +57,8 @@
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.13.3"
         },
@@ -70,6 +80,12 @@
             ],
             "locked": "2.13.3"
         },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -83,12 +99,19 @@
             "project": true
         },
         "com.netflix.conductor:conductor-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
             "project": true
         },
         "com.netflix.conductor:conductor-common": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-client"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-java-sdk": {
             "project": true
         },
         "com.netflix.eureka:eureka-client": {
@@ -105,7 +128,8 @@
         },
         "com.sun.jersey:jersey-client": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-client"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "1.19.4"
         },
@@ -114,6 +138,13 @@
                 "com.netflix.conductor:conductor-client"
             ],
             "locked": "2.7"
+        },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "2.1.1"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
@@ -132,7 +163,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -140,7 +172,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -148,7 +181,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -156,7 +190,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -164,9 +199,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "2.35"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -183,6 +226,9 @@
             "project": true
         },
         "com.netflix.conductor:conductor-common": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-java-sdk": {
             "project": true
         },
         "com.netflix.eureka:eureka-client": {
@@ -220,6 +266,12 @@
         }
     },
     "testRuntimeClasspath": {
+        "cglib:cglib": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "3.3.0"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
@@ -234,7 +286,8 @@
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.13.3"
         },
@@ -256,6 +309,12 @@
             ],
             "locked": "2.13.3"
         },
+        "com.google.guava:guava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "30.0-jre"
+        },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -269,12 +328,19 @@
             "project": true
         },
         "com.netflix.conductor:conductor-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
             "project": true
         },
         "com.netflix.conductor:conductor-common": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-client"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-java-sdk": {
             "project": true
         },
         "com.netflix.eureka:eureka-client": {
@@ -291,7 +357,8 @@
         },
         "com.sun.jersey:jersey-client": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-client"
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "1.19.4"
         },
@@ -300,6 +367,13 @@
                 "com.netflix.conductor:conductor-client"
             ],
             "locked": "2.7"
+        },
+        "javax.ws.rs:javax.ws.rs-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "2.1.1"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -321,7 +395,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -329,7 +404,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -337,7 +413,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -345,7 +422,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
         },
@@ -353,9 +431,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-client",
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-java-sdk"
             ],
             "locked": "2.17.2"
+        },
+        "org.glassfish.jersey.core:jersey-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "2.35"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"

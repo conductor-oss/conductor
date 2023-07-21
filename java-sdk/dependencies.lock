@@ -134,6 +134,9 @@
             "locked": "2.7"
         },
         "javax.ws.rs:javax.ws.rs-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.1.1"
         },
         "org.apache.bval:bval-jsr": {
@@ -190,6 +193,9 @@
             "locked": "2.17.2"
         },
         "org.glassfish.jersey.core:jersey-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.22.2"
         },
         "org.slf4j:slf4j-api": {
@@ -359,6 +365,9 @@
             "locked": "2.7"
         },
         "javax.ws.rs:javax.ws.rs-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.1.1"
         },
         "junit:junit": {
@@ -421,6 +430,9 @@
             "locked": "2.5.13"
         },
         "org.glassfish.jersey.core:jersey-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.22.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
