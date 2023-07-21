@@ -6,7 +6,7 @@
     },
     "compileClasspath": {
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
@@ -59,7 +59,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -134,7 +134,7 @@
     },
     "protobufToolsLocator_protoc": {
         "com.google.protobuf:protoc": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         }
     },
     "runtimeClasspath": {
@@ -160,7 +160,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -230,7 +230,7 @@
     },
     "testCompileClasspath": {
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
@@ -295,7 +295,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -398,7 +398,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [

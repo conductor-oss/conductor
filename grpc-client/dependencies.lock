@@ -9,7 +9,7 @@
             "locked": "30.0-jre"
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
@@ -75,7 +75,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -174,7 +174,7 @@
             "locked": "30.0-jre"
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
@@ -252,7 +252,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
