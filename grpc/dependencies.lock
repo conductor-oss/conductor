@@ -6,16 +6,16 @@
     },
     "compileClasspath": {
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -59,7 +59,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -71,10 +71,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -129,12 +129,12 @@
     },
     "protobufToolsLocator_grpc": {
         "io.grpc:protoc-gen-grpc-java": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         }
     },
     "protobufToolsLocator_protoc": {
         "com.google.protobuf:protoc": {
-            "locked": "3.13.0"
+            "locked": "3.14.0"
         }
     },
     "runtimeClasspath": {
@@ -160,7 +160,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -172,10 +172,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -230,16 +230,16 @@
     },
     "testCompileClasspath": {
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-common": {
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -295,7 +295,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -307,10 +307,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
@@ -398,7 +398,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -410,10 +410,10 @@
             "project": true
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "javax.annotation:javax.annotation-api": {
             "locked": "1.3.2"
