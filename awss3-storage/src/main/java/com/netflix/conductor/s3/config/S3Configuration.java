@@ -21,6 +21,9 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.s3.storage.S3PayloadStorage;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+
 @Configuration
 @EnableConfigurationProperties(S3Properties.class)
 @ConditionalOnProperty(name = "conductor.external-payload-storage.type", havingValue = "s3")
@@ -28,7 +31,16 @@ public class S3Configuration {
 
     @Bean
     public ExternalPayloadStorage s3ExternalPayloadStorage(
-            IDGenerator idGenerator, S3Properties properties) {
-        return new S3PayloadStorage(idGenerator, properties);
+            IDGenerator idGenerator, S3Properties properties, AmazonS3 s3Client) {
+        return new S3PayloadStorage(idGenerator, properties, s3Client);
+    }
+
+    @ConditionalOnProperty(
+            name = "conductor.external-payload-storage.s3.use_default_client",
+            havingValue = "true",
+            matchIfMissing = true)
+    @Bean
+    public AmazonS3 amazonS3(S3Properties properties) {
+        return AmazonS3ClientBuilder.standard().withRegion(properties.getRegion()).build();
     }
 }
