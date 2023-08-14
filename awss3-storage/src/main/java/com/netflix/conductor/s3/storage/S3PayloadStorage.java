@@ -30,7 +30,6 @@ import com.netflix.conductor.s3.config.S3Properties;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 
 /**
@@ -52,12 +51,11 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     private final String bucketName;
     private final long expirationSec;
 
-    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties) {
+    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties, AmazonS3 s3Client) {
         this.idGenerator = idGenerator;
+        this.s3Client = s3Client;
         bucketName = properties.getBucketName();
         expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
-        String region = properties.getRegion();
-        s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build();
     }
 
     /**

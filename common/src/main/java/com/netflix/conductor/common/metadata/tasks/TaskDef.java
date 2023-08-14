@@ -20,7 +20,6 @@ import java.util.Objects;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Email;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -63,7 +62,6 @@ public class TaskDef extends BaseDef {
 
     @ProtoField(id = 3)
     @Min(value = 0, message = "TaskDef retryCount: {value} must be >= 0")
-    @Max(value = 10, message = "TaskDef retryCount: ${validatedValue} must be <= {value}")
     private int retryCount = 3; // Default
 
     @ProtoField(id = 4)

@@ -254,6 +254,81 @@ export default class WorkflowDAG {
     }
   }
 
+  getRefTaskChilds(task) {
+    switch (task.type) {
+      case "FORK_JOIN": {
+        const outerForkTasks = task.forkTasks || [];
+        return _.flatten(
+          outerForkTasks.map((innerForkTasks) =>
+            innerForkTasks.map((tasks) => tasks)
+          )
+        );
+      }
+
+      case "FORK_JOIN_DYNAMIC": {
+        const dfTaskResult = this.getLastTaskResult(task.taskReferenceName);
+        const forkedTasks = _.get(dfTaskResult, "inputData.forkedTaskDefs");
+        const forkedTasksCount = _.get(forkedTasks, "length");
+
+        if (!forkedTasksCount) {
+          const placeholderRef =
+            task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
+          const placeholderTask = {
+            name: placeholderRef, // will be overwritten if results available
+            taskReferenceName: placeholderRef, // will be overwritten if results available
+            type: "DF_EMPTY_PLACEHOLDER",
+          };
+          return [placeholderTask];
+        } else {
+          return dfTaskResult.inputData.forkedTaskDefs;
+        }
+      }
+
+      case "DECISION": // DECISION is deprecated and will be removed in a future release
+      case "SWITCH": {
+        const retval = [];
+        if (!_.isEmpty(task.defaultCase)) {
+          retval.push(...this.getRefTask(task.defaultCase));
+        }
+        retval.push(
+          ..._.flatten(
+            Object.entries(task.decisionCases).map(([caseValue, tasks]) => {
+              return tasks;
+            })
+          )
+        );
+        return retval;
+      }
+
+      case "DO_WHILE": {
+        return task.loopOver;
+      }
+
+      /*
+      case "TERMINATE": 
+      case "JOIN": 
+      case "TERMINAL":
+      case "EVENT":
+      case "SUB_WORKFLOW":
+      case "EXCLUSIVE_JOIN":
+      */
+      default: {
+        return [];
+      }
+    }
+  }
+
+  getRefTask(task) {
+    const taskRefs = this.getRefTaskChilds(task)
+      .map((t) => {
+        return this.getRefTask(t);
+      })
+      .reduce((r, tasks) => {
+        return r.concat(tasks);
+      }, []);
+    return [task].concat(taskRefs);
+  }
+
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
 
@@ -272,7 +347,7 @@ export default class WorkflowDAG {
       aliasForRef: doWhileTask.taskReferenceName,
     };
 
-    const loopOverRefPrefixes = doWhileTask.loopOver.map(
+    const loopOverRefPrefixes = this.getRefTask(doWhileTask).map(
       (t) => t.taskReferenceName
     );
     if (hasDoWhileExecuted) {

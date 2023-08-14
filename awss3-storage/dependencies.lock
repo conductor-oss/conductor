@@ -77,7 +77,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.jayway.jsonpath:json-path": {
             "firstLevelTransitive": [
@@ -273,7 +273,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.jayway.jsonpath:json-path": {
             "firstLevelTransitive": [

@@ -49,7 +49,7 @@
             "locked": "30.0-jre"
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.netflix.conductor:conductor-cassandra-persistence": {
             "project": true
@@ -239,7 +239,7 @@
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client"
             ],
-            "locked": "3.13.0"
+            "locked": "3.21.7"
         },
         "com.jayway.jsonpath:json-path": {
             "firstLevelTransitive": [
@@ -412,7 +412,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.4.19"
+            "locked": "1.4.20"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -427,27 +427,33 @@
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client"
             ],
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-services": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc-server"
             ],
-            "locked": "1.50.2"
+            "locked": "1.56.1"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client"
             ],
-            "locked": "1.50.2"
+            "locked": "1.56.1"
+        },
+        "io.orkes.queues:orkes-conductor-queues": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.0.3"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -475,6 +481,9 @@
             "locked": "1.3.2"
         },
         "javax.ws.rs:javax.ws.rs-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.1.1"
         },
         "javax.ws.rs:jsr311-api": {
@@ -658,6 +667,9 @@
             "locked": "2.3.6"
         },
         "org.glassfish.jersey.core:jersey-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
             "locked": "2.22.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
@@ -693,7 +705,7 @@
                 "com.netflix.conductor:conductor-rest",
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "1.6.12"
+            "locked": "1.6.15"
         },
         "org.springframework.boot:spring-boot-starter": {
             "firstLevelTransitive": [

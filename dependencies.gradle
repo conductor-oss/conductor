@@ -43,7 +43,7 @@ ext {
     revOpenapi = '1.6.+'
     revOrkesQueues = '1.0.3'
     revPowerMock = '2.0.9'
-    revProtoBuf = '3.13.0'
+    revProtoBuf = '3.21.7'
     revProtogenAnnotations = '1.0.0'
     revProtogenCodegen = '1.4.0'
     revRarefiedRedis = '0.0.17'
