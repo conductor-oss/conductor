@@ -189,6 +189,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "2.17.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         }
     },
     "testCompileClasspath": {
@@ -218,6 +224,12 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.17.2"
+        },
+        "org.bouncycastle:bcpkix-jdk15on": {
+            "locked": "1.70"
+        },
+        "org.bouncycastle:bcprov-jdk15on": {
+            "locked": "1.70"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
@@ -395,11 +407,23 @@
             ],
             "locked": "2.17.2"
         },
+        "org.bouncycastle:bcpkix-jdk15on": {
+            "locked": "1.70"
+        },
+        "org.bouncycastle:bcprov-jdk15on": {
+            "locked": "1.70"
+        },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
         },
         "org.mock-server:mockserver-client-java": {
             "locked": "5.12.0"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.7.3"

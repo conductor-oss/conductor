@@ -43,6 +43,9 @@
         },
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "locked": "15.4"
         }
     },
     "runtimeClasspath": {
@@ -198,6 +201,9 @@
             ],
             "locked": "2.22.2"
         },
+        "org.openjdk.nashorn:nashorn-core": {
+            "locked": "15.4"
+        },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
@@ -252,13 +258,16 @@
             "locked": "2.17.2"
         },
         "org.codehaus.groovy:groovy-all": {
-            "locked": "2.5.13"
+            "locked": "2.5.22"
         },
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "locked": "15.4"
         },
         "org.spockframework:spock-core": {
             "locked": "1.3-groovy-2.5"
@@ -427,7 +436,7 @@
             "locked": "2.17.2"
         },
         "org.codehaus.groovy:groovy-all": {
-            "locked": "2.5.13"
+            "locked": "2.5.22"
         },
         "org.glassfish.jersey.core:jersey-common": {
             "firstLevelTransitive": [
@@ -437,6 +446,9 @@
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "locked": "15.4"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
