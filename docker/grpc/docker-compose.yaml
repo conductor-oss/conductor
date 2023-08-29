@@ -16,10 +16,13 @@ services:
       - 8090:8090
     links:
       - elasticsearch:es
+      - redis:rs
     depends_on:
       elasticsearch:
         condition: service_healthy
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   conductor-ui:
@@ -56,6 +59,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+
+  redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
 
   elasticsearch:
     image: elasticsearch:6.8.15
