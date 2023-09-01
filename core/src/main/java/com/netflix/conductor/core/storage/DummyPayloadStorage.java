@@ -17,10 +17,11 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.conductor.common.run.ExternalStorageLocation;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 /**
  * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is
@@ -49,7 +50,8 @@ public class DummyPayloadStorage implements ExternalPayloadStorage {
             final int bytesRead = payload.read(new byte[(int) payloadSize]);
 
             if (bytesRead > 0) {
-                dummyDataStore.put(path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path, payloadBytes);
+                dummyDataStore.put(
+                        path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path, payloadBytes);
             }
         } catch (Exception e) {
             LOGGER.error("Error encountered while uploading payload {}", e.getMessage());
@@ -58,7 +60,8 @@ public class DummyPayloadStorage implements ExternalPayloadStorage {
 
     @Override
     public InputStream download(String path) {
-        final byte[] data = dummyDataStore.get(path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path);
+        final byte[] data =
+                dummyDataStore.get(path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path);
         if (data != null) {
             return new ByteArrayInputStream(data);
         } else {
