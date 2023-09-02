@@ -12,16 +12,22 @@
  */
 package com.netflix.conductor.core.storage;
 
-import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.nio.file.Files;
+import java.util.UUID;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is
@@ -31,40 +37,64 @@ public class DummyPayloadStorage implements ExternalPayloadStorage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DummyPayloadStorage.class);
 
-    private final Map<String, byte[]> dummyDataStore = new ConcurrentHashMap<>();
+    private ObjectMapper objectMapper;
+    private File payloadDir;
 
-    private static final String DUMMY_DATA_STORE_KEY = "DUMMY_PAYLOAD_STORE_KEY";
+    public DummyPayloadStorage() {
+        try {
+            this.objectMapper = new ObjectMapper();
+            this.payloadDir = Files.createTempDirectory("payloads").toFile();
+            LOGGER.info(
+                    "{} initialized in directory: {}",
+                    this.getClass().getSimpleName(),
+                    payloadDir.getAbsolutePath());
+        } catch (IOException ioException) {
+            LOGGER.error(
+                    "Exception encountered while creating payloads directory : {}",
+                    ioException.getMessage());
+        }
+    }
 
     @Override
     public ExternalStorageLocation getLocation(
             Operation operation, PayloadType payloadType, String path) {
-        ExternalStorageLocation externalStorageLocation = new ExternalStorageLocation();
-        externalStorageLocation.setPath(path != null ? path : "");
-        return externalStorageLocation;
+        ExternalStorageLocation location = new ExternalStorageLocation();
+        location.setPath(path + UUID.randomUUID() + ".json");
+        return location;
     }
 
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
+        File file = new File(payloadDir, path);
+        String filePath = file.getAbsolutePath();
         try {
-            final byte[] payloadBytes = new byte[(int) payloadSize];
-            final int bytesRead = payload.read(new byte[(int) payloadSize]);
-
-            if (bytesRead > 0) {
-                dummyDataStore.put(
-                        path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path, payloadBytes);
+            if (!file.exists() && file.createNewFile()) {
+                LOGGER.debug("Created file: {}", filePath);
             }
-        } catch (Exception e) {
-            LOGGER.error("Error encountered while uploading payload {}", e.getMessage());
+            IOUtils.copy(payload, new FileOutputStream(file));
+            LOGGER.debug("Written to {}", filePath);
+        } catch (IOException e) {
+            // just handle this exception here and return empty map so that test will fail in case
+            // this exception is thrown
+            LOGGER.error("Error writing to {}", filePath);
+        } finally {
+            try {
+                if (payload != null) {
+                    payload.close();
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Unable to close input stream when writing to file");
+            }
         }
     }
 
     @Override
     public InputStream download(String path) {
-        final byte[] data =
-                dummyDataStore.get(path == null || path.isEmpty() ? DUMMY_DATA_STORE_KEY : path);
-        if (data != null) {
-            return new ByteArrayInputStream(data);
-        } else {
+        try {
+            LOGGER.debug("Reading from {}", path);
+            return new FileInputStream(new File(payloadDir, path));
+        } catch (IOException e) {
+            LOGGER.error("Error reading {}", path, e);
             return null;
         }
     }
