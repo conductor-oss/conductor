@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,7 +34,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 
 public class DummyPayloadStorageTest {
 
@@ -52,7 +52,10 @@ public class DummyPayloadStorageTest {
         dummyPayloadStorage = new DummyPayloadStorage();
         objectMapper = new ObjectMapper();
         location =
-                dummyPayloadStorage.getLocation(any(), PayloadType.TASK_OUTPUT, TEST_STORAGE_PATH);
+                dummyPayloadStorage.getLocation(
+                        ExternalPayloadStorage.Operation.WRITE,
+                        PayloadType.TASK_OUTPUT,
+                        TEST_STORAGE_PATH);
         try {
             byte[] payloadBytes = MOCK_PAYLOAD.getBytes("UTF-8");
             dummyPayloadStorage.upload(
