@@ -14,11 +14,11 @@ jobs:
     name: Gradle Build and Publish
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Zulu JDK 11
+      - name: Set up Zulu JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
       - name: Cache Gradle packages
         uses: actions/cache@v3
         with:
