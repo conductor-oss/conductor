@@ -20,7 +20,7 @@ import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 
 public class ScriptEvaluator {
 
-    private static final ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine();
+    private static ScriptEngine engine;
 
     private ScriptEvaluator() {}
 
@@ -46,6 +46,9 @@ public class ScriptEvaluator {
      * @return Generic object, the result of the evaluated expression.
      */
     public static Object eval(String script, Object input) throws ScriptException {
+        if (engine == null) {
+            engine = new NashornScriptEngineFactory().getScriptEngine();
+        }
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
         return engine.eval(script, bindings);
