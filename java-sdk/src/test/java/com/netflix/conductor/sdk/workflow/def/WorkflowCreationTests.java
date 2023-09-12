@@ -161,6 +161,7 @@ public class WorkflowCreationTests {
                     Workflow.WorkflowStatus.COMPLETED,
                     run.getStatus(),
                     run.getReasonForIncompletion());
+            System.out.println("TESTING");
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
