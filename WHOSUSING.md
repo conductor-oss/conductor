@@ -15,3 +15,4 @@ We would like to keep track of whose using Conductor. Please send a pull request
 * [GE Healthcare](https://www.gehealthcare.com/) [[@flavioschuindt](https://github.com/flavioschuindt)]
 * [ReliaQuest](https://www.reliaquest.com/) [[@rq-dbrady](https://github.com/rq-dbrady)] [[@alexmay48](https://github.com/alexmay48)]
 * [Clari](https://www.clari.com/) [[@TeamJOF](https://github.com/clari)]
+* [Atlassian](https://www.atlassian.com/) [[@LuisLainez](https://github.com/LuisLainez)] [[@aradu](https://github.com/aradu-atlassian)]
