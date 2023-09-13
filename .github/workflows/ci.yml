@@ -44,7 +44,7 @@ jobs:
           cat conductor_tests.log
       - name: Publish server logs
         if: always()
-        uses: actions/upload-artifacts@v3
+        uses: actions/upload-artifact@v3
         with:
           name: server-logs
           path: conductor_tests.log
