@@ -1,0 +1,344 @@
+935  [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Neither @ContextConfiguration nor @ContextHierarchy found for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest], using SpringBootContextLoader
+945  [Test worker] INFO  org.springframework.test.context.support.AbstractContextLoader [] - Could not detect default resource locations for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest]: no resource found for suffixes {-context.xml, Context.groovy}.
+946  [Test worker] INFO  org.springframework.test.context.support.AnnotationConfigContextLoaderUtils [] - Could not detect default configuration classes for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest]: ConductorObjectMapperTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+1069 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Found @SpringBootConfiguration com.netflix.conductor.Conductor for test class com.netflix.conductor.common.config.ConductorObjectMapperTest
+1173 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Loaded default TestExecutionListener class names from location [META-INF/spring.factories]: [org.springframework.boot.test.autoconfigure.restdocs.RestDocsTestExecutionListener, org.springframework.boot.test.autoconfigure.web.client.MockRestServiceServerResetTestExecutionListener, org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrintOnlyOnFailureTestExecutionListener, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverTestExecutionListener, org.springframework.boot.test.autoconfigure.webservices.client.MockWebServiceServerTestExecutionListener, org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener, org.springframework.boot.test.mock.mockito.ResetMocksTestExecutionListener, org.springframework.test.context.web.ServletTestExecutionListener, org.springframework.test.context.support.DirtiesContextBeforeModesTestExecutionListener, org.springframework.test.context.event.ApplicationEventsTestExecutionListener, org.springframework.test.context.support.DependencyInjectionTestExecutionListener, org.springframework.test.context.support.DirtiesContextTestExecutionListener, org.springframework.test.context.transaction.TransactionalTestExecutionListener, org.springframework.test.context.jdbc.SqlScriptsTestExecutionListener, org.springframework.test.context.event.EventPublishingTestExecutionListener]
+1183 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Using TestExecutionListeners: [org.springframework.test.context.web.ServletTestExecutionListener@57540fd0, org.springframework.test.context.support.DirtiesContextBeforeModesTestExecutionListener@5cf8edcf, org.springframework.test.context.event.ApplicationEventsTestExecutionListener@58cec85b, org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener@629f066f, org.springframework.boot.test.autoconfigure.SpringBootDependencyInjectionTestExecutionListener@1542af63, org.springframework.test.context.support.DirtiesContextTestExecutionListener@ecfbe91, org.springframework.test.context.event.EventPublishingTestExecutionListener@20ed3303, org.springframework.boot.test.autoconfigure.restdocs.RestDocsTestExecutionListener@3adbe50f, org.springframework.boot.test.autoconfigure.web.client.MockRestServiceServerResetTestExecutionListener@3a627c80, org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrintOnlyOnFailureTestExecutionListener@49aa766b, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverTestExecutionListener@963176, org.springframework.boot.test.autoconfigure.webservices.client.MockWebServiceServerTestExecutionListener@65004ff6, org.springframework.boot.test.mock.mockito.ResetMocksTestExecutionListener@4cafa9aa]
+1619 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - Starting ConductorObjectMapperTest using Java 17.0.2 on RQLSOCT01545 with PID 632 (started by almay in /Users/almay/code/conductor-code/conductor/server)
+1623 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - No active profile set, falling back to 1 default profile: "default"
+4443 [Test worker] INFO  com.netflix.conductor.core.config.ConductorCoreConfiguration [] - Initialized dummy payload storage!
+4465 [Test worker] INFO  com.netflix.conductor.tasks.http.HttpTask [] - HTTP initialized...
+4663 [Test worker] INFO  com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider [] - Using RoundRobinStrategy sharding strategy for queues
+4687 [Test worker] INFO  com.netflix.conductor.redis.config.RedisCommonConfiguration [] - DynoQueueDAO initialized with prefix .test!
+4944 [Test worker] INFO  com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor [] - DefaultEventQueueProcessor initialized with 0 queues
+4948 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowRepairService [] - WorkflowRepairService Initialized
+4967 [Test worker] INFO  com.netflix.conductor.core.events.DefaultEventProcessor [] - Event Processing is ENABLED
+5088 [Test worker] INFO  com.netflix.conductor.metrics.WorkflowMonitor [] - WorkflowMonitor initialized.
+5091 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowSweeper [] - WorkflowSweeper initialized.
+5096 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowReconciler [] - WorkflowReconciler initialized with 24 sweeper threads
+5104 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - SystemTaskWorker initialized with 24 threads
+5107 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.IsolatedTaskQueueProducer [] - Isolated System Task Worker DISABLED
+5603 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - WorkflowReconciler started.
+5603 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - SystemTaskWorker started.
+5621 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - DefaultEventQueueManager started.
+5640 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - Started ConductorObjectMapperTest in 4.349 seconds (JVM running for 5.677)
+5643 [Test worker] INFO  com.netflix.conductor.rest.startup.KitchenSinkInitializer [] - Loading Kitchen Sink examples
+5788 [Test worker] ERROR com.netflix.conductor.rest.startup.KitchenSinkInitializer [] - Error initializing kitchen sink
+org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://localhost:8080/api/metadata/taskdefs": Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused; nested exception is org.apache.http.conn.HttpHostConnectException: Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:785) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:711) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.postForEntity(RestTemplate.java:468) ~[spring-web-5.3.22.jar:5.3.22]
+	at com.netflix.conductor.rest.startup.KitchenSinkInitializer.createKitchenSink(KitchenSinkInitializer.java:95) ~[conductor-rest-3.14.0-SNAPSHOT.jar:3.14.0-SNAPSHOT]
+	at com.netflix.conductor.rest.startup.KitchenSinkInitializer.setupKitchenSink(KitchenSinkInitializer.java:75) ~[conductor-rest-3.14.0-SNAPSHOT.jar:3.14.0-SNAPSHOT]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?]
+	at java.lang.reflect.Method.invoke(Method.java:568) ~[?:?]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:344) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:229) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:166) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:176) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:169) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:143) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:421) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:378) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.boot.context.event.EventPublishingRunListener.ready(EventPublishingRunListener.java:114) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.lambda$ready$6(SpringApplicationRunListeners.java:82) ~[spring-boot-2.7.3.jar:2.7.3]
+	at java.util.ArrayList.forEach(ArrayList.java:1511) ~[?:?]
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:120) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:114) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.ready(SpringApplicationRunListeners.java:82) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:323) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:132) ~[spring-boot-test-2.7.3.jar:2.7.3]
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:99) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:124) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DependencyInjectionTestExecutionListener.injectDependencies(DependencyInjectionTestExecutionListener.java:118) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DependencyInjectionTestExecutionListener.prepareTestInstance(DependencyInjectionTestExecutionListener.java:83) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.boot.test.autoconfigure.SpringBootDependencyInjectionTestExecutionListener.prepareTestInstance(SpringBootDependencyInjectionTestExecutionListener.java:43) ~[spring-boot-test-autoconfigure-2.7.3.jar:2.7.3]
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.vintage.engine.execution.RunnerExecutor.execute(RunnerExecutor.java:42) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.vintage.engine.VintageTestEngine.executeAllChildren(VintageTestEngine.java:80) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.vintage.engine.VintageTestEngine.execute(VintageTestEngine.java:72) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:107) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:88) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:54) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:67) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:52) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:86) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncherSession$DelegatingLauncher.execute(DefaultLauncherSession.java:86) ~[?:?]
+	at org.junit.platform.launcher.core.SessionPerRequestLauncher.execute(SessionPerRequestLauncher.java:53) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses(JUnitPlatformTestClassProcessor.java:99) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000(JUnitPlatformTestClassProcessor.java:79) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop(JUnitPlatformTestClassProcessor.java:75) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop(SuiteTestClassProcessor.java:62) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?]
+	at java.lang.reflect.Method.invoke(Method.java:568) ~[?:?]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36) ~[?:?]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24) ~[?:?]
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33) ~[?:?]
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:94) ~[?:?]
+	at jdk.proxy1.$Proxy2.stop(Unknown Source) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$3.run(TestWorker.java:193) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:129) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:100) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:60) ~[?:?]
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56) ~[?:?]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:113) ~[?:?]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:65) ~[?:?]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69) ~[gradle-worker.jar:?]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74) ~[gradle-worker.jar:?]
+Caused by: org.apache.http.conn.HttpHostConnectException: Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused
+	at org.apache.http.impl.conn.DefaultHttpClientConnectionOperator.connect(DefaultHttpClientConnectionOperator.java:156) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.PoolingHttpClientConnectionManager.connect(PoolingHttpClientConnectionManager.java:376) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.establishRoute(MainClientExec.java:393) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.execute(MainClientExec.java:236) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.ProtocolExec.execute(ProtocolExec.java:186) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RetryExec.execute(RetryExec.java:89) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RedirectExec.execute(RedirectExec.java:110) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.InternalHttpClient.doExecute(InternalHttpClient.java:185) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:83) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.springframework.http.client.HttpComponentsClientHttpRequest.executeInternal(HttpComponentsClientHttpRequest.java:87) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:109) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.boot.actuate.metrics.web.client.MetricsClientHttpRequestInterceptor.intercept(MetricsClientHttpRequestInterceptor.java:86) ~[spring-boot-actuator-2.7.3.jar:2.7.3]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:93) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest.executeInternal(InterceptingClientHttpRequest.java:77) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:776) ~[spring-web-5.3.22.jar:5.3.22]
+	... 83 more
+Caused by: java.net.ConnectException: Connection refused
+	at sun.nio.ch.Net.connect0(Native Method) ~[?:?]
+	at sun.nio.ch.Net.connect(Net.java:579) ~[?:?]
+	at sun.nio.ch.Net.connect(Net.java:568) ~[?:?]
+	at sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:588) ~[?:?]
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327) ~[?:?]
+	at java.net.Socket.connect(Socket.java:633) ~[?:?]
+	at org.apache.http.conn.socket.PlainConnectionSocketFactory.connectSocket(PlainConnectionSocketFactory.java:75) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.DefaultHttpClientConnectionOperator.connect(DefaultHttpClientConnectionOperator.java:142) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.PoolingHttpClientConnectionManager.connect(PoolingHttpClientConnectionManager.java:376) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.establishRoute(MainClientExec.java:393) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.execute(MainClientExec.java:236) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.ProtocolExec.execute(ProtocolExec.java:186) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RetryExec.execute(RetryExec.java:89) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RedirectExec.execute(RedirectExec.java:110) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.InternalHttpClient.doExecute(InternalHttpClient.java:185) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:83) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.springframework.http.client.HttpComponentsClientHttpRequest.executeInternal(HttpComponentsClientHttpRequest.java:87) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:109) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.boot.actuate.metrics.web.client.MetricsClientHttpRequestInterceptor.intercept(MetricsClientHttpRequestInterceptor.java:86) ~[spring-boot-actuator-2.7.3.jar:2.7.3]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:93) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest.executeInternal(InterceptingClientHttpRequest.java:77) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:776) ~[spring-web-5.3.22.jar:5.3.22]
+	... 83 more
+5809 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: SUB_WORKFLOW in queue: SUB_WORKFLOW
+5810 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: HTTP in queue: HTTP
+5811 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: JOIN in queue: JOIN
+5811 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: START_WORKFLOW in queue: START_WORKFLOW
+5811 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator [] - SystemTaskWorkerCoordinator initialized with 4 async tasks
+6252 [scheduled-task-pool-2] INFO  com.netflix.dyno.queues.redis.RedisDynoQueue [] - com.netflix.dyno.queues.redis.RedisDynoQueue is ready to serve _deciderQueue
+6459 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - WorkflowReconciler stopped.
+6459 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - SystemTaskWorker stopped.
+6459 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - DefaultEventQueueManager stopped.
+6463 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.dal.ExecutionDAOFacade [] - Gracefully shutdown executor service
+1090 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Neither @ContextConfiguration nor @ContextHierarchy found for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest], using SpringBootContextLoader
+1100 [Test worker] INFO  org.springframework.test.context.support.AbstractContextLoader [] - Could not detect default resource locations for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest]: no resource found for suffixes {-context.xml, Context.groovy}.
+1101 [Test worker] INFO  org.springframework.test.context.support.AnnotationConfigContextLoaderUtils [] - Could not detect default configuration classes for test class [com.netflix.conductor.common.config.ConductorObjectMapperTest]: ConductorObjectMapperTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+1232 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Found @SpringBootConfiguration com.netflix.conductor.Conductor for test class com.netflix.conductor.common.config.ConductorObjectMapperTest
+1333 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Loaded default TestExecutionListener class names from location [META-INF/spring.factories]: [org.springframework.boot.test.autoconfigure.restdocs.RestDocsTestExecutionListener, org.springframework.boot.test.autoconfigure.web.client.MockRestServiceServerResetTestExecutionListener, org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrintOnlyOnFailureTestExecutionListener, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverTestExecutionListener, org.springframework.boot.test.autoconfigure.webservices.client.MockWebServiceServerTestExecutionListener, org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener, org.springframework.boot.test.mock.mockito.ResetMocksTestExecutionListener, org.springframework.test.context.web.ServletTestExecutionListener, org.springframework.test.context.support.DirtiesContextBeforeModesTestExecutionListener, org.springframework.test.context.event.ApplicationEventsTestExecutionListener, org.springframework.test.context.support.DependencyInjectionTestExecutionListener, org.springframework.test.context.support.DirtiesContextTestExecutionListener, org.springframework.test.context.transaction.TransactionalTestExecutionListener, org.springframework.test.context.jdbc.SqlScriptsTestExecutionListener, org.springframework.test.context.event.EventPublishingTestExecutionListener]
+1346 [Test worker] INFO  org.springframework.boot.test.context.SpringBootTestContextBootstrapper [] - Using TestExecutionListeners: [org.springframework.test.context.web.ServletTestExecutionListener@963176, org.springframework.test.context.support.DirtiesContextBeforeModesTestExecutionListener@65004ff6, org.springframework.test.context.event.ApplicationEventsTestExecutionListener@4cafa9aa, org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener@562c877a, org.springframework.boot.test.autoconfigure.SpringBootDependencyInjectionTestExecutionListener@67001148, org.springframework.test.context.support.DirtiesContextTestExecutionListener@989da1, org.springframework.test.context.event.EventPublishingTestExecutionListener@31cb96e1, org.springframework.boot.test.autoconfigure.restdocs.RestDocsTestExecutionListener@3eed0f5, org.springframework.boot.test.autoconfigure.web.client.MockRestServiceServerResetTestExecutionListener@64030b91, org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrintOnlyOnFailureTestExecutionListener@2032e725, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverTestExecutionListener@4d23015c, org.springframework.boot.test.autoconfigure.webservices.client.MockWebServiceServerTestExecutionListener@383f1975, org.springframework.boot.test.mock.mockito.ResetMocksTestExecutionListener@441cc260]
+1710 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - Starting ConductorObjectMapperTest using Java 17.0.8.1 on RQLSOCT01545 with PID 2320 (started by almay in /Users/almay/code/conductor-code/conductor/server)
+1713 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - No active profile set, falling back to 1 default profile: "default"
+4027 [Test worker] INFO  com.netflix.conductor.core.config.ConductorCoreConfiguration [] - Initialized dummy payload storage!
+4044 [Test worker] INFO  com.netflix.conductor.tasks.http.HttpTask [] - HTTP initialized...
+4229 [Test worker] INFO  com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider [] - Using RoundRobinStrategy sharding strategy for queues
+4255 [Test worker] INFO  com.netflix.conductor.redis.config.RedisCommonConfiguration [] - DynoQueueDAO initialized with prefix .test!
+4558 [Test worker] INFO  com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor [] - DefaultEventQueueProcessor initialized with 0 queues
+4563 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowRepairService [] - WorkflowRepairService Initialized
+4585 [Test worker] INFO  com.netflix.conductor.core.events.DefaultEventProcessor [] - Event Processing is ENABLED
+4734 [Test worker] INFO  com.netflix.conductor.metrics.WorkflowMonitor [] - WorkflowMonitor initialized.
+4738 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowSweeper [] - WorkflowSweeper initialized.
+4745 [Test worker] INFO  com.netflix.conductor.core.reconciliation.WorkflowReconciler [] - WorkflowReconciler initialized with 24 sweeper threads
+4755 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - SystemTaskWorker initialized with 24 threads
+4758 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.IsolatedTaskQueueProducer [] - Isolated System Task Worker DISABLED
+5313 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - WorkflowReconciler started.
+5313 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - SystemTaskWorker started.
+5313 [Test worker] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - DefaultEventQueueManager started.
+5332 [Test worker] INFO  com.netflix.conductor.common.config.ConductorObjectMapperTest [] - Started ConductorObjectMapperTest in 3.876 seconds (JVM running for 5.376)
+5335 [Test worker] INFO  com.netflix.conductor.rest.startup.KitchenSinkInitializer [] - Loading Kitchen Sink examples
+5474 [Test worker] ERROR com.netflix.conductor.rest.startup.KitchenSinkInitializer [] - Error initializing kitchen sink
+org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://localhost:8080/api/metadata/taskdefs": Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused; nested exception is org.apache.http.conn.HttpHostConnectException: Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:785) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:711) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.postForEntity(RestTemplate.java:468) ~[spring-web-5.3.22.jar:5.3.22]
+	at com.netflix.conductor.rest.startup.KitchenSinkInitializer.createKitchenSink(KitchenSinkInitializer.java:95) ~[conductor-rest-3.14.0-SNAPSHOT.jar:3.14.0-SNAPSHOT]
+	at com.netflix.conductor.rest.startup.KitchenSinkInitializer.setupKitchenSink(KitchenSinkInitializer.java:75) ~[conductor-rest-3.14.0-SNAPSHOT.jar:3.14.0-SNAPSHOT]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?]
+	at java.lang.reflect.Method.invoke(Method.java:568) ~[?:?]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:344) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:229) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:166) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:176) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:169) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:143) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:421) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:378) ~[spring-context-5.3.22.jar:5.3.22]
+	at org.springframework.boot.context.event.EventPublishingRunListener.ready(EventPublishingRunListener.java:114) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.lambda$ready$6(SpringApplicationRunListeners.java:82) ~[spring-boot-2.7.3.jar:2.7.3]
+	at java.util.ArrayList.forEach(ArrayList.java:1511) ~[?:?]
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:120) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:114) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplicationRunListeners.ready(SpringApplicationRunListeners.java:82) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:323) ~[spring-boot-2.7.3.jar:2.7.3]
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:132) ~[spring-boot-test-2.7.3.jar:2.7.3]
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:99) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:124) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DependencyInjectionTestExecutionListener.injectDependencies(DependencyInjectionTestExecutionListener.java:118) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.support.DependencyInjectionTestExecutionListener.prepareTestInstance(DependencyInjectionTestExecutionListener.java:83) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.boot.test.autoconfigure.SpringBootDependencyInjectionTestExecutionListener.prepareTestInstance(SpringBootDependencyInjectionTestExecutionListener.java:43) ~[spring-boot-test-autoconfigure-2.7.3.jar:2.7.3]
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413) ~[junit-4.13.2.jar:4.13.2]
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190) ~[spring-test-5.3.22.jar:5.3.22]
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115) ~[junit-4.13.2.jar:4.13.2]
+	at org.junit.vintage.engine.execution.RunnerExecutor.execute(RunnerExecutor.java:42) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.vintage.engine.VintageTestEngine.executeAllChildren(VintageTestEngine.java:80) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.vintage.engine.VintageTestEngine.execute(VintageTestEngine.java:72) ~[junit-vintage-engine-5.8.2.jar:5.8.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:107) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:88) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:54) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:67) ~[?:?]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:52) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:86) ~[?:?]
+	at org.junit.platform.launcher.core.DefaultLauncherSession$DelegatingLauncher.execute(DefaultLauncherSession.java:86) ~[?:?]
+	at org.junit.platform.launcher.core.SessionPerRequestLauncher.execute(SessionPerRequestLauncher.java:53) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses(JUnitPlatformTestClassProcessor.java:99) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000(JUnitPlatformTestClassProcessor.java:79) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop(JUnitPlatformTestClassProcessor.java:75) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop(SuiteTestClassProcessor.java:62) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:?]
+	at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[?:?]
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:?]
+	at java.lang.reflect.Method.invoke(Method.java:568) ~[?:?]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36) ~[?:?]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24) ~[?:?]
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33) ~[?:?]
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:94) ~[?:?]
+	at jdk.proxy1.$Proxy2.stop(Unknown Source) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$3.run(TestWorker.java:193) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:129) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:100) ~[?:?]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:60) ~[?:?]
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56) ~[?:?]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:113) ~[?:?]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:65) ~[?:?]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69) ~[gradle-worker.jar:?]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74) ~[gradle-worker.jar:?]
+Caused by: org.apache.http.conn.HttpHostConnectException: Connect to localhost:8080 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused
+	at org.apache.http.impl.conn.DefaultHttpClientConnectionOperator.connect(DefaultHttpClientConnectionOperator.java:156) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.PoolingHttpClientConnectionManager.connect(PoolingHttpClientConnectionManager.java:376) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.establishRoute(MainClientExec.java:393) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.execute(MainClientExec.java:236) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.ProtocolExec.execute(ProtocolExec.java:186) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RetryExec.execute(RetryExec.java:89) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RedirectExec.execute(RedirectExec.java:110) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.InternalHttpClient.doExecute(InternalHttpClient.java:185) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:83) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.springframework.http.client.HttpComponentsClientHttpRequest.executeInternal(HttpComponentsClientHttpRequest.java:87) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:109) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.boot.actuate.metrics.web.client.MetricsClientHttpRequestInterceptor.intercept(MetricsClientHttpRequestInterceptor.java:86) ~[spring-boot-actuator-2.7.3.jar:2.7.3]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:93) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest.executeInternal(InterceptingClientHttpRequest.java:77) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:776) ~[spring-web-5.3.22.jar:5.3.22]
+	... 83 more
+Caused by: java.net.ConnectException: Connection refused
+	at sun.nio.ch.Net.connect0(Native Method) ~[?:?]
+	at sun.nio.ch.Net.connect(Net.java:579) ~[?:?]
+	at sun.nio.ch.Net.connect(Net.java:568) ~[?:?]
+	at sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593) ~[?:?]
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327) ~[?:?]
+	at java.net.Socket.connect(Socket.java:639) ~[?:?]
+	at org.apache.http.conn.socket.PlainConnectionSocketFactory.connectSocket(PlainConnectionSocketFactory.java:75) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.DefaultHttpClientConnectionOperator.connect(DefaultHttpClientConnectionOperator.java:142) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.conn.PoolingHttpClientConnectionManager.connect(PoolingHttpClientConnectionManager.java:376) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.establishRoute(MainClientExec.java:393) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.MainClientExec.execute(MainClientExec.java:236) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.ProtocolExec.execute(ProtocolExec.java:186) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RetryExec.execute(RetryExec.java:89) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.execchain.RedirectExec.execute(RedirectExec.java:110) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.InternalHttpClient.doExecute(InternalHttpClient.java:185) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:83) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:56) ~[httpclient-4.5.13.jar:4.5.13]
+	at org.springframework.http.client.HttpComponentsClientHttpRequest.executeInternal(HttpComponentsClientHttpRequest.java:87) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:109) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.boot.actuate.metrics.web.client.MetricsClientHttpRequestInterceptor.intercept(MetricsClientHttpRequestInterceptor.java:86) ~[spring-boot-actuator-2.7.3.jar:2.7.3]
+	at org.springframework.http.client.InterceptingClientHttpRequest$InterceptingRequestExecution.execute(InterceptingClientHttpRequest.java:93) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.InterceptingClientHttpRequest.executeInternal(InterceptingClientHttpRequest.java:77) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractBufferingClientHttpRequest.executeInternal(AbstractBufferingClientHttpRequest.java:48) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66) ~[spring-web-5.3.22.jar:5.3.22]
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:776) ~[spring-web-5.3.22.jar:5.3.22]
+	... 83 more
+5494 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: JOIN in queue: JOIN
+5495 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: SUB_WORKFLOW in queue: SUB_WORKFLOW
+5496 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: START_WORKFLOW in queue: START_WORKFLOW
+5496 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorker [] - Started listening for task: HTTP in queue: HTTP
+5497 [Test worker] INFO  com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator [] - SystemTaskWorkerCoordinator initialized with 4 async tasks
+5885 [scheduled-task-pool-2] INFO  com.netflix.dyno.queues.redis.RedisDynoQueue [] - com.netflix.dyno.queues.redis.RedisDynoQueue is ready to serve _deciderQueue
+6128 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - WorkflowReconciler stopped.
+6128 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - SystemTaskWorker stopped.
+6128 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.LifecycleAwareComponent [] - DefaultEventQueueManager stopped.
+6133 [SpringApplicationShutdownHook] INFO  com.netflix.conductor.core.dal.ExecutionDAOFacade [] - Gracefully shutdown executor service

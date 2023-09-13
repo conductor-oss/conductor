@@ -22,8 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import javax.script.ScriptEngineManager;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -160,9 +158,6 @@ public class WorkflowCreationTests {
 
     @Test
     public void verifyInlineWorkflowExecution() throws ValidationError {
-        var test = new ScriptEngineManager().getEngineFactories();
-        LOGGER.error("TESTING SCRIPT ENGINES: ");
-        LOGGER.error(test.toString());
         TestWorkflowInput workflowInput = new TestWorkflowInput("username", "10121", "US");
         try {
             Workflow run = registerTestWorkflow().execute(workflowInput).get(10, TimeUnit.SECONDS);
