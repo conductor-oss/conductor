@@ -49,6 +49,10 @@ public class ScriptEvaluator {
         if (engine == null) {
             engine = new NashornScriptEngineFactory().getScriptEngine();
         }
+        if (engine == null) {
+            throw new RuntimeException(
+                    "missing nashorn engine.  Ensure you are running supported JVM");
+        }
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
         return engine.eval(script, bindings);
