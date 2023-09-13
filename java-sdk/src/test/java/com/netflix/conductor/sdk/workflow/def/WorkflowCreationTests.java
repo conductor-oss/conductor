@@ -22,6 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import javax.script.ScriptEngineManager;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,8 +40,6 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 import com.netflix.conductor.sdk.workflow.testing.TestWorkflowInput;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import javax.script.ScriptEngineManager;
 
 public class WorkflowCreationTests {
 
