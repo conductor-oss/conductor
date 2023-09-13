@@ -50,9 +50,6 @@ public class ScriptEvaluator {
         if (engine == null) {
             engine = new NashornScriptEngineFactory().getScriptEngine();
         }
-        var test = new ScriptEngineManager().getEngineFactories();
-        System.out.println("TESTING SCRIPT ENGINES: ");
-        System.out.println(test);
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
         return engine.eval(script, bindings);

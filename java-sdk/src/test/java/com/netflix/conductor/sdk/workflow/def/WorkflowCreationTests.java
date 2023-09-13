@@ -39,6 +39,8 @@ import com.netflix.conductor.sdk.workflow.testing.TestWorkflowInput;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import javax.script.ScriptEngineManager;
+
 public class WorkflowCreationTests {
 
     private static WorkflowExecutor executor;
@@ -154,6 +156,9 @@ public class WorkflowCreationTests {
 
     @Test
     public void verifyInlineWorkflowExecution() throws ValidationError {
+        var test = new ScriptEngineManager().getEngineFactories();
+        System.out.println("TESTING SCRIPT ENGINES: ");
+        System.out.println(test);
         TestWorkflowInput workflowInput = new TestWorkflowInput("username", "10121", "US");
         try {
             Workflow run = registerTestWorkflow().execute(workflowInput).get(10, TimeUnit.SECONDS);
