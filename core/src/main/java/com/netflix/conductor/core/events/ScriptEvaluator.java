@@ -14,9 +14,8 @@ package com.netflix.conductor.core.events;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-
-import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 
 public class ScriptEvaluator {
 
@@ -47,7 +46,7 @@ public class ScriptEvaluator {
      */
     public static Object eval(String script, Object input) throws ScriptException {
         if (engine == null) {
-            engine = new NashornScriptEngineFactory().getScriptEngine();
+            engine = new ScriptEngineManager().getEngineByName("Nashorn");
         }
         if (engine == null) {
             throw new RuntimeException(
