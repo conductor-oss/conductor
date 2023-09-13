@@ -21,11 +21,15 @@
         <Console name="CONSOLE">
             <PatternLayout pattern="%-4r [%t] %-5p %c %x - %m%n"/>
         </Console>
+        <File name="File" filename="conductor_tests.log">
+            <PatternLayout pattern="%-4r [%t] %-5p %c %x - %m%n"/>
+        </File>
     </Appenders>
 
     <Loggers>
         <Root level="INFO">
             <AppenderRef ref="CONSOLE" />
+            <AppenderRef ref="File" />
         </Root>
     </Loggers>
 </Configuration>
