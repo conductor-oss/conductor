@@ -458,14 +458,12 @@ public class WorkflowExecutor {
             String terminationStatus =
                     (String)
                             terminateTask
-                                    .getWorkflowTask()
-                                    .getInputParameters()
+                                    .getInputData()
                                     .get(Terminate.getTerminationStatusParameter());
             String reason =
                     (String)
                             terminateTask
-                                    .getWorkflowTask()
-                                    .getInputParameters()
+                                    .getInputData()
                                     .get(Terminate.getTerminationReasonParameter());
             if (StringUtils.isBlank(reason)) {
                 reason =
