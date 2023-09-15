@@ -15,16 +15,16 @@ package com.netflix.conductor.core.execution.mapper;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
-import com.netflix.conductor.core.execution.tasks.Wait;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -176,7 +176,7 @@ public class WaitTaskMapperTest {
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
         assertEquals(mappedTasks.get(0).getStatus(), TaskModel.Status.IN_PROGRESS);
-        assertTrue(mappedTasks.get(0).getCallbackAfterSeconds()<=1L);
+        assertTrue(mappedTasks.get(0).getCallbackAfterSeconds() <= 1L);
     }
 
     @Test
@@ -186,7 +186,8 @@ public class WaitTaskMapperTest {
         workflowTask.setName("Wait_task");
         workflowTask.setType(TaskType.WAIT.name());
         String taskId = new IDGenerator().generate();
-        Map<String, Object> input = Map.of(Wait.DURATION_INPUT, "1s", Wait.UNTIL_INPUT, "2022-12-12");
+        Map<String, Object> input =
+                Map.of(Wait.DURATION_INPUT, "1s", Wait.UNTIL_INPUT, "2022-12-12");
         workflowTask.setInputParameters(input);
 
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
@@ -200,7 +201,8 @@ public class WaitTaskMapperTest {
                         .withWorkflowModel(workflow)
                         .withTaskDefinition(new TaskDef())
                         .withWorkflowTask(workflowTask)
-                        .withTaskInput(Map.of(Wait.DURATION_INPUT, "1s", Wait.UNTIL_INPUT, "2022-12-12"))
+                        .withTaskInput(
+                                Map.of(Wait.DURATION_INPUT, "1s", Wait.UNTIL_INPUT, "2022-12-12"))
                         .withRetryCount(0)
                         .withTaskId(taskId)
                         .build();
