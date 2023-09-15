@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.netflix.conductor.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,13 +83,15 @@ public class WaitTaskMapper implements TaskMapper {
         return List.of(waitTask);
     }
 
-
     void setCallbackAfter(TaskModel task) {
-        String duration = Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
-        String until = Optional.ofNullable(task.getInputData().get(UNTIL_INPUT)).orElse("").toString();
+        String duration =
+                Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
+        String until =
+                Optional.ofNullable(task.getInputData().get(UNTIL_INPUT)).orElse("").toString();
 
         if (StringUtils.isNotBlank(duration) && StringUtils.isNotBlank(until)) {
-            task.setReasonForIncompletion("Both 'duration' and 'until' specified. Please provide only one input");
+            task.setReasonForIncompletion(
+                    "Both 'duration' and 'until' specified. Please provide only one input");
             task.setStatus(FAILED_WITH_TERMINAL_ERROR);
             return;
         }
@@ -110,18 +111,19 @@ public class WaitTaskMapper implements TaskMapper {
                 long timeInMS = expiryDate.getTime();
                 long now = System.currentTimeMillis();
                 long seconds = ((timeInMS - now) / 1000) + 1;
-                if(seconds < 0) {
+                if (seconds < 0) {
                     seconds = 0;
                 }
                 task.setCallbackAfterSeconds(seconds);
                 task.setWaitTimeout(timeInMS);
 
             } catch (ParseException parseException) {
-                task.setReasonForIncompletion("Invalid/Unsupported Wait Until format.  Provided: " + until);
+                task.setReasonForIncompletion(
+                        "Invalid/Unsupported Wait Until format.  Provided: " + until);
                 task.setStatus(FAILED_WITH_TERMINAL_ERROR);
             }
         } else {
-            //If there is no time duration specified then the WAIT task should wait forever
+            // If there is no time duration specified then the WAIT task should wait forever
             task.setCallbackAfterSeconds(Integer.MAX_VALUE);
         }
     }
