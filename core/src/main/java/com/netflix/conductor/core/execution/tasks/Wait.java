@@ -12,12 +12,6 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.text.ParseException;
-import java.time.Duration;
-import java.util.Date;
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -25,8 +19,6 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
-import static com.netflix.conductor.core.utils.DateTimeUtils.parseDate;
-import static com.netflix.conductor.core.utils.DateTimeUtils.parseDuration;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
 @Component(TASK_TYPE_WAIT)
@@ -37,46 +29,6 @@ public class Wait extends WorkflowSystemTask {
 
     public Wait() {
         super(TASK_TYPE_WAIT);
-    }
-
-    @Override
-    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-
-        String duration =
-                Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
-        String until =
-                Optional.ofNullable(task.getInputData().get(UNTIL_INPUT)).orElse("").toString();
-
-        if (StringUtils.isNotBlank(duration) && StringUtils.isNotBlank(until)) {
-            task.setReasonForIncompletion(
-                    "Both 'duration' and 'until' specified. Please provide only one input");
-            task.setStatus(FAILED_WITH_TERMINAL_ERROR);
-            return;
-        }
-
-        if (StringUtils.isNotBlank(duration)) {
-
-            Duration timeDuration = parseDuration(duration);
-            long waitTimeout = System.currentTimeMillis() + (timeDuration.getSeconds() * 1000);
-            task.setWaitTimeout(waitTimeout);
-
-            long seconds = timeDuration.getSeconds();
-            task.setCallbackAfterSeconds(seconds);
-        } else if (StringUtils.isNotBlank(until)) {
-            try {
-                Date expiryDate = parseDate(until);
-                long timeInMS = expiryDate.getTime();
-                long now = System.currentTimeMillis();
-                long seconds = (timeInMS - now) / 1000;
-                task.setWaitTimeout(timeInMS);
-
-            } catch (ParseException parseException) {
-                task.setReasonForIncompletion(
-                        "Invalid/Unsupported Wait Until format.  Provided: " + until);
-                task.setStatus(FAILED_WITH_TERMINAL_ERROR);
-            }
-        }
-        task.setStatus(IN_PROGRESS);
     }
 
     @Override
@@ -97,5 +49,9 @@ public class Wait extends WorkflowSystemTask {
         }
 
         return false;
+    }
+
+    public boolean isAsync() {
+        return true;
     }
 }
