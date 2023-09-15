@@ -316,8 +316,9 @@ public class TestWorkflowExecutor {
         doAnswer(answer).when(queueDAO).push(any(), any(), anyInt(), anyLong());
 
         boolean stateChanged = workflowExecutor.scheduleTask(workflow, tasks);
-        assertEquals(2, startedTaskCount.get());
-        assertEquals(1, queuedTaskCount.get());
+        // Wait task is no async to it will be queued.
+        assertEquals(1, startedTaskCount.get());
+        assertEquals(2, queuedTaskCount.get());
         assertTrue(stateChanged);
         assertFalse(httpTask.isStarted());
         assertTrue(http2Task.isStarted());
