@@ -19,6 +19,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -44,6 +46,9 @@ import com.jayway.jsonpath.Option;
 public class ParametersUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParametersUtils.class);
+    private static final Pattern PATTERN =
+            Pattern.compile(
+                    "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)");
 
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};
@@ -221,56 +226,58 @@ public class ParametersUtils {
 
     private Object replaceVariables(
             String paramString, DocumentContext documentContext, String taskId) {
-        String[] values = paramString.split("(?=(?<!\\$)\\$\\{)|(?<=})");
-        Object[] convertedValues = new Object[values.length];
-        for (int i = 0; i < values.length; i++) {
-            convertedValues[i] = values[i];
-            if (values[i].startsWith("${") && values[i].endsWith("}")) {
-                String paramPath = values[i].substring(2, values[i].length() - 1);
-                // if the paramPath is blank, meaning no value in between ${ and }
-                // like ${}, ${  } etc, set the value to empty string
-                if (StringUtils.isBlank(paramPath)) {
-                    convertedValues[i] = "";
-                    continue;
-                }
-                if (EnvUtils.isEnvironmentVariable(paramPath)) {
-                    String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
-                    if (sysValue != null) {
-                        convertedValues[i] = sysValue;
-                    }
+        return replaceVariables(paramString, documentContext, taskId, 0);
+    }
 
-                } else {
-                    try {
-                        convertedValues[i] = documentContext.read(paramPath);
-                    } catch (Exception e) {
-                        LOGGER.warn(
-                                "Error reading documentContext for paramPath: {}. Exception: {}",
-                                paramPath,
-                                e);
-                        convertedValues[i] = null;
-                    }
-                }
-            } else if (values[i].contains("$${")) {
-                convertedValues[i] = values[i].replaceAll("\\$\\$\\{", "\\${");
+    private Object replaceVariables(
+            String paramString, DocumentContext documentContext, String taskId, int depth) {
+        var matcher = PATTERN.matcher(paramString);
+        var replacements = new LinkedList<Replacement>();
+        while (matcher.find()) {
+            var start = matcher.start();
+            var end = matcher.end();
+            var match = paramString.substring(start, end);
+            String paramPath = match.substring(2, match.length() - 1);
+            paramPath = replaceVariables(paramPath, documentContext, taskId, depth + 1).toString();
+            // if the paramPath is blank, meaning no value in between ${ and }
+            // like ${}, ${  } etc, set the value to empty string
+            if (StringUtils.isBlank(paramPath)) {
+                replacements.add(new Replacement("", start, end));
+                continue;
             }
-        }
-
-        Object retObj = convertedValues[0];
-        // If the parameter String was "v1 v2 v3" then make sure to stitch it back
-        if (convertedValues.length > 1) {
-            for (int i = 0; i < convertedValues.length; i++) {
-                Object val = convertedValues[i];
-                if (val == null) {
-                    val = "";
+            if (EnvUtils.isEnvironmentVariable(paramPath)) {
+                String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
+                if (sysValue != null) {
+                    replacements.add(new Replacement(sysValue, start, end));
                 }
-                if (i == 0) {
-                    retObj = val;
-                } else {
-                    retObj = retObj + "" + val.toString();
+            } else {
+                try {
+                    replacements.add(new Replacement(documentContext.read(paramPath), start, end));
+                } catch (Exception e) {
+                    LOGGER.warn(
+                            "Error reading documentContext for paramPath: {}. Exception: {}",
+                            paramPath,
+                            e);
+                    replacements.add(new Replacement(null, start, end));
                 }
             }
         }
-        return retObj;
+        if (replacements.size() == 1
+                && replacements.getFirst().getStartIndex() == 0
+                && replacements.getFirst().getEndIndex() == paramString.length()
+                && depth == 0) {
+            return replacements.get(0).getReplacement();
+        }
+        Collections.sort(replacements);
+        var builder = new StringBuilder(paramString);
+        for (int i = replacements.size() - 1; i >= 0; i--) {
+            var replacement = replacements.get(i);
+            builder.replace(
+                    replacement.getStartIndex(),
+                    replacement.getEndIndex(),
+                    Objects.toString(replacement.getReplacement()));
+        }
+        return builder.toString().replaceAll("\\$\\$\\{", "\\${");
     }
 
     @Deprecated
@@ -320,5 +327,34 @@ public class ParametersUtils {
             clone(workflowDef.getInputTemplate()).forEach(inputParams::putIfAbsent);
         }
         return inputParams;
+    }
+
+    private static class Replacement implements Comparable<Replacement> {
+        private final int startIndex;
+        private final int endIndex;
+        private final Object replacement;
+
+        public Replacement(Object replacement, int startIndex, int endIndex) {
+            this.replacement = replacement;
+            this.startIndex = startIndex;
+            this.endIndex = endIndex;
+        }
+
+        public Object getReplacement() {
+            return replacement;
+        }
+
+        public int getStartIndex() {
+            return startIndex;
+        }
+
+        public int getEndIndex() {
+            return endIndex;
+        }
+
+        @Override
+        public int compareTo(Replacement o) {
+            return Long.compare(startIndex, o.startIndex);
+        }
     }
 }
