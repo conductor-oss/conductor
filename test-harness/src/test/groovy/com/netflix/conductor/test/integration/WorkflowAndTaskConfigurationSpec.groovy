@@ -730,7 +730,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
             tasks[0].taskType == 'WAIT'
             tasks[0].status == Task.Status.TIMED_OUT
             tasks[1].taskType == 'WAIT'
-            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[1].status == Task.Status.SCHEDULED
         }
 
         when: "The wait task is completed"
