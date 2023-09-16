@@ -184,6 +184,12 @@
             ],
             "locked": "2.17.2"
         },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
+        },
         "org.redisson:redisson": {
             "locked": "3.13.3"
         }
@@ -388,6 +394,12 @@
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         },
         "org.redisson:redisson": {
             "locked": "3.13.3"

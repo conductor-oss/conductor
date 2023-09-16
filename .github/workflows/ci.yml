@@ -12,11 +12,11 @@ jobs:
           fetch-depth: 0
       - name: Gradle wrapper validation
         uses: gradle/wrapper-validation-action@v1
-      - name: Set up Zulu JDK 11
+      - name: Set up Zulu JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
       - name: Cache SonarCloud packages
         uses: actions/cache@v3
         with:
@@ -38,6 +38,16 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./gradlew build --scan
+      - name: Print Server Logs
+        if: always()
+        run: |
+          cat conductor_tests.log
+      - name: Publish server logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-logs
+          path: conductor_tests.log
       - name: Build and Publish snapshot
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |

@@ -52,8 +52,8 @@ allprojects {
     apply plugin: 'java-library'
     apply plugin: 'project-report'
 
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 
     group = 'com.netflix.conductor'
 
@@ -164,11 +164,11 @@ allprojects {
     }
 }
 
-// all client and their related modules are published with Java 11 compatibility
+// all client and their related modules are published with Java 17 compatibility
 ["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
-            options.release = 11
+            options.release = 17
         }
     }
 }

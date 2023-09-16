@@ -77,7 +77,7 @@ Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/ne
 * The indexing backend is [Elasticsearch](https://www.elastic.co/) (6.x)
 
 ## Other Requirements
-* JDK 11+
+* JDK 17+
 * UI requires Node 14 to build. Earlier Node versions may work but is untested.
 
 ## Get Support

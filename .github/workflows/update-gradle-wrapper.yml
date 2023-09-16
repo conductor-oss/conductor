@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Zulu JDK 11
+      - name: Set up Zulu JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
       - name: Update Gradle Wrapper
         uses: gradle-update/update-gradle-wrapper-action@v1

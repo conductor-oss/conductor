@@ -18,13 +18,13 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
@@ -93,19 +93,19 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "javax.annotation:javax.annotation-api": {
             "firstLevelTransitive": [
@@ -183,13 +183,13 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -270,19 +270,19 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "javax.annotation:javax.annotation-api": {
             "firstLevelTransitive": [

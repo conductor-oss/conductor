@@ -4,7 +4,7 @@
 # ===========================================================================================================
 # 0. Builder stage
 # ===========================================================================================================
-FROM openjdk:11-jdk AS builder
+FROM openjdk:17-jdk AS builder
 LABEL maintainer="Netflix OSS <conductor@netflix.com>"
 
 # Install Node
@@ -36,7 +36,7 @@ RUN yarn install && yarn build
 # ===========================================================================================================
 
 FROM nginx:alpine
-RUN apk add openjdk11-jre
+RUN apk add openjdk17-jre
 
 LABEL maintainer="Netflix OSS <conductor@netflix.com>"
 

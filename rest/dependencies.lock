@@ -190,6 +190,12 @@
             ],
             "locked": "2.17.2"
         },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
+        },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.6.15"
         },
@@ -400,6 +406,12 @@
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         },
         "org.springdoc:springdoc-openapi-ui": {
             "locked": "1.6.15"

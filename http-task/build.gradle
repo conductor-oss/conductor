@@ -21,4 +21,6 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"
     testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
+    testImplementation "org.bouncycastle:bcprov-jdk15on:1.70"
+    testImplementation "org.bouncycastle:bcpkix-jdk15on:1.70"
 }

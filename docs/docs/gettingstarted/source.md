@@ -5,7 +5,7 @@ In this article we will explore how you can set up Netflix Conductor on your loc
 features.
 
 ### Prerequisites
-1. JDK 11 or greater
+1. JDK 17 or greater
 2. (Optional) Docker if you want to run tests.  You can install docker from [here](https://www.docker.com/get-started/).
 3. Node for building and running UI.  Instructions at [https://nodejs.org](https://nodejs.org).
 4. Yarn for building and running UI.  Instructions at [https://classic.yarnpkg.com/en/docs/install](https://classic.yarnpkg.com/en/docs/install).

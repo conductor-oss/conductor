@@ -211,6 +211,12 @@
             ],
             "locked": "2.35"
         },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "15.4"
+        },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
@@ -445,6 +451,12 @@
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-java-sdk"
+            ],
+            "locked": "15.4"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [

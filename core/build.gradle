@@ -41,6 +41,8 @@ dependencies {
 
     implementation "com.github.ben-manes.caffeine:caffeine"
 
+    implementation "org.openjdk.nashorn:nashorn-core:15.4"
+
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"

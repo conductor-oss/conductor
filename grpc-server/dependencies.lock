@@ -15,10 +15,10 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
@@ -127,22 +127,22 @@
             "locked": "2.7"
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -226,6 +226,12 @@
                 "com.netflix.conductor:conductor-grpc"
             ],
             "locked": "2.17.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         }
     },
     "testCompileClasspath": {
@@ -239,13 +245,13 @@
             "project": true
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -366,25 +372,25 @@
             "locked": "2.7"
         },
         "io.grpc:grpc-netty": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-services": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-stub": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.grpc:grpc-testing": {
-            "locked": "1.56.1"
+            "locked": "1.57.1"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -474,6 +480,12 @@
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.8.2"
+        },
+        "org.openjdk.nashorn:nashorn-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "15.4"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "2.7.3"

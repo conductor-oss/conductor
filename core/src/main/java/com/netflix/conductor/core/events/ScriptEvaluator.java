@@ -19,7 +19,7 @@ import javax.script.ScriptException;
 
 public class ScriptEvaluator {
 
-    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+    private static ScriptEngine engine;
 
     private ScriptEvaluator() {}
 
@@ -45,6 +45,13 @@ public class ScriptEvaluator {
      * @return Generic object, the result of the evaluated expression.
      */
     public static Object eval(String script, Object input) throws ScriptException {
+        if (engine == null) {
+            engine = new ScriptEngineManager().getEngineByName("Nashorn");
+        }
+        if (engine == null) {
+            throw new RuntimeException(
+                    "missing nashorn engine.  Ensure you are running supported JVM");
+        }
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
         return engine.eval(script, bindings);

@@ -222,7 +222,7 @@
             "locked": "2.17.2"
         },
         "org.codehaus.groovy:groovy-all": {
-            "locked": "2.5.13"
+            "locked": "2.5.22"
         },
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"
@@ -361,7 +361,7 @@
             "locked": "2.17.2"
         },
         "org.codehaus.groovy:groovy-all": {
-            "locked": "2.5.13"
+            "locked": "2.5.22"
         },
         "org.glassfish.jersey.core:jersey-common": {
             "locked": "2.22.2"

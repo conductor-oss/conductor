@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -40,6 +42,8 @@ import com.netflix.conductor.sdk.workflow.testing.TestWorkflowInput;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class WorkflowCreationTests {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowCreationTests.class);
 
     private static WorkflowExecutor executor;
 
