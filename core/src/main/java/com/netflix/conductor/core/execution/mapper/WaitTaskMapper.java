@@ -110,7 +110,7 @@ public class WaitTaskMapper implements TaskMapper {
                 Date expiryDate = parseDate(until);
                 long timeInMS = expiryDate.getTime();
                 long now = System.currentTimeMillis();
-                long seconds = ((timeInMS - now) / 1000) + 1;
+                long seconds = ((timeInMS - now) / 1000);
                 if (seconds < 0) {
                     seconds = 0;
                 }
