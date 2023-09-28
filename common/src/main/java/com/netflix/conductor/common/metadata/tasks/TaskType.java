@@ -40,7 +40,8 @@ public enum TaskType {
     TERMINATE,
     KAFKA_PUBLISH,
     JSON_JQ_TRANSFORM,
-    SET_VARIABLE;
+    SET_VARIABLE,
+    NOOP;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not
@@ -69,6 +70,7 @@ public enum TaskType {
     public static final String TASK_TYPE_JSON_JQ_TRANSFORM = "JSON_JQ_TRANSFORM";
     public static final String TASK_TYPE_SET_VARIABLE = "SET_VARIABLE";
     public static final String TASK_TYPE_FORK = "FORK";
+    public static final String TASK_TYPE_NOOP = "NOOP";
 
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
 
