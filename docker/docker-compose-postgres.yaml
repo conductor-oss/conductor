@@ -13,21 +13,19 @@ services:
       - internal
     ports:
       - 8080:8080
+      - 5000:5000
     healthcheck:
       test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
       interval: 60s
       timeout: 30s
       retries: 12
     links:
-      - elasticsearch:es
-      - redis:rs
-      - postgres:postgresdb
+      - conductor-elasticsearch:es
+      - conductor-postgres:postgresdb
     depends_on:
-      elasticsearch:
+      conductor-elasticsearch:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      postgres:
+      conductor-postgres:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -35,7 +33,7 @@ services:
         max-size: "1k"
         max-file: "3"
 
-  postgres:
+  conductor-postgres:
     image: postgres
     environment:
       - POSTGRES_USER=conductor
@@ -45,7 +43,7 @@ services:
     networks:
       - internal
     ports:
-      - 5432:5432
+      - 6432:5432
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
       interval: 5s
@@ -57,32 +55,20 @@ services:
         max-size: "1k"
         max-file: "3"
 
-  redis:
-    image: redis:6.2.3-alpine
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    networks:
-      - internal
-    ports:
-      - 6379:6379
-    healthcheck:
-      test: [ "CMD", "redis-cli","ping" ]
-
-  elasticsearch:
-    image: elasticsearch:6.8.15
-    container_name: elasticsearch
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
-      - transport.host=0.0.0.0
-      - discovery.type=single-node
       - xpack.security.enabled=false
+      - discovery.type=single-node
+    volumes:
+      - esdata-conductor:/usr/share/elasticsearch/data
     networks:
       - internal
     ports:
-      - 9200:9200
-      - 9300:9300
+      - 9201:9200
     healthcheck:
-      test: wget http://localhost:9200/ -O /dev/null
+      test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s
       timeout: 5s
       retries: 12
@@ -94,6 +80,8 @@ services:
 
 volumes:
   pgdata-conductor:
+    driver: local
+  esdata-conductor:
     driver: local
 
 networks:

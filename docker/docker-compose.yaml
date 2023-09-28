@@ -3,7 +3,7 @@ version: '2.3'
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-local.properties
+      - CONFIG_PROP=config-redis.properties
     image: conductor:server
     container_name: conductor-server
     build:
@@ -13,18 +13,19 @@ services:
       - internal
     ports:
       - 8080:8080
+      - 5000:5000
     healthcheck:
       test: ["CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health"]
       interval: 60s
       timeout: 30s
       retries: 12
     links:
-      - elasticsearch:es
-      - redis:rs
+      - conductor-elasticsearch:es
+      - conductor-redis:rs
     depends_on:
-      elasticsearch:
+      conductor-elasticsearch:
         condition: service_healthy
-      redis:
+      conductor-redis:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -32,50 +33,31 @@ services:
         max-size: "1k"
         max-file: "3"
 
-  conductor-ui:
-    environment:
-      - WF_SERVER=http://conductor-server:8080
-    image: conductor:ui
-    container_name: conductor-ui
-    build:
-      context: ../
-      dockerfile: docker/ui/Dockerfile
-    networks:
-      - internal
-    ports:
-      - 5000:5000
-    links:
-      - conductor-server
-    stdin_open: true
-
-  redis:
+  conductor-redis:
     image: redis:6.2.3-alpine
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ../server/config/redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - internal
     ports:
-      - 6379:6379
+      - 7379:6379
     healthcheck:
       test: [ "CMD", "redis-cli","ping" ]
 
-  elasticsearch:
-    image: elasticsearch:6.8.15
-    container_name: elasticsearch
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
-      - transport.host=0.0.0.0
-      - discovery.type=single-node
       - xpack.security.enabled=false
+      - discovery.type=single-node
     volumes:
       - esdata-conductor:/usr/share/elasticsearch/data
     networks:
       - internal
     ports:
-      - 9200:9200
-      - 9300:9300
+      - 9201:9200
     healthcheck:
-      test: wget http://localhost:9200/ -O /dev/null
+      test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s
       timeout: 5s
       retries: 12
