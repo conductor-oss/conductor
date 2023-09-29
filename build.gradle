@@ -96,51 +96,11 @@ allprojects {
     }
 
     dependencies {
-        implementation('org.apache.logging.log4j:log4j-core') {
-            version {
-                // this is the preferred version this library will use
-                prefer '2.17.2'
-                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
-                // could also remove the upper bound entirely if we wanted too
-                strictly '[2.17.2,3.0)'
-            }
-        }
-        implementation('org.apache.logging.log4j:log4j-api') {
-            version {
-                // this is the preferred version this library will use
-                prefer '2.17.2'
-                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
-                // could also remove the upper bound entirely if we wanted too
-                strictly '[2.17.2,3.0)'
-            }
-        }
-        implementation('org.apache.logging.log4j:log4j-slf4j-impl') {
-            version {
-                // this is the preferred version this library will use
-                prefer '2.17.2'
-                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
-                // could also remove the upper bound entirely if we wanted too
-                strictly '[2.17.2,3.0)'
-            }
-        }
-        implementation('org.apache.logging.log4j:log4j-jul') {
-            version {
-                // this is the preferred version this library will use
-                prefer '2.17.2'
-                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
-                // could also remove the upper bound entirely if we wanted too
-                strictly '[2.17.2,3.0)'
-            }
-        }
-        implementation('org.apache.logging.log4j:log4j-web') {
-            version {
-                // this is the preferred version this library will use
-                prefer '2.17.2'
-                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
-                // could also remove the upper bound entirely if we wanted too
-                strictly '[2.17.2,3.0)'
-            }
-        }
+        implementation('org.apache.logging.log4j:log4j-core')
+        implementation('org.apache.logging.log4j:log4j-api')
+        implementation('org.apache.logging.log4j:log4j-slf4j-impl')
+        implementation('org.apache.logging.log4j:log4j-jul')
+        implementation('org.apache.logging.log4j:log4j-web') 
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
