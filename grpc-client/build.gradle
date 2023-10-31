@@ -21,5 +21,6 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "org.slf4j:slf4j-api"
     implementation "org.apache.commons:commons-lang3"
+    implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
     implementation "com.google.guava:guava:${revGuava}"
 }

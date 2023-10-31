@@ -11,7 +11,7 @@ dependencies {
     implementation "redis.clients:jedis:3.6.0" // Jedis version "revJedis=3.3.0" does not play well with Spring Data Redis
     implementation "org.apache.commons:commons-lang3"
 
-    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.testcontainers:spock:${revTestContainer}"

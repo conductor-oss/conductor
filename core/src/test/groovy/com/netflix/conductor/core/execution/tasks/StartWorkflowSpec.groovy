@@ -12,9 +12,6 @@
  */
 package com.netflix.conductor.core.execution.tasks
 
-import javax.validation.ConstraintViolation
-import javax.validation.Validator
-
 import com.netflix.conductor.common.config.ObjectMapperProvider
 import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.exception.TransientException
@@ -23,6 +20,8 @@ import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
+import jakarta.validation.ConstraintViolation
+import jakarta.validation.Validator
 import spock.lang.Specification
 import spock.lang.Subject
 

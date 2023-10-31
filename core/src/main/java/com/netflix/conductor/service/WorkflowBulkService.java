@@ -14,12 +14,12 @@ package com.netflix.conductor.service;
 
 import java.util.List;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Size;
-
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.model.BulkResponse;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 @Validated
 public interface WorkflowBulkService {

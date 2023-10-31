@@ -315,7 +315,7 @@ public class HttpTaskTest {
         task.setScheduledTime(0);
 
         httpTask.start(workflow, task, workflowExecutor);
-        assertEquals(task.getStatus(), TaskModel.Status.FAILED);
+        assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
 
     @Test

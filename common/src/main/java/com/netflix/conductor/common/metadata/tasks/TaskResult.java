@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.validation.constraints.NotEmpty;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
@@ -27,6 +25,7 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.validation.constraints.NotEmpty;
 
 /** Result of the task execution. */
 @ProtoMessage

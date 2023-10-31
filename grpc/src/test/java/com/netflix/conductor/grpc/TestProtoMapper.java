@@ -39,7 +39,7 @@ public class TestProtoMapper {
     final WorkflowTaskPb.WorkflowTask taskWithDefaultRetryCount = WorkflowTaskPb.WorkflowTask.newBuilder().build();
     final WorkflowTaskPb.WorkflowTask taskWith1RetryCount = WorkflowTaskPb.WorkflowTask.newBuilder().setRetryCount(1).build();
     final WorkflowTaskPb.WorkflowTask taskWithNoRetryCount = WorkflowTaskPb.WorkflowTask.newBuilder().setRetryCount(-1).build();
-    assertEquals(new Integer(0), mapper.fromProto(taskWithDefaultRetryCount).getRetryCount());
+    assertEquals(Integer.valueOf(0), mapper.fromProto(taskWithDefaultRetryCount).getRetryCount());
     assertEquals(1, mapper.fromProto(taskWith1RetryCount).getRetryCount().intValue());
     assertNull(mapper.fromProto(taskWithNoRetryCount).getRetryCount());
   }
