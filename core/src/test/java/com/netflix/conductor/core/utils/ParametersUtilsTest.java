@@ -258,6 +258,30 @@ public class ParametersUtilsTest {
     }
 
     @Test
+    public void testReplaceWithLineTerminators() throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "conductor");
+        map.put("version", 2);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("k1", "Name: ${name}; Version: ${version};");
+        input.put("k2", "Name: ${name};\nVersion: ${version};");
+        input.put("k3", "Name: ${name};\rVersion: ${version};");
+        input.put("k4", "Name: ${name};\r\nVersion: ${version};");
+
+        Object jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(map), Object.class);
+
+        Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
+
+        assertNotNull(replaced);
+
+        assertEquals("Name: conductor; Version: 2;", replaced.get("k1"));
+        assertEquals("Name: conductor;\nVersion: 2;", replaced.get("k2"));
+        assertEquals("Name: conductor;\rVersion: 2;", replaced.get("k3"));
+        assertEquals("Name: conductor;\r\nVersion: 2;", replaced.get("k4"));
+    }
+
+    @Test
     public void testReplaceWithEscapedTags() throws Exception {
         Map<String, Object> map = new HashMap<>();
         map.put("someString", "conductor");
