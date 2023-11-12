@@ -2,6 +2,7 @@ import React from "react";
 
 import { Route, Switch } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
+import { loader } from '@monaco-editor/react';
 import { Button, AppBar, Toolbar } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
@@ -131,4 +132,9 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+if (process.env.REACT_APP_MONACO_EDITOR_USING_CDN === "false") {
+  // Change the source of the monaco files, see https://github.com/suren-atoyan/monaco-react/issues/168#issuecomment-762336713
+  loader.config({ paths: { vs: '/monaco-editor/min/vs' } });
 }
