@@ -7,8 +7,10 @@ dependencies {
 
     implementation "io.grpc:grpc-netty:${revGrpc}"
     implementation "io.grpc:grpc-services:${revGrpc}"
+    implementation "io.grpc:grpc-protobuf:${revGrpc}"
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "io.grpc:grpc-testing:${revGrpc}"
+    testImplementation "io.grpc:grpc-protobuf:${revGrpc}"
     testImplementation "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
 }

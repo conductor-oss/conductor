@@ -45,7 +45,6 @@ class IsolatedTaskQueueProducerSpec extends Specification {
                 Duration.ofSeconds(10))
     }
 
-    @Test
     def "addTaskQueuesAddsElementToQueue"() {
         given:
         TaskDef taskDef = new TaskDef(isolationGroupId: "isolated")

@@ -62,6 +62,10 @@ bootJar {
     classifier = 'boot'
 }
 
+// https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
+// This will configure a BuildInfo task named bootBuildInfo
 springBoot {
     buildInfo()
 }
+
+compileJava.dependsOn bootBuildInfo
