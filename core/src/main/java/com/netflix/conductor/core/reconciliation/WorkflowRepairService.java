@@ -109,6 +109,11 @@ public class WorkflowRepairService {
                                 () ->
                                         new NotFoundException(
                                                 "Could not find workflow: " + workflowId));
+        verifyAndRepairWorkflowTasks(workflow);
+    }
+
+    /** Verify and repair tasks in a workflow. */
+    public void verifyAndRepairWorkflowTasks(WorkflowModel workflow) {
         workflow.getTasks().forEach(this::verifyAndRepairTask);
         // repair the parent workflow if needed
         verifyAndRepairWorkflow(workflow.getParentWorkflowId());

@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
@@ -48,6 +49,7 @@ public class WorkflowSweeper {
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowRepairService workflowRepairService;
     private final QueueDAO queueDAO;
+    private final ExecutionDAOFacade executionDAOFacade;
 
     private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
 
@@ -56,10 +58,12 @@ public class WorkflowSweeper {
             WorkflowExecutor workflowExecutor,
             Optional<WorkflowRepairService> workflowRepairService,
             ConductorProperties properties,
-            QueueDAO queueDAO) {
+            QueueDAO queueDAO,
+            ExecutionDAOFacade executionDAOFacade) {
         this.properties = properties;
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
+        this.executionDAOFacade = executionDAOFacade;
         this.workflowRepairService = workflowRepairService.orElse(null);
         LOGGER.info("WorkflowSweeper initialized.");
     }
@@ -77,12 +81,14 @@ public class WorkflowSweeper {
             WorkflowContext.set(workflowContext);
             LOGGER.debug("Running sweeper for workflow {}", workflowId);
 
+            workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
+
             if (workflowRepairService != null) {
                 // Verify and repair tasks in the workflow.
-                workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
+                workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
 
-            workflow = workflowExecutor.decide(workflowId);
+            workflow = workflowExecutor.decideWithLock(workflow);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
