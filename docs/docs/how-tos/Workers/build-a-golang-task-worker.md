@@ -11,7 +11,7 @@ go get github.com/netflix/conductor/client/go
 This will create a Go project under $GOPATH/src and download any dependencies.
 
 ## Implementing a Task a Worker
-`task`package provies the types used to implement the worker.  Here is a reference worker implementation:
+`task`package provides the types used to implement the worker.  Here is a reference worker implementation:
 
 ```go
 package task
