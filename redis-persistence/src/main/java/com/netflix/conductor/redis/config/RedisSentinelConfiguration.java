@@ -63,7 +63,24 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
         }
         // We use the password of the first sentinel host as password and sentinelPassword
         String password = getPassword(hostSupplier.getHosts());
-        if (password != null) {
+        if (properties.getUsername() != null && password != null) {
+            return new JedisSentinel(
+                    new JedisSentinelPool(
+                            properties.getClusterName(),
+                            sentinels,
+                            genericObjectPoolConfig,
+                            Protocol.DEFAULT_TIMEOUT,
+                            Protocol.DEFAULT_TIMEOUT,
+                            properties.getUsername(),
+                            password,
+                            properties.getDatabase(),
+                            null,
+                            Protocol.DEFAULT_TIMEOUT,
+                            Protocol.DEFAULT_TIMEOUT,
+                            properties.getUsername(),
+                            password,
+                            null));
+        } else if (password != null) {
             return new JedisSentinel(
                     new JedisSentinelPool(
                             properties.getClusterName(),
@@ -72,7 +89,7 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
                             Protocol.DEFAULT_TIMEOUT,
                             Protocol.DEFAULT_TIMEOUT,
                             password,
-                            Protocol.DEFAULT_DATABASE,
+                            properties.getDatabase(),
                             null,
                             Protocol.DEFAULT_TIMEOUT,
                             Protocol.DEFAULT_TIMEOUT,
