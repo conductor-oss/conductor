@@ -201,6 +201,7 @@ function WorkbenchForm(props) {
 
         <FormikJsonInput
           className={classes.field}
+          reinitialize
           height={200}
           label="Task to Domain (JSON)"
           name="taskToDomain"
