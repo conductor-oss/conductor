@@ -40,13 +40,13 @@ The modules contributed by the community are housed at [conductor-community](htt
 
 ## Getting Started - Building & Running Conductor
 ###  Using Docker:
-The easiest way to get started is with Docker containers. Please follow the instructions [here](https://conductor.netflix.com/gettingstarted/docker.html). 
+The easiest way to get started is with Docker containers. Please follow the instructions [here](https://conductor.netflix.com/devguide/running/docker.html). 
 
 ###  From Source:
-Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. See instructions [here](http://conductor.netflix.com/gettingstarted/source.html).
+Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. See instructions [here](https://conductor.netflix.com/devguide/running/source.html).
 
 ## Published Artifacts
-Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository, or the [Maven Central Repository](https://search.maven.org/search?q=g:com.netflix.conductor).
+Binaries are available from the [Maven Central Repository](https://search.maven.org/search?q=g:com.netflix.conductor).
 
 | Artifact                        | Description                                                                                     |
 |---------------------------------|-------------------------------------------------------------------------------------------------|
