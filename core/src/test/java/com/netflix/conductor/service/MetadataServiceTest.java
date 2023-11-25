@@ -12,13 +12,7 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.validation.ConstraintViolationException;
 
@@ -35,6 +29,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
@@ -280,6 +275,66 @@ public class MetadataServiceTest {
         when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
         metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
         verify(metadataDAO, times(1)).updateWorkflowDef(workflowDef);
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testUpdateWorkflowDefWithCaseExpression() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("somename");
+        workflowDef.setOwnerEmail("sample@test.com");
+        List<WorkflowTask> tasks = new ArrayList<>();
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("hello");
+        workflowTask.setName("hello");
+        workflowTask.setType("DECISION");
+
+        WorkflowTask caseTask = new WorkflowTask();
+        caseTask.setTaskReferenceName("casetrue");
+        caseTask.setName("casetrue");
+
+        List<WorkflowTask> caseTaskList = new ArrayList<>();
+        caseTaskList.add(caseTask);
+
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap();
+        decisionCases.put("true", caseTaskList);
+
+        workflowTask.setDecisionCases(decisionCases);
+        workflowTask.setCaseExpression("1 >0abcd");
+        tasks.add(workflowTask);
+        workflowDef.setTasks(tasks);
+        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+        BulkResponse bulkResponse =
+                metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testUpdateWorkflowDefWithJavscriptEvaluator() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("somename");
+        workflowDef.setOwnerEmail("sample@test.com");
+        List<WorkflowTask> tasks = new ArrayList<>();
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("hello");
+        workflowTask.setName("hello");
+        workflowTask.setType("SWITCH");
+        workflowTask.setEvaluatorType("javascript");
+        workflowTask.setExpression("1>abcd");
+        WorkflowTask caseTask = new WorkflowTask();
+        caseTask.setTaskReferenceName("casetrue");
+        caseTask.setName("casetrue");
+
+        List<WorkflowTask> caseTaskList = new ArrayList<>();
+        caseTaskList.add(caseTask);
+
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap();
+        decisionCases.put("true", caseTaskList);
+
+        workflowTask.setDecisionCases(decisionCases);
+        tasks.add(workflowTask);
+        workflowDef.setTasks(tasks);
+        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+        BulkResponse bulkResponse =
+                metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
 
     @Test(expected = ConstraintViolationException.class)
