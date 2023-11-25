@@ -17,10 +17,10 @@ dependencies {
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
     // https://github.com/FasterXML/jackson-modules-base/tree/master/afterburner
-    implementation "com.fasterxml.jackson.module:jackson-module-afterburner"
+    implementation "com.fasterxml.jackson.module:jackson-module-afterburner:${revFasterXml}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
 }

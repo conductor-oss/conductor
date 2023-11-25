@@ -5,7 +5,7 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-client')
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
     implementation "com.google.guava:guava:${revGuava}"
     implementation "cglib:cglib:3.3.0"
     implementation "com.sun.jersey:jersey-client:${revJersey}"
@@ -17,7 +17,7 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 
-    testImplementation "com.fasterxml.jackson.core:jackson-core"
+    testImplementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
     testImplementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"

@@ -65,6 +65,10 @@ allprojects {
         exclude group: 'ch.qos.logback', module: 'logback-core'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        resolutionStrategy {
+            force 'org.codehaus.jettison:jettison:1.5.4'
+            force "org.apache.commons:commons-compress:${revCommonsCompress}"
+        }
     }
 
     repositories {
@@ -99,6 +103,147 @@ allprojects {
     }
 
     dependencies {
+        implementation('org.apache.logging.log4j:log4j-core') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-api') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-slf4j-impl') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-jul') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
+            }
+        }
+        implementation('org.apache.logging.log4j:log4j-web') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.17.2'
+                // the strict bounds, effectively allowing any 2.x version greater than 2.17.2
+                // could also remove the upper bound entirely if we wanted too
+                strictly '[2.17.2,3.0)'
+            }
+        }
+        implementation('org.yaml:snakeyaml') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.0'
+                // the strict bounds, effectively allowing any 2.x version between 2.0 and 2.1
+                strictly '[2.0,2.1)'
+            }
+        }
+        implementation('com.fasterxml.jackson.core:jackson-core') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.core:jackson-databind') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.core:jackson-annotations') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-smile') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-cbor') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.datatype:jackson-datatype-jdk8') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.datatype:jackson-datatype-joda') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.datatype:jackson-datatype-jsr310') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
+        implementation('com.fasterxml.jackson.module:jackson-module-afterburner') {
+            version {
+                // this is the preferred version this library will use
+                prefer '2.15.0'
+                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
+                strictly '[2.15.0,2.15.2)'
+            }
+        }
         implementation('org.apache.logging.log4j:log4j-core')
         implementation('org.apache.logging.log4j:log4j-api')
         implementation('org.apache.logging.log4j:log4j-slf4j-impl')
@@ -106,10 +251,15 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-web') 
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
-        testImplementation('org.springframework.boot:spring-boot-starter-test')
+        testImplementation('org.springframework.boot:spring-boot-starter-test') {
+            exclude group: 'org.yaml', module: 'snakeyaml'
+        }
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
+
+        // Needed for build to work on m1/m2 macs
+        testImplementation 'net.java.dev.jna:jna:5.13.0'
     }
 
     // processes additional configuration metadata json file as described here

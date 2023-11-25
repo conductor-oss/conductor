@@ -16,8 +16,8 @@ dependencies {
 
     testImplementation "org.springframework.retry:spring-retry"
 
-    testImplementation "com.fasterxml.jackson.core:jackson-databind"
-    testImplementation "com.fasterxml.jackson.core:jackson-core"
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    testImplementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
 
     testImplementation "org.apache.commons:commons-lang3"
 

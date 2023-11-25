@@ -18,8 +18,8 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.springframework.retry:spring-retry'
 
-    implementation "com.fasterxml.jackson.core:jackson-annotations"
-    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${revFasterXml}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
 
     implementation "commons-io:commons-io:${revCommonsIo}"
 
@@ -27,7 +27,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
 
     implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
 

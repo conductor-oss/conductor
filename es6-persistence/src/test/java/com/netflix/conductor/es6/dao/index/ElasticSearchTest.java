@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.es6.dao.index;
 
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -47,8 +49,11 @@ abstract class ElasticSearchTest {
 
     protected static final ElasticsearchContainer container =
             new ElasticsearchContainer(
-                    DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
-                            .withTag("6.8.12")); // this should match the client version
+                            DockerImageName.parse(
+                                            "docker.elastic.co/elasticsearch/elasticsearch-oss")
+                                    .withTag("6.8.17")) // this should match the client version
+                    // Resolve issue with es container not starting on m1/m2 macs
+                    .withEnv(Map.of("bootstrap.system_call_filter", "false"));
 
     @Autowired protected ObjectMapper objectMapper;
 
