@@ -238,7 +238,7 @@ public class WorkflowExecutor {
         return taskClient;
     }
 
-    public WorkflowClient  getWorkflowClient() {
+    public WorkflowClient getWorkflowClient() {
         return workflowClient;
     }
 }
