@@ -262,7 +262,7 @@ public @interface WorkflowTaskTypeConstraint {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
-                                "loopExpression",
+                                "loopCondition",
                                 TaskType.DO_WHILE,
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
@@ -272,7 +272,7 @@ public @interface WorkflowTaskTypeConstraint {
                 String message =
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
-                                "loopover",
+                                "loopOver",
                                 TaskType.DO_WHILE,
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
