@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "version": "3.7.2",
+  "version": "3.8.0",
   "dependencies": {
     "@material-ui/core": "^4.12.3",
     "@material-ui/icons": "^4.11.2",
