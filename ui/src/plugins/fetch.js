@@ -17,7 +17,7 @@ export function fetchWithContext(
   const newParams = { ...fetchParams };
 
   const basename = getBasename();
-  const newPath = basename + `/api/${path}`;
+  const newPath = basename + `api/${path}`;
   const cleanPath = cleanDuplicateSlash(newPath); // Cleanup duplicated slashes
 
   return fetch(cleanPath, newParams)
