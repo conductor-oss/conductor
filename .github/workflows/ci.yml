@@ -13,7 +13,7 @@ jobs:
       - name: Gradle wrapper validation
         uses: gradle/wrapper-validation-action@v1
       - name: Set up Zulu JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
