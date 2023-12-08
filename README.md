@@ -26,12 +26,11 @@ We have an active [community](https://join.slack.com/t/orkes-conductor/shared_in
 #### [Documentation Site](https://orkes.io/content)
 [Documentation](https://orkes.io/content) and tutorial on how to use Conductor
 
-## Workflow SDKs
+[Discussion Forum](https://github.com/conductor-oss/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
+
+### Conductor SDKs
 Conductor supports creating workflows using JSON and Code.  
 SDK support for creating workflows using code is available in multiple languages and can be found at https://github.com/conductor-sdk
-
-
-[Discussion Forum](https://github.com/conductor-oss/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
 
 
 ## Getting Started - Building & Running Conductor
