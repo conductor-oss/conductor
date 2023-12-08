@@ -4,7 +4,6 @@
 [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
 [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
 [![GitHub stars](https://img.shields.io/github/stars/Netflix/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/Netflix/conductor/stargazers/)
 [![GitHub forks](https://img.shields.io/github/forks/Netflix/conductor.svg?style=social&label=Fork&maxAge=2592000)](https://GitHub.com/Netflix/conductor/network/)
@@ -18,6 +17,7 @@ For more information, see [Main Documentation Site](https://orkes.io/content)
 
 ## Releases
 The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
+
 The next scheduled release is in Dec 2023.
 
 ## Resources
@@ -35,11 +35,40 @@ SDK support for creating workflows using code is available in multiple languages
 
 
 ## Getting Started - Building & Running Conductor
-###  Using Docker:
-The easiest way to get started is with Docker containers. Please follow the instructions [here](https://conductor.netflix.com/devguide/running/docker.html). 
 
 ###  From Source:
-Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. See instructions [here](https://conductor.netflix.com/devguide/running/source.html).
+If you wish to build your own distribution, you can run ```./gradlew build``` from this project that products the runtime artifacts.
+The runnable server is in server/ module.
+
+### Using Docker (Recommended)
+A production ready container is published by Orkes from (https://github.com/orkes-io/orkes-conductor-community)
+
+Follow the steps below to launch the docker container:
+
+#### Simple self-contained script to launch the docker image
+```shell
+curl https://raw.githubusercontent.com/orkes-io/orkes-conductor-community/main/scripts/run_local.sh | sh
+```
+
+#### Using docker run manually (Provides more control)
+```shell
+
+# Create volumes for persistent stores
+# Used to create a persistent volume that will preserve the 
+docker volume create postgres
+docker volume create redis
+
+docker run --init -p 8080:8080 -p 1234:5000 --mount source=redis,target=/redis \
+--mount source=postgres,target=/pgdata orkesio/orkes-conductor-community-standalone:latest
+```
+
+Navigate to http://localhost:1234 once the container starts to launch UI.
+
+## Docker Containers for production usage
+```shell
+docker pull orkesio/orkes-conductor-community:latest
+```
+
 
 ## Database Requirements
 
