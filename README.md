@@ -14,6 +14,11 @@ This Conductor repository is maintained by the team at [Orkes](https://orkes.io/
 
 For more information, see [Main Documentation Site](https://orkes.io/content)
 
+## Update your forks
+Please update your forks to point to this repo.  This will ensure your commits and PRs can be send against this repository
+```shell
+git remote set-url origin https://github.com/conductor-oss/conductor
+```
 
 ## Releases
 The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
