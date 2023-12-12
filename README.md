@@ -14,6 +14,9 @@ This Conductor repository is maintained by the team at [Orkes](https://orkes.io/
 
 For more information, see [Main Documentation Site](https://orkes.io/content)
 
+## Star this repo
+Show support for the Conductor OSS.  Please help spread the awareness by starring this repo.
+
 ## Update your forks
 Please update your forks to point to this repo.  This will ensure your commits and PRs can be send against this repository
 ```shell
