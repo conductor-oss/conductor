@@ -5,8 +5,8 @@
 [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
-[![GitHub stars](https://img.shields.io/github/stars/Netflix/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/Netflix/conductor/stargazers/)
-[![GitHub forks](https://img.shields.io/github/forks/Netflix/conductor.svg?style=social&label=Fork&maxAge=2592000)](https://GitHub.com/Netflix/conductor/network/)
+
+
 
 
 Conductor is a platform originally created at Netflix to orchestrate microservices and events.
@@ -14,17 +14,19 @@ This Conductor repository is maintained by the team at [Orkes](https://orkes.io/
 
 For more information, see [Main Documentation Site](https://orkes.io/content)
 
-## Star this repo
+## Star this repo 
 Show support for the Conductor OSS.  Please help spread the awareness by starring this repo.
 
-## Update your forks
+[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/conductor-oss/conductor/stargazers/)
+
+## Update your local forks/clones
 Please update your forks to point to this repo.  This will ensure your commits and PRs can be send against this repository
 ```shell
 git remote set-url origin https://github.com/conductor-oss/conductor
 ```
 > [!IMPORTANT]  
 > **Follow the steps below if you have an active PR againt the Netflix/Conductor repository**
-> 1. Fork this repository
+> 1. Fork **this** repository
 > 2. Update your local repository to change the remote to this repository
 > 3. Send a PR against the `main` branch
 
