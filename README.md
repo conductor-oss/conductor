@@ -1,12 +1,8 @@
 ![Conductor](docs/docs/img/logo.png)
 
-# Conductor
 [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
 [![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-
-
-
 
 
 Conductor is a platform originally created at Netflix to orchestrate microservices and events.
@@ -14,7 +10,17 @@ This Conductor repository is maintained by the team at [Orkes](https://orkes.io/
 
 For more information, see [Main Documentation Site](https://orkes.io/content)
 
-## Star this repo 
+## Conductor OSS
+This is the new home for the Conductor open source going forward (previously hosted at Netflix/Conductor).
+> [!IMPORTANT]  
+> Going forward, all the bug fixes, feature requests and security patches will be applied and released from this repository.
+
+
+The last published version of Netflix Condutor will be **3.15.0** which we will continue to support.
+
+If you would like to participate in the roadmap and development, [please reach out](https://forms.gle/P2i1xHrxPQLrjzTB7).
+
+## ⭐ This repository
 Show support for the Conductor OSS.  Please help spread the awareness by starring this repo.
 
 [![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/conductor-oss/conductor/stargazers/)
