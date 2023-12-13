@@ -79,14 +79,14 @@ docker volume create postgres
 docker volume create redis
 
 docker run --init -p 8080:8080 -p 1234:5000 --mount source=redis,target=/redis \
---mount source=postgres,target=/pgdata orkesio/orkes-conductor-community-standalone:latest
+--mount source=postgres,target=/pgdata conductoross/conductor-standalone:3.15.0
 ```
 
 Navigate to http://localhost:1234 once the container starts to launch UI.
 
 ## Docker Containers for production usage
 ```shell
-docker pull orkesio/orkes-conductor-community:latest
+docker pull conductoross/conductor:3.15.0
 ```
 
 
