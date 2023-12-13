@@ -6,7 +6,7 @@
 
 
 Conductor is a platform originally created at Netflix to orchestrate microservices and events.
-
+Condutor OSS is maintained by the team of developers at Orkes along with the members of the open source community.
 
 ## Conductor OSS
 This is the new home for the Conductor open source going forward (previously hosted at Netflix/Conductor).
@@ -42,8 +42,8 @@ The next scheduled release is in Dec 2023.
 ## Resources
 #### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
 We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg) of Conductor users and contributors on the channel.
-#### [Documentation Site](https://conductor.netflix.com)
-[Documentation](https://conductor.netflix.com) and tutorial on how to use Conductor
+#### [Documentation Site](https://orkes.io/content)
+[Documentation](https://orkes.io/content) and tutorial on how to use Conductor
 
 [Discussion Forum](https://github.com/conductor-oss/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
 
