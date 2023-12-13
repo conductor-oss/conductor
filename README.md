@@ -87,7 +87,7 @@ docker pull conductoross/conductor:3.15.0
 
 ## Other Requirements
 * JDK 17+
-* UI requires Node 14 to build. Earlier Node versions may work but is untested.
+* UI requires Node 14 to build. Earlier Node versions may work but are untested.
 
 ## Get Support
 There are several ways to get in touch with us:
