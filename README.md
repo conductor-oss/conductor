@@ -6,9 +6,7 @@
 
 
 Conductor is a platform originally created at Netflix to orchestrate microservices and events.
-This Conductor repository is maintained by the team at [Orkes](https://orkes.io/content) and a group of volunteers from the community.
 
-For more information, see [Main Documentation Site](https://orkes.io/content)
 
 ## Conductor OSS
 This is the new home for the Conductor open source going forward (previously hosted at Netflix/Conductor).
@@ -44,8 +42,8 @@ The next scheduled release is in Dec 2023.
 ## Resources
 #### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
 We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg) of Conductor users and contributors on the channel.
-#### [Documentation Site](https://orkes.io/content)
-[Documentation](https://orkes.io/content) and tutorial on how to use Conductor
+#### [Documentation Site](https://conductor.netflix.com)
+[Documentation](https://conductor.netflix.com) and tutorial on how to use Conductor
 
 [Discussion Forum](https://github.com/conductor-oss/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
 
@@ -61,14 +59,7 @@ If you wish to build your own distribution, you can run ```./gradlew build``` fr
 The runnable server is in server/ module.
 
 ### Using Docker (Recommended)
-A production ready container is published by Orkes from (https://github.com/orkes-io/orkes-conductor-community)
-
 Follow the steps below to launch the docker container:
-
-#### Simple self-contained script to launch the docker image
-```shell
-curl https://raw.githubusercontent.com/orkes-io/orkes-conductor-community/main/scripts/run_local.sh | sh
-```
 
 #### Using docker run manually (Provides more control)
 ```shell
@@ -94,7 +85,6 @@ docker pull conductoross/conductor:3.15.0
 
 * The default persistence used is Redis
 * The indexing backend is [Elasticsearch](https://www.elastic.co/) (6.x)
-* The default queues are [orkes-queues](https://github.com/orkes-io/orkes-queues)
 
 ## Other Requirements
 * JDK 17+
