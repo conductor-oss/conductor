@@ -61,7 +61,6 @@ The runnable server is in server/ module.
 ### Using Docker (Recommended)
 Follow the steps below to launch the docker container:
 
-#### Using docker run manually (Provides more control)
 ```shell
 
 # Create volumes for persistent stores
