@@ -21,7 +21,7 @@ If you would like to participate in the roadmap and development, [please reach o
 ## ⭐ This repository
 Show support for the Conductor OSS.  Please help spread the awareness by starring this repo.
 
-[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/conductor-oss/conductor/stargazers/)
+[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=)](https://GitHub.com/conductor-oss/conductor/)
 
 ## Update your local forks/clones
 Please update your forks to point to this repo.  This will ensure your commits and PRs can be send against this repository
