@@ -23,6 +23,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.PERMISSIVE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 
 @Component(TASK_TYPE_JOIN)
@@ -57,9 +58,21 @@ public class Join extends WorkflowSystemTask {
                 break;
             }
             TaskModel.Status taskStatus = forkedTask.getStatus();
-            hasFailures = !taskStatus.isSuccessful() && !forkedTask.getWorkflowTask().isOptional();
+            hasFailures =
+                    !taskStatus.isSuccessful()
+                            && !forkedTask.getWorkflowTask().isOptional()
+                            && (!PERMISSIVE.name().equals(forkedTask.getWorkflowTask().getType())
+                                    || joinOn.stream()
+                                            .map(workflow::getTaskByRefName)
+                                            .allMatch(t -> t.getStatus().isTerminal()));
             if (hasFailures) {
-                failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
             }
             // Only add to task output if it's not empty
             if (!forkedTask.getOutputData().isEmpty()) {

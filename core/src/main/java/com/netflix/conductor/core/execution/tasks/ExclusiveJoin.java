@@ -24,6 +24,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.PERMISSIVE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_EXCLUSIVE_JOIN;
 
 @Component(TASK_TYPE_EXCLUSIVE_JOIN)
@@ -65,9 +66,20 @@ public class ExclusiveJoin extends WorkflowSystemTask {
             }
             taskStatus = exclusiveTask.getStatus();
             foundExlusiveJoinOnTask = taskStatus.isTerminal();
-            hasFailures = !taskStatus.isSuccessful();
+            hasFailures =
+                    !taskStatus.isSuccessful()
+                            && (!PERMISSIVE.name().equals(exclusiveTask.getWorkflowTask().getType())
+                                    || joinOn.stream()
+                                            .map(workflow::getTaskByRefName)
+                                            .allMatch(t -> t.getStatus().isTerminal()));
             if (hasFailures) {
-                failureReason.append(exclusiveTask.getReasonForIncompletion()).append(" ");
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
             }
 
             break;

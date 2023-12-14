@@ -44,6 +44,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.PERMISSIVE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.model.TaskModel.Status.*;
@@ -207,7 +208,11 @@ public class DeciderService {
                     tasksToBeScheduled.put(retryTask.get().getReferenceTaskName(), retryTask.get());
                     executedTaskRefNames.remove(retryTask.get().getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);
-                } else {
+                } else if (!(pendingTask.getWorkflowTask() != null
+                        && TaskType.PERMISSIVE
+                                .name()
+                                .equals(pendingTask.getWorkflowTask().getType())
+                        && !pendingTask.getWorkflowTask().isOptional())) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
             }
@@ -254,6 +259,39 @@ public class DeciderService {
         if (hasSuccessfulTerminateTask
                 || (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
+            List<TaskModel> permissiveTasksTerminalNonSuccessful =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getWorkflowTask() != null)
+                            .filter(t -> PERMISSIVE.name().equals(t.getWorkflowTask().getType()))
+                            .filter(t -> !t.getWorkflowTask().isOptional())
+                            .collect(
+                                    Collectors.toMap(
+                                            TaskModel::getReferenceTaskName,
+                                            t -> t,
+                                            (t1, t2) ->
+                                                    t1.getRetryCount() > t2.getRetryCount()
+                                                            ? t1
+                                                            : t2))
+                            .values()
+                            .stream()
+                            .filter(
+                                    t ->
+                                            t.getStatus().isTerminal()
+                                                    && !t.getStatus().isSuccessful())
+                            .toList();
+            if (!permissiveTasksTerminalNonSuccessful.isEmpty()) {
+                final String errMsg =
+                        permissiveTasksTerminalNonSuccessful.stream()
+                                .map(
+                                        t ->
+                                                String.format(
+                                                        "Task %s failed with status: %s and reason: '%s'",
+                                                        t.getTaskId(),
+                                                        t.getStatus(),
+                                                        t.getReasonForIncompletion()))
+                                .collect(Collectors.joining(". "));
+                throw new TerminateWorkflowException(errMsg);
+            }
             outcome.isComplete = true;
         }
 
@@ -437,11 +475,6 @@ public class DeciderService {
             if (status == null || !status.isTerminal()) {
                 return false;
             }
-            // if we reach here, the task has been completed.
-            // Was the task successful in completion?
-            if (!status.isSuccessful()) {
-                return false;
-            }
         }
 
         boolean noPendingSchedule =
@@ -529,7 +562,9 @@ public class DeciderService {
         if (!task.getStatus().isRetriable()
                 || TaskType.isBuiltIn(task.getTaskType())
                 || expectedRetryCount <= retryCount) {
-            if (workflowTask != null && workflowTask.isOptional()) {
+            if (workflowTask != null
+                    && (workflowTask.isOptional()
+                            || TaskType.PERMISSIVE.name().equals(workflowTask.getType()))) {
                 return Optional.empty();
             }
             WorkflowModel.Status status;

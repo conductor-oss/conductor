@@ -23,6 +23,7 @@ public enum TaskType {
     DYNAMIC,
     FORK_JOIN,
     FORK_JOIN_DYNAMIC,
+    PERMISSIVE,
     DECISION,
     SWITCH,
     JOIN,
@@ -70,6 +71,7 @@ public enum TaskType {
     public static final String TASK_TYPE_JSON_JQ_TRANSFORM = "JSON_JQ_TRANSFORM";
     public static final String TASK_TYPE_SET_VARIABLE = "SET_VARIABLE";
     public static final String TASK_TYPE_FORK = "FORK";
+    public static final String TASK_TYPE_PERMISSIVE = "PERMISSIVE";
     public static final String TASK_TYPE_NOOP = "NOOP";
 
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
