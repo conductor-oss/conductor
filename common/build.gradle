@@ -9,7 +9,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
-    compileOnly "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
     implementation "org.apache.commons:commons-lang3"
 

@@ -42,7 +42,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
-    implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
