@@ -60,6 +60,11 @@ include 'grpc-client'
 
 include 'java-sdk'
 
+// community modules
+include 'workflow-event-listener'
+include 'test-util'
+
 include 'test-harness'
+
 
 rootProject.children.each {it.name="conductor-${it.name}"}
