@@ -9,7 +9,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:10.0.0'
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.7.16'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.7.18'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -159,89 +159,89 @@ allprojects {
         implementation('com.fasterxml.jackson.core:jackson-core') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.core:jackson-databind') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.core:jackson-annotations') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-smile') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-cbor') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.datatype:jackson-datatype-jdk8') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.datatype:jackson-datatype-joda') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.datatype:jackson-datatype-jsr310') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('com.fasterxml.jackson.module:jackson-module-afterburner') {
             version {
                 // this is the preferred version this library will use
-                prefer '2.15.0'
-                // the strict bounds, effectively allowing any 2.15.x version between 2.15.0 and 2.15.2
-                strictly '[2.15.0,2.15.2)'
+                prefer '2.15.3'
+                // the strict bounds, effectively allowing any 2.15.3 or higher
+                strictly '[2.15.3,2.15.3+]'
             }
         }
         implementation('org.apache.logging.log4j:log4j-core')

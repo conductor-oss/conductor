@@ -1,42 +1,42 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.7.16"
+            "locked": "2.7.18"
         }
     },
     "compileClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.2"
@@ -69,37 +69,37 @@
     },
     "runtimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.17.2"
@@ -122,37 +122,37 @@
     },
     "testCompileClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -179,10 +179,10 @@
             "locked": "5.8.2"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.7.16"
+            "locked": "2.7.18"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.7.16"
+            "locked": "2.7.18"
         },
         "org.yaml:snakeyaml": {
             "locked": "2.0"
@@ -190,37 +190,37 @@
     },
     "testRuntimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.0"
+            "locked": "2.15.3"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -247,10 +247,10 @@
             "locked": "5.8.2"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.7.16"
+            "locked": "2.7.18"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.7.16"
+            "locked": "2.7.18"
         },
         "org.yaml:snakeyaml": {
             "locked": "2.0"
