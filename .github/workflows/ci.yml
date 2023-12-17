@@ -43,7 +43,6 @@ jobs:
         run: |
           echo "Running build for commit ${{ github.sha }}"
           ./gradlew build
-        env:
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: always()
