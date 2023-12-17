@@ -170,10 +170,10 @@ public class WorkflowTaskTypeConstraintTest {
 
         assertTrue(
                 validationErrors.contains(
-                        "loopExpression field is required for taskType: DO_WHILE taskName: encode"));
+                        "loopCondition field is required for taskType: DO_WHILE taskName: encode"));
         assertTrue(
                 validationErrors.contains(
-                        "loopover field is required for taskType: DO_WHILE taskName: encode"));
+                        "loopOver field is required for taskType: DO_WHILE taskName: encode"));
     }
 
     @Test
