@@ -17,5 +17,5 @@ dependencies {
     testImplementation "org.testcontainers:spock:${revTestContainer}"
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
-    testImplementation 'org.springframework.data:spring-data-redis'
+    testImplementation 'org.springframework.data:spring-data-redis:2.7.16'
 }

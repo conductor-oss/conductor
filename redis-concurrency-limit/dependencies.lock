@@ -33,7 +33,7 @@
             "locked": "3.1.4"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "3.1.4"
+            "locked": "2.7.16"
         },
         "redis.clients:jedis": {
             "locked": "3.6.0"
@@ -196,6 +196,12 @@
             ],
             "locked": "15.4"
         },
+        "org.springdoc:springdoc-openapi-starter-webmvc-ui": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.1.0"
+        },
         "redis.clients:jedis": {
             "locked": "3.6.0"
         }
@@ -250,7 +256,7 @@
             "locked": "3.1.4"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "3.1.4"
+            "locked": "2.7.16"
         },
         "org.testcontainers:spock": {
             "locked": "1.15.3"
@@ -434,6 +440,12 @@
         "org.spockframework:spock-spring": {
             "locked": "2.4-M1-groovy-4.0"
         },
+        "org.springdoc:springdoc-openapi-starter-webmvc-ui": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.1.0"
+        },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "locked": "3.1.4"
         },
@@ -441,7 +453,7 @@
             "locked": "3.1.4"
         },
         "org.springframework.data:spring-data-redis": {
-            "locked": "3.1.4"
+            "locked": "2.7.16"
         },
         "org.testcontainers:spock": {
             "locked": "1.15.3"
