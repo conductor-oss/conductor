@@ -58,5 +58,6 @@ ext {
     revTestContainer = '1.15.3'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
+    revKafka = '2.6.0'
 
 }
