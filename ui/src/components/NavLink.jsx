@@ -26,7 +26,8 @@ export default React.forwardRef((props, ref) => {
       </Link>
     );
   } else {
-    const href = absolutePath ? url.toString() : cleanDuplicateSlash(getBasename() + url.toString());
+    // Note: + '/' + is required here
+    const href = absolutePath ? url.toString() : cleanDuplicateSlash(getBasename() + '/' + url.toString());
     return (
       <Link ref={ref} target="_blank" href={href}>
         {rest.children}
