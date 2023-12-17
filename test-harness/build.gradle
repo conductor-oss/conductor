@@ -32,8 +32,8 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 
-    testImplementation "org.elasticsearch.client:elasticsearch-rest-client"
-    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
 
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation('junit:junit:4.13.2')

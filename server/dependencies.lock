@@ -149,7 +149,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "3.24.0"
+            "locked": "3.22.3"
         },
         "com.jayway.jsonpath:json-path": {
             "firstLevelTransitive": [
@@ -280,7 +280,8 @@
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-server"
             ],
             "locked": "1.57.2"
         },
@@ -312,17 +313,23 @@
             ],
             "locked": "2.1.2"
         },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-grpc"
+            ],
+            "locked": "2.1.1"
+        },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "4.0.1"
         },
-        "jakarta.annotation:jakarta.annotation-api": {
+        "javax.annotation:javax.annotation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.1.1"
+            "locked": "1.3.2"
         },
         "javax.ws.rs:jsr311-api": {
             "firstLevelTransitive": [
@@ -356,6 +363,12 @@
                 "com.netflix.conductor:conductor-redis-lock"
             ],
             "locked": "3.12.0"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-http-task"
+            ],
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -596,7 +609,7 @@
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "3.24.0"
+            "locked": "3.22.3"
         },
         "com.jayway.jsonpath:json-path": {
             "firstLevelTransitive": [
@@ -727,7 +740,8 @@
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-server"
             ],
             "locked": "1.57.2"
         },
@@ -759,17 +773,23 @@
             ],
             "locked": "2.1.2"
         },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-grpc"
+            ],
+            "locked": "2.1.1"
+        },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "4.0.1"
         },
-        "jakarta.annotation:jakarta.annotation-api": {
+        "javax.annotation:javax.annotation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.1.1"
+            "locked": "1.3.2"
         },
         "javax.ws.rs:jsr311-api": {
             "firstLevelTransitive": [
@@ -803,6 +823,12 @@
                 "com.netflix.conductor:conductor-redis-lock"
             ],
             "locked": "3.12.0"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-http-task"
+            ],
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -1278,7 +1304,8 @@
         },
         "io.grpc:grpc-protobuf": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-grpc"
+                "com.netflix.conductor:conductor-grpc",
+                "com.netflix.conductor:conductor-grpc-server"
             ],
             "locked": "1.57.2"
         },
@@ -1313,17 +1340,23 @@
             ],
             "locked": "2.1.2"
         },
+        "jakarta.annotation:jakarta.annotation-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-grpc"
+            ],
+            "locked": "2.1.1"
+        },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "4.0.1"
         },
-        "jakarta.annotation:jakarta.annotation-api": {
+        "javax.annotation:javax.annotation-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "2.1.1"
+            "locked": "1.3.2"
         },
         "javax.ws.rs:jsr311-api": {
             "firstLevelTransitive": [
@@ -1360,6 +1393,12 @@
                 "com.netflix.conductor:conductor-redis-lock"
             ],
             "locked": "3.12.0"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-http-task"
+            ],
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [

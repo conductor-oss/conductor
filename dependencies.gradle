@@ -15,7 +15,7 @@
  * Common place to define all the version dependencies
  */
 ext {
-    revActivation = '3.0.2'
+    revActivation = '2.0.1'
     revApacheHttpComponentsClient5 = '5.2.1'
     revAwaitility = '3.1.6'
     revAwsSdk = '1.11.86'
@@ -56,4 +56,5 @@ ext {
     revSpock = '2.4-M1-groovy-4.0'
     revSpotifyCompletableFutures = '0.3.3'
     revTestContainer = '1.15.3'
+    revFasterXml = '2.15.3'
 }

@@ -15,7 +15,7 @@
             "locked": "1.1.1"
         },
         "org.apache.httpcomponents.client5:httpclient5": {
-           "locked": "5.2.1"
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.20.0"
@@ -139,9 +139,6 @@
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
         },
-        "org.apache.httpcomponents.client5:httpclient5": {
-           "locked": "5.2.1"
-        },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
@@ -155,6 +152,9 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "3.12.0"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -213,11 +213,11 @@
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
         },
-        "org.apache.httpcomponents.client5:httpclient5": {
-           "locked": "5.2.1"
-        },
         "junit:junit": {
             "locked": "4.13.2"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.20.0"
@@ -359,9 +359,6 @@
         "javax.ws.rs:jsr311-api": {
             "locked": "1.1.1"
         },
-        "org.apache.httpcomponents.client5:httpclient5": {
-           "locked": "5.2.1"
-        },
         "junit:junit": {
             "locked": "4.13.2"
         },
@@ -378,6 +375,9 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "3.12.0"
+        },
+        "org.apache.httpcomponents.client5:httpclient5": {
+            "locked": "5.2.1"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
