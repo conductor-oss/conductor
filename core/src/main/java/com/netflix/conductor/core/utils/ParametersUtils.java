@@ -48,7 +48,8 @@ public class ParametersUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParametersUtils.class);
     private static final Pattern PATTERN =
             Pattern.compile(
-                    "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)");
+                    "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)",
+                    Pattern.DOTALL);
 
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};

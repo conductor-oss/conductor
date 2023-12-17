@@ -11,7 +11,7 @@ Conductor server with support for the following backend:
 
 ### Docker File for Server and UI
 
-[Docker Image Source for Server with UI](docker/server/DockerFile)
+[Docker Image Source for Server with UI](server/Dockerfile)
 
 ### Configuration Guide for Conductor Server
 Conductor uses a persistent store for managing state.  
@@ -48,4 +48,4 @@ TODO: Link to the helm charts
 |--------------------------------------------------------------|----------------------------|
 | [docker-compose.yaml](docker-compose.yaml)                   | Redis + Elasticsearch 7    |
 | [docker-compose-postgres.yaml](docker-compose-postgres.yaml) | Postgres + Elasticsearch 7 |
-| [docker-compose-postgres.yaml](docker-compose-mysql.yaml)    | Mysql + Elasticsearch 7    |
+| [docker-compose-mysql.yaml](docker-compose-mysql.yaml)    | Mysql + Elasticsearch 7    |

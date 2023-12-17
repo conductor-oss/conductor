@@ -97,7 +97,8 @@ public class WorkflowCreationTests {
         return forks;
     }
 
-    private ConductorWorkflow<TestWorkflowInput> registerTestWorkflow() {
+    private ConductorWorkflow<TestWorkflowInput> registerTestWorkflow()
+            throws InterruptedException {
         InputStream script = getClass().getResourceAsStream("/script.js");
         SimpleTask getUserInfo = new SimpleTask("get_user_info", "get_user_info");
         getUserInfo.input("name", ConductorWorkflow.input.get("name"));
@@ -142,7 +143,7 @@ public class WorkflowCreationTests {
     }
 
     @Test
-    public void verifyCreatedWorkflow() {
+    public void verifyCreatedWorkflow() throws Exception {
         ConductorWorkflow<TestWorkflowInput> conductorWorkflow = registerTestWorkflow();
         WorkflowDef def = conductorWorkflow.toWorkflowDef();
         assertNotNull(def);

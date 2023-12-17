@@ -1,5 +1,7 @@
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import { getBasename } from "../utils/helpers";
+import { cleanDuplicateSlash } from "./fetch";
 
 const useStyles = makeStyles((theme) => ({
   logo: {
@@ -11,5 +13,6 @@ const useStyles = makeStyles((theme) => ({
 
 export default function AppLogo() {
   const classes = useStyles();
-  return <img src="/logo.svg" alt="Conductor" className={classes.logo} />;
+  const logoPath = getBasename() + 'logo.svg';
+  return <img src={cleanDuplicateSlash(logoPath)} alt="Conductor" className={classes.logo} />;
 }

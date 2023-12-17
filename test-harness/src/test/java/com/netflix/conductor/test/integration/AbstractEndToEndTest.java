@@ -62,7 +62,7 @@ public abstract class AbstractEndToEndTest {
     private static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
-                            .withTag("6.8.12")); // this should match the client version
+                            .withTag("6.8.17")); // this should match the client version
 
     private static RestClient restClient;
 

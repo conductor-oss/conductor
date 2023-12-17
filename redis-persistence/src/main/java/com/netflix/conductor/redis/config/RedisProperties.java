@@ -108,6 +108,10 @@ public class RedisProperties {
 
     private int numTestsPerEvictionRun = 3;
 
+    private int database = 0;
+
+    private String username = null;
+
     public int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
     }
@@ -282,5 +286,21 @@ public class RedisProperties {
         } else {
             return () -> new RetryNTimes(maxRetryAttempts, false);
         }
+    }
+
+    public int getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(int database) {
+        this.database = database;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

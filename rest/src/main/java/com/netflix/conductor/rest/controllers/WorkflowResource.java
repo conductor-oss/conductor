@@ -270,7 +270,7 @@ public class WorkflowResource {
     @Operation(
             summary =
                     "Get the uri and path of the external storage where the workflow payload is to be stored")
-    @GetMapping("/externalstoragelocation")
+    @GetMapping({"/externalstoragelocation", "external-storage-location"})
     public ExternalStorageLocation getExternalStorageLocation(
             @RequestParam("path") String path,
             @RequestParam("operation") String operation,

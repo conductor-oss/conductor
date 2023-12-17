@@ -45,18 +45,29 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
         config.setMaxTotal(properties.getMaxConnectionsPerHost());
         log.info("Starting conductor server using redis_standalone.");
         Host host = hostSupplier.getHosts().get(0);
-        return new JedisStandalone(getJedisPool(config, host));
+        return new JedisStandalone(getJedisPool(config, host, properties));
     }
 
-    private JedisPool getJedisPool(JedisPoolConfig config, Host host) {
-        if (host.getPassword() != null) {
+    private JedisPool getJedisPool(JedisPoolConfig config, Host host, RedisProperties properties) {
+        if (properties.getUsername() != null && host.getPassword() != null) {
             log.info("Connecting to Redis Standalone with AUTH");
             return new JedisPool(
                     config,
                     host.getHostName(),
                     host.getPort(),
                     Protocol.DEFAULT_TIMEOUT,
-                    host.getPassword());
+                    properties.getUsername(),
+                    host.getPassword(),
+                    properties.getDatabase());
+        } else if (host.getPassword() != null) {
+            log.info("Connecting to Redis Standalone with AUTH");
+            return new JedisPool(
+                    config,
+                    host.getHostName(),
+                    host.getPort(),
+                    Protocol.DEFAULT_TIMEOUT,
+                    host.getPassword(),
+                    properties.getDatabase());
         } else {
             return new JedisPool(config, host.getHostName(), host.getPort());
         }

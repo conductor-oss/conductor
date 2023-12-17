@@ -1,1 +1,1 @@
-[Code of Conduct](docs/docs/resources/code-of-conduct.md)
+[Code of Conduct](https://orkes.io/orkes-conductor-community-code-of-conduct)

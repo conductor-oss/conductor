@@ -16,10 +16,13 @@ WORKDIR /usr/src/app
 COPY ./ui/package.json ./
 
 # Installs all node packages. Cached unless package.json changes
-RUN yarn install
+RUN yarn install && mkdir -p public && cp -r node_modules/monaco-editor public/
 
 # Copies everything else over to Docker environment
 # node_modules excluded in .dockerignore.
 COPY ./ui .
+
+# Include monaco sources into bundle (instead of using CDN)
+ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
 
 CMD [ "yarn", "start" ]
