@@ -23,9 +23,9 @@ dependencies {
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "org.elasticsearch.client:transport"
-    implementation "org.elasticsearch.client:elasticsearch-rest-client"
-    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+    implementation "org.elasticsearch.client:transport:${revElasticSearch6}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
 
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.awaitility:awaitility:${revAwaitility}"

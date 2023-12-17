@@ -14,8 +14,6 @@ package com.netflix.conductor.core.execution.tasks
 
 import java.time.Duration
 
-import org.junit.Test
-
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.service.MetadataService
 

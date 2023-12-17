@@ -14,8 +14,6 @@ package com.netflix.conductor.grpc.server.service;
 
 import java.util.Arrays;
 
-import javax.annotation.Nonnull;
-
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 
@@ -25,6 +23,7 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.protobuf.lite.ProtoLiteUtils;
 import io.grpc.stub.StreamObserver;
+import jakarta.annotation.Nonnull;
 
 public class GRPCHelper {
 

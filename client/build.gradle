@@ -40,7 +40,7 @@ dependencies {
     testImplementation "org.powermock:powermock-module-junit4:${revPowerMock}"
     testImplementation "org.powermock:powermock-api-mockito2:${revPowerMock}"
 
-    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 }

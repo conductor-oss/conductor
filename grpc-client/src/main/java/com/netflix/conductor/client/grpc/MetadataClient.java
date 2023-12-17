@@ -14,8 +14,6 @@ package com.netflix.conductor.client.grpc;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -25,6 +23,7 @@ import com.netflix.conductor.grpc.MetadataServicePb;
 
 import com.google.common.base.Preconditions;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 public class MetadataClient extends ClientBase {
 

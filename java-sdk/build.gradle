@@ -20,7 +20,7 @@ dependencies {
     testImplementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
     testImplementation "org.apache.commons:commons-lang3"
 
-    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
 
 }
 

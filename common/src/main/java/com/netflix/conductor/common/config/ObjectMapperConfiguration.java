@@ -12,13 +12,12 @@
  */
 package com.netflix.conductor.common.config;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import jakarta.annotation.PostConstruct;
 
 @Configuration
 public class ObjectMapperConfiguration {

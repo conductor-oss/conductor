@@ -14,8 +14,6 @@ package com.netflix.conductor.client.grpc;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +22,7 @@ import com.netflix.conductor.grpc.SearchPb;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 abstract class ClientBase {
 

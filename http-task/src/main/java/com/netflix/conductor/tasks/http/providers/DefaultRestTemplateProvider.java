@@ -14,7 +14,10 @@ package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -32,7 +35,7 @@ import com.netflix.conductor.tasks.http.HttpTask;
 @Component
 public class DefaultRestTemplateProvider implements RestTemplateProvider {
 
-    private final ThreadLocal<RestTemplate> threadLocalRestTemplate;
+    private final ThreadLocal<RestTemplateBuilder> threadLocalRestTemplateBuilder;
 
     private final int defaultReadTimeout;
     private final int defaultConnectTimeout;
@@ -41,20 +44,28 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
             @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
-        this.threadLocalRestTemplate = ThreadLocal.withInitial(RestTemplate::new);
+        this.threadLocalRestTemplateBuilder = ThreadLocal.withInitial(RestTemplateBuilder::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
     }
 
     @Override
     public @NonNull RestTemplate getRestTemplate(@NonNull HttpTask.Input input) {
-        RestTemplate restTemplate = threadLocalRestTemplate.get();
+        Duration timeout =
+                Duration.ofMillis(
+                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
+        threadLocalRestTemplateBuilder.get().setReadTimeout(timeout);
+        RestTemplate restTemplate =
+                threadLocalRestTemplateBuilder.get().setReadTimeout(timeout).build();
         HttpComponentsClientHttpRequestFactory requestFactory =
                 new HttpComponentsClientHttpRequestFactory();
+        SocketConfig.Builder builder = SocketConfig.custom();
+        builder.setSoTimeout(
+                Timeout.of(
+                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout),
+                        TimeUnit.MILLISECONDS));
         requestFactory.setConnectTimeout(
                 Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
-        requestFactory.setReadTimeout(
-                Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
         restTemplate.setRequestFactory(requestFactory);
         return restTemplate;
     }

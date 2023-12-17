@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.test.util
 
-import javax.annotation.PostConstruct
-
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -31,6 +29,7 @@ import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.annotation.PostConstruct
 
 /**
  * This is a helper class used to initialize task definitions required by the tests when loaded up.

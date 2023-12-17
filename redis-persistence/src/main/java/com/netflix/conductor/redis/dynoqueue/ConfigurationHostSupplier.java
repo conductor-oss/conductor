@@ -40,6 +40,9 @@ public class ConfigurationHostSupplier implements HostSupplier {
     }
 
     private List<Host> parseHostsFromConfig() {
+        System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+        System.out.println("Properties in ConfigurationHostSupplier: ");
+        System.out.println(properties);
         String hosts = properties.getHosts();
         if (hosts == null) {
             String message =

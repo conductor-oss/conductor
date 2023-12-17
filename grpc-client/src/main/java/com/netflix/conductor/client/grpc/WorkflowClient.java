@@ -16,8 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -32,6 +30,7 @@ import com.netflix.conductor.proto.WorkflowPb;
 
 import com.google.common.base.Preconditions;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 public class WorkflowClient extends ClientBase {
 

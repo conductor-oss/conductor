@@ -1,7 +1,7 @@
 {
     "annotationProcessor": {
         "org.springframework.boot:spring-boot-configuration-processor": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         }
     },
     "compileClasspath": {
@@ -14,35 +14,11 @@
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.15.3"
         },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.3"
-        },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.9.3"
+            "locked": "3.1.8"
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.24.3"
+            "locked": "3.21.12"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0"
@@ -63,134 +39,75 @@
             "locked": "1.2.2"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "2.0.0"
+            "locked": "2.0.1"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "org.apache.bval:bval-jsr": {
-            "locked": "2.0.6"
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.openjdk.nashorn:nashorn-core": {
             "locked": "15.4"
         },
         "org.springframework.boot:spring-boot-starter": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.4"
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "2.0"
+            "locked": "2.0.3"
         }
     },
     "runtimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.15.3"
+            "locked": "2.15.2"
         },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.9.3"
+            "locked": "3.1.8"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.24.3"
+            "locked": "3.21.12"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0"
@@ -217,16 +134,16 @@
             "locked": "1.2.2"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "2.0.0"
+            "locked": "2.0.1"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.0.6"
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -239,45 +156,38 @@
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.openjdk.nashorn:nashorn-core": {
             "locked": "15.4"
-        },
-        "org.yaml:snakeyaml": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0"
         }
     },
     "testCompileClasspath": {
@@ -290,35 +200,11 @@
         "com.fasterxml.jackson.core:jackson-databind": {
             "locked": "2.15.3"
         },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.module:jackson-module-afterburner": {
-            "locked": "2.15.3"
-        },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.9.3"
+            "locked": "3.1.8"
         },
         "com.google.protobuf:protobuf-java": {
-            "locked": "3.24.3"
+            "locked": "3.21.12"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0"
@@ -339,158 +225,96 @@
             "locked": "1.2.2"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "2.0.0"
+            "locked": "2.0.1"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "junit:junit": {
             "locked": "4.13.2"
         },
-        "net.java.dev.jna:jna": {
-            "locked": "5.13.0"
-        },
         "org.apache.bval:bval-jsr": {
-            "locked": "2.0.6"
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.12.0"
         },
+        "org.apache.groovy:groovy-all": {
+            "locked": "4.0.9"
+        },
         "org.apache.logging.log4j:log4j-api": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-core": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-jul": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-web": {
-            "locked": "2.17.2"
-        },
-        "org.codehaus.groovy:groovy-all": {
-            "locked": "3.0.19"
+            "locked": "2.20.0"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "org.junit.vintage:junit-vintage-engine": {
-            "locked": "5.8.2"
+            "locked": "5.9.3"
         },
         "org.openjdk.nashorn:nashorn-core": {
             "locked": "15.4"
         },
         "org.spockframework:spock-core": {
-            "locked": "2.3-groovy-3.0"
+            "locked": "2.4-M1-groovy-4.0"
         },
         "org.spockframework:spock-spring": {
-            "locked": "2.3-groovy-3.0"
+            "locked": "2.4-M1-groovy-4.0"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.4"
-        },
-        "org.yaml:snakeyaml": {
-            "locked": "2.0"
+            "locked": "2.0.3"
         }
     },
     "testRuntimeClasspath": {
         "com.fasterxml.jackson.core:jackson-annotations": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-smile": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-joda": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.15.3"
-        },
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.15.3"
         },
         "com.fasterxml.jackson.module:jackson-module-afterburner": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.15.3"
+            "locked": "2.15.2"
         },
         "com.github.ben-manes.caffeine:caffeine": {
-            "locked": "2.9.3"
+            "locked": "3.1.8"
         },
         "com.google.protobuf:protobuf-java": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "3.24.3"
+            "locked": "3.21.12"
         },
         "com.jayway.jsonpath:json-path": {
             "locked": "2.4.0"
@@ -517,22 +341,19 @@
             "locked": "1.2.2"
         },
         "jakarta.activation:jakarta.activation-api": {
-            "locked": "2.0.0"
+            "locked": "2.0.1"
         },
         "jakarta.xml.bind:jakarta.xml.bind-api": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "junit:junit": {
             "locked": "4.13.2"
-        },
-        "net.java.dev.jna:jna": {
-            "locked": "5.13.0"
         },
         "org.apache.bval:bval-jsr": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.0.6"
+            "locked": "2.0.5"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -540,77 +361,70 @@
             ],
             "locked": "3.12.0"
         },
+        "org.apache.groovy:groovy-all": {
+            "locked": "4.0.9"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
+            "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.17.2"
-        },
-        "org.codehaus.groovy:groovy-all": {
-            "locked": "3.0.19"
+            "locked": "2.20.0"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
-            "locked": "2.3.3"
+            "locked": "4.0.1"
         },
         "org.junit.vintage:junit-vintage-engine": {
-            "locked": "5.8.2"
+            "locked": "5.9.3"
         },
         "org.openjdk.nashorn:nashorn-core": {
             "locked": "15.4"
         },
         "org.spockframework:spock-core": {
-            "locked": "2.3-groovy-3.0"
+            "locked": "2.4-M1-groovy-4.0"
         },
         "org.spockframework:spock-spring": {
-            "locked": "2.3-groovy-3.0"
+            "locked": "2.4-M1-groovy-4.0"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-test": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-validation": {
-            "locked": "2.7.18"
+            "locked": "3.1.4"
         },
         "org.springframework.retry:spring-retry": {
-            "locked": "1.3.4"
-        },
-        "org.yaml:snakeyaml": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-annotations",
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0"
+            "locked": "2.0.3"
         }
     }
 }

@@ -15,11 +15,11 @@ package com.netflix.conductor.service;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.constraints.NotEmpty;
-
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+
+import jakarta.validation.constraints.NotEmpty;
 
 @Validated
 public interface AdminService {

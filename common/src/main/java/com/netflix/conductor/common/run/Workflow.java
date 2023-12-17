@@ -15,9 +15,6 @@ package com.netflix.conductor.common.run;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
@@ -26,6 +23,9 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @ProtoMessage
 public class Workflow extends Auditable {
