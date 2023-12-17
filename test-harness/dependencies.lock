@@ -454,7 +454,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [

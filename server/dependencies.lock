@@ -42,7 +42,7 @@
             "project": true
         },
         "io.orkes.queues:orkes-conductor-queues": {
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.20.0"
@@ -298,7 +298,7 @@
             "locked": "1.57.2"
         },
         "io.orkes.queues:orkes-conductor-queues": {
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -758,7 +758,7 @@
             "locked": "1.57.2"
         },
         "io.orkes.queues:orkes-conductor-queues": {
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -1057,7 +1057,7 @@
             "locked": "1.57.2"
         },
         "io.orkes.queues:orkes-conductor-queues": {
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "junit:junit": {
             "locked": "4.13.2"
@@ -1325,7 +1325,7 @@
             "locked": "1.57.2"
         },
         "io.orkes.queues:orkes-conductor-queues": {
-            "locked": "1.0.3"
+            "locked": "1.0.7"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
