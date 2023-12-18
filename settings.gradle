@@ -69,6 +69,8 @@ include 'mysql-persistence'
 include 'postgres-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'azureblob-storage'
+include 'postgres-external-storage'
 
 include 'test-harness'
 
