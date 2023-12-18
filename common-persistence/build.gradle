@@ -1,0 +1,10 @@
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "org.apache.commons:commons-lang3"
+
+}
