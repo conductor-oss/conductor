@@ -67,6 +67,7 @@ include 'kafka'
 include 'common-persistence'
 include 'mysql-persistence'
 include 'postgres-persistence'
+include 'metrics'
 
 include 'test-harness'
 

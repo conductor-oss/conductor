@@ -1,0 +1,30 @@
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation "org.apache.commons:commons-lang3:"
+
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
+
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    implementation "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
+    implementation "com.netflix.spectator:spectator-reg-micrometer:${revSpectator}"
+	implementation "io.prometheus:simpleclient:${revPrometheus}"
+	implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
+
+    implementation 'io.micrometer:micrometer-registry-datadog:1.9.1'
+
+    
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation "org.testcontainers:mockserver:${revTestContainer}"
+    testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
+
+
+}
