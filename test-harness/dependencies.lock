@@ -672,7 +672,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-es6-persistence"
             ],
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
             "firstLevelTransitive": [

@@ -36,13 +36,13 @@
             "locked": "2.20.0"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:transport": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.springframework.boot:spring-boot-starter": {
             "locked": "3.1.4"
@@ -206,13 +206,13 @@
             "locked": "2.20.0"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:transport": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.openjdk.nashorn:nashorn-core": {
             "firstLevelTransitive": [
@@ -259,13 +259,13 @@
             "locked": "3.1.6"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:transport": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.9.3"
@@ -444,13 +444,13 @@
             "locked": "3.1.6"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.elasticsearch.client:transport": {
-            "locked": "6.8.12"
+            "locked": "6.8.23"
         },
         "org.junit.vintage:junit-vintage-engine": {
             "locked": "5.9.3"
