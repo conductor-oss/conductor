@@ -51,7 +51,7 @@ abstract class ElasticSearchTest {
             new ElasticsearchContainer(
                             DockerImageName.parse(
                                             "docker.elastic.co/elasticsearch/elasticsearch-oss")
-                                    .withTag("6.8.17")) // this should match the client version
+                                    .withTag("6.8.23")) // this should match the client version
                     // Resolve issue with es container not starting on m1/m2 macs
                     .withEnv(Map.of("bootstrap.system_call_filter", "false"));
 
