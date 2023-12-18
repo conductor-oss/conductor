@@ -61,4 +61,5 @@ ext {
     revKafka = '2.6.0'
     revMicrometer = '1.6.2'
     revPrometheus = '0.9.0'
+    revElasticSearch7 = '7.17.13'
 }
