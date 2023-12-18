@@ -1,4 +1,5 @@
 /*
+ * Copyright 2023 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,7 +16,6 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import jakarta.annotation.*;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -28,6 +28,8 @@ import org.springframework.context.annotation.Import;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.postgres.storage.PostgresPayloadStorage;
+
+import jakarta.annotation.*;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PostgresPayloadProperties.class)

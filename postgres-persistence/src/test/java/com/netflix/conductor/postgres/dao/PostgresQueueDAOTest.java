@@ -1,4 +1,5 @@
 /*
+ * Copyright 2023 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -73,13 +74,13 @@ public class PostgresQueueDAOTest {
 
     @Autowired Flyway flyway;
 
-
     // clean the database between tests.
     @Before
     public void before() {
-        try (Connection conn = dataSource.getConnection()){
+        try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(true);
-            String[] stmts = new String[]{"truncate table queue;", "truncate table queue_message;"};
+            String[] stmts =
+                    new String[] {"truncate table queue;", "truncate table queue_message;"};
             for (String stmt : stmts) {
                 conn.prepareStatement(stmt).executeUpdate();
             }
@@ -334,7 +335,7 @@ public class PostgresQueueDAOTest {
         }
     }
 
-    //@Test
+    // @Test
     public void processUnacksTest() {
         processUnacks(
                 () -> {
@@ -344,7 +345,7 @@ public class PostgresQueueDAOTest {
                 "process_unacks_test");
     }
 
-    //@Test
+    // @Test
     public void processAllUnacksTest() {
         processUnacks(
                 () -> {
