@@ -71,6 +71,9 @@ include 'metrics'
 include 'es7-persistence'
 include 'azureblob-storage'
 include 'postgres-external-storage'
+include 'amqp'
+include 'nats'
+include 'nats-streaming'
 
 include 'test-harness'
 
