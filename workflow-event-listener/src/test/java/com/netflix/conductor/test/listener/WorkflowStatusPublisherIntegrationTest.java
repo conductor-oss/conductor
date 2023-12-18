@@ -1,4 +1,5 @@
 /*
+ * Copyright 2023 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         properties = {
+            "conductor.db.type=memory",
             "conductor.workflow-status-listener.type=queue_publisher",
             "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
             "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
