@@ -270,7 +270,7 @@
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.conductor:conductor-es6-persistence": {
+        "com.netflix.conductor:conductor-es7-persistence": {
             "project": true
         },
         "com.netflix.conductor:conductor-grpc-client": {
@@ -305,18 +305,6 @@
         },
         "org.apache.logging.log4j:log4j-web": {
             "locked": "2.20.0"
-        },
-        "org.elasticsearch.client:elasticsearch-rest-client": {
-            "locked": "6.8.23"
-        },
-        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
-            "locked": "6.8.23"
-        },
-        "org.elasticsearch.client:transport": {
-            "locked": "6.8.23"
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.23"
         },
         "org.flywaydb:flyway-mysql": {
             "locked": "9.16.3"
@@ -359,6 +347,12 @@
             ],
             "locked": "1.11.86"
         },
+        "com.azure:azure-storage-blob": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-azureblob-storage"
+            ],
+            "locked": "12.7.0"
+        },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-cassandra-persistence"
@@ -375,7 +369,10 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es7-persistence",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.15.2"
         },
@@ -383,7 +380,10 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es7-persistence",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.15.2"
         },
@@ -414,9 +414,16 @@
         },
         "com.google.guava:guava": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
-                "com.netflix.conductor:conductor-es6-persistence",
-                "com.netflix.conductor:conductor-grpc-client"
+                "com.netflix.conductor:conductor-es7-persistence",
+                "com.netflix.conductor:conductor-grpc-client",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "30.0-jre"
         },
@@ -434,6 +441,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "2.8.0"
+        },
+        "com.netflix.conductor:conductor-amqp": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
         },
         "com.netflix.conductor:conductor-annotations": {
             "firstLevelTransitive": [
@@ -453,6 +466,12 @@
             ],
             "project": true
         },
+        "com.netflix.conductor:conductor-azureblob-storage": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
         "com.netflix.conductor:conductor-cassandra-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
@@ -464,46 +483,71 @@
         },
         "com.netflix.conductor:conductor-common": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-persistence",
-                "com.netflix.conductor:conductor-rest"
+                "com.netflix.conductor:conductor-rest",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "project": true
         },
         "com.netflix.conductor:conductor-common-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es7-persistence",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-common-persistence",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "project": true
         },
-        "com.netflix.conductor:conductor-es6-persistence": {
+        "com.netflix.conductor:conductor-es7-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
@@ -537,6 +581,48 @@
             ],
             "project": true
         },
+        "com.netflix.conductor:conductor-kafka": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-metrics": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-nats": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-external-storage": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
         "com.netflix.conductor:conductor-redis-concurrency-limit": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
@@ -551,7 +637,8 @@
         },
         "com.netflix.conductor:conductor-redis-persistence": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "project": true
         },
@@ -562,6 +649,12 @@
             "project": true
         },
         "com.netflix.conductor:conductor-server": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-workflow-event-listener": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
@@ -589,6 +682,24 @@
             ],
             "locked": "0.122.0"
         },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-metrics"
+            ],
+            "locked": "0.122.0"
+        },
+        "com.netflix.spectator:spectator-reg-micrometer": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-metrics"
+            ],
+            "locked": "0.122.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp"
+            ],
+            "locked": "5.17.1"
+        },
         "com.spotify:completable-futures": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -607,11 +718,17 @@
             ],
             "locked": "1.4.20"
         },
+        "commons-codec:commons-codec": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-external-storage"
+            ],
+            "locked": "1.15"
+        },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence"
+                "com.netflix.conductor:conductor-es7-persistence"
             ],
             "locked": "2.7"
         },
@@ -643,16 +760,52 @@
             ],
             "locked": "1.57.2"
         },
+        "io.micrometer:micrometer-registry-datadog": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-metrics"
+            ],
+            "locked": "1.11.4"
+        },
+        "io.micrometer:micrometer-registry-prometheus": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-metrics"
+            ],
+            "locked": "1.11.4"
+        },
+        "io.nats:java-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-nats-streaming"
+            ],
+            "locked": "2.2.3"
+        },
+        "io.nats:jnats": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming"
+            ],
+            "locked": "2.15.6"
+        },
         "io.orkes.queues:orkes-conductor-queues": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
             "locked": "1.0.7"
         },
+        "io.prometheus:simpleclient": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-metrics"
+            ],
+            "locked": "0.16.0"
+        },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming"
             ],
             "locked": "1.2.2"
         },
@@ -689,7 +842,9 @@
         },
         "javax.ws.rs:jsr311-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-http-task"
+                "com.netflix.conductor:conductor-http-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics"
             ],
             "locked": "1.1.1"
         },
@@ -697,6 +852,9 @@
             "locked": "4.13.2"
         },
         "mysql:mysql-connector-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
             "locked": "8.0.33"
         },
         "net.thisptr:jackson-jq": {
@@ -714,16 +872,24 @@
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock"
             ],
@@ -738,148 +904,205 @@
             ],
             "locked": "5.2.1"
         },
+        "org.apache.kafka:kafka-clients": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-kafka"
+            ],
+            "locked": "3.4.1"
+        },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-core": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-jul": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-slf4j-impl": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "2.20.0"
         },
         "org.apache.logging.log4j:log4j-web": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-amqp",
                 "com.netflix.conductor:conductor-annotations",
                 "com.netflix.conductor:conductor-awss3-storage",
                 "com.netflix.conductor:conductor-awssqs-event-queue",
+                "com.netflix.conductor:conductor-azureblob-storage",
                 "com.netflix.conductor:conductor-cassandra-persistence",
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-common-persistence",
                 "com.netflix.conductor:conductor-core",
-                "com.netflix.conductor:conductor-es6-persistence",
+                "com.netflix.conductor:conductor-es7-persistence",
                 "com.netflix.conductor:conductor-grpc",
                 "com.netflix.conductor:conductor-grpc-client",
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-http-task",
                 "com.netflix.conductor:conductor-json-jq-task",
+                "com.netflix.conductor:conductor-kafka",
+                "com.netflix.conductor:conductor-metrics",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-nats",
+                "com.netflix.conductor:conductor-nats-streaming",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-concurrency-limit",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-rest",
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "2.20.0"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-es6-persistence"
+                "com.netflix.conductor:conductor-es7-persistence"
             ],
-            "locked": "6.8.23"
+            "locked": "8.7.1"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-es6-persistence"
+                "com.netflix.conductor:conductor-es7-persistence"
             ],
-            "locked": "6.8.23"
+            "locked": "7.12.1"
         },
-        "org.elasticsearch.client:transport": {
+        "org.flywaydb:flyway-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-es6-persistence"
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
-            "locked": "6.8.23"
-        },
-        "org.elasticsearch:elasticsearch": {
-            "locked": "6.8.23"
+            "locked": "9.16.3"
         },
         "org.flywaydb:flyway-mysql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
             "locked": "9.16.3"
         },
         "org.glassfish.jaxb:jaxb-runtime": {
@@ -903,9 +1126,17 @@
             ],
             "locked": "15.4"
         },
+        "org.postgresql:postgresql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
+            "locked": "42.6.0"
+        },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-redis-persistence"
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "0.0.17"
         },
@@ -925,6 +1156,7 @@
         "org.springdoc:springdoc-openapi-starter-webmvc-ui": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-postgres-external-storage",
                 "com.netflix.conductor:conductor-rest",
                 "com.netflix.conductor:conductor-server"
             ],
@@ -943,11 +1175,17 @@
             "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-jdbc": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-external-storage",
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
             "locked": "3.1.4"
         },
         "org.springframework.boot:spring-boot-starter-log4j2": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-server"
+                "com.netflix.conductor:conductor-server",
+                "com.netflix.conductor:conductor-workflow-event-listener"
             ],
             "locked": "3.1.4"
         },
@@ -985,7 +1223,7 @@
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "3.3.0"
+            "locked": "4.3.2"
         }
     }
 }
