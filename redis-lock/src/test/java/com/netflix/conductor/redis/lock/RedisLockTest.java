@@ -21,12 +21,11 @@ import org.redisson.Redisson;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.testcontainers.containers.*;
 
 import com.netflix.conductor.redislock.config.RedisLockProperties;
 import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
 import com.netflix.conductor.redislock.lock.RedisLock;
-
-import org.testcontainers.containers.*;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -39,8 +38,8 @@ public class RedisLockTest {
     private static Config config;
     private static RedissonClient redisson;
 
-    static GenericContainer redis = new GenericContainer("redis:5.0.3-alpine")
-            .withExposedPorts(6379);
+    static GenericContainer redis =
+            new GenericContainer("redis:5.0.3-alpine").withExposedPorts(6379);
 
     @BeforeClass
     public static void setUp() throws Exception {
