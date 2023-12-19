@@ -44,7 +44,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.PERMISSIVE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.USER_DEFINED;
 import static com.netflix.conductor.model.TaskModel.Status.*;
@@ -209,9 +208,7 @@ public class DeciderService {
                     executedTaskRefNames.remove(retryTask.get().getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);
                 } else if (!(pendingTask.getWorkflowTask() != null
-                        && TaskType.PERMISSIVE
-                                .name()
-                                .equals(pendingTask.getWorkflowTask().getType())
+                        && pendingTask.getWorkflowTask().isPermissive()
                         && !pendingTask.getWorkflowTask().isOptional())) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
@@ -262,7 +259,7 @@ public class DeciderService {
             List<TaskModel> permissiveTasksTerminalNonSuccessful =
                     workflow.getTasks().stream()
                             .filter(t -> t.getWorkflowTask() != null)
-                            .filter(t -> PERMISSIVE.name().equals(t.getWorkflowTask().getType()))
+                            .filter(t -> t.getWorkflowTask().isPermissive())
                             .filter(t -> !t.getWorkflowTask().isOptional())
                             .collect(
                                     Collectors.toMap(
@@ -563,8 +560,7 @@ public class DeciderService {
                 || TaskType.isBuiltIn(task.getTaskType())
                 || expectedRetryCount <= retryCount) {
             if (workflowTask != null
-                    && (workflowTask.isOptional()
-                            || TaskType.PERMISSIVE.name().equals(workflowTask.getType()))) {
+                    && (workflowTask.isOptional() || workflowTask.isPermissive())) {
                 return Optional.empty();
             }
             WorkflowModel.Status status;

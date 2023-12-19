@@ -10,13 +10,14 @@
         "p1": "${workflow.input.param1}",
         "p2": "${workflow.input.param2}"
       },
-      "type": "PERMISSIVE",
+      "type": "SIMPLE",
       "decisionCases": {},
       "defaultCase": [],
       "forkTasks": [],
       "startDelay": 0,
       "joinOn": [],
       "optional": true,
+      "permissive": true,
       "defaultExclusiveJoinTask": [],
       "asyncComplete": false,
       "loopOver": []
@@ -28,13 +29,14 @@
         "tp1": "${workflow.input.param1}",
         "tp2": "${t1.output.op}"
       },
-      "type": "PERMISSIVE",
+      "type": "SIMPLE",
       "decisionCases": {},
       "defaultCase": [],
       "forkTasks": [],
       "startDelay": 0,
       "joinOn": [],
       "optional": false,
+      "permissive": true,
       "defaultExclusiveJoinTask": [],
       "asyncComplete": false,
       "loopOver": []

@@ -1832,7 +1832,7 @@ public class WorkflowExecutor {
                 .map(workflow::getTaskByRefName)
                 .anyMatch(
                         t ->
-                                TaskType.PERMISSIVE.name().equals(t.getWorkflowTask().getType())
+                                t.getWorkflowTask().isPermissive()
                                         && !t.getWorkflowTask().isOptional()
                                         && t.getStatus().equals(FAILED));
     }

@@ -440,7 +440,6 @@ public class TestDeciderOutcomes {
                 outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
     }
 
-    /** Similar to {@link #testOptional} */
     @Test
     public void testPermissive() {
         WorkflowDef def = new WorkflowDef();
@@ -448,14 +447,14 @@ public class TestDeciderOutcomes {
 
         WorkflowTask task1 = new WorkflowTask();
         task1.setName("task0");
-        task1.setType("PERMISSIVE");
+        task1.setPermissive(true);
         task1.setTaskReferenceName("t0");
         task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
         task1.setTaskDefinition(new TaskDef("task0"));
 
         WorkflowTask task2 = new WorkflowTask();
         task2.setName("task1");
-        task2.setType("PERMISSIVE");
+        task2.setPermissive(true);
         task2.setTaskReferenceName("t1");
         task2.setTaskDefinition(new TaskDef("task1"));
 

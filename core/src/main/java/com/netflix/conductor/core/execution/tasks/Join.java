@@ -23,7 +23,6 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.PERMISSIVE;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOIN;
 
 @Component(TASK_TYPE_JOIN)
@@ -61,7 +60,7 @@ public class Join extends WorkflowSystemTask {
             hasFailures =
                     !taskStatus.isSuccessful()
                             && !forkedTask.getWorkflowTask().isOptional()
-                            && (!PERMISSIVE.name().equals(forkedTask.getWorkflowTask().getType())
+                            && (!forkedTask.getWorkflowTask().isPermissive()
                                     || joinOn.stream()
                                             .map(workflow::getTaskByRefName)
                                             .allMatch(t -> t.getStatus().isTerminal()));

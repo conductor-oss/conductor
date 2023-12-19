@@ -72,7 +72,6 @@ public class WorkflowExecutor {
         TaskRegistry.register(TaskType.DYNAMIC.name(), Dynamic.class);
         TaskRegistry.register(TaskType.FORK_JOIN_DYNAMIC.name(), DynamicFork.class);
         TaskRegistry.register(TaskType.FORK_JOIN.name(), ForkJoin.class);
-        TaskRegistry.register(TaskType.PERMISSIVE.name(), PermissiveTask.class);
         TaskRegistry.register(TaskType.HTTP.name(), Http.class);
         TaskRegistry.register(TaskType.INLINE.name(), Javascript.class);
         TaskRegistry.register(TaskType.JOIN.name(), Join.class);

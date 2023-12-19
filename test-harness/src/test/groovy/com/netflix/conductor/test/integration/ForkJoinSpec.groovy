@@ -291,10 +291,10 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks.size() == 4
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'FORK'
-            tasks[1].workflowTask.type == TaskType.PERMISSIVE.name()
+            tasks[1].workflowTask.permissive
             tasks[1].status == Task.Status.SCHEDULED
             tasks[1].taskType == 'integration_task_1'
-            tasks[2].workflowTask.type == TaskType.PERMISSIVE.name()
+            tasks[2].workflowTask.permissive
             tasks[2].status == Task.Status.SCHEDULED
             tasks[2].taskType == 'integration_task_2'
             tasks[3].status == Task.Status.IN_PROGRESS
