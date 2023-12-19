@@ -12,9 +12,7 @@
  */
 package com.netflix.conductor.test.integration.grpc;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -114,7 +112,7 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
             assertEquals(taskName, def.getName());
         }
 
-        WorkflowDef def = createWorkflowDefinition("test");
+        WorkflowDef def = createWorkflowDefinition("test" + UUID.randomUUID());
         WorkflowTask t0 = createWorkflowTask("t0");
         WorkflowTask t1 = createWorkflowTask("t1");
 
