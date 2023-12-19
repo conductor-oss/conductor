@@ -173,6 +173,28 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
+    public void testWorkflowTaskTypeWhile() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("WHILE");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(2, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(
+                validationErrors.contains(
+                        "loopCondition field is required for taskType: WHILE taskName: encode"));
+        assertTrue(
+                validationErrors.contains(
+                        "loopOver field is required for taskType: WHILE taskName: encode"));
+    }
+
+    @Test
     public void testWorkflowTaskTypeWait() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("WAIT");

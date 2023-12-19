@@ -1,0 +1,45 @@
+{
+  "name": "while_Set_variable_fix",
+  "description": "while with set variable task fix",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "loopTask",
+      "taskReferenceName": "loopTask",
+      "inputParameters": {
+        "list": "${workflow.input.list}"
+      },
+      "type": "WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "if ( $.list && $.loopTask['iteration'] < $.list.length ) { true; } else { false; } ",
+      "loopOver": [
+        {
+          "name": "set_variable",
+          "taskReferenceName": "set_variable",
+          "inputParameters": {
+            "value": "${workflow.input.value}"
+          },
+          "type": "SET_VARIABLE",
+          "startDelay": 0,
+          "optional": false,
+          "asyncComplete": false
+        }
+      ]
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

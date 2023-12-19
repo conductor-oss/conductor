@@ -87,7 +87,7 @@ class WorkflowGraph extends React.Component {
       const parentRef = _.first(dagGraph.predecessors(selectedRef));
       const parentType = dagGraph.node(parentRef).type;
       console.assert(
-        parentType === "FORK_JOIN_DYNAMIC" || parentType === "DO_WHILE"
+        parentType === "FORK_JOIN_DYNAMIC" || parentType === "DO_WHILE" || parentType === "WHILE"
       );
 
       resolvedRef = this.graph
@@ -257,20 +257,20 @@ class WorkflowGraph extends React.Component {
       }
     }
 
-    // Collapse Do_while children
+    // Collapse DO_WHILE or WHILE children
     const doWhileNodes = dagGraph
       .nodes()
-      .filter((nodeId) => dagGraph.node(nodeId).type === "DO_WHILE");
+      .filter((nodeId) => dagGraph.node(nodeId).type === "DO_WHILE" || dagGraph.node(nodeId).type === "WHILE");
 
     for (const parentRef of doWhileNodes) {
       const parentNode = dagGraph.node(parentRef);
 
-      // Only collapse executed DO_WHILE loops
+      // Only collapse executed DO_WHILE or WHILE loops
       if (_.get(parentNode, "status")) {
         const childRefs = dagGraph
           .successors(parentRef)
           .map((ref) => dagGraph.node(ref))
-          .filter((node) => node.type !== "DO_WHILE_END")
+          .filter((node) => node.type !== "DO_WHILE_END" && node.type !== "WHILE_END")
           .map((node) => node.ref);
 
         if (childRefs.length > 0) {
@@ -542,6 +542,12 @@ class WorkflowGraph extends React.Component {
       case "DO_WHILE_END":
         retval = composeBarNode(v, "down");
         retval.label = `${retval.label} [DO_WHILE]`;
+        this.barNodes.push(v.ref);
+        break;
+      case "WHILE":
+      case "WHILE_END":
+        retval = composeBarNode(v, "down");
+        retval.label = `${retval.label} [WHILE]`;
         this.barNodes.push(v.ref);
         break;
       default:

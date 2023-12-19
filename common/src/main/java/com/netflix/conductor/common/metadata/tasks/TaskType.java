@@ -13,6 +13,7 @@
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
@@ -27,6 +28,7 @@ public enum TaskType {
     SWITCH,
     JOIN,
     DO_WHILE,
+    WHILE,
     SUB_WORKFLOW,
     START_WORKFLOW,
     EVENT,
@@ -53,6 +55,7 @@ public enum TaskType {
     public static final String TASK_TYPE_DYNAMIC = "DYNAMIC";
     public static final String TASK_TYPE_JOIN = "JOIN";
     public static final String TASK_TYPE_DO_WHILE = "DO_WHILE";
+    public static final String TASK_TYPE_WHILE = "WHILE";
     public static final String TASK_TYPE_FORK_JOIN_DYNAMIC = "FORK_JOIN_DYNAMIC";
     public static final String TASK_TYPE_EVENT = "EVENT";
     public static final String TASK_TYPE_WAIT = "WAIT";
@@ -81,6 +84,7 @@ public enum TaskType {
         BUILT_IN_TASKS.add(TASK_TYPE_JOIN);
         BUILT_IN_TASKS.add(TASK_TYPE_EXCLUSIVE_JOIN);
         BUILT_IN_TASKS.add(TASK_TYPE_DO_WHILE);
+        BUILT_IN_TASKS.add(TASK_TYPE_WHILE);
     }
 
     /**
@@ -103,5 +107,14 @@ public enum TaskType {
 
     public static boolean isBuiltIn(String taskType) {
         return BUILT_IN_TASKS.contains(taskType);
+    }
+
+    public static boolean isLoopTask(String taskType) {
+        return Objects.equals(TASK_TYPE_DO_WHILE, taskType)
+                || Objects.equals(TASK_TYPE_WHILE, taskType);
+    }
+
+    public static boolean isLoopTask(TaskType taskType) {
+        return taskType == DO_WHILE || taskType == WHILE;
     }
 }

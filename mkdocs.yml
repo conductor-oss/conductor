@@ -70,6 +70,7 @@ nav:
         - Operators:
           - documentation/configuration/workflowdef/operators/index.md
           - documentation/configuration/workflowdef/operators/do-while-task.md
+          - documentation/configuration/workflowdef/operators/while-task.md
           - documentation/configuration/workflowdef/operators/dynamic-task.md
           - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
           - documentation/configuration/workflowdef/operators/fork-task.md

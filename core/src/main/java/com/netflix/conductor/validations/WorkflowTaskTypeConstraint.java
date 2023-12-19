@@ -105,7 +105,8 @@ public @interface WorkflowTaskTypeConstraint {
                     valid = isKafkaPublishTaskValid(workflowTask, context);
                     break;
                 case TaskType.TASK_TYPE_DO_WHILE:
-                    valid = isDoWhileTaskValid(workflowTask, context);
+                case TaskType.TASK_TYPE_WHILE:
+                    valid = isLoopTaskValid(workflowTask, context);
                     break;
                 case TaskType.TASK_TYPE_SUB_WORKFLOW:
                     valid = isSubWorkflowTaskValid(workflowTask, context);
@@ -256,7 +257,7 @@ public @interface WorkflowTaskTypeConstraint {
             return valid;
         }
 
-        private boolean isDoWhileTaskValid(
+        private boolean isLoopTaskValid(
                 WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
             if (workflowTask.getLoopCondition() == null) {
@@ -264,7 +265,7 @@ public @interface WorkflowTaskTypeConstraint {
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
                                 "loopCondition",
-                                TaskType.DO_WHILE,
+                                workflowTask.getType(),
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
@@ -274,7 +275,7 @@ public @interface WorkflowTaskTypeConstraint {
                         String.format(
                                 PARAM_REQUIRED_STRING_FORMAT,
                                 "loopOver",
-                                TaskType.DO_WHILE,
+                                workflowTask.getType(),
                                 workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
