@@ -250,4 +250,11 @@ public interface TaskService {
      */
     ExternalStorageLocation getExternalStorageLocation(
             String path, String operation, String payloadType);
+
+    String updateTask(
+            String workflowId,
+            String taskRefName,
+            TaskResult.Status status,
+            String workerId,
+            Map<String, Object> output);
 }

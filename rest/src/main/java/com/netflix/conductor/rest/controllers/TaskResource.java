@@ -83,6 +83,18 @@ public class TaskResource {
         return taskService.updateTask(taskResult);
     }
 
+    @PostMapping(value = "/{workflowId}/{taskRefName}/{status}", produces = TEXT_PLAIN_VALUE)
+    @Operation(summary = "Update a task By Ref Name")
+    public String updateTask(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("taskRefName") String taskRefName,
+            @PathVariable("status") TaskResult.Status status,
+            @RequestParam(value = "workerid", required = false) String workerId,
+            @RequestBody Map<String, Object> output) {
+
+        return taskService.updateTask(workflowId, taskRefName, status, workerId, output);
+    }
+
     @PostMapping("/{taskId}/log")
     @Operation(summary = "Log Task Execution Details")
     public void log(@PathVariable("taskId") String taskId, @RequestBody String log) {
