@@ -10,4 +10,4 @@
 
 ## Reporting a Vulnerability
 
-Please email conductor@netflix.com to report vulnerabilities.
+Please email oess@orkes.com to report vulnerabilities.
