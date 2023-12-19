@@ -3,7 +3,7 @@ version: '2.3'
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-postgres.properties
+      - CONFIG_PROP=config-postgres-es7.properties
     image: conductor:server
     container_name: conductor-server
     build:
@@ -21,8 +21,11 @@ services:
       retries: 12
     links:
       - conductor-postgres:postgresdb
+      - conductor-elasticsearch:es
     depends_on:
       conductor-postgres:
+        condition: service_healthy
+      conductor-elasticsearch:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -52,8 +55,33 @@ services:
         max-size: "1k"
         max-file: "3"
 
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    volumes:
+      - esdata-conductor:/usr/share/elasticsearch/data
+    networks:
+      - internal
+    ports:
+      - 9201:9200
+    healthcheck:
+      test: curl http://localhost:9200/_cluster/health -o /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
 volumes:
   pgdata-conductor:
+    driver: local
+  esdata-conductor:
     driver: local
 
 networks:
