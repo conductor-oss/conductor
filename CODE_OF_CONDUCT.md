@@ -1,3 +1,5 @@
+# Code of Conduct
+
 Hello valued community members! 👋
 
 Our Conductor community has grown tremendously, and as part of ensuring a harmonious experience for everyone, 
