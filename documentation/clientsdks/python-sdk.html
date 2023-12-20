@@ -10,23 +10,25 @@
       
       
       
-        <link rel="canonical" href="https://conductor-oss.github.io/conductor/index.html">
+        <link rel="canonical" href="https://conductor-oss.github.io/conductor/documentation/clientsdks/python-sdk.html">
       
       
+        <link rel="prev" href="go-sdk.html">
       
-        <link rel="next" href="devguide/concepts/index.html">
+      
+        <link rel="next" href="../../resources/contributing.html">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
     
     
       
-        <title>Conductor Documentation</title>
+        <title>Python SDK - Conductor Documentation</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.50c56a3b.min.css">
       
       
 
@@ -45,9 +47,9 @@
       
     
     
-      <link rel="stylesheet" href="css/custom.css">
+      <link rel="stylesheet" href="../../css/custom.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#python-sdk" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -77,9 +84,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../img/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -96,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Python SDK
             
           </span>
         </div>
@@ -169,11 +176,9 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="index.html" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
         
   
     
@@ -198,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="devguide/concepts/index.html" class="md-tabs__link">
+        <a href="../../devguide/concepts/index.html" class="md-tabs__link">
           
   
     
@@ -217,17 +222,21 @@
         
   
   
+    
+  
   
     
     
       
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="documentation/api/index.html" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../api/index.html" class="md-tabs__link">
           
   
     
@@ -250,7 +259,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="resources/contributing.html" class="md-tabs__link">
+        <a href="../../resources/contributing.html" class="md-tabs__link">
           
   
     
@@ -280,9 +289,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -293,9 +300,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../img/logo.svg" alt="logo">
 
     </a>
     Conductor Documentation
@@ -319,17 +326,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="index.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -338,7 +338,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -434,7 +433,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/concepts/index.html" class="md-nav__link ">
+            <a href="../../devguide/concepts/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -467,7 +466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workflows.html" class="md-nav__link">
+      <a href="../../devguide/concepts/workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -488,7 +487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/tasks.html" class="md-nav__link">
+      <a href="../../devguide/concepts/tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -509,7 +508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workers.html" class="md-nav__link">
+      <a href="../../devguide/concepts/workers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -530,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/why.html" class="md-nav__link">
+      <a href="../../devguide/concepts/why.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -604,7 +603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/source.html" class="md-nav__link">
+      <a href="../../devguide/running/source.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,7 +624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/docker.html" class="md-nav__link">
+      <a href="../../devguide/running/docker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -646,7 +645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/hosted.html" class="md-nav__link">
+      <a href="../../devguide/running/hosted.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,7 +700,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/architecture/index.html" class="md-nav__link ">
+            <a href="../../devguide/architecture/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -734,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/tasklifecycle.html" class="md-nav__link">
+      <a href="../../devguide/architecture/tasklifecycle.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -755,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/technicaldetails.html" class="md-nav__link">
+      <a href="../../devguide/architecture/technicaldetails.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/directed-acyclic-graph.html" class="md-nav__link">
+      <a href="../../devguide/architecture/directed-acyclic-graph.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -905,7 +904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -926,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -947,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -968,7 +967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -989,7 +988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/updating-workflows.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/updating-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1010,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1031,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1117,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1138,7 +1137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1159,7 +1158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1180,7 +1179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1201,7 +1200,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-configurations.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/task-configurations.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1222,7 +1221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1243,7 +1242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-timeouts.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/task-timeouts.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1264,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/updating-tasks.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/updating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1285,7 +1284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1359,7 +1358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1380,7 +1379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1401,7 +1400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1471,7 +1470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
+      <a href="../../devguide/how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1534,7 +1533,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/labs/index.html" class="md-nav__link ">
+            <a href="../../devguide/labs/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1567,7 +1566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/first-workflow.html" class="md-nav__link">
+      <a href="../../devguide/labs/first-workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1588,7 +1587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/eventhandlers.html" class="md-nav__link">
+      <a href="../../devguide/labs/eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1609,7 +1608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/kitchensink.html" class="md-nav__link">
+      <a href="../../devguide/labs/kitchensink.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1638,7 +1637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/faq.html" class="md-nav__link">
+      <a href="../../devguide/faq.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1659,7 +1658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/bestpractices.html" class="md-nav__link">
+      <a href="../../devguide/bestpractices.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1684,8 +1683,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1706,12 +1707,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -1725,7 +1726,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Documentation
@@ -1769,7 +1770,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/api/index.html" class="md-nav__link ">
+            <a href="../api/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1802,7 +1803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/metadata.html" class="md-nav__link">
+      <a href="../api/metadata.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1823,7 +1824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/startworkflow.html" class="md-nav__link">
+      <a href="../api/startworkflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1844,7 +1845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/workflow.html" class="md-nav__link">
+      <a href="../api/workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1865,7 +1866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/task.html" class="md-nav__link">
+      <a href="../api/task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1886,7 +1887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/taskdomains.html" class="md-nav__link">
+      <a href="../api/taskdomains.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1984,7 +1985,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/index.html" class="md-nav__link ">
+            <a href="../configuration/workflowdef/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2057,7 +2058,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/operators/index.html" class="md-nav__link ">
+            <a href="../configuration/workflowdef/operators/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2090,7 +2091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2111,7 +2112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2132,7 +2133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2153,7 +2154,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2174,7 +2175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/join-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/join-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2195,7 +2196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2216,7 +2217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2237,7 +2238,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2258,7 +2259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2279,7 +2280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2342,7 +2343,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
+            <a href="../configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2375,7 +2376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2396,7 +2397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2417,7 +2418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2438,7 +2439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2459,7 +2460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2480,7 +2481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2501,7 +2502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
+      <a href="../configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2538,7 +2539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/taskdef.html" class="md-nav__link">
+      <a href="../configuration/taskdef.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2559,7 +2560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/eventhandlers.html" class="md-nav__link">
+      <a href="../configuration/eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2631,7 +2632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/server.html" class="md-nav__link">
+      <a href="../metrics/server.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2652,7 +2653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/client.html" class="md-nav__link">
+      <a href="../metrics/client.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2734,7 +2735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/extend.html" class="md-nav__link">
+      <a href="../advanced/extend.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2755,7 +2756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/isolationgroups.html" class="md-nav__link">
+      <a href="../advanced/isolationgroups.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2776,7 +2777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/annotation-processor.html" class="md-nav__link">
+      <a href="../advanced/annotation-processor.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2797,7 +2798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/archival-of-workflows.html" class="md-nav__link">
+      <a href="../advanced/archival-of-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2818,7 +2819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/azureblob-storage.html" class="md-nav__link">
+      <a href="../advanced/azureblob-storage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2839,7 +2840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/externalpayloadstorage.html" class="md-nav__link">
+      <a href="../advanced/externalpayloadstorage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2860,7 +2861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/redis.html" class="md-nav__link">
+      <a href="../advanced/redis.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2886,6 +2887,8 @@
                 
   
   
+    
+  
   
   
     
@@ -2909,17 +2912,17 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/clientsdks/index.html" class="md-nav__link ">
+            <a href="index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2936,7 +2939,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_5">
             <span class="md-nav__icon md-icon"></span>
             Client SDKs
@@ -2952,7 +2955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/java-sdk.html" class="md-nav__link">
+      <a href="java-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2973,7 +2976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/csharp-sdk.html" class="md-nav__link">
+      <a href="csharp-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2994,7 +2997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/clojure-sdk.html" class="md-nav__link">
+      <a href="clojure-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3015,7 +3018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/go-sdk.html" class="md-nav__link">
+      <a href="go-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3033,10 +3036,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="documentation/clientsdks/python-sdk.html" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Python SDK
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="python-sdk.html" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -3045,6 +3068,74 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Guide
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Tests
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Simple validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-with-code-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run with code coverage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3122,7 +3213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/contributing.html" class="md-nav__link">
+      <a href="../../resources/contributing.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3143,7 +3234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/code-of-conduct.md" class="md-nav__link">
+      <a href="../../resources/code-of-conduct.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3164,7 +3255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/related.html" class="md-nav__link">
+      <a href="../../resources/related.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3185,7 +3276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/license.html" class="md-nav__link">
+      <a href="../../resources/license.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3214,9 +3305,7 @@
             
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -3225,6 +3314,64 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Guide
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Tests
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Simple validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-with-code-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run with code coverage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -3239,161 +3386,205 @@
                   
 
 
-  <h1>Home</h1>
+<h1 id="python-sdk">Python SDK</h1>
+<p>Software Development Kit for Netflix Conductor, written on and providing support for Python.</p>
+<p>The code for the Python SDk is available on <a href="https://github.com/conductor-sdk/conductor-python">Github</a>. Please feel free to file PRs, issues, etc. there.</p>
+<h2 id="quick-guide">Quick Guide</h2>
+<ol>
+<li>
+<p>Create a virtual environment</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>virtualenv<span class="w"> </span>conductor
+$<span class="w"> </span><span class="nb">source</span><span class="w"> </span>conductor/bin/activate
+$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>list
+Package<span class="w">    </span>Version
+----------<span class="w"> </span>-------
+pip<span class="w">        </span><span class="m">22</span>.0.3
+setuptools<span class="w"> </span><span class="m">60</span>.6.0
+wheel<span class="w">      </span><span class="m">0</span>.37.1
+</code></pre></div>
 
-<div class="home">
-<div class="hero">
-  <div class="row justify-content-center align-items-center">
-    <div class="col-6">
-      <div class="heading">
-        Scalable Workflow Orchestration
-      </div>
-      <div class="caption" style="padding-top:15px">
-        Conductor is a platform created by <b>Netflix</b> to orchestrate workflows that span across microservices.
-      </div >
-      <div style="display: flex; margin-top: 45px;">
-        <a type="button" class="btn btn-primary" href="../devguide/concepts/index.html">Get Started</a>
-      </div>
-    </div>
-    <div class="col-6">
-      <img src="home/workflow.svg" class="illustration">
-    </div>
-  </div>
-</div>
+</li>
+<li>
+<p>Install latest version of <code>conductor-python</code> from pypi</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>conductor-python
+Collecting<span class="w"> </span>conductor-python
+Collecting<span class="w"> </span>certifi&gt;<span class="o">=</span><span class="m">14</span>.05.14
+Collecting<span class="w"> </span>urllib3&gt;<span class="o">=</span><span class="m">1</span>.15.1
+Requirement<span class="w"> </span>already<span class="w"> </span>satisfied:<span class="w"> </span>setuptools&gt;<span class="o">=</span><span class="m">21</span>.0.0<span class="w"> </span><span class="k">in</span><span class="w"> </span>./conductor/lib/python3.8/site-packages<span class="w"> </span><span class="o">(</span>from<span class="w"> </span>conductor-python<span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="m">60</span>.6.0<span class="o">)</span>
+Collecting<span class="w"> </span>six&gt;<span class="o">=</span><span class="m">1</span>.10
+Installing<span class="w"> </span>collected<span class="w"> </span>packages:<span class="w"> </span>certifi,<span class="w"> </span>urllib3,<span class="w"> </span>six,<span class="w"> </span>conductor-python
+Successfully<span class="w"> </span>installed<span class="w"> </span>certifi-2021.10.8<span class="w"> </span>conductor-python-1.0.7<span class="w"> </span>six-1.16.0<span class="w"> </span>urllib3-1.26.8
+</code></pre></div>
+
+</li>
+<li>
+<p>Create a worker capable of executing a <code>Task</code>. Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">conductor.client.worker.worker_interface</span> <span class="kn">import</span> <span class="n">WorkerInterface</span>
+
+<span class="k">class</span> <span class="nc">SimplePythonWorker</span><span class="p">(</span><span class="n">WorkerInterface</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+        <span class="n">task_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_task_result_from_task</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">task_result</span><span class="o">.</span><span class="n">add_output_data</span><span class="p">(</span><span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">)</span>
+        <span class="n">task_result</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;COMPLETED&#39;</span>
+        <span class="k">return</span> <span class="n">task_result</span>
+</code></pre></div>
+
+<ul>
+<li>The <code>add_output_data</code> is the most relevant part, since you can store information in a dictionary, which will be sent within <code>TaskResult</code> as your execution response to Conductor</li>
+</ul>
+</li>
+<li>
+<p>Create a main method to start polling tasks to execute with your worker. Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">conductor.client.automator.task_handler</span> <span class="kn">import</span> <span class="n">TaskHandler</span>
+<span class="kn">from</span> <span class="nn">conductor.client.configuration.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<span class="kn">from</span> <span class="nn">conductor.client.worker.sample.faulty_execution_worker</span> <span class="kn">import</span> <span class="n">FaultyExecutionWorker</span>
+<span class="kn">from</span> <span class="nn">conductor.client.worker.sample.simple_python_worker</span> <span class="kn">import</span> <span class="n">SimplePythonWorker</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">configuration</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">task_definition_name</span> <span class="o">=</span> <span class="s1">&#39;python_example_task&#39;</span>
+    <span class="n">workers</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">SimplePythonWorker</span><span class="p">(</span><span class="n">task_definition_name</span><span class="p">),</span>
+        <span class="n">FaultyExecutionWorker</span><span class="p">(</span><span class="n">task_definition_name</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">with</span> <span class="n">TaskHandler</span><span class="p">(</span><span class="n">workers</span><span class="p">,</span> <span class="n">configuration</span><span class="p">)</span> <span class="k">as</span> <span class="n">task_handler</span><span class="p">:</span>
+        <span class="n">task_handler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+
+<ul>
+<li>This example contains two workers, each with a different execution method, capable of running the same <code>task_definition_name</code></li>
+</ul>
+</li>
+<li>
+<p>Now that you have implemented the example, you can start the Conductor server locally:</p>
+<ol>
+<li>
+<p>Clone <a href="https://github.com/Netflix/conductor">Netflix Conductor repository</a>:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Netflix/conductor.git
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>conductor/
+</code></pre></div>
+
+</li>
+<li>
+<p>Start the Conductor server:</p>
+<div class="codehilite"><pre><span></span><code>/conductor$ ./gradlew bootRun
+</code></pre></div>
+
+</li>
+<li>
+<p>Start Conductor UI:</p>
+<div class="codehilite"><pre><span></span><code>/conductor$ cd ui/
+/conductor/ui$ yarn install
+/conductor/ui$ yarn run start
+</code></pre></div>
+
+</li>
+</ol>
+<p>You should be able to access:
+  * Conductor API:
+    * {{ server_host }}/swagger-ui/index.html
+  * Conductor UI:
+    * http://localhost:5000</p>
+</li>
+<li>
+<p>Create a <code>Task</code> within <code>Conductor</code>. Example:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;{{ server_host }}{{ api_prefix }}/metadata/taskdefs&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;accept: */*&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;[</span>
+<span class="s1">    {</span>
+<span class="s1">        &quot;name&quot;: &quot;python_task_example&quot;,</span>
+<span class="s1">        &quot;description&quot;: &quot;Python task example&quot;,</span>
+<span class="s1">        &quot;retryCount&quot;: 3,</span>
+<span class="s1">        &quot;retryLogic&quot;: &quot;FIXED&quot;,</span>
+<span class="s1">        &quot;retryDelaySeconds&quot;: 10,</span>
+<span class="s1">        &quot;timeoutSeconds&quot;: 300,</span>
+<span class="s1">        &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,</span>
+<span class="s1">        &quot;responseTimeoutSeconds&quot;: 180,</span>
+<span class="s1">        &quot;ownerEmail&quot;: &quot;example@example.com&quot;</span>
+<span class="s1">    }</span>
+<span class="s1">    ]&#39;</span>
+</code></pre></div>
+
+</li>
+<li>
+<p>Create a <code>Workflow</code> within <code>Conductor</code>. Example:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;{{ server_host }}{{ api_prefix }}/metadata/workflow&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;accept: */*&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;createTime&quot;: 1634021619147,</span>
+<span class="s1">    &quot;updateTime&quot;: 1630694890267,</span>
+<span class="s1">    &quot;name&quot;: &quot;workflow_with_python_task_example&quot;,</span>
+<span class="s1">    &quot;description&quot;: &quot;Workflow with Python Task example&quot;,</span>
+<span class="s1">    &quot;version&quot;: 1,</span>
+<span class="s1">    &quot;tasks&quot;: [</span>
+<span class="s1">        {</span>
+<span class="s1">        &quot;name&quot;: &quot;python_task_example&quot;,</span>
+<span class="s1">        &quot;taskReferenceName&quot;: &quot;python_task_example_ref_1&quot;,</span>
+<span class="s1">        &quot;inputParameters&quot;: {},</span>
+<span class="s1">        &quot;type&quot;: &quot;SIMPLE&quot;</span>
+<span class="s1">        }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;inputParameters&quot;: [],</span>
+<span class="s1">    &quot;outputParameters&quot;: {</span>
+<span class="s1">        &quot;workerOutput&quot;: &quot;${python_task_example_ref_1.output}&quot;</span>
+<span class="s1">    },</span>
+<span class="s1">    &quot;schemaVersion&quot;: 2,</span>
+<span class="s1">    &quot;restartable&quot;: true,</span>
+<span class="s1">    &quot;ownerEmail&quot;: &quot;example@example.com&quot;,</span>
+<span class="s1">    &quot;timeoutPolicy&quot;: &quot;ALERT_ONLY&quot;,</span>
+<span class="s1">    &quot;timeoutSeconds&quot;: 0</span>
+<span class="s1">    }&#39;</span>
+</code></pre></div>
+
+</li>
+<li>
+<p>Start a new workflow:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s1">&#39;{{ server_host }}{{ api_prefix }}/workflow/workflow_with_python_task_example&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;accept: text/plain&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+</code></pre></div>
+
+<p>You should receive a <em>Workflow ID</em> at the <em>Response body</em>
+* <em>Workflow ID</em> example: <code>8ff0bc06-4413-4c94-b27a-b3210412a914</code></p>
+<p>Now you must be able to see its execution through the UI.
+* Example: <code>http://localhost:5000/execution/8ff0bc06-4413-4c94-b27a-b3210412a914</code></p>
+</li>
+<li>
+<p>Run your Python file with the <code>main</code> method</p>
+</li>
+</ol>
+<h3 id="unit-tests">Unit Tests</h3>
+<h4 id="simple-validation">Simple validation</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/conductor-python/src$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>unittest<span class="w"> </span>-v
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>test_execute_task<span class="w"> </span><span class="o">(</span>tst.automator.test_task_runner.TestTaskRunner<span class="o">)</span><span class="w"> </span>...<span class="w"> </span>ok
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>test_execute_task_with_faulty_execution_worker<span class="w"> </span><span class="o">(</span>tst.automator.test_task_runner.TestTaskRunner<span class="o">)</span><span class="w"> </span>...<span class="w"> </span>ok
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>test_execute_task_with_invalid_task<span class="w"> </span><span class="o">(</span>tst.automator.test_task_runner.TestTaskRunner<span class="o">)</span><span class="w"> </span>...<span class="w"> </span>ok
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>----------------------------------------------------------------------
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Ran<span class="w"> </span><span class="m">3</span><span class="w"> </span>tests<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span>.001s
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>OK
+</code></pre></div>
+<h4 id="run-with-code-coverage">Run with code coverage</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>/conductor-python/src$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>coverage<span class="w"> </span>run<span class="w"> </span>--source<span class="o">=</span>conductor/<span class="w"> </span>-m<span class="w"> </span>unittest
+</code></pre></div>
+<p>Report:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>/conductor-python/src$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>coverage<span class="w"> </span>report
+</code></pre></div>
+<p>Visual coverage results:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>/conductor-python/src$<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>coverage<span class="w"> </span>html
+</code></pre></div>
 
 
-<div class="bullets">
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/osi.svg" class="icon"/> Open Source
-      </div>
-      <div class="caption">
-        Apache-2.0 license for commercial and non-commerical use. Freedom to deploy, modify and contribute back.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/modular.svg" class="icon"/> Modular
-      </div>
-      <div class="caption">
-        A fully abstracted backend enables you choose your own database persistence layer and queueing service.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/shield.svg" class="icon"/> Proven
-      </div>
-      <div class="caption">        
-        Enterprise ready, Java Spring based platform that has been battle tested in production systems at Netflix and elsewhere.
-      </div>
-    </div>
-  </div>
-
-
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/wrench.svg" class="icon"/> Control
-      </div>
-      <div class="caption">
-        Powerful flow control constructs including Decisions, Dynamic Fork-Joins and Subworkflows. Variables and templates are supported.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/brackets.svg" class="icon"/> Polyglot
-      </div>
-      <div class="caption">
-        Client libraries in multiple languages allows workers to be implemented in Java, Node JS, Python and C#.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/server.svg" class="icon" /> Scalable
-      </div>
-      <div class="caption">
-        Distributed architecture for both orchestrator and workers scalable from a single workflow to millions of concurrent processes.
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Developer Experience
-      </div>
-      <div class="caption">
-        <ul>
-          <li>Discover and visualize the process flows from the bundled UI</li>
-          <li>Integrated interface to create, refine and validate workflows</li>          
-          <li>JSON based workflow definition DSL</li>
-          <li>Full featured API for custom automation</li>
-        </ui>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/devex.png);"></div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Observability
-      </div>
-      <div class="caption">    
-        <ul>
-          <li>Understand, debug and iterate on task and workflow executions.</li>
-          <li>Fine grain operational control over workflows with the ability to pause, resume, restart, retry and terminate</li>
-        </ul>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/timeline.png);"></div>
-    </div>
-  </div>
-</div>
-
-
-<div class="compare">
-  <div class="container">
-    <div class="row">
-      <h2 class="heading">Why Conductor?</h2>
-    </div>
-    <div class="row" style="gap:30px;">
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-           <img src="home/icons/conductor.svg" class="icon"/> Service Orchestration
-        </h3>
-        <div class="caption">
-          <p>Workflow definitions are decoupled from task implementations. This allows the creation of process flows in which each individual task can be implemented 
-          by an encapsulated microservice.</p>
-          <p>Designing a workflow orchestrator that is resilient and horizontally scalable is not a simple problem. At Netflix we have developed a solution in <b>Conductor</b>.</p>
-        </div>
-        </div>
-      </div>
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-          <img src="home/icons/network.svg" class="icon"/> Service Choreography
-        </h3>
-        <div class="caption">
-          Process flows are implicitly defined across multiple service implementations, often with
-          tight peer-to-peer coupling between services. Multiple event buses and complex
-          pub/sub models limit observability around process progress and capacity. 
-        </div>
-      </div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
 
 
 
@@ -3401,13 +3592,6 @@
 
 
 
-  
-  
-
-
-
-
-  
 
 
 
@@ -3425,19 +3609,33 @@
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="go-sdk.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Go SDK">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Go SDK
+              </div>
+            </div>
+          </a>
         
         
           
-          <a href="devguide/concepts/index.html" class="md-footer__link md-footer__link--next" aria-label="Next: Basic Concepts">
+          <a href="../../resources/contributing.html" class="md-footer__link md-footer__link--next" aria-label="Next: Contributing">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Basic Concepts
+                Contributing
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -3475,10 +3673,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7c377c4.min.js"></script>
       
     
   </body>

@@ -10,23 +10,25 @@
       
       
       
-        <link rel="canonical" href="https://conductor-oss.github.io/conductor/index.html">
+        <link rel="canonical" href="https://conductor-oss.github.io/conductor/devguide/architecture/directed-acyclic-graph.html">
       
       
+        <link rel="prev" href="technicaldetails.html">
       
-        <link rel="next" href="devguide/concepts/index.html">
+      
+        <link rel="next" href="../how-tos/Workflows/debugging-workflows.html">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
     
     
       
-        <title>Conductor Documentation</title>
+        <title>Directed Acyclic Graph (DAG) - Conductor Documentation</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.50c56a3b.min.css">
       
       
 
@@ -45,9 +47,9 @@
       
     
     
-      <link rel="stylesheet" href="css/custom.css">
+      <link rel="stylesheet" href="../../css/custom.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#directed-acyclic-graph-dag" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -77,9 +84,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../img/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -96,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Directed Acyclic Graph (DAG)
             
           </span>
         </div>
@@ -169,11 +176,9 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="index.html" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
         
   
     
@@ -188,17 +193,21 @@
         
   
   
+    
+  
   
     
     
       
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="devguide/concepts/index.html" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../concepts/index.html" class="md-tabs__link">
           
   
     
@@ -227,7 +236,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="documentation/api/index.html" class="md-tabs__link">
+        <a href="../../documentation/api/index.html" class="md-tabs__link">
           
   
     
@@ -250,7 +259,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="resources/contributing.html" class="md-tabs__link">
+        <a href="../../resources/contributing.html" class="md-tabs__link">
           
   
     
@@ -280,9 +289,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -293,9 +300,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../img/logo.svg" alt="logo">
 
     </a>
     Conductor Documentation
@@ -319,17 +326,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="index.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -338,7 +338,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -347,8 +346,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -373,12 +374,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -392,7 +393,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Developer's Guide
@@ -434,7 +435,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/concepts/index.html" class="md-nav__link ">
+            <a href="../concepts/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -467,7 +468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workflows.html" class="md-nav__link">
+      <a href="../concepts/workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -488,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/tasks.html" class="md-nav__link">
+      <a href="../concepts/tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -509,7 +510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workers.html" class="md-nav__link">
+      <a href="../concepts/workers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -530,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/why.html" class="md-nav__link">
+      <a href="../concepts/why.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -604,7 +605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/source.html" class="md-nav__link">
+      <a href="../running/source.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,7 +626,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/docker.html" class="md-nav__link">
+      <a href="../running/docker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -646,7 +647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/hosted.html" class="md-nav__link">
+      <a href="../running/hosted.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -672,6 +673,8 @@
                 
   
   
+    
+  
   
   
     
@@ -691,17 +694,17 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/architecture/index.html" class="md-nav__link ">
+            <a href="index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -718,7 +721,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -734,7 +737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/tasklifecycle.html" class="md-nav__link">
+      <a href="tasklifecycle.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -755,7 +758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/technicaldetails.html" class="md-nav__link">
+      <a href="technicaldetails.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -773,10 +776,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="devguide/architecture/directed-acyclic-graph.html" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Directed Acyclic Graph (DAG)
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="directed-acyclic-graph.html" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -785,6 +808,77 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-a-directed-acyclic-graph-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is a Directed Acyclic Graph (DAG)?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What is a Directed Acyclic Graph (DAG)?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Directed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acyclic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Acyclic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can-a-workflow-have-loops-and-still-be-a-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Can a workflow have loops and still be a DAG?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -905,7 +999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -926,7 +1020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/handling-errors.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -947,7 +1041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/searching-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -968,7 +1062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/starting-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -989,7 +1083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/updating-workflows.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/updating-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1010,7 +1104,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1031,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
+      <a href="../how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1117,7 +1211,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/creating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1138,7 +1232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1159,7 +1253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1180,7 +1274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1201,7 +1295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-configurations.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/task-configurations.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1222,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/task-inputs.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1243,7 +1337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-timeouts.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/task-timeouts.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1264,7 +1358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/updating-tasks.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/updating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1285,7 +1379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
+      <a href="../how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1359,7 +1453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
+      <a href="../how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1380,7 +1474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
+      <a href="../how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1401,7 +1495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
+      <a href="../how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1471,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
+      <a href="../how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1534,7 +1628,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/labs/index.html" class="md-nav__link ">
+            <a href="../labs/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1567,7 +1661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/first-workflow.html" class="md-nav__link">
+      <a href="../labs/first-workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1588,7 +1682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/eventhandlers.html" class="md-nav__link">
+      <a href="../labs/eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1609,7 +1703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/kitchensink.html" class="md-nav__link">
+      <a href="../labs/kitchensink.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1638,7 +1732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/faq.html" class="md-nav__link">
+      <a href="../faq.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1659,7 +1753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/bestpractices.html" class="md-nav__link">
+      <a href="../bestpractices.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1769,7 +1863,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/api/index.html" class="md-nav__link ">
+            <a href="../../documentation/api/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1802,7 +1896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/metadata.html" class="md-nav__link">
+      <a href="../../documentation/api/metadata.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1823,7 +1917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/startworkflow.html" class="md-nav__link">
+      <a href="../../documentation/api/startworkflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1844,7 +1938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/workflow.html" class="md-nav__link">
+      <a href="../../documentation/api/workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1865,7 +1959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/task.html" class="md-nav__link">
+      <a href="../../documentation/api/task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1886,7 +1980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/taskdomains.html" class="md-nav__link">
+      <a href="../../documentation/api/taskdomains.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1984,7 +2078,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/index.html" class="md-nav__link ">
+            <a href="../../documentation/configuration/workflowdef/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2057,7 +2151,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/operators/index.html" class="md-nav__link ">
+            <a href="../../documentation/configuration/workflowdef/operators/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2090,7 +2184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2111,7 +2205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2132,7 +2226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2153,7 +2247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2174,7 +2268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/join-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/join-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2195,7 +2289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2216,7 +2310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2237,7 +2331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2258,7 +2352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2279,7 +2373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2342,7 +2436,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
+            <a href="../../documentation/configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2375,7 +2469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2396,7 +2490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2417,7 +2511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2438,7 +2532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2459,7 +2553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2480,7 +2574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2501,7 +2595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
+      <a href="../../documentation/configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2538,7 +2632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/taskdef.html" class="md-nav__link">
+      <a href="../../documentation/configuration/taskdef.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2559,7 +2653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/eventhandlers.html" class="md-nav__link">
+      <a href="../../documentation/configuration/eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2631,7 +2725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/server.html" class="md-nav__link">
+      <a href="../../documentation/metrics/server.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2652,7 +2746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/client.html" class="md-nav__link">
+      <a href="../../documentation/metrics/client.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2734,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/extend.html" class="md-nav__link">
+      <a href="../../documentation/advanced/extend.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2755,7 +2849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/isolationgroups.html" class="md-nav__link">
+      <a href="../../documentation/advanced/isolationgroups.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2776,7 +2870,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/annotation-processor.html" class="md-nav__link">
+      <a href="../../documentation/advanced/annotation-processor.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2797,7 +2891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/archival-of-workflows.html" class="md-nav__link">
+      <a href="../../documentation/advanced/archival-of-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2818,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/azureblob-storage.html" class="md-nav__link">
+      <a href="../../documentation/advanced/azureblob-storage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2839,7 +2933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/externalpayloadstorage.html" class="md-nav__link">
+      <a href="../../documentation/advanced/externalpayloadstorage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2860,7 +2954,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/redis.html" class="md-nav__link">
+      <a href="../../documentation/advanced/redis.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2919,7 +3013,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/clientsdks/index.html" class="md-nav__link ">
+            <a href="../../documentation/clientsdks/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2952,7 +3046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/java-sdk.html" class="md-nav__link">
+      <a href="../../documentation/clientsdks/java-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2973,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/csharp-sdk.html" class="md-nav__link">
+      <a href="../../documentation/clientsdks/csharp-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2994,7 +3088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/clojure-sdk.html" class="md-nav__link">
+      <a href="../../documentation/clientsdks/clojure-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3015,7 +3109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/go-sdk.html" class="md-nav__link">
+      <a href="../../documentation/clientsdks/go-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3036,7 +3130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/python-sdk.html" class="md-nav__link">
+      <a href="../../documentation/clientsdks/python-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3122,7 +3216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/contributing.html" class="md-nav__link">
+      <a href="../../resources/contributing.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3143,7 +3237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/code-of-conduct.md" class="md-nav__link">
+      <a href="../../resources/code-of-conduct.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3164,7 +3258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/related.html" class="md-nav__link">
+      <a href="../../resources/related.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3185,7 +3279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/license.html" class="md-nav__link">
+      <a href="../../resources/license.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3214,9 +3308,7 @@
             
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -3225,6 +3317,67 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-a-directed-acyclic-graph-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is a Directed Acyclic Graph (DAG)?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What is a Directed Acyclic Graph (DAG)?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Directed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acyclic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Acyclic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can-a-workflow-have-loops-and-still-be-a-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Can a workflow have loops and still be a DAG?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -3239,161 +3392,39 @@
                   
 
 
-  <h1>Home</h1>
-
-<div class="home">
-<div class="hero">
-  <div class="row justify-content-center align-items-center">
-    <div class="col-6">
-      <div class="heading">
-        Scalable Workflow Orchestration
-      </div>
-      <div class="caption" style="padding-top:15px">
-        Conductor is a platform created by <b>Netflix</b> to orchestrate workflows that span across microservices.
-      </div >
-      <div style="display: flex; margin-top: 45px;">
-        <a type="button" class="btn btn-primary" href="../devguide/concepts/index.html">Get Started</a>
-      </div>
-    </div>
-    <div class="col-6">
-      <img src="home/workflow.svg" class="illustration">
-    </div>
-  </div>
-</div>
-
-
-<div class="bullets">
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/osi.svg" class="icon"/> Open Source
-      </div>
-      <div class="caption">
-        Apache-2.0 license for commercial and non-commerical use. Freedom to deploy, modify and contribute back.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/modular.svg" class="icon"/> Modular
-      </div>
-      <div class="caption">
-        A fully abstracted backend enables you choose your own database persistence layer and queueing service.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/shield.svg" class="icon"/> Proven
-      </div>
-      <div class="caption">        
-        Enterprise ready, Java Spring based platform that has been battle tested in production systems at Netflix and elsewhere.
-      </div>
-    </div>
-  </div>
-
-
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/wrench.svg" class="icon"/> Control
-      </div>
-      <div class="caption">
-        Powerful flow control constructs including Decisions, Dynamic Fork-Joins and Subworkflows. Variables and templates are supported.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/brackets.svg" class="icon"/> Polyglot
-      </div>
-      <div class="caption">
-        Client libraries in multiple languages allows workers to be implemented in Java, Node JS, Python and C#.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/server.svg" class="icon" /> Scalable
-      </div>
-      <div class="caption">
-        Distributed architecture for both orchestrator and workers scalable from a single workflow to millions of concurrent processes.
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Developer Experience
-      </div>
-      <div class="caption">
-        <ul>
-          <li>Discover and visualize the process flows from the bundled UI</li>
-          <li>Integrated interface to create, refine and validate workflows</li>          
-          <li>JSON based workflow definition DSL</li>
-          <li>Full featured API for custom automation</li>
-        </ui>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/devex.png);"></div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Observability
-      </div>
-      <div class="caption">    
-        <ul>
-          <li>Understand, debug and iterate on task and workflow executions.</li>
-          <li>Fine grain operational control over workflows with the ability to pause, resume, restart, retry and terminate</li>
-        </ul>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/timeline.png);"></div>
-    </div>
-  </div>
-</div>
-
-
-<div class="compare">
-  <div class="container">
-    <div class="row">
-      <h2 class="heading">Why Conductor?</h2>
-    </div>
-    <div class="row" style="gap:30px;">
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-           <img src="home/icons/conductor.svg" class="icon"/> Service Orchestration
-        </h3>
-        <div class="caption">
-          <p>Workflow definitions are decoupled from task implementations. This allows the creation of process flows in which each individual task can be implemented 
-          by an encapsulated microservice.</p>
-          <p>Designing a workflow orchestrator that is resilient and horizontally scalable is not a simple problem. At Netflix we have developed a solution in <b>Conductor</b>.</p>
-        </div>
-        </div>
-      </div>
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-          <img src="home/icons/network.svg" class="icon"/> Service Choreography
-        </h3>
-        <div class="caption">
-          Process flows are implicitly defined across multiple service implementations, often with
-          tight peer-to-peer coupling between services. Multiple event buses and complex
-          pub/sub models limit observability around process progress and capacity. 
-        </div>
-      </div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+<h1 id="directed-acyclic-graph-dag">Directed Acyclic Graph (DAG)</h1>
+<h2 id="what-is-a-directed-acyclic-graph-dag">What is a Directed Acyclic Graph (DAG)?</h2>
+<p>Conductor workflows are directed acyclic graphs (DAGs). But, what exactly is a DAG?</p>
+<p>To understand a DAG, we'll walk through each term (but not in order):</p>
+<h3 id="graph">Graph</h3>
+<p>A graph is "a collection of vertices (or point) and edges (or lines) that indicate connections between the vertices."  </p>
+<p>By this definition, this is a graph - just not exactly correct in the context of DAGs:</p>
+<p><img alt="pirate vs global warming graph" src="pirate_graph.gif" /></p>
+<p>But in the context of workflows, we're thinking of a graph more like this:</p>
+<p><img alt="a regular graph (source: wikipedia)" src="regular_graph.png" /></p>
+<p>Imagine each vertex as a microservice, and the lines are how the microservices are connected together. However, this graph is not a directed graph - as there is no direction given to each connection.</p>
+<h3 id="directed">Directed</h3>
+<p>A directed graph means that there is a direction to each connection. For example, this graph is directed:</p>
+<p><img alt="directed graph" src="directed_graph.png" /></p>
+<p>Each arrow has a direction, Point "N" can proceed directly to "B", but "B" cannot proceed to "N" in the opposite direction.  </p>
+<h3 id="acyclic">Acyclic</h3>
+<p>Acyclic means without circular or cyclic paths.  In the directed example above,  A -&gt; B -&gt; D -&gt; A is a cyclic loop.  </p>
+<p>So a Directed Acyclic Graph is a set of vertices where the connections are directed without any looping.  DAG charts can only "move forward" and cannot redo a step (or series of steps.)</p>
+<p>Since a Conductor workflow is a series of vertices that can connect in only a specific direction and cannot loop, a Conductor workflow is thus a directed acyclic graph:</p>
+<p><img alt="Conductor Dag" src="dag_workflow.png" /></p>
+<h3 id="can-a-workflow-have-loops-and-still-be-a-dag">Can a workflow have loops and still be a DAG?</h3>
+<p>Yes. For example, Conductor workflows have Do-While loops:</p>
+<p><img alt="Conductor Dag" src="dag_workflow2.png" /></p>
+<p>This is still a DAG, because the loop is just shorthand for running the tasks inside the loop over and over again.  For example, if the 2nd loop in the above image is run 3 times, the workflow path will be:</p>
+<ol>
+<li>zero_offset_fix_1</li>
+<li>post_to_orbit_ref_1</li>
+<li>zero_offset_fix_2</li>
+<li>post_to_orbit_ref_2</li>
+<li>zero_offset_fix_3</li>
+<li>post_to_orbit_ref_3</li>
+</ol>
+<p>The path is directed forward, and the loop just makes it easier to define the workflow.</p>
 
 
 
@@ -3401,13 +3432,8 @@
 
 
 
-  
-  
 
 
-
-
-  
 
 
 
@@ -3425,19 +3451,33 @@
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="technicaldetails.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Technical Details">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Technical Details
+              </div>
+            </div>
+          </a>
         
         
           
-          <a href="devguide/concepts/index.html" class="md-footer__link md-footer__link--next" aria-label="Next: Basic Concepts">
+          <a href="../how-tos/Workflows/debugging-workflows.html" class="md-footer__link md-footer__link--next" aria-label="Next: Debugging Workflows">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Basic Concepts
+                Debugging Workflows
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -3475,10 +3515,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7c377c4.min.js"></script>
       
     
   </body>

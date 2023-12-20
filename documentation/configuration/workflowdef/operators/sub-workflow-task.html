@@ -10,23 +10,25 @@
       
       
       
-        <link rel="canonical" href="https://conductor-oss.github.io/conductor/index.html">
+        <link rel="canonical" href="https://conductor-oss.github.io/conductor/documentation/configuration/workflowdef/operators/sub-workflow-task.html">
       
       
+        <link rel="prev" href="start-workflow-task.html">
       
-        <link rel="next" href="devguide/concepts/index.html">
+      
+        <link rel="next" href="switch-task.html">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
     
     
       
-        <title>Conductor Documentation</title>
+        <title>Sub Workflow - Conductor Documentation</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.50c56a3b.min.css">
       
       
 
@@ -45,9 +47,9 @@
       
     
     
-      <link rel="stylesheet" href="css/custom.css">
+      <link rel="stylesheet" href="../../../../css/custom.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#sub-workflow" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -77,9 +84,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../../../index.html" title="Conductor Documentation" class="md-header__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../../../img/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -96,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Sub Workflow
             
           </span>
         </div>
@@ -169,11 +176,9 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="index.html" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../../index.html" class="md-tabs__link">
         
   
     
@@ -198,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="devguide/concepts/index.html" class="md-tabs__link">
+        <a href="../../../../devguide/concepts/index.html" class="md-tabs__link">
           
   
     
@@ -217,17 +222,21 @@
         
   
   
+    
+  
   
     
     
       
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="documentation/api/index.html" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../api/index.html" class="md-tabs__link">
           
   
     
@@ -250,7 +259,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="resources/contributing.html" class="md-tabs__link">
+        <a href="../../../../resources/contributing.html" class="md-tabs__link">
           
   
     
@@ -280,9 +289,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -293,9 +300,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
+    <a href="../../../../index.html" title="Conductor Documentation" class="md-nav__button md-logo" aria-label="Conductor Documentation" data-md-component="logo">
       
-  <img src="img/logo.svg" alt="logo">
+  <img src="../../../../img/logo.svg" alt="logo">
 
     </a>
     Conductor Documentation
@@ -319,17 +326,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="index.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../index.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -338,7 +338,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -434,7 +433,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/concepts/index.html" class="md-nav__link ">
+            <a href="../../../../devguide/concepts/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -467,7 +466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/concepts/workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -488,7 +487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/concepts/tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -509,7 +508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/workers.html" class="md-nav__link">
+      <a href="../../../../devguide/concepts/workers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -530,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/concepts/why.html" class="md-nav__link">
+      <a href="../../../../devguide/concepts/why.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -604,7 +603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/source.html" class="md-nav__link">
+      <a href="../../../../devguide/running/source.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,7 +624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/docker.html" class="md-nav__link">
+      <a href="../../../../devguide/running/docker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -646,7 +645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/running/hosted.html" class="md-nav__link">
+      <a href="../../../../devguide/running/hosted.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,7 +700,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/architecture/index.html" class="md-nav__link ">
+            <a href="../../../../devguide/architecture/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -734,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/tasklifecycle.html" class="md-nav__link">
+      <a href="../../../../devguide/architecture/tasklifecycle.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -755,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/technicaldetails.html" class="md-nav__link">
+      <a href="../../../../devguide/architecture/technicaldetails.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/architecture/directed-acyclic-graph.html" class="md-nav__link">
+      <a href="../../../../devguide/architecture/directed-acyclic-graph.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -905,7 +904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/debugging-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -926,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/handling-errors.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -947,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/searching-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -968,7 +967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/starting-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -989,7 +988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/updating-workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/updating-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1010,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/view-workflow-executions.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1031,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workflows/versioning-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1117,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/creating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1138,7 +1137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/dynamic-vs-switch-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1159,7 +1158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/monitoring-task-queues.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1180,7 +1179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/reusing-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1201,7 +1200,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-configurations.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/task-configurations.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1222,7 +1221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/task-inputs.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1243,7 +1242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/task-timeouts.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/task-timeouts.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1264,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/updating-tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/updating-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1285,7 +1284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Tasks/extending-system-tasks.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1359,7 +1358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workers/build-a-golang-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1380,7 +1379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workers/build-a-java-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1401,7 +1400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Workers/build-a-python-task-worker.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1471,7 +1470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
+      <a href="../../../../devguide/how-tos/Monitoring/Conductor-LogLevel.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1534,7 +1533,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="devguide/labs/index.html" class="md-nav__link ">
+            <a href="../../../../devguide/labs/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1567,7 +1566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/first-workflow.html" class="md-nav__link">
+      <a href="../../../../devguide/labs/first-workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1588,7 +1587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/eventhandlers.html" class="md-nav__link">
+      <a href="../../../../devguide/labs/eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1609,7 +1608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/labs/kitchensink.html" class="md-nav__link">
+      <a href="../../../../devguide/labs/kitchensink.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1638,7 +1637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/faq.html" class="md-nav__link">
+      <a href="../../../../devguide/faq.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1659,7 +1658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="devguide/bestpractices.html" class="md-nav__link">
+      <a href="../../../../devguide/bestpractices.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1684,8 +1683,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1706,12 +1707,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -1725,7 +1726,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Documentation
@@ -1769,7 +1770,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/api/index.html" class="md-nav__link ">
+            <a href="../../../api/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1802,7 +1803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/metadata.html" class="md-nav__link">
+      <a href="../../../api/metadata.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1823,7 +1824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/startworkflow.html" class="md-nav__link">
+      <a href="../../../api/startworkflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1844,7 +1845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/workflow.html" class="md-nav__link">
+      <a href="../../../api/workflow.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1865,7 +1866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/task.html" class="md-nav__link">
+      <a href="../../../api/task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1886,7 +1887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/api/taskdomains.html" class="md-nav__link">
+      <a href="../../../api/taskdomains.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1912,8 +1913,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1927,12 +1930,12 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
@@ -1946,7 +1949,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             Configuration
@@ -1957,6 +1960,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1974,17 +1979,17 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/index.html" class="md-nav__link ">
+            <a href="../index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2001,7 +2006,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2_1">
             <span class="md-nav__icon md-icon"></span>
             Workflow Definition
@@ -2014,6 +2019,8 @@
                 
   
   
+    
+  
   
   
     
@@ -2047,17 +2054,17 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1_2" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/operators/index.html" class="md-nav__link ">
+            <a href="index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2074,7 +2081,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_1_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2_1_2">
             <span class="md-nav__icon md-icon"></span>
             Operators
@@ -2090,7 +2097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/do-while-task.html" class="md-nav__link">
+      <a href="do-while-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2111,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-task.html" class="md-nav__link">
+      <a href="dynamic-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2132,7 +2139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/dynamic-fork-task.html" class="md-nav__link">
+      <a href="dynamic-fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2153,7 +2160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/fork-task.html" class="md-nav__link">
+      <a href="fork-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2174,7 +2181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/join-task.html" class="md-nav__link">
+      <a href="join-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2195,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/set-variable-task.html" class="md-nav__link">
+      <a href="set-variable-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2216,7 +2223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/start-workflow-task.html" class="md-nav__link">
+      <a href="start-workflow-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2234,10 +2241,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/sub-workflow-task.html" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Sub Workflow
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="sub-workflow-task.html" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -2246,6 +2273,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subworkflowparam" class="md-nav__link">
+    <span class="md-ellipsis">
+      subWorkflowParam
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-sub-workflow-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optional Sub Workflow Task
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2258,7 +2371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/switch-task.html" class="md-nav__link">
+      <a href="switch-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2279,7 +2392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/operators/terminate-task.html" class="md-nav__link">
+      <a href="terminate-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2342,7 +2455,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/configuration/workflowdef/systemtasks/index.html" class="md-nav__link ">
+            <a href="../systemtasks/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2375,7 +2488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/event-task.html" class="md-nav__link">
+      <a href="../systemtasks/event-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2396,7 +2509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/http-task.html" class="md-nav__link">
+      <a href="../systemtasks/http-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2417,7 +2530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/human-task.html" class="md-nav__link">
+      <a href="../systemtasks/human-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2438,7 +2551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/inline-task.html" class="md-nav__link">
+      <a href="../systemtasks/inline-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2459,7 +2572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.html" class="md-nav__link">
+      <a href="../systemtasks/json-jq-transform-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2480,7 +2593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/kafka-publish-task.html" class="md-nav__link">
+      <a href="../systemtasks/kafka-publish-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2501,7 +2614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/workflowdef/systemtasks/wait-task.html" class="md-nav__link">
+      <a href="../systemtasks/wait-task.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2538,7 +2651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/taskdef.html" class="md-nav__link">
+      <a href="../../taskdef.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2559,7 +2672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/configuration/eventhandlers.html" class="md-nav__link">
+      <a href="../../eventhandlers.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2631,7 +2744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/server.html" class="md-nav__link">
+      <a href="../../../metrics/server.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2652,7 +2765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/metrics/client.html" class="md-nav__link">
+      <a href="../../../metrics/client.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2734,7 +2847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/extend.html" class="md-nav__link">
+      <a href="../../../advanced/extend.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2755,7 +2868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/isolationgroups.html" class="md-nav__link">
+      <a href="../../../advanced/isolationgroups.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2776,7 +2889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/annotation-processor.html" class="md-nav__link">
+      <a href="../../../advanced/annotation-processor.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2797,7 +2910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/archival-of-workflows.html" class="md-nav__link">
+      <a href="../../../advanced/archival-of-workflows.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2818,7 +2931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/azureblob-storage.html" class="md-nav__link">
+      <a href="../../../advanced/azureblob-storage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2839,7 +2952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/externalpayloadstorage.html" class="md-nav__link">
+      <a href="../../../advanced/externalpayloadstorage.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2860,7 +2973,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/advanced/redis.html" class="md-nav__link">
+      <a href="../../../advanced/redis.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2919,7 +3032,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="documentation/clientsdks/index.html" class="md-nav__link ">
+            <a href="../../../clientsdks/index.html" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -2952,7 +3065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/java-sdk.html" class="md-nav__link">
+      <a href="../../../clientsdks/java-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2973,7 +3086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/csharp-sdk.html" class="md-nav__link">
+      <a href="../../../clientsdks/csharp-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2994,7 +3107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/clojure-sdk.html" class="md-nav__link">
+      <a href="../../../clientsdks/clojure-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3015,7 +3128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/go-sdk.html" class="md-nav__link">
+      <a href="../../../clientsdks/go-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3036,7 +3149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="documentation/clientsdks/python-sdk.html" class="md-nav__link">
+      <a href="../../../clientsdks/python-sdk.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3122,7 +3235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/contributing.html" class="md-nav__link">
+      <a href="../../../../resources/contributing.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3143,7 +3256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/code-of-conduct.md" class="md-nav__link">
+      <a href="../../../../resources/code-of-conduct.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3164,7 +3277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/related.html" class="md-nav__link">
+      <a href="../../../../resources/related.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3185,7 +3298,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/license.html" class="md-nav__link">
+      <a href="../../../../resources/license.html" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3214,9 +3327,7 @@
             
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -3225,6 +3336,82 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subworkflowparam" class="md-nav__link">
+    <span class="md-ellipsis">
+      subWorkflowParam
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-sub-workflow-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optional Sub Workflow Task
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -3239,161 +3426,203 @@
                   
 
 
-  <h1>Home</h1>
+<h1 id="sub-workflow">Sub Workflow</h1>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">&quot;type&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUB_WORKFLOW&quot;</span>
+</code></pre></div>
+Sub Workflow task allows for nesting a workflow within another workflow. Nested workflows contain a reference to their parent.</p>
+<h2 id="use-cases">Use Cases</h2>
+<p>Suppose we want to include another workflow inside our current workflow. In that
+case, Sub Workflow Task would be used.</p>
+<h2 id="configuration">Configuration</h2>
+<p><code>subWorkflowParam</code> is provided at the top level of the task configuration.</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subWorkflowParam</td>
+<td>Map[String, Any]</td>
+<td>See below</td>
+</tr>
+</tbody>
+</table>
+<p><code>inputParameters</code> will be passed down to the invoked sub-workflow.</p>
+<h3 id="subworkflowparam">subWorkflowParam</h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>String</td>
+<td>Name of the workflow to execute</td>
+</tr>
+<tr>
+<td>version</td>
+<td>Integer</td>
+<td>Version of the workflow to execute</td>
+</tr>
+<tr>
+<td>taskToDomain</td>
+<td>Map[String, String]</td>
+<td>Allows scheduling the sub workflow's tasks per given mappings. <br/> See <a href="../../../api/taskdomains.html">Task Domains</a> for instructions to configure taskDomains.</td>
+</tr>
+<tr>
+<td>workflowDefinition</td>
+<td><a href="../index.html">WorkflowDefinition</a></td>
+<td>Allows starting a subworkflow with a dynamic workflow definition.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="output">Output</h2>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subWorkflowId</td>
+<td>String</td>
+<td>Sub-workflow execution Id generated when running the sub-workflow</td>
+</tr>
+</tbody>
+</table>
+<h2 id="examples">Examples</h2>
+<p>Imagine we have a workflow that has a fork in it. In the example below, we input one image, but using a fork to create 2 images simultaneously:</p>
+<p><img alt="workflow with fork" src="workflow_fork.png" /></p>
+<p>The left fork will create a JPG, and the right fork a WEBP image. Maintaining this workflow might be difficult, as changes made to one side of the fork do not automatically propagate the other.  Rather than using 2 tasks, we can define a <code>image_convert_resize</code> workflow that we can call for both forks as a sub-workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_subworkflow1&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Image Processing Workflow&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">&quot;tasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_multipleformat_fork&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">            </span><span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_multipleformat_ref&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">            </span><span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORK_JOIN&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">            </span><span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">            </span><span class="nt">&quot;defaultCase&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">            </span><span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">                </span><span class="p">[{</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">                    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_sub&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">                    </span><span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;subworkflow_jpg_ref&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">                    </span><span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">                        </span><span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.fileLocation}&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">                        </span><span class="nt">&quot;recipeParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">                            </span><span class="nt">&quot;outputSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">                                </span><span class="nt">&quot;width&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.recipeParameters.outputSize.width}&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">                                </span><span class="nt">&quot;height&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.recipeParameters.outputSize.height}&quot;</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">                            </span><span class="p">},</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">                            </span><span class="nt">&quot;outputFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jpg&quot;</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">                        </span><span class="p">}</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">                    </span><span class="p">},</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">                    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">                    </span><span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">                        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">                        </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">                </span><span class="p">}],</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">                </span><span class="p">[{</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">                        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_sub&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">                        </span><span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;subworkflow_webp_ref&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">                        </span><span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">                            </span><span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.fileLocation}&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">                            </span><span class="nt">&quot;recipeParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">                                </span><span class="nt">&quot;outputSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">                                    </span><span class="nt">&quot;width&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.recipeParameters.outputSize.width}&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="w">                                    </span><span class="nt">&quot;height&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workflow.input.recipeParameters.outputSize.height}&quot;</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">                                </span><span class="p">},</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">                                </span><span class="nt">&quot;outputFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;webp&quot;</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">                            </span><span class="p">}</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">                        </span><span class="p">},</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="w">                        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="w">                        </span><span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="w">                            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="w">                            </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="w">                        </span><span class="p">}</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="w">                    </span><span class="p">}</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">                </span><span class="p">]</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="w">            </span><span class="p">]</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_multipleformat_join&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="w">            </span><span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_convert_resize_multipleformat_join_ref&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="w">            </span><span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;JOIN&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="w">            </span><span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="w">            </span><span class="nt">&quot;defaultCase&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="w">            </span><span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a><span class="w">            </span><span class="nt">&quot;startDelay&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a><span class="w">            </span><span class="nt">&quot;joinOn&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a><span class="w">                </span><span class="s2">&quot;subworkflow_jpg_ref&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a><span class="w">                </span><span class="s2">&quot;upload_toS3_webp_ref&quot;</span>
+<a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a><span class="w">            </span><span class="p">],</span>
+<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a><span class="w">            </span><span class="nt">&quot;optional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a><span class="w">            </span><span class="nt">&quot;defaultExclusiveJoinTask&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a><span class="w">            </span><span class="nt">&quot;asyncComplete&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a><span class="w">            </span><span class="nt">&quot;loopOver&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a><span class="w">    </span><span class="p">],</span>
+<a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a><span class="w">    </span><span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a><span class="w">    </span><span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a><span class="w">        </span><span class="nt">&quot;fileLocationJpg&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${subworkflow_jpg_ref.output.fileLocation}&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a><span class="w">        </span><span class="nt">&quot;fileLocationWebp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${subworkflow_webp_ref.output.fileLocation}&quot;</span>
+<a id="__codelineno-1-78" name="__codelineno-1-78" href="#__codelineno-1-78"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-1-79" name="__codelineno-1-79" href="#__codelineno-1-79"></a><span class="w">    </span><span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-80" name="__codelineno-1-80" href="#__codelineno-1-80"></a><span class="w">    </span><span class="nt">&quot;restartable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-81" name="__codelineno-1-81" href="#__codelineno-1-81"></a><span class="w">    </span><span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-82" name="__codelineno-1-82" href="#__codelineno-1-82"></a><span class="w">    </span><span class="nt">&quot;ownerEmail&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;conductor@example.com&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-83" name="__codelineno-1-83" href="#__codelineno-1-83"></a><span class="w">    </span><span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ALERT_ONLY&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-84" name="__codelineno-1-84" href="#__codelineno-1-84"></a><span class="w">    </span><span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-1-85" name="__codelineno-1-85" href="#__codelineno-1-85"></a><span class="w">    </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<a id="__codelineno-1-86" name="__codelineno-1-86" href="#__codelineno-1-86"></a><span class="w">    </span><span class="nt">&quot;inputTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<a id="__codelineno-1-87" name="__codelineno-1-87" href="#__codelineno-1-87"></a><span class="p">}</span>
+</code></pre></div>
+<p>Now our diagram will appear as:
+<img alt="workflow with 2 subworkflows" src="subworkflow_diagram.png" /></p>
+<p>The inputs to both sides of the workflow are identical before and after - but we've abstracted the tasks into the sub-workflow. Any change to the sub-workflow will automatically occur in bth sides of the fork.</p>
+<p>Looking at the subworkflow (the WEBP version):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>{
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    &quot;name&quot;: &quot;image_convert_resize_sub&quot;,
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    &quot;taskReferenceName&quot;: &quot;subworkflow_webp_ref&quot;,
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    &quot;inputParameters&quot;: {
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        &quot;fileLocation&quot;: &quot;${workflow.input.fileLocation}&quot;,
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        &quot;recipeParameters&quot;: {
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>            &quot;outputSize&quot;: {
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>                &quot;width&quot;: &quot;${workflow.input.recipeParameters.outputSize.width}&quot;,
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>                &quot;height&quot;: &quot;${workflow.input.recipeParameters.outputSize.height}&quot;
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>            },
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>            &quot;outputFormat&quot;: &quot;webp&quot;
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        }
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    },
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    &quot;subWorkflowParam&quot;: {
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        &quot;name&quot;: &quot;image_convert_resize&quot;,
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>        &quot;version&quot;: 1
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    }
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>}
+</code></pre></div>
+<p>The <code>subWorkflowParam</code> tells conductor which workflow to call. The task is marked as completed upon the completion of the spawned workflow. 
+If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
+<h3 id="optional-sub-workflow-task">Optional Sub Workflow Task</h3>
+<p>If the Sub Workflow task is defined as optional in the parent workflow task definition, the parent workflow task will not be retried if sub-workflow is terminated or failed.
+In addition, even if the sub-workflow is retried/rerun/restarted after reaching to a terminal status, the parent workflow task status will remain as it is.</p>
 
-<div class="home">
-<div class="hero">
-  <div class="row justify-content-center align-items-center">
-    <div class="col-6">
-      <div class="heading">
-        Scalable Workflow Orchestration
-      </div>
-      <div class="caption" style="padding-top:15px">
-        Conductor is a platform created by <b>Netflix</b> to orchestrate workflows that span across microservices.
-      </div >
-      <div style="display: flex; margin-top: 45px;">
-        <a type="button" class="btn btn-primary" href="../devguide/concepts/index.html">Get Started</a>
-      </div>
-    </div>
-    <div class="col-6">
-      <img src="home/workflow.svg" class="illustration">
-    </div>
-  </div>
-</div>
-
-
-<div class="bullets">
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/osi.svg" class="icon"/> Open Source
-      </div>
-      <div class="caption">
-        Apache-2.0 license for commercial and non-commerical use. Freedom to deploy, modify and contribute back.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/modular.svg" class="icon"/> Modular
-      </div>
-      <div class="caption">
-        A fully abstracted backend enables you choose your own database persistence layer and queueing service.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/shield.svg" class="icon"/> Proven
-      </div>
-      <div class="caption">        
-        Enterprise ready, Java Spring based platform that has been battle tested in production systems at Netflix and elsewhere.
-      </div>
-    </div>
-  </div>
-
-
-  <div class="row justify-content-center">
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/wrench.svg" class="icon"/> Control
-      </div>
-      <div class="caption">
-        Powerful flow control constructs including Decisions, Dynamic Fork-Joins and Subworkflows. Variables and templates are supported.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-        <img src="home/icons/brackets.svg" class="icon"/> Polyglot
-      </div>
-      <div class="caption">
-        Client libraries in multiple languages allows workers to be implemented in Java, Node JS, Python and C#.
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="heading">
-         <img src="home/icons/server.svg" class="icon" /> Scalable
-      </div>
-      <div class="caption">
-        Distributed architecture for both orchestrator and workers scalable from a single workflow to millions of concurrent processes.
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Developer Experience
-      </div>
-      <div class="caption">
-        <ul>
-          <li>Discover and visualize the process flows from the bundled UI</li>
-          <li>Integrated interface to create, refine and validate workflows</li>          
-          <li>JSON based workflow definition DSL</li>
-          <li>Full featured API for custom automation</li>
-        </ui>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/devex.png);"></div>
-    </div>
-  </div>
-</div>
-
-<div class="module">
-  <div class="row">
-    <div class="col-6">
-      <div class="heading">
-        Observability
-      </div>
-      <div class="caption">    
-        <ul>
-          <li>Understand, debug and iterate on task and workflow executions.</li>
-          <li>Fine grain operational control over workflows with the ability to pause, resume, restart, retry and terminate</li>
-        </ul>
-      </div>
-    </div>
-    <div class="col-6">
-      <div class="screenshot" style="background-image: url(home/timeline.png);"></div>
-    </div>
-  </div>
-</div>
-
-
-<div class="compare">
-  <div class="container">
-    <div class="row">
-      <h2 class="heading">Why Conductor?</h2>
-    </div>
-    <div class="row" style="gap:30px;">
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-           <img src="home/icons/conductor.svg" class="icon"/> Service Orchestration
-        </h3>
-        <div class="caption">
-          <p>Workflow definitions are decoupled from task implementations. This allows the creation of process flows in which each individual task can be implemented 
-          by an encapsulated microservice.</p>
-          <p>Designing a workflow orchestrator that is resilient and horizontally scalable is not a simple problem. At Netflix we have developed a solution in <b>Conductor</b>.</p>
-        </div>
-        </div>
-      </div>
-      <div class="col-6">
-      <div class="bubble">
-        <h3 class="heading">
-          <img src="home/icons/network.svg" class="icon"/> Service Choreography
-        </h3>
-        <div class="caption">
-          Process flows are implicitly defined across multiple service implementations, often with
-          tight peer-to-peer coupling between services. Multiple event buses and complex
-          pub/sub models limit observability around process progress and capacity. 
-        </div>
-      </div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
 
 
 
@@ -3401,13 +3630,7 @@
 
 
 
-  
-  
 
-
-
-
-  
 
 
 
@@ -3425,19 +3648,33 @@
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="start-workflow-task.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Start Workflow">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Start Workflow
+              </div>
+            </div>
+          </a>
         
         
           
-          <a href="devguide/concepts/index.html" class="md-footer__link md-footer__link--next" aria-label="Next: Basic Concepts">
+          <a href="switch-task.html" class="md-footer__link md-footer__link--next" aria-label="Next: Switch">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Basic Concepts
+                Switch
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -3475,10 +3712,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.d7c377c4.min.js"></script>
       
     
   </body>
