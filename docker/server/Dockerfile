@@ -1,52 +1,48 @@
 #
-# conductor:server - Combined conductor server & UI
+# conductor:server - Build Conductor Server
 #
 # ===========================================================================================================
-# 0. Builder stage
+# 0. Builder stage 1
 # ===========================================================================================================
-FROM alpine:3.18 AS builder
+FROM openjdk:17-bullseye AS builder
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-# ===========================================================================================================
-# 0. Build Conductor Server
-# ===========================================================================================================
+# Copy the project directly onto the image
+COPY . /conductor
+WORKDIR /conductor
 
+# Build the server on run
+RUN ./gradlew build -x test
+WORKDIR /server/build/libs
+RUN ls -ltr
+
+
+#
+# conductor:server - Build Conductor UI
+#
+# ===========================================================================================================
+# 1. Builder stage 2
+# ===========================================================================================================
+FROM alpine:3.18 AS ui-builder
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 # Install dependencies
-RUN apk add openjdk17
-RUN apk add git
 RUN apk add --update nodejs npm yarn
 
 COPY . /conductor
 WORKDIR /conductor/ui
+
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
 RUN yarn install && cp -r node_modules/monaco-editor public/ && yarn build
 RUN ls -ltr
 RUN echo "Done building UI"
 
-# Checkout the community project
-WORKDIR /
-RUN mkdir server-build
-WORKDIR  server-build
-RUN ls -ltr
-
-RUN git clone https://github.com/conductor-oss/conductor-community.git
-
-# Copy the project directly onto the image
-WORKDIR conductor-community
-RUN ls -ltr
-
-# Build the server on run
-RUN ./gradlew build -x test --stacktrace
-WORKDIR /server-build
-RUN ls -ltr
-RUN pwd
-
 
 # ===========================================================================================================
-# 1. Bin stage
+# 2. Bin stage
 # ===========================================================================================================
 FROM alpine:3.18
 
@@ -61,13 +57,13 @@ RUN mkdir -p /app/config /app/logs /app/libs
 # Copy the compiled output to new image
 COPY docker/server/bin /app
 COPY docker/server/config /app/config
-COPY --from=builder /server-build/conductor-community/community-server/build/libs/*boot*.jar /app/libs/conductor-server.jar
+COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-server.jar
 
 # Copy compiled UI assets to nginx www directory
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
-COPY --from=builder /conductor/ui/build .
-COPY --from=builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
+COPY --from=ui-builder /conductor/ui/build .
+COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh

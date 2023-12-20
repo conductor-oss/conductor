@@ -2,7 +2,7 @@
 # conductor:ui - Netflix Conductor UI
 #
 FROM node:20-alpine
-LABEL maintainer="Netflix OSS <conductor@netflix.com>"
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 # Install the required packages for the node build
 # to run on alpine

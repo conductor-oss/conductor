@@ -50,7 +50,11 @@ public class Conductor {
      */
     private static void loadExternalConfig() throws IOException {
         String configFile = System.getProperty("CONDUCTOR_CONFIG_FILE");
+        if (StringUtils.isBlank(configFile)) {
+            configFile = System.getenv("CONDUCTOR_CONFIG_FILE");
+        }
         if (StringUtils.isNotBlank(configFile)) {
+            log.info("Loading {}", configFile);
             FileSystemResource resource = new FileSystemResource(configFile);
             if (resource.exists()) {
                 Properties properties = new Properties();

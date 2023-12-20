@@ -1,0 +1,25 @@
+plugins {
+    id 'groovy'
+}
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-redis-persistence')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    testImplementation project(':conductor-server')
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.spockframework:spock-core:${revSpock}"
+    testImplementation "org.spockframework:spock-spring:${revSpock}"
+    implementation "org.springframework.boot:spring-boot-starter-log4j2"
+    testImplementation 'org.springframework.retry:spring-retry'
+    testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+
+    //In memory
+    implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+}

@@ -720,12 +720,13 @@
         "org.spockframework:spock-spring": {
             "locked": "2.4-M1-groovy-4.0"
         },
-        "org.springdoc:springdoc-openapi-ui": {
+        "org.springdoc:springdoc-openapi-starter-webmvc-ui": {
             "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-rest",
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "1.6.15"
+            "locked": "2.1.0"
         },
         "org.springframework.boot:spring-boot-starter": {
             "firstLevelTransitive": [

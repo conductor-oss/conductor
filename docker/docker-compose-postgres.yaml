@@ -20,11 +20,8 @@ services:
       timeout: 30s
       retries: 12
     links:
-      - conductor-elasticsearch:es
       - conductor-postgres:postgresdb
     depends_on:
-      conductor-elasticsearch:
-        condition: service_healthy
       conductor-postgres:
         condition: service_healthy
     logging:
@@ -55,33 +52,8 @@ services:
         max-size: "1k"
         max-file: "3"
 
-  conductor-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
-      - xpack.security.enabled=false
-      - discovery.type=single-node
-    volumes:
-      - esdata-conductor:/usr/share/elasticsearch/data
-    networks:
-      - internal
-    ports:
-      - 9201:9200
-    healthcheck:
-      test: curl http://localhost:9200/_cluster/health -o /dev/null
-      interval: 5s
-      timeout: 5s
-      retries: 12
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1k"
-        max-file: "3"
-
 volumes:
   pgdata-conductor:
-    driver: local
-  esdata-conductor:
     driver: local
 
 networks:

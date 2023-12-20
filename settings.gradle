@@ -60,6 +60,22 @@ include 'grpc-client'
 
 include 'java-sdk'
 
+// community modules
+include 'workflow-event-listener'
+include 'test-util'
+include 'kafka'
+include 'common-persistence'
+include 'mysql-persistence'
+include 'postgres-persistence'
+include 'metrics'
+include 'es7-persistence'
+include 'azureblob-storage'
+include 'postgres-external-storage'
+include 'amqp'
+include 'nats'
+include 'nats-streaming'
+
 include 'test-harness'
+
 
 rootProject.children.each {it.name="conductor-${it.name}"}

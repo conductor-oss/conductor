@@ -57,4 +57,15 @@ ext {
     revSpotifyCompletableFutures = '0.3.3'
     revTestContainer = '1.15.3'
     revFasterXml = '2.15.3'
+    revAmqpClient = '5.13.0'
+    revKafka = '2.6.0'
+    revMicrometer = '1.8.12'
+    revPrometheus = '0.9.0'
+    revElasticSearch7 = '7.12.1'
+    revCodec = '1.15'
+    revAzureStorageBlobSdk = '12.7.0'
+    revNatsStreaming = '2.6.5'
+    revNats = '2.15.6'
+    revStan = '2.2.3'
+
 }
