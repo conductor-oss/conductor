@@ -8,7 +8,7 @@ Our community thrives when everyone engages with kindness, respect, and a collab
 ### 1. Maintain a Positive Tone.  
 Every interaction is an opportunity to lift someone up. Let's ensure our words and actions reflect optimism and encouragement.
 
-### 2.Be Respectful to the Community
+### 2. Be Respectful to the Community
 Every member here comes with a unique background and perspective. Please honor those differences by being courteous, considerate, and open-minded. 
 Remember, mutual respect is the foundation of a thriving community. Be careful in the words that you choose. 
 We are a community of professionals, and we conduct ourselves professionally. 
