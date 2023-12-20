@@ -55,9 +55,6 @@ Once we have decided on a direction, it's time to summarize the idea by creating
 We use [spotless](https://github.com/diffplug/spotless) to enforce consistent code style for the project, so make sure to run `gradlew spotlessApply` to fix any violations after code changes.
 
 ## License
-
-By contributing your code, you agree to license your contribution under the terms of the APLv2: https://github.com/Netflix/conductor/blob/master/LICENSE
-
 All files are released with the Apache 2.0 license.
 
 
