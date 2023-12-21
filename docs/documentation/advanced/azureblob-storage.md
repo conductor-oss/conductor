@@ -9,10 +9,6 @@ It has only been tested with **v12.2.0**.
 
 ## Configuration
 
-### Usage
-
-Cf. Documentation [External Payload Storage](https://netflix.github.io/conductor/externalpayloadstorage/#azure-blob-storage)
-
 ### Example
 
 ```properties

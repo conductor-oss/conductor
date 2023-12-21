@@ -108,6 +108,7 @@ nav:
       - documentation/clientsdks/clojure-sdk.md
       - documentation/clientsdks/go-sdk.md
       - documentation/clientsdks/python-sdk.md
+      - documentation/clientsdks/js-sdk.md
   - Resources:
     - Contributing: resources/contributing.md
     - Code of Conduct: resources/code-of-conduct.md
