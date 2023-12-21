@@ -1,4 +1,4 @@
-![Conductor](docs/docs/img/logo.png)
+![Conductor](https://docs.conductor-oss.org/img/logo.svg)
 
 [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
