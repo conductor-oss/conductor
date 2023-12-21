@@ -3,7 +3,6 @@
 Conductor uses [spectator](https://github.com/Netflix/spectator) to collect the metrics.
 
 - To enable conductor serve to publish metrics, add this [dependency](http://netflix.github.io/spectator/en/latest/registry/metrics3/) to your build.gradle.
-- Conductor Server enables you to load additional modules dynamically, this feature can be controlled using this [configuration](https://github.com/Netflix/conductor/blob/master/server/README.md#additional-modules-optional).
 - Create your own AbstractModule that overides configure function and registers the Spectator metrics registry.
 - Initialize the Registry and add it to the global registry via ```((CompositeRegistry)Spectator.globalRegistry()).add(...)```.
 

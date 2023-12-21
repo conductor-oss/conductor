@@ -1,1 +1,1 @@
-[Annotations Processor](docs/docs/reference-docs/annotations-processor.md)
+[Annotations Processor](docs/documentation/advanced/annotation-processor.md)

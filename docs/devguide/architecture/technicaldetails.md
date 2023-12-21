@@ -59,7 +59,7 @@ The goal is to allow only one decide to run on a workflow at any given time acro
 **Preventing stale data updates with fencing tokens:**
 While the locking service helps to run one decide at a time, it might still be possible for nodes with timed out locks to reactivate and continue execution from where it left off (usually with stale data). This can be avoided with fencing tokens, which basically is an incrementing counter on workflow state with read-before-write support in a transaction or similar construct.
 
-*At Netflix, we use Cassandra. Considering the tradeoffs of Cassandra’s Lightweight Transactions (LWT) and the probability of this stale updates happening, and our testing results, we’ve decided to first only rollout distributed locking with Zookeeper. We'll monitor our system and add C* LWT if needed.
+*Netflix uses Cassandra. Considering the tradeoffs of Cassandra’s Lightweight Transactions (LWT) and the probability of this stale updates happening, and our testing results, we’ve decided to first only rollout distributed locking with Zookeeper. We'll monitor our system and add C* LWT if needed.
 
 #### Setting up desired level of consistency
 

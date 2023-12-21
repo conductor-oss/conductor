@@ -17,7 +17,7 @@ The docker compose will bring up the following:
 ### 1. Clone the Conductor Code
 
 ```shell
-$ git clone https://github.com/Netflix/conductor.git
+$ git clone https://github.com/conductor-oss/conductor.git
 ```
 
 ### 2. Build the Docker Compose

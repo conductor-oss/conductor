@@ -1,1 +1,1 @@
-[Contributing](docs/docs/resources/contributing.md)
+[Contributing](docs/resources/contributing.md)

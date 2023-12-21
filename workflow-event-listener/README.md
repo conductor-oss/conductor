@@ -32,7 +32,7 @@ conductor.workflow-status-listener.archival.delayQueueWorkerThreadCount=5
 ```
 
 ### Queue publisher
-Publish a summary of workflow [WorkflowSummary](https://github.com/Netflix/conductor/blob/main/common/src/main/java/com/netflix/conductor/common/run/WorkflowSummary.java) 
+Publish a summary of workflow [WorkflowSummary](https://github.com/conductor-oss/conductor/blob/main/common/src/main/java/com/netflix/conductor/common/run/WorkflowSummary.java) 
 to a queue as the workflow gets completed.
 
 ```properties

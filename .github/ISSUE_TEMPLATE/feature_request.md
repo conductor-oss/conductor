@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 
-Please read our [contributor guide](https://github.com/Netflix/conductor/blob/main/CONTRIBUTING.md) before creating an issue.   
-Also consider discussing your idea on the [discussion forum](https://github.com/Netflix/conductor/discussions) first.
+Please read our [contributor guide](https://github.com/conductor-oss/conductor/blob/main/CONTRIBUTING.md) before creating an issue.   
+Also consider discussing your idea on the [discussion forum](https://github.com/conductor-oss/conductor/discussions) first.
 
 ## Describe the Feature Request
 _A clear and concise description of what the feature request is._
