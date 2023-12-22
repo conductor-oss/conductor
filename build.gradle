@@ -8,7 +8,6 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:7.0.0'
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.1.4'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
@@ -20,11 +19,10 @@ plugins {
     id 'application'
     id 'jacoco'
     id 'nebula.netflixoss' version '10.6.0'
-    id 'org.sonarqube' version '3.4.0.2513'
 }
 
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -66,26 +64,6 @@ allprojects {
 
     repositories {
         mavenCentral()
-
-        // oss-candidate for -rc.* verions:
-        maven {
-            url "https://artifactory-oss.prod.netflix.net/artifactory/maven-oss-candidates"
-        }
-
-        /**
-         * This repository locates artifacts that don't exist in maven central but we had to backup from jcenter
-         * The exclusiveContent
-         */
-        exclusiveContent {
-            forRepository {
-                maven {
-                    url "https://artifactory-oss.prod.netflix.net/artifactory/required-jcenter-modules-backup"
-                }
-            }
-            filter {
-                includeGroupByRegex "com\\.github\\.vmg.*"
-            }
-        }
     }
 
     dependencyManagement {
@@ -143,14 +121,6 @@ jacocoTestReport {
 
 task server {
     dependsOn ':conductor-server:bootRun'
-}
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "com.netflix.conductor:conductor"
-        property "sonar.organization", "netflix"
-        property "sonar.host.url", "https://sonarcloud.io"
-    }
 }
 
 configure(allprojects - project(':conductor-grpc')) {

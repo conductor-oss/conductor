@@ -9,6 +9,9 @@ dependencies {
     implementation "io.grpc:grpc-services:${revGrpc}"
     implementation "io.grpc:grpc-protobuf:${revGrpc}"
     implementation "org.apache.commons:commons-lang3"
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
 
     testImplementation "io.grpc:grpc-testing:${revGrpc}"
     testImplementation "io.grpc:grpc-protobuf:${revGrpc}"

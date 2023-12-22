@@ -1,7 +1,7 @@
 # Building Conductor From Source
 ## Build and Run
 
-In this article we will explore how you can set up Netflix Conductor on your local machine for trying out some of its
+In this article we will explore how you can set up Conductor on your local machine for trying out some of its
 features.
 
 ### Prerequisites
@@ -13,10 +13,10 @@ features.
 ### Steps to build Conductor Server
 
 #### 1. Checkout the code
-Clone conductor code from the repo: https://github.com/Netflix/conductor
+Clone conductor code from the repo: https://github.com/conductor-oss/conductor
 
 ```shell
-$ git clone https://github.com/Netflix/conductor.git
+$ git clone https://github.com/conductor-oss/conductor.git
 ```
 #### 2. Build and run Server
 

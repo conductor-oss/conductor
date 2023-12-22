@@ -15,8 +15,8 @@ Conductor supports the the following eventing models:
 
 1. Conductor internal events (prefix: `conductor`)
 2. SQS (prefix: `sqs`)
-3. [NATS](https://github.com/Netflix/conductor/tree/main/contribs/src/main/java/com/netflix/conductor/contribs/queue/nats) (prefix: `nats`)
-4. [AMQP](https://github.com/Netflix/conductor/tree/main/contribs/src/main/java/com/netflix/conductor/contribs/queue/amqp) (prefix: `amqp_queue or amqp_exchange`)
+3. NATS (prefix: `nats`)
+4. AMQP (prefix: `amqp_queue or amqp_exchange`)
 
 
 ## Configuration
@@ -39,10 +39,6 @@ When using Conductor as sink, you have two options: defining the sink as `conduc
 
 ### SQS sink
 For SQS, use the **name** of the queue and NOT the URI.  Conductor looks up the URI based on the name.
-
-!!!warning
-	When using SQS add the [ContribsModule](https://github.com/Netflix/conductor/blob/master/contribs/src/main/java/com/netflix/conductor/contribs/ContribsModule.java) to the deployment.  The module needs to be configured with AWSCredentialsProvider for Conductor to be able to use AWS APIs.
-
 
 ## Output
 Tasks's output are sent as a payload to the external event. In case of SQS the task's output is sent to the SQS message a a payload.

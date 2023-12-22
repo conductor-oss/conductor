@@ -1,6 +1,6 @@
 # Clojure SDK
 
-Software Development Kit for Netflix Conductor, written on and providing support for Clojure.
+Software Development Kit for Conductor, written on and providing support for Clojure.
 
 The code for the Clojure SDk is available on [Github](https://github.com/conductor-sdk/conductor-clojure). Please feel free to file PRs, issues, etc. there.
 

@@ -16,8 +16,8 @@ More information can be found here: https://www.elastic.co/guide/en/elasticsearc
 
 1. In order to use the ES7, you must change the following files from ES6 to ES7:
 
-https://github.com/Netflix/conductor/blob/main/build.gradle
-https://github.com/Netflix/conductor/blob/main/server/src/main/resources/application.properties
+https://github.com/conductor-oss/conductor/blob/main/build.gradle
+https://github.com/conductor-oss/conductor/blob/main/server/src/main/resources/application.properties
 
 In file:
  
@@ -41,8 +41,8 @@ Also you need to recreate dependencies.lock files with ES7 dependencies. To do t
 
 2. To use the ES7 for all modules include test-harness, you must change also the following files:
 
-https://github.com/Netflix/conductor/blob/main/test-harness/build.gradle
-https://github.com/Netflix/conductor/blob/main/test-harness/src/test/java/com/netflix/conductor/test/integration/AbstractEndToEndTest.java
+https://github.com/conductor-oss/conductor/blob/main/test-harness/build.gradle
+https://github.com/conductor-oss/conductor/blob/main/test-harness/src/test/java/com/netflix/conductor/test/integration/AbstractEndToEndTest.java
 
 In file:
  

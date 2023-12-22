@@ -51,7 +51,7 @@ conductor.external-payload-storage.type=S3
 ```
 
 !!! note
-    This [implementation](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L44-L45) assumes that S3 access is configured on the instance.
+    This [implementation](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L44-L45) assumes that S3 access is configured on the instance.
 
 Set the following properties to the desired values in the JVM system properties:
 
@@ -60,13 +60,13 @@ Set the following properties to the desired values in the JVM system properties:
 | conductor.external-payload-storage.s3.bucketName | S3 bucket where the payloads will be stored | |
 | conductor.external-payload-storage.s3.signedUrlExpirationDuration | The expiration time in seconds of the signed url for the payload | 5 |
 
-The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See [here](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
+The payloads will be stored in the bucket configured above in a `UUID.json` file at locations determined by the type of the payload. See [here](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167) for information about how the object key is determined.
 
 ### Azure Blob Storage
 
 ProductLive provides an implementation of [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/) used to externalize large payload storage.  
 
-To build conductor with azure blob feature read the [README.md](https://github.com/Netflix/conductor/blob/master/azureblob-storage/README.md) in `azureblob-storage` module 
+To build conductor with azure blob feature read the [README.md](https://github.com/conductor-oss/conductor/blob/main/azureblob-storage/README.md) in `azureblob-storage` module 
 
 !!!note
     This implementation assumes that you have an [Azure Blob Storage account's connection string or SAS Token](https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/storage/azure-storage-blob/README.md).
@@ -86,7 +86,7 @@ Set the following properties to the desired values in the JVM system properties:
 | workflow.external.payload.storage.azure_blob.task_input_path | Path prefix where tasks input will be stored with an random UUID filename | task/input/ |
 | workflow.external.payload.storage.azure_blob.task_output_path | Path prefix where tasks output will be stored with an random UUID filename | task/output/ |
 
-The payloads will be stored as done in [Amazon S3](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167).
+The payloads will be stored as done in [Amazon S3](https://github.com/conductor-oss/conductor/blob/main/awss3-storage/src/main/java/com/netflix/conductor/s3/storage/S3PayloadStorage.java#L149-L167).
 
 ### PostgreSQL Storage
 

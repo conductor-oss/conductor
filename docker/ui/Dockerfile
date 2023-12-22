@@ -1,5 +1,5 @@
 #
-# conductor:ui - Netflix Conductor UI
+# conductor:ui - Conductor UI
 #
 FROM node:20-alpine
 LABEL maintainer="Orkes OSS <oss@orkes.io>"

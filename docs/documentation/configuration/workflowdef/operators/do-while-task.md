@@ -133,7 +133,7 @@ will produce the following execution, assuming 3 executions occurred (alongside 
 
 ### Example using iteration key
 
-Sometimes, you may want to use the iteration value/counter in the tasks used in the loop.  In this example, an API call is made to GitHub (to the Netflix Conductor repository), but each loop increases the pagination.
+Sometimes, you may want to use the iteration value/counter in the tasks used in the loop.  In this example, an API call is made to GitHub (to the Conductor repository), but each loop increases the pagination.
 
 The Loop ```taskReferenceName``` is "get_all_stars_loop_ref".
 

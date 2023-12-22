@@ -161,15 +161,6 @@ body {
   background-size: cover;
 }
 
-/* Footer */
-.md-copyright__highlight {
-  background-image: url('/img/netflix-oss.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  color: rgba(0,0,0,0);
-  height: 60px;
-}
-
 /* Comparison block */
 .compare {
   background-color: var(--brand-lt-blue);

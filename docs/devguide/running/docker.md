@@ -1,7 +1,7 @@
 
 # Running Conductor Using Docker
 
-In this article we will explore how you can set up Netflix Conductor on your local machine using Docker compose.
+In this article we will explore how you can set up Conductor on your local machine using Docker compose.
 The docker compose will bring up the following:
 
 1. Conductor API Server
@@ -17,7 +17,7 @@ The docker compose will bring up the following:
 ### 1. Clone the Conductor Code
 
 ```shell
-$ git clone https://github.com/Netflix/conductor.git
+$ git clone https://github.com/conductor-oss/conductor.git
 ```
 
 ### 2. Build the Docker Compose

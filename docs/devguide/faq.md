@@ -25,7 +25,7 @@ Conductor, however will run [system tasks](../documentation/configuration/workfl
 
 ## How can I schedule workflows to run at a specific time?
 
-Netflix Conductor itself does not provide any scheduling mechanism.  But there is a community project [_Schedule Conductor Workflows_](https://github.com/jas34/scheduledwf) which provides workflow scheduling capability as a pluggable module as well as workflow server.
+Conductor itself does not provide any scheduling mechanism.  But there is a community project [_Schedule Conductor Workflows_](https://github.com/jas34/scheduledwf) which provides workflow scheduling capability as a pluggable module as well as workflow server.
 Other way is you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.  
 More details about [eventing](../documentation/configuration/eventhandlers.md).
 

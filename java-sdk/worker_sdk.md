@@ -75,7 +75,7 @@ Output:
 ```
 
 ## Managing Task Workers
-Annotated Workers are managed by [WorkflowExecutor](https://github.com/Netflix/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/executor/WorkflowExecutor.java)
+Annotated Workers are managed by [WorkflowExecutor](https://github.com/conductor-oss/conductor/blob/main/java-sdk/src/main/java/com/netflix/conductor/sdk/workflow/executor/WorkflowExecutor.java)
 
 ### Start Workers
 ```java

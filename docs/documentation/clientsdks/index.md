@@ -6,5 +6,6 @@ Conductor tasks that are executed by remote workers communicate over HTTP endpoi
 * [C#](csharp-sdk.md)
 * [Go](go-sdk.md)
 * [Python](python-sdk.md)
+* [Javascript/Typescript](js-sdk.md)
 
 The non-Java Conductor SDKs are hosted on a separate GitHub repository: [github.com/conductor-sdk](https://github.com/conductor-sdk).  Contributions from the community are encouraged!
