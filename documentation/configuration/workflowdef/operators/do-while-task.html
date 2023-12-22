@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Conductor is a platform created by Netflix to orchestrate workflows that span across microservices.">
+        <meta name="description" content="Conductor is a platform created to orchestrate workflows that span across microservices.">
       
       
       
@@ -3592,7 +3592,7 @@ The list of tasks is executed first, before the condition is checked (the first 
 <a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="example-using-iteration-key">Example using iteration key</h3>
-<p>Sometimes, you may want to use the iteration value/counter in the tasks used in the loop.  In this example, an API call is made to GitHub (to the Netflix Conductor repository), but each loop increases the pagination.</p>
+<p>Sometimes, you may want to use the iteration value/counter in the tasks used in the loop.  In this example, an API call is made to GitHub (to the Conductor repository), but each loop increases the pagination.</p>
 <p>The Loop <code>taskReferenceName</code> is "get_all_stars_loop_ref".</p>
 <p>In the <code>loopCondition</code> the term <code>$.get_all_stars_loop_ref['iteration']</code> is used.</p>
 <p>In tasks embedded in the loop, <code>${get_all_stars_loop_ref.output.iteration}</code> is used.  In this case, it is used to define which page of results the API should return.</p>
