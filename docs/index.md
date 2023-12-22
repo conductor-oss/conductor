@@ -11,7 +11,7 @@ hide:
         Scalable Workflow Orchestration
       </div>
       <div class="caption" style="padding-top:15px">
-        Conductor is a platform created by <b>Netflix</b> to orchestrate workflows that span across microservices.
+        Conductor is a platform originally created at Netflix to orchestrate workflows that span across microservices.
       </div >
       <div style="display: flex; margin-top: 45px;">
         <a type="button" class="btn btn-primary" href="../devguide/concepts/index.html">Get Started</a>
