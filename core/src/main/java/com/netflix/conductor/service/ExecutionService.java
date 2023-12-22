@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import com.netflix.conductor.common.run.*;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
@@ -252,12 +254,28 @@ public class ExecutionService {
     }
 
     public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
-        return executionDAOFacade.getTasksForWorkflow(workflowId).stream()
-                .filter(task -> !task.getStatus().isTerminal())
-                .filter(task -> task.getReferenceTaskName().equals(taskReferenceName))
-                .findFirst() // There can only be one task by a given reference name running at a
-                // time.
-                .orElse(null);
+        List<TaskModel> tasks = executionDAOFacade.getTaskModelsForWorkflow(workflowId);
+        Stream<TaskModel> taskStream =
+                tasks.stream().filter(task -> !task.getStatus().isTerminal());
+        Optional<TaskModel> found =
+                taskStream
+                        .filter(task -> task.getReferenceTaskName().equals(taskReferenceName))
+                        .findFirst();
+        if (found.isPresent()) {
+            return found.get().toTask();
+        }
+        // If no task is found, let's check if there is one inside an iteration
+        found =
+                tasks.stream()
+                        .filter(task -> !task.getStatus().isTerminal())
+                        .filter(
+                                task ->
+                                        TaskUtils.removeIterationFromTaskRefName(
+                                                        task.getReferenceTaskName())
+                                                .equals(taskReferenceName))
+                        .findFirst();
+
+        return found.map(TaskModel::toTask).orElse(null);
     }
 
     /**

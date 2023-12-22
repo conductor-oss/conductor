@@ -439,9 +439,13 @@ public class ExecutionDAOFacade {
     }
 
     public List<Task> getTasksForWorkflow(String workflowId) {
-        return executionDAO.getTasksForWorkflow(workflowId).stream()
+        return getTaskModelsForWorkflow(workflowId).stream()
                 .map(TaskModel::toTask)
                 .collect(Collectors.toList());
+    }
+
+    public List<TaskModel> getTaskModelsForWorkflow(String workflowId) {
+        return executionDAO.getTasksForWorkflow(workflowId);
     }
 
     public TaskModel getTaskModel(String taskId) {

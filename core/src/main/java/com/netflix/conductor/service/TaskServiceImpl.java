@@ -139,6 +139,27 @@ public class TaskServiceImpl implements TaskService {
         return taskResult.getTaskId();
     }
 
+    @Override
+    public String updateTask(
+            String workflowId,
+            String taskRefName,
+            TaskResult.Status status,
+            String workerId,
+            Map<String, Object> output) {
+        Task pending = getPendingTaskForWorkflow(workflowId, taskRefName);
+        if (pending == null) {
+            return null;
+        }
+
+        TaskResult taskResult = new TaskResult(pending);
+        taskResult.setStatus(status);
+        taskResult.getOutputData().putAll(output);
+        if (StringUtils.isNotBlank(workerId)) {
+            taskResult.setWorkerId(workerId);
+        }
+        return updateTask(taskResult);
+    }
+
     /**
      * Ack Task is received.
      *
