@@ -441,6 +441,79 @@ public class TestDeciderOutcomes {
     }
 
     @Test
+    public void testPermissive() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test-permissive");
+
+        WorkflowTask task1 = new WorkflowTask();
+        task1.setName("task0");
+        task1.setPermissive(true);
+        task1.setTaskReferenceName("t0");
+        task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+        task1.setTaskDefinition(new TaskDef("task0"));
+
+        WorkflowTask task2 = new WorkflowTask();
+        task2.setName("task1");
+        task2.setPermissive(true);
+        task2.setTaskReferenceName("t1");
+        task2.setTaskDefinition(new TaskDef("task1"));
+
+        def.getTasks().add(task1);
+        def.getTasks().add(task2);
+        def.setSchemaVersion(2);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        DeciderOutcome outcome = deciderService.decide(workflow);
+        assertNotNull(outcome);
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+        assertEquals(
+                task1.getTaskReferenceName(),
+                outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+
+        for (int i = 0; i < 3; i++) {
+            String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+            assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+
+            workflow.getTasks().clear();
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+            workflow.getTasks().get(0).setStatus(TaskModel.Status.FAILED);
+
+            outcome = deciderService.decide(workflow);
+
+            assertNotNull(outcome);
+            assertEquals(1, outcome.tasksToBeUpdated.size());
+            assertEquals(1, outcome.tasksToBeScheduled.size());
+
+            assertEquals(TaskModel.Status.FAILED, workflow.getTasks().get(0).getStatus());
+            assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+            assertEquals(
+                    task1.getTaskReferenceName(),
+                    outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+            assertEquals(i + 1, outcome.tasksToBeScheduled.get(0).getRetryCount());
+        }
+
+        String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+
+        workflow.getTasks().clear();
+        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+        workflow.getTasks().get(0).setStatus(TaskModel.Status.FAILED);
+
+        outcome = deciderService.decide(workflow);
+
+        assertNotNull(outcome);
+        assertEquals(1, outcome.tasksToBeUpdated.size());
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+
+        assertEquals(TaskModel.Status.FAILED, workflow.getTasks().get(0).getStatus());
+        assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+        assertEquals(
+                task2.getTaskReferenceName(),
+                outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+    }
+
+    @Test
     public void testOptionalWithDynamicFork() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");

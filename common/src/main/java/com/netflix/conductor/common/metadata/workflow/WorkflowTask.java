@@ -152,6 +152,9 @@ public class WorkflowTask {
     @ProtoField(id = 28)
     private String expression;
 
+    @ProtoField(id = 29)
+    private boolean permissive = false;
+
     /**
      * @return the name
      */
@@ -545,6 +548,22 @@ public class WorkflowTask {
      */
     public void setExpression(String expression) {
         this.expression = expression;
+    }
+
+    /**
+     * @return If the task is permissive. When set to true, and the task is in failed status,
+     *     fail-fast does not occur. The workflow execution continues until reaching join or end of
+     *     workflow, allowing idempotent execution of other tasks.
+     */
+    public boolean isPermissive() {
+        return this.permissive;
+    }
+
+    /**
+     * @param permissive when set to true, the task is marked as permissive
+     */
+    public void setPermissive(boolean permissive) {
+        this.permissive = permissive;
     }
 
     private Collection<List<WorkflowTask>> children() {

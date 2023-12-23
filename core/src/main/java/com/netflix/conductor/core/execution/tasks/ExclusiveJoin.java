@@ -65,9 +65,20 @@ public class ExclusiveJoin extends WorkflowSystemTask {
             }
             taskStatus = exclusiveTask.getStatus();
             foundExlusiveJoinOnTask = taskStatus.isTerminal();
-            hasFailures = !taskStatus.isSuccessful();
+            hasFailures =
+                    !taskStatus.isSuccessful()
+                            && (!exclusiveTask.getWorkflowTask().isPermissive()
+                                    || joinOn.stream()
+                                            .map(workflow::getTaskByRefName)
+                                            .allMatch(t -> t.getStatus().isTerminal()));
             if (hasFailures) {
-                failureReason.append(exclusiveTask.getReasonForIncompletion()).append(" ");
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
             }
 
             break;

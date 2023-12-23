@@ -336,6 +336,18 @@ public class WorkflowExecutor {
         for (TaskModel task : workflow.getTasks()) {
             switch (task.getStatus()) {
                 case FAILED:
+                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
+                            || task.getTaskType()
+                                    .equalsIgnoreCase(TaskType.EXCLUSIVE_JOIN.toString())) {
+                        @SuppressWarnings("unchecked")
+                        List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
+                        boolean joinOnFailedPermissive = isJoinOnFailedPermissive(joinOn, workflow);
+                        if (joinOnFailedPermissive) {
+                            task.setStatus(IN_PROGRESS);
+                            addTaskToQueue(task);
+                            break;
+                        }
+                    }
                 case FAILED_WITH_TERMINAL_ERROR:
                 case TIMED_OUT:
                     retriableMap.put(task.getReferenceTaskName(), task);
@@ -1813,5 +1825,15 @@ public class WorkflowExecutor {
         }
 
         LOGGER.info("Pushed workflow {} to {} for expedited evaluation", workflowId, DECIDER_QUEUE);
+    }
+
+    private static boolean isJoinOnFailedPermissive(List<String> joinOn, WorkflowModel workflow) {
+        return joinOn.stream()
+                .map(workflow::getTaskByRefName)
+                .anyMatch(
+                        t ->
+                                t.getWorkflowTask().isPermissive()
+                                        && !t.getWorkflowTask().isOptional()
+                                        && t.getStatus().equals(FAILED));
     }
 }

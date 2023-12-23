@@ -57,9 +57,21 @@ public class Join extends WorkflowSystemTask {
                 break;
             }
             TaskModel.Status taskStatus = forkedTask.getStatus();
-            hasFailures = !taskStatus.isSuccessful() && !forkedTask.getWorkflowTask().isOptional();
+            hasFailures =
+                    !taskStatus.isSuccessful()
+                            && !forkedTask.getWorkflowTask().isOptional()
+                            && (!forkedTask.getWorkflowTask().isPermissive()
+                                    || joinOn.stream()
+                                            .map(workflow::getTaskByRefName)
+                                            .allMatch(t -> t.getStatus().isTerminal()));
             if (hasFailures) {
-                failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
             }
             // Only add to task output if it's not empty
             if (!forkedTask.getOutputData().isEmpty()) {
