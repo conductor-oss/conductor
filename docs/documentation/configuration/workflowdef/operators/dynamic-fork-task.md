@@ -38,78 +38,270 @@ To use the `DYNAMIC_FORK` task, you need to provide the following attributes at 
 | *dynamicForkTasksParam          | This is a JSON array of tasks or sub-workflow objects that needs to be forked and run in parallel (Note: This has a different format for ```SUB_WORKFLOW``` compared to ```SIMPLE``` tasks.) |
 | *dynamicForkTasksInputParamName | A JSON map, where the keys are task or sub-workflow names, and the values are the `inputParameters` to be passed into the corresponding spawned tasks or sub-workflows.                      |
 
+
 Note: * means the de-referenced name.
 
 
 ## Examples
+
+
 ### Example 1
-Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` task
+Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` task to run a `SIMPLE` task 
+
+(default value of `forkTaskType` is `SIMPLE`)
+
+The `SIMPLE` task will resize the images and store the resized images into specified `location` as part of input below
+
+| Attribute     | Description                                                                                                                                                             |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| forkTaskName	 | Specify the name of the simple task to execute.                                                                                                                         |
+| forkTaskType  | Type of the fork Task.                                                                                                                                                  |
+| forkTaskInputs  | A JSON map, where the keys are task or sub-workflow names, and the values are the `inputParameters` to be passed into the corresponding spawned tasks or sub-workflows. |
 
 ```json
-[
-  {
-    "inputParameters": {
-      "dynamicTasks": "${fooBarTask.output.dynamicTasksJSON}",
-      "dynamicTasksInput": "${fooBarTask.output.dynamicTasksInputJSON}"
+{
+  "name": "image_multiple_convert_resize_fork",
+  "description": "Image multiple convert resize example",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "image_multiple_convert_resize_dynamic_task",
+      "taskReferenceName": "image_multiple_convert_resize_dynamic_task_ref",
+      "inputParameters": {
+        "forkTaskName": "fork_task",
+        "forkTaskInputs": "Images" : [
+           {
+            "image" : "url1",
+            "location" : "location url",
+            "width" : 100,
+            "height" : 200
+           },
+           {
+            "image" : "url2",
+            "location" : "location url",
+            "width" : 300,
+            "height" : 400
+           }
+       ],
+        "forkTaskType": "SIMPLE"
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "decisionCases": {},
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput",
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
     },
-    "type": "FORK_JOIN_DYNAMIC",
-    "dynamicForkTasksParam": "dynamicTasks",
-    "dynamicForkTasksInputParamName": "dynamicTasksInput"
+    {
+      "name": "image_multiple_convert_resize_join",
+      "taskReferenceName": "image_multiple_convert_resize_join_ref",
+      "inputParameters": {},
+      "type": "JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {}
+    }
+  ],
+  "inputParameters": [
+    "Images"
+  ],
+  "outputParameters": {
+    "Output": "${join_task_ref.output}"
   },
-  {
-    "name": "image_multiple_convert_resize_join",
-    "taskReferenceName": "image_multiple_convert_resize_join_ref",
-    "type": "JOIN"
-  }
-]
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "example@gmail.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "onStateChange": {}
+}
 ```
 
-Dissecting into this example above, let's look at the three things that are needed to configured for
-the `FORK_JOIN_DYNAMIC` task
-
-`dynamicForkTasksParam` This is a JSON array of task or sub-workflow objects that specifies the list of tasks or
-sub-workflows that needs to be forked and run in parallel `dynamicForkTasksInputParamName` This is a JSON map of task or
-sub-workflow objects that specifies the list of tasks or sub-workflows that needs to be forked and run in parallel
-fooBarTask This is a task that is defined prior to the FORK_JOIN_DYNAMIC in the workflow definition. This task will need
-to output (outputParameters) 1 and 2 above so that it can be wired into inputParameters of the FORK_JOIN_DYNAMIC
-tasks. (dynamicTasks and dynamicTasksInput)
-
 ### Example 2
-Let's say we have a task that resizes an image, and we need to create a workflow that will resize an image into multiple sizes. In this case, a task can be created prior to
-the `FORK_JOIN_DYNAMIC` task that will prepare the input that needs to be passed into the `FORK_JOIN_DYNAMIC` task. These will be:
+Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` task to run an `HTTP` task
 
-* ```dynamicForkTasksParam``` the JSON array of tasks/subworkflows to be run in parallel. Each JSON object will have: 
-  * A unique ```taskReferenceName```.
-  * The name of the Task/Subworkflow to be called (note - the location of this key:value is different for a subworkflow).
-  * The type of the task (This is optional for SIMPLE tasks).
-* ```dynamicForkTasksInputParamName``` a JSON map of input parameters for each task. The keys will be the unique ```taskReferenceName``` defined in the first JSON array, and the values will be the specific input parameters for the task/subworkflow.
-
-The ```image_resize``` task works to resize just one image. The `FORK_JOIN_DYNAMIC` and the following `JOIN` will manage the multiple invocations of the single ```image_resize``` task. The responsibilities are clearly broken out, where the individual  ```image_resize```
-tasks do the core job and `FORK_JOIN_DYNAMIC` manages the orchestration and fault tolerance aspects of handling multiple invocations of the task.
-
-#### Workflow Definition - Task Configuration
-
-Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` task.  The fork is named and given a taskReferenceName, but all of the input parameters are JSON variables that we will discuss next:
+Call to `HTTP` uri will resize the images and store the resized images into specified `location` as part of input below.
 
 ```json
-[
-  {      
-    "name": "image_multiple_convert_resize_fork",
-    "taskReferenceName": "image_multiple_convert_resize_fork_ref",
-    "inputParameters": {
-      "dynamicTasks": "${fooBarTask.output.dynamicTasksJSON}",
-      "dynamicTasksInput": "${fooBarTask.output.dynamicTasksInputJSON}"
+{
+  "name": "image_multiple_convert_resize_fork",
+  "description": "Image multiple convert resize example",
+  "tasks": [
+    {
+      "name": "image_multiple_convert_resize_dynamic_task_http",
+      "taskReferenceName": "image_multiple_convert_resize_dynamic_task_http_ref",
+      "inputParameters": {
+        "forkTaskName": "http_task_name",
+        "forkTaskType": "HTTP",
+        "forkTaskInputs": [
+          {
+            "uri" : "https://imageResizeUrl/imageName1/<width>/<height>/<location>"
+          },
+          {
+            "uri" : "https://imageResizeUrl/imageName2/<width>/<height>/<location>",
+            "method" : "GET"
+          }
+        ]
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput"
     },
-    "type": "FORK_JOIN_DYNAMIC",
-    "dynamicForkTasksParam": "dynamicTasks",
-    "dynamicForkTasksInputParamName": "dynamicTasksInput"
+    {
+      "name": "dynamic_workflow_array_http_join",
+      "taskReferenceName": "dynamic_workflow_array_http_join_ref",
+      "type": "JOIN"
+    }
+  ]
+}
+```
+
+### Example 3
+Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` task to run `SUBWORKFLOW`
+
+`SUBWORKFLOW` will resize the images and store the resized images into specified `location` as part of input below.
+
+| Attribute     | Description                                                                                                                                                             |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| forkTaskWorkflow	 | Specify the name of the sub-workflow to be executed.                                                                                                                     |
+| forkTaskWorkflowVersion  | Optional version of the workflow to run.                                                                                                                                                 |
+| forkTaskInputs  | Array of inputs - a task will be executed for each input. |
+
+```json
+{
+  "name": "image_multiple_convert_resize_fork",
+  "description": "Image multiple convert resize example",
+  "tasks": [
+    {
+      "name": "image_multiple_convert_resize_dynamic_task_subworkflow",
+      "taskReferenceName": "image_multiple_convert_resize_dynamic_task_subworkflow_ref",
+      "inputParameters": {
+        "forkTaskWorkflow": "image_resize_subworkflow",
+        "forkTaskInputs": [
+          {
+            'image' : 'url1',
+            'location' : 'location url',
+            'width' : 100,
+            'height' : 200
+          },
+          {
+            'image' : 'url2',
+            'location' : 'locationurl',
+            'width' : 300,
+            'height' : 400
+          }
+        ]
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+    },
+    {
+      "name": "dynamic_workflow_array_http_subworkflow",
+      "taskReferenceName": "dynamic_workflow_array_http_subworkflow_ref",
+      "type": "JOIN"
+    }
+  ]
+}
+```
+
+### Example 4
+Here is an example of a `FORK_JOIN_DYNAMIC` task followed by a `JOIN` using input parameters
+
+#### Using JSON Task
+```json
+{
+  "name": "image_multiple_convert_resize_fork",
+   "description": "Image multiple convert resize example", 
+  "inputParameters": {
+    "dynamicTasks": [
+        {
+          "name":"image_convert_resize",
+          "taskReferenceName": "image_convert_resize_png_300x300_0"
+          // ...
+        },
+        {
+          "name":"image_convert_resize",
+          "taskReferenceName": "image_convert_resize_png_200x200_1"
+          // ...
+        }
+    ],
+    "dynamicTasksInput": {
+      "image_convert_resize_png_300x300_0" : {
+        "outputWidth": 300,
+        "outputHeight": 300
+      },
+      "image_convert_resize_png_200x200_1" : {
+        "outputWidth": 200,
+        "outputHeight": 200
+      }
+    }
   },
-  {
-    "name": "image_multiple_convert_resize_join",
-    "taskReferenceName": "image_multiple_convert_resize_join_ref",
-    "type": "JOIN"
-  }
-]
+  "type": "FORK_JOIN_DYNAMIC",
+  "dynamicForkTasksParam": "dynamicTasks",
+  "dynamicForkTasksInputParamName": "dynamicTasksInput"
+}
+```
+
+#### Using JSON Subworkflow
+```json
+{
+   "name": "dynamic",
+   "taskReferenceName": "dynamic_ref",
+   "inputParameters": {
+      "dynamicTasks": [
+         {
+            "subWorkflowParam" : {
+               "name": :"image_convert_resize_subworkflow",
+               "version": "1"
+            },
+            "type" : "SUB_WORKFLOW",
+            "taskReferenceName": "image_convert_resize_subworkflow_png_300x300_0",
+            // ...
+         },
+         {
+            "subWorkflowParam" : {
+               "name": :"image_convert_resize_subworkflow",
+               "version": "1"
+            },
+            "type" : "SUB_WORKFLOW",
+            "taskReferenceName": "image_convert_resize_subworkflow_png_200x200_1",
+            // ...
+         }
+      ],
+      "dynamicTasksInput": {
+         "image_convert_resize_png_300x300_0" : {
+            "outputWidth": 300,
+            "outputHeight": 300
+         },
+         "image_convert_resize_png_200x200_1" : {
+            "outputWidth": 200,
+            "outputHeight": 200
+         }
+      }
+   },
+   "type": "FORK_JOIN_DYNAMIC",
+   "dynamicForkTasksParam": "dynamicTasks",
+   "dynamicForkTasksInputParamName": "dynamicTasksInput"
+}
 ```
 
 This appears in the UI as follows:
@@ -135,116 +327,12 @@ Let's assume this data is sent to the workflow:
 
 With 2 file formats and 2 sizes in the input, we'll be creating 4 images total.  The first task will generate the tasks and the parameters for these tasks:
 
-* `dynamicForkTasksParam` This is a JSON array of task or sub-workflow objects that specifies the list of tasks or sub-workflows that needs to be forked and run in parallel. This JSON varies depeding oon the type of task.  
-
-
-#### ```dynamicForkTasksParam``` Simple task 
-In this case, our fork is running a SIMPLE task: ```image_convert_resize```:
-
-```
-{ "dynamicTasks": [
-  {
-    "name": :"image_convert_resize",
-    "taskReferenceName": "image_convert_resize_png_300x300_0",
-    ...
-  },
-  {
-    "name": :"image_convert_resize",
-    "taskReferenceName": "image_convert_resize_png_200x200_1",
-    ...
-  },
-  {
-    "name": :"image_convert_resize",
-    "taskReferenceName": "image_convert_resize_jpg_300x300_2",
-    ...
-  },
-  {
-    "name": :"image_convert_resize",
-    "taskReferenceName": "image_convert_resize_jpg_200x200_3",
-    ...
-  }
-]}
-```
-#### ```dynamicForkTasksParam``` SubWorkflow task
-In this case, our Dynamic fork is running a SUB_WORKFLOW task: ```image_convert_resize_subworkflow```
-
-```
-{ "dynamicTasks": [
-  {
-    "subWorkflowParam" : {
-      "name": :"image_convert_resize_subworkflow",
-      "version": "1"
-    },
-    "type" : "SUB_WORKFLOW",
-    "taskReferenceName": "image_convert_resize_subworkflow_png_300x300_0",
-    ...
-  },
-  {
-    "subWorkflowParam" : {
-      "name": :"image_convert_resize_subworkflow",
-      "version": "1"
-    },
-    "type" : "SUB_WORKFLOW",
-    "taskReferenceName": "image_convert_resize_subworkflow_png_200x200_1",
-    ...
-  },
-  {
-    "subWorkflowParam" : {
-      "name": :"image_convert_resize_subworkflow",
-      "version": "1"
-    },
-    "type" : "SUB_WORKFLOW",
-    "taskReferenceName": "image_convert_resize_subworkflow_jpg_300x300_2",
-    ...
-  },
-  {
-    "subWorkflowParam" : {
-      "name": :"image_convert_resize_subworkflow",
-      "version": "1"
-    },
-    "type" : "SUB_WORKFLOW",
-    "taskReferenceName": "image_convert_resize_subworkflow_jpg_200x200_3",
-    ...
-  }
-]}
-```
 
 
 
 * `dynamicForkTasksInputParamName` This is a JSON map of task or
 sub-workflow objects and all the input parameters that these tasks will need to run.
 
-```
-"dynamicTasksInput":{
-"image_convert_resize_jpg_300x300_2":{
-"outputWidth":300
-"outputHeight":300
-"fileLocation":"https://pbs.twimg.com/media/FJY7ud0XEAYVCS8?format=png&name=900x900"
-"outputFormat":"jpg"
-"maintainAspectRatio":true
-}
-"image_convert_resize_jpg_200x200_3":{
-"outputWidth":200
-"outputHeight":200
-"fileLocation":"https://pbs.twimg.com/media/FJY7ud0XEAYVCS8?format=png&name=900x900"
-"outputFormat":"jpg"
-"maintainAspectRatio":true
-}
-"image_convert_resize_png_200x200_1":{
-"outputWidth":200
-"outputHeight":200
-"fileLocation":"https://pbs.twimg.com/media/FJY7ud0XEAYVCS8?format=png&name=900x900"
-"outputFormat":"png"
-"maintainAspectRatio":true
-}
-"image_convert_resize_png_300x300_0":{
-"outputWidth":300
-"outputHeight":300
-"fileLocation":"https://pbs.twimg.com/media/FJY7ud0XEAYVCS8?format=png&name=900x900"
-"outputFormat":"png"
-"maintainAspectRatio":true
-}
-```
 
 #### Join Task
 

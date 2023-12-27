@@ -178,7 +178,11 @@ public class TestWorkflowExecutor {
         taskMappers.put(
                 FORK_JOIN_DYNAMIC.name(),
                 new ForkJoinDynamicTaskMapper(
-                        idGenerator, parametersUtils, objectMapper, metadataDAO));
+                        idGenerator,
+                        parametersUtils,
+                        objectMapper,
+                        metadataDAO,
+                        mock(SystemTaskRegistry.class)));
         taskMappers.put(
                 USER_DEFINED.name(), new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(SIMPLE.name(), new SimpleTaskMapper(parametersUtils));
