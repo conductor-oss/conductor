@@ -43,10 +43,9 @@ export function fetchWithContext(
 
 /**
  * @param {string} path 
- * @returns path with '/' not duplicated except at ://
+ * @returns path with '/' not duplicated, except at ://
  * 
- * Note: we need the second .replace() because the first one doesn't catch multiple slashes at the start of the string
  */
 export function cleanDuplicateSlash(path) {
-  return path.replace(/([^:]\/)\/+/g, "$1").replace(/^(\/)+/, '/');
+  return path.replace(/(:\/\/)\/*|(\/)+/g, "$1$2");
 }
