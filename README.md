@@ -91,3 +91,9 @@ docker pull conductoross/conductor:3.15.0
 ## Get Support
 There are several ways to get in touch with us:
 * [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
+
+## Contributors
+
+<a href="https://github.com/conductor-oss/conductor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=conductor-oss/conductor" />
+</a>
