@@ -1,0 +1,69 @@
+
+allprojects {
+
+    apply plugin: 'maven-publish'
+    apply plugin: 'java-library'
+    apply plugin: 'signing'
+
+    group = 'org.conductoross'
+    def conductorVersion = System.getenv('CONDUCTOR_VERSION')
+    if (conductorVersion) {
+        println "Inferred version from env variable 'CONDUCTOR_VERSION': $conductorVersion"
+        version = conductorVersion
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+                pom {
+                    name = 'Conductor OSS'
+                    description = 'Conductor OSS build.'
+                    url = 'https://github.com/conductor-oss/conductor'
+                    scm {
+                        connection = 'scm:git:git://github.com/conductor-oss/conductor.git'
+                        developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor.git'
+                        url = 'https://github.com/conductor-oss/conductor'
+                    }
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            organization = 'Conductor OSS'
+                            organizationUrl = 'https://conductor-oss.org/'
+                            name = 'Conductor OSS'
+                        }
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                println "Publishing to Sonatype Repository"
+                url = "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/"}"
+                credentials {
+                    username project.properties.username
+                    password project.properties.password
+                }
+            }
+        }
+    }
+
+    signing {
+        def signingKeyId = findProperty('signingKeyId')
+        def signingKey = findProperty('signingKey')
+        def signingPassword = findProperty('signingPassword')
+        System.out.println("signingKeyId: " + signingKeyId)
+        if (signingKeyId && signingKey && signingPassword) {
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        }
+
+        sign publishing.publications
+    }
+
+}

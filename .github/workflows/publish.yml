@@ -1,66 +1,44 @@
-name: Publish to NetflixOSS and Maven Central
+name: Publish OSS Conductor
+
+
 on:
   release:
     types:
       - released
       - prereleased
 
-permissions:
-  contents: read
-
 jobs:
-  publish:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    name: Gradle Build and Publish
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-      - name: Set up Zulu JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Publish candidate
-        if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc.')
-        run: ./gradlew -Prelease.useLastTag=true candidate --scan
-        env:
-          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
-          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v') && (!contains(github.ref, '-rc.'))
-        run: ./gradlew -Prelease.useLastTag=true final --scan
-        env:
-          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
-          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
-      - name: Publish tag to community repo
-        if: startsWith(github.ref, 'refs/tags/v')
+
+      # Checkout Conductor version tag and publish an initial release
+      - name: Build and Deploy Conductor Main
         run: |
-          export TAG=$(git describe --tags --abbrev=0)
-          echo "Current release version is $TAG"
-          echo "Triggering community build"
-          curl \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: Bearer ${{ secrets.COMMUNITY_REPO_TRIGGER }}" \
-            -X POST https://api.github.com/repos/Netflix/conductor-community/dispatches \
-            -d '{"event_type": "publish_build","client_payload": {"tag":"'"$TAG"'"}}'
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
-        if: always() # always run even if the previous step fails
-        with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          export TAG=$(git tag)
+          export CONDUCTOR_VERSION=`echo $TAG | cut -f2 -d"v"`
+          echo "CONDUCTOR_VERSION is $CONDUCTOR_VERSION"
+          echo "Tag to checkout and publish $TAG"
+          git clone -b $TAG https://github.com/conductor-oss/conductor.git
+          cd conductor 
+          git checkout tags/$TAG
+          git describe --tags --abbrev=0
+          ls -ltr
+          echo "Updating build.gradle - and printing its content"
+          cat ../deploy.gradle
+          cp ../deploy.gradle .
+          echo "apply from: "\"\$rootDir/deploy.gradle\""" >> build.gradle
+          cat build.gradle
+          cat deploy.gradle
+          ./gradlew publish -PmavenCentral -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
+          echo "All done"
+        env:
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
