@@ -18,7 +18,7 @@ plugins {
     id 'java'
     id 'application'
     id 'jacoco'
-    id 'nebula.netflixoss' version '10.6.0'
+    id 'nebula.netflixoss' version '11.4.0'
 }
 
 /*
@@ -50,6 +50,12 @@ allprojects {
     apply plugin: 'java-library'
     apply plugin: 'project-report'
 
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+    
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 

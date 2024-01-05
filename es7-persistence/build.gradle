@@ -41,7 +41,7 @@ dependencies {
 // Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
 shadowJar {
     configurations = [project.configurations.shadow]
-    classifier = null
+    archiveClassifier = null
 
     // Service files are not included by default.
     mergeServiceFiles {
