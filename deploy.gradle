@@ -1,21 +1,24 @@
 
-allprojects {
+subprojects {
 
     apply plugin: 'maven-publish'
     apply plugin: 'java-library'
     apply plugin: 'signing'
 
     group = 'org.conductoross'
-    def conductorVersion = System.getenv('CONDUCTOR_VERSION')
-    if (conductorVersion) {
-        println "Inferred version from env variable 'CONDUCTOR_VERSION': $conductorVersion"
-        version = conductorVersion
-    }
 
     publishing {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
                 pom {
                     name = 'Conductor OSS'
                     description = 'Conductor OSS build.'
@@ -44,8 +47,7 @@ allprojects {
 
         repositories {
             maven {
-                println "Publishing to Sonatype Repository"
-                url = "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/"}"
+                url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
                 credentials {
                     username project.properties.username
                     password project.properties.password
@@ -56,14 +58,17 @@ allprojects {
 
     signing {
         def signingKeyId = findProperty('signingKeyId')
-        def signingKey = findProperty('signingKey')
-        def signingPassword = findProperty('signingPassword')
-        System.out.println("signingKeyId: " + signingKeyId)
-        if (signingKeyId && signingKey && signingPassword) {
-            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        if (signingKeyId) {
+            println 'Signing artifacts with keys'
+            def signingKey = findProperty('signingKey')
+            def signingPassword = findProperty('signingPassword')
+            if (signingKeyId && signingKey && signingPassword) {
+                useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            }
+
+            sign publishing.publications
         }
 
-        sign publishing.publications
     }
 
 }

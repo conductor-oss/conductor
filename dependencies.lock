@@ -21,16 +21,6 @@
             "locked": "2.20.0"
         }
     },
-    "jacocoAgent": {
-        "org.jacoco:org.jacoco.agent": {
-            "locked": "0.8.8"
-        }
-    },
-    "jacocoAnt": {
-        "org.jacoco:org.jacoco.ant": {
-            "locked": "0.8.8"
-        }
-    },
     "runtimeClasspath": {
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.20.0"

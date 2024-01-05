@@ -37,6 +37,6 @@ dependencies {
 
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.MAC_OS:
-        //tasks.forEach(task -> task.onlyIf { project.hasProperty('ES6Test') })
+        tasks.forEach(task -> task.onlyIf { project.hasProperty('ES6Test') })
         break;
 }

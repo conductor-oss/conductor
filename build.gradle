@@ -17,22 +17,11 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.13.RELEASE'
     id 'java'
     id 'application'
-    id 'jacoco'
-    id 'nebula.netflixoss' version '10.6.0'
+    id 'maven-publish'
+    id 'signing'
+    id 'java-library'
+    id "com.diffplug.spotless" version "5.0.0"
 }
-
-/*
- *  Copyright 2023 Conductor authors
- *  <p>
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  <p>
- *  http://www.apache.org/licenses/LICENSE-2.0
- *  <p>
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- *  specific language governing permissions and limitations under the License.
- */
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
@@ -43,9 +32,9 @@ subprojects {
 
 apply from: "$rootDir/dependencies.gradle"
 apply from: "$rootDir/springboot-bom-overrides.gradle"
+apply from: "$rootDir/deploy.gradle"
 
 allprojects {
-    apply plugin: 'nebula.netflixoss'
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'java-library'
     apply plugin: 'project-report'
@@ -53,7 +42,7 @@ allprojects {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 
-    group = 'com.netflix.conductor'
+    group = 'org.conductoross'
 
     configurations.all {
         exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -108,14 +97,6 @@ allprojects {
         compileJava {
             options.release = 17
         }
-    }
-}
-
-jacocoTestReport {
-    reports {
-        html.required = true
-        xml.required = true
-        csv.required = false
     }
 }
 

@@ -31,7 +31,7 @@ ext {
     revGrpc = '1.57.2'
     revGuava = '30.0-jre'
     revHamcrestAllMatchers = '1.8'
-    revHealth = '1.1.+'
+    revHealth = '1.1.4'
     revProtoBuf = '3.21.12'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'

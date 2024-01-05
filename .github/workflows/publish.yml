@@ -1,43 +1,39 @@
-name: Publish OSS Conductor
-
-
+name: Publish Conductor OSS toMaven Central
 on:
   release:
     types:
       - released
       - prereleased
 
+permissions:
+  contents: read
+
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  publish:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    name: Gradle Build and Publish
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-
-      # Checkout Conductor version tag and publish an initial release
-      - name: Build and Deploy Conductor Main
+      - name: Set up Zulu JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Publish release
         run: |
-          export TAG=$(git tag)
-          export CONDUCTOR_VERSION=`echo $TAG | cut -f2 -d"v"`
-          echo "CONDUCTOR_VERSION is $CONDUCTOR_VERSION"
-          echo "Tag to checkout and publish $TAG"
-          git clone -b $TAG https://github.com/conductor-oss/conductor.git
-          cd conductor 
-          git checkout tags/$TAG
-          git describe --tags --abbrev=0
-          ls -ltr
-          echo "Updating build.gradle - and printing its content"
-          cat ../deploy.gradle
-          cp ../deploy.gradle .
-          echo "apply from: "\"\$rootDir/deploy.gradle\""" >> build.gradle
-          cat build.gradle
-          cat deploy.gradle
-          ./gradlew publish -PmavenCentral -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
-          echo "All done"
+          export VERSION="${{github.ref_name}}"
+          export PUBLISH_VERSION=`echo ${VERSION:1}`
+          echo Publishing version $PUBLISH_VERSION
+          ./gradlew publish -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
