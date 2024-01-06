@@ -29,7 +29,10 @@ import com.netflix.conductor.test.util.WorkflowTestUtil
 import spock.lang.Specification
 
 @SpringBootTest(classes = ConductorTestApp.class)
-@TestPropertySource(locations = "classpath:application-integrationtest.properties")
+@TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
+        "conductor.db.type=memory",
+        "conductor.queue.type=xxx"
+])
 abstract class AbstractSpecification extends Specification {
 
     @Autowired
