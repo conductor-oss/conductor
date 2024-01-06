@@ -22,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.netflix.conductor.ConductorTestApp;
 import com.netflix.conductor.client.grpc.EventClient;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
@@ -48,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
+        classes = ConductorTestApp.class,
         properties = {"conductor.grpc-server.enabled=true", "conductor.grpc-server.port=8092"})
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
@@ -156,7 +158,7 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         assertNotNull(polled);
         assertEquals(0, polled.size());
 
-        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
+        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 1000);
         assertNotNull(polled);
         assertEquals(1, polled.size());
         assertEquals(t0.getName(), polled.get(0).getTaskDefName());

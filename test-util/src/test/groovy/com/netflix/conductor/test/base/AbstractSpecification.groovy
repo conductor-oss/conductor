@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.base
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.service.WorkflowService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -26,7 +27,7 @@ import com.netflix.conductor.test.util.WorkflowTestUtil
 
 import spock.lang.Specification
 
-@SpringBootTest
+@SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 abstract class AbstractSpecification extends Specification {
 

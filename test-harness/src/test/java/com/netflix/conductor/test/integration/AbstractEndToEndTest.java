@@ -48,7 +48,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 @TestPropertySource(
-        properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
+        properties = {
+            "conductor.indexing.enabled=true",
+            "conductor.elasticsearch.version=7",
+            "conductor.queue.type=xxx"
+        })
 public abstract class AbstractEndToEndTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractEndToEndTest.class);
@@ -62,7 +66,7 @@ public abstract class AbstractEndToEndTest {
     private static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
-                            .withTag("6.8.17")); // this should match the client version
+                            .withTag("7.10.2")); // this should match the client version
 
     private static RestClient restClient;
 

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.WorkflowExecutor
@@ -27,8 +28,11 @@ import com.netflix.conductor.test.util.WorkflowTestUtil
 
 import spock.lang.Specification
 
-@SpringBootTest
-@TestPropertySource(locations = "classpath:application-integrationtest.properties")
+@SpringBootTest(classes = ConductorTestApp.class)
+@TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
+        "conductor.db.type=memory",
+        "conductor.queue.type=xxx"
+])
 abstract class AbstractSpecification extends Specification {
 
     @Autowired
