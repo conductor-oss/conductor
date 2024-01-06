@@ -7,7 +7,7 @@ dependencies {
     testImplementation project(':conductor-core')
     testImplementation project(':conductor-redis-persistence')
     testImplementation project(':conductor-cassandra-persistence')
-    testImplementation project(':conductor-es6-persistence')
+    testImplementation project(':conductor-es7-persistence')
     testImplementation project(':conductor-grpc-server')
     testImplementation project(':conductor-client')
     testImplementation project(':conductor-grpc-client')
@@ -32,8 +32,8 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 
-    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
-    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch7}"
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
 
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation('junit:junit:4.13.2')

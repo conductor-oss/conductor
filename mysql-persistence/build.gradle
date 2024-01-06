@@ -33,7 +33,7 @@ dependencies {
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
-
+    testImplementation "redis.clients:jedis:${revJedis}"
 }
 
 test {
