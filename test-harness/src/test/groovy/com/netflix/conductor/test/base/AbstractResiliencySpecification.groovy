@@ -61,7 +61,8 @@ import spock.mock.DetachedMockFactory
         "conductor.system-task-workers.enabled=false",
         "conductor.workflow-repair-service.enabled=true",
         "conductor.workflow-reconciler.enabled=false",
-        "conductor.integ-test.queue-spy.enabled=true"
+        "conductor.integ-test.queue-spy.enabled=true",
+        "conductor.queue.type=xxx"
 ])
 abstract class AbstractResiliencySpecification extends AbstractSpecification {
 
