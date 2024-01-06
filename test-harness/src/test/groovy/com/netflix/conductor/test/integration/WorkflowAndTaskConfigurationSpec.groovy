@@ -13,7 +13,10 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.TestPropertySource
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -31,6 +34,10 @@ import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
+@TestPropertySource(properties = [
+        "conductor.db.type=memory",
+        "conductor.queue.type=xxx"
+])
 class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
     @Autowired
