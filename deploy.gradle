@@ -7,6 +7,11 @@ subprojects {
 
     group = 'org.conductoross'
 
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
     publishing {
         publications {
             mavenJava(MavenPublication) {
@@ -59,13 +64,11 @@ subprojects {
     signing {
         def signingKeyId = findProperty('signingKeyId')
         if (signingKeyId) {
-            println 'Signing artifacts with keys'
             def signingKey = findProperty('signingKey')
             def signingPassword = findProperty('signingPassword')
             if (signingKeyId && signingKey && signingPassword) {
                 useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             }
-
             sign publishing.publications
         }
 
