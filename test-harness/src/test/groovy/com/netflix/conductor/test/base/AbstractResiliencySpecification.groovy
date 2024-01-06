@@ -12,6 +12,16 @@
  */
 package com.netflix.conductor.test.base
 
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.FilterType
+import org.springframework.context.annotation.Primary
+import org.springframework.test.context.TestPropertySource
+
 import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.core.config.SchedulerConfiguration
 import com.netflix.conductor.core.events.DefaultEventProcessor
@@ -36,20 +46,10 @@ import com.netflix.conductor.core.execution.tasks.Join
 import com.netflix.conductor.core.execution.tasks.SetVariable
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.Wait
-import com.netflix.conductor.tasks.json.JsonJqTransform
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.FilterType
-import org.springframework.context.annotation.Primary
-import org.springframework.test.context.TestPropertySource
-
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.redis.dao.DynoQueueDAO
 import com.netflix.conductor.redis.jedis.JedisMock
+import com.netflix.conductor.tasks.json.JsonJqTransform
 import com.netflix.dyno.connectionpool.Host
 import com.netflix.dyno.queues.ShardSupplier
 import com.netflix.dyno.queues.redis.RedisQueues

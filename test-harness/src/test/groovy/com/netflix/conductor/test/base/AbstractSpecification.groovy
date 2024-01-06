@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.test.base
 
-import com.netflix.conductor.ConductorTestApp
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.WorkflowExecutor
