@@ -24,7 +24,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +52,6 @@ public class KafkaProducerManager {
                 }
             };
 
-    @Autowired
     public KafkaProducerManager(
             @Value("${conductor.tasks.kafka-publish.requestTimeout:100ms}") Duration requestTimeout,
             @Value("${conductor.tasks.kafka-publish.maxBlock:500ms}") Duration maxBlock,

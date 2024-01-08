@@ -17,7 +17,6 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -35,7 +34,6 @@ public class EventTaskMapper implements TaskMapper {
 
     private final ParametersUtils parametersUtils;
 
-    @Autowired
     public EventTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
     }
