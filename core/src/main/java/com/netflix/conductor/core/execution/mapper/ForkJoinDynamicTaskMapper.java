@@ -25,7 +25,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
@@ -68,7 +67,6 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks =
             new TypeReference<>() {};
 
-    @Autowired
     public ForkJoinDynamicTaskMapper(
             IDGenerator idGenerator,
             ParametersUtils parametersUtils,

@@ -18,7 +18,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -42,7 +41,6 @@ public class DoWhileTaskMapper implements TaskMapper {
     private final MetadataDAO metadataDAO;
     private final ParametersUtils parametersUtils;
 
-    @Autowired
     public DoWhileTaskMapper(MetadataDAO metadataDAO, ParametersUtils parametersUtils) {
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;

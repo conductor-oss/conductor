@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +47,6 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     private final ObjectMapper objectMapper;
     private final File payloadDir;
 
-    @Autowired
     public MockExternalPayloadStorage(ObjectMapper objectMapper) throws IOException {
         this.objectMapper = objectMapper;
         this.payloadDir = Files.createTempDirectory("payloads").toFile();

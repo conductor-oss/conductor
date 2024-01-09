@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -37,7 +36,6 @@ public class EventQueues {
     private final ParametersUtils parametersUtils;
     private final Map<String, EventQueueProvider> providers;
 
-    @Autowired
     public EventQueues(
             @Qualifier(EVENT_QUEUE_PROVIDERS_QUALIFIER) Map<String, EventQueueProvider> providers,
             ParametersUtils parametersUtils) {

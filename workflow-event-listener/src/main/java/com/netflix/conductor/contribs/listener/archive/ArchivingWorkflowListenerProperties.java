@@ -15,7 +15,6 @@ package com.netflix.conductor.contribs.listener.archive;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.core.env.Environment;
@@ -25,7 +24,6 @@ public class ArchivingWorkflowListenerProperties {
 
     private final Environment environment;
 
-    @Autowired
     public ArchivingWorkflowListenerProperties(Environment environment) {
         this.environment = environment;
     }
