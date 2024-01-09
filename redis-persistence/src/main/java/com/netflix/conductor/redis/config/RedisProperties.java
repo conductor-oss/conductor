@@ -15,6 +15,7 @@ package com.netflix.conductor.redis.config;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 
@@ -29,6 +30,7 @@ public class RedisProperties {
 
     private final ConductorProperties conductorProperties;
 
+    @Autowired
     public RedisProperties(ConductorProperties conductorProperties) {
         this.conductorProperties = conductorProperties;
     }
