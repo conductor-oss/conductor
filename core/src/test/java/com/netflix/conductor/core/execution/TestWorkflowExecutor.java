@@ -2486,14 +2486,26 @@ public class TestWorkflowExecutor {
         doWhile.setName("doWhile");
         doWhile.setTaskReferenceName("doWhile");
 
-        WorkflowTask loopTask = new WorkflowTask();
-        loopTask.setType(SIMPLE.name());
-        loopTask.setName("loopTask");
-        loopTask.setTaskReferenceName("loopTask");
+        WorkflowTask loopTask1 = new WorkflowTask();
+        loopTask1.setType(SIMPLE.name());
+        loopTask1.setName("loopTask1");
+        loopTask1.setTaskReferenceName("loopTask1");
 
-        doWhile.setLoopOver(List.of(loopTask));
+        doWhile.setLoopOver(List.of(loopTask1));
 
-        workflowDef.getTasks().addAll(List.of(simpleTask, forkTask, joinTask, doWhile));
+        WorkflowTask whileTask = new WorkflowTask();
+        whileTask.setType(WHILE.name());
+        whileTask.setName("while");
+        whileTask.setTaskReferenceName("while");
+
+        WorkflowTask loopTask2 = new WorkflowTask();
+        loopTask2.setType(SIMPLE.name());
+        loopTask2.setName("loopTask2");
+        loopTask2.setTaskReferenceName("loopTask2");
+
+        whileTask.setLoopOver(List.of(loopTask2));
+
+        workflowDef.getTasks().addAll(List.of(simpleTask, forkTask, joinTask, doWhile, whileTask));
 
         TaskModel task = new TaskModel();
         task.setStatus(TaskModel.Status.COMPLETED);
@@ -2511,7 +2523,11 @@ public class TestWorkflowExecutor {
         task.setReferenceTaskName("simple");
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
 
-        task.setReferenceTaskName("loopTask__1");
+        task.setReferenceTaskName("loopTask1__1");
+        task.setIteration(1);
+        assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
+
+        task.setReferenceTaskName("loopTask2__1");
         task.setIteration(1);
         assertFalse(workflowExecutor.isLazyEvaluateWorkflow(workflowDef, task));
 

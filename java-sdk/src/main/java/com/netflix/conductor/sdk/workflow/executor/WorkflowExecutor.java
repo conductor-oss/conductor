@@ -69,6 +69,7 @@ public class WorkflowExecutor {
 
     public static void initTaskImplementations() {
         TaskRegistry.register(TaskType.DO_WHILE.name(), DoWhile.class);
+        TaskRegistry.register(TaskType.WHILE.name(), While.class);
         TaskRegistry.register(TaskType.DYNAMIC.name(), Dynamic.class);
         TaskRegistry.register(TaskType.FORK_JOIN_DYNAMIC.name(), DynamicFork.class);
         TaskRegistry.register(TaskType.FORK_JOIN.name(), ForkJoin.class);
