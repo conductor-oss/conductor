@@ -571,6 +571,7 @@ public class TaskModel {
     /**
      * @return {@link Optional} containing the task definition if available
      */
+    @JsonIgnore
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }

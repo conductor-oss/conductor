@@ -24,6 +24,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
 
@@ -629,6 +630,7 @@ public class Task {
     /**
      * @return {@link Optional} containing the task definition if available
      */
+    @JsonIgnore
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
