@@ -61,7 +61,7 @@ ext {
     revKafka = '2.6.0'
     revMicrometer = '1.8.12'
     revPrometheus = '0.9.0'
-    revElasticSearch7 = '7.12.1'
+    revElasticSearch7 = '7.17.16'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.7.0'
     revNatsStreaming = '2.6.5'
