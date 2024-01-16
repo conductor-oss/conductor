@@ -10,22 +10,22 @@ Conductor provides Java client libraries, which we will use to build a simple ta
 
 ```xml
 <dependency>
-    <groupId>com.netflix.conductor</groupId>
+    <groupId>org.conductoross</groupId>
     <artifactId>conductor-client</artifactId>
-    <version>3.13.2</version>
+    <version>3.16.0</version>
 </dependency>
 <dependency>
-    <groupId>com.netflix.conductor</groupId>
+    <groupId>org.conductoross</groupId>
     <artifactId>conductor-common</artifactId>
-    <version>3.13.2</version>
+    <version>3.16.0</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-implementation group: 'com.netflix.conductor', name: 'conductor-client', version: '3.13.2'
-implementation group: 'com.netflix.conductor', name: 'conductor-common', version: '3.13.2'
+implementation group: 'org.conductoross', name: 'conductor-client', version: '3.16.0'
+implementation group: 'org.conductoross', name: 'conductor-common', version: '3.16.0'
 ```
 
 ## Implementing a Task Worker
