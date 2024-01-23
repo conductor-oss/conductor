@@ -34,9 +34,9 @@ git remote set-url origin https://github.com/conductor-oss/conductor
 > 3. Send a PR against the `main` branch
 
 ## Releases
-The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
+The latest version is [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://GitHub.com/conductor-oss/conductor/releases)
 
-The next scheduled release is in Dec 2023.
+The next scheduled release is in Jan 2024.
 
 ## Resources
 #### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
