@@ -41,8 +41,8 @@ The next scheduled release is in Jan 2024.
 ## Resources
 #### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
 We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg) of Conductor users and contributors on the channel.
-#### [Documentation Site](https://orkes.io/content)
-[Documentation](https://orkes.io/content) and tutorial on how to use Conductor
+#### [Documentation Site](https://conductor-oss.org/)
+[Documentation](https://conductor-oss.org/) and tutorial on how to use Conductor
 
 [Discussion Forum](https://github.com/conductor-oss/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
 
