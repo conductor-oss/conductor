@@ -43,6 +43,8 @@ dependencies {
 
     implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
+    implementation "com.netflix.spectator:spectator-reg-metrics3:${version_spectator}"
+
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"

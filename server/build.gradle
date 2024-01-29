@@ -70,7 +70,9 @@ dependencies {
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+    runtimeOnly group: 'com.netflix.conductor', name: 'conductor-postgres-persistence', version: '3.9.1'
 
+    implementation "com.netflix.spectator:spectator-reg-metrics3:${version_spectator}"
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 

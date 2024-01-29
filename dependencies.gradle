@@ -67,5 +67,5 @@ ext {
     revNatsStreaming = '2.6.5'
     revNats = '2.15.6'
     revStan = '2.2.3'
-
+    version_spectator='0.60.0'
 }
