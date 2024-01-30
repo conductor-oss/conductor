@@ -31,7 +31,6 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -66,7 +65,6 @@ public class KafkaPublishTask extends WorkflowSystemTask {
     private final String requestParameter;
     private final KafkaProducerManager producerManager;
 
-    @Autowired
     public KafkaPublishTask(KafkaProducerManager clientManager, ObjectMapper objectMapper) {
         super(TASK_TYPE_KAFKA_PUBLISH);
         this.requestParameter = REQUEST_PARAMETER_NAME;
