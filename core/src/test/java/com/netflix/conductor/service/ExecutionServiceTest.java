@@ -34,6 +34,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 
 import static junit.framework.TestCase.assertEquals;
@@ -48,6 +49,7 @@ public class ExecutionServiceTest {
     @Mock private ConductorProperties conductorProperties;
     @Mock private ExternalPayloadStorage externalPayloadStorage;
     @Mock private SystemTaskRegistry systemTaskRegistry;
+    @Mock private TaskStatusListener taskStatusListener;
 
     private ExecutionService executionService;
 
@@ -68,7 +70,8 @@ public class ExecutionServiceTest {
                         queueDAO,
                         conductorProperties,
                         externalPayloadStorage,
-                        systemTaskRegistry);
+                        systemTaskRegistry,
+                        taskStatusListener);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
