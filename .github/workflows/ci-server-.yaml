@@ -1,0 +1,154 @@
+name: Build & Publish Conductor Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      Environment:
+        required: true
+        type: choice
+        description: Choose aws env
+        options:
+          - dev
+          - prd
+      Tag:
+        required: true
+        type: string
+        description: Provide tag (Eg:v3.14.0)
+
+env:
+  SERVICE_NAME: conductor-server
+  AWS_REGION: "ap-south-1"
+
+jobs:
+  prepare-env:
+    name: Prepare Env
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 2
+    outputs:
+      AWS_ROLE: ${{ steps.vars.outputs.AWS_ROLE }}
+      ENV: ${{ steps.vars.outputs.ENV }}
+      PROJECT_PREFIX: ${{ steps.vars.outputs.PROJECT_PREFIX }}
+      ECS_CLUSTER: ${{ steps.set_env.outputs.ECS_CLUSTER }}
+      ECR_REPOSITORY: ${{ steps.set_env.outputs.ECR_REPOSITORY }}
+      ENVIRONMENT_BUCKET: ${{ steps.set_env.outputs.ENVIRONMENT_BUCKET }}
+      SLACK_WEBHOOK_URL: ${{ steps.vars.outputs.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - id: vars
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          ENV=${{ github.event.inputs.environment }}
+          IMAGE_TAG=${{ github.event.inputs.tag }}
+          echo $BRANCH
+          
+          if [ -z "$ENV" ]
+          then
+            case $BRANCH in
+              "dev")
+                ENV="dev"
+                ;;
+              "stg")
+                ENV="stg"
+                ;;
+              "main")
+                ENV="prd"
+                ;;
+              *)
+                echo "ENV not configured" && exit 1
+                ;;
+            esac
+          fi
+          if [[ $ENV == 'prd' && $BRANCH == 'production' ]]
+          then
+            echo "AWS_ROLE=PRD_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-prd-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=PRD_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT     
+          elif [ $ENV == 'dev' ]
+          then
+            echo "AWS_ROLE=DEV_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-dev-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT
+          else
+            echo "Branch not configured!"
+            exit 1
+          fi
+          echo "ENV=$ENV"  >> $GITHUB_OUTPUT
+          echo ":rocket: Environment - $ENV " >> $GITHUB_STEP_SUMMARY
+          echo ":label: Image Tag - $IMAGE_TAG " >> $GITHUB_STEP_SUMMARY
+      - name: set variables
+        id: set_env
+        run: |
+          PROJECT_PREFIX=${{ steps.vars.outputs.PROJECT_PREFIX }}
+          echo "ECS_CLUSTER=$PROJECT_PREFIX-ecs-cluster"  >> $GITHUB_OUTPUT
+          echo "ECR_REPOSITORY=$PROJECT_PREFIX-ecr-$SERVICE_NAME"  >> $GITHUB_OUTPUT
+          echo "ENVIRONMENT_BUCKET=$PROJECT_PREFIX-s3-environment"  >> $GITHUB_OUTPUT
+          echo ":seedling: Branch:${GITHUB_REF#refs/heads/}" >> $GITHUB_STEP_SUMMARY
+
+  # Building and Pushing Conductor Server Image to ECR
+  build-push-image:
+    name: Build and Push Server Image
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+    needs: prepare-env
+    env:
+      AWS_ROLE: ${{ needs.prepare-env.outputs.AWS_ROLE }}
+      ENV: ${{ needs.prepare-env.outputs.ENV }}
+      PROJECT_PREFIX: ${{needs.prepare-env.outputs.PROJECT_PREFIX}}
+      ECR_REPOSITORY: ${{needs.prepare-env.outputs.ECR_REPOSITORY}}
+      ENVIRONMENT_BUCKET: ${{needs.prepare-env.outputs.ENVIRONMENT_BUCKET}}
+      IMAGE_TAG: ${{ github.event.inputs.tag }}
+    outputs:
+      ECR_REPO: ${{ steps.build.outputs.ECR_REPO }}
+      APP_IMAGE: ${{ steps.image.outputs.APP_IMAGE }}
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+      -
+        # Add support for more platforms with QEMU (optional)
+        # https://github.com/docker/setup-qemu-action
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[env.AWS_ROLE] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download S3 file
+        run: |
+          aws s3 cp s3://${PROJECT_PREFIX}-s3-environment/conductor-server/conductor-server.properties ./docker/server/config/conductor-server.properties
+
+      - name: Amazon ECR Login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.7.0
+
+      - name: Build and push to Amazon ECR
+        id: build
+        uses: docker/build-push-action@v5.1.0
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          provenance: false
+          platforms: linux/amd64
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+
+      - name: Image name
+        id: image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          echo "APP_IMAGE=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"  >> $GITHUB_OUTPUT
+          
