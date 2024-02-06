@@ -15,7 +15,7 @@
 // Dependency version override properties can be found at https://docs.spring.io/spring-boot/docs/3.1.4/reference/htmlsingle/#appendix.dependency-versions.properties
 
 // Conductor's default is ES6, but SB brings in ES7
-ext['elasticsearch.version'] = revElasticSearch6
+ext['elasticsearch.version'] = revElasticSearch7
 
 // SB brings groovy 3.0.x which is not compatible with Spock
 ext['groovy.version'] = revGroovy

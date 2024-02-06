@@ -49,6 +49,4 @@ shadowJar {
         include 'META-INF/maven/*'
     }
 }
-
-jar.enabled = false
 jar.dependsOn shadowJar
