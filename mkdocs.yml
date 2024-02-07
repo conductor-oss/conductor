@@ -87,6 +87,7 @@ nav:
           - documentation/configuration/workflowdef/systemtasks/inline-task.md
           - documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.md
           - documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md
+          - documentation/configuration/workflowdef/systemtasks/set-correlation-id-task.md
           - documentation/configuration/workflowdef/systemtasks/wait-task.md
       - documentation/configuration/taskdef.md
       - documentation/configuration/eventhandlers.md

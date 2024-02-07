@@ -1,0 +1,24 @@
+{
+  "name": "test_set_correlation_id_wf",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "set_correlation_id",
+      "taskReferenceName": "set_correlation_id",
+      "inputParameters": {
+        "correlationId": "${workflow.input.correlationId}"
+      },
+      "type": "SET_CORRELATION_ID"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "correlationId": "${set_correlation_id.output.correlationId}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

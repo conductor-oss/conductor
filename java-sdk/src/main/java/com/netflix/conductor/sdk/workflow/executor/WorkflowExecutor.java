@@ -76,6 +76,7 @@ public class WorkflowExecutor {
         TaskRegistry.register(TaskType.INLINE.name(), Javascript.class);
         TaskRegistry.register(TaskType.JOIN.name(), Join.class);
         TaskRegistry.register(TaskType.JSON_JQ_TRANSFORM.name(), JQ.class);
+        TaskRegistry.register(TaskType.SET_CORRELATION_ID.name(), SetCorrelationId.class);
         TaskRegistry.register(TaskType.SET_VARIABLE.name(), SetVariable.class);
         TaskRegistry.register(TaskType.SIMPLE.name(), SimpleTask.class);
         TaskRegistry.register(TaskType.SUB_WORKFLOW.name(), SubWorkflow.class);

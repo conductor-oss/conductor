@@ -116,6 +116,9 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_WAIT:
                     valid = isWaitTaskValid(workflowTask, context);
                     break;
+                case TaskType.TASK_TYPE_SET_CORRELATION_ID:
+                    valid = isSetCorrelationIdTaskValid(workflowTask, context);
+                    break;
             }
 
             return valid;
@@ -345,11 +348,30 @@ public @interface WorkflowTaskTypeConstraint {
             return valid;
         }
 
+        private boolean isSetCorrelationIdTaskValid(
+                WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            if (workflowTask.getInputParameters() == null
+                    || !workflowTask.getInputParameters().containsKey("correlationId")
+                    || workflowTask.getInputParameters().get("correlationId").getClass()
+                            != String.class) {
+                String message =
+                        String.format(
+                                PARAM_REQUIRED_STRING_FORMAT,
+                                "correlationId",
+                                TaskType.SET_CORRELATION_ID,
+                                workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                return false;
+            }
+            return true;
+        }
+
         private boolean isDynamicForkJoinValid(
                 WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
 
-            // For DYNAMIC_FORK_JOIN_TASK support dynamicForkJoinTasksParam or combination of
+            // For DYNAMIC_FORK_JOIN_TASK support dynamicForkJoinTasksParam or combination
+            // of
             // dynamicForkTasksParam and dynamicForkTasksInputParamName.
             // Both are not allowed.
             if (workflowTask.getDynamicForkJoinTasksParam() != null
@@ -397,7 +419,8 @@ public @interface WorkflowTaskTypeConstraint {
             boolean isInputParameterSet = false;
             boolean isInputTemplateSet = false;
 
-            // Either http_request in WorkflowTask inputParam should be set or in inputTemplate
+            // Either http_request in WorkflowTask inputParam should be set or in
+            // inputTemplate
             // Taskdef should be set
             if (workflowTask.getInputParameters() != null
                     && workflowTask.getInputParameters().containsKey("http_request")) {
@@ -476,7 +499,8 @@ public @interface WorkflowTaskTypeConstraint {
             boolean isInputParameterSet = false;
             boolean isInputTemplateSet = false;
 
-            // Either kafka_request in WorkflowTask inputParam should be set or in inputTemplate
+            // Either kafka_request in WorkflowTask inputParam should be set or in
+            // inputTemplate
             // Taskdef should be set
             if (workflowTask.getInputParameters() != null
                     && workflowTask.getInputParameters().containsKey("kafka_request")) {
@@ -531,7 +555,8 @@ public @interface WorkflowTaskTypeConstraint {
             boolean isInputParameterSet = false;
             boolean isInputTemplateSet = false;
 
-            // Either queryExpression in WorkflowTask inputParam should be set or in inputTemplate
+            // Either queryExpression in WorkflowTask inputParam should be set or in
+            // inputTemplate
             // Taskdef should be set
             if (workflowTask.getInputParameters() != null
                     && workflowTask.getInputParameters().containsKey("queryExpression")) {

@@ -37,6 +37,7 @@ public class WorkflowTestService {
         operators.add(TaskType.TASK_TYPE_JOIN);
         operators.add(TaskType.TASK_TYPE_DO_WHILE);
         operators.add(TaskType.TASK_TYPE_SET_VARIABLE);
+        operators.add(TaskType.TASK_TYPE_SET_CORRELATION_ID);
         operators.add(TaskType.TASK_TYPE_FORK);
         operators.add(TaskType.TASK_TYPE_INLINE);
         operators.add(TaskType.TASK_TYPE_TERMINATE);
