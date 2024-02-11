@@ -73,7 +73,7 @@ public class TaskResource {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(
                         taskService.batchPoll(taskType, workerId, domain, count, timeout))
-                .filter(logs -> !logs.isEmpty())
+                .filter(tasks -> !tasks.isEmpty())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
