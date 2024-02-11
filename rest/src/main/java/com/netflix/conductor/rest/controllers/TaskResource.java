@@ -59,7 +59,7 @@ public class TaskResource {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.poll(taskType, workerId, domain))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.noContent().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/poll/batch/{tasktype}")
@@ -74,7 +74,7 @@ public class TaskResource {
         return Optional.ofNullable(
                         taskService.batchPoll(taskType, workerId, domain, count, timeout))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.noContent().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping(produces = TEXT_PLAIN_VALUE)
@@ -103,8 +103,11 @@ public class TaskResource {
 
     @GetMapping("/{taskId}/log")
     @Operation(summary = "Get Task Execution Logs")
-    public List<TaskExecLog> getTaskLogs(@PathVariable("taskId") String taskId) {
-        return taskService.getTaskLogs(taskId);
+    public ResponseEntity<List<TaskExecLog>> getTaskLogs(@PathVariable("taskId") String taskId) {
+        return Optional.ofNullable(taskService.getTaskLogs(taskId))
+                .filter(logs -> !logs.isEmpty())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{taskId}")
@@ -113,7 +116,7 @@ public class TaskResource {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.getTask(taskId))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.noContent().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/queue/sizes")
