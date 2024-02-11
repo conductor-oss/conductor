@@ -28,7 +28,7 @@ Please update your forks to point to this repo.  This will ensure your commits a
 git remote set-url origin https://github.com/conductor-oss/conductor
 ```
 > [!IMPORTANT]  
-> **Follow the steps below if you have an active PR againt the Netflix/Conductor repository**
+> **Follow the steps below if you have an active PR against the Netflix/Conductor repository**
 > 1. Fork **this** repository
 > 2. Update your local repository to change the remote to this repository
 > 3. Send a PR against the `main` branch
