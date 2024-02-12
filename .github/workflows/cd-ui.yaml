@@ -9,6 +9,7 @@ on:
         description: Choose aws env
         options:
           - dev
+          - stg
           - prd
       Tag:
         required: true
@@ -65,7 +66,12 @@ jobs:
           then
             echo "AWS_ROLE=PRD_AWS_ROLE" >> $GITHUB_OUTPUT
             echo "PROJECT_PREFIX=sirn-prd-mb" >> $GITHUB_OUTPUT
-            echo "SLACK_WEBHOOK_URL=PRD_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT     
+            echo "SLACK_WEBHOOK_URL=PRD_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT   
+          elif [ $ENV == 'stg' ]
+          then
+            echo "AWS_ROLE=STG_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-stg-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT  
           elif [ $ENV == 'dev' ]
           then
             echo "AWS_ROLE=DEV_AWS_ROLE" >> $GITHUB_OUTPUT
