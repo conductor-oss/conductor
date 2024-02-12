@@ -90,6 +90,6 @@ Launch UI [http://localhost:5000](http://localhost:5000)
 ![conductor ui](conductorUI.png)
 
 ## Summary
-1. By default in-memory persistence is used, so any workflows created or excuted will be wiped out once the server is terminated.
+1. By default in-memory persistence is used, so any workflows created or executed will be wiped out once the server is terminated.
 2. Without indexing configured, the search functionality in UI will not work and will result an empty set.
 3. See how to install Conductor using [Docker](docker.md) with persistence and indexing.
