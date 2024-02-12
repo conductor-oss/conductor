@@ -1,0 +1,156 @@
+name: Deploy Conductor Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      Environment:
+        required: true
+        type: choice
+        description: Choose aws env
+        options:
+          - dev
+          - stg
+          - prd
+      Tag:
+        required: true
+        type: string
+        description: Provide tag (Eg:v3.14.0)
+
+env:
+  SERVICE_NAME: conductor-server
+  AWS_REGION: "ap-south-1"
+
+
+jobs:
+  prepare-env:
+    name: Prepare Env
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 2
+    outputs:
+      AWS_ROLE: ${{ steps.vars.outputs.AWS_ROLE }}
+      ENV: ${{ steps.vars.outputs.ENV }}
+      PROJECT_PREFIX: ${{ steps.vars.outputs.PROJECT_PREFIX }}
+      ECS_CLUSTER: ${{ steps.set_env.outputs.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ steps.set_env.outputs.ECS_SERVICE }}
+      TASK_DEFINITION: ${{ steps.set_env.outputs.TASK_DEFINITION }}
+      CONTAINER_NAME: ${{ steps.set_env.outputs.CONTAINER_NAME }}
+      ECR_REPOSITORY: ${{ steps.set_env.outputs.ECR_REPOSITORY }}
+      SLACK_WEBHOOK_URL: ${{ steps.vars.outputs.SLACK_WEBHOOK_URL }}
+      
+    steps:
+      - id: vars
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          ENV=${{ github.event.inputs.environment }}
+          IMAGE_TAG=${{ github.event.inputs.tag }}
+          echo $BRANCH
+          
+          if [ -z "$ENV" ]
+          then
+            case $BRANCH in
+              "dev")
+                ENV="dev"
+                ;;
+              "stg")
+                ENV="stg"
+                ;;
+              "main")
+                ENV="prd"
+                ;;
+              *)
+                echo "ENV not configured" && exit 1
+                ;;
+            esac
+          fi
+          if [[ $ENV == 'prd' && $BRANCH == 'production' ]]
+          then
+            echo "AWS_ROLE=PRD_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-prd-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=PRD_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT  
+          elif [ $ENV == 'stg' ]
+          then
+            echo "AWS_ROLE=STG_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-stg-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT   
+          elif [ $ENV == 'dev' ]
+          then
+            echo "AWS_ROLE=DEV_AWS_ROLE" >> $GITHUB_OUTPUT
+            echo "PROJECT_PREFIX=sirn-dev-mb" >> $GITHUB_OUTPUT
+            echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT
+          else
+            echo "Branch not configured!"
+            exit 1
+          fi
+          echo "ENV=$ENV"  >> $GITHUB_OUTPUT
+          echo ":rocket: Environment - $ENV " >> $GITHUB_STEP_SUMMARY
+          echo ":label: Image Tag - $IMAGE_TAG " >> $GITHUB_STEP_SUMMARY
+      - name: set variables
+        id: set_env
+        run: |
+          PROJECT_PREFIX=${{ steps.vars.outputs.PROJECT_PREFIX }}
+          echo "ECR_REPOSITORY=$PROJECT_PREFIX-ecr-$SERVICE_NAME"  >> $GITHUB_OUTPUT
+          echo "ECS_CLUSTER=$PROJECT_PREFIX-ecs-cluster"  >> $GITHUB_OUTPUT
+          echo "ECS_SERVICE=$PROJECT_PREFIX-svc-$SERVICE_NAME"  >> $GITHUB_OUTPUT
+          echo "TASK_DEFINITION=$PROJECT_PREFIX-td-$SERVICE_NAME"  >> $GITHUB_OUTPUT
+          echo "CONTAINER_NAME=$PROJECT_PREFIX-cntr-$SERVICE_NAME"  >> $GITHUB_OUTPUT
+          echo ":seedling: Branch:${GITHUB_REF#refs/heads/}" >> $GITHUB_STEP_SUMMARY
+          
+  # Deploy Conductor UI Image to ECS
+  deploy-ui-image:
+    name: Deploy UI Image
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+    needs: prepare-env
+    env:
+      AWS_ROLE: ${{ needs.prepare-env.outputs.AWS_ROLE }}
+      ENV: ${{ needs.prepare-env.outputs.ENV }}
+      PROJECT_PREFIX: ${{needs.prepare-env.outputs.PROJECT_PREFIX}}
+      ECR_REPOSITORY: ${{needs.prepare-env.outputs.ECR_REPOSITORY}}
+      IMAGE_TAG: ${{ github.event.inputs.tag }}
+      ECS_CLUSTER: ${{ needs.prepare-env.outputs.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ needs.prepare-env.outputs.ECS_SERVICE }}
+      TASK_DEFINITION: ${{ needs.prepare-env.outputs.TASK_DEFINITION }}
+      CONTAINER_NAME: ${{ needs.prepare-env.outputs.CONTAINER_NAME }}
+      
+    steps:
+      - name: Checkout code from action
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[env.AWS_ROLE] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Amazon ECR Login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.7.0
+
+      - name: Check if image tag exists in ECR
+        id: check-image-existence
+        run: |          
+          if aws ecr describe-images --repository-name "${{ env.ECR_REPOSITORY }}" --region "${{ env.AWS_REGION }}" --image-ids imageTag="${{ env.IMAGE_TAG }}" 2>&1 | grep -q "imageTag"; then
+            echo "Image tag $IMAGE_TAG exists in ECR"
+          else
+            echo "Error: Image tag $IMAGE_TAG does not exist in ECR"
+            exit 1
+          fi
+
+      - name: Deploy backend
+        id: deploy_backend
+        uses: ./.github/actions/deploy-ecs
+        env:
+          APP_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        with:
+         aws-region : ${{ env.AWS_REGION }}
+         aws-role: ${{ secrets[env.AWS_ROLE] }}
+         task-definition: ${{ env.TASK_DEFINITION }}
+         container-name: ${{ env.CONTAINER_NAME }}
+         ecs-service: ${{ env.ECS_SERVICE }}
+         ecs-cluster: ${{ env.ECS_CLUSTER }}
+         image: ${{ env.APP_IMAGE }}

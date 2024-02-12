@@ -1,0 +1,60 @@
+name: "Deploy to ECS"
+description: "Deploy new image to given ECS service by updating task definition file"
+inputs:
+  aws-role:
+    required: true
+    description: "AWS ROLE"
+  aws-region:
+    required: true
+    description: "AWS REGION"
+  task-definition:
+    required: true
+    description: "TASK DEFINITION"
+  container-name:
+    required: true
+    description: "CONTAINER NAME"
+  ecs-service:
+    required: true
+    description: "ECS SERVICE"
+  ecs-cluster:
+    required: true
+    description: "ECS CLUSTER"
+  image:
+    required: true
+    description: "APP IMAGE"
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws-role }}
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition ${{ inputs.task-definition }} \
+        --query taskDefinition > task-definition.json
+      shell: bash
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task_def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: ${{ inputs.container-name }}
+        image: ${{ inputs.image }}
+    
+    - name: Remove unwanted fields from task definition
+      id: task_def_cleanup
+      shell: bash
+      run: |
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' ${{ steps.task_def.outputs.task-definition }} > updated-task-definition.json
+      
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: updated-task-definition.json
+        service: ${{ inputs.ecs-service }}
+        cluster: ${{ inputs.ecs-cluster }}
+        wait-for-service-stability: true
