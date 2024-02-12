@@ -97,8 +97,8 @@ jobs:
           echo ":seedling: Branch:${GITHUB_REF#refs/heads/}" >> $GITHUB_STEP_SUMMARY
           
   # Deploy Conductor UI Image to ECS
-  deploy-ui-image:
-    name: Deploy UI Image
+  deploy-server-image:
+    name: Deploy Server Image
     runs-on: 'ubuntu-latest'
     timeout-minutes: 20
     permissions:
