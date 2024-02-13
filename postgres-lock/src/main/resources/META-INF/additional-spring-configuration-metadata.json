@@ -1,0 +1,13 @@
+{
+  "hints": [
+    {
+      "name": "conductor.workflow-execution-lock.type",
+      "values": [
+        {
+          "value": "postgres",
+          "description": "Use the postgres-lock implementation as the lock provider."
+        }
+      ]
+    }
+  ]
+}

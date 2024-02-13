@@ -1,0 +1,14 @@
+dependencies {
+    implementation project(':conductor-core')
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "org.apache.commons:commons-lang3"
+
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.flywaydb:flyway-core'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+}

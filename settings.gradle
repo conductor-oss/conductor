@@ -43,6 +43,7 @@ include 'redis-persistence'
 
 include 'es6-persistence'
 
+include 'postgres-lock'
 include 'redis-lock'
 
 include 'awss3-storage'
