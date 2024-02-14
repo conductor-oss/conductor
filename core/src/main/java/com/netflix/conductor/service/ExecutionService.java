@@ -187,6 +187,7 @@ public class ExecutionService {
         }
         taskIds.stream()
                 .map(executionDAOFacade::getTaskModel)
+                .filter(Objects::nonNull)
                 .filter(task -> TaskModel.Status.IN_PROGRESS.equals(task.getStatus()))
                 .forEach(taskStatusListener::onTaskInProgress);
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
