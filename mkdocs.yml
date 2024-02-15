@@ -111,7 +111,7 @@ nav:
       - documentation/clientsdks/js-sdk.md
   - Resources:
     - Contributing: resources/contributing.md
-    - Code of Conduct: resources/code-of-conduct.md
+    - Code of Conduct: https://orkes.io/orkes-conductor-community-code-of-conduct
     - Related Projects: resources/related.md
     - License: resources/license.md
 theme: 
