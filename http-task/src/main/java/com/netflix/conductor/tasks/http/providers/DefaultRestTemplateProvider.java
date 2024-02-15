@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -40,7 +39,6 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
     private final int defaultReadTimeout;
     private final int defaultConnectTimeout;
 
-    @Autowired
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
             @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {

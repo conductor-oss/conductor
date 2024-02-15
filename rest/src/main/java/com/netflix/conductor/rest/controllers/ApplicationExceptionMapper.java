@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.core.exception.ConflictException;
@@ -49,6 +50,7 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(ConflictException.class, HttpStatus.CONFLICT);
         EXCEPTION_STATUS_MAP.put(IllegalArgumentException.class, HttpStatus.BAD_REQUEST);
         EXCEPTION_STATUS_MAP.put(InvalidFormatException.class, HttpStatus.INTERNAL_SERVER_ERROR);
+        EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Throwable.class)

@@ -7,11 +7,11 @@ export const NEW_WORKFLOW_TEMPLATE = {
   version: 1,
   tasks: [
     {
-      name: "get_population_data",
-      taskReferenceName: "get_population_data",
+      name: "call_remote_api",
+      taskReferenceName: "call_remote_api",
       inputParameters: {
         http_request: {
-          uri: "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+          uri: "https://orkes-api-tester.orkesconductor.com/api",
           method: "GET",
         },
       },
@@ -20,8 +20,8 @@ export const NEW_WORKFLOW_TEMPLATE = {
   ],
   inputParameters: [],
   outputParameters: {
-    data: "${get_population_data.output.response.body.data}",
-    source: "${get_population_data.output.response.body.source}",
+    data: "${call_remote_api.output.response.body.data}",
+    source: "${call_remote_api.output.response.body.source}",
   },
   schemaVersion: 2,
   restartable: true,
@@ -45,11 +45,11 @@ const WORKFLOW_SCHEMA = {
       version: 1,
       tasks: [
         {
-          name: "get_population_data",
-          taskReferenceName: "get_population_data",
+          name: "call_remote_api",
+          taskReferenceName: "call_remote_api",
           inputParameters: {
             http_request: {
-              uri: "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+              uri: "https://orkes-api-tester.orkesconductor.com/api",
               method: "GET",
             },
           },
@@ -58,8 +58,8 @@ const WORKFLOW_SCHEMA = {
       ],
       inputParameters: [],
       outputParameters: {
-        data: "${get_population_data.output.response.body.data}",
-        source: "${get_population_data.output.response.body.source}",
+        data: "${call_remote_api.output.response.body.data}",
+        source: "${call_remote_api.output.response.body.source}",
       },
       schemaVersion: 2,
       restartable: true,
@@ -108,11 +108,11 @@ const WORKFLOW_SCHEMA = {
       examples: [
         [
           {
-            name: "get_population_data",
-            taskReferenceName: "get_population_data",
+            name: "call_remote_api",
+            taskReferenceName: "call_remote_api",
             inputParameters: {
               http_request: {
-                uri: "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+                uri: "https://orkes-api-tester.orkesconductor.com/api",
                 method: "GET",
               },
             },
@@ -137,11 +137,11 @@ const WORKFLOW_SCHEMA = {
             },
             examples: [
               {
-                name: "get_population_data",
-                taskReferenceName: "get_population_data",
+                name: "call_remote_api",
+                taskReferenceName: "call_remote_api",
                 inputParameters: {
                   http_request: {
-                    uri: "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+                    uri: "https://orkes-api-tester.orkesconductor.com/api",
                     method: "GET",
                   },
                 },
@@ -156,7 +156,7 @@ const WORKFLOW_SCHEMA = {
                 title: "Task name",
                 description: "Task name",
                 default: "",
-                examples: ["get_population_data"],
+                examples: ["call_remote_api"],
               },
               taskReferenceName: {
                 $id: "#/properties/tasks/items/anyOf/0/properties/taskReferenceName",
@@ -165,7 +165,7 @@ const WORKFLOW_SCHEMA = {
                 description:
                   "A unique task reference name for this task in the entire workflow",
                 default: "",
-                examples: ["get_population_data"],
+                examples: ["call_remote_api"],
               },
               inputParameters: {
                 $id: "#/properties/tasks/items/anyOf/0/properties/inputParameters",
@@ -176,7 +176,7 @@ const WORKFLOW_SCHEMA = {
                 examples: [
                   {
                     http_request: {
-                      uri: "https://datausa.io/api/data?drilldowns=Nation&measures=Population",
+                      uri: "https://orkes-api-tester.orkesconductor.com/api",
                       method: "GET",
                     },
                   },
@@ -219,8 +219,8 @@ const WORKFLOW_SCHEMA = {
       default: {},
       examples: [
         {
-          data: "${get_population_data.output.response.body.data}",
-          source: "${get_population_data.output.response.body.source}",
+          data: "${call_remote_api.output.response.body.data}",
+          source: "${call_remote_api.output.response.body.source}",
         },
       ],
       required: [],

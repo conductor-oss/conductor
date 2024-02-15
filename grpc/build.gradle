@@ -87,4 +87,5 @@ sourceSets {
   }
 }
 
+tasks.getByPath(':conductor-grpc:sourcesJar').dependsOn(':conductor-grpc:generateProto')
 compileJava.dependsOn(tasks.getByPath(':conductor-common:protogen'))
