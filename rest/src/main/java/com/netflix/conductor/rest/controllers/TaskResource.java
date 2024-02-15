@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.netflix.conductor.core.exception.NotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -108,7 +109,7 @@ public class TaskResource {
         return Optional.ofNullable(taskService.getTaskLogs(taskId))
                 .filter(logs -> !logs.isEmpty())
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new NotFoundException("Task logs not found for taskId: %s", taskId));
     }
 
     @GetMapping("/{taskId}")
