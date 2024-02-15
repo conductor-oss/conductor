@@ -60,7 +60,7 @@ public class TaskResource {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.poll(taskType, workerId, domain))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new NotFoundException("Poll not found for Task Type: %s", taskType));
     }
 
     @GetMapping("/poll/batch/{tasktype}")
@@ -76,7 +76,7 @@ public class TaskResource {
                         taskService.batchPoll(taskType, workerId, domain, count, timeout))
                 .filter(tasks -> !tasks.isEmpty())
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new NotFoundException("Batch Poll not found for Task Type: %s", taskType));
     }
 
     @PostMapping(produces = TEXT_PLAIN_VALUE)
@@ -118,7 +118,7 @@ public class TaskResource {
         // for backwards compatibility with 2.x client which expects a 204 when no Task is found
         return Optional.ofNullable(taskService.getTask(taskId))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new NotFoundException("Task not found for taskId: %s", taskId));
     }
 
     @GetMapping("/queue/sizes")
