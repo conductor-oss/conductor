@@ -101,6 +101,7 @@ nav:
       - documentation/advanced/azureblob-storage.md
       - documentation/advanced/externalpayloadstorage.md
       - documentation/advanced/redis.md
+      - documentation/advanced/postgresql.md
     - Client SDKs:
       - documentation/clientsdks/index.md
       - documentation/clientsdks/java-sdk.md

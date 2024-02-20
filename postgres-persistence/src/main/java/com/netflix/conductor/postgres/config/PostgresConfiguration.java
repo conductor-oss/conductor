@@ -30,10 +30,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
-import com.netflix.conductor.postgres.dao.PostgresIndexDAO;
-import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
-import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
+import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
@@ -83,6 +80,15 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    public PostgresPollDataDAO postgresPollDataDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresPollDataDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
     @Bean
