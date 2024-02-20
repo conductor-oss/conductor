@@ -71,6 +71,7 @@ jobs:
           then
             echo "AWS_ROLE=STG_AWS_ROLE" >> $GITHUB_OUTPUT
             echo "PROJECT_PREFIX=sirn-stg-mb" >> $GITHUB_OUTPUT
+            echo "DEFAULT_CONF=default-stg.conf" >> $GITHUB_OUTPUT
             echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT    
           elif [ $ENV == 'dev' ]
           then
