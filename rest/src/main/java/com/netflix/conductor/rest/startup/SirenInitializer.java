@@ -79,9 +79,9 @@ public class SirenInitializer {
         createWorkflow(sirenWebhookWorkflow, headers);
         LOGGER.info("Siren workflows are created");
 
-        createTask(sendNotificationTask, headers);
-        createTask(sendWebhookTask, headers);
-        createTask(finalizeWorkflowExecutionTask, headers);
+        updateTask(sendNotificationTask, headers);
+        updateTask(sendWebhookTask, headers);
+        updateTask(finalizeWorkflowExecutionTask, headers);
         LOGGER.info("Siren tasks are created");
 
         createEventHandler(finalizeWorkflowExecutionEventHandler, headers);
@@ -97,13 +97,9 @@ public class SirenInitializer {
         }
     }
 
-    private void createTask(Resource resource, MultiValueMap<String, String> headers) {
-        try {
-            HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url + "/api/metadata/taskdefs", request, Map.class);
-        } catch (RestClientException e) {
-            handleException(e);
-        }
+    private void updateTask(Resource resource, MultiValueMap<String, String> headers) {
+        HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
+        restTemplate.postForEntity(url + "/api/metadata/taskdefs", request, Map.class);
     }
 
     private void createEventHandler(Resource resource, MultiValueMap<String, String> headers) {
