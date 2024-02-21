@@ -1,7 +1,7 @@
 {
   "accessPolicy": {},
   "name": "siren_finalize_execution_workflow",
-  "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+  "description": "Workflow for finalizing workflow execution",
   "version": 1,
   "tasks": [
     {
