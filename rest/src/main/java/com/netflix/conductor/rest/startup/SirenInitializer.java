@@ -1,3 +1,15 @@
+/*
+ * Copyright 2024 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.rest.startup;
 
 import java.io.IOException;
@@ -24,13 +36,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Component
 public class SirenInitializer {
-
+    private static final String ALREADY_EXISTS_KEYWORD = "already exists";
     private static final Logger LOGGER = LoggerFactory.getLogger(SirenInitializer.class);
 
     private final RestTemplate restTemplate;
 
-    @Value("${server.port:8080}")
-    private int port;
+    @Value("${server.url:http://localhost:8080}")
+    private String url;
 
     @Value("classpath:./siren/eventhandlers/finalizeWorkflowExecutionEventHandler.json")
     private Resource finalizeWorkflowExecutionEventHandler;
@@ -63,52 +75,52 @@ public class SirenInitializer {
     private void createSirenResources() {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
         headers.add(CONTENT_TYPE, APPLICATION_JSON_VALUE);
-        createWorkflow(sirenFinalizeExecutionWorkflow, headers, "sirenFinalizeExecutionWorkflow");
-        createWorkflow(sirenWebhookWorkflow, headers, "sirenWebhookWorkflow");
+        createWorkflow(sirenFinalizeExecutionWorkflow, headers);
+        createWorkflow(sirenWebhookWorkflow, headers);
         LOGGER.info("Siren workflows are created");
 
-        createTask(sendNotificationTask, headers, "sendNotificationTask");
-        createTask(sendWebhookTask, headers, "sendWebhookTask");
-        createTask(finalizeWorkflowExecutionTask, headers, "finalizeWorkflowExecutionTask");
+        createTask(sendNotificationTask, headers);
+        createTask(sendWebhookTask, headers);
+        createTask(finalizeWorkflowExecutionTask, headers);
         LOGGER.info("Siren tasks are created");
 
-        createEventHandler(
-                finalizeWorkflowExecutionEventHandler,
-                headers,
-                "finalizeWorkflowExecutionEventHandler");
+        createEventHandler(finalizeWorkflowExecutionEventHandler, headers);
         LOGGER.info("Siren event handlers are created");
     }
 
-    private void createWorkflow(
-            Resource resource, MultiValueMap<String, String> headers, String workflowName) {
+    private void createWorkflow(Resource resource, MultiValueMap<String, String> headers) {
         try {
             HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url("/api/metadata/workflow"), request, Map.class);
+            restTemplate.postForEntity(url + "/api/metadata/workflow", request, Map.class);
         } catch (RestClientException e) {
-            LOGGER.info("Skipping create {} ", workflowName);
-            e.printStackTrace();
+            handleException(e);
         }
     }
 
-    private void createTask(
-            Resource resource, MultiValueMap<String, String> headers, String taskName) {
+    private void createTask(Resource resource, MultiValueMap<String, String> headers) {
         try {
             HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url("/api/metadata/taskdefs"), request, Map.class);
+            restTemplate.postForEntity(url + "/api/metadata/taskdefs", request, Map.class);
         } catch (RestClientException e) {
-            LOGGER.info("Skipping create {} ", taskName);
-            e.printStackTrace();
+            handleException(e);
         }
     }
 
-    private void createEventHandler(
-            Resource resource, MultiValueMap<String, String> headers, String eventHandlerName) {
+    private void createEventHandler(Resource resource, MultiValueMap<String, String> headers) {
         try {
             HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url("/api/event"), request, Map.class);
+            restTemplate.postForEntity(url + "/api/event", request, Map.class);
         } catch (RestClientException e) {
-            LOGGER.info("Skipping create {} ", eventHandlerName);
-            e.printStackTrace();
+            handleException(e);
+        }
+    }
+
+    private void handleException(RestClientException e) {
+        if (e.getMessage().contains(ALREADY_EXISTS_KEYWORD)) {
+            LOGGER.info("Skipping creation: {}", e.getMessage());
+        } else {
+            LOGGER.error("Error while creation ", e);
+            throw e;
         }
     }
 
@@ -119,10 +131,5 @@ public class SirenInitializer {
             LOGGER.error("Error while loading siren resources", e);
             throw new RuntimeException("Error reading resources", e);
         }
-    }
-
-    private String url(String path) {
-        // TODO replace with url
-        return "http://localhost:" + port + path;
     }
 }
