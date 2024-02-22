@@ -52,7 +52,7 @@ public class PostgresLock implements Lock {
         while (System.currentTimeMillis() < endTime) {
             Timestamp now = new Timestamp(System.currentTimeMillis());
             Timestamp leaseExpiration =
-                    new Timestamp(System.currentTimeMillis() - unit.toMillis(leaseTime));
+                    new Timestamp(System.currentTimeMillis() + unit.toMillis(leaseTime));
 
             String sql =
                     "INSERT INTO locks(lock_id, owner_id, locked_at) VALUES (?, ?, ?) ON CONFLICT (lock_id) DO UPDATE SET owner_id = ?, locked_at = ? WHERE locks.lock_id = ? AND (locks.owner_id = ? OR locks.locked_at <= ?)";
