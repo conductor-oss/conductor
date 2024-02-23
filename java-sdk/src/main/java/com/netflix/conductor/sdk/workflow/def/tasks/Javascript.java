@@ -22,6 +22,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,8 @@ public class Javascript extends Task<Javascript> {
      * Javascript tasks are executed on the Conductor server without having to write worker code
      *
      * <p>Use {@link Javascript#validate()} method to validate the javascript to ensure the script
-     * is valid.
+     * is valid. Set environment variable CONDUCTOR_NASHORN_ES6_ENABLED=true for Nashorn ES6 support
+     * during validation.
      *
      * @param taskReferenceName
      * @param script script to execute
@@ -100,7 +102,13 @@ public class Javascript extends Task<Javascript> {
      * @return
      */
     public Javascript validate() {
-        ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+        ScriptEngine scriptEngine;
+        if ("true".equalsIgnoreCase(System.getenv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
+            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
+            scriptEngine = factory.getScriptEngine("--language=es6");
+        } else {
+            scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+        }
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
             return this;
@@ -128,7 +136,13 @@ public class Javascript extends Task<Javascript> {
      */
     public Object test(Map<String, Object> input) {
 
-        ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+        ScriptEngine scriptEngine;
+        if ("true".equalsIgnoreCase(System.getenv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
+            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
+            scriptEngine = factory.getScriptEngine("--language=es6");
+        } else {
+            scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+        }
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
             return this;
