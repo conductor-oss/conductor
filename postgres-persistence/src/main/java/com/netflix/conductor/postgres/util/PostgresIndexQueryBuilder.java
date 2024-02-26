@@ -44,7 +44,7 @@ public class PostgresIndexQueryBuilder {
         "task_def_name",
         "update_time",
         "json_data",
-        "to_tsvector(json_data::text)"
+        "jsonb_to_tsvector('english', json_data, '[\"all\"]')"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -186,7 +186,7 @@ public class PostgresIndexQueryBuilder {
                 conditions.add(cond);
             } else {
                 Condition cond = new Condition();
-                cond.setAttribute("to_tsvector(json_data::text)");
+                cond.setAttribute("jsonb_to_tsvector('english', json_data, '[\"all\"]')");
                 cond.setOperator("@@");
                 String[] values = {freeText};
                 cond.setValues(Arrays.asList(values));

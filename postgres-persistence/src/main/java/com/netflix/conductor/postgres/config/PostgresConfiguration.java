@@ -13,6 +13,7 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
@@ -59,6 +60,7 @@ public class PostgresConfiguration {
     public Flyway flywayForPrimaryDb() {
         return Flyway.configure()
                 .locations("classpath:db/migration_postgres")
+                .configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                 .schemas(properties.getSchema())
                 .dataSource(dataSource)
                 .outOfOrder(true)
