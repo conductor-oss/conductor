@@ -50,7 +50,8 @@ public class WorkflowBulkServiceTest {
         }
 
         @Bean
-        public WorkflowBulkService workflowBulkService(WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
+        public WorkflowBulkService workflowBulkService(
+                WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
             return new WorkflowBulkServiceImpl(workflowExecutor, workflowService);
         }
     }

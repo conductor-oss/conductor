@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -110,5 +111,16 @@ public class WorkflowBulkResource {
             @RequestBody List<String> workflowIds,
             @RequestParam(value = "reason", required = false) String reason) {
         return workflowBulkService.terminate(workflowIds, reason);
+    }
+
+    /**
+     * Delete the list of workflows.
+     *
+     * @param workflowIds - list of workflow Ids to be deleted
+     * @return bulk reponse object containing a list of successfully deleted workflows
+     */
+    @DeleteMapping("/remove")
+    public BulkResponse deleteWorkflow(@RequestBody List<String> workflowIds) {
+        return workflowBulkService.deleteWorkflow(workflowIds, true);
     }
 }

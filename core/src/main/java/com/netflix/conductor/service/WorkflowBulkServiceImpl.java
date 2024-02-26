@@ -12,10 +12,8 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.conductor.common.run.Workflow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,7 +32,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowService workflowService;
 
-    public WorkflowBulkServiceImpl(WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
+    public WorkflowBulkServiceImpl(
+            WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
         this.workflowExecutor = workflowExecutor;
         this.workflowService = workflowService;
     }
@@ -179,7 +178,10 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
         BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             try {
-                workflowService.deleteWorkflow(workflowId, archiveWorkflow); // TODO: change this to method that cancels then deletes workflows
+                workflowService.deleteWorkflow(
+                        workflowId,
+                        archiveWorkflow); // TODO: change this to method that cancels then deletes
+                // workflows
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
                 LOGGER.error(
