@@ -120,7 +120,10 @@ public class WorkflowBulkResource {
      * @return bulk reponse object containing a list of successfully deleted workflows
      */
     @DeleteMapping("/remove")
-    public BulkResponse deleteWorkflow(@RequestBody List<String> workflowIds) {
-        return workflowBulkService.deleteWorkflow(workflowIds, true);
+    public BulkResponse deleteWorkflow(
+            @RequestBody List<String> workflowIds,
+            @RequestParam(value = "archiveWorkflow", defaultValue = "true", required = false)
+                    boolean archiveWorkflow) {
+        return workflowBulkService.deleteWorkflow(workflowIds, archiveWorkflow);
     }
 }

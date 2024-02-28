@@ -181,7 +181,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
                 workflowService.deleteWorkflow(
                         workflowId,
                         archiveWorkflow); // TODO: change this to method that cancels then deletes
-                // workflows
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
                 LOGGER.error(
