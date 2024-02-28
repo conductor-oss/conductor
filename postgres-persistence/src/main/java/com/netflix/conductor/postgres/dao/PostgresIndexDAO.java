@@ -30,15 +30,22 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.PostgresIndexQueryBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
+    private final PostgresProperties properties;
+
     public PostgresIndexDAO(
-            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+            RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource,
+            PostgresProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
+        this.properties = properties;
     }
 
     @Override
@@ -69,7 +76,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
             String query, String freeText, int start, int count, List<String> sort) {
         PostgresIndexQueryBuilder queryBuilder =
                 new PostgresIndexQueryBuilder(
-                        "workflow_index", query, freeText, start, count, sort);
+                        "workflow_index", query, freeText, start, count, sort, properties);
 
         List<WorkflowSummary> results =
                 queryWithTransaction(
@@ -117,7 +124,8 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
     public SearchResult<TaskSummary> searchTaskSummary(
             String query, String freeText, int start, int count, List<String> sort) {
         PostgresIndexQueryBuilder queryBuilder =
-                new PostgresIndexQueryBuilder("task_index", query, freeText, start, count, sort);
+                new PostgresIndexQueryBuilder(
+                        "task_index", query, freeText, start, count, sort, properties);
 
         List<TaskSummary> results =
                 queryWithTransaction(
