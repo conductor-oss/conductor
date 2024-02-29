@@ -13,7 +13,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core"
 
     implementation "org.apache.commons:commons-lang3"
-    implementation "org.postgresql:postgresql:42.3.8"
+    implementation "org.postgresql:postgresql:${revPostgres}"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-core"
 
