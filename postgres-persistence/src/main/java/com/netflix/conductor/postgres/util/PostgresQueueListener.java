@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Optional;
 
 import javax.sql.DataSource;
 
@@ -78,20 +79,20 @@ public class PostgresQueueListener {
         return true;
     }
 
-    public Integer getSize(String queueName) {
+    public Optional<Integer> getSize(String queueName) {
         checkUpToDate();
         handleNotifications();
         if (notificationIsStale() || !connected) {
             connect();
-            return null;
+            return Optional.empty();
         }
 
         QueueStats queueStats = queues.get(queueName);
         if (queueStats == null) {
-            return 0;
+            return Optional.of(0);
         }
 
-        return queueStats.getDepth();
+        return Optional.of(queueStats.getDepth());
     }
 
     private boolean notificationIsStale() {
@@ -187,15 +188,14 @@ public class PostgresQueueListener {
             iterator.forEachRemaining(
                     key -> {
                         if (!key.equals("__now__")) {
-                            QueueStats stats = null;
                             try {
-                                stats =
+                                QueueStats stats =
                                         objectMapper.treeToValue(
                                                 notification.get(key), QueueStats.class);
+                                queueStats.put(key, stats);
                             } catch (JsonProcessingException e) {
                                 throw new RuntimeException(e);
                             }
-                            queueStats.put(key, stats);
                         }
                     });
             this.queues = queueStats;

@@ -181,9 +181,9 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     @Override
     public int getSize(String queueName) {
         if (queueListener != null) {
-            Integer size = queueListener.getSize(queueName);
-            if (size != null) {
-                return size;
+            Optional<Integer> size = queueListener.getSize(queueName);
+            if (size.isPresent()) {
+                return size.get();
             }
         }
 

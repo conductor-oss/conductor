@@ -163,31 +163,31 @@ public class PostgresQueueListenerTest {
 
     @Test
     public void testGetSize() {
-        assertEquals(0, listener.getSize("dummy-task").intValue());
+        assertEquals(0, listener.getSize("dummy-task").get().intValue());
         sendNotification("dummy-task", 3, System.currentTimeMillis() + 100);
-        assertEquals(3, listener.getSize("dummy-task").intValue());
+        assertEquals(3, listener.getSize("dummy-task").get().intValue());
     }
 
     @Test
     public void testTrigger() throws InterruptedException {
-        assertEquals(0, listener.getSize("dummy-task").intValue());
+        assertEquals(0, listener.getSize("dummy-task").get().intValue());
         assertFalse(listener.hasMessagesReady("dummy-task"));
 
         createQueueMessage("dummy-task", "dummy-id1");
         createQueueMessage("dummy-task", "dummy-id2");
-        assertEquals(2, listener.getSize("dummy-task").intValue());
+        assertEquals(2, listener.getSize("dummy-task").get().intValue());
         assertTrue(listener.hasMessagesReady("dummy-task"));
 
         popQueueMessage("dummy-id2");
-        assertEquals(1, listener.getSize("dummy-task").intValue());
+        assertEquals(1, listener.getSize("dummy-task").get().intValue());
         assertTrue(listener.hasMessagesReady("dummy-task"));
 
         deleteQueueMessage("dummy-id2");
-        assertEquals(1, listener.getSize("dummy-task").intValue());
+        assertEquals(1, listener.getSize("dummy-task").get().intValue());
         assertTrue(listener.hasMessagesReady("dummy-task"));
 
         deleteQueueMessage("dummy-id1");
-        assertEquals(0, listener.getSize("dummy-task").intValue());
+        assertEquals(0, listener.getSize("dummy-task").get().intValue());
         assertFalse(listener.hasMessagesReady("test-task"));
     }
 }
