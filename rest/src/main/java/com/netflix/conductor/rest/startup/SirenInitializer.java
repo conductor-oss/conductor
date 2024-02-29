@@ -41,6 +41,9 @@ public class SirenInitializer {
 
     private final RestTemplate restTemplate;
 
+    @Value("${loadSirenResources:false}")
+    private boolean loadSirenResources;
+
     @Value("${server.url:http://localhost:8080}")
     private String url;
 
@@ -68,8 +71,10 @@ public class SirenInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void setupSirenResources() {
-        LOGGER.info("Loading siren resources");
-        createSirenResources();
+        if (loadSirenResources) {
+            LOGGER.info("Loading siren resources");
+            createSirenResources();
+        }
     }
 
     private void createSirenResources() {
@@ -91,7 +96,7 @@ public class SirenInitializer {
     private void createWorkflow(Resource resource, MultiValueMap<String, String> headers) {
         try {
             HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url + "/api/metadata/workflow/", request, Map.class);
+            restTemplate.postForEntity(url + "/api/metadata/workflow", request, Map.class);
         } catch (RestClientException e) {
             handleException(e);
         }
@@ -99,13 +104,13 @@ public class SirenInitializer {
 
     private void updateTask(Resource resource, MultiValueMap<String, String> headers) {
         HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-        restTemplate.postForEntity(url + "/api/metadata/taskdefs/", request, Map.class);
+        restTemplate.postForEntity(url + "/api/metadata/taskdefs", request, Map.class);
     }
 
     private void createEventHandler(Resource resource, MultiValueMap<String, String> headers) {
         try {
             HttpEntity<String> request = new HttpEntity<>(readToString(resource), headers);
-            restTemplate.postForEntity(url + "/api/event/", request, Map.class);
+            restTemplate.postForEntity(url + "/api/event", request, Map.class);
         } catch (RestClientException e) {
             handleException(e);
         }
