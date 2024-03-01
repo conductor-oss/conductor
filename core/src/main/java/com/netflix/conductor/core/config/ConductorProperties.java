@@ -81,6 +81,9 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
+    /** Used to enable/disable the indexing of tasks. */
+    private boolean taskIndexingEnabled = true;
+
     /** Used to enable/disable the indexing of task execution logs. */
     private boolean taskExecLogIndexingEnabled = true;
 
@@ -331,6 +334,14 @@ public class ConductorProperties {
 
     public void setTaskExecLogIndexingEnabled(boolean taskExecLogIndexingEnabled) {
         this.taskExecLogIndexingEnabled = taskExecLogIndexingEnabled;
+    }
+
+    public boolean isTaskIndexingEnabled() {
+        return taskIndexingEnabled;
+    }
+
+    public void setTaskIndexingEnabled(boolean taskIndexingEnabled) {
+        this.taskIndexingEnabled = taskIndexingEnabled;
     }
 
     public boolean isAsyncIndexingEnabled() {
