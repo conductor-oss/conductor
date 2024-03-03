@@ -5,7 +5,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation 'org.postgresql:postgresql'
+    implementation "org.postgresql:postgresql:${revPostgres}"
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.flywaydb:flyway-core'
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
