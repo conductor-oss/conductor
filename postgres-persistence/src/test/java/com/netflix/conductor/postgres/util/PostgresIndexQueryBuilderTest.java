@@ -268,7 +268,7 @@ public class PostgresIndexQueryBuilderTest {
                 new PostgresIndexQueryBuilder(
                         "table_name", "", freeText, 0, 15, Arrays.asList(query));
         String expectedQuery =
-                "SELECT json_data::TEXT FROM table_name WHERE to_tsvector(json_data::text) @@ to_tsquery(?) LIMIT ? OFFSET ?";
+                "SELECT json_data::TEXT FROM table_name WHERE jsonb_to_tsvector('english', json_data, '[\"all\"]') @@ to_tsquery(?) LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
     }
 
