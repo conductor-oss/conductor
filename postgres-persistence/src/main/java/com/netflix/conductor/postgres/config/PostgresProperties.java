@@ -29,6 +29,10 @@ public class PostgresProperties {
 
     public String schema = "public";
 
+    public boolean allowFullTextQueries = true;
+
+    public boolean allowJsonQueries = true;
+
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
@@ -51,5 +55,21 @@ public class PostgresProperties {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public boolean getAllowFullTextQueries() {
+        return allowFullTextQueries;
+    }
+
+    public void setAllowFullTextQueries(boolean allowFullTextQueries) {
+        this.allowFullTextQueries = allowFullTextQueries;
+    }
+
+    public boolean getAllowJsonQueries() {
+        return allowJsonQueries;
+    }
+
+    public void setAllowJsonQueries(boolean allowJsonQueries) {
+        this.allowJsonQueries = allowJsonQueries;
     }
 }

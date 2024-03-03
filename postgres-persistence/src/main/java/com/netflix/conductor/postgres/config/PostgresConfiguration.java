@@ -98,8 +98,9 @@ public class PostgresConfiguration {
     @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "postgres")
     public PostgresIndexDAO postgresIndexDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new PostgresIndexDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresIndexDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
     @Bean
