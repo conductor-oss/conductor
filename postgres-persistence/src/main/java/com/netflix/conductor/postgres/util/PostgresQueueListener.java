@@ -17,6 +17,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sql.DataSource;
 
@@ -36,15 +38,15 @@ public class PostgresQueueListener {
 
     private PGConnection pgconn;
 
-    private Connection conn;
+    private volatile Connection conn;
+
+    private final Lock connectionLock = new ReentrantLock();
 
     private DataSource dataSource;
 
     private HashMap<String, QueueStats> queues;
 
-    private boolean connected = false;
-
-    private boolean connecting = false;
+    private volatile boolean connected = false;
 
     private long lastNotificationTime = 0;
 
@@ -100,34 +102,53 @@ public class PostgresQueueListener {
     }
 
     private void connect() {
-        if (!connecting) {
-            connected = false;
-            connecting = true;
-            try {
-                this.conn = dataSource.getConnection();
-                this.pgconn = conn.unwrap(PGConnection.class);
+        // Attempt to acquire the lock without waiting.
+        if (!connectionLock.tryLock()) {
+            // If the lock is not available, return early.
+            return;
+        }
 
+        boolean newConnectedState = false;
+
+        try {
+            // Check if the connection is null or not valid.
+            if (conn == null || !conn.isValid(1)) {
+                // Close the old connection if it exists and is not valid.
+                if (conn != null) {
+                    try {
+                        conn.close();
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                }
+
+                // Establish a new connection.
                 try {
+                    this.conn = dataSource.getConnection();
+                    this.pgconn = conn.unwrap(PGConnection.class);
+
                     boolean previousAutoCommitMode = conn.getAutoCommit();
                     conn.setAutoCommit(true);
                     try {
                         conn.prepareStatement("LISTEN conductor_queue_state").execute();
-                        connected = true;
+                        newConnectedState = true;
                     } catch (Throwable th) {
                         conn.rollback();
                         logger.error(th.getMessage());
                     } finally {
                         conn.setAutoCommit(previousAutoCommitMode);
                     }
-                } catch (SQLException ex) {
-                    throw new NonTransientException(ex.getMessage(), ex);
+                    requestStats();
+                } catch (SQLException e) {
+                    throw new NonTransientException(e.getMessage(), e);
                 }
-                requestStats();
-
-            } catch (SQLException e) {
-                logger.info(e.getSQLState());
             }
-            connecting = false;
+        } catch (Exception e) {
+            throw new NonTransientException(e.getMessage(), e);
+        } finally {
+            connected = newConnectedState;
+            // Ensure the lock is always released.
+            connectionLock.unlock();
         }
     }
 
@@ -140,13 +161,13 @@ public class PostgresQueueListener {
                 connected = true;
             } catch (Throwable th) {
                 conn.rollback();
-                logger.info(th.getMessage());
+                logger.error(th.getMessage());
             } finally {
                 conn.setAutoCommit(previousAutoCommitMode);
             }
         } catch (SQLException e) {
             if (!e.getSQLState().equals("08003")) {
-                logger.info("Error fetching notifications {}", e.getSQLState());
+                logger.error("Error fetching notifications {}", e.getSQLState());
             }
             connect();
         }
@@ -167,14 +188,13 @@ public class PostgresQueueListener {
             processPayload(notifications[notifications.length - 1].getParameter());
         } catch (SQLException e) {
             if (e.getSQLState() != "08003") {
-                logger.info("Error fetching notifications {}", e.getSQLState());
+                logger.error("Error fetching notifications {}", e.getSQLState());
             }
             connect();
         }
     }
 
     private void processPayload(String payload) {
-        logger.info("Payload: {}", payload);
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             JsonNode notification = objectMapper.readTree(payload);
