@@ -18,6 +18,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -30,6 +34,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.PostgresIndexQueryBuilder;
 
@@ -38,6 +43,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
     private final PostgresProperties properties;
+    private final ExecutorService executorService;
+
+    private static final int CORE_POOL_SIZE = 6;
+    private static final long KEEP_ALIVE_TIME = 1L;
 
     public PostgresIndexDAO(
             RetryTemplate retryTemplate,
@@ -46,6 +55,25 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
             PostgresProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
         this.properties = properties;
+
+        int maximumPoolSize = properties.getAsyncMaxPoolSize();
+        int workerQueueSize = properties.getAsyncWorkerQueueSize();
+
+        // Set up a workerpool for performing async operations.
+        this.executorService =
+                new ThreadPoolExecutor(
+                        CORE_POOL_SIZE,
+                        maximumPoolSize,
+                        KEEP_ALIVE_TIME,
+                        TimeUnit.MINUTES,
+                        new LinkedBlockingQueue<>(workerQueueSize),
+                        (runnable, executor) -> {
+                            logger.warn(
+                                    "Request {} to async dao discarded in executor {}",
+                                    runnable,
+                                    executor);
+                            Monitors.recordDiscardedIndexingCount("indexQueue");
+                        });
     }
 
     @Override
@@ -208,13 +236,14 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
     @Override
     public void removeWorkflow(String workflowId) {
-        logger.info("removeWorkflow is not supported for postgres indexing");
+        String REMOVE_WORKFLOW_SQL = "DELETE FROM workflow_index WHERE workflow_id = ?";
+
+        queryWithTransaction(REMOVE_WORKFLOW_SQL, q -> q.addParameter(workflowId).executeUpdate());
     }
 
     @Override
     public CompletableFuture<Void> asyncRemoveWorkflow(String workflowId) {
-        logger.info("asyncRemoveWorkflow is not supported for postgres indexing");
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> removeWorkflow(workflowId), executorService);
     }
 
     @Override
@@ -231,13 +260,17 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
     @Override
     public void removeTask(String workflowId, String taskId) {
-        logger.info("removeTask is not supported for postgres indexing");
+        String REMOVE_TASK_SQL =
+                "WITH task_delete AS (DELETE FROM task_index WHERE task_id = ?)"
+                        + "DELETE FROM task_execution_logs WHERE task_id =?";
+
+        queryWithTransaction(
+                REMOVE_TASK_SQL, q -> q.addParameter(taskId).addParameter(taskId).executeUpdate());
     }
 
     @Override
     public CompletableFuture<Void> asyncRemoveTask(String workflowId, String taskId) {
-        logger.info("asyncRemoveTask is not supported for postgres indexing");
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> removeTask(workflowId, taskId), executorService);
     }
 
     @Override

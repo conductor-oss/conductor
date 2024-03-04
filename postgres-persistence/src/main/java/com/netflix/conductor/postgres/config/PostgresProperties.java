@@ -33,6 +33,12 @@ public class PostgresProperties {
 
     public boolean allowJsonQueries = true;
 
+    /** The maximum number of threads allowed in the async pool */
+    private int asyncMaxPoolSize = 12;
+
+    /** The size of the queue used for holding async indexing tasks */
+    private int asyncWorkerQueueSize = 100;
+
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
@@ -71,5 +77,21 @@ public class PostgresProperties {
 
     public void setAllowJsonQueries(boolean allowJsonQueries) {
         this.allowJsonQueries = allowJsonQueries;
+    }
+
+    public int getAsyncWorkerQueueSize() {
+        return asyncWorkerQueueSize;
+    }
+
+    public void setAsyncWorkerQueueSize(int asyncWorkerQueueSize) {
+        this.asyncWorkerQueueSize = asyncWorkerQueueSize;
+    }
+
+    public int getAsyncMaxPoolSize() {
+        return asyncMaxPoolSize;
+    }
+
+    public void setAsyncMaxPoolSize(int asyncMaxPoolSize) {
+        this.asyncMaxPoolSize = asyncMaxPoolSize;
     }
 }
