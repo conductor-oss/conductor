@@ -5,7 +5,7 @@
     {
       "action": "start_workflow",
       "start_workflow": {
-        "name": "finalize_workflow_execution",
+        "name": "siren_finalize_execution_workflow",
         "input": {
           "workflowType": "${workflowType}",
           "version": "${version}",
