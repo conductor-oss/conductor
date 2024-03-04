@@ -48,3 +48,7 @@ export const useBulkTerminateWithReasonAction = (callbacks) => {
     });
   }, callbacks);
 };
+
+export const useBulkDeleteAction = ({ onSuccess }) => {
+  return useAction("/workflow/bulk/remove", "delete", { onSuccess });
+};

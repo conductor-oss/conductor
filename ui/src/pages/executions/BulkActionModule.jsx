@@ -21,6 +21,7 @@ import {
   useBulkPauseAction,
   useBulkRetryAction,
   useBulkTerminateWithReasonAction,
+  useBulkDeleteAction,
 } from "../../data/bulkactions";
 
 const useStyles = makeStyles({
@@ -59,6 +60,8 @@ export default function BulkActionModule({ selectedRows }) {
     mutate: terminateWithReasonAction,
     isLoading: terminateWithReasonLoading,
   } = useBulkTerminateWithReasonAction({ onSuccess });
+  const { mutate: deleteAction, isLoading: deleteLoading } = 
+    useBulkDeleteAction({ onSuccess });
 
   const isLoading =
     pauseLoading ||
@@ -67,7 +70,8 @@ export default function BulkActionModule({ selectedRows }) {
     restartLatestLoading ||
     retryLoading ||
     terminateLoading ||
-    terminateWithReasonLoading;
+    terminateWithReasonLoading ||
+    deleteLoading;
 
   function onSuccess(data, variables, context) {
     const retval = {
@@ -132,6 +136,11 @@ export default function BulkActionModule({ selectedRows }) {
                 });
               }
             },
+          },
+          {
+            label: "Delete",
+            handler: () =>
+              deleteAction({ body: JSON.stringify(selectedIds) }),
           },
         ]}
       >
