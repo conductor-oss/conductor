@@ -46,21 +46,20 @@ public class ElasticSearchV7Configuration {
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchV7Configuration.class);
 
     @Bean
-    public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder =
-                RestClient.builder(convertToHttpHosts(properties.toURLs()));
-        if (properties.getRestClientConnectionRequestTimeout() > 0) {
-            restClientBuilder.setRequestConfigCallback(
-                    requestConfigBuilder ->
-                            requestConfigBuilder.setConnectionRequestTimeout(
-                                    properties.getRestClientConnectionRequestTimeout()));
-        }
+    public RestClient restClient(RestClientBuilder restClientBuilder) {
         return restClientBuilder.build();
     }
 
     @Bean
     public RestClientBuilder elasticRestClientBuilder(ElasticSearchProperties properties) {
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+
+        if (properties.getRestClientConnectionRequestTimeout() > 0) {
+            builder.setRequestConfigCallback(
+                    requestConfigBuilder ->
+                            requestConfigBuilder.setConnectionRequestTimeout(
+                                    properties.getRestClientConnectionRequestTimeout()));
+        }
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
             log.info(
