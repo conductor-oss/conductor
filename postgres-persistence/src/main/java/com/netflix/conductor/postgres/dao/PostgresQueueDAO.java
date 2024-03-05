@@ -25,7 +25,9 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
+import com.netflix.conductor.postgres.util.PostgresQueueListener;
 import com.netflix.conductor.postgres.util.Query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,8 +42,13 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     private final ScheduledExecutorService scheduledExecutorService;
 
+    private PostgresQueueListener queueListener;
+
     public PostgresQueueDAO(
-            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+            RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource,
+            PostgresProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
 
         this.scheduledExecutorService =
@@ -53,6 +60,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                 UNACK_SCHEDULE_MS,
                 TimeUnit.MILLISECONDS);
         logger.debug("{} is ready to serve", PostgresQueueDAO.class.getName());
+
+        if (properties.getExperimentalQueueNotify()) {
+            this.queueListener = new PostgresQueueListener(dataSource, properties);
+        }
     }
 
     @PreDestroy
@@ -169,6 +180,13 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     @Override
     public int getSize(String queueName) {
+        if (queueListener != null) {
+            Optional<Integer> size = queueListener.getSize(queueName);
+            if (size.isPresent()) {
+                return size.get();
+            }
+        }
+
         final String GET_QUEUE_SIZE = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ?";
         return queryWithTransaction(
                 GET_QUEUE_SIZE, q -> ((Long) q.addParameter(queueName).executeCount()).intValue());
@@ -424,6 +442,12 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     private List<Message> popMessages(
             Connection connection, String queueName, int count, int timeout) {
+
+        if (this.queueListener != null) {
+            if (!this.queueListener.hasMessagesReady(queueName)) {
+                return new ArrayList<>();
+            }
+        }
 
         String POP_QUERY =
                 "UPDATE queue_message SET popped = true WHERE message_id IN ("

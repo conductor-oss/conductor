@@ -33,6 +33,10 @@ public class PostgresProperties {
     @DurationUnit(ChronoUnit.MILLIS)
     private Duration pollDataCacheValidityPeriod = Duration.ofMillis(0);
 
+    private boolean experimentalQueueNotify = false;
+
+    private Integer experimentalQueueNotifyStalePeriod = 5000;
+
     public String schema = "public";
 
     public boolean allowFullTextQueries = true;
@@ -44,6 +48,22 @@ public class PostgresProperties {
 
     /** The size of the queue used for holding async indexing tasks */
     private int asyncWorkerQueueSize = 100;
+
+    public boolean getExperimentalQueueNotify() {
+        return experimentalQueueNotify;
+    }
+
+    public void setExperimentalQueueNotify(boolean experimentalQueueNotify) {
+        this.experimentalQueueNotify = experimentalQueueNotify;
+    }
+
+    public Integer getExperimentalQueueNotifyStalePeriod() {
+        return experimentalQueueNotifyStalePeriod;
+    }
+
+    public void setExperimentalQueueNotifyStalePeriod(Integer experimentalQueueNotifyStalePeriod) {
+        this.experimentalQueueNotifyStalePeriod = experimentalQueueNotifyStalePeriod;
+    }
 
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;

@@ -19,6 +19,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -55,9 +56,16 @@ public class PostgresConfiguration {
     @Bean(initMethod = "migrate")
     @PostConstruct
     public Flyway flywayForPrimaryDb() {
-        return Flyway.configure()
-                .locations("classpath:db/migration_postgres")
-                .configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
+        FluentConfiguration config = Flyway.configure();
+
+        if (properties.getExperimentalQueueNotify()) {
+            config.locations(
+                    "classpath:db/migration_postgres", "classpath:db/migration_postgres_notify");
+        } else {
+            config.locations("classpath:db/migration_postgres");
+        }
+
+        return config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                 .schemas(properties.getSchema())
                 .dataSource(dataSource)
                 .outOfOrder(true)
@@ -95,8 +103,9 @@ public class PostgresConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public PostgresQueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new PostgresQueueDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresQueueDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
     @Bean
