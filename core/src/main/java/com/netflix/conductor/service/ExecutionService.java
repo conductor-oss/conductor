@@ -35,6 +35,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.QueueDAO;
@@ -52,6 +53,7 @@ public class ExecutionService {
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
+    private final TaskStatusListener taskStatusListener;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -65,7 +67,8 @@ public class ExecutionService {
             QueueDAO queueDAO,
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
-            SystemTaskRegistry systemTaskRegistry) {
+            SystemTaskRegistry systemTaskRegistry,
+            TaskStatusListener taskStatusListener) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -74,6 +77,7 @@ public class ExecutionService {
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
+        this.taskStatusListener = taskStatusListener;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -181,6 +185,11 @@ public class ExecutionService {
                 queueDAO.postpone(queueName, taskId, 0, queueTaskMessagePostponeSecs);
             }
         }
+        taskIds.stream()
+                .map(executionDAOFacade::getTaskModel)
+                .filter(Objects::nonNull)
+                .filter(task -> TaskModel.Status.IN_PROGRESS.equals(task.getStatus()))
+                .forEach(taskStatusListener::onTaskInProgress);
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
         Monitors.recordTaskPoll(queueName);
         tasks.forEach(this::ackTaskReceived);
