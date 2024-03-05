@@ -12,14 +12,14 @@
           "workflowId": "${workflowId}",
           "correlationId": "${correlationId}",
           "status": "${status}",
-          "input": "${input}",
+          "workflowInput": "${input}",
           "output": "${output}",
           "reasonForIncompletion": "${reasonForIncompletion}",
           "executionTime": "${executionTime}",
           "event": "${event}"
         }
       },
-      "expandInlineJSON": false
+      "expandInlineJSON": true
     }
   ],
   "active": true

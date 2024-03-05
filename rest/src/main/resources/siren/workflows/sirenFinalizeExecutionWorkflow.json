@@ -9,7 +9,8 @@
       "taskReferenceName": "finalize_workflow_execution_task_ref",
       "inputParameters": {
         "status": "${workflow.input.status}",
-        "externalExecutionId": "${workflow.input.workflowId}"
+        "externalExecutionId": "${workflow.input.workflowId}",
+        "input": "${workflow.input.workflowInput}"
       },
       "type": "SIMPLE",
       "startDelay": 0,
