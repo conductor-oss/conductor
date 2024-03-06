@@ -1,0 +1,31 @@
+{
+  "accessPolicy": {},
+  "name": "siren_webhook_workflow",
+  "description": "Workflow for sending webhook",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "send_webhook_task",
+      "taskReferenceName": "send_webhook_task_ref",
+      "inputParameters": {
+        "notificationAuditId": "${workflow.input.notificationAuditId}",
+        "workflowExecutionId": "${workflow.input.workflowExecutionId}"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "optional": true,
+      "asyncComplete": false,
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "admin@sirenapp.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

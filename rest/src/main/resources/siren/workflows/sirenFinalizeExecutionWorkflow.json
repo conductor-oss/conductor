@@ -1,0 +1,32 @@
+{
+  "accessPolicy": {},
+  "name": "siren_finalize_execution_workflow",
+  "description": "Workflow for finalizing workflow execution",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "finalize_workflow_execution_task",
+      "taskReferenceName": "finalize_workflow_execution_task_ref",
+      "inputParameters": {
+        "status": "${workflow.input.status}",
+        "externalExecutionId": "${workflow.input.workflowId}",
+        "input": "${workflow.input.workflowInput}"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false,
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "example@email.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

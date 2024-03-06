@@ -1,0 +1,21 @@
+[
+  {
+    "createdBy": "",
+    "accessPolicy": {},
+    "name": "send_notification_task",
+    "description": "Send Notification Task",
+    "retryCount": 5,
+    "timeoutSeconds": 3600,
+    "inputKeys": [],
+    "outputKeys": [],
+    "timeoutPolicy": "TIME_OUT_WF",
+    "retryLogic": "EXPONENTIAL_BACKOFF",
+    "retryDelaySeconds": 10,
+    "responseTimeoutSeconds": 600,
+    "inputTemplate": {},
+    "rateLimitPerFrequency": 0,
+    "rateLimitFrequencyInSeconds": 1,
+    "ownerEmail": "admin@sirenapp.io",
+    "backoffScaleFactor": 1
+  }
+]

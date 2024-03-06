@@ -1,0 +1,26 @@
+{
+  "name": "finalize_workflow_execution_event_handler",
+  "event": "conductor:finalize_workflow_execution_event",
+  "actions": [
+    {
+      "action": "start_workflow",
+      "start_workflow": {
+        "name": "siren_finalize_execution_workflow",
+        "input": {
+          "workflowType": "${workflowType}",
+          "version": "${version}",
+          "workflowId": "${workflowId}",
+          "correlationId": "${correlationId}",
+          "status": "${status}",
+          "workflowInput": "${input}",
+          "output": "${output}",
+          "reasonForIncompletion": "${reasonForIncompletion}",
+          "executionTime": "${executionTime}",
+          "event": "${event}"
+        }
+      },
+      "expandInlineJSON": true
+    }
+  ],
+  "active": true
+}
