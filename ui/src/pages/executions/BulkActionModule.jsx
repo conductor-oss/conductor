@@ -138,9 +138,24 @@ export default function BulkActionModule({ selectedRows }) {
             },
           },
           {
+            label: "Archive",
+            handler: () => {
+              const archiveWorkflow = "true";
+              deleteAction({
+                body: JSON.stringify(selectedIds),
+                archiveWorkflow,
+              });
+            },
+          },
+          {
             label: "Delete",
-            handler: () =>
-              deleteAction({ body: JSON.stringify(selectedIds) }),
+            handler: () => {
+              const archiveWorkflow = "false";
+              deleteAction({
+                body: JSON.stringify(selectedIds),
+                archiveWorkflow,
+              });
+            },
           },
         ]}
       >
