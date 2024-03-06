@@ -1,0 +1,46 @@
+#can we use this approach 
+ 
+  
+  #for desicion:
+
+{
+    "name": "decisionTask",
+    "taskType": "DECISION",
+    ...
+  }
+
+#USER_DEFINED:
+
+ {
+  "name": "userDefinedTask",
+  "taskType": "USER_DEFINED",
+  ...
+}
+
+
+#LAMBDA:
+
+{
+  "name": "lambdaTask",
+  "taskType": "LAMBDA",
+  ...
+}
+
+
+#EXCLUSIVE_JOIN:
+
+{
+  "name": "exclusiveJoinTask",
+  "taskType": "EXCLUSIVE_JOIN",
+  ...
+}
+
+
+#NOOP:
+
+{
+  "name": "noopTask",
+  "taskType": "NOOP",
+  ...
+}
+
