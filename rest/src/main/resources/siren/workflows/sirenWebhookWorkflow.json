@@ -9,7 +9,7 @@
       "taskReferenceName": "send_webhook_task_ref",
       "inputParameters": {
         "notificationAuditId": "${workflow.input.notificationAuditId}",
-        "traceId":"${workflow.input.traceId}"
+        "workflowExecutionId": "${workflow.input.workflowExecutionId}"
       },
       "type": "SIMPLE",
       "startDelay": 0,
