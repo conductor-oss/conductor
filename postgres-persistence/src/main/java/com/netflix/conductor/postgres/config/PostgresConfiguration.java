@@ -30,10 +30,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
-import com.netflix.conductor.postgres.dao.PostgresIndexDAO;
-import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
-import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
+import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
@@ -101,6 +98,17 @@ public class PostgresConfiguration {
             ObjectMapper objectMapper,
             PostgresProperties properties) {
         return new PostgresIndexDAO(retryTemplate, objectMapper, dataSource, properties);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(
+            name = "conductor.workflow-execution-lock.type",
+            havingValue = "postgres")
+    public PostgresLockDAO postgresLockDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresLockDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
