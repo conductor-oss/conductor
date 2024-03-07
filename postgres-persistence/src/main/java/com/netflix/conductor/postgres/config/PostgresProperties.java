@@ -27,6 +27,18 @@ public class PostgresProperties {
 
     private Integer deadlockRetryMax = 3;
 
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration pollDataFlushInterval = Duration.ofMillis(0);
+
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration pollDataCacheValidityPeriod = Duration.ofMillis(0);
+
+    private boolean experimentalQueueNotify = false;
+
+    private Integer experimentalQueueNotifyStalePeriod = 5000;
+
+    private boolean onlyIndexOnStatusChange = false;
+
     public String schema = "public";
 
     public boolean allowFullTextQueries = true;
@@ -39,12 +51,36 @@ public class PostgresProperties {
     /** The size of the queue used for holding async indexing tasks */
     private int asyncWorkerQueueSize = 100;
 
+    public boolean getExperimentalQueueNotify() {
+        return experimentalQueueNotify;
+    }
+
+    public void setExperimentalQueueNotify(boolean experimentalQueueNotify) {
+        this.experimentalQueueNotify = experimentalQueueNotify;
+    }
+
+    public Integer getExperimentalQueueNotifyStalePeriod() {
+        return experimentalQueueNotifyStalePeriod;
+    }
+
+    public void setExperimentalQueueNotifyStalePeriod(Integer experimentalQueueNotifyStalePeriod) {
+        this.experimentalQueueNotifyStalePeriod = experimentalQueueNotifyStalePeriod;
+    }
+
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
 
     public void setTaskDefCacheRefreshInterval(Duration taskDefCacheRefreshInterval) {
         this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
+    }
+
+    public boolean getOnlyIndexOnStatusChange() {
+        return onlyIndexOnStatusChange;
+    }
+
+    public void setOnlyIndexOnStatusChange(boolean onlyIndexOnStatusChange) {
+        this.onlyIndexOnStatusChange = onlyIndexOnStatusChange;
     }
 
     public Integer getDeadlockRetryMax() {
@@ -93,5 +129,21 @@ public class PostgresProperties {
 
     public void setAsyncMaxPoolSize(int asyncMaxPoolSize) {
         this.asyncMaxPoolSize = asyncMaxPoolSize;
+    }
+
+    public Duration getPollDataFlushInterval() {
+        return pollDataFlushInterval;
+    }
+
+    public void setPollDataFlushInterval(Duration interval) {
+        this.pollDataFlushInterval = interval;
+    }
+
+    public Duration getPollDataCacheValidityPeriod() {
+        return pollDataCacheValidityPeriod;
+    }
+
+    public void setPollDataCacheValidityPeriod(Duration period) {
+        this.pollDataCacheValidityPeriod = period;
     }
 }
