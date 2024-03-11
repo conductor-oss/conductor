@@ -12,10 +12,12 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.catalina.connector.ClientAbortException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -53,8 +55,21 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(ClientAbortException.class)
+    @ExceptionHandler(ClosedChannelException.class)
     @Order(ValidationExceptionMapper.ORDER + 1)
+    public void handleNestedClientAbortedInClosedChannelException(
+            HttpServletRequest request, ClosedChannelException closedChannelException) {
+        final Throwable rootCause = ExceptionUtils.getRootCause(closedChannelException);
+        if (rootCause != null
+                && ClientAbortException.class.getName().equals(rootCause.getClass().getName())) {
+            handleClientAborted(request, (ClientAbortException) rootCause);
+            return;
+        }
+        handleAll(request, closedChannelException);
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    @Order(ValidationExceptionMapper.ORDER + 2)
     public void handleClientAborted(
             HttpServletRequest request, ClientAbortException clientAbortException) {
         logException(
@@ -62,7 +77,7 @@ public class ApplicationExceptionMapper {
     }
 
     @ExceptionHandler(Throwable.class)
-    @Order(ValidationExceptionMapper.ORDER + 2)
+    @Order(ValidationExceptionMapper.ORDER + 3)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
 
