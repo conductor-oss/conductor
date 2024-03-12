@@ -44,7 +44,7 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
         long endTime = System.currentTimeMillis() + unit.toMillis(timeToTry);
         while (System.currentTimeMillis() < endTime) {
             var sql =
-                    "INSERT INTO locks(lock_id, lease_expiration) VALUES (?, timezone('utc', now()) + (?::text || ' milliseconds')::interval) ON CONFLICT (lock_id) DO UPDATE SET lease_expiration = timezone('utc', now()) + (?::text || ' milliseconds')::interval WHERE lock_id = ? AND lease_expiration <= timezone('utc', now())";
+                    "INSERT INTO locks(lock_id, lease_expiration) VALUES (?, now() + (?::text || ' milliseconds')::interval) ON CONFLICT (lock_id) DO UPDATE SET lease_expiration = now() + (?::text || ' milliseconds')::interval WHERE lock_id = ? AND lease_expiration <= now()";
             int rowsAffected =
                     queryWithTransaction(
                             sql,
