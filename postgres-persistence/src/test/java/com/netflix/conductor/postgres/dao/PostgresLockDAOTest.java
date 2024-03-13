@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
@@ -37,7 +38,6 @@ import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(properties = "spring.flyway.clean-disabled=false")
 @RunWith(SpringRunner.class)
 @ContextConfiguration(
         classes = {
@@ -45,6 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             PostgresConfiguration.class,
             FlywayAutoConfiguration.class
         })
+@TestPropertySource(
+        properties = {
+            "conductor.workflow-execution-lock.type=postgres",
+            "spring.flyway.clean-disabled=false"
+        })
+@SpringBootTest
 public class PostgresLockDAOTest {
 
     @Autowired private PostgresLockDAO postgresLock;
