@@ -41,7 +41,8 @@ dependencies {
     //Indexing (note: Elasticsearch 6 is deprecated)
     implementation project(':conductor-es7-persistence')
 
-
+    //Locking
+    implementation project(':conductor-postgres-lock')
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
 
