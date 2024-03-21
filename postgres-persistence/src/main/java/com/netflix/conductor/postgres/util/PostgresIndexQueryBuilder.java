@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.postgres.config.PostgresProperties;
+
 public class PostgresIndexQueryBuilder {
 
     private final String table;
@@ -32,6 +34,10 @@ public class PostgresIndexQueryBuilder {
     private final int count;
     private final List<String> sort;
     private final List<Condition> conditions = new ArrayList<>();
+
+    private boolean allowJsonQueries;
+
+    private boolean allowFullTextQueries;
 
     private static final String[] VALID_FIELDS = {
         "workflow_id",
@@ -44,7 +50,7 @@ public class PostgresIndexQueryBuilder {
         "task_def_name",
         "update_time",
         "json_data",
-        "to_tsvector(json_data::text)"
+        "jsonb_to_tsvector('english', json_data, '[\"all\"]')"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -128,12 +134,20 @@ public class PostgresIndexQueryBuilder {
     }
 
     public PostgresIndexQueryBuilder(
-            String table, String query, String freeText, int start, int count, List<String> sort) {
+            String table,
+            String query,
+            String freeText,
+            int start,
+            int count,
+            List<String> sort,
+            PostgresProperties properties) {
         this.table = table;
         this.freeText = freeText;
         this.start = start;
         this.count = count;
         this.sort = sort;
+        this.allowFullTextQueries = properties.getAllowFullTextQueries();
+        this.allowJsonQueries = properties.getAllowJsonQueries();
         this.parseQuery(query);
         this.parseFreeText(freeText);
     }
@@ -177,16 +191,16 @@ public class PostgresIndexQueryBuilder {
 
     private void parseFreeText(String freeText) {
         if (!StringUtils.isEmpty(freeText) && !freeText.equals("*")) {
-            if (freeText.startsWith("{") && freeText.endsWith("}")) {
+            if (allowJsonQueries && freeText.startsWith("{") && freeText.endsWith("}")) {
                 Condition cond = new Condition();
                 cond.setAttribute("json_data");
                 cond.setOperator("@>");
                 String[] values = {freeText};
                 cond.setValues(Arrays.asList(values));
                 conditions.add(cond);
-            } else {
+            } else if (allowFullTextQueries) {
                 Condition cond = new Condition();
-                cond.setAttribute("to_tsvector(json_data::text)");
+                cond.setAttribute("jsonb_to_tsvector('english', json_data, '[\"all\"]')");
                 cond.setOperator("@@");
                 String[] values = {freeText};
                 cond.setValues(Arrays.asList(values));

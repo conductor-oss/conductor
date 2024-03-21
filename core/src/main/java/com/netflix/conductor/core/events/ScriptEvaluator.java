@@ -17,6 +17,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
+
 public class ScriptEvaluator {
 
     private static ScriptEngine engine;
@@ -25,7 +27,7 @@ public class ScriptEvaluator {
 
     /**
      * Evaluates the script with the help of input provided but converts the result to a boolean
-     * value.
+     * value. Set environment variable CONDUCTOR_NASHORN_ES6_ENABLED=true for Nashorn ES6 support.
      *
      * @param script Script to be evaluated.
      * @param input Input parameters.
@@ -37,7 +39,8 @@ public class ScriptEvaluator {
     }
 
     /**
-     * Evaluates the script with the help of input provided.
+     * Evaluates the script with the help of input provided. Set environment variable
+     * CONDUCTOR_NASHORN_ES6_ENABLED=true for Nashorn ES6 support.
      *
      * @param script Script to be evaluated.
      * @param input Input parameters.
@@ -45,16 +48,30 @@ public class ScriptEvaluator {
      * @return Generic object, the result of the evaluated expression.
      */
     public static Object eval(String script, Object input) throws ScriptException {
-        if (engine == null) {
-            engine = new ScriptEngineManager().getEngineByName("Nashorn");
+        initEngine(false);
+        Bindings bindings = engine.createBindings();
+        bindings.put("$", input);
+        return engine.eval(script, bindings);
+    }
+
+    // to mock in a test
+    public static String getEnv(String name) {
+        return System.getenv(name);
+    }
+
+    public static void initEngine(boolean reInit) {
+        if (engine == null || reInit) {
+            if ("true".equalsIgnoreCase(getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
+                NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
+                engine = factory.getScriptEngine("--language=es6");
+            } else {
+                engine = new ScriptEngineManager().getEngineByName("Nashorn");
+            }
         }
         if (engine == null) {
             throw new RuntimeException(
                     "missing nashorn engine.  Ensure you are running supported JVM");
         }
-        Bindings bindings = engine.createBindings();
-        bindings.put("$", input);
-        return engine.eval(script, bindings);
     }
 
     /**

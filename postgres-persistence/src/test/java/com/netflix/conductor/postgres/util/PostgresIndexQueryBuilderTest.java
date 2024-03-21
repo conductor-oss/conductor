@@ -21,16 +21,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import com.netflix.conductor.postgres.config.PostgresProperties;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class PostgresIndexQueryBuilderTest {
+
+    private PostgresProperties properties = new PostgresProperties();
+
     @Test
     void shouldGenerateQueryForEmptyString() throws SQLException {
         String inputQuery = "";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
@@ -46,7 +51,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = null;
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
@@ -62,7 +67,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "workflowId=\"abc123\"";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE workflow_id = ? LIMIT ? OFFSET ?",
@@ -81,7 +86,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "status IN (COMPLETED,RUNNING)";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE status = ANY(?) LIMIT ? OFFSET ?",
@@ -100,7 +105,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "status IN (COMPLETED)";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE status = ? LIMIT ? OFFSET ?",
@@ -119,7 +124,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "startTime>1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE start_time > ?::TIMESTAMPTZ LIMIT ? OFFSET ?",
@@ -138,7 +143,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "startTime<1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE start_time < ?::TIMESTAMPTZ LIMIT ? OFFSET ?",
@@ -157,7 +162,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "updateTime>1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE update_time > ?::TIMESTAMPTZ LIMIT ? OFFSET ?",
@@ -176,7 +181,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "updateTime<1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE update_time < ?::TIMESTAMPTZ LIMIT ? OFFSET ?",
@@ -196,7 +201,7 @@ public class PostgresIndexQueryBuilderTest {
                 "workflowId=\"abc123\" AND workflowType IN (one,two) AND status IN (COMPLETED,RUNNING) AND startTime>1675701498000 AND startTime<1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String generatedQuery = builder.getQuery();
         assertEquals(
                 "SELECT json_data::TEXT FROM table_name WHERE start_time < ?::TIMESTAMPTZ AND start_time > ?::TIMESTAMPTZ AND status = ANY(?) AND workflow_id = ? AND workflow_type = ANY(?) LIMIT ? OFFSET ?",
@@ -220,7 +225,7 @@ public class PostgresIndexQueryBuilderTest {
         String[] query = {"updateTime:DESC"};
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query));
+                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query), properties);
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE update_time < ?::TIMESTAMPTZ ORDER BY update_time DESC LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
@@ -232,7 +237,7 @@ public class PostgresIndexQueryBuilderTest {
         String[] query = {"updateTime:DESC", "correlationId:ASC"};
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query));
+                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query), properties);
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE update_time < ?::TIMESTAMPTZ ORDER BY update_time DESC, correlation_id ASC LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
@@ -243,7 +248,7 @@ public class PostgresIndexQueryBuilderTest {
         String inputQuery = "sqlInjection<1675702498000";
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, new ArrayList<>());
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
         String expectedQuery = "SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
     }
@@ -254,7 +259,7 @@ public class PostgresIndexQueryBuilderTest {
         String[] query = {"sqlInjection:DESC"};
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query));
+                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query), properties);
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE update_time < ?::TIMESTAMPTZ LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
@@ -266,9 +271,9 @@ public class PostgresIndexQueryBuilderTest {
         String[] query = {"sqlInjection:DESC"};
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", "", freeText, 0, 15, Arrays.asList(query));
+                        "table_name", "", freeText, 0, 15, Arrays.asList(query), properties);
         String expectedQuery =
-                "SELECT json_data::TEXT FROM table_name WHERE to_tsvector(json_data::text) @@ to_tsquery(?) LIMIT ? OFFSET ?";
+                "SELECT json_data::TEXT FROM table_name WHERE jsonb_to_tsvector('english', json_data, '[\"all\"]') @@ to_tsquery(?) LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
     }
 
@@ -278,7 +283,7 @@ public class PostgresIndexQueryBuilderTest {
         String[] query = {"sqlInjection:DESC"};
         PostgresIndexQueryBuilder builder =
                 new PostgresIndexQueryBuilder(
-                        "table_name", "", freeText, 0, 15, Arrays.asList(query));
+                        "table_name", "", freeText, 0, 15, Arrays.asList(query), properties);
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE json_data @> ?::JSONB LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());

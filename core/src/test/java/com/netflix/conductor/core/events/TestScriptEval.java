@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -43,5 +45,44 @@ public class TestScriptEval {
         assertFalse(ScriptEvaluator.evalBool(script2, payload));
         assertTrue(ScriptEvaluator.evalBool(script3, payload));
         assertFalse(ScriptEvaluator.evalBool(script4, payload));
+    }
+
+    @Test
+    public void testES6Setting() throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        Map<String, Object> app = new HashMap<>();
+        app.put("name", "conductor");
+        app.put("version", 2.0);
+        app.put("license", "Apache 2.0");
+
+        payload.put("app", app);
+        payload.put("author", "Netflix");
+        payload.put("oss", true);
+
+        String script1 =
+                """
+                (function(){\s
+                const variable = 1; // const support => es6\s
+                return $.app.name == 'conductor';})();"""; // true
+
+        MockedStatic<ScriptEvaluator> evaluator = Mockito.mockStatic(ScriptEvaluator.class);
+        evaluator
+                .when(() -> ScriptEvaluator.getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))
+                .thenReturn("true");
+        evaluator
+                .when(() -> ScriptEvaluator.eval(Mockito.any(), Mockito.any()))
+                .thenCallRealMethod();
+        evaluator
+                .when(() -> ScriptEvaluator.evalBool(Mockito.any(), Mockito.any()))
+                .thenCallRealMethod();
+        evaluator.when(() -> ScriptEvaluator.initEngine(Mockito.anyBoolean())).thenCallRealMethod();
+        evaluator.when(() -> ScriptEvaluator.toBoolean(Mockito.any())).thenCallRealMethod();
+        ScriptEvaluator.initEngine(true);
+        assertTrue(ScriptEvaluator.evalBool(script1, payload));
+        evaluator
+                .when(() -> ScriptEvaluator.getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))
+                .thenReturn("false");
+        ScriptEvaluator.initEngine(true);
+        evaluator.close();
     }
 }

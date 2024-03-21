@@ -13,11 +13,13 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -29,10 +31,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
-import com.netflix.conductor.postgres.dao.PostgresIndexDAO;
-import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
-import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
+import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
@@ -57,8 +56,16 @@ public class PostgresConfiguration {
     @Bean(initMethod = "migrate")
     @PostConstruct
     public Flyway flywayForPrimaryDb() {
-        return Flyway.configure()
-                .locations("classpath:db/migration_postgres")
+        FluentConfiguration config = Flyway.configure();
+
+        if (properties.getExperimentalQueueNotify()) {
+            config.locations(
+                    "classpath:db/migration_postgres", "classpath:db/migration_postgres_notify");
+        } else {
+            config.locations("classpath:db/migration_postgres");
+        }
+
+        return config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                 .schemas(properties.getSchema())
                 .dataSource(dataSource)
                 .outOfOrder(true)
@@ -85,10 +92,20 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
+    public PostgresPollDataDAO postgresPollDataDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresPollDataDAO(retryTemplate, objectMapper, dataSource, properties);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
     public PostgresQueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new PostgresQueueDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresQueueDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
     @Bean
@@ -96,8 +113,9 @@ public class PostgresConfiguration {
     @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "postgres")
     public PostgresIndexDAO postgresIndexDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new PostgresIndexDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            PostgresProperties properties) {
+        return new PostgresIndexDAO(retryTemplate, objectMapper, dataSource, properties);
     }
 
     @Bean

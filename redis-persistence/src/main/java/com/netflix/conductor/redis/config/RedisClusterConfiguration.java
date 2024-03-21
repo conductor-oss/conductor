@@ -55,7 +55,18 @@ public class RedisClusterConfiguration extends JedisCommandsConfigurer {
                         .collect(Collectors.toSet());
         String password = getPassword(hostSupplier.getHosts());
 
-        if (password != null) {
+        if (properties.getUsername() != null && password != null) {
+            log.info("Connecting to Redis Cluster with user AUTH");
+            return new JedisCluster(
+                    new redis.clients.jedis.JedisCluster(
+                            hosts,
+                            Protocol.DEFAULT_TIMEOUT,
+                            Protocol.DEFAULT_TIMEOUT,
+                            DEFAULT_MAX_ATTEMPTS,
+                            properties.getUsername(),
+                            password,
+                            genericObjectPoolConfig));
+        } else if (password != null) {
             log.info("Connecting to Redis Cluster with AUTH");
             return new JedisCluster(
                     new redis.clients.jedis.JedisCluster(

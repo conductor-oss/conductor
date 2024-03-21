@@ -32,6 +32,7 @@ ext {
     revGuava = '30.0-jre'
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
+    revPostgres = '42.7.2'
     revProtoBuf = '3.21.12'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'

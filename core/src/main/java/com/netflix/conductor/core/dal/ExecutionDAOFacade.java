@@ -513,7 +513,7 @@ public class ExecutionDAOFacade {
              * of tasks on a system failure. So only index for each update if async indexing is not enabled.
              * If it *is* enabled, tasks will be indexed only when a workflow is in terminal state.
              */
-            if (!properties.isAsyncIndexingEnabled()) {
+            if (!properties.isAsyncIndexingEnabled() && properties.isTaskIndexingEnabled()) {
                 indexDAO.indexTask(new TaskSummary(taskModel.toTask()));
             }
         } catch (TerminateWorkflowException e) {
