@@ -15,6 +15,7 @@ package com.netflix.conductor.rest.controllers;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -35,7 +36,6 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
-@Order(ValidationExceptionMapper.ORDER + 1)
 public class ApplicationExceptionMapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
@@ -53,7 +53,16 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(ClientAbortException.class)
+    @Order(ValidationExceptionMapper.ORDER + 1)
+    public void handleClientAborted(
+            HttpServletRequest request, ClientAbortException clientAbortException) {
+        logException(
+                request, clientAbortException); // socket closed, cannot return any error response
+    }
+
     @ExceptionHandler(Throwable.class)
+    @Order(ValidationExceptionMapper.ORDER + 2)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
 
