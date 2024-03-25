@@ -32,7 +32,7 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public void acquireLock(String lockId) {
-        acquireLock(lockId, DAY_MS, DAY_MS, TimeUnit.SECONDS);
+        acquireLock(lockId, DAY_MS, DAY_MS, TimeUnit.MILLISECONDS);
     }
 
     @Override
