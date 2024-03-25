@@ -23,6 +23,7 @@ import com.netflix.conductor.core.sync.Lock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
+    private final long DAY_MS = 24 * 60 * 60 * 1000;
 
     public PostgresLockDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
@@ -31,12 +32,12 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public void acquireLock(String lockId) {
-        acquireLock(lockId, Long.MAX_VALUE, Long.MAX_VALUE, TimeUnit.SECONDS);
+        acquireLock(lockId, DAY_MS, DAY_MS, TimeUnit.SECONDS);
     }
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, TimeUnit unit) {
-        return acquireLock(lockId, timeToTry, Long.MAX_VALUE, unit);
+        return acquireLock(lockId, timeToTry, DAY_MS, unit);
     }
 
     @Override

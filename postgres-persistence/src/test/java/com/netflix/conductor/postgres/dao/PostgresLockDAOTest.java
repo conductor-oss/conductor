@@ -68,10 +68,11 @@ public class PostgresLockDAOTest {
     public void testLockAcquisitionAndRelease() throws SQLException {
         String lockId = UUID.randomUUID().toString();
         Instant beforeAcquisitionTimeUtc = Instant.now();
+        long leaseTime = 2000;
 
         try (var connection = dataSource.getConnection()) {
             assertTrue(
-                    postgresLock.acquireLock(lockId, 500, 2000, TimeUnit.MILLISECONDS),
+                    postgresLock.acquireLock(lockId, 500, leaseTime, TimeUnit.MILLISECONDS),
                     "Lock acquisition failed");
             Instant afterAcquisitionTimeUtc = Instant.now();
 
@@ -84,11 +85,13 @@ public class PostgresLockDAOTest {
                     long leaseExpirationTime = rs.getTimestamp("lease_expiration").getTime();
                     assertTrue(
                             leaseExpirationTime
-                                    > beforeAcquisitionTimeUtc.plusMillis(2000).toEpochMilli(),
+                                    >= beforeAcquisitionTimeUtc
+                                            .plusMillis(leaseTime)
+                                            .toEpochMilli(),
                             "Lease expiration is too early");
                     assertTrue(
                             leaseExpirationTime
-                                    < afterAcquisitionTimeUtc.plusMillis(2000).toEpochMilli(),
+                                    <= afterAcquisitionTimeUtc.plusMillis(leaseTime).toEpochMilli(),
                             "Lease expiration is too late");
                 } else {
                     Assertions.fail("Lock not found in the database");
@@ -101,7 +104,7 @@ public class PostgresLockDAOTest {
                     connection.prepareStatement("SELECT * FROM locks WHERE lock_id = ?")) {
                 ps.setString(1, lockId);
                 var rs = ps.executeQuery();
-                Assertions.assertFalse(rs.first(), "Lock was not released properly");
+                Assertions.assertFalse(rs.next(), "Lock was not released properly");
             }
         }
     }
