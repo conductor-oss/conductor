@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -117,7 +119,9 @@ public class HttpTask extends WorkflowSystemTask {
                 if (response.body != null) {
                     task.setReasonForIncompletion(response.body.toString());
                 } else {
-                    task.setReasonForIncompletion("No response from the remote service");
+                    task.setReasonForIncompletion(
+                            Objects.requireNonNullElse(
+                                    response.reasonPhrase, "No response from the remote service"));
                 }
                 task.setStatus(TaskModel.Status.FAILED);
             }
@@ -175,11 +179,15 @@ public class HttpTask extends WorkflowSystemTask {
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.hasBody()) {
                 response.body = extractBody(responseEntity.getBody());
             }
-
             response.statusCode = responseEntity.getStatusCodeValue();
             response.reasonPhrase =
                     HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
             response.headers = responseEntity.getHeaders();
+            return response;
+        } catch (HttpClientErrorException ex) {
+            response.headers = ex.getResponseHeaders();
+            response.statusCode = ex.getStatusCode().value();
+            response.reasonPhrase = ex.getStatusText();
             return response;
         } catch (RestClientException ex) {
             LOGGER.error(
