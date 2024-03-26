@@ -109,7 +109,7 @@ public class HttpTask extends WorkflowSystemTask {
                     response.statusCode,
                     response.body,
                     task.getTaskId());
-            if (response.statusCode > 199 && response.statusCode < 300) {
+            if (response.statusCode >= 100 && response.statusCode < 300) {
                 if (isAsyncComplete(task)) {
                     task.setStatus(TaskModel.Status.IN_PROGRESS);
                 } else {
