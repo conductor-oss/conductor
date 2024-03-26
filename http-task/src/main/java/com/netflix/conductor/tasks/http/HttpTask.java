@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -120,8 +120,12 @@ public class HttpTask extends WorkflowSystemTask {
                     task.setReasonForIncompletion(response.body.toString());
                 } else {
                     task.setReasonForIncompletion(
-                            Objects.requireNonNullElse(
-                                    response.reasonPhrase, "No response from the remote service"));
+                            String.format(
+                                    "%d: %s",
+                                    response.statusCode,
+                                    Objects.requireNonNullElse(
+                                            response.reasonPhrase,
+                                            "No response from the remote service")));
                 }
                 task.setStatus(TaskModel.Status.FAILED);
             }
@@ -184,7 +188,7 @@ public class HttpTask extends WorkflowSystemTask {
                     HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
             response.headers = responseEntity.getHeaders();
             return response;
-        } catch (HttpClientErrorException ex) {
+        } catch (HttpStatusCodeException ex) {
             response.headers = ex.getResponseHeaders();
             response.statusCode = ex.getStatusCode().value();
             response.reasonPhrase = ex.getStatusText();
