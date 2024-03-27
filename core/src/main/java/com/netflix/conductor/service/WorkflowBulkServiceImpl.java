@@ -193,4 +193,44 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
         }
         return bulkResponse;
     }
+
+    /**
+     * Terminates execution for workflows in a list, then removes each workflow.
+     *
+     * @param workflowIds List of workflow IDs to terminate and delete.
+     * @param reason Reason for terminating the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
+     * @return bulk response object containing a list of succeeded workflows and a list of failed
+     *     ones with errors
+     */
+    public BulkResponse terminateRemove(
+            List<String> workflowIds, String reason, boolean archiveWorkflow) {
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.terminateWorkflow(workflowId, reason);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error(
+                        "bulk terminate exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+
+            try {
+                workflowService.deleteWorkflow(workflowId, archiveWorkflow);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error(
+                        "bulk delete exception, workflowId {}, message: {} ",
+                        workflowId,
+                        e.getMessage(),
+                        e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
+    }
 }

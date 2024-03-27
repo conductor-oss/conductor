@@ -243,6 +243,19 @@ public interface WorkflowService {
             String reason);
 
     /**
+     * Terminate workflow execution, and then remove it from the system. Acts as terminate and
+     * remove combined.
+     *
+     * @param workflowId WorkflowId of the workflow
+     * @param reason Reason for terminating the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
+     */
+    void terminateRemove(
+            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+            String reason,
+            boolean archiveWorkflow);
+
+    /**
      * Search for workflows based on payload and given parameters. Use sort options as sort ASCor
      * DESC e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
      *

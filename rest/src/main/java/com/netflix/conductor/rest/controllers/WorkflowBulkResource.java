@@ -126,4 +126,19 @@ public class WorkflowBulkResource {
                     boolean archiveWorkflow) {
         return workflowBulkService.deleteWorkflow(workflowIds, archiveWorkflow);
     }
+
+    /**
+     * Terminate then delete the list of workflows.
+     *
+     * @param workflowIds - list of workflow Ids to be deleted
+     * @return bulk response object containing a list of successfully deleted workflows
+     */
+    @DeleteMapping("/terminate-remove")
+    public BulkResponse terminateRemove(
+            @RequestBody List<String> workflowIds,
+            @RequestParam(value = "archiveWorkflow", defaultValue = "true", required = false)
+                    boolean archiveWorkflow,
+            @RequestParam(value = "reason", required = false) String reason) {
+        return workflowBulkService.terminateRemove(workflowIds, reason, archiveWorkflow);
+    }
 }
