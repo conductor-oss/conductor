@@ -197,6 +197,19 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
     /**
+     * Terminate workflow execution, and then remove it from the system. Acts as terminate and
+     * remove combined.
+     *
+     * @param workflowId WorkflowId of the workflow
+     * @param reason Reason for terminating the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
+     */
+    public void terminateRemove(String workflowId, String reason, boolean archiveWorkflow) {
+        workflowExecutor.terminateWorkflow(workflowId, reason);
+        executionService.removeWorkflow(workflowId, archiveWorkflow);
+    }
+
+    /**
      * Retrieves all the running workflows.
      *
      * @param workflowName Name of the workflow.

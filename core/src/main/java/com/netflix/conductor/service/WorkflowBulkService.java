@@ -67,4 +67,23 @@ public interface WorkflowBulkService {
                                     "Cannot process more than {max} workflows. Please use multiple requests.")
                     List<String> workflowIds,
             String reason);
+
+    BulkResponse deleteWorkflow(
+            @NotEmpty(message = "WorkflowIds list cannot be null.")
+                    @Size(
+                            max = MAX_REQUEST_ITEMS,
+                            message =
+                                    "Cannot process more than {max} workflows. Please use multiple requests.")
+                    List<String> workflowIds,
+            boolean archiveWorkflow);
+
+    BulkResponse terminateRemove(
+            @NotEmpty(message = "WorkflowIds list cannot be null.")
+                    @Size(
+                            max = MAX_REQUEST_ITEMS,
+                            message =
+                                    "Cannot process more than {max} workflows. Please use multiple requests.")
+                    List<String> workflowIds,
+            String reason,
+            boolean archiveWorkflow);
 }
