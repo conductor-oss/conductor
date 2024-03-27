@@ -579,6 +579,7 @@ public class WorkflowTask {
                 workflowTaskLists.addAll(forkTasks);
                 break;
             case DO_WHILE:
+            case WHILE:
                 workflowTaskLists.add(loopOver);
                 break;
             default:
@@ -603,6 +604,7 @@ public class WorkflowTask {
 
         switch (taskType) {
             case DO_WHILE:
+            case WHILE:
             case DECISION:
             case SWITCH:
                 for (List<WorkflowTask> workflowTasks : children()) {
@@ -624,13 +626,12 @@ public class WorkflowTask {
                         return iterator.next();
                     }
                 }
-                if (taskType == TaskType.DO_WHILE && this.has(taskReferenceName)) {
-                    // come here means this is DO_WHILE task and `taskReferenceName` is the last
-                    // task in
-                    // this DO_WHILE task, because DO_WHILE task need to be executed to decide
-                    // whether to
-                    // schedule next iteration, so we just return the DO_WHILE task, and then ignore
-                    // generating this task again in deciderService.getNextTask()
+                if (TaskType.isLoopTask(taskType) && this.has(taskReferenceName)) {
+                    // come here means this is DO_WHILE/WHILE task and `taskReferenceName` is the
+                    // last task in this DO_WHILE/WHILE task, because DO_WHILE/WHILE task need to be
+                    // executed to decide whether to schedule next iteration, so we just return the
+                    // DO_WHILE/WHILE task, and then ignore generating this task again in
+                    // deciderService.getNextTask()
                     return this;
                 }
                 break;
@@ -682,6 +683,7 @@ public class WorkflowTask {
             case DECISION:
             case SWITCH:
             case DO_WHILE:
+            case WHILE:
             case FORK_JOIN:
                 for (List<WorkflowTask> childx : children()) {
                     for (WorkflowTask child : childx) {

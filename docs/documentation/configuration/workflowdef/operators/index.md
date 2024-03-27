@@ -9,6 +9,7 @@ Conductor supports the following programming language constructs:
 | Language Construct         | Conductor Operator                        |
 | -------------------------- | ----------------------------------------- |
 | Do-While or For Loops      | [Do While Task](do-while-task.md)         |
+| While or For Loops         | [While Task](while-task.md)               |
 | Function Pointer           | [Dynamic Task](dynamic-task.md)           |
 | Dynamic Parallel execution | [Dynamic Fork Task](dynamic-fork-task.md) |
 | Static Parallel execution  | [Fork Task](fork-task.md)                 |

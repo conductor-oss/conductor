@@ -23,6 +23,7 @@ export const TASK_TYPES = [
   "ARCHER",
   "DECISION",
   "DO_WHILE",
+  "WHILE",
   "DYNAMIC",
   "DYNIMO",
   "EAAS",
