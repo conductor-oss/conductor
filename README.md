@@ -61,22 +61,11 @@ The runnable server is in server/ module.
 Follow the steps below to launch the docker container:
 
 ```shell
-
-# Create volumes for persistent stores
-# Used to create a persistent volume that will preserve the 
-docker volume create postgres
-docker volume create redis
-
-docker run --init -p 8080:8080 -p 1234:5000 --mount source=redis,target=/redis \
---mount source=postgres,target=/pgdata conductoross/conductor-standalone:3.15.0
+docker compose -f docker/docker-compose.yaml up
 ```
-
-Navigate to http://localhost:1234 once the container starts to launch UI.
-
-## Docker Containers for production usage
-```shell
-docker pull conductoross/conductor:3.15.0
-```
+* Navigate to http://localhost:5000 once the container starts to launch UI.
+* APIs are accessible at http://localhost:8080
+* Swagger Docs:http://localhost:8080/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/
 
 
 ## Database Requirements
