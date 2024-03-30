@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coming Soon - API Integration</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff; /* Light blue background color */
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #coming-soon-container {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #3498db; /* Light blue text color */
+        }
+
+        p {
+            color: #666;
+            font-size: 18px;
+        }
+
+        #countdown {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #e74c3c; /* Red countdown color */
+        }
+    </style>
+</head>
+<body>
+    <div id="coming-soon-container">
+        <h1>Coming Soon</h1>
+        <p>We are working on integrating a new API for you.</p>
+        <p>Stay tuned for exciting updates!</p>
+        <div id="countdown">00:00:00</div>
+    </div>
+
+    <script>
+        // Set the date and time for when the API integration will be ready
+        const targetDate = new Date('2023-11-01 00:00:00').getTime();
+
+        // Update the countdown every second
+        const countdown = setInterval(() => {
+            const currentDate = new Date().getTime();
+            const timeRemaining = targetDate - currentDate;
+
+            if (timeRemaining <= 0) {
+                clearInterval(countdown);
+                document.getElementById('countdown').textContent = 'Coming Soon!';
+            } else {
+                const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                document.getElementById('countdown').textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
