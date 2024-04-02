@@ -101,6 +101,12 @@ public class WorkflowDef extends BaseDef {
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
 
+    @ProtoField(id = 16)
+    private String webhookUrl;
+
+    @ProtoField(id = 17)
+    private String webhookAuthToken;
+
     /**
      * @return the name
      */
@@ -305,6 +311,34 @@ public class WorkflowDef extends BaseDef {
         this.variables = variables;
     }
 
+    /**
+     * @return the webhookUrl
+     */
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
+    /**
+     * @param webhookUrl the webhookUrl to set
+     */
+    public void setWebhookUrl(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
+    }
+
+    /**
+     * @return the webhookAuthToken
+     */
+    public String getWebhookAuthToken() {
+        return webhookAuthToken;
+    }
+
+    /**
+     * @param webhookAuthToken the webhookAuthToken to set
+     */
+    public void setWebhookAuthToken(String webhookAuthToken) {
+        this.webhookAuthToken = webhookAuthToken;
+    }
+
     public Map<String, Object> getInputTemplate() {
         return inputTemplate;
     }
@@ -393,7 +427,9 @@ public class WorkflowDef extends BaseDef {
                 && Objects.equals(getOutputParameters(), that.getOutputParameters())
                 && Objects.equals(getFailureWorkflow(), that.getFailureWorkflow())
                 && Objects.equals(getOwnerEmail(), that.getOwnerEmail())
-                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds());
+                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds())
+                && Objects.equals(getWebhookUrl(), that.getWebhookUrl())
+                && Objects.equals(getWebhookAuthToken(), that.getWebhookAuthToken());
     }
 
     @Override
@@ -408,7 +444,9 @@ public class WorkflowDef extends BaseDef {
                 getFailureWorkflow(),
                 getSchemaVersion(),
                 getOwnerEmail(),
-                getTimeoutSeconds());
+                getTimeoutSeconds(),
+                getWebhookUrl(),
+                getWebhookAuthToken());
     }
 
     @Override
@@ -439,6 +477,10 @@ public class WorkflowDef extends BaseDef {
                 + workflowStatusListenerEnabled
                 + ", timeoutSeconds="
                 + timeoutSeconds
+                + ", webhookUrl="
+                + webhookUrl
+                + ", webhookAuthToken="
+                + webhookAuthToken
                 + '}';
     }
 }

@@ -1124,6 +1124,12 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getInputTemplate().entrySet()) {
             to.putInputTemplate( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getWebhookUrl() != null) {
+            to.setWebhookUrl( from.getWebhookUrl() );
+        }
+        if (from.getWebhookAuthToken() != null) {
+            to.setWebhookAuthToken( from.getWebhookAuthToken() );
+        }
         return to.build();
     }
 
@@ -1156,6 +1162,8 @@ public abstract class AbstractProtoMapper {
             inputTemplateMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setInputTemplate(inputTemplateMap);
+        to.setWebhookUrl( from.getWebhookUrl() );
+        to.setWebhookAuthToken( from.getWebhookAuthToken() );
         return to;
     }
 

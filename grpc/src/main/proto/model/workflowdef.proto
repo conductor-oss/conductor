@@ -28,4 +28,6 @@ message WorkflowDef {
     int64 timeout_seconds = 13;
     map<string, google.protobuf.Value> variables = 14;
     map<string, google.protobuf.Value> input_template = 15;
+    string webhook_url = 16;
+    string webhook_auth_token = 17;
 }

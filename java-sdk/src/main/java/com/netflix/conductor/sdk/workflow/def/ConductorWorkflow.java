@@ -69,6 +69,10 @@ public class ConductorWorkflow<T> {
 
     private final WorkflowExecutor workflowExecutor;
 
+    private String webhookUrl;
+
+    private String webhookAuthToken;
+
     public ConductorWorkflow(WorkflowExecutor workflowExecutor) {
         this.workflowOutput = new HashMap<>();
         this.workflowExecutor = workflowExecutor;
@@ -167,6 +171,22 @@ public class ConductorWorkflow<T> {
         this.variables = variables;
     }
 
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
+    public void setWebhookUrl(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
+    }
+
+    public String getWebhookAuthToken() {
+        return webhookAuthToken;
+    }
+
+    public void setWebhookAuthToken(String webhookAuthToken) {
+        this.webhookAuthToken = webhookAuthToken;
+    }
+
     /**
      * Execute a dynamic workflow without creating a definition in metadata store.
      *
@@ -254,6 +274,8 @@ public class ConductorWorkflow<T> {
         def.setOutputParameters(workflowOutput);
         def.setVariables(variables);
         def.setInputTemplate(objectMapper.convertValue(defaultInput, Map.class));
+        def.setWebhookUrl(webhookUrl);
+        def.setWebhookAuthToken(webhookAuthToken);
 
         for (Task task : tasks) {
             def.getTasks().addAll(task.getWorkflowDefTasks());

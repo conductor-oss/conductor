@@ -55,6 +55,10 @@ public class WorkflowBuilder<T> {
 
     private WorkflowExecutor workflowExecutor;
 
+    private String webhookUrl;
+
+    private String webhookAuthToken;
+
     public final InputOutputGetter input =
             new InputOutputGetter("workflow", InputOutputGetter.Field.input);
 
@@ -123,6 +127,16 @@ public class WorkflowBuilder<T> {
         return this;
     }
 
+    public WorkflowBuilder<T> withWebhookUrl(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
+        return this;
+    }
+
+    public WorkflowBuilder<T> withWebhookAuthToken(String webhookAuthToken) {
+        this.webhookAuthToken = webhookAuthToken;
+        return this;
+    }
+
     public WorkflowBuilder<T> output(String key, boolean value) {
         output.put(key, value);
         return this;
@@ -168,6 +182,8 @@ public class WorkflowBuilder<T> {
         workflow.setDefaultInput(defaultInput);
         workflow.setWorkflowOutput(output);
         workflow.setVariables(state);
+        workflow.setWebhookUrl(webhookUrl);
+        workflow.setWebhookAuthToken(webhookAuthToken);
 
         for (Task task : tasks) {
             workflow.add(task);
