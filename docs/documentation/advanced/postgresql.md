@@ -34,6 +34,10 @@ conductor.indexing.type=postgres
 conductor.elasticsearch.version=0
 ```
 
+## Performance Optimisations
+
+### Poll Data caching
+
 By default, Conductor writes the latest poll for tasks to the database so that it can be used to determine which tasks and domains are active. This creates a lot of database traffic.
 To avoid some of this traffic you can configure the PollDataDAO with a write buffer so that it only flushes every x milliseconds. If you keep this value around 5s then there should be no impact on behaviour. Conductor uses a default duration of 10s to determine whether a queue for a domain is active or not (also configurable using `conductor.app.activeWorkerLastPollTimeout`) so this will ensure that there is plenty of time for the data to get to the database to be shared by other instances:
 
@@ -47,4 +51,37 @@ You can also configure a duration when the cached poll data will be considered s
 ```properties
 # Data older than 5 seconds is considered stale
 conductor.postgres.pollDataCacheValidityPeriod=5000
+```
+
+### Workflow and Task indexing on status change
+
+If you have a workflow with many tasks, Conductor will index that workflow every time a task completes which can result in a lot of extra load on the database. By setting this parameter you can configure Conductor to only index the workflow when its status changes:
+
+```properties
+conductor.postgres.onlyIndexOnStatusChange=true
+```
+
+### Control over what gets indexed
+
+By default Conductor will index both workflows and tasks to enable searching via the UI. If you find that you don't search for tasks, but only workflows, you can use the following option to disable task indexing:
+
+```properties
+conductor.app.taskIndexingEnabled=false
+```
+
+### Experimental LISTEN/NOTIFY based queues
+
+By default, Conductor will query the queues in the database 10 times per second for every task, which can result in a lot of traffic.
+By enabling this option, Conductor makes use of [LISTEN](https://www.postgresql.org/docs/current/sql-listen.html)/[NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html) to use triggers that distribute metadata about the state of the queues to all of the Conductor servers. This drastically reduces the load on the database because a single message containing the state of the queues is sent to all subscribers.
+Enable it as follows:
+
+```properties
+conductor.postgres.experimentalQueueNotify=true
+```
+
+You can also configure how long Conductor will wait before considering a notification stale using the following property:
+
+```properties
+# Data older than 5 seconds is considered stale
+conductor.postgres.experimentalQueueNotifyStalePeriod=5000
 ```
