@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class PostgresIndexQueryBuilderTest {
@@ -287,5 +288,20 @@ public class PostgresIndexQueryBuilderTest {
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE json_data @> ?::JSONB LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
+    }
+
+    @Test()
+    void shouldThrowIllegalArgumentExceptionWhenQueryStringIsInvalid() {
+        String inputQuery =
+                "workflowType IN (one,two) AND status IN (COMPLETED,RUNNING) AND startTime>1675701498000 AND xyz";
+
+        try {
+            new PostgresIndexQueryBuilder(
+                    "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+
+            fail("should have failed since xyz does not conform to expected format");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Incorrectly formatted query string: xyz", e.getMessage());
+        }
     }
 }
