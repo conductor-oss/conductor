@@ -75,6 +75,8 @@ public class PostgresIndexQueryBuilder {
                 if (this.attribute.endsWith("_time")) {
                     values.set(0, millisToUtc(values.get(0)));
                 }
+            } else {
+                throw new IllegalArgumentException("Incorrectly formatted query string: " + query);
             }
         }
 
