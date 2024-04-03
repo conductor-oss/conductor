@@ -211,6 +211,13 @@ public class WorkflowResourceTest {
     }
 
     @Test
+    public void testTerminateRemove() {
+        workflowResource.terminateRemove("w123", "test", false);
+        verify(mockWorkflowService, times(1))
+                .terminateRemove(anyString(), anyString(), anyBoolean());
+    }
+
+    @Test
     public void testSearch() {
         workflowResource.search(0, 100, "asc", "*", "*");
         verify(mockWorkflowService, times(1))

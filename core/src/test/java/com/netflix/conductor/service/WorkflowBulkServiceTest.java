@@ -50,6 +50,11 @@ public class WorkflowBulkServiceTest {
         }
 
         @Bean
+        WorkflowService workflowService() {
+            return mock(WorkflowService.class);
+        }
+
+        @Bean
         public WorkflowBulkService workflowBulkService(
                 WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
             return new WorkflowBulkServiceImpl(workflowExecutor, workflowService);
@@ -138,6 +143,30 @@ public class WorkflowBulkServiceTest {
     public void testTerminateNull() {
         try {
             workflowBulkService.terminate(null, null);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowIds list cannot be null."));
+            throw ex;
+        }
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testDeleteWorkflowNull() {
+        try {
+            workflowBulkService.deleteWorkflow(null, false);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowIds list cannot be null."));
+            throw ex;
+        }
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testTerminateRemoveNull() {
+        try {
+            workflowBulkService.terminateRemove(null, null, false);
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());

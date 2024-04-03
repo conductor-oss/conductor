@@ -213,7 +213,7 @@ public class WorkflowResource {
             @PathVariable("workflowId") String workflowId,
             @RequestParam(value = "reason", required = false) String reason,
             @RequestParam(value = "archiveWorkflow", defaultValue = "true", required = false)
-            boolean archiveWorkflow) {
+                    boolean archiveWorkflow) {
         workflowService.terminateRemove(workflowId, reason, archiveWorkflow);
     }
 
