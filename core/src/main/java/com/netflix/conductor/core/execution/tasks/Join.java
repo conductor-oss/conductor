@@ -37,7 +37,6 @@ public class Join extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
@@ -57,7 +56,7 @@ public class Join extends WorkflowSystemTask {
         for (String joinOnRef : joinOn) {
             TaskModel forkedTask = workflow.getTaskByRefName(joinOnRef);
             if (forkedTask == null) {
-                // Task is not even scheduled yet
+                // Continue checking other tasks if a referenced task is not yet scheduled
                 continue;
             }
 
@@ -68,6 +67,9 @@ public class Join extends WorkflowSystemTask {
                 task.addOutput(joinOnRef, forkedTask.getOutputData());
             }
 
+            // Determine if the join task fails immediately due to a non-optional, non-permissive
+            // task failure,
+            // or waits for all tasks to be terminal if the failed task is permissive.
             var isJoinFailure =
                     !taskStatus.isSuccessful()
                             && !forkedTask.getWorkflowTask().isOptional()
@@ -98,6 +100,7 @@ public class Join extends WorkflowSystemTask {
             }
         }
 
+        // Finalize the join task's status based on the outcomes of all referenced tasks.
         if (allTasksTerminal) {
             if (!optionalTaskFailures.isEmpty()) {
                 task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
@@ -109,6 +112,7 @@ public class Join extends WorkflowSystemTask {
             return true;
         }
 
+        // Task execution not complete, waiting on more tasks to reach terminal state.
         return false;
     }
 
