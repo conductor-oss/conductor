@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -36,9 +37,6 @@ public class Join extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-
-        boolean allDone = true;
-        boolean hasFailures = false;
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
@@ -47,41 +45,47 @@ public class Join extends WorkflowSystemTask {
             joinOn =
                     joinOn.stream()
                             .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                            .collect(Collectors.toList());
+                            .toList();
         }
+
+        boolean allTasksTerminal =
+                joinOn.stream()
+                        .map(workflow::getTaskByRefName)
+                        .allMatch(t -> t != null && t.getStatus().isTerminal());
+
         for (String joinOnRef : joinOn) {
             TaskModel forkedTask = workflow.getTaskByRefName(joinOnRef);
             if (forkedTask == null) {
-                // Task is not even scheduled yet
-                allDone = false;
-                break;
+                // Continue checking other tasks if a referenced task is not yet scheduled
+                continue;
             }
+
             TaskModel.Status taskStatus = forkedTask.getStatus();
-            hasFailures =
-                    !taskStatus.isSuccessful()
-                            && !forkedTask.getWorkflowTask().isOptional()
-                            && (!forkedTask.getWorkflowTask().isPermissive()
-                                    || joinOn.stream()
-                                            .map(workflow::getTaskByRefName)
-                                            .allMatch(t -> t.getStatus().isTerminal()));
-            if (hasFailures) {
-                final String failureReasons =
-                        joinOn.stream()
-                                .map(workflow::getTaskByRefName)
-                                .filter(t -> !t.getStatus().isSuccessful())
-                                .map(TaskModel::getReasonForIncompletion)
-                                .collect(Collectors.joining(" "));
-                failureReason.append(failureReasons);
-            }
+
             // Only add to task output if it's not empty
             if (!forkedTask.getOutputData().isEmpty()) {
                 task.addOutput(joinOnRef, forkedTask.getOutputData());
             }
-            if (!taskStatus.isTerminal()) {
-                allDone = false;
-            }
-            if (hasFailures) {
-                break;
+
+            // Determine if the join task fails immediately due to a non-optional, non-permissive
+            // task failure,
+            // or waits for all tasks to be terminal if the failed task is permissive.
+            var isJoinFailure =
+                    !taskStatus.isSuccessful()
+                            && !forkedTask.getWorkflowTask().isOptional()
+                            && (!forkedTask.getWorkflowTask().isPermissive() || allTasksTerminal);
+            if (isJoinFailure) {
+                final String failureReasons =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(Objects::nonNull)
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .map(TaskModel::getReasonForIncompletion)
+                                .collect(Collectors.joining(" "));
+                failureReason.append(failureReasons);
+                task.setReasonForIncompletion(failureReason.toString());
+                task.setStatus(TaskModel.Status.FAILED);
+                return true;
             }
 
             // check for optional task failures
@@ -95,11 +99,10 @@ public class Join extends WorkflowSystemTask {
                         .append(" ");
             }
         }
-        if (allDone || hasFailures || optionalTaskFailures.length() > 0) {
-            if (hasFailures) {
-                task.setReasonForIncompletion(failureReason.toString());
-                task.setStatus(TaskModel.Status.FAILED);
-            } else if (optionalTaskFailures.length() > 0) {
+
+        // Finalize the join task's status based on the outcomes of all referenced tasks.
+        if (allTasksTerminal) {
+            if (!optionalTaskFailures.isEmpty()) {
                 task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
                 optionalTaskFailures.append("completed with errors");
                 task.setReasonForIncompletion(optionalTaskFailures.toString());
@@ -108,6 +111,8 @@ public class Join extends WorkflowSystemTask {
             }
             return true;
         }
+
+        // Task execution not complete, waiting on more tasks to reach terminal state.
         return false;
     }
 
