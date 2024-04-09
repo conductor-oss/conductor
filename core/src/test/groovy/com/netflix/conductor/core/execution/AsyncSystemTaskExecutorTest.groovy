@@ -238,7 +238,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
-        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty();
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
 
 
         when:
@@ -274,12 +274,12 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
-        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        2 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
 
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        1 * workflowExecutor.decide(workflowId) >> workflow // verify that workflow is decided
 
         task.status == TaskModel.Status.COMPLETED
         task.startTime != 0 // verify that startTime is set
@@ -332,7 +332,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
-        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        2 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
@@ -384,7 +384,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
-        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        2 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // only one call since pollCount is not incremented
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
@@ -396,4 +396,31 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.pollCount == 1 // verify that poll count is NOT incremented
     }
 
+    def "Execute with a task id that is in IN_PROGRESS state and cannot acquired lock"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
+                rateLimitPerFrequency: 1, taskDefName: "taskDefName", workflowPriority: 10, pollCount: 1)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        2 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * executionDAOFacade.updateTask(task)
+
+        1 * workflowSystemTask.isAsyncComplete(task) >> true
+        0 * workflowSystemTask.start(workflow, task, workflowExecutor)
+        1 * workflowSystemTask.execute(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+        1 * queueDAO.remove(queueName, taskId)
+        1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, task.callbackAfterSeconds)
+
+        task.status == TaskModel.Status.IN_PROGRESS
+        task.endTime == 0
+        task.pollCount == 1
+    }
 }

@@ -194,8 +194,27 @@ public class AsyncSystemTaskExecutor {
             }
             // if the current task execution has completed, then the workflow needs to be evaluated
             if (hasTaskExecutionCompleted) {
-                workflowExecutor.decide(workflowId);
+                forScheduleTaskEvaluate(task, queueName, workflowId);
             }
+        }
+    }
+
+    private void forScheduleTaskEvaluate(TaskModel task, String queueName, String workflowId) {
+        WorkflowModel decideResult = workflowExecutor.decide(workflowId);
+        WorkflowModel existWorkflow = executionDAOFacade.getWorkflowModel(workflowId, true);
+        // Cannot acquire lock, next node may not be able to execute.
+        if (decideResult == null && existWorkflow != null) {
+            task.setStatus(TaskModel.Status.IN_PROGRESS);
+            task.setEndTime(0L);
+            queueDAO.postpone(
+                    queueName,
+                    task.getTaskId(),
+                    task.getWorkflowPriority(),
+                    task.getCallbackAfterSeconds());
+            LOGGER.debug(
+                    "{} postponed in queue: {}, Reason: JOIN Task cannot acquire lock",
+                    task,
+                    queueName);
         }
     }
 
