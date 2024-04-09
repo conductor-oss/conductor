@@ -1,7 +1,7 @@
 # PostgreSQL
 
 By default conductor runs with an in-memory Redis mock. However, you
-can run Conductor against PostgreSQL which provides workflow management, queues and indexing.
+can run Conductor against PostgreSQL which provides workflow management, queues, indexing, and locking.
 There are a number of configuration options that enable you to use more or less of PostgreSQL functionality for your needs.
 It has the benefit of requiring fewer moving parts for the infrastructure, but does not scale as well to handle high volumes of workflows.
 You should benchmark Conductor with Postgres against your specific workload to be sure.
@@ -32,6 +32,12 @@ You can also use PostgreSQL to index workflows, configure this as follows:
 conductor.indexing.enabled=true
 conductor.indexing.type=postgres
 conductor.elasticsearch.version=0
+```
+
+To use PostgreSQL for locking, set the following configurations:
+```properties
+conductor.app.workflowExecutionLockEnabled=true
+conductor.workflow-execution-lock.type=postgres
 ```
 
 ## Performance Optimisations
