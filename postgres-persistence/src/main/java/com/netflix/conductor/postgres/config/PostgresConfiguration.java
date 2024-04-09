@@ -119,6 +119,17 @@ public class PostgresConfiguration {
     }
 
     @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(
+            name = "conductor.workflow-execution-lock.type",
+            havingValue = "postgres")
+    public PostgresLockDAO postgresLockDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresLockDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
     public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
         SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
         retryPolicy.setMaxAttempts(3);
