@@ -6,7 +6,6 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     implementation project(':conductor-redis-persistence')
-    implementation project(':conductor-task-status-listener')
     implementation project(':conductor-annotations')
 
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
@@ -16,18 +15,10 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
-    testImplementation project(':conductor-server')
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
-    testImplementation "org.spockframework:spock-core:${revSpock}"
-    testImplementation "org.spockframework:spock-spring:${revSpock}"
     implementation "org.springframework.boot:spring-boot-starter-log4j2"
-    testImplementation 'org.springframework.retry:spring-retry'
-    testImplementation 'org.springframework.boot:spring-boot-starter-web'
-    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
-    testImplementation "redis.clients:jedis:${revJedis}"
 
 }
