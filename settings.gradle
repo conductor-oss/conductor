@@ -62,7 +62,6 @@ include 'java-sdk'
 
 // community modules
 include 'workflow-event-listener'
-include 'task-status-listener'
 include 'test-util'
 include 'kafka'
 include 'common-persistence'
