@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
             FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = "spring.flyway.clean-disabled=false")
+@SpringBootTest(properties = "spring.flyway.clean-disabled=true")
 public class PostgresMetadataDAOTest {
 
     @Autowired private PostgresMetadataDAO metadataDAO;

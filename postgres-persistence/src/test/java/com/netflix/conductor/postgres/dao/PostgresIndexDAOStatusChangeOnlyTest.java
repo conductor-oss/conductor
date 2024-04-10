@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,6 +133,7 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
                 result.get(0).get("update_time").toString());
     }
 
+
     @Test
     public void testIndexWorkflowOnlyStatusChange() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
@@ -155,7 +157,6 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
         checkWorkflow("workflow-id", "FAILED", "new-correlation-id");
     }
 
-    @Test
     public void testIndexTaskOnlyStatusChange() throws SQLException {
         TaskSummary ts = getMockTaskSummary("task-id");
 

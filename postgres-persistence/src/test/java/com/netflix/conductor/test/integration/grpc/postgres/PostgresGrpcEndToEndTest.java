@@ -27,6 +27,7 @@ import com.netflix.conductor.test.integration.grpc.AbstractGrpcEndToEndTest;
 @TestPropertySource(
         properties = {
             "conductor.db.type=postgres",
+            "conductor.postgres.experimentalQueueNotify=true",
             "conductor.app.asyncIndexingEnabled=false",
             "conductor.elasticsearch.version=7",
             "conductor.grpc-server.port=8098",
@@ -37,7 +38,8 @@ import com.netflix.conductor.test.integration.grpc.AbstractGrpcEndToEndTest;
             "spring.datasource.username=postgres",
             "spring.datasource.password=postgres",
             "spring.datasource.hikari.maximum-pool-size=8",
-            "spring.datasource.hikari.minimum-idle=300000"
+            "spring.datasource.hikari.minimum-idle=300000",
+            "spring.flyway.clean-disabled=true"
         })
 public class PostgresGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
