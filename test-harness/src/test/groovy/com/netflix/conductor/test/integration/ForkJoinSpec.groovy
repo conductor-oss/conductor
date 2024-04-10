@@ -331,13 +331,13 @@ class ForkJoinSpec extends AbstractSpecification {
 
         and: "the workflow is in the failed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
+            status == Workflow.WorkflowStatus.FAILED
             tasks.size() == 4
             tasks[1].status == Task.Status.FAILED
             tasks[1].taskType == 'integration_task_1'
             tasks[2].status == Task.Status.COMPLETED
             tasks[2].taskType == 'integration_task_2'
-            tasks[3].status == Task.Status.IN_PROGRESS
+            tasks[3].status == Task.Status.FAILED
             tasks[3].taskType == 'JOIN'
         }
 
