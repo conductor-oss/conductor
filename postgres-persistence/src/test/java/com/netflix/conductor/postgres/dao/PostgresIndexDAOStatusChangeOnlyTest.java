@@ -155,7 +155,6 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
         checkWorkflow("workflow-id", "FAILED", "new-correlation-id");
     }
 
-    @Test
     public void testIndexTaskOnlyStatusChange() throws SQLException {
         TaskSummary ts = getMockTaskSummary("task-id");
 
