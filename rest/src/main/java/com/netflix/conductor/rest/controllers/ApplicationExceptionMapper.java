@@ -14,7 +14,9 @@ package com.netflix.conductor.rest.controllers;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -59,10 +61,18 @@ public class ApplicationExceptionMapper {
     @Order(ValidationExceptionMapper.ORDER + 1)
     public void handleNestedClientAbortedInClosedChannelException(
             HttpServletRequest request, ClosedChannelException closedChannelException) {
-        final Throwable rootCause = ExceptionUtils.getRootCause(closedChannelException);
-        if (rootCause != null
-                && ClientAbortException.class.getName().equals(rootCause.getClass().getName())) {
-            handleClientAborted(request, (ClientAbortException) rootCause);
+        final List<Throwable> exceptionChain =
+                ExceptionUtils.getThrowableList(closedChannelException);
+        final Optional<Throwable> clientAbortedException =
+                exceptionChain.stream()
+                        .filter(
+                                t ->
+                                        ClientAbortException.class
+                                                .getName()
+                                                .equals(t.getClass().getName()))
+                        .findAny();
+        if (clientAbortedException.isPresent()) {
+            handleClientAborted(request, (ClientAbortException) clientAbortedException.get());
             return;
         }
         handleAll(request, closedChannelException);
