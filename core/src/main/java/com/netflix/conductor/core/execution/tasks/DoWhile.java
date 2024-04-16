@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.script.ScriptException;
 
@@ -43,6 +44,10 @@ public class DoWhile extends WorkflowSystemTask {
     public DoWhile(ParametersUtils parametersUtils) {
         super(TASK_TYPE_DO_WHILE);
         this.parametersUtils = parametersUtils;
+    }
+
+    private static Integer apply(Object a) {
+        return (Integer) a;
     }
 
     @Override
@@ -110,6 +115,14 @@ public class DoWhile extends WorkflowSystemTask {
             }
         }
         doWhileTaskModel.addOutput(String.valueOf(doWhileTaskModel.getIteration()), output);
+
+        Optional<Integer> keepLastN = Optional.ofNullable(doWhileTaskModel.getWorkflowTask().getInputParameters())
+                .map(parameters -> parameters.get("keepLastN"))
+                .map(value -> (Integer) value);
+        if(keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
+            Integer iteration = doWhileTaskModel.getIteration();
+            IntStream.range(0, iteration - keepLastN.get()).mapToObj(Integer::toString).forEach(doWhileTaskModel::removeOutput);
+        }
 
         if (hasFailures) {
             LOGGER.debug(
@@ -265,5 +278,11 @@ public class DoWhile extends WorkflowSystemTask {
             result = ScriptEvaluator.evalBool(condition, conditionInput);
         }
         return result;
+    }
+
+    Optional<Integer> getKeepLastN(TaskModel task) {
+        return Optional.ofNullable(task.getWorkflowTask().getInputParameters())
+                .map(parameters -> parameters.get("keepLastN"))
+                .map(value -> (Integer) value);
     }
 }

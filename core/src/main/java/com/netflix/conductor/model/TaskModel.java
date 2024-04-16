@@ -874,6 +874,10 @@ public class TaskModel {
         this.outputData.put(key, value);
     }
 
+    public void removeOutput(String key) {
+        this.outputData.remove(key);
+    }
+
     public void addOutput(Map<String, Object> outputData) {
         if (outputData != null) {
             this.outputData.putAll(outputData);
