@@ -112,12 +112,15 @@ public class DoWhile extends WorkflowSystemTask {
         }
         doWhileTaskModel.addOutput(String.valueOf(doWhileTaskModel.getIteration()), output);
 
-        Optional<Integer> keepLastN = Optional.ofNullable(doWhileTaskModel.getWorkflowTask().getInputParameters())
-                .map(parameters -> parameters.get("keepLastN"))
-                .map(value -> (Integer) value);
-        if(keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
+        Optional<Integer> keepLastN =
+                Optional.ofNullable(doWhileTaskModel.getWorkflowTask().getInputParameters())
+                        .map(parameters -> parameters.get("keepLastN"))
+                        .map(value -> (Integer) value);
+        if (keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
             Integer iteration = doWhileTaskModel.getIteration();
-            IntStream.range(0, iteration - keepLastN.get()).mapToObj(Integer::toString).forEach(doWhileTaskModel::removeOutput);
+            IntStream.range(0, iteration - keepLastN.get())
+                    .mapToObj(Integer::toString)
+                    .forEach(doWhileTaskModel::removeOutput);
         }
 
         if (hasFailures) {
