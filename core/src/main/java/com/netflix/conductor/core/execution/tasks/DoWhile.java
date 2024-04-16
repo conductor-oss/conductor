@@ -275,10 +275,4 @@ public class DoWhile extends WorkflowSystemTask {
         }
         return result;
     }
-
-    Optional<Integer> getKeepLastN(TaskModel task) {
-        return Optional.ofNullable(task.getWorkflowTask().getInputParameters())
-                .map(parameters -> parameters.get("keepLastN"))
-                .map(value -> (Integer) value);
-    }
 }
