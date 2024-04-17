@@ -65,6 +65,9 @@ public class SirenInitializer {
     @Value("classpath:./siren/workflows/sirenWebhookWorkflow.json")
     private Resource sirenWebhookWorkflow;
 
+    @Value("classpath:./siren/workflows/sirenCampaignWorkflow.json")
+    private Resource sirenCampaignWorkflow;
+
     public SirenInitializer(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder.build();
     }
@@ -82,6 +85,7 @@ public class SirenInitializer {
         headers.add(CONTENT_TYPE, APPLICATION_JSON_VALUE);
         createWorkflow(sirenFinalizeExecutionWorkflow, headers);
         createWorkflow(sirenWebhookWorkflow, headers);
+        createWorkflow(sirenCampaignWorkflow, headers);
         LOGGER.info("Siren workflows are created");
 
         updateTask(sendNotificationTask, headers);

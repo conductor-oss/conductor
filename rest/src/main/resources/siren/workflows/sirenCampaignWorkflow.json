@@ -1,0 +1,57 @@
+{
+  "accessPolicy": {},
+  "name": "siren_campaign_workflow",
+  "description": "Workflow for executing campaigns",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "template_fork",
+      "taskReferenceName": "temp_pSzeL9pM3AMtpm7hD-WcA_template_fork",
+      "inputParameters": {},
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "send_notification_task",
+            "taskReferenceName": "prov_j7ooKIGve0iG2n2tH-1Ds_send_notification_task",
+            "inputParameters": {
+              "workflowExecutionId": "${workflow.input.workflowExecutionId}",
+              "providerIntegrationId": "${workflow.input.providerIntegrationId}",
+              "templateId": "${workflow.input.templateId}",
+              "notifyVariables": "${workflow.input.notifyVariables}",
+              "templateVariables": "${workflow.input.templateVariables}"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false,
+            "asyncComplete": false,
+            "permissive": false
+          }
+        ]
+      ],
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false,
+      "permissive": false
+    },
+    {
+      "name": "template_join",
+      "taskReferenceName": "temp_pSzeL9pM3AMtpm7hD-WcA_template_join",
+      "inputParameters": {},
+      "type": "JOIN",
+      "startDelay": 0,
+      "optional": false,
+      "asyncComplete": false,
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "admin@sirenapp.io",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}
