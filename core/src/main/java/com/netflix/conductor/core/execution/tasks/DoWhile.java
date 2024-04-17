@@ -118,7 +118,7 @@ public class DoWhile extends WorkflowSystemTask {
                         .map(value -> (Integer) value);
         if (keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
             Integer iteration = doWhileTaskModel.getIteration();
-            IntStream.range(0, iteration - keepLastN.get())
+            IntStream.range(0, iteration - keepLastN.get() - 1)
                     .mapToObj(Integer::toString)
                     .forEach(doWhileTaskModel::removeOutput);
         }
