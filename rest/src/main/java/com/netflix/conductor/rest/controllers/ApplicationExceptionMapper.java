@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +56,18 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(ClosedChannelException.class)
+    @ExceptionHandler(ClientAbortException.class)
     @Order(ValidationExceptionMapper.ORDER + 1)
-    public void handleNestedClientAbortedInClosedChannelException(
-            HttpServletRequest request, ClosedChannelException closedChannelException) {
-        final List<Throwable> exceptionChain =
-                ExceptionUtils.getThrowableList(closedChannelException);
+    public void handleClientAborted(
+            HttpServletRequest request, ClientAbortException clientAbortException) {
+        logException(
+                request, clientAbortException); // socket closed, cannot return any error response
+    }
+
+    @ExceptionHandler(Throwable.class)
+    @Order(ValidationExceptionMapper.ORDER + 2)
+    public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
+        final List<Throwable> exceptionChain = ExceptionUtils.getThrowableList(th);
         final Optional<Throwable> clientAbortedException =
                 exceptionChain.stream()
                         .filter(
@@ -73,22 +78,9 @@ public class ApplicationExceptionMapper {
                         .findAny();
         if (clientAbortedException.isPresent()) {
             handleClientAborted(request, (ClientAbortException) clientAbortedException.get());
-            return;
+            return ResponseEntity.ok().build();
         }
-        handleAll(request, closedChannelException);
-    }
 
-    @ExceptionHandler(ClientAbortException.class)
-    @Order(ValidationExceptionMapper.ORDER + 2)
-    public void handleClientAborted(
-            HttpServletRequest request, ClientAbortException clientAbortException) {
-        logException(
-                request, clientAbortException); // socket closed, cannot return any error response
-    }
-
-    @ExceptionHandler(Throwable.class)
-    @Order(ValidationExceptionMapper.ORDER + 3)
-    public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
         logException(request, th);
 
         HttpStatus status =
