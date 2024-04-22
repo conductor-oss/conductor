@@ -14,7 +14,6 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.Collections;
 
-import org.apache.catalina.connector.ClientAbortException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -86,66 +85,6 @@ public class ApplicationExceptionMapperTest {
                         "Exception",
                         "/api/queue/update/workflowId/taskRefName/SKIPPED",
                         exception);
-        verifyNoMoreInteractions(logger);
-    }
-
-    @Test
-    public void testClientAbortException() throws Exception {
-        var clientAbortException = new ClientAbortException("test");
-        // pick a method that raises a generic exception
-        doThrow(clientAbortException)
-                .when(this.queueAdminResource)
-                .update(any(), any(), any(), any());
-
-        // verify we do not try to write response to an already disconnected client
-        this.mockMvc
-                .perform(
-                        MockMvcRequestBuilders.post(
-                                        "/api/queue/update/workflowId/taskRefName/{status}",
-                                        TaskModel.Status.SKIPPED)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        new ObjectMapper()
-                                                .writeValueAsString(Collections.emptyMap())))
-                .andDo(print())
-                .andExpect(status().isNoContent());
-        // verify the error was logged
-        verify(logger)
-                .error(
-                        "Error {} url: '{}'",
-                        "ClientAbortException",
-                        "/api/queue/update/workflowId/taskRefName/SKIPPED",
-                        clientAbortException);
-        verifyNoMoreInteractions(logger);
-    }
-
-    @Test
-    public void testClientAbortExceptionChained() throws Exception {
-        var clientAbortException = new ClientAbortException("test", new Exception("nested"));
-        // pick a method that raises a generic exception
-        doThrow(new RuntimeException(clientAbortException))
-                .when(this.queueAdminResource)
-                .update(any(), any(), any(), any());
-
-        // verify we do not try to write response to an already disconnected client
-        this.mockMvc
-                .perform(
-                        MockMvcRequestBuilders.post(
-                                        "/api/queue/update/workflowId/taskRefName/{status}",
-                                        TaskModel.Status.SKIPPED)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        new ObjectMapper()
-                                                .writeValueAsString(Collections.emptyMap())))
-                .andDo(print())
-                .andExpect(status().isNoContent());
-        // verify the error was logged
-        verify(logger)
-                .error(
-                        "Error {} url: '{}'",
-                        "ClientAbortException",
-                        "/api/queue/update/workflowId/taskRefName/SKIPPED",
-                        clientAbortException);
         verifyNoMoreInteractions(logger);
     }
 }

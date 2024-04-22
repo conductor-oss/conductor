@@ -13,19 +13,14 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import org.apache.catalina.connector.ClientAbortException;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -40,6 +35,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
+@Order(ValidationExceptionMapper.ORDER + 1)
 public class ApplicationExceptionMapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
@@ -57,32 +53,8 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(ClientAbortException.class)
-    @Order(ValidationExceptionMapper.ORDER + 1)
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void handleClientAborted(
-            HttpServletRequest request, ClientAbortException clientAbortException) {
-        logException(
-                request, clientAbortException); // socket closed, cannot return any error response
-    }
-
     @ExceptionHandler(Throwable.class)
-    @Order(ValidationExceptionMapper.ORDER + 2)
     public ResponseEntity<ErrorResponse> handleAll(HttpServletRequest request, Throwable th) {
-        final List<Throwable> exceptionChain = ExceptionUtils.getThrowableList(th);
-        final Optional<Throwable> clientAbortedException =
-                exceptionChain.stream()
-                        .filter(
-                                t ->
-                                        ClientAbortException.class
-                                                .getName()
-                                                .equals(t.getClass().getName()))
-                        .findAny();
-        if (clientAbortedException.isPresent()) {
-            handleClientAborted(request, (ClientAbortException) clientAbortedException.get());
-            return ResponseEntity.noContent().build();
-        }
-
         logException(request, th);
 
         HttpStatus status =
