@@ -108,7 +108,7 @@ public class ApplicationExceptionMapperTest {
                                         new ObjectMapper()
                                                 .writeValueAsString(Collections.emptyMap())))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         // verify the error was logged
         verify(logger)
                 .error(
@@ -138,7 +138,7 @@ public class ApplicationExceptionMapperTest {
                                         new ObjectMapper()
                                                 .writeValueAsString(Collections.emptyMap())))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         // verify the error was logged
         verify(logger)
                 .error(

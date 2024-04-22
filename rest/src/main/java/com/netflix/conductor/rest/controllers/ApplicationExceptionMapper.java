@@ -25,6 +25,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -58,6 +59,7 @@ public class ApplicationExceptionMapper {
 
     @ExceptionHandler(ClientAbortException.class)
     @Order(ValidationExceptionMapper.ORDER + 1)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleClientAborted(
             HttpServletRequest request, ClientAbortException clientAbortException) {
         logException(
@@ -78,7 +80,7 @@ public class ApplicationExceptionMapper {
                         .findAny();
         if (clientAbortedException.isPresent()) {
             handleClientAborted(request, (ClientAbortException) clientAbortedException.get());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.noContent().build();
         }
 
         logException(request, th);
