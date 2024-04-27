@@ -12,7 +12,6 @@
           "workflowId": "${workflowId}",
           "correlationId": "${correlationId}",
           "status": "${status}",
-          "workflowInput": "${input}",
           "output": "${output}",
           "reasonForIncompletion": "${reasonForIncompletion}",
           "executionTime": "${executionTime}",
