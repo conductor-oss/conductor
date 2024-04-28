@@ -37,8 +37,8 @@ git remote set-url origin https://github.com/conductor-oss/conductor
 The latest version is [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://GitHub.com/conductor-oss/conductor/releases)
 
 ## Resources
-#### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg)
-We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg) of Conductor users and contributors on the channel.
+#### [Slack Community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2hmxn0i3n-_W~a9rWMbvMoYmlJo3Y15g)
+We have an active [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2hmxn0i3n-_W~a9rWMbvMoYmlJo3Y15g) of Conductor users and contributors on the channel.
 #### [Documentation Site](https://docs.conductor-oss.org/)
 [Documentation](https://docs.conductor-oss.org/) and tutorial on how to use Conductor
 
@@ -69,7 +69,7 @@ docker compose -f docker/docker-compose.yaml up
 ## Database Requirements
 
 * The default persistence used is Redis
-* The indexing backend is [Elasticsearch](https://www.elastic.co/) (6.x)
+* The indexing backend is [Elasticsearch](https://www.elastic.co/) (7.x)
 
 ## Other Requirements
 * JDK 17+
