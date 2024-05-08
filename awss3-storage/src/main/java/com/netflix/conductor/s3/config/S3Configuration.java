@@ -41,6 +41,12 @@ public class S3Configuration {
             matchIfMissing = true)
     @Bean
     public AmazonS3 amazonS3(S3Properties properties) {
-        return AmazonS3ClientBuilder.standard().withRegion(properties.getRegion()).build();
+                return AmazonS3ClientBuilder.standard().withRegion(properties.getRegion()).build();
+//        TODO: Add localstack support to test locally
+//        return AmazonS3ClientBuilder.standard()
+//                .withEndpointConfiguration(
+//                        new AwsClientBuilder.EndpointConfiguration(
+//                                properties.getEndpoint(), properties.getRegion()))
+//                .build();
     }
 }

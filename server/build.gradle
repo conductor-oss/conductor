@@ -73,6 +73,7 @@ dependencies {
     runtimeOnly group: 'com.netflix.conductor', name: 'conductor-postgres-persistence', version: '3.9.1'
 
     implementation "com.netflix.spectator:spectator-reg-metrics3:${version_spectator}"
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
