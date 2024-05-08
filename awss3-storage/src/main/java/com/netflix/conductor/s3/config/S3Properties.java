@@ -55,14 +55,14 @@ public class S3Properties {
         this.region = region;
     }
 
-//    TODO: Add localstack support to test locally
-//    private String endpoint = "http://s3.localhost.localstack.cloud:4566";
-//
-//    public String getEndpoint() {
-//        return endpoint;
-//    }
-//
-//    public void setEndpoint(String endpoint) {
-//        this.endpoint = endpoint;
-//    }
+    //    TODO: Add localstack support to test locally
+    //    private String endpoint = "http://s3.localhost.localstack.cloud:4566";
+    //
+    //    public String getEndpoint() {
+    //        return endpoint;
+    //    }
+    //
+    //    public void setEndpoint(String endpoint) {
+    //        this.endpoint = endpoint;
+    //    }
 }
