@@ -136,9 +136,10 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
     public List<TaskModel> createTasks(List<TaskModel> tasks) {
         List<TaskModel> created = Lists.newArrayListWithCapacity(tasks.size());
 
-        for (TaskModel task : tasks) {
-            withTransaction(
-                    connection -> {
+        withTransaction(
+                connection -> {
+                    for (TaskModel task : tasks) {
+
                         validate(task);
 
                         task.setScheduledTime(System.currentTimeMillis());
@@ -155,7 +156,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                                             + task.getReferenceTaskName()
                                             + ", key="
                                             + taskKey);
-                            return;
+                            continue;
                         }
 
                         insertOrUpdateTaskData(connection, task);
@@ -164,8 +165,8 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                         updateTask(connection, task);
 
                         created.add(task);
-                    });
-        }
+                    }
+                });
 
         return created;
     }
