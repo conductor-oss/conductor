@@ -1203,6 +1203,15 @@ public class WorkflowExecutor {
             if (!task.getStatus().isTerminal()) {
                 // Cancel the ones which are not completed yet....
                 task.setStatus(CANCELED);
+                try {
+                    notifyTaskStatusListener(task);
+                } catch (Exception e) {
+                    String errorMsg =
+                            String.format(
+                                    "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                    task.getTaskId(), task.getWorkflowInstanceId());
+                    LOGGER.error(errorMsg, e);
+                }
                 if (systemTaskRegistry.isSystemTask(task.getTaskType())) {
                     WorkflowSystemTask workflowSystemTask =
                             systemTaskRegistry.get(task.getTaskType());
