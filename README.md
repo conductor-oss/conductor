@@ -33,6 +33,9 @@ git remote set-url origin https://github.com/conductor-oss/conductor
 > 2. Update your local repository to change the remote to this repository
 > 3. Send a PR against the `main` branch
 
+## Conductor OSS Roadmap
+[See the roadmap for the Conductor](ROADMAP.md)
+
 ## Releases
 The latest version is [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://GitHub.com/conductor-oss/conductor/releases)
 
