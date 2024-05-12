@@ -74,7 +74,7 @@ jobs:
         run: yarn run build
 
       - name: Run E2E Tests
-        uses: cypress-io/github-action@v4
+        uses: cypress-io/github-action@v6
         with: 
           working-directory: ui
           install: false
@@ -82,7 +82,7 @@ jobs:
           wait-on: 'http://localhost:5000'
       
       - name: Run Component Tests
-        uses: cypress-io/github-action@v4
+        uses: cypress-io/github-action@v6
         with: 
           working-directory: ui
           install: false
