@@ -19,7 +19,7 @@ dependencies {
 	implementation "io.prometheus:simpleclient:${revPrometheus}"
 	implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
 
-    implementation 'io.micrometer:micrometer-registry-datadog:1.12.1'
+    implementation 'io.micrometer:micrometer-registry-datadog:1.12.6'
 
     
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
