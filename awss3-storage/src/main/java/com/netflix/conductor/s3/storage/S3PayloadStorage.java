@@ -134,6 +134,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                     String.format(
                             "Error uploading to S3 - path:%s, payloadSize: %d, bucketName: %s",
                             path, payloadSize, bucketName);
+            e.printStackTrace();
             LOGGER.error(msg, e);
             throw new TransientException(msg, e);
         }
