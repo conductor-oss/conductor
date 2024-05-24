@@ -49,10 +49,7 @@ jobs:
             case $BRANCH in
               "dev")
                 ENV="dev"
-                ;;
-              "add/ci-public-ecr-push")
-                ENV="dev"
-                ;;                
+                ;;               
               "stg")
                 ENV="stg"
                 ;;
@@ -169,19 +166,7 @@ jobs:
         id: login-ecr-public
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry-type: public
-
-      # - name: Push image to Public ECR 
-      #   if: ${{ env.ENV == 'dev'}}
-      #   id: push-to-public-ecr
-      #   env:
-      #     PVT_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-      #     PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-      #     PUBLIC_REGISTRY_ALIAS: kvsiren-${{ env.ENV }}
-      #   run: |
-      #     docker images
-      #     docker tag ${{ env.PVT_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}
-      #     docker push ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}                    
+          registry-type: public                
           
       - name: Build and push to Public ECR
         if: ${{ env.ENV == 'dev'}}
