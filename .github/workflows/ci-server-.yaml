@@ -185,7 +185,7 @@ jobs:
           
       - name: Build and push to Public ECR
         if: ${{ env.ENV == 'dev'}}
-        id: build
+        id: build-public
         uses: docker/build-push-action@v5.1.0
         env:
           PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
