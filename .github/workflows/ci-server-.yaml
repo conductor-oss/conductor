@@ -33,6 +33,7 @@ jobs:
       ECR_REPOSITORY: ${{ steps.set_env.outputs.ECR_REPOSITORY }}
       ENVIRONMENT_BUCKET: ${{ steps.set_env.outputs.ENVIRONMENT_BUCKET }}
       SLACK_WEBHOOK_URL: ${{ steps.vars.outputs.SLACK_WEBHOOK_URL }}
+      PUBLIC_CONDUCTOR_ECR: ${{ steps.vars.outputs.PUBLIC_CONDUCTOR_ECR}}
 
     steps:
       - id: vars
@@ -49,6 +50,9 @@ jobs:
               "dev")
                 ENV="dev"
                 ;;
+              "add/ci-public-ecr-push")
+                ENV="dev"
+                ;;                
               "stg")
                 ENV="stg"
                 ;;
@@ -75,6 +79,7 @@ jobs:
             echo "AWS_ROLE=DEV_AWS_ROLE" >> $GITHUB_OUTPUT
             echo "PROJECT_PREFIX=sirn-dev-mb" >> $GITHUB_OUTPUT
             echo "SLACK_WEBHOOK_URL=DEV_SLACK_WEBHOOK_URL" >> $GITHUB_OUTPUT
+            echo "PUBLIC_CONDUCTOR_ECR=sandbox-conductor-server"  >> $GITHUB_OUTPUT               
           else
             echo "Branch not configured!"
             exit 1
@@ -108,6 +113,7 @@ jobs:
       ECR_REPOSITORY: ${{needs.prepare-env.outputs.ECR_REPOSITORY}}
       ENVIRONMENT_BUCKET: ${{needs.prepare-env.outputs.ENVIRONMENT_BUCKET}}
       IMAGE_TAG: ${{ github.event.inputs.tag }}
+      PUBLIC_CONDUCTOR_ECR: ${{needs.prepare-env.outputs.PUBLIC_CONDUCTOR_ECR}}
     outputs:
       ECR_REPO: ${{ steps.build.outputs.ECR_REPO }}
       APP_IMAGE: ${{ steps.image.outputs.APP_IMAGE }}
@@ -150,6 +156,38 @@ jobs:
           provenance: false
           platforms: linux/amd64
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+      - name: Login to Amazon ECR Public
+        if: ${{ env.ENV == 'dev'}}
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+      - name: Push image to Public ECR 
+        if: ${{ env.ENV == 'dev'}}
+        id: push-to-public-ecr
+        env:
+          PVT_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+          PUBLIC_REGISTRY_ALIAS: kvsiren-${{ env.ENV }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker images
+          docker tag ${{ env.PVT_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}                    
+          
+      # - name: Build and push to Public ECR
+      #   if: ${{ env.ENV == 'dev'}}
+      #   id: build
+      #   uses: docker/build-push-action@v5.1.0
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+      #   with:
+      #     context: .
+      #     file: ./Dockerfile
+      #     push: true
+      #     provenance: false
+      #     platforms: linux/amd64
+      #     tags: ${{ env.ECR_REGISTRY }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}          
 
       - name: Image name
         id: image
