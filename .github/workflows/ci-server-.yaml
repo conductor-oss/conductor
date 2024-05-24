@@ -157,7 +157,8 @@ jobs:
           platforms: linux/amd64
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials for Public ECR
+        if: ${{ env.ENV == 'dev'}}      
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets[env.AWS_ROLE] }}
@@ -169,33 +170,33 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry-type: public
-          
-      - name: Push image to Public ECR 
-        if: ${{ env.ENV == 'dev'}}
-        id: push-to-public-ecr
-        env:
-          PVT_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-          PUBLIC_REGISTRY_ALIAS: kvsiren-${{ env.ENV }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker images
-          docker tag ${{ env.PVT_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}
-          docker push ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}                    
-          
-      # - name: Build and push to Public ECR
+
+      # - name: Push image to Public ECR 
       #   if: ${{ env.ENV == 'dev'}}
-      #   id: build
-      #   uses: docker/build-push-action@v5.1.0
+      #   id: push-to-public-ecr
       #   env:
-      #     ECR_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-      #   with:
-      #     context: .
-      #     file: ./Dockerfile
-      #     push: true
-      #     provenance: false
-      #     platforms: linux/amd64
-      #     tags: ${{ env.ECR_REGISTRY }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}          
+      #     PVT_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+      #     PUBLIC_REGISTRY_ALIAS: kvsiren-${{ env.ENV }}
+      #   run: |
+      #     docker images
+      #     docker tag ${{ env.PVT_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}
+      #     docker push ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}                    
+          
+      - name: Build and push to Public ECR
+        if: ${{ env.ENV == 'dev'}}
+        id: build
+        uses: docker/build-push-action@v5.1.0
+        env:
+          PUBLIC_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+          PUBLIC_REGISTRY_ALIAS: kvsiren-${{ env.ENV }}          
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          provenance: false
+          platforms: linux/amd64
+          tags: ${{ env.PUBLIC_REGISTRY }}/${{ env.PUBLIC_REGISTRY_ALIAS }}/${{ env.PUBLIC_CONDUCTOR_ECR }}:${{ env.IMAGE_TAG }}          
 
       - name: Image name
         id: image
