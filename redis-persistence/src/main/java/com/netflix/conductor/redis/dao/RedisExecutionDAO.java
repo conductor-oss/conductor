@@ -289,7 +289,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         jedisProxy.zaddnx(rateLimitKey, score, taskId);
         recordRedisDaoRequests("checkTaskRateLimiting", task.getTaskType(), task.getWorkflowType());
 
-        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, limit);
+        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, Integer.MAX_VALUE);
         boolean rateLimited = !ids.contains(taskId);
         if (rateLimited) {
             LOGGER.info(
