@@ -188,7 +188,8 @@ public class RestClientManager {
         String url = prepareUrl(notifType, statusNotifier);
 
         Map<String, String> headers = new HashMap<>();
-        headers.put(config.getHeaderPrefer(), config.getHeaderPreferValue());
+        if (config.getHeaderPrefer() != "" && config.getHeaderPreferValue() != "")
+            headers.put(config.getHeaderPrefer(), config.getHeaderPreferValue());
 
         HttpPost request = createPostRequest(url, data, headers);
         long start = System.currentTimeMillis();
