@@ -6,13 +6,29 @@ import { cleanDuplicateSlash } from "./fetch";
 const useStyles = makeStyles((theme) => ({
   logo: {
     height: 37,
-    width: 175,
+    marginTop: 2,
+    marginLeft: 5,
     marginRight: 30,
+    verticalAlign: "text-bottom",
+    lineHeight: 3
   },
+  boostLogo: {
+      height: 37,
+      width: 102,
+    },
+    container:{
+      height: 37,
+      display: "flex",
+      marginTop: -8
+    }
 }));
 
 export default function AppLogo() {
   const classes = useStyles();
-  const logoPath = getBasename() + 'logo.svg';
-  return <img src={cleanDuplicateSlash(logoPath)} alt="Conductor" className={classes.logo} />;
+  const boostLogoPath = getBasename() + 'Boost_Logo_.png';
+
+  return <div className={classes.container}>
+            <img src={cleanDuplicateSlash(boostLogoPath)} alt="Boost" className={classes.boostLogo} />
+            <span className={classes.logo}>Conductor</span>
+         </div>
 }
