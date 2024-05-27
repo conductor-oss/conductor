@@ -1,0 +1,14 @@
+name: Check for Jira Ticket
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check PR for Jira ticket reference
+      uses: getboost-io/Boost.Core.GithubActions/check-for-jira-ticket@main
+      with:
+        pr-title: ${{ github.event.pull_request.title }}
