@@ -20,7 +20,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'java-library'
-    id "com.diffplug.spotless" version "5.0.0"
+    id "com.diffplug.spotless" version "6.25.0"
 }
 
 // Establish version and status
