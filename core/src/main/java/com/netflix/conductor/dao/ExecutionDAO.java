@@ -153,6 +153,14 @@ public interface ExecutionDAO {
     List<String> getRunningWorkflowIds(String workflowName, int version);
 
     /**
+     * @return List of workflow ids which are running
+     */
+    default List<String> getRunningWorkflowIds() {
+        throw new UnsupportedOperationException(
+                getClass() + " does not support getRunningWorkflowIds");
+    }
+
+    /**
      * @param workflowName Name of the workflow
      * @param version the workflow version
      * @return List of workflows that are running

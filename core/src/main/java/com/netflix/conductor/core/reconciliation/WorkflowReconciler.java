@@ -13,7 +13,9 @@
 package com.netflix.conductor.core.reconciliation;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -41,21 +45,63 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
 
     private final WorkflowSweeper workflowSweeper;
     private final QueueDAO queueDAO;
+    private final ExecutionDAO executionDAO;
+
     private final int sweeperThreadCount;
     private final int sweeperWorkflowPollTimeout;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowReconciler.class);
 
     public WorkflowReconciler(
-            WorkflowSweeper workflowSweeper, QueueDAO queueDAO, ConductorProperties properties) {
+            WorkflowSweeper workflowSweeper,
+            QueueDAO queueDAO,
+            ExecutionDAO executionDAO,
+            ConductorProperties properties) {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
+        this.executionDAO = executionDAO;
         this.sweeperThreadCount = properties.getSweeperThreadCount();
         this.sweeperWorkflowPollTimeout =
                 (int) properties.getSweeperWorkflowPollTimeout().toMillis();
         LOGGER.info(
                 "WorkflowReconciler initialized with {} sweeper threads",
                 properties.getSweeperThreadCount());
+    }
+
+    // This routine will check for workflows that should be running but not in the decider queue and
+    // repairs them.
+    @Scheduled(fixedDelay = 30000L, initialDelay = 30000L)
+    public void reconcileRunningWorkflowsAndDeciderQueue() {
+        if (!isRunning()) {
+            LOGGER.debug("Component stopped, skip workflow repairs");
+            return;
+        }
+
+        // fetch all workflows that are running from the workflows table
+        List<String> runningWorkflowIds = executionDAO.getRunningWorkflowIds();
+
+        // fetch all workflows that are in the decider queue
+        Set<String> workflowIdsInDeciderQueue =
+                queueDAO.getMessages(DECIDER_QUEUE).stream()
+                        .map(Message::getId)
+                        .collect(Collectors.toSet());
+
+        // check which workflows are in a RUNNING state but not in the decider queue
+        List<String> workflowsNotInDeciderQueue =
+                runningWorkflowIds.stream()
+                        .filter(workflowId -> !workflowIdsInDeciderQueue.contains(workflowId))
+                        .toList();
+
+        if (workflowsNotInDeciderQueue.isEmpty()) {
+            return;
+        }
+
+        // if not in the decider queue, add it back to the decider queue
+        List<Message> messagesToPush =
+                workflowsNotInDeciderQueue.stream()
+                        .map(workflowId -> new Message(workflowId, null, null, 0))
+                        .toList();
+        queueDAO.push(DECIDER_QUEUE, messagesToPush);
     }
 
     @Scheduled(
