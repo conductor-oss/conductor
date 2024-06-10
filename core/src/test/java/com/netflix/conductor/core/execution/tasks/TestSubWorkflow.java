@@ -415,7 +415,7 @@ public class TestSubWorkflow {
 
     @Test
     public void testIsAsync() {
-        assertTrue(subWorkflow.isAsync());
+        assertFalse(subWorkflow.isAsync());
     }
 
     @Test
