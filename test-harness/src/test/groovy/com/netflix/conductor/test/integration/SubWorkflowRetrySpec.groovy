@@ -198,14 +198,10 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
             tasks[1].retried
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[2].retriedTaskId == tasks[1].taskId
         }
-
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-        def newMidLevelWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(1).subWorkflowId
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
@@ -407,7 +403,7 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
             tasks[1].retried
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[2].retriedTaskId == tasks[1].taskId
         }
 
@@ -419,11 +415,7 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
             tasks[1].subworkflowChanged
         }
-
-        when: "the SUB_WORKFLOW task in mid level workflow is started by issuing a system task call"
-        def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-        def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(1).subWorkflowId
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
