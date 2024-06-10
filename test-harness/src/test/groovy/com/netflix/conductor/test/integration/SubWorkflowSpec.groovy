@@ -253,8 +253,6 @@ class SubWorkflowSpec extends AbstractSpecification {
         }
 
         when: "Polled for and executed subworkflow task"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
 
@@ -351,10 +349,6 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[1].taskType == 'SUB_WORKFLOW'
             tasks[1].status == Task.Status.IN_PROGRESS
         }
-
-        when: "the subworkflow is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
