@@ -99,10 +99,6 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         def rootWorkflowInstance = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
         with(rootWorkflowInstance) {
@@ -336,7 +332,7 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
         }
 
         when: "the SUB_WORKFLOW task in mid level workflow is started by issuing a system task call"
-        def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(4).subWorkflowId
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
