@@ -196,7 +196,7 @@ public class RestClientManager {
         executePost(request);
         long duration = System.currentTimeMillis() - start;
         if (duration > 100) {
-            logger.info("Round trip response time = " + (duration) + " millis");
+            logger.info("Round trip response time = {} millis", duration);
         }
     }
 
@@ -213,7 +213,7 @@ public class RestClientManager {
             }
         } else if (notifType == RestClientManager.NotificationType.WORKFLOW) {
             if (statusNotifier != null
-                    && StringUtils.isNotBlank(statusNotifier.getEndpointTask())) {
+                    && StringUtils.isNotBlank(statusNotifier.getEndpointWorkflow())) {
                 urlEndPoint = statusNotifier.getEndpointWorkflow();
             } else {
                 urlEndPoint = config.getEndpointWorkflow();
