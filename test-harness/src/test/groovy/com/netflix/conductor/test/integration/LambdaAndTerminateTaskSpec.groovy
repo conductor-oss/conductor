@@ -139,7 +139,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
             tasks[3].status == Task.Status.IN_PROGRESS
             tasks[3].taskType == 'JOIN'
             tasks[3].seq == 4
-            tasks[4].status == Task.Status.SCHEDULED
+            tasks[4].status == Task.Status.IN_PROGRESS
             tasks[4].taskType == 'SUB_WORKFLOW'
             tasks[4].seq == 5
             tasks[5].status == Task.Status.IN_PROGRESS
@@ -149,8 +149,6 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
 
         when: "subworkflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowTaskId = workflow.getTaskByRefName("test_terminate_subworkflow").getTaskId()
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.getTaskByRefName("test_terminate_subworkflow").subWorkflowId
 

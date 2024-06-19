@@ -865,7 +865,7 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[5].inputData['joinOn'] == ['t14', 't20']
 
             tasks[6].taskType == 'SUB_WORKFLOW'
-            tasks[6].status == Task.Status.SCHEDULED
+            tasks[6].status == Task.Status.IN_PROGRESS
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
@@ -905,7 +905,7 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[5].inputData['joinOn'] == ['t14', 't20']
 
             tasks[6].taskType == 'SUB_WORKFLOW'
-            tasks[6].status == Task.Status.SCHEDULED
+            tasks[6].status == Task.Status.IN_PROGRESS
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t11', 'join2', 'sw1']
@@ -923,8 +923,6 @@ class ForkJoinSpec extends AbstractSpecification {
 
         and: "Get the sub workflow id associated with the SubWorkflow Task sw1 and start the system task"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowTaskId = workflow.getTaskByRefName("sw1").getTaskId()
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
         def updatedWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowInstanceId = updatedWorkflow.getTaskByRefName('sw1').subWorkflowId
 
@@ -1079,19 +1077,15 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[0].taskType == 'FORK'
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
             tasks[2].taskType == 'SUB_WORKFLOW'
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[3].taskType == 'JOIN'
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
         when: "both the sub workflows are started by issuing a system task call"
         def workflowWithScheduledSubWorkflows = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowTaskId1 = workflowWithScheduledSubWorkflows.getTaskByRefName('st1').taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId1)
-        def subWorkflowTaskId2 = workflowWithScheduledSubWorkflows.getTaskByRefName('st2').taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId2)
         def joinTaskId = workflowWithScheduledSubWorkflows.getTaskByRefName("fanouttask_join").taskId
 
         then: "verify that the sub workflow tasks are in a IN PROGRESS state"
@@ -1212,7 +1206,7 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[0].taskType == 'FORK'
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
             tasks[2].taskType == 'integration_task_2'
             tasks[2].status == Task.Status.SCHEDULED
             tasks[3].taskType == 'JOIN'
@@ -1224,7 +1218,6 @@ class ForkJoinSpec extends AbstractSpecification {
         def parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1').taskId
         def jointaskId = parentWorkflow.getTaskByRefName("fanouttask_join").taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1283,13 +1276,12 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[3].inputData['joinOn'] == ['st1', 't2']
             tasks[3].status == Task.Status.IN_PROGRESS
             tasks[4].taskType == 'SUB_WORKFLOW'
-            tasks[4].status == Task.Status.SCHEDULED
+            tasks[4].status == Task.Status.IN_PROGRESS
         }
 
         when: "the sub workflow is started by issuing a system task call"
         parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1').taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

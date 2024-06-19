@@ -421,13 +421,8 @@ class DoWhileSpec extends AbstractSpecification {
             tasks[5].taskType == 'JOIN'
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == 'SUB_WORKFLOW'
-            tasks[6].status == Task.Status.SCHEDULED
+            tasks[6].status == Task.Status.IN_PROGRESS
         }
-
-        when: "the sub workflow is started by issuing a system task call"
-        def parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1__1').taskId
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

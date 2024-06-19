@@ -103,13 +103,11 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
         }
 
         when: "the subworkflow is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        String subworkflowTaskId = polledTaskIds.get(0)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subworkflowTaskId)
+        String subworkflowTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTasks().get(1).getTaskId()
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -251,12 +249,10 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
         }
 
         when: "Polled for and executed subworkflow task"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
 
@@ -351,12 +347,8 @@ class SubWorkflowSpec extends AbstractSpecification {
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
             tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].status == Task.Status.IN_PROGRESS
         }
-
-        when: "the subworkflow is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
