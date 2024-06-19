@@ -17,9 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
 
 import com.netflix.conductor.contribs.queue.nats.JetStreamObservableQueue;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
@@ -33,12 +35,20 @@ public class JetStreamEventQueueProvider implements EventQueueProvider {
     private static final Logger LOG = LoggerFactory.getLogger(JetStreamEventQueueProvider.class);
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
     private final JetStreamProperties properties;
+    private final ConductorProperties conductorProperties;
     private final Scheduler scheduler;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public JetStreamEventQueueProvider(JetStreamProperties properties, Scheduler scheduler) {
+    public JetStreamEventQueueProvider(
+            ConductorProperties conductorProperties,
+            JetStreamProperties properties,
+            Scheduler scheduler,
+            ApplicationEventPublisher eventPublisher) {
         LOG.info("NATS Event Queue Provider initialized...");
         this.properties = properties;
+        this.conductorProperties = conductorProperties;
         this.scheduler = scheduler;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -49,9 +59,16 @@ public class JetStreamEventQueueProvider implements EventQueueProvider {
     @Override
     @NonNull
     public ObservableQueue getQueue(String queueURI) throws IllegalArgumentException {
-        LOG.debug("Getting obs queue, quri={}", queueURI);
+        LOG.info("Getting obs queue, quri={}", queueURI);
         return queues.computeIfAbsent(
                 queueURI,
-                q -> new JetStreamObservableQueue(properties, getQueueType(), queueURI, scheduler));
+                q ->
+                        new JetStreamObservableQueue(
+                                conductorProperties,
+                                properties,
+                                getQueueType(),
+                                queueURI,
+                                scheduler,
+                                eventPublisher));
     }
 }
