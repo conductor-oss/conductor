@@ -107,6 +107,12 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
             tasks.size() == 4
         }
 
+        when: "poll and complete the integration_task_2 task"
+        pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
+
+        then: "verify that the 'integration_task_2' was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
+
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
