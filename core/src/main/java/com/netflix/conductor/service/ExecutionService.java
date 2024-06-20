@@ -189,7 +189,18 @@ public class ExecutionService {
                 .map(executionDAOFacade::getTaskModel)
                 .filter(Objects::nonNull)
                 .filter(task -> TaskModel.Status.IN_PROGRESS.equals(task.getStatus()))
-                .forEach(taskStatusListener::onTaskInProgress);
+                .forEach(
+                        task -> {
+                            try {
+                                taskStatusListener.onTaskInProgress(task);
+                            } catch (Exception e) {
+                                String errorMsg =
+                                        String.format(
+                                                "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                                task.getTaskId(), task.getWorkflowInstanceId());
+                                LOGGER.error(errorMsg, e);
+                            }
+                        });
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
         Monitors.recordTaskPoll(queueName);
         tasks.forEach(this::ackTaskReceived);
