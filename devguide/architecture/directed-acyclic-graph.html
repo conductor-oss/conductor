@@ -3434,10 +3434,10 @@
 <p>Acyclic means without circular or cyclic paths.  In the directed example above,  A -&gt; B -&gt; D -&gt; A is a cyclic loop.  </p>
 <p>So a Directed Acyclic Graph is a set of vertices where the connections are directed without any looping.  DAG charts can only "move forward" and cannot redo a step (or series of steps.)</p>
 <p>Since a Conductor workflow is a series of vertices that can connect in only a specific direction and cannot loop, a Conductor workflow is thus a directed acyclic graph:</p>
-<p><img alt="Conductor Dag" src="dag_workflow.png" /></p>
+<p><img alt="Conductor Dag" src="dag_workflow2.png" /></p>
 <h3 id="can-a-workflow-have-loops-and-still-be-a-dag">Can a workflow have loops and still be a DAG?</h3>
 <p>Yes. For example, Conductor workflows have Do-While loops:</p>
-<p><img alt="Conductor Dag" src="dag_workflow2.png" /></p>
+<p><img alt="Conductor Dag" src="dag_workflow.png" /></p>
 <p>This is still a DAG, because the loop is just shorthand for running the tasks inside the loop over and over again.  For example, if the 2nd loop in the above image is run 3 times, the workflow path will be:</p>
 <ol>
 <li>zero_offset_fix_1</li>
