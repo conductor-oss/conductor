@@ -93,10 +93,10 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        when: "poll and complete the integration_task_1 task"
+        when: "poll and complete the integration_task_2 task"
         def pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
 
-        then: "verify that the 'integration_task_1' was polled and acknowledged"
+        then: "verify that the 'integration_task_2' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
@@ -105,6 +105,12 @@ class HierarchicalForkJoinSubworkflowRetrySpec extends AbstractSpecification {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
         }
+
+        when: "poll and complete the integration_task_2 task"
+        pollAndCompleteTask = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', ['op': 'task2.done'])
+
+        then: "verify that the 'integration_task_2' was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
