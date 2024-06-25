@@ -146,10 +146,10 @@ export default class WorkflowDAG {
       //
       // SWITCH is the newer version of DECISION and DECISION is deprecated
       //
-      // Skip this if current type is DO_WHILE_END - which means the SWITCH is one of the bundled
+      // Skip this if current type is DO_WHILE_END or WHILE_END - which means the SWITCH is one of the bundled
       // loop tasks and the current task is not the result of a decision
       if (
-        taskConfig.type !== "DO_WHILE_END" &&
+        taskConfig.type !== "DO_WHILE_END" && taskConfig.type !== "WHILE_END" &&
         (antecedent.type === "SWITCH" || antecedent.type === "DECISION")
       ) {
         edgeParams.caseValue = getCaseValue(
@@ -300,6 +300,7 @@ export default class WorkflowDAG {
         return retval;
       }
 
+      case "WHILE":
       case "DO_WHILE": {
         return task.loopOver;
       }
@@ -329,35 +330,35 @@ export default class WorkflowDAG {
     return [task].concat(taskRefs);
   }
 
-  processDoWhileTask(doWhileTask, antecedents) {
+  processLoopTask(loopTask, antecedents) {
     console.assert(Array.isArray(antecedents));
 
-    const hasDoWhileExecuted = !!this.getExecutionStatus(
-      doWhileTask.taskReferenceName
+    const hasLoopTaskExecuted = !!this.getExecutionStatus(
+      loopTask.taskReferenceName
     );
 
-    this.addVertex(doWhileTask, antecedents);
+    this.addVertex(loopTask, antecedents);
 
     // Bottom bar
     // aliasForRef indicates when the bottom bar is clicked one we should highlight the ref
-    let endDoWhileTask = {
-      type: "DO_WHILE_END",
-      name: doWhileTask.name,
-      taskReferenceName: doWhileTask.taskReferenceName + "-END",
-      aliasForRef: doWhileTask.taskReferenceName,
+    let endLoopTask = {
+      type: loopTask.type + "_END",
+      name: loopTask.name,
+      taskReferenceName: loopTask.taskReferenceName + "-END",
+      aliasForRef: loopTask.taskReferenceName,
     };
 
-    const loopOverRefPrefixes = this.getRefTask(doWhileTask).map(
+    const loopOverRefPrefixes = this.getRefTask(loopTask).map(
       (t) => t.taskReferenceName
     );
-    if (hasDoWhileExecuted) {
+    if (hasLoopTaskExecuted) {
       // Create cosmetic LOOP edges between top and bottom bars
       this.graph.setEdge(
-        doWhileTask.taskReferenceName,
-        doWhileTask.taskReferenceName + "-END",
+        loopTask.taskReferenceName,
+        loopTask.taskReferenceName + "-END",
         {
           type: "loop",
-          executed: hasDoWhileExecuted,
+          executed: hasLoopTaskExecuted,
         }
       );
 
@@ -383,16 +384,16 @@ export default class WorkflowDAG {
       }));
 
       for (let task of loopTasks) {
-        this.addVertex(task, [doWhileTask]);
+        this.addVertex(task, [loopTask]);
       }
 
-      this.addVertex(endDoWhileTask, [...loopTasks]);
+      this.addVertex(endLoopTask, [...loopTasks]);
     } else {
       // Definition view (or not executed)
 
-      this.processTaskList(doWhileTask.loopOver, [doWhileTask]);
+      this.processTaskList(loopTask.loopOver, [loopTask]);
 
-      const lastLoopTask = _.last(doWhileTask.loopOver);
+      const lastLoopTask = _.last(loopTask.loopOver);
 
       // Connect the end of each case to the loop end
       if (
@@ -402,26 +403,26 @@ export default class WorkflowDAG {
         Object.entries(lastLoopTask.decisionCases).forEach(
           ([caseValue, tasks]) => {
             const lastTaskInCase = _.last(tasks);
-            this.addVertex(endDoWhileTask, [lastTaskInCase]);
+            this.addVertex(endLoopTask, [lastTaskInCase]);
           }
         );
       }
 
       // Default case
-      this.addVertex(endDoWhileTask, [lastLoopTask]);
+      this.addVertex(endLoopTask, [lastLoopTask]);
     }
 
     // Create reverse loop edge
     this.graph.setEdge(
-      doWhileTask.taskReferenceName,
-      doWhileTask.taskReferenceName + "-END",
+      loopTask.taskReferenceName,
+      loopTask.taskReferenceName + "-END",
       {
         type: "loop",
-        executed: hasDoWhileExecuted,
+        executed: hasLoopTaskExecuted,
       }
     );
 
-    return [endDoWhileTask];
+    return [endLoopTask];
   }
 
   processForkJoin(forkJoinTask, antecedents) {
@@ -503,8 +504,9 @@ export default class WorkflowDAG {
         return [];
       }
 
+      case "WHILE":
       case "DO_WHILE": {
-        return this.processDoWhileTask(task, antecedents);
+        return this.processLoopTask(task, antecedents);
       }
 
       case "JOIN": {
@@ -546,11 +548,11 @@ export default class WorkflowDAG {
           return this.graph
             .successors(parent.ref)
             .map((ref) => this.graph.node(ref));
-        } else if (parent.type === "DO_WHILE") {
+        } else if (parent.type === "DO_WHILE" || parent.type === "WHILE") {
           return this.graph
             .successors(parent.ref)
             .map((ref) => this.graph.node(ref))
-            .filter((node) => node.type !== "DO_WHILE_END");
+            .filter((node) => node.type !== "DO_WHILE_END" && node.type !== "WHILE_END");
         }
       }
     }

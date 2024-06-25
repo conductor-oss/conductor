@@ -354,7 +354,7 @@ public class WorkflowExecutor {
                     break;
                 case CANCELED:
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
-                            || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
+                            || TaskType.isLoopTask(task.getTaskType())) {
                         task.setStatus(IN_PROGRESS);
                         addTaskToQueue(task);
                         // Task doesn't have to be updated yet. Will be updated along with other
@@ -946,7 +946,7 @@ public class WorkflowExecutor {
      * Determines if a workflow can be lazily evaluated, if it meets any of these criteria
      *
      * <ul>
-     *   <li>The task is NOT a loop task within DO_WHILE
+     *   <li>The task is NOT a loop task within DO_WHILE or WHILE
      *   <li>The task is one of the intermediate tasks in a branch within a FORK_JOIN
      *   <li>The task is forked from a FORK_JOIN_DYNAMIC
      * </ul>
