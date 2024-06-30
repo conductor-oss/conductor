@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.acl.Permission;
  * A base class for {@link com.netflix.conductor.common.metadata.workflow.WorkflowDef} and {@link
  * com.netflix.conductor.common.metadata.tasks.TaskDef}.
  */
+@Deprecated
 public abstract class BaseDef extends Auditable {
 
     private final Map<Permission, String> accessPolicy = new EnumMap<>(Permission.class);

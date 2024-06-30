@@ -377,7 +377,7 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.registerWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
@@ -397,7 +397,7 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.validateWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(

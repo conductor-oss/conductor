@@ -26,10 +26,10 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 
 /**
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in
@@ -86,7 +86,6 @@ public class WorkflowTask {
 
     // Populates for the tasks of the decision type
     @ProtoField(id = 9)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, @Valid List<@Valid WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
     @Deprecated private String dynamicForkJoinTasksParam;
@@ -98,11 +97,9 @@ public class WorkflowTask {
     private String dynamicForkTasksInputParamName;
 
     @ProtoField(id = 12)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid WorkflowTask> defaultCase = new LinkedList<>();
 
     @ProtoField(id = 13)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid List<@Valid WorkflowTask>> forkTasks = new LinkedList<>();
 
     @ProtoField(id = 14)
@@ -114,7 +111,6 @@ public class WorkflowTask {
     private SubWorkflowParams subWorkflowParam;
 
     @ProtoField(id = 16)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> joinOn = new LinkedList<>();
 
     @ProtoField(id = 17)
@@ -130,7 +126,6 @@ public class WorkflowTask {
     private Boolean rateLimited;
 
     @ProtoField(id = 21)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
     @ProtoField(id = 23)
@@ -140,7 +135,6 @@ public class WorkflowTask {
     private String loopCondition;
 
     @ProtoField(id = 25)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<WorkflowTask> loopOver = new LinkedList<>();
 
     @ProtoField(id = 26)
@@ -153,7 +147,40 @@ public class WorkflowTask {
     private String expression;
 
     @ProtoField(id = 29)
-    private boolean permissive = false;
+    private String joinStatus;
+
+    @ProtoField(id = 30)
+    private boolean permissive;
+
+    public static class CacheConfig {
+
+        private String key;
+        private int ttlInSecond;
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public int getTtlInSecond() {
+            return ttlInSecond;
+        }
+
+        public void setTtlInSecond(int ttlInSecond) {
+            this.ttlInSecond = ttlInSecond;
+        }
+    }
+
+    private CacheConfig cacheConfig;
+
+    /*
+    Map of events to be emitted when the task status changed.
+    key can be comma separated values of the status changes prefixed with "on"<STATUS>
+    */
+    private @Valid Map<String, List<StateChangeEvent>> onStateChange = new HashMap<>();
 
     /**
      * @return the name
@@ -390,9 +417,18 @@ public class WorkflowTask {
         this.scriptExpression = expression;
     }
 
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
+    }
+
     /**
      * @return the subWorkflow
      */
+    @JsonGetter
     public SubWorkflowParams getSubWorkflowParam() {
         return subWorkflowParam;
     }
@@ -400,6 +436,7 @@ public class WorkflowTask {
     /**
      * @param subWorkflow the subWorkflowParam to set
      */
+    @JsonSetter
     public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
         this.subWorkflowParam = subWorkflow;
     }
@@ -550,18 +587,18 @@ public class WorkflowTask {
         this.expression = expression;
     }
 
-    /**
-     * @return If the task is permissive. When set to true, and the task is in failed status,
-     *     fail-fast does not occur. The workflow execution continues until reaching join or end of
-     *     workflow, allowing idempotent execution of other tasks.
-     */
-    public boolean isPermissive() {
-        return this.permissive;
+    public String getJoinStatus() {
+        return joinStatus;
     }
 
-    /**
-     * @param permissive when set to true, the task is marked as permissive
-     */
+    public void setJoinStatus(String joinStatus) {
+        this.joinStatus = joinStatus;
+    }
+
+    public boolean isPermissive() {
+        return permissive;
+    }
+
     public void setPermissive(boolean permissive) {
         this.permissive = permissive;
     }
@@ -713,6 +750,14 @@ public class WorkflowTask {
         return null;
     }
 
+    public Map<String, List<StateChangeEvent>> getOnStateChange() {
+        return onStateChange;
+    }
+
+    public void setOnStateChange(Map<String, List<StateChangeEvent>> onStateChange) {
+        this.onStateChange = onStateChange;
+    }
+
     @Override
     public String toString() {
         return name + "/" + taskReferenceName;
@@ -750,10 +795,14 @@ public class WorkflowTask {
                 && Objects.equals(getForkTasks(), that.getForkTasks())
                 && Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam())
                 && Objects.equals(getJoinOn(), that.getJoinOn())
+                && Objects.equals(getJoinStatus(), that.getJoinStatus())
                 && Objects.equals(getSink(), that.getSink())
                 && Objects.equals(isAsyncComplete(), that.isAsyncComplete())
                 && Objects.equals(getDefaultExclusiveJoinTask(), that.getDefaultExclusiveJoinTask())
-                && Objects.equals(getRetryCount(), that.getRetryCount());
+                && Objects.equals(getRetryCount(), that.getRetryCount())
+                && Objects.equals(getCacheConfig(), that.getCacheConfig())
+                && Objects.equals(isPermissive(), that.isPermissive())
+                && Objects.equals(getOnStateChange(), that.getOnStateChange());
     }
 
     @Override
@@ -779,10 +828,14 @@ public class WorkflowTask {
                 getStartDelay(),
                 getSubWorkflowParam(),
                 getJoinOn(),
+                getJoinStatus(),
                 getSink(),
                 isAsyncComplete(),
                 isOptional(),
                 getDefaultExclusiveJoinTask(),
+                getOnStateChange(),
+                getCacheConfig(),
+                isPermissive(),
                 getRetryCount());
     }
 }

@@ -12,12 +12,7 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
@@ -25,19 +20,16 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
-import com.netflix.conductor.common.metadata.BaseDef;
+import com.netflix.conductor.common.metadata.Auditable;
+import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.*;
+import jakarta.validation.constraints.*;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
-public class WorkflowDef extends BaseDef {
+public class WorkflowDef extends Auditable {
 
     @ProtoEnum
     public enum TimeoutPolicy {
@@ -76,7 +68,7 @@ public class WorkflowDef extends BaseDef {
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
 
-    // By default, a workflow is restartable
+    // By default a workflow is restartable
     @ProtoField(id = 9)
     private boolean restartable = true;
 
@@ -85,7 +77,6 @@ public class WorkflowDef extends BaseDef {
 
     @ProtoField(id = 11)
     @OwnerEmailMandatoryConstraint
-    @Email(message = "ownerEmail should be valid email address")
     private String ownerEmail;
 
     @ProtoField(id = 12)
@@ -100,6 +91,28 @@ public class WorkflowDef extends BaseDef {
 
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
+
+    @ProtoField(id = 16)
+    private String workflowStatusListenerSink;
+
+    @ProtoField(id = 17)
+    private RateLimitConfig rateLimitConfig;
+
+    @ProtoField(id = 18)
+    private SchemaDef inputSchema;
+
+    @ProtoField(id = 19)
+    private SchemaDef outputSchema;
+
+    public boolean isEnforceSchema() {
+        return enforceSchema;
+    }
+
+    public void setEnforceSchema(boolean enforceSchema) {
+        this.enforceSchema = enforceSchema;
+    }
+
+    private boolean enforceSchema = true;
 
     /**
      * @return the name
@@ -321,6 +334,38 @@ public class WorkflowDef extends BaseDef {
         return name + "." + version;
     }
 
+    public String getWorkflowStatusListenerSink() {
+        return workflowStatusListenerSink;
+    }
+
+    public void setWorkflowStatusListenerSink(String workflowStatusListenerSink) {
+        this.workflowStatusListenerSink = workflowStatusListenerSink;
+    }
+
+    public RateLimitConfig getRateLimitConfig() {
+        return rateLimitConfig;
+    }
+
+    public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
+        this.rateLimitConfig = rateLimitConfig;
+    }
+
+    public SchemaDef getInputSchema() {
+        return inputSchema;
+    }
+
+    public void setInputSchema(SchemaDef inputSchema) {
+        this.inputSchema = inputSchema;
+    }
+
+    public SchemaDef getOutputSchema() {
+        return outputSchema;
+    }
+
+    public void setOutputSchema(SchemaDef outputSchema) {
+        this.outputSchema = outputSchema;
+    }
+
     public boolean containsType(String taskType) {
         return collectTasks().stream().anyMatch(t -> t.getType().equals(taskType));
     }
@@ -393,7 +438,9 @@ public class WorkflowDef extends BaseDef {
                 && Objects.equals(getOutputParameters(), that.getOutputParameters())
                 && Objects.equals(getFailureWorkflow(), that.getFailureWorkflow())
                 && Objects.equals(getOwnerEmail(), that.getOwnerEmail())
-                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds());
+                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds())
+                && Objects.equals(getInputSchema(), that.getInputSchema())
+                && Objects.equals(getOutputSchema(), that.getOutputSchema());
     }
 
     @Override
@@ -408,7 +455,9 @@ public class WorkflowDef extends BaseDef {
                 getFailureWorkflow(),
                 getSchemaVersion(),
                 getOwnerEmail(),
-                getTimeoutSeconds());
+                getTimeoutSeconds(),
+                getInputSchema(),
+                getOutputSchema());
     }
 
     @Override
@@ -437,8 +486,28 @@ public class WorkflowDef extends BaseDef {
                 + restartable
                 + ", workflowStatusListenerEnabled="
                 + workflowStatusListenerEnabled
+                + ", ownerEmail='"
+                + ownerEmail
+                + '\''
+                + ", timeoutPolicy="
+                + timeoutPolicy
                 + ", timeoutSeconds="
                 + timeoutSeconds
+                + ", variables="
+                + variables
+                + ", inputTemplate="
+                + inputTemplate
+                + ", workflowStatusListenerSink='"
+                + workflowStatusListenerSink
+                + '\''
+                + ", rateLimitConfig="
+                + rateLimitConfig
+                + ", inputSchema="
+                + inputSchema
+                + ", outputSchema="
+                + outputSchema
+                + ", enforceSchema="
+                + enforceSchema
                 + '}';
     }
 }

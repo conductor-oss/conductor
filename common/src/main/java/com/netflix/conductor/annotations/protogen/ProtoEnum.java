@@ -10,13 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.common.metadata.acl;
+package com.netflix.conductor.annotations.protogen;
 
-import com.netflix.conductor.annotations.protogen.ProtoEnum;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@ProtoEnum
-@Deprecated
-public enum Permission {
-    OWNER,
-    OPERATOR
-}
+/**
+ * ProtoEnum annotates an enum type that will be exposed via the GRPC API as a native Protocol
+ * Buffers enum.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface ProtoEnum {}
