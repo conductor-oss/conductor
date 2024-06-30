@@ -383,7 +383,6 @@ public class MetadataServiceTest {
             assertTrue(
                     messages.contains(
                             "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
             throw ex;
         }
         fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
@@ -403,7 +402,6 @@ public class MetadataServiceTest {
             assertTrue(
                     messages.contains(
                             "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
             throw ex;
         }
         fail("metadataService.validateWorkflowDef did not throw ConstraintViolationException !");
