@@ -16,6 +16,7 @@ import com.netflix.conductor.common.metadata.workflow.RateLimitConfig;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.StateChangeEvent;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.UpgradeWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -34,6 +35,7 @@ import com.netflix.conductor.proto.RerunWorkflowRequestPb;
 import com.netflix.conductor.proto.SchemaDefPb;
 import com.netflix.conductor.proto.SkipTaskRequestPb;
 import com.netflix.conductor.proto.StartWorkflowRequestPb;
+import com.netflix.conductor.proto.StateChangeEventPb;
 import com.netflix.conductor.proto.SubWorkflowParamsPb;
 import com.netflix.conductor.proto.TaskDefPb;
 import com.netflix.conductor.proto.TaskExecLogPb;
@@ -590,6 +592,28 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setPriority( from.getPriority() );
         to.setCreatedBy( from.getCreatedBy() );
+        return to;
+    }
+
+    public StateChangeEventPb.StateChangeEvent toProto(StateChangeEvent from) {
+        StateChangeEventPb.StateChangeEvent.Builder to = StateChangeEventPb.StateChangeEvent.newBuilder();
+        if (from.getType() != null) {
+            to.setType( from.getType() );
+        }
+        for (Map.Entry<String, Object> pair : from.getPayload().entrySet()) {
+            to.putPayload( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        return to.build();
+    }
+
+    public StateChangeEvent fromProto(StateChangeEventPb.StateChangeEvent from) {
+        StateChangeEvent to = new StateChangeEvent();
+        to.setType( from.getType() );
+        Map<String, Object> payloadMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getPayloadMap().entrySet()) {
+            payloadMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setPayload(payloadMap);
         return to;
     }
 
@@ -1310,6 +1334,7 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputSchema() != null) {
             to.setOutputSchema( toProto( from.getOutputSchema() ) );
         }
+        to.setEnforceSchema( from.isEnforceSchema() );
         return to.build();
     }
 
@@ -1352,6 +1377,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasOutputSchema()) {
             to.setOutputSchema( fromProto( from.getOutputSchema() ) );
         }
+        to.setEnforceSchema( from.getEnforceSchema() );
         return to;
     }
 
@@ -1554,6 +1580,9 @@ public abstract class AbstractProtoMapper {
         if (from.getJoinStatus() != null) {
             to.setJoinStatus( from.getJoinStatus() );
         }
+        if (from.getCacheConfig() != null) {
+            to.setCacheConfig( toProto( from.getCacheConfig() ) );
+        }
         to.setPermissive( from.isPermissive() );
         return to.build();
     }
@@ -1601,7 +1630,26 @@ public abstract class AbstractProtoMapper {
         to.setEvaluatorType( from.getEvaluatorType() );
         to.setExpression( from.getExpression() );
         to.setJoinStatus( from.getJoinStatus() );
+        if (from.hasCacheConfig()) {
+            to.setCacheConfig( fromProto( from.getCacheConfig() ) );
+        }
         to.setPermissive( from.getPermissive() );
+        return to;
+    }
+
+    public WorkflowTaskPb.WorkflowTask.CacheConfig toProto(WorkflowTask.CacheConfig from) {
+        WorkflowTaskPb.WorkflowTask.CacheConfig.Builder to = WorkflowTaskPb.WorkflowTask.CacheConfig.newBuilder();
+        if (from.getKey() != null) {
+            to.setKey( from.getKey() );
+        }
+        to.setTtlInSecond( from.getTtlInSecond() );
+        return to.build();
+    }
+
+    public WorkflowTask.CacheConfig fromProto(WorkflowTaskPb.WorkflowTask.CacheConfig from) {
+        WorkflowTask.CacheConfig to = new WorkflowTask.CacheConfig();
+        to.setKey( from.getKey() );
+        to.setTtlInSecond( from.getTtlInSecond() );
         return to;
     }
 

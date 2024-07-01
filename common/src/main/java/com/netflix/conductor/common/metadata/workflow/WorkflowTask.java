@@ -38,9 +38,13 @@ import jakarta.validation.constraints.*;
 @ProtoMessage
 public class WorkflowTask {
 
+    @ProtoMessage
     public static class CacheConfig {
 
+        @ProtoField(id = 1)
         private String key;
+
+        @ProtoField(id = 2)
         private int ttlInSecond;
 
         public String getKey() {
@@ -172,23 +176,8 @@ public class WorkflowTask {
     Map of events to be emitted when the task status changed.
     key can be comma separated values of the status changes prefixed with "on"<STATUS>
     */
-    @ProtoField(id = 29)
+    // @ProtoField(id = 29)
     private @Valid Map<String, List<StateChangeEvent>> onStateChange = new HashMap<>();
-
-    @ProtoMessage(wrapper = true)
-    public static class StateChangeEventList {
-
-        public List<StateChangeEvent> getTasks() {
-            return events;
-        }
-
-        public void setTasks(List<StateChangeEvent> events) {
-            this.events = events;
-        }
-
-        @ProtoField(id = 1)
-        private List<StateChangeEvent> events;
-    }
 
     @ProtoField(id = 30)
     private String joinStatus;
