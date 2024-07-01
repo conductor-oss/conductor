@@ -166,7 +166,7 @@ public class PostgresQueueListener {
                 conn.setAutoCommit(previousAutoCommitMode);
             }
         } catch (SQLException e) {
-            if (!e.getSQLState().equals("08003")) {
+            if (!isSQLExceptionConnectionDoesNotExists(e)) {
                 logger.error("Error fetching notifications {}", e.getSQLState());
             }
             connect();
@@ -187,7 +187,7 @@ public class PostgresQueueListener {
             }
             processPayload(notifications[notifications.length - 1].getParameter());
         } catch (SQLException e) {
-            if (e.getSQLState() != "08003") {
+            if (!isSQLExceptionConnectionDoesNotExists(e)) {
                 logger.error("Error fetching notifications {}", e.getSQLState());
             }
             connect();
@@ -222,5 +222,9 @@ public class PostgresQueueListener {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean isSQLExceptionConnectionDoesNotExists(SQLException e) {
+        return "08003".equals(e.getSQLState());
     }
 }
