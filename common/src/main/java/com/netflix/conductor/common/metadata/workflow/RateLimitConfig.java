@@ -12,15 +12,21 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
 /** Rate limit configuration for workflows */
+@ProtoMessage
 public class RateLimitConfig {
     /**
      * Key that defines the rate limit. Rate limit key is a combination of workflow payload such as
      * name, or correlationId etc.
      */
+    @ProtoField(id = 1)
     private String rateLimitKey;
 
     /** Number of concurrently running workflows that are allowed per key */
+    @ProtoField(id = 2)
     private int concurrentExecLimit;
 
     public String getRateLimitKey() {

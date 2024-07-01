@@ -14,14 +14,21 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Map;
 
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 @Valid
+@ProtoMessage
 public class StateChangeEvent {
 
-    @NotNull private String type;
+    @ProtoField(id = 1)
+    @NotNull
+    private String type;
 
+    @ProtoField(id = 2)
     private Map<String, Object> payload;
 
     public String getType() {

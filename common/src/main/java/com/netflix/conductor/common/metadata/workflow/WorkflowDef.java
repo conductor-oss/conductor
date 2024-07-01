@@ -92,17 +92,20 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
 
-    @ProtoField(id = 16)
+    @ProtoField(id = 17)
     private String workflowStatusListenerSink;
 
-    @ProtoField(id = 17)
+    @ProtoField(id = 18)
     private RateLimitConfig rateLimitConfig;
 
-    @ProtoField(id = 18)
+    @ProtoField(id = 19)
     private SchemaDef inputSchema;
 
-    @ProtoField(id = 19)
+    @ProtoField(id = 20)
     private SchemaDef outputSchema;
+
+    @ProtoField(id = 21)
+    private boolean enforceSchema = true;
 
     public boolean isEnforceSchema() {
         return enforceSchema;
@@ -111,8 +114,6 @@ public class WorkflowDef extends Auditable {
     public void setEnforceSchema(boolean enforceSchema) {
         this.enforceSchema = enforceSchema;
     }
-
-    private boolean enforceSchema = true;
 
     /**
      * @return the name
@@ -429,35 +430,12 @@ public class WorkflowDef extends Auditable {
             return false;
         }
         WorkflowDef that = (WorkflowDef) o;
-        return getVersion() == that.getVersion()
-                && getSchemaVersion() == that.getSchemaVersion()
-                && Objects.equals(getName(), that.getName())
-                && Objects.equals(getDescription(), that.getDescription())
-                && Objects.equals(getTasks(), that.getTasks())
-                && Objects.equals(getInputParameters(), that.getInputParameters())
-                && Objects.equals(getOutputParameters(), that.getOutputParameters())
-                && Objects.equals(getFailureWorkflow(), that.getFailureWorkflow())
-                && Objects.equals(getOwnerEmail(), that.getOwnerEmail())
-                && Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds())
-                && Objects.equals(getInputSchema(), that.getInputSchema())
-                && Objects.equals(getOutputSchema(), that.getOutputSchema());
+        return version == that.version && Objects.equals(name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                getName(),
-                getDescription(),
-                getVersion(),
-                getTasks(),
-                getInputParameters(),
-                getOutputParameters(),
-                getFailureWorkflow(),
-                getSchemaVersion(),
-                getOwnerEmail(),
-                getTimeoutSeconds(),
-                getInputSchema(),
-                getOutputSchema());
+        return Objects.hash(name, version);
     }
 
     @Override

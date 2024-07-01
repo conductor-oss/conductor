@@ -41,5 +41,6 @@ message WorkflowTask {
     int32 retry_count = 26;
     string evaluator_type = 27;
     string expression = 28;
-    bool permissive = 29;
+    string join_status = 29;
+    bool permissive = 30;
 }
