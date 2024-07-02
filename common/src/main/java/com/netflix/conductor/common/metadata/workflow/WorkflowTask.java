@@ -26,10 +26,10 @@ import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 
 /**
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in
@@ -37,6 +37,32 @@ import jakarta.validation.constraints.PositiveOrZero;
  */
 @ProtoMessage
 public class WorkflowTask {
+
+    @ProtoMessage
+    public static class CacheConfig {
+
+        @ProtoField(id = 1)
+        private String key;
+
+        @ProtoField(id = 2)
+        private int ttlInSecond;
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public int getTtlInSecond() {
+            return ttlInSecond;
+        }
+
+        public void setTtlInSecond(int ttlInSecond) {
+            this.ttlInSecond = ttlInSecond;
+        }
+    }
 
     @ProtoField(id = 1)
     @NotEmpty(message = "WorkflowTask name cannot be empty or null")
@@ -86,7 +112,6 @@ public class WorkflowTask {
 
     // Populates for the tasks of the decision type
     @ProtoField(id = 9)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, @Valid List<@Valid WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
     @Deprecated private String dynamicForkJoinTasksParam;
@@ -98,11 +123,9 @@ public class WorkflowTask {
     private String dynamicForkTasksInputParamName;
 
     @ProtoField(id = 12)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid WorkflowTask> defaultCase = new LinkedList<>();
 
     @ProtoField(id = 13)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<@Valid List<@Valid WorkflowTask>> forkTasks = new LinkedList<>();
 
     @ProtoField(id = 14)
@@ -114,7 +137,6 @@ public class WorkflowTask {
     private SubWorkflowParams subWorkflowParam;
 
     @ProtoField(id = 16)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> joinOn = new LinkedList<>();
 
     @ProtoField(id = 17)
@@ -130,7 +152,6 @@ public class WorkflowTask {
     private Boolean rateLimited;
 
     @ProtoField(id = 21)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
     @ProtoField(id = 23)
@@ -140,7 +161,6 @@ public class WorkflowTask {
     private String loopCondition;
 
     @ProtoField(id = 25)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<WorkflowTask> loopOver = new LinkedList<>();
 
     @ProtoField(id = 26)
@@ -152,8 +172,21 @@ public class WorkflowTask {
     @ProtoField(id = 28)
     private String expression;
 
-    @ProtoField(id = 29)
-    private boolean permissive = false;
+    /*
+    Map of events to be emitted when the task status changed.
+    key can be comma separated values of the status changes prefixed with "on"<STATUS>
+    */
+    // @ProtoField(id = 29)
+    private @Valid Map<String, List<StateChangeEvent>> onStateChange = new HashMap<>();
+
+    @ProtoField(id = 30)
+    private String joinStatus;
+
+    @ProtoField(id = 31)
+    private CacheConfig cacheConfig;
+
+    @ProtoField(id = 32)
+    private boolean permissive;
 
     /**
      * @return the name
@@ -390,9 +423,18 @@ public class WorkflowTask {
         this.scriptExpression = expression;
     }
 
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
+    }
+
     /**
      * @return the subWorkflow
      */
+    @JsonGetter
     public SubWorkflowParams getSubWorkflowParam() {
         return subWorkflowParam;
     }
@@ -400,6 +442,7 @@ public class WorkflowTask {
     /**
      * @param subWorkflow the subWorkflowParam to set
      */
+    @JsonSetter
     public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
         this.subWorkflowParam = subWorkflow;
     }
@@ -550,18 +593,18 @@ public class WorkflowTask {
         this.expression = expression;
     }
 
-    /**
-     * @return If the task is permissive. When set to true, and the task is in failed status,
-     *     fail-fast does not occur. The workflow execution continues until reaching join or end of
-     *     workflow, allowing idempotent execution of other tasks.
-     */
-    public boolean isPermissive() {
-        return this.permissive;
+    public String getJoinStatus() {
+        return joinStatus;
     }
 
-    /**
-     * @param permissive when set to true, the task is marked as permissive
-     */
+    public void setJoinStatus(String joinStatus) {
+        this.joinStatus = joinStatus;
+    }
+
+    public boolean isPermissive() {
+        return permissive;
+    }
+
     public void setPermissive(boolean permissive) {
         this.permissive = permissive;
     }
@@ -713,6 +756,14 @@ public class WorkflowTask {
         return null;
     }
 
+    public Map<String, List<StateChangeEvent>> getOnStateChange() {
+        return onStateChange;
+    }
+
+    public void setOnStateChange(Map<String, List<StateChangeEvent>> onStateChange) {
+        this.onStateChange = onStateChange;
+    }
+
     @Override
     public String toString() {
         return name + "/" + taskReferenceName;
@@ -727,62 +778,12 @@ public class WorkflowTask {
             return false;
         }
         WorkflowTask that = (WorkflowTask) o;
-        return getStartDelay() == that.getStartDelay()
-                && isOptional() == that.isOptional()
-                && Objects.equals(getName(), that.getName())
-                && Objects.equals(getTaskReferenceName(), that.getTaskReferenceName())
-                && Objects.equals(getDescription(), that.getDescription())
-                && Objects.equals(getInputParameters(), that.getInputParameters())
-                && Objects.equals(getType(), that.getType())
-                && Objects.equals(getDynamicTaskNameParam(), that.getDynamicTaskNameParam())
-                && Objects.equals(getCaseValueParam(), that.getCaseValueParam())
-                && Objects.equals(getEvaluatorType(), that.getEvaluatorType())
-                && Objects.equals(getExpression(), that.getExpression())
-                && Objects.equals(getCaseExpression(), that.getCaseExpression())
-                && Objects.equals(getDecisionCases(), that.getDecisionCases())
-                && Objects.equals(
-                        getDynamicForkJoinTasksParam(), that.getDynamicForkJoinTasksParam())
-                && Objects.equals(getDynamicForkTasksParam(), that.getDynamicForkTasksParam())
-                && Objects.equals(
-                        getDynamicForkTasksInputParamName(),
-                        that.getDynamicForkTasksInputParamName())
-                && Objects.equals(getDefaultCase(), that.getDefaultCase())
-                && Objects.equals(getForkTasks(), that.getForkTasks())
-                && Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam())
-                && Objects.equals(getJoinOn(), that.getJoinOn())
-                && Objects.equals(getSink(), that.getSink())
-                && Objects.equals(isAsyncComplete(), that.isAsyncComplete())
-                && Objects.equals(getDefaultExclusiveJoinTask(), that.getDefaultExclusiveJoinTask())
-                && Objects.equals(getRetryCount(), that.getRetryCount());
+        return Objects.equals(name, that.name)
+                && Objects.equals(taskReferenceName, that.taskReferenceName);
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(
-                getName(),
-                getTaskReferenceName(),
-                getDescription(),
-                getInputParameters(),
-                getType(),
-                getDynamicTaskNameParam(),
-                getCaseValueParam(),
-                getCaseExpression(),
-                getEvaluatorType(),
-                getExpression(),
-                getDecisionCases(),
-                getDynamicForkJoinTasksParam(),
-                getDynamicForkTasksParam(),
-                getDynamicForkTasksInputParamName(),
-                getDefaultCase(),
-                getForkTasks(),
-                getStartDelay(),
-                getSubWorkflowParam(),
-                getJoinOn(),
-                getSink(),
-                isAsyncComplete(),
-                isOptional(),
-                getDefaultExclusiveJoinTask(),
-                getRetryCount());
+        return Objects.hash(name, taskReferenceName);
     }
 }
