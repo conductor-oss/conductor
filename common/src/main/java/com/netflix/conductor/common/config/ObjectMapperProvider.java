@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.common.config;
 
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.netflix.conductor.common.jackson.JsonProtoModule;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -56,6 +57,7 @@ public class ObjectMapperProvider {
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         objectMapper.registerModule(new JsonProtoModule());
         objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.registerModule(new AfterburnerModule());
         return objectMapper;
     }
 }
