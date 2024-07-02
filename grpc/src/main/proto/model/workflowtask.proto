@@ -10,6 +10,10 @@ option java_outer_classname = "WorkflowTaskPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message WorkflowTask {
+    message CacheConfig {
+        string key = 1;
+        int32 ttl_in_second = 2;
+    }
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
     }
@@ -41,5 +45,7 @@ message WorkflowTask {
     int32 retry_count = 26;
     string evaluator_type = 27;
     string expression = 28;
-    bool permissive = 29;
+    string join_status = 30;
+    WorkflowTask.CacheConfig cache_config = 31;
+    bool permissive = 32;
 }

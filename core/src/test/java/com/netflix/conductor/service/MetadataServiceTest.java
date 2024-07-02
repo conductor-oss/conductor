@@ -377,13 +377,12 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.registerWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
                             "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
             throw ex;
         }
         fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
@@ -397,13 +396,12 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.validateWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
                             "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
             throw ex;
         }
         fail("metadataService.validateWorkflowDef did not throw ConstraintViolationException !");

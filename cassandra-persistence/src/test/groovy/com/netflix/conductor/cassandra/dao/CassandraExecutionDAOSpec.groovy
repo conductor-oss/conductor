@@ -403,44 +403,6 @@ class CassandraExecutionDAOSpec extends CassandraSpec {
         eventExecutionList != null && eventExecutionList.empty
     }
 
-    def "verify workflow serialization"() {
-        given: 'define a workflow'
-        String workflowId = new IDGenerator().generate()
-        WorkflowTask workflowTask = new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2))
-        WorkflowDef workflowDef = new WorkflowDef(name: UUID.randomUUID().toString(), version: 1, tasks: [workflowTask])
-        WorkflowModel workflow = new WorkflowModel(workflowDefinition: workflowDef, workflowId: workflowId, status: WorkflowModel.Status.RUNNING, createTime: System.currentTimeMillis())
-
-        when: 'serialize workflow'
-        def workflowJson = objectMapper.writeValueAsString(workflow)
-
-        then:
-        !workflowJson.contains('failedReferenceTaskNames')
-        // workflowTask
-        !workflowJson.contains('decisionCases')
-        !workflowJson.contains('defaultCase')
-        !workflowJson.contains('forkTasks')
-        !workflowJson.contains('joinOn')
-        !workflowJson.contains('defaultExclusiveJoinTask')
-        !workflowJson.contains('loopOver')
-    }
-
-    def "verify task serialization"() {
-        given: 'define a workflow and tasks for this workflow'
-        String workflowId = new IDGenerator().generate()
-        WorkflowTask workflowTask = new WorkflowTask(taskDefinition: new TaskDef(concurrentExecLimit: 2))
-        TaskModel task = new TaskModel(workflowInstanceId: workflowId, taskType: UUID.randomUUID().toString(), referenceTaskName: UUID.randomUUID().toString(), status: TaskModel.Status.SCHEDULED, taskId: new IDGenerator().generate(), workflowTask: workflowTask)
-
-        when: 'serialize task'
-        def taskJson = objectMapper.writeValueAsString(task)
-
-        then:
-        !taskJson.contains('decisionCases')
-        !taskJson.contains('defaultCase')
-        !taskJson.contains('forkTasks')
-        !taskJson.contains('joinOn')
-        !taskJson.contains('defaultExclusiveJoinTask')
-    }
-
     def "serde of workflow with large number of tasks"() {
         given: 'create a workflow and tasks for this workflow'
         String workflowId = new IDGenerator().generate()

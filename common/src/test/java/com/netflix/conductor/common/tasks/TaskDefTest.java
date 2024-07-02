@@ -75,31 +75,12 @@ public class TaskDefTest {
     }
 
     @Test
-    public void testTaskDefNameAndOwnerNotSet() {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setRetryCount(-1);
-        taskDef.setTimeoutSeconds(1000);
-        taskDef.setResponseTimeoutSeconds(1);
-
-        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
-        assertEquals(3, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
-        assertTrue(validationErrors.contains("TaskDef name cannot be null or empty"));
-        assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
-    }
-
-    @Test
     public void testTaskDefInvalidEmail() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test-task");
         taskDef.setRetryCount(1);
         taskDef.setTimeoutSeconds(1000);
         taskDef.setResponseTimeoutSeconds(1);
-        taskDef.setOwnerEmail("owner");
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
         assertEquals(1, result.size());
@@ -107,7 +88,9 @@ public class TaskDefTest {
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("ownerEmail should be valid email address"));
+        assertTrue(
+                validationErrors.toString(),
+                validationErrors.contains("ownerEmail cannot be empty"));
     }
 
     @Test

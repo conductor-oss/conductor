@@ -126,7 +126,46 @@ public class Workflow extends Auditable {
     @ProtoField(id = 25)
     private Set<String> failedTaskNames = new HashSet<>();
 
+    @ProtoField(id = 26)
+    private List<Workflow> history = new LinkedList<>();
+
+    private String idempotencyKey;
+    private String rateLimitKey;
+    private boolean rateLimited;
+
     public Workflow() {}
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public String getRateLimitKey() {
+        return rateLimitKey;
+    }
+
+    public void setRateLimitKey(String rateLimitKey) {
+        this.rateLimitKey = rateLimitKey;
+    }
+
+    public boolean isRateLimited() {
+        return rateLimited;
+    }
+
+    public void setRateLimited(boolean rateLimited) {
+        this.rateLimited = rateLimited;
+    }
+
+    public List<Workflow> getHistory() {
+        return history;
+    }
+
+    public void setHistory(List<Workflow> history) {
+        this.history = history;
+    }
 
     /**
      * @return the status
@@ -326,14 +365,6 @@ public class Workflow extends Auditable {
         this.failedReferenceTaskNames = failedReferenceTaskNames;
     }
 
-    public Set<String> getFailedTaskNames() {
-        return failedTaskNames;
-    }
-
-    public void setFailedTaskNames(Set<String> failedTaskNames) {
-        this.failedTaskNames = failedTaskNames;
-    }
-
     public WorkflowDef getWorkflowDefinition() {
         return workflowDefinition;
     }
@@ -447,6 +478,14 @@ public class Workflow extends Auditable {
         return StringUtils.isNotEmpty(parentWorkflowId);
     }
 
+    public Set<String> getFailedTaskNames() {
+        return failedTaskNames;
+    }
+
+    public void setFailedTaskNames(Set<String> failedTaskNames) {
+        this.failedTaskNames = failedTaskNames;
+    }
+
     public Task getTaskByRefName(String refName) {
         if (refName == null) {
             throw new RuntimeException(
@@ -495,7 +534,6 @@ public class Workflow extends Auditable {
         copy.setLastRetriedTime(lastRetriedTime);
         copy.setTaskToDomain(taskToDomain);
         copy.setFailedReferenceTaskNames(failedReferenceTaskNames);
-        copy.setFailedTaskNames(failedTaskNames);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         return copy;
@@ -527,61 +565,11 @@ public class Workflow extends Auditable {
             return false;
         }
         Workflow workflow = (Workflow) o;
-        return getEndTime() == workflow.getEndTime()
-                && getWorkflowVersion() == workflow.getWorkflowVersion()
-                && getStatus() == workflow.getStatus()
-                && Objects.equals(getWorkflowId(), workflow.getWorkflowId())
-                && Objects.equals(getParentWorkflowId(), workflow.getParentWorkflowId())
-                && Objects.equals(getParentWorkflowTaskId(), workflow.getParentWorkflowTaskId())
-                && Objects.equals(getTasks(), workflow.getTasks())
-                && Objects.equals(getInput(), workflow.getInput())
-                && Objects.equals(getOutput(), workflow.getOutput())
-                && Objects.equals(getWorkflowName(), workflow.getWorkflowName())
-                && Objects.equals(getCorrelationId(), workflow.getCorrelationId())
-                && Objects.equals(getReRunFromWorkflowId(), workflow.getReRunFromWorkflowId())
-                && Objects.equals(getReasonForIncompletion(), workflow.getReasonForIncompletion())
-                && Objects.equals(getEvent(), workflow.getEvent())
-                && Objects.equals(getTaskToDomain(), workflow.getTaskToDomain())
-                && Objects.equals(
-                        getFailedReferenceTaskNames(), workflow.getFailedReferenceTaskNames())
-                && Objects.equals(getFailedTaskNames(), workflow.getFailedTaskNames())
-                && Objects.equals(
-                        getExternalInputPayloadStoragePath(),
-                        workflow.getExternalInputPayloadStoragePath())
-                && Objects.equals(
-                        getExternalOutputPayloadStoragePath(),
-                        workflow.getExternalOutputPayloadStoragePath())
-                && Objects.equals(getPriority(), workflow.getPriority())
-                && Objects.equals(getWorkflowDefinition(), workflow.getWorkflowDefinition())
-                && Objects.equals(getVariables(), workflow.getVariables())
-                && Objects.equals(getLastRetriedTime(), workflow.getLastRetriedTime());
+        return Objects.equals(getWorkflowId(), workflow.getWorkflowId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                getStatus(),
-                getEndTime(),
-                getWorkflowId(),
-                getParentWorkflowId(),
-                getParentWorkflowTaskId(),
-                getTasks(),
-                getInput(),
-                getOutput(),
-                getWorkflowName(),
-                getWorkflowVersion(),
-                getCorrelationId(),
-                getReRunFromWorkflowId(),
-                getReasonForIncompletion(),
-                getEvent(),
-                getTaskToDomain(),
-                getFailedReferenceTaskNames(),
-                getFailedTaskNames(),
-                getWorkflowDefinition(),
-                getExternalInputPayloadStoragePath(),
-                getExternalOutputPayloadStoragePath(),
-                getPriority(),
-                getVariables(),
-                getLastRetriedTime());
+        return Objects.hash(getWorkflowId());
     }
 }

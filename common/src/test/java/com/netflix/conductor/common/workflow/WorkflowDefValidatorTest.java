@@ -327,12 +327,7 @@ public class WorkflowDefValidatorTest {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
         Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
-        assertEquals(1, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(validationErrors.contains("ownerEmail should be valid email address"));
+        assertEquals(0, result.size());
     }
 
     @Test

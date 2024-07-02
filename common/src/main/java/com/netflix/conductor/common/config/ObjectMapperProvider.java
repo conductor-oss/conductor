@@ -17,6 +17,8 @@ import com.netflix.conductor.common.jackson.JsonProtoModule;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
 /**
@@ -25,6 +27,8 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
  * TestObjectMapperConfiguration.
  */
 public class ObjectMapperProvider {
+
+    private static final ObjectMapper objectMapper = _getObjectMapper();
 
     /**
      * The customizations in this method are configured using {@link
@@ -39,6 +43,10 @@ public class ObjectMapperProvider {
      * @see org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
      */
     public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    private static ObjectMapper _getObjectMapper() {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -46,7 +54,9 @@ public class ObjectMapperProvider {
         objectMapper.setDefaultPropertyInclusion(
                 JsonInclude.Value.construct(
                         JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS));
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         objectMapper.registerModule(new JsonProtoModule());
+        objectMapper.registerModule(new JavaTimeModule());
         objectMapper.registerModule(new AfterburnerModule());
         return objectMapper;
     }

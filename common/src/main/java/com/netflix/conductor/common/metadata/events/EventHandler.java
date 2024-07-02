@@ -146,7 +146,9 @@ public class EventHandler {
         public enum Type {
             start_workflow,
             complete_task,
-            fail_task
+            fail_task,
+            terminate_workflow,
+            update_workflow_variables
         }
 
         @ProtoField(id = 1)
@@ -163,6 +165,12 @@ public class EventHandler {
 
         @ProtoField(id = 5)
         private boolean expandInlineJSON;
+
+        @ProtoField(id = 6)
+        private TerminateWorkflow terminate_workflow;
+
+        @ProtoField(id = 7)
+        private UpdateWorkflowVariables update_workflow_variables;
 
         /**
          * @return the action
@@ -233,6 +241,35 @@ public class EventHandler {
          */
         public boolean isExpandInlineJSON() {
             return expandInlineJSON;
+        }
+
+        /**
+         * @return the terminate_workflow
+         */
+        public TerminateWorkflow getTerminate_workflow() {
+            return terminate_workflow;
+        }
+
+        /**
+         * @param terminate_workflow the terminate_workflow to set
+         */
+        public void setTerminate_workflow(TerminateWorkflow terminate_workflow) {
+            this.terminate_workflow = terminate_workflow;
+        }
+
+        /**
+         * @return the update_workflow_variables
+         */
+        public UpdateWorkflowVariables getUpdate_workflow_variables() {
+            return update_workflow_variables;
+        }
+
+        /**
+         * @param update_workflow_variables the update_workflow_variables to set
+         */
+        public void setUpdate_workflow_variables(
+                UpdateWorkflowVariables update_workflow_variables) {
+            this.update_workflow_variables = update_workflow_variables;
         }
     }
 
@@ -412,6 +449,99 @@ public class EventHandler {
 
         public void setTaskToDomain(Map<String, String> taskToDomain) {
             this.taskToDomain = taskToDomain;
+        }
+    }
+
+    @ProtoMessage
+    public static class TerminateWorkflow {
+
+        @ProtoField(id = 1)
+        private String workflowId;
+
+        @ProtoField(id = 2)
+        private String terminationReason;
+
+        /**
+         * @return the workflowId
+         */
+        public String getWorkflowId() {
+            return workflowId;
+        }
+
+        /**
+         * @param workflowId the workflowId to set
+         */
+        public void setWorkflowId(String workflowId) {
+            this.workflowId = workflowId;
+        }
+
+        /**
+         * @return the reasonForTermination
+         */
+        public String getTerminationReason() {
+            return terminationReason;
+        }
+
+        /**
+         * @param terminationReason the reasonForTermination to set
+         */
+        public void setTerminationReason(String terminationReason) {
+            this.terminationReason = terminationReason;
+        }
+    }
+
+    @ProtoMessage
+    public static class UpdateWorkflowVariables {
+
+        @ProtoField(id = 1)
+        private String workflowId;
+
+        @ProtoField(id = 2)
+        private Map<String, Object> variables;
+
+        @ProtoField(id = 3)
+        private Boolean appendArray;
+
+        /**
+         * @return the workflowId
+         */
+        public String getWorkflowId() {
+            return workflowId;
+        }
+
+        /**
+         * @param workflowId the workflowId to set
+         */
+        public void setWorkflowId(String workflowId) {
+            this.workflowId = workflowId;
+        }
+
+        /**
+         * @return the variables
+         */
+        public Map<String, Object> getVariables() {
+            return variables;
+        }
+
+        /**
+         * @param variables the variables to set
+         */
+        public void setVariables(Map<String, Object> variables) {
+            this.variables = variables;
+        }
+
+        /**
+         * @return appendArray
+         */
+        public Boolean isAppendArray() {
+            return appendArray;
+        }
+
+        /**
+         * @param appendArray the appendArray to set
+         */
+        public void setAppendArray(Boolean appendArray) {
+            this.appendArray = appendArray;
         }
     }
 }
