@@ -392,6 +392,18 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
     }
 
     /**
+     * @return list of workflow ids that are in RUNNING state
+     */
+    @Override
+    public List<String> getRunningWorkflowIds() {
+        String GET_PENDING_WORKFLOW_IDS =
+                "SELECT workflow_id FROM workflow WHERE (json_data::jsonb)->>'status' = 'RUNNING'";
+
+        return queryWithTransaction(
+                GET_PENDING_WORKFLOW_IDS, q -> q.executeScalarList(String.class));
+    }
+
+    /**
      * @param workflowName Name of the workflow
      * @param version the workflow version
      * @return list of workflows that are in RUNNING state

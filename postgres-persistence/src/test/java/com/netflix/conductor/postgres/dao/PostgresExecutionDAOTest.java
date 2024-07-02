@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.flywaydb.core.Flyway;
@@ -34,6 +35,7 @@ import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
 import com.google.common.collect.Iterables;
 
+import static java.util.Collections.sort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -105,6 +107,27 @@ public class PostgresExecutionDAOTest extends ExecutionDAOTest {
         assertEquals(1, execDao.getPendingWorkflowCount("workflow"));
         ids.forEach(wfId -> execDao.removeWorkflowWithExpiry(wfId, 1));
         Mockito.verify(execDao, Mockito.timeout(10 * 1000)).removeWorkflow(Iterables.getLast(ids));
+    }
+
+    @Test
+    public void testGetRunningWorkflowIds() {
+        WorkflowModel workflowFailed = createTestWorkflow();
+        workflowFailed.setStatus(WorkflowModel.Status.COMPLETED);
+        getExecutionDAO().createWorkflow(workflowFailed);
+
+        List<String> expectedRunningWorkflowIds = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            WorkflowModel workflowRunning = createTestWorkflow();
+            workflowRunning.setStatus(WorkflowModel.Status.RUNNING);
+            getExecutionDAO().createWorkflow(workflowRunning);
+            expectedRunningWorkflowIds.add(workflowRunning.getWorkflowId());
+        }
+
+        List<String> actualRunningWorkflowIds = getExecutionDAO().getRunningWorkflowIds();
+        assertEquals(expectedRunningWorkflowIds.size(), actualRunningWorkflowIds.size());
+        sort(expectedRunningWorkflowIds);
+        sort(actualRunningWorkflowIds);
+        assertEquals(expectedRunningWorkflowIds, actualRunningWorkflowIds);
     }
 
     @Override

@@ -164,4 +164,13 @@ public interface QueueDAO {
         throw new UnsupportedOperationException(
                 "Please ensure your provided Queue implementation overrides and implements this method.");
     }
+
+    /**
+     * @param queueName name of the queue
+     * @return List of messages in the queue
+     */
+    default List<Message> getMessages(String queueName) {
+        throw new UnsupportedOperationException(
+                "Please ensure your provided Queue implementation overrides and implements this method.");
+    }
 }

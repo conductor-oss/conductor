@@ -481,6 +481,28 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         return getWithRetriedTransactions(tx -> existsMessage(tx, queueName, messageId));
     }
 
+    @Override
+    public List<Message> getMessages(String queueName) {
+        final String GET_MESSAGES =
+                "SELECT * FROM queue_message WHERE queue_name = ? AND popped = false";
+        return queryWithTransaction(
+                GET_MESSAGES,
+                q ->
+                        q.addParameter(queueName)
+                                .executeAndFetch(
+                                        rs -> {
+                                            List<Message> messages = new ArrayList<>();
+                                            while (rs.next()) {
+                                                Message message = new Message();
+                                                message.setId(rs.getString("message_id"));
+                                                message.setPayload(rs.getString("payload"));
+                                                message.setPriority(rs.getInt("priority"));
+                                                messages.add(message);
+                                            }
+                                            return messages;
+                                        }));
+    }
+
     private void createQueueIfNotExists(Connection connection, String queueName) {
         logger.trace("Creating new queue '{}'", queueName);
         final String EXISTS_QUEUE =

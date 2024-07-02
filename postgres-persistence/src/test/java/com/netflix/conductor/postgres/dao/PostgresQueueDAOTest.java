@@ -415,4 +415,19 @@ public class PostgresQueueDAOTest {
         assertNotNull(size);
         assertEquals(size.longValue(), count - unackedCount);
     }
+
+    @Test
+    public void getMessagesTest() {
+        String queueName = "testQueue";
+        for (int i = 0; i < 4; i++) {
+            String messageId = "msg" + i;
+            queueDAO.push(queueName, messageId, 5);
+        }
+        queueDAO.pop(queueName, 1, 10_000);
+
+        List<Message> messages = queueDAO.getMessages(queueName);
+
+        assertNotNull(messages);
+        assertEquals(3, messages.size());
+    }
 }
