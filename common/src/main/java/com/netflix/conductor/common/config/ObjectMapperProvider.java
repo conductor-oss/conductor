@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.common.config;
 
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.netflix.conductor.common.jackson.JsonProtoModule;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -20,6 +19,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
 /**
  * A Factory class for creating a customized {@link ObjectMapper}. This is only used by the
