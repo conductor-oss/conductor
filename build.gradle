@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.2.1'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.1.4'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -21,6 +21,7 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
+    id 'org.springframework.boot' version '3.3.0'
 }
 
 // Establish version and status
@@ -50,11 +51,19 @@ allprojects {
 
     group = 'org.conductoross'
 
-    configurations.all {
-        exclude group: 'ch.qos.logback', module: 'logback-classic'
-        exclude group: 'ch.qos.logback', module: 'logback-core'
-        exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    configurations {
+        all {
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+            exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+
+            resolutionStrategy.eachDependency { details ->
+                if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
+                    details.useVersion "2.15.2"
+                }
+            }
+        }
     }
 
     repositories {
@@ -84,8 +93,19 @@ allprojects {
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
         testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    }
 
+        //Locks for the dependecies
+        implementation('org.codehaus.jettison:jettison') {
+            version {
+                strictly '1.5.4'
+            }
+        }
+        implementation('org.apache.tomcat.embed:tomcat-embed-core') {
+            version {
+                strictly '10.1.25'
+            }
+        }
+    }
     // processes additional configuration metadata json file as described here
     // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
     compileJava.inputs.files(processResources)
@@ -98,6 +118,9 @@ allprojects {
             displayGranularity = 1
             showStandardStreams = false
         }
+    }
+    bootJar {
+        enabled = false
     }
 }
 
