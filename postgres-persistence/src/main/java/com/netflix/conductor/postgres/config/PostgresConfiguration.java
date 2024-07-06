@@ -65,7 +65,7 @@ public class PostgresConfiguration {
             config.locations("classpath:db/migration_postgres");
         }
 
-        return config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
+        return config.configuration(Map.of())
                 .schemas(properties.getSchema())
                 .dataSource(dataSource)
                 .outOfOrder(true)
