@@ -83,6 +83,7 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-slf4j-impl')
         implementation('org.apache.logging.log4j:log4j-jul')
         implementation('org.apache.logging.log4j:log4j-web')
+
         compileOnly 'org.projectlombok:lombok:1.18.34'
 
         annotationProcessor 'org.projectlombok:lombok:1.18.34'

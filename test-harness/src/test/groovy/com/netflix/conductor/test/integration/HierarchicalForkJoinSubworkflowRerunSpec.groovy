@@ -237,6 +237,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
+        workflowExecutor.decide(newMidLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
