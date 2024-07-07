@@ -1,1 +1,1 @@
-[Annotations Processor](docs/documentation/advanced/annotation-processor.md)
+Annotation processor is used to generate protobuf files from the annotations.
