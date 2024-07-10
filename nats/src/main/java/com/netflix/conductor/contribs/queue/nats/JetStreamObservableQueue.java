@@ -22,26 +22,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.availability.AvailabilityChangeEvent;
+import org.springframework.boot.availability.LivenessState;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.netflix.conductor.contribs.queue.nats.config.JetStreamProperties;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
-import io.nats.client.Connection;
-import io.nats.client.ConnectionListener;
-import io.nats.client.JetStream;
-import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamManagement;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Nats;
-import io.nats.client.Options;
-import io.nats.client.PushSubscribeOptions;
-import io.nats.client.api.RetentionPolicy;
-import io.nats.client.api.StorageType;
-import io.nats.client.api.StreamConfiguration;
-import io.nats.client.api.StreamInfo;
+import io.nats.client.*;
+import io.nats.client.api.*;
 import rx.Observable;
 import rx.Scheduler;
 
@@ -58,31 +52,49 @@ public class JetStreamObservableQueue implements ObservableQueue {
     private final JetStreamProperties properties;
     private final Scheduler scheduler;
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final ApplicationEventPublisher eventPublisher;
     private Connection nc;
     private JetStreamSubscription sub;
     private Observable<Long> interval;
     private final String queueGroup;
 
     public JetStreamObservableQueue(
+            ConductorProperties conductorProperties,
             JetStreamProperties properties,
             String queueType,
             String queueUri,
-            Scheduler scheduler) {
+            Scheduler scheduler,
+            ApplicationEventPublisher eventPublisher) {
         LOG.debug("JSM obs queue create, qtype={}, quri={}", queueType, queueUri);
 
         this.queueUri = queueUri;
         // If queue specified (e.g. subject:queue) - split to subject & queue
         if (queueUri.contains(":")) {
-            this.subject = queueUri.substring(0, queueUri.indexOf(':'));
+            this.subject =
+                    getQueuePrefix(conductorProperties, properties)
+                            + queueUri.substring(0, queueUri.indexOf(':'));
             queueGroup = queueUri.substring(queueUri.indexOf(':') + 1);
         } else {
-            this.subject = queueUri;
+            this.subject = getQueuePrefix(conductorProperties, properties) + queueUri;
             queueGroup = null;
         }
 
         this.queueType = queueType;
         this.properties = properties;
         this.scheduler = scheduler;
+        this.eventPublisher = eventPublisher;
+    }
+
+    public static String getQueuePrefix(
+            ConductorProperties conductorProperties, JetStreamProperties properties) {
+        String stack = "";
+        if (conductorProperties.getStack() != null && conductorProperties.getStack().length() > 0) {
+            stack = conductorProperties.getStack() + "_";
+        }
+
+        return StringUtils.isBlank(properties.getListenerQueuePrefix())
+                ? conductorProperties.getAppId() + "_jsm_notify_" + stack
+                : properties.getListenerQueuePrefix();
     }
 
     @Override
@@ -211,11 +223,19 @@ public class JetStreamObservableQueue implements ObservableQueue {
                             .connectionListener(
                                     (conn, type) -> {
                                         LOG.info("Connection to JSM updated: {}", type);
+                                        if (ConnectionListener.Events.CLOSED.equals(type)) {
+                                            LOG.error(
+                                                    "Could not reconnect to NATS! Changing liveness status to {}!",
+                                                    LivenessState.BROKEN);
+                                            AvailabilityChangeEvent.publish(
+                                                    eventPublisher, type, LivenessState.BROKEN);
+                                        }
                                         this.nc = conn;
                                         subscribeOnce(conn, type);
                                     })
+                            .errorListener(new LoggingNatsErrorListener())
                             .server(properties.getUrl())
-                            .maxReconnects(-1)
+                            .maxReconnects(properties.getMaxReconnects())
                             .build(),
                     true);
         } catch (InterruptedException e) {
@@ -224,43 +244,71 @@ public class JetStreamObservableQueue implements ObservableQueue {
         }
     }
 
-    private void createStream(Connection nc) {
-        JetStreamManagement jsm;
-        try {
-            jsm = nc.jetStreamManagement();
-        } catch (IOException e) {
-            throw new NatsException("Failed to get jsm management", e);
-        }
-
+    private void createStream(JetStreamManagement jsm) {
         StreamConfiguration streamConfig =
                 StreamConfiguration.builder()
                         .name(subject)
-                        .retentionPolicy(RetentionPolicy.WorkQueue)
+                        .replicas(properties.getReplicas())
+                        .retentionPolicy(RetentionPolicy.Limits)
+                        .maxBytes(properties.getStreamMaxBytes())
                         .storageType(StorageType.get(properties.getStreamStorageType()))
                         .build();
 
         try {
             StreamInfo streamInfo = jsm.addStream(streamConfig);
-            LOG.debug("Create stream, info: {}", streamInfo);
+            LOG.debug("Updated stream, info: {}", streamInfo);
         } catch (IOException | JetStreamApiException e) {
             LOG.error("Failed to add stream: " + streamConfig, e);
+            AvailabilityChangeEvent.publish(eventPublisher, e, LivenessState.BROKEN);
         }
     }
 
     private void subscribeOnce(Connection nc, ConnectionListener.Events type) {
         if (type.equals(ConnectionListener.Events.CONNECTED)
                 || type.equals(ConnectionListener.Events.RECONNECTED)) {
-            createStream(nc);
-            subscribe(nc);
+            JetStreamManagement jsm;
+            try {
+                jsm = nc.jetStreamManagement();
+            } catch (IOException e) {
+                throw new NatsException("Failed to get jsm management", e);
+            }
+            createStream(jsm);
+            var consumerConfig = createConsumer(jsm);
+            subscribe(nc, consumerConfig);
         }
     }
 
-    private void subscribe(Connection nc) {
+    private ConsumerConfiguration createConsumer(JetStreamManagement jsm) {
+        ConsumerConfiguration consumerConfig =
+                ConsumerConfiguration.builder()
+                        .name(properties.getDurableName())
+                        .deliverGroup(queueGroup)
+                        .durable(properties.getDurableName())
+                        .ackWait(properties.getAckWait())
+                        .maxDeliver(properties.getMaxDeliver())
+                        .maxAckPending(properties.getMaxAckPending())
+                        .ackPolicy(AckPolicy.Explicit)
+                        .deliverSubject(subject + "-deliver")
+                        .deliverPolicy(DeliverPolicy.New)
+                        .build();
+
+        try {
+            jsm.addOrUpdateConsumer(subject, consumerConfig);
+            return consumerConfig;
+        } catch (IOException | JetStreamApiException e) {
+            throw new NatsException("Failed to add/update consumer", e);
+        }
+    }
+
+    private void subscribe(Connection nc, ConsumerConfiguration consumerConfig) {
         try {
             JetStream js = nc.jetStream();
 
             PushSubscribeOptions pso =
-                    PushSubscribeOptions.builder().durable(properties.getDurableName()).build();
+                    PushSubscribeOptions.builder().configuration(consumerConfig).stream(subject)
+                            .bind(true)
+                            .build();
+
             LOG.debug("Subscribing jsm, subject={}, options={}", subject, pso);
             sub =
                     js.subscribe(
@@ -270,7 +318,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
                             msg -> {
                                 var message = new JsmMessage();
                                 message.setJsmMsg(msg);
-                                message.setId(msg.getSID());
+                                message.setId(NUID.nextGlobal());
                                 message.setPayload(new String(msg.getData()));
                                 messages.add(message);
                             },
@@ -279,7 +327,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             LOG.debug("Subscribed successfully {}", sub.getConsumerInfo());
             this.running.set(true);
         } catch (IOException | JetStreamApiException e) {
-            LOG.error("Failed to subscribe", e);
+            throw new NatsException("Failed to subscribe", e);
         }
     }
 }

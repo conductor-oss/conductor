@@ -34,13 +34,13 @@ So a Directed Acyclic Graph is a set of vertices where the connections are direc
 
 Since a Conductor workflow is a series of vertices that can connect in only a specific direction and cannot loop, a Conductor workflow is thus a directed acyclic graph:
 
-![Conductor Dag](dag_workflow.png)
+![Conductor Dag](dag_workflow2.png)
 
 ### Can a workflow have loops and still be a DAG?
 
 Yes. For example, Conductor workflows have Do-While loops:
 
-![Conductor Dag](dag_workflow2.png)
+![Conductor Dag](dag_workflow.png)
 
 This is still a DAG, because the loop is just shorthand for running the tasks inside the loop over and over again.  For example, if the 2nd loop in the above image is run 3 times, the workflow path will be:
 

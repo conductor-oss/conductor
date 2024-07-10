@@ -87,27 +87,9 @@ class FailureWorkflowSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_FAILURE_TASK, 1,
                 '', workflowInput, null)
 
-        then: "verify that the workflow has started and the tasks are as expected"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 2
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[0].taskType == 'LAMBDA'
-            tasks[0].referenceTaskName == 'lambdaTask1'
-            tasks[0].seq == 1
-            tasks[1].status == Task.Status.SCHEDULED
-            tasks[1].taskType == 'SUB_WORKFLOW'
-            tasks[1].seq == 2
-        }
-
-        when: "subworkflow is retrieved"
-        def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowTaskId = workflow.getTaskByRefName("test_task_failed_sub_wf").getTaskId()
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subWorkflowTaskId)
-        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
-        def subWorkflowId = workflow.getTaskByRefName("test_task_failed_sub_wf").subWorkflowId
-
         then: "verify that the sub workflow has failed"
+        def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        def subWorkflowId = workflow.getTaskByRefName("test_task_failed_sub_wf").subWorkflowId
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks.size() == 2

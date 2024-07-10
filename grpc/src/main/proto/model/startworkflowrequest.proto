@@ -17,4 +17,5 @@ message StartWorkflowRequest {
     WorkflowDef workflow_def = 6;
     string external_input_payload_storage_path = 7;
     int32 priority = 8;
+    string created_by = 9;
 }

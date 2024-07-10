@@ -1242,6 +1242,55 @@ public class TestDeciderService {
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
     }
 
+    @Test
+    public void testWorkflowCompleted_WhenAllOptionalTasksInTerminalState() {
+        var workflowDef = createOnlyOptionalTaskWorkflow();
+
+        var workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        // Workflow should be running
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        var task1 = new TaskModel();
+        task1.setTaskType(SIMPLE.name());
+        task1.setReferenceTaskName("o1");
+        task1.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        var task2 = new TaskModel();
+        task2.setTaskType(SIMPLE.name());
+        task2.setReferenceTaskName("o2");
+        task2.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+
+        workflow.getTasks().addAll(List.of(task1, task2));
+
+        // Workflow should be COMPLETED. All optional tasks have reached a terminal state.
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
+    private WorkflowDef createOnlyOptionalTaskWorkflow() {
+        var workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
+        workflowTask1.setTaskReferenceName("o1");
+        workflowTask1.setTaskDefinition(new TaskDef("junit_task_1"));
+        workflowTask1.setOptional(true);
+
+        var workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setTaskReferenceName("o2");
+        workflowTask2.setTaskDefinition(new TaskDef("junit_task_2"));
+        workflowTask2.setOptional(true);
+
+        var workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+        workflowDef.setName("only_optional_tasks_workflow");
+        workflowDef.getTasks().addAll(Arrays.asList(workflowTask1, workflowTask2));
+        return workflowDef;
+    }
+
     private WorkflowDef createConditionalWF() {
 
         WorkflowTask workflowTask1 = new WorkflowTask();

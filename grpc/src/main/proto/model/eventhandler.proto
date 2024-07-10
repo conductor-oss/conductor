@@ -9,6 +9,15 @@ option java_outer_classname = "EventHandlerPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message EventHandler {
+    message UpdateWorkflowVariables {
+        string workflow_id = 1;
+        map<string, google.protobuf.Value> variables = 2;
+        bool append_array = 3;
+    }
+    message TerminateWorkflow {
+        string workflow_id = 1;
+        string termination_reason = 2;
+    }
     message StartWorkflow {
         string name = 1;
         int32 version = 2;
@@ -29,12 +38,16 @@ message EventHandler {
             START_WORKFLOW = 0;
             COMPLETE_TASK = 1;
             FAIL_TASK = 2;
+            TERMINATE_WORKFLOW = 3;
+            UPDATE_WORKFLOW_VARIABLES = 4;
         }
         EventHandler.Action.Type action = 1;
         EventHandler.StartWorkflow start_workflow = 2;
         EventHandler.TaskDetails complete_task = 3;
         EventHandler.TaskDetails fail_task = 4;
         bool expand_inline_json = 5;
+        EventHandler.TerminateWorkflow terminate_workflow = 6;
+        EventHandler.UpdateWorkflowVariables update_workflow_variables = 7;
     }
     string name = 1;
     string event = 2;

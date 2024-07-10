@@ -15,9 +15,9 @@ package com.netflix.conductor.contribs.queue.nats.config;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,32 +37,25 @@ import rx.Scheduler;
 public class JetStreamConfiguration {
     @Bean
     public EventQueueProvider jsmEventQueueProvider(
-            JetStreamProperties properties, Scheduler scheduler) {
-        return new JetStreamEventQueueProvider(properties, scheduler);
+            JetStreamProperties properties,
+            Scheduler scheduler,
+            ConductorProperties conductorProperties,
+            ApplicationEventPublisher eventPublisher) {
+        return new JetStreamEventQueueProvider(
+                conductorProperties, properties, scheduler, eventPublisher);
     }
 
     @ConditionalOnProperty(name = "conductor.default-event-queue.type", havingValue = "jsm")
     @Bean
     public Map<TaskModel.Status, ObservableQueue> getQueues(
-            JetStreamEventQueueProvider provider,
-            ConductorProperties conductorProperties,
-            JetStreamProperties properties) {
-        String stack = "";
-        if (conductorProperties.getStack() != null && conductorProperties.getStack().length() > 0) {
-            stack = conductorProperties.getStack() + "_";
-        }
+            EventQueueProvider jsmEventQueueProvider, JetStreamProperties properties) {
         TaskModel.Status[] statuses =
                 new TaskModel.Status[] {TaskModel.Status.COMPLETED, TaskModel.Status.FAILED};
         Map<TaskModel.Status, ObservableQueue> queues = new EnumMap<>(TaskModel.Status.class);
         for (TaskModel.Status status : statuses) {
-            String queuePrefix =
-                    StringUtils.isBlank(properties.getListenerQueuePrefix())
-                            ? conductorProperties.getAppId() + "_jsm_notify_" + stack
-                            : properties.getListenerQueuePrefix();
+            String queueName = status.name() + getQueueGroup(properties);
 
-            String queueName = queuePrefix + status.name() + getQueueGroup(properties);
-
-            ObservableQueue queue = provider.getQueue(queueName);
+            ObservableQueue queue = jsmEventQueueProvider.getQueue(queueName);
             queues.put(status, queue);
         }
 

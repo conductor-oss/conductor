@@ -147,11 +147,6 @@ public class SubWorkflow extends WorkflowSystemTask {
         workflowExecutor.terminateWorkflow(subWorkflow, reason, null);
     }
 
-    @Override
-    public boolean isAsync() {
-        return true;
-    }
-
     /**
      * Keep Subworkflow task asyncComplete. The Subworkflow task will be executed once
      * asynchronously to move to IN_PROGRESS state, and will move to termination by Subworkflow's
