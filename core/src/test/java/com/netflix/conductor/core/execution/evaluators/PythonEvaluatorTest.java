@@ -25,8 +25,6 @@ import static org.junit.Assert.assertEquals;
 public class PythonEvaluatorTest {
 
     private Evaluator pythonEvaluator = new PythonEvaluator();
-    private static final String POLICY_VIOLATION_MESSAGE =
-            "Script execution is restricted due to policy violations.";
 
     @Test
     public void testImportsRestrictionOs() {
@@ -196,7 +194,7 @@ public class PythonEvaluatorTest {
     public void testReplacingNestedObjectWithList() {
         String testPythonScript =
                 "def greet():\n"
-                        + "    name = $.jsonObj.var[0]\n"
+                        + "    name = '$.jsonObj.var[0]'\n"
                         + // In case of list we don't wrap variable inside ""
                         "    return \"Greetings \" + name\n"
                         + "\n"
@@ -225,5 +223,110 @@ public class PythonEvaluatorTest {
                     terminateWorkflowException.getMessage(),
                     "outputIdentifier is missing from task input");
         }
+    }
+
+    @Test
+    public void testFailedNestedExpression() {
+        String testPythonScript =
+                "result = $.$.a\n"
+                        + // This would be replaced as result = $.b
+                        "result";
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("evaluatorType", "python");
+        inputs.put("a", "b");
+        inputs.put("b", 2);
+        inputs.put("expression", testPythonScript);
+        inputs.put("outputIdentifier", "result");
+        try {
+            Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
+            assertEquals(result.toString(), "2");
+        } catch (TerminateWorkflowException exception) {
+        }
+    }
+
+    @Test
+    public void testNestedExpressionNotReplaced1() {
+        String testPythonScript =
+                "result = $.$\n"
+                        + // This would be replaced as result = $.b
+                        "result";
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("evaluatorType", "python");
+        inputs.put("$", "b");
+        inputs.put("b", 2);
+        inputs.put("expression", testPythonScript);
+        inputs.put("outputIdentifier", "result");
+        try {
+            Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
+            assertEquals(result.toString(), "$.$");
+        } catch (TerminateWorkflowException exception) {
+        }
+    }
+
+    @Test
+    public void testNestedExpressionNotReplaced2() {
+        String testPythonScript =
+                "result = $.$arr\n"
+                        + // This would be replaced as result = $.b
+                        "result";
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("evaluatorType", "python");
+        inputs.put("arr", List.of(1, 2, 3));
+        inputs.put("[1,2,3]", "c");
+        inputs.put("b", 2);
+        inputs.put("expression", testPythonScript);
+        inputs.put("outputIdentifier", "result");
+        try {
+            Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
+            assertEquals(result.toString(), "$.[1,2,3]");
+        } catch (TerminateWorkflowException exception) {
+        }
+    }
+
+    @Test
+    public void testNestedExpressionNotReplaced3() {
+        String testPythonScript =
+                "result = $.$dict\n"
+                        + // This would be replaced as result = $.b
+                        "result";
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("evaluatorType", "python");
+        inputs.put("$dict", Map.of("k", "v"));
+        inputs.put("{k=v}", "c");
+        inputs.put("b", 2);
+        inputs.put("expression", testPythonScript);
+        inputs.put("outputIdentifier", "result");
+        try {
+            Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
+            assertEquals(result.toString(), "$.k=v}");
+        } catch (TerminateWorkflowException exception) {
+        }
+    }
+
+    @Test
+    public void testComplexExample() {
+        String testPythonScript = "result = '$.$.versionPath'\n" + "result";
+        Map<String, Object> inputs =
+                Map.of(
+                        "config",
+                                Map.of(
+                                        "env",
+                                        "production",
+                                        "details",
+                                        Map.of(
+                                                "version", "1.2.3",
+                                                "releaseDate", "2024-07-11"),
+                                        "array",
+                                        new Map[] {
+                                            Map.of("value", "first"), Map.of("value", "second")
+                                        },
+                                        "map",
+                                        Map.of("nested", Map.of("key", "nestedValue"))),
+                        "versionPath", "config.details.version",
+                        "evaluatorType", "python",
+                        "expression", testPythonScript,
+                        "outputIdentifier", "result");
+        Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
+        assertEquals(result.toString(), "1.2.3");
     }
 }

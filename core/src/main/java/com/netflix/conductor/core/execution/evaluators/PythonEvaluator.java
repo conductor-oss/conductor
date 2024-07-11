@@ -43,10 +43,7 @@ public class PythonEvaluator implements Evaluator {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonEvaluator.class);
     private static final PythonInterpreter pythonInterpreter = new PythonInterpreter();
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final Pattern pattern =
-            Pattern.compile("\\$\\.([a-zA-Z0-9_\\.]+)"); // Regex Pattern to find all occurrences of
-
-    // $.[variable] or $.[nested.property] in script
+    private static final Pattern pattern = Pattern.compile("\\$\\.([a-zA-Z0-9_\\.\\[\\]]+)");
 
     @Override
     public Object evaluate(String script, Object input) {
@@ -99,32 +96,55 @@ public class PythonEvaluator implements Evaluator {
         }
     }
 
-    public String replaceVariablesInScript(String script, Map<String, Object> inputs)
+    private String replaceVariablesInScript(String script, Map<String, Object> inputs)
             throws IOException {
         String inputJsonString = objectMapper.writeValueAsString(inputs);
         DocumentContext jsonContext = JsonPath.parse(inputJsonString);
 
-        // Use a Matcher to process all matches in the script
-        Matcher matcher = pattern.matcher(script);
-        StringBuffer updatedScript = new StringBuffer();
+        // Function to handle nested replacements
+        script = processNestedReplacements(script, jsonContext, pattern);
 
-        while (matcher.find()) {
-            String jsonPath = matcher.group(1);
-            try {
-                Object value = jsonContext.read("$." + jsonPath);
-                // Create the replacement string for the variable
-                String replacement = value != null ? value.toString() : "";
-                // Escape $ to avoid issues in replacement string
-                String safeReplacement = replacement.replace("$", "\\$");
-                // Append the new script with the replaced variable
-                matcher.appendReplacement(updatedScript, safeReplacement);
-            } catch (Exception e) {
-                // In case of an invalid JsonPath expression, keep the original placeholder
-                matcher.appendReplacement(updatedScript, "\\$." + jsonPath);
+        return script;
+    }
+
+    /**
+     * Replace nested expressions like $.$.$.variable
+     *
+     * @param script
+     * @param jsonContext
+     * @param pattern
+     * @return
+     */
+    private String processNestedReplacements(
+            String script, DocumentContext jsonContext, Pattern pattern) {
+        boolean found = true;
+
+        while (found) {
+            found = false;
+            Matcher matcher = pattern.matcher(script);
+            StringBuffer updatedScript = new StringBuffer();
+
+            while (matcher.find()) {
+                found = true;
+                String jsonPath = matcher.group(1);
+                try {
+                    Object value = jsonContext.read("$." + jsonPath);
+                    // Create the replacement string for the variable
+                    String replacement = value != null ? value.toString() : "";
+                    // Escape $ to avoid issues in replacement string
+                    String safeReplacement = replacement.replace("$", "\\$");
+                    // Append the new script with the replaced variable
+                    matcher.appendReplacement(updatedScript, safeReplacement);
+                } catch (Exception e) {
+                    matcher.appendReplacement(updatedScript, "\\$." + jsonPath);
+                    found = false;
+                    break;
+                }
             }
+            // Append the remaining part of the script after the last match
+            matcher.appendTail(updatedScript);
+            script = updatedScript.toString();
         }
-        // Append the remaining part of the script after the last match
-        matcher.appendTail(updatedScript);
-        return updatedScript.toString();
+        return script;
     }
 }
