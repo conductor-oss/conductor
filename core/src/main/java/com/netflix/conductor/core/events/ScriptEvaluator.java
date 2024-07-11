@@ -12,12 +12,16 @@
  */
 package com.netflix.conductor.core.events;
 
+import java.util.Map;
+
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
+import org.python.core.PyObject;
+import org.python.util.PythonInterpreter;
 
 public class ScriptEvaluator {
 
@@ -48,10 +52,34 @@ public class ScriptEvaluator {
      * @return Generic object, the result of the evaluated expression.
      */
     public static Object eval(String script, Object input) throws ScriptException {
+        if (input instanceof Map<?, ?>) {
+            Map<String, Object> inputs = (Map<String, Object>) input;
+            if (inputs.containsKey("evaluatorType")
+                    && inputs.get("evaluatorType").toString().equals("python")) {
+                return evalPython(script, input);
+            }
+        }
         initEngine(false);
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
         return engine.eval(script, bindings);
+    }
+
+    /**
+     * Evaluates the script with the help of input provided. Set environment variable using Jython
+     *
+     * @param script Script to be evaluated.
+     * @param input Input parameters.
+     * @throws ScriptException
+     * @return Generic object, the result of the evaluated expression.
+     */
+    private static Object evalPython(String script, Object input) throws ScriptException {
+        Map<String, Object> inputs = (Map<String, Object>) input;
+        String outputIdentifier = inputs.get("outputIdentifier").toString();
+        PythonInterpreter interpreter = new PythonInterpreter();
+        interpreter.exec(script);
+        PyObject result = interpreter.get(outputIdentifier);
+        return result.toString();
     }
 
     // to mock in a test
