@@ -16,7 +16,8 @@ class ConductorBuiltInRestrictor(ast.NodeVisitor):
         'globals', 'hasattr', 'hash', 'help', 'id', 'input', 'isinstance',
         'issubclass', 'iter', 'locals', 'map', 'memoryview',
         'next', 'object', 'property', 'repr', 'reversed',
-        'setattr', 'sorted', 'staticmethod', 'vars', 'zip', 'reload', 'exit', 'quit'
+        'setattr', 'sorted', 'staticmethod', 'vars', 'zip', 'reload', 'exit', 'quit',
+        'file'
     }
 
     def visit_Import(self, node):
