@@ -35,9 +35,9 @@ class ConductorBuiltInRestrictor(ast.NodeVisitor):
         try:
             tree = ast.parse(code)
             self.visit(tree)
-            return True
+            return "Success"
         except ImportError as e:
-           return False
+           return "Error : " + str(e)
 
 restrictor = ConductorBuiltInRestrictor()
 codeTrusted = restrictor.isCodeTrusted(${code})  # Should raise an ImportError

@@ -55,10 +55,11 @@ public class PythonEvaluator implements Evaluator {
             script = script.trim();
             Map<String, Object> inputs = (Map<String, Object>) input;
             script = replaceVariablesInScript(script, inputs);
-            boolean scriptTrusted = isScriptTrusted(script);
-            if (!scriptTrusted) {
+            String untrustedCodeValidatorOutput = getUntrustedCodeValidatorOutput(script);
+            if (untrustedCodeValidatorOutput.startsWith("Error : ")) {
                 throw new ScriptException(
-                        "Script execution is restricted due to policy violations.");
+                        "Script execution is restricted due to policy violations : "
+                                + untrustedCodeValidatorOutput);
             }
             Object result = ScriptEvaluator.eval(script, input);
             LOGGER.debug("Python evaluator -- result: {}", result);
@@ -69,7 +70,7 @@ public class PythonEvaluator implements Evaluator {
         }
     }
 
-    private static boolean isScriptTrusted(String script) {
+    private static String getUntrustedCodeValidatorOutput(String script) {
         try (InputStream inputStream =
                         PythonEvaluator.class
                                 .getClassLoader()
@@ -90,10 +91,11 @@ public class PythonEvaluator implements Evaluator {
             String pythonScript = stringBuilder.toString().replace("${code}", untrustedCode);
             pythonInterpreter.exec(pythonScript);
             PyObject result = pythonInterpreter.get("codeTrusted");
-            return result.toString().equals("True");
+            return result.toString();
         } catch (Exception e) {
-            LOGGER.error("Some error encountered validating python script : {} as : {}", script, e);
-            return false;
+            LOGGER.error(
+                    "Some error encountered running getUntrustedCodeValidatorOutput as : {}", e);
+            throw new TerminateWorkflowException(e.getMessage());
         }
     }
 

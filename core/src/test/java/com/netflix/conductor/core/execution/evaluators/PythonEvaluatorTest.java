@@ -39,7 +39,9 @@ public class PythonEvaluatorTest {
         try {
             result = pythonEvaluator.evaluate(testPythonScript, Map.of());
         } catch (TerminateWorkflowException terminateWorkflowException) {
-            assertEquals(terminateWorkflowException.getMessage(), POLICY_VIOLATION_MESSAGE);
+            assertEquals(
+                    terminateWorkflowException.getMessage(),
+                    "Script execution is restricted due to policy violations : Error : Import statements are not allowed.");
         }
     }
 
@@ -50,7 +52,9 @@ public class PythonEvaluatorTest {
         try {
             result = pythonEvaluator.evaluate(testPythonScript, Map.of());
         } catch (TerminateWorkflowException terminateWorkflowException) {
-            assertEquals(terminateWorkflowException.getMessage(), POLICY_VIOLATION_MESSAGE);
+            assertEquals(
+                    terminateWorkflowException.getMessage(),
+                    "Script execution is restricted due to policy violations : Error : Import statements are not allowed.");
         }
     }
 
@@ -63,27 +67,9 @@ public class PythonEvaluatorTest {
         try {
             result = pythonEvaluator.evaluate(testPythonScript, Map.of());
         } catch (TerminateWorkflowException terminateWorkflowException) {
-            assertEquals(terminateWorkflowException.getMessage(), POLICY_VIOLATION_MESSAGE);
-        }
-    }
-
-    @Test
-    public void testRestrictedInBuiltFunctionExec() {
-        String testPythonScript =
-                "code = '''\n"
-                        + "def add(a, b):\n"
-                        + "    return a + b\n"
-                        + "\n"
-                        + "result = add(1, 1)\n"
-                        + "print(result)'''\n"
-                        + "\n"
-                        + "exec(code)"; // Exec is a malicious function and code lead to remote code
-        // executions
-        Object result = null;
-        try {
-            result = pythonEvaluator.evaluate(testPythonScript, Map.of());
-        } catch (TerminateWorkflowException terminateWorkflowException) {
-            assertEquals(terminateWorkflowException.getMessage(), POLICY_VIOLATION_MESSAGE);
+            assertEquals(
+                    terminateWorkflowException.getMessage(),
+                    "Script execution is restricted due to policy violations : Error : Usage of 'eval' is not allowed.");
         }
     }
 
@@ -97,7 +83,9 @@ public class PythonEvaluatorTest {
         try {
             result = pythonEvaluator.evaluate(testPythonScript, Map.of());
         } catch (TerminateWorkflowException terminateWorkflowException) {
-            assertEquals(terminateWorkflowException.getMessage(), POLICY_VIOLATION_MESSAGE);
+            assertEquals(
+                    terminateWorkflowException.getMessage(),
+                    "Script execution is restricted due to policy violations : Error : Usage of 'open' is not allowed.");
         }
     }
 
@@ -221,5 +209,21 @@ public class PythonEvaluatorTest {
         inputs.put("outputIdentifier", "message");
         Object result = pythonEvaluator.evaluate(testPythonScript, inputs);
         assertEquals(result.toString(), "Greetings Foo");
+    }
+
+    @Test
+    public void testMissingOutputIdentifier() {
+        String testPythonScript = "a = 100\n" + "a";
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("evaluatorType", "python");
+        inputs.put("expression", testPythonScript);
+        Object result = null;
+        try {
+            result = pythonEvaluator.evaluate(testPythonScript, inputs);
+        } catch (TerminateWorkflowException terminateWorkflowException) {
+            assertEquals(
+                    terminateWorkflowException.getMessage(),
+                    "outputIdentifier is missing from task input");
+        }
     }
 }

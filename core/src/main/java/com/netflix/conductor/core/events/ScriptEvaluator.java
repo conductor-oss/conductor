@@ -75,6 +75,9 @@ public class ScriptEvaluator {
      */
     private static Object evalPython(String script, Object input) throws ScriptException {
         Map<String, Object> inputs = (Map<String, Object>) input;
+        if (!inputs.containsKey("outputIdentifier")) {
+            throw new ScriptException("outputIdentifier is missing from task input");
+        }
         String outputIdentifier = inputs.get("outputIdentifier").toString();
         PythonInterpreter interpreter = new PythonInterpreter();
         interpreter.exec(script);
