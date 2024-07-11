@@ -38,7 +38,6 @@ class ConductorBuiltInRestrictor(ast.NodeVisitor):
         except ImportError as e:
            return False
 
-# Example usage
 restrictor = ConductorBuiltInRestrictor()
 codeTrusted = restrictor.isCodeTrusted(${code})  # Should raise an ImportError
 codeTrusted
