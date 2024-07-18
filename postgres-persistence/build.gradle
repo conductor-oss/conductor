@@ -16,6 +16,7 @@ dependencies {
     implementation "org.postgresql:postgresql:${revPostgres}"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-core:${revFlyway}"
+    implementation "org.flywaydb:flyway-database-postgresql:${revFlyway}"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')

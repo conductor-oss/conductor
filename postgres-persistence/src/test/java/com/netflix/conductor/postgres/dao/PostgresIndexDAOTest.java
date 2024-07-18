@@ -87,6 +87,7 @@ public class PostgresIndexDAOTest {
         wfs.setCorrelationId("correlation-id");
         wfs.setWorkflowType("workflow-type");
         wfs.setStartTime("2023-02-07T08:42:45Z");
+        wfs.setUpdateTime("2023-02-07T08:43:45Z");
         wfs.setStatus(Workflow.WorkflowStatus.COMPLETED);
         return wfs;
     }
@@ -173,7 +174,7 @@ public class PostgresIndexDAOTest {
 
     @Test
     public void testIndexNewWorkflow() throws SQLException {
-        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-new");
 
         indexDAO.indexWorkflow(wfs);
 
@@ -182,13 +183,14 @@ public class PostgresIndexDAOTest {
 
     @Test
     public void testIndexExistingWorkflow() throws SQLException {
-        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-existing");
 
         indexDAO.indexWorkflow(wfs);
 
         compareWorkflowSummary(wfs);
 
         wfs.setStatus(Workflow.WorkflowStatus.FAILED);
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
 
         indexDAO.indexWorkflow(wfs);
 
@@ -196,8 +198,29 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testIndexExistingWorkflowWithOlderUpdateToEnsureItsNotIndexed()
+            throws SQLException {
+
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-existing-no-index");
+
+        indexDAO.indexWorkflow(wfs);
+
+        compareWorkflowSummary(wfs);
+
+        // Set the update time to the past
+        wfs.setUpdateTime("2023-02-07T08:42:45Z");
+        wfs.setStatus(Workflow.WorkflowStatus.FAILED);
+
+        indexDAO.indexWorkflow(wfs);
+
+        // Reset the workflow to check it's not been updated
+        wfs = getMockWorkflowSummary("workflow-id-existing-no-index");
+        compareWorkflowSummary(wfs);
+    }
+
+    @Test
     public void testIndexNewTask() throws SQLException {
-        TaskSummary ts = getMockTaskSummary("task-id");
+        TaskSummary ts = getMockTaskSummary("task-id-new");
 
         indexDAO.indexTask(ts);
 
@@ -206,16 +229,36 @@ public class PostgresIndexDAOTest {
 
     @Test
     public void testIndexExistingTask() throws SQLException {
-        TaskSummary ts = getMockTaskSummary("task-id");
+        TaskSummary ts = getMockTaskSummary("task-id-existing");
 
         indexDAO.indexTask(ts);
 
         compareTaskSummary(ts);
 
+        ts.setUpdateTime("2023-02-07T09:43:45Z");
         ts.setStatus(Task.Status.FAILED);
 
         indexDAO.indexTask(ts);
 
+        compareTaskSummary(ts);
+    }
+
+    @Test
+    public void testIndexExistingTaskWithOlderUpdateToEnsureItsNotIndexed() throws SQLException {
+        TaskSummary ts = getMockTaskSummary("task-id-exiting-no-update");
+
+        indexDAO.indexTask(ts);
+
+        compareTaskSummary(ts);
+
+        // Set the update time to the past
+        ts.setUpdateTime("2023-02-07T09:41:45Z");
+        ts.setStatus(Task.Status.FAILED);
+
+        indexDAO.indexTask(ts);
+
+        // Reset the task to check it's not been updated
+        ts = getMockTaskSummary("task-id-exiting-no-update");
         compareTaskSummary(ts);
     }
 
@@ -275,7 +318,7 @@ public class PostgresIndexDAOTest {
 
     @Test
     public void testJsonSearchWorkflowSummary() {
-        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-summary");
         wfs.setVersion(3);
 
         indexDAO.indexWorkflow(wfs);
@@ -297,40 +340,40 @@ public class PostgresIndexDAOTest {
     @Test
     public void testSearchWorkflowSummaryPagination() {
         for (int i = 0; i < 5; i++) {
-            WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-" + i);
+            WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-pagination-" + i);
             indexDAO.indexWorkflow(wfs);
         }
 
         List<String> orderBy = Arrays.asList(new String[] {"workflowId:DESC"});
         SearchResult<WorkflowSummary> results =
-                indexDAO.searchWorkflowSummary("", "*", 0, 2, orderBy);
+                indexDAO.searchWorkflowSummary("", "workflow-id-pagination*", 0, 2, orderBy);
         assertEquals("Wrong totalHits returned", 3, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "workflow-id-4",
+                "workflow-id-pagination-4",
                 results.getResults().get(0).getWorkflowId());
         assertEquals(
                 "Results returned in wrong order",
-                "workflow-id-3",
+                "workflow-id-pagination-3",
                 results.getResults().get(1).getWorkflowId());
         results = indexDAO.searchWorkflowSummary("", "*", 2, 2, orderBy);
         assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "workflow-id-2",
+                "workflow-id-pagination-2",
                 results.getResults().get(0).getWorkflowId());
         assertEquals(
                 "Results returned in wrong order",
-                "workflow-id-1",
+                "workflow-id-pagination-1",
                 results.getResults().get(1).getWorkflowId());
         results = indexDAO.searchWorkflowSummary("", "*", 4, 2, orderBy);
         assertEquals("Wrong totalHits returned", 7, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "workflow-id-0",
+                "workflow-id-pagination-0",
                 results.getResults().get(0).getWorkflowId());
     }
 
@@ -351,7 +394,7 @@ public class PostgresIndexDAOTest {
     @Test
     public void testSearchTaskSummaryPagination() {
         for (int i = 0; i < 5; i++) {
-            TaskSummary ts = getMockTaskSummary("task-id-" + i);
+            TaskSummary ts = getMockTaskSummary("task-id-pagination-" + i);
             indexDAO.indexTask(ts);
         }
 
@@ -361,29 +404,29 @@ public class PostgresIndexDAOTest {
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "task-id-4",
+                "task-id-pagination-4",
                 results.getResults().get(0).getTaskId());
         assertEquals(
                 "Results returned in wrong order",
-                "task-id-3",
+                "task-id-pagination-3",
                 results.getResults().get(1).getTaskId());
         results = indexDAO.searchTaskSummary("", "*", 2, 2, orderBy);
         assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "task-id-2",
+                "task-id-pagination-2",
                 results.getResults().get(0).getTaskId());
         assertEquals(
                 "Results returned in wrong order",
-                "task-id-1",
+                "task-id-pagination-1",
                 results.getResults().get(1).getTaskId());
         results = indexDAO.searchTaskSummary("", "*", 4, 2, orderBy);
         assertEquals("Wrong totalHits returned", 7, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
-                "task-id-0",
+                "task-id-pagination-0",
                 results.getResults().get(0).getTaskId());
     }
 
