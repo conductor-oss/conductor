@@ -79,11 +79,12 @@ public class WorkflowSweeper {
 
     public void sweep(String workflowId) {
         WorkflowModel workflow = null;
+        StopWatch watch = new StopWatch();
         try {
             WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
             WorkflowContext.set(workflowContext);
             LOGGER.debug("Running sweeper for workflow {}", workflowId);
-            if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
+            if (!executionLockService.acquireLock(workflowId)) {
                 return;
             }
             workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
@@ -91,18 +92,11 @@ public class WorkflowSweeper {
                 // Verify and repair tasks in the workflow.
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
-            StopWatch watch = new StopWatch();
             watch.start();
-            try {
-                workflow = workflowExecutor.decide(workflow);
-                if (workflow != null && workflow.getStatus().isTerminal()) {
-                    queueDAO.remove(DECIDER_QUEUE, workflowId);
-                    return;
-                }
-            } finally {
-                executionLockService.releaseLock(workflow.getWorkflowId());
-                watch.stop();
-                Monitors.recordWorkflowDecisionTime(watch.getTime());
+            workflow = workflowExecutor.decide(workflow);
+            if (workflow != null && workflow.getStatus().isTerminal()) {
+                queueDAO.remove(DECIDER_QUEUE, workflowId);
+                return;
             }
         } catch (NotFoundException nfe) {
             queueDAO.remove(DECIDER_QUEUE, workflowId);
@@ -112,6 +106,10 @@ public class WorkflowSweeper {
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "sweep");
             LOGGER.error("Error running sweep for " + workflowId, e);
+        } finally {
+            executionLockService.releaseLock(workflowId);
+            watch.stop();
+            Monitors.recordWorkflowDecisionTime(watch.getTime());
         }
         long workflowOffsetTimeout =
                 workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
