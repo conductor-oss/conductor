@@ -124,7 +124,7 @@ public class ConductorProperties {
     /**
      * The max number of the threads to be polled within the threadpool for system task workers.
      */
-    private int systemTaskMaxPollCount = systemTaskWorkerThreadCount / 2;
+    private int systemTaskMaxPollCount = systemTaskWorkerThreadCount;
 
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker
