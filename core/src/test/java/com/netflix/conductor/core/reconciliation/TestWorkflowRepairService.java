@@ -24,7 +24,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.*;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -203,8 +202,7 @@ public class TestWorkflowRepairService {
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
-        WorkflowSystemTask workflowSystemTask =
-                new SubWorkflow(new ObjectMapper(), mock(StartWorkflowOperation.class));
+        WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
         when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 

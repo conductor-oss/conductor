@@ -866,7 +866,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowDef.ownerEmail = 'test@harness.com'
 
         def startWorkflowInput = new StartWorkflowInput(name: workflowDef.name, version: workflowDef.version, workflowInput: workflowInput, workflowDefinition: workflowDef)
-        def workflowInstanceId = startWorkflowOperation.execute(startWorkflowInput)
+        def workflowInstanceId = workflowExecutor.startWorkflow(startWorkflowInput)
 
         then: "verify that workflow failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
