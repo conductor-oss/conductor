@@ -81,7 +81,7 @@ import static org.mockito.Mockito.*;
 @RunWith(SpringRunner.class)
 public class TestWorkflowExecutor {
 
-    private WorkflowExecutor workflowExecutor;
+    private WorkflowExecutorOps workflowExecutor;
     private ExecutionDAOFacade executionDAOFacade;
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
@@ -211,7 +211,7 @@ public class TestWorkflowExecutor {
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
 
         workflowExecutor =
-                new WorkflowExecutor(
+                new WorkflowExecutorOps(
                         deciderService,
                         metadataDAO,
                         queueDAO,
