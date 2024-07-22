@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -75,7 +76,7 @@ public class InlineTaskMapper implements TaskMapper {
         inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
         inlineTask.setStartTime(System.currentTimeMillis());
         inlineTask.setInputData(taskInput);
-        if (taskMapperContext.getTaskDefinition().getIsolationGroupId() != null) {
+        if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
             inlineTask.setIsolationGroupId(
                     taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
