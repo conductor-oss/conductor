@@ -41,6 +41,7 @@ public class PostgresIndexQueryBuilderTest {
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
@@ -57,6 +58,7 @@ public class PostgresIndexQueryBuilderTest {
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
@@ -75,6 +77,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("abc123");
         inOrder.verify(mockQuery).addParameter(15);
@@ -94,6 +97,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMPLETED", "RUNNING")));
         inOrder.verify(mockQuery).addParameter(15);
@@ -113,6 +117,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("COMPLETED");
         inOrder.verify(mockQuery).addParameter(15);
@@ -132,6 +137,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
@@ -151,6 +157,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
@@ -170,6 +177,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
@@ -189,6 +197,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
@@ -209,6 +218,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:38:18Z");

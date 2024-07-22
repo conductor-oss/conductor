@@ -198,24 +198,43 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
-    public void testIndexExistingWorkflowWithOlderUpdateToEnsureItsNotIndexed()
-            throws SQLException {
+    public void testWhenWorkflowIsIndexedOutOfOrderOnlyLatestIsIndexed() throws SQLException {
+        WorkflowSummary firstWorkflowUpdate =
+                getMockWorkflowSummary("workflow-id-existing-no-index");
+        firstWorkflowUpdate.setUpdateTime("2023-02-07T08:42:45Z");
 
-        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-existing-no-index");
+        WorkflowSummary secondWorkflowUpdateSummary =
+                getMockWorkflowSummary("workflow-id-existing-no-index");
+        secondWorkflowUpdateSummary.setUpdateTime("2023-02-07T08:43:45Z");
+        secondWorkflowUpdateSummary.setStatus(Workflow.WorkflowStatus.FAILED);
 
-        indexDAO.indexWorkflow(wfs);
+        indexDAO.indexWorkflow(secondWorkflowUpdateSummary);
 
-        compareWorkflowSummary(wfs);
+        compareWorkflowSummary(secondWorkflowUpdateSummary);
 
-        // Set the update time to the past
-        wfs.setUpdateTime("2023-02-07T08:42:45Z");
-        wfs.setStatus(Workflow.WorkflowStatus.FAILED);
+        indexDAO.indexWorkflow(firstWorkflowUpdate);
 
-        indexDAO.indexWorkflow(wfs);
+        compareWorkflowSummary(secondWorkflowUpdateSummary);
+    }
 
-        // Reset the workflow to check it's not been updated
-        wfs = getMockWorkflowSummary("workflow-id-existing-no-index");
-        compareWorkflowSummary(wfs);
+    @Test
+    public void testWhenWorkflowUpdatesHaveTheSameUpdateTimeTheLastIsIndexed() throws SQLException {
+        WorkflowSummary firstWorkflowUpdate =
+                getMockWorkflowSummary("workflow-id-existing-same-time-index");
+        firstWorkflowUpdate.setUpdateTime("2023-02-07T08:42:45Z");
+
+        WorkflowSummary secondWorkflowUpdateSummary =
+                getMockWorkflowSummary("workflow-id-existing-same-time-index");
+        secondWorkflowUpdateSummary.setUpdateTime("2023-02-07T08:42:45Z");
+        secondWorkflowUpdateSummary.setStatus(Workflow.WorkflowStatus.FAILED);
+
+        indexDAO.indexWorkflow(firstWorkflowUpdate);
+
+        compareWorkflowSummary(firstWorkflowUpdate);
+
+        indexDAO.indexWorkflow(secondWorkflowUpdateSummary);
+
+        compareWorkflowSummary(secondWorkflowUpdateSummary);
     }
 
     @Test
@@ -244,22 +263,39 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
-    public void testIndexExistingTaskWithOlderUpdateToEnsureItsNotIndexed() throws SQLException {
-        TaskSummary ts = getMockTaskSummary("task-id-exiting-no-update");
+    public void testWhenTaskIsIndexedOutOfOrderOnlyLatestIsIndexed() throws SQLException {
+        TaskSummary firstTaskState = getMockTaskSummary("task-id-exiting-no-update");
+        firstTaskState.setUpdateTime("2023-02-07T09:41:45Z");
+        firstTaskState.setStatus(Task.Status.FAILED);
 
-        indexDAO.indexTask(ts);
+        TaskSummary secondTaskState = getMockTaskSummary("task-id-exiting-no-update");
+        secondTaskState.setUpdateTime("2023-02-07T09:42:45Z");
 
-        compareTaskSummary(ts);
+        indexDAO.indexTask(secondTaskState);
 
-        // Set the update time to the past
-        ts.setUpdateTime("2023-02-07T09:41:45Z");
-        ts.setStatus(Task.Status.FAILED);
+        compareTaskSummary(secondTaskState);
 
-        indexDAO.indexTask(ts);
+        indexDAO.indexTask(firstTaskState);
 
-        // Reset the task to check it's not been updated
-        ts = getMockTaskSummary("task-id-exiting-no-update");
-        compareTaskSummary(ts);
+        compareTaskSummary(secondTaskState);
+    }
+
+    @Test
+    public void testWhenTaskUpdatesHaveTheSameUpdateTimeTheLastIsIndexed() throws SQLException {
+        TaskSummary firstTaskState = getMockTaskSummary("task-id-exiting-same-time-update");
+        firstTaskState.setUpdateTime("2023-02-07T09:42:45Z");
+        firstTaskState.setStatus(Task.Status.FAILED);
+
+        TaskSummary secondTaskState = getMockTaskSummary("task-id-exiting-same-time-update");
+        secondTaskState.setUpdateTime("2023-02-07T09:42:45Z");
+
+        indexDAO.indexTask(firstTaskState);
+
+        compareTaskSummary(firstTaskState);
+
+        indexDAO.indexTask(secondTaskState);
+
+        compareTaskSummary(secondTaskState);
     }
 
     @Test
@@ -347,7 +383,7 @@ public class PostgresIndexDAOTest {
         List<String> orderBy = Arrays.asList(new String[] {"workflowId:DESC"});
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary("", "workflow-id-pagination*", 0, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 3, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -358,7 +394,7 @@ public class PostgresIndexDAOTest {
                 "workflow-id-pagination-3",
                 results.getResults().get(1).getWorkflowId());
         results = indexDAO.searchWorkflowSummary("", "*", 2, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 8, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -369,7 +405,7 @@ public class PostgresIndexDAOTest {
                 "workflow-id-pagination-1",
                 results.getResults().get(1).getWorkflowId());
         results = indexDAO.searchWorkflowSummary("", "*", 4, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 7, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 8, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -400,7 +436,7 @@ public class PostgresIndexDAOTest {
 
         List<String> orderBy = Arrays.asList(new String[] {"taskId:DESC"});
         SearchResult<TaskSummary> results = indexDAO.searchTaskSummary("", "*", 0, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 3, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -411,7 +447,7 @@ public class PostgresIndexDAOTest {
                 "task-id-pagination-3",
                 results.getResults().get(1).getTaskId());
         results = indexDAO.searchTaskSummary("", "*", 2, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 5, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
@@ -422,7 +458,7 @@ public class PostgresIndexDAOTest {
                 "task-id-pagination-1",
                 results.getResults().get(1).getTaskId());
         results = indexDAO.searchTaskSummary("", "*", 4, 2, orderBy);
-        assertEquals("Wrong totalHits returned", 7, results.getTotalHits());
+        assertEquals("Wrong totalHits returned", 10, results.getTotalHits());
         assertEquals("Wrong number of results returned", 2, results.getResults().size());
         assertEquals(
                 "Results returned in wrong order",
