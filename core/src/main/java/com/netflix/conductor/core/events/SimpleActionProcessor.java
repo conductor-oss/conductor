@@ -27,7 +27,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.metrics.Monitors;
@@ -46,17 +45,14 @@ public class SimpleActionProcessor implements ActionProcessor {
     private final WorkflowExecutor workflowExecutor;
     private final ParametersUtils parametersUtils;
     private final JsonUtils jsonUtils;
-    private final StartWorkflowOperation startWorkflowOperation;
 
     public SimpleActionProcessor(
             WorkflowExecutor workflowExecutor,
             ParametersUtils parametersUtils,
-            JsonUtils jsonUtils,
-            StartWorkflowOperation startWorkflowOperation) {
+            JsonUtils jsonUtils) {
         this.workflowExecutor = workflowExecutor;
         this.parametersUtils = parametersUtils;
         this.jsonUtils = jsonUtils;
-        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     public Map<String, Object> execute(
@@ -218,7 +214,7 @@ public class SimpleActionProcessor implements ActionProcessor {
             startWorkflowInput.setEvent(event);
             startWorkflowInput.setTaskToDomain(params.getTaskToDomain());
 
-            String workflowId = startWorkflowOperation.execute(startWorkflowInput);
+            String workflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
             output.put("workflowId", workflowId);
             LOGGER.debug(
