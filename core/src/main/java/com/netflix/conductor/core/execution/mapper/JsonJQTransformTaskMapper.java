@@ -66,7 +66,8 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
         jsonJQTransformTask.setStartTime(System.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
         if (taskMapperContext.getTaskDefinition().getIsolationGroupId() != null) {
-            jsonJQTransformTask.setIsolationGroupId(taskMapperContext.getTaskDefinition().getIsolationGroupId());
+            jsonJQTransformTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

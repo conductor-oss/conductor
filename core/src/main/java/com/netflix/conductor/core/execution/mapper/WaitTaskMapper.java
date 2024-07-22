@@ -80,7 +80,8 @@ public class WaitTaskMapper implements TaskMapper {
         waitTask.setStartTime(System.currentTimeMillis());
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
         if (taskMapperContext.getTaskDefinition().getIsolationGroupId() != null) {
-            waitTask.setIsolationGroupId(taskMapperContext.getTaskDefinition().getIsolationGroupId());
+            waitTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
         setCallbackAfter(waitTask);
         return List.of(waitTask);

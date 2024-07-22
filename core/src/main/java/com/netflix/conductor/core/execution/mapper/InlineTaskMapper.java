@@ -76,7 +76,8 @@ public class InlineTaskMapper implements TaskMapper {
         inlineTask.setStartTime(System.currentTimeMillis());
         inlineTask.setInputData(taskInput);
         if (taskMapperContext.getTaskDefinition().getIsolationGroupId() != null) {
-            inlineTask.setIsolationGroupId(taskMapperContext.getTaskDefinition().getIsolationGroupId());
+            inlineTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
         inlineTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
