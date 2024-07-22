@@ -32,55 +32,35 @@ public class ConductorProperties {
      */
     private String stack = "test";
 
-    /**
-     * The id with the app has been registered.
-     */
+    /** The id with the app has been registered. */
     private String appId = "conductor";
 
-    /**
-     * The maximum number of threads to be allocated to the executor service threadpool.
-     */
+    /** The maximum number of threads to be allocated to the executor service threadpool. */
     private int executorServiceMaxThreadCount = 50;
 
-    /**
-     * The timeout duration to set when a workflow is pushed to the decider queue.
-     */
+    /** The timeout duration to set when a workflow is pushed to the decider queue. */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration workflowOffsetTimeout = Duration.ofSeconds(30);
 
-    /**
-     * The number of threads to use to do background sweep on active workflows.
-     */
+    /** The number of threads to use to do background sweep on active workflows. */
     private int sweeperThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
-    /**
-     * The timeout (in milliseconds) for the polling of workflows to be swept.
-     */
+    /** The timeout (in milliseconds) for the polling of workflows to be swept. */
     private Duration sweeperWorkflowPollTimeout = Duration.ofMillis(2000);
 
-    /**
-     * The number of threads to configure the threadpool in the event processor.
-     */
+    /** The number of threads to configure the threadpool in the event processor. */
     private int eventProcessorThreadCount = 2;
 
-    /**
-     * Used to enable/disable the indexing of messages within event payloads.
-     */
+    /** Used to enable/disable the indexing of messages within event payloads. */
     private boolean eventMessageIndexingEnabled = true;
 
-    /**
-     * Used to enable/disable the indexing of event execution results.
-     */
+    /** Used to enable/disable the indexing of event execution results. */
     private boolean eventExecutionIndexingEnabled = true;
 
-    /**
-     * Used to enable/disable the workflow execution lock.
-     */
+    /** Used to enable/disable the workflow execution lock. */
     private boolean workflowExecutionLockEnabled = false;
 
-    /**
-     * The time (in milliseconds) for which the lock is leased for.
-     */
+    /** The time (in milliseconds) for which the lock is leased for. */
     private Duration lockLeaseTime = Duration.ofMillis(60000);
 
     /**
@@ -101,29 +81,19 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
-    /**
-     * Used to enable/disable the indexing of tasks.
-     */
+    /** Used to enable/disable the indexing of tasks. */
     private boolean taskIndexingEnabled = true;
 
-    /**
-     * Used to enable/disable the indexing of task execution logs.
-     */
+    /** Used to enable/disable the indexing of task execution logs. */
     private boolean taskExecLogIndexingEnabled = true;
 
-    /**
-     * Used to enable/disable asynchronous indexing to elasticsearch.
-     */
+    /** Used to enable/disable asynchronous indexing to elasticsearch. */
     private boolean asyncIndexingEnabled = false;
 
-    /**
-     * The number of threads to be used within the threadpool for system task workers.
-     */
+    /** The number of threads to be used within the threadpool for system task workers. */
     private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
-    /**
-     * The max number of the threads to be polled within the threadpool for system task workers.
-     */
+    /** The max number of the threads to be polled within the threadpool for system task workers. */
     private int systemTaskMaxPollCount = systemTaskWorkerThreadCount;
 
     /**
@@ -139,9 +109,7 @@ public class ConductorProperties {
      */
     private Duration systemTaskWorkerPollInterval = Duration.ofMillis(50);
 
-    /**
-     * The namespace for the system task workers to provide instance level isolation.
-     */
+    /** The namespace for the system task workers to provide instance level isolation. */
     private String systemTaskWorkerExecutionNamespace = "";
 
     /**
@@ -176,19 +144,13 @@ public class ConductorProperties {
      */
     private int eventQueueSchedulerPollThreadCount = Runtime.getRuntime().availableProcessors();
 
-    /**
-     * The time interval (in milliseconds) at which the default event queues will be polled.
-     */
+    /** The time interval (in milliseconds) at which the default event queues will be polled. */
     private Duration eventQueuePollInterval = Duration.ofMillis(100);
 
-    /**
-     * The number of messages to be polled from a default event queue in a single operation.
-     */
+    /** The number of messages to be polled from a default event queue in a single operation. */
     private int eventQueuePollCount = 10;
 
-    /**
-     * The timeout (in milliseconds) for the poll operation on the default event queue.
-     */
+    /** The timeout (in milliseconds) for the poll operation on the default event queue. */
     private Duration eventQueueLongPollTimeout = Duration.ofMillis(1000);
 
     /**
@@ -254,9 +216,7 @@ public class ConductorProperties {
     @DataSizeUnit(DataUnit.KILOBYTES)
     private DataSize maxWorkflowVariablesPayloadSizeThreshold = DataSize.ofKilobytes(256L);
 
-    /**
-     * Used to limit the size of task execution logs.
-     */
+    /** Used to limit the size of task execution logs. */
     private int taskExecLogSizeLimit = 10;
 
     public String getStack() {
