@@ -187,7 +187,7 @@ public class PostgresIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT COUNT(json_data::TEXT) FROM " + table + queryString;
+        return "SELECT COUNT(json_data) FROM " + table + queryString;
     }
 
     public void addParameters(Query q) throws SQLException {
