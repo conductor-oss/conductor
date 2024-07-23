@@ -139,10 +139,7 @@ public class WorkflowSweeper {
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     postponeDurationSeconds = workflowOffsetTimeout;
                 } else {
-                    postponeDurationSeconds =
-                            (taskModel.getResponseTimeoutSeconds() != 0)
-                                    ? taskModel.getResponseTimeoutSeconds() + 1
-                                    : workflowOffsetTimeout;
+                    postponeDurationSeconds = workflowOffsetTimeout;
                 }
                 break;
             } else if (taskModel.getStatus() == Status.SCHEDULED) {
