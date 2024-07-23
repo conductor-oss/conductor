@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -79,21 +78,22 @@ public class WorkflowSweeper {
 
     public void sweep(String workflowId) {
         WorkflowModel workflow = null;
-        StopWatch watch = new StopWatch();
         try {
-            WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
-            WorkflowContext.set(workflowContext);
-            LOGGER.debug("Running sweeper for workflow {}", workflowId);
             if (!executionLockService.acquireLock(workflowId)) {
                 return;
             }
             workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
+            WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
+            WorkflowContext.set(workflowContext);
+            LOGGER.debug("Running sweeper for workflow {}", workflowId);
+
             if (workflowRepairService != null) {
                 // Verify and repair tasks in the workflow.
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
-            watch.start();
+            long decideStartTime = System.currentTimeMillis();
             workflow = workflowExecutor.decide(workflow);
+            Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
@@ -108,8 +108,6 @@ public class WorkflowSweeper {
             LOGGER.error("Error running sweep for " + workflowId, e);
         } finally {
             executionLockService.releaseLock(workflowId);
-            watch.stop();
-            Monitors.recordWorkflowDecisionTime(watch.getTime());
         }
         long workflowOffsetTimeout =
                 workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
