@@ -77,22 +77,21 @@ public class WorkflowSweeper {
     }
 
     public void sweep(String workflowId) {
+        WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
+        WorkflowContext.set(workflowContext);
         WorkflowModel workflow = null;
         try {
             if (!executionLockService.acquireLock(workflowId)) {
                 return;
             }
             workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
-            WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
-            WorkflowContext.set(workflowContext);
             LOGGER.debug("Running sweeper for workflow {}", workflowId);
-
             if (workflowRepairService != null) {
                 // Verify and repair tasks in the workflow.
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
             long decideStartTime = System.currentTimeMillis();
-            workflow = workflowExecutor.decide(workflow);
+            workflow = workflowExecutor.decide(workflow.getWorkflowId());
             Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
