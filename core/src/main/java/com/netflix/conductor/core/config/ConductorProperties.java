@@ -93,6 +93,9 @@ public class ConductorProperties {
     /** The number of threads to be used within the threadpool for system task workers. */
     private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
+    /** The max number of the threads to be polled within the threadpool for system task workers. */
+    private int systemTaskMaxPollCount = systemTaskWorkerThreadCount;
+
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker
      * for completion.
@@ -358,6 +361,14 @@ public class ConductorProperties {
 
     public void setSystemTaskWorkerThreadCount(int systemTaskWorkerThreadCount) {
         this.systemTaskWorkerThreadCount = systemTaskWorkerThreadCount;
+    }
+
+    public int getSystemTaskMaxPollCount() {
+        return systemTaskMaxPollCount;
+    }
+
+    public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
+        this.systemTaskMaxPollCount = systemTaskMaxPollCount;
     }
 
     public Duration getSystemTaskWorkerCallbackDuration() {

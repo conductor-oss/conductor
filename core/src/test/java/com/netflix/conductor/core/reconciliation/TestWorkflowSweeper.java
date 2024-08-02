@@ -29,6 +29,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
@@ -45,6 +46,7 @@ public class TestWorkflowSweeper {
     private QueueDAO queueDAO;
     private ExecutionDAOFacade executionDAOFacade;
     private WorkflowSweeper workflowSweeper;
+    private ExecutionLockService executionLockService;
 
     private int defaultPostPoneOffSetSeconds = 1800;
 
@@ -55,13 +57,15 @@ public class TestWorkflowSweeper {
         queueDAO = mock(QueueDAO.class);
         workflowRepairService = mock(WorkflowRepairService.class);
         executionDAOFacade = mock(ExecutionDAOFacade.class);
+        executionLockService = mock(ExecutionLockService.class);
         workflowSweeper =
                 new WorkflowSweeper(
                         workflowExecutor,
                         Optional.of(workflowRepairService),
                         properties,
                         queueDAO,
-                        executionDAOFacade);
+                        executionDAOFacade,
+                        executionLockService);
     }
 
     @Test

@@ -41,9 +41,23 @@ public class PostgresIndexQueryBuilderTest {
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForEmptyString() throws SQLException {
+        String inputQuery = "";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals("SELECT COUNT(json_data) FROM table_name", generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -57,9 +71,23 @@ public class PostgresIndexQueryBuilderTest {
         assertEquals("SELECT json_data::TEXT FROM table_name LIMIT ? OFFSET ?", generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForNull() throws SQLException {
+        String inputQuery = null;
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals("SELECT COUNT(json_data) FROM table_name", generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -75,10 +103,27 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("abc123");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForWorkflowId() throws SQLException {
+        String inputQuery = "workflowId=\"abc123\"";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE workflow_id = ?", generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("abc123");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -94,10 +139,27 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMPLETED", "RUNNING")));
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForMultipleInClause() throws SQLException {
+        String inputQuery = "status IN (COMPLETED,RUNNING)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE status = ANY(?)", generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMPLETED", "RUNNING")));
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -113,10 +175,26 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("COMPLETED");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForSingleInClause() throws SQLException {
+        String inputQuery = "status IN (COMPLETED)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals("SELECT COUNT(json_data) FROM table_name WHERE status = ?", generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("COMPLETED");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -132,10 +210,28 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForStartTimeGt() throws SQLException {
+        String inputQuery = "startTime>1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE start_time > ?::TIMESTAMPTZ",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -151,10 +247,28 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForStartTimeLt() throws SQLException {
+        String inputQuery = "startTime<1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE start_time < ?::TIMESTAMPTZ",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -170,10 +284,28 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForUpdateTimeGt() throws SQLException {
+        String inputQuery = "updateTime>1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE update_time > ?::TIMESTAMPTZ",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -189,10 +321,28 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForUpdateTimeLt() throws SQLException {
+        String inputQuery = "updateTime<1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE update_time < ?::TIMESTAMPTZ",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -209,6 +359,7 @@ public class PostgresIndexQueryBuilderTest {
                 generatedQuery);
         Query mockQuery = mock(Query.class);
         builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter("2023-02-06T16:38:18Z");
@@ -217,6 +368,28 @@ public class PostgresIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("one", "two")));
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateCountQueryForMultipleConditions() throws SQLException {
+        String inputQuery =
+                "workflowId=\"abc123\" AND workflowType IN (one,two) AND status IN (COMPLETED,RUNNING) AND startTime>1675701498000 AND startTime<1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getCountQuery();
+        assertEquals(
+                "SELECT COUNT(json_data) FROM table_name WHERE start_time < ?::TIMESTAMPTZ AND start_time > ?::TIMESTAMPTZ AND status = ANY(?) AND workflow_id = ? AND workflow_type = ANY(?)",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:38:18Z");
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMPLETED", "RUNNING")));
+        inOrder.verify(mockQuery).addParameter("abc123");
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("one", "two")));
         verifyNoMoreInteractions(mockQuery);
     }
 
@@ -255,6 +428,16 @@ public class PostgresIndexQueryBuilderTest {
     }
 
     @Test
+    void shouldNotAllowInvalidColumnsOnCountQuery() throws SQLException {
+        String inputQuery = "sqlInjection<1675702498000";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String expectedQuery = "SELECT COUNT(json_data) FROM table_name";
+        assertEquals(expectedQuery, builder.getCountQuery());
+    }
+
+    @Test
     void shouldNotAllowInvalidSortColumn() throws SQLException {
         String inputQuery = "updateTime<1675702498000";
         String[] query = {"sqlInjection:DESC"};
@@ -264,6 +447,18 @@ public class PostgresIndexQueryBuilderTest {
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE update_time < ?::TIMESTAMPTZ LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
+    }
+
+    @Test
+    void shouldNotAllowInvalidSortColumnOnCountQuery() throws SQLException {
+        String inputQuery = "updateTime<1675702498000";
+        String[] query = {"sqlInjection:DESC"};
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, Arrays.asList(query), properties);
+        String expectedQuery =
+                "SELECT COUNT(json_data) FROM table_name WHERE update_time < ?::TIMESTAMPTZ";
+        assertEquals(expectedQuery, builder.getCountQuery());
     }
 
     @Test
@@ -279,6 +474,18 @@ public class PostgresIndexQueryBuilderTest {
     }
 
     @Test
+    void shouldAllowFullTextSearchOnCountQuery() throws SQLException {
+        String freeText = "correlation-id";
+        String[] query = {"sqlInjection:DESC"};
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", "", freeText, 0, 15, Arrays.asList(query), properties);
+        String expectedQuery =
+                "SELECT COUNT(json_data) FROM table_name WHERE jsonb_to_tsvector('english', json_data, '[\"all\"]') @@ to_tsquery(?)";
+        assertEquals(expectedQuery, builder.getCountQuery());
+    }
+
+    @Test
     void shouldAllowJsonSearch() throws SQLException {
         String freeText = "{\"correlationId\":\"not-the-id\"}";
         String[] query = {"sqlInjection:DESC"};
@@ -288,6 +495,18 @@ public class PostgresIndexQueryBuilderTest {
         String expectedQuery =
                 "SELECT json_data::TEXT FROM table_name WHERE json_data @> ?::JSONB LIMIT ? OFFSET ?";
         assertEquals(expectedQuery, builder.getQuery());
+    }
+
+    @Test
+    void shouldAllowJsonSearchOnCountQuery() throws SQLException {
+        String freeText = "{\"correlationId\":\"not-the-id\"}";
+        String[] query = {"sqlInjection:DESC"};
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", "", freeText, 0, 15, Arrays.asList(query), properties);
+        String expectedQuery =
+                "SELECT COUNT(json_data) FROM table_name WHERE json_data @> ?::JSONB";
+        assertEquals(expectedQuery, builder.getCountQuery());
     }
 
     @Test()

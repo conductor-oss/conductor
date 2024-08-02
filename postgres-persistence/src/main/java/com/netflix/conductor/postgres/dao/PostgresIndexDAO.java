@@ -86,7 +86,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         + "VALUES (?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
                         + "DO UPDATE SET correlation_id = EXCLUDED.correlation_id, workflow_type = EXCLUDED.workflow_type, "
                         + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data "
-                        + "WHERE EXCLUDED.update_time > workflow_index.update_time";
+                        + "WHERE EXCLUDED.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
             INSERT_WORKFLOW_INDEX_SQL += " AND workflow_index.status != EXCLUDED.status";
@@ -125,12 +125,19 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         queryBuilder.getQuery(),
                         q -> {
                             queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
                             return q.executeAndFetch(WorkflowSummary.class);
                         });
 
-        // To avoid making a second potentially expensive query to postgres say we've
-        // got enough results for another page so the pagination works
-        int totalHits = results.size() == count ? start + count + 1 : start + results.size();
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
         return new SearchResult<>(totalHits, results);
     }
 
@@ -141,7 +148,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = EXCLUDED.task_type, task_def_name = EXCLUDED.task_def_name, "
                         + "status = EXCLUDED.status, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data "
-                        + "WHERE EXCLUDED.update_time > task_index.update_time";
+                        + "WHERE EXCLUDED.update_time >= task_index.update_time";
 
         if (onlyIndexOnStatusChange) {
             INSERT_TASK_INDEX_SQL += " AND task_index.status != EXCLUDED.status";
@@ -181,12 +188,19 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         queryBuilder.getQuery(),
                         q -> {
                             queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
                             return q.executeAndFetch(TaskSummary.class);
                         });
 
-        // To avoid making a second potentially expensive query to postgres say we've
-        // got enough results for another page so the pagination works
-        int totalHits = results.size() == count ? start + count + 1 : start + results.size();
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
         return new SearchResult<>(totalHits, results);
     }
 

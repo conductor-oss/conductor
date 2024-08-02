@@ -96,8 +96,14 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
-
-        int messagesToAcquire = semaphoreUtil.availableSlots();
+        final int systemTaskMaxPollCount = properties.getSystemTaskMaxPollCount();
+        int maxSystemTasksToAcquire =
+                (systemTaskMaxPollCount < 1
+                                || systemTaskMaxPollCount
+                                        > properties.getSystemTaskWorkerThreadCount())
+                        ? properties.getSystemTaskWorkerThreadCount()
+                        : systemTaskMaxPollCount;
+        int messagesToAcquire = Math.min(semaphoreUtil.availableSlots(), maxSystemTasksToAcquire);
 
         try {
             if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {

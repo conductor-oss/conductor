@@ -11,7 +11,7 @@ describe("Landing Page", () => {
   it("Homepage preloads with default query", () => {
     cy.visit("/");
     cy.contains("Search Execution");
-    cy.contains("Page 1 of 5");
+    cy.contains("Page 1 of 1");
     cy.get(".rdt_TableCell").contains("feature_value_compute_workflow");
   });
 

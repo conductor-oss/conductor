@@ -23,7 +23,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.common.run.WorkflowTestRequest
-import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.service.WorkflowTestService
 import com.netflix.conductor.test.base.AbstractSpecification
 
