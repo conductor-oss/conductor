@@ -233,7 +233,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                                 log.setLog(rs.getString("log"));
                                                 log.setTaskId(rs.getString("task_id"));
                                                 log.setCreatedTime(
-                                                        rs.getDate("created_time").getTime());
+                                                        rs.getTimestamp("created_time").getTime());
                                                 result.add(log);
                                             }
                                             return result;
