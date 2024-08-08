@@ -17,7 +17,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "redis.clients:jedis:${revJedis}"
-    implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+        implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
     implementation('com.thoughtworks.xstream:xstream:1.4.20')
 
     //In memory

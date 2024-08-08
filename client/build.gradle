@@ -19,8 +19,8 @@ dependencies {
     compileOnly 'org.jetbrains:annotations:23.0.0'
 
     implementation project(':conductor-common')
-    implementation "com.sun.jersey:jersey-client:${revJersey}"
-    implementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
+    implementation "org.glassfish.jersey.core:jersey-client:${revJersey}"
+    implementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
     implementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
 
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
@@ -29,7 +29,7 @@ dependencies {
     }
     implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
 
-    implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
+    implementation "com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
 
     implementation "org.apache.commons:commons-lang3"
