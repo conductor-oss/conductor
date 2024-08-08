@@ -15,13 +15,7 @@ package com.netflix.conductor.client.http;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-
-import javax.ws.rs.core.Response;
+import java.net.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +25,7 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.amazonaws.util.IOUtils;
+import jakarta.ws.rs.core.Response;
 
 /** An implementation of {@link ExternalPayloadStorage} for storing large JSON payload data. */
 class PayloadStorage implements ExternalPayloadStorage {

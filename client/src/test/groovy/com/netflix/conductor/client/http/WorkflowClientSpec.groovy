@@ -17,7 +17,7 @@ import com.netflix.conductor.common.run.SearchResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.common.run.WorkflowSummary
 
-import com.sun.jersey.api.client.ClientResponse
+import jakarta.ws.rs.core.Response
 import spock.lang.Subject
 
 class WorkflowClientSpec extends ClientSpecification {
@@ -43,8 +43,8 @@ class WorkflowClientSpec extends ClientSpecification {
         SearchResult<WorkflowSummary> searchResult = workflowClient.search(query)
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -65,8 +65,8 @@ class WorkflowClientSpec extends ClientSpecification {
         SearchResult<Workflow> searchResult = workflowClient.searchV2('my_complex_query')
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -91,8 +91,8 @@ class WorkflowClientSpec extends ClientSpecification {
         SearchResult<WorkflowSummary> searchResult = workflowClient.search(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -117,8 +117,8 @@ class WorkflowClientSpec extends ClientSpecification {
         SearchResult<Workflow> searchResult = workflowClient.searchV2(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
