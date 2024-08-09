@@ -36,6 +36,7 @@ import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
 import com.netflix.conductor.sdk.workflow.utils.ObjectMapperProvider;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
@@ -240,5 +241,13 @@ public class WorkflowExecutor {
 
     public WorkflowClient getWorkflowClient() {
         return workflowClient;
+    }
+
+    public void addBean(Object bean) {
+        annotatedWorkerExecutor.addBean(bean);
+    }
+
+    public void registerModule(Module module) {
+        annotatedWorkerExecutor.registerModule(module);
     }
 }
