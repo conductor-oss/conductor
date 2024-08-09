@@ -14,8 +14,8 @@ package com.netflix.conductor.client.http
 
 import com.netflix.conductor.common.metadata.events.EventHandler
 
-import com.sun.jersey.api.client.ClientResponse
-import com.sun.jersey.api.client.WebResource
+import jakarta.ws.rs.client.Invocation
+import jakarta.ws.rs.core.Response
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -38,7 +38,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.registerEventHandler(handler)
 
         then:
-        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
+        1 * requestHandler.getWebResourceBuilder(uri) >> Mock(Invocation.Builder.class)
     }
 
     def "update event handler"() {
@@ -50,7 +50,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.updateEventHandler(handler)
 
         then:
-        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
+        1 * requestHandler.getWebResourceBuilder(uri) >> Mock(Invocation.Builder.class)
     }
 
     def "unregister event handler"() {
@@ -62,7 +62,7 @@ class EventClientSpec extends ClientSpecification {
         eventClient.unregisterEventHandler(eventName)
 
         then:
-        1 * requestHandler.delete(uri, null)
+        1 * requestHandler.delete(uri)
     }
 
     @Unroll
@@ -77,8 +77,8 @@ class EventClientSpec extends ClientSpecification {
 
         then:
         eventHandlers && eventHandlers.size() == 2
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> handlers
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> handlers
         }
 
         where:

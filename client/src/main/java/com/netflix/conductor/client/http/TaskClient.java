@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.glassfish.jersey.client.ClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +39,8 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 
-import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.client.filter.ClientFilter;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.core.GenericType;
 
 /** Client for conductor task management including polling for task, updating task status etc. */
 public class TaskClient extends ClientBase {
@@ -68,49 +66,35 @@ public class TaskClient extends ClientBase {
 
     /** Creates a default task client */
     public TaskClient() {
-        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
+        this(new ClientConfig(), new DefaultConductorClientConfiguration());
     }
 
     /**
      * @param config REST Client configuration
      */
     public TaskClient(ClientConfig config) {
-        this(config, new DefaultConductorClientConfiguration(), null);
+        this(config, new DefaultConductorClientConfiguration());
     }
 
     /**
      * @param config REST Client configuration
-     * @param handler Jersey client handler. Useful when plugging in various http client interaction
-     *     modules (e.g. ribbon)
-     */
-    public TaskClient(ClientConfig config, ClientHandler handler) {
-        this(config, new DefaultConductorClientConfiguration(), handler);
-    }
-
-    /**
-     * @param config REST Client configuration
-     * @param handler Jersey client handler. Useful when plugging in various http client interaction
-     *     modules (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
-    public TaskClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
-        this(config, new DefaultConductorClientConfiguration(), handler, filters);
+    public TaskClient(ClientConfig config, ClientRequestFilter... filters) {
+        this(config, new DefaultConductorClientConfiguration(), filters);
     }
 
     /**
      * @param config REST Client configuration
      * @param clientConfiguration Specific properties configured for the client, see {@link
      *     ConductorClientConfiguration}
-     * @param handler Jersey client handler. Useful when plugging in various http client interaction
-     *     modules (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
     public TaskClient(
             ClientConfig config,
             ConductorClientConfiguration clientConfiguration,
-            ClientHandler handler,
-            ClientFilter... filters) {
-        super(new ClientRequestHandler(config, handler, filters), clientConfiguration);
+            ClientRequestFilter... filters) {
+        super(new ClientRequestHandler(config, filters), clientConfiguration);
     }
 
     TaskClient(ClientRequestHandler requestHandler) {
