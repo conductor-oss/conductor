@@ -27,6 +27,7 @@ import CustomRoutes from "./plugins/CustomRoutes";
 import AppBarModules from "./plugins/AppBarModules";
 import CustomAppBarButtons from "./plugins/CustomAppBarButtons";
 import Workbench from "./pages/workbench/Workbench";
+import { getBasename } from "./utils/helpers";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -136,5 +137,5 @@ export default function App() {
 
 if (process.env.REACT_APP_MONACO_EDITOR_USING_CDN === "false") {
   // Change the source of the monaco files, see https://github.com/suren-atoyan/monaco-react/issues/168#issuecomment-762336713
-  loader.config({ paths: { vs: '/monaco-editor/min/vs' } });
+  loader.config({ paths: { vs: getBasename() + 'monaco-editor/min/vs' } });
 }
