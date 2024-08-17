@@ -23,6 +23,7 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import com.fasterxml.jackson.databind.Module;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
@@ -50,6 +51,8 @@ public class AnnotatedWorkerExecutor {
     private static Set<String> scannedPackages = new HashSet<>();
 
     private WorkerConfiguration workerConfiguration;
+
+    private Set<Module> modules = new HashSet<>();
 
     public AnnotatedWorkerExecutor(TaskClient taskClient) {
         this.taskClient = taskClient;
@@ -189,6 +192,9 @@ public class AnnotatedWorkerExecutor {
                 (taskName, method) -> {
                     Object obj = workerClassObjs.get(taskName);
                     AnnotatedWorker executor = new AnnotatedWorker(taskName, method, obj);
+                    for (Module module : modules) {
+                        executor.registerModule(module);
+                    }
                     executor.setPollingInterval(workerToPollingInterval.get(taskName));
                     executors.add(executor);
                 });
@@ -217,5 +223,9 @@ public class AnnotatedWorkerExecutor {
     @VisibleForTesting
     TaskRunnerConfigurer getTaskRunner() {
         return taskRunner;
+    }
+
+    public void registerModule(Module module) {
+        modules.add(module);
     }
 }

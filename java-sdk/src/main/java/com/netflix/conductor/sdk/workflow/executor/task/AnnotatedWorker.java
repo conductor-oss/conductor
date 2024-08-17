@@ -27,6 +27,7 @@ import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.utils.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AnnotatedWorker implements Worker {
@@ -49,6 +50,10 @@ public class AnnotatedWorker implements Worker {
         this.workerMethod = workerMethod;
         this.obj = obj;
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    void registerModule(Module module) {
+        om.registerModule(module);
     }
 
     @Override
