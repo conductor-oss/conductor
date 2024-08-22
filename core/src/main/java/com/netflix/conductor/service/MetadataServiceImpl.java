@@ -82,6 +82,8 @@ public class MetadataServiceImpl implements MetadataService {
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
+        taskDefinition.setCreateTime(existing.getCreateTime());
+        taskDefinition.setCreatedBy(existing.getCreatedBy());
         metadataDAO.updateTaskDef(taskDefinition);
     }
 
