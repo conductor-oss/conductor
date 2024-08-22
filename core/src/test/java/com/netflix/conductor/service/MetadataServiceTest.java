@@ -16,6 +16,7 @@ import java.util.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -54,7 +55,6 @@ public class MetadataServiceTest {
 
     @TestConfiguration
     static class TestMetadataConfiguration {
-
         @Bean
         public MetadataDAO metadataDAO() {
             return mock(MetadataDAO.class);
@@ -72,7 +72,22 @@ public class MetadataServiceTest {
                 MetadataDAO metadataDAO, ConductorProperties properties) {
             EventHandlerDAO eventHandlerDAO = mock(EventHandlerDAO.class);
 
+            Map<String, TaskDef> taskDefinitions = new HashMap<>();
+
             when(metadataDAO.getAllWorkflowDefs()).thenReturn(mockWorkflowDefs());
+
+            Answer<TaskDef> upsertTaskDef =
+                    (invocation) -> {
+                        TaskDef argument = invocation.getArgument(0, TaskDef.class);
+                        taskDefinitions.put(argument.getName(), argument);
+                        return argument;
+                    };
+            when(metadataDAO.createTaskDef(any(TaskDef.class))).then(upsertTaskDef);
+            when(metadataDAO.updateTaskDef(any(TaskDef.class))).then(upsertTaskDef);
+            when(metadataDAO.getTaskDef(any()))
+                    .then(
+                            invocation ->
+                                    taskDefinitions.get(invocation.getArgument(0, String.class)));
 
             return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
         }
@@ -175,7 +190,6 @@ public class MetadataServiceTest {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");
         taskDef.setOwnerEmail("sample@test.com");
-        when(metadataDAO.getTaskDef(any())).thenReturn(null);
         metadataService.updateTaskDef(taskDef);
     }
 
@@ -184,7 +198,6 @@ public class MetadataServiceTest {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");
         taskDef.setOwnerEmail("sample@test.com");
-        when(metadataDAO.getTaskDef(any())).thenReturn(null);
         metadataService.updateTaskDef(taskDef);
     }
 
@@ -196,6 +209,27 @@ public class MetadataServiceTest {
         taskDef.setResponseTimeoutSeconds(60 * 60);
         metadataService.registerTaskDef(Collections.singletonList(taskDef));
         verify(metadataDAO, times(1)).createTaskDef(any(TaskDef.class));
+    }
+
+    @Test
+    public void testUpdateTask() {
+        String taskDefName = "another-task";
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName(taskDefName);
+        taskDef.setOwnerEmail("sample@test.com");
+        taskDef.setRetryCount(1);
+        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+        TaskDef before = metadataService.getTaskDef(taskDefName);
+
+        taskDef.setRetryCount(2);
+        taskDef.setCreatedBy("someone-else");
+        taskDef.setCreateTime(1000L);
+        metadataService.updateTaskDef(taskDef);
+        verify(metadataDAO, times(1)).updateTaskDef(any(TaskDef.class));
+
+        TaskDef after = metadataService.getTaskDef(taskDefName);
+        assertEquals(2, after.getRetryCount());
+        assertEquals(before.getCreateTime(), after.getCreateTime());
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -272,7 +306,6 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
         metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
         verify(metadataDAO, times(1)).updateWorkflowDef(workflowDef);
     }
@@ -302,7 +335,7 @@ public class MetadataServiceTest {
         workflowTask.setCaseExpression("1 >0abcd");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         BulkResponse bulkResponse =
                 metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
@@ -332,7 +365,7 @@ public class MetadataServiceTest {
         workflowTask.setDecisionCases(decisionCases);
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         BulkResponse bulkResponse =
                 metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
@@ -419,7 +452,7 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         metadataService.registerWorkflowDef(workflowDef);
         verify(metadataDAO, times(1)).createWorkflowDef(workflowDef);
         assertEquals(2, workflowDef.getSchemaVersion());
@@ -437,7 +470,7 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         metadataService.validateWorkflowDef(workflowDef);
         verify(metadataDAO, times(1)).createWorkflowDef(workflowDef);
         assertEquals(2, workflowDef.getSchemaVersion());
