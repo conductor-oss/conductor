@@ -50,6 +50,7 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 RUN apk add openjdk17
 RUN apk add nginx
+RUN apk add curl
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
