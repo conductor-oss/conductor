@@ -1,3 +1,0 @@
-[submodule "client/go/conductor-go"]
-	path = client/go/conductor-go
-	url = git@github.com:conductor-sdk/conductor-go.git
