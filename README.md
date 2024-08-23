@@ -1,4 +1,5 @@
-<img src="https://assets.conductor-oss.org/logo.png">
+![Conductor OSS Logo](https://assets.conductor-oss.org/logo.png "Conductor OSS")
+
 
 [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://GitHub.com/Netflix/conductor-oss/releases)
 [![License](https://img.shields.io/github/license/conductor-oss/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
