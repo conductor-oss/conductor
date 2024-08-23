@@ -70,7 +70,9 @@ It has been observed, that the UI build may fail with an error message like
 
 This can happen, even if the network resources `yarn` tries to use are available, but there is too much network latency. `yarn` accepts the option `--network-timeout` to set a custom timeout in milliseconds.
 
-For passing arguments to `yarn`, in [this Dockerfile](server/Dockerfile) the build arg `YARN_OPTS` has been added. This argument will be added to each `yarn` call. When using one of the `docker-compose-*` files, you can set this via the eponymous environment variable `YARN_OPTS`, e.g.:
+For passing arguments to `yarn`, in [this Dockerfile](server/Dockerfile) the build arg `YARN_OPTS` has been added. This argument will be added to each `yarn` call. It is not compulsory to set this argument.
+
+When using one of the `docker-compose-*` files, you can set this via the eponymous environment variable `YARN_OPTS`, e.g.:
 
 ```
 YARN_OPTS='--network-timeout 10000000' docker compose -f docker-compose.yaml up
