@@ -14,7 +14,7 @@ hide:
         Conductor is a platform originally created at Netflix to orchestrate workflows that span across microservices.
       </div >
       <div style="display: flex; margin-top: 45px;">
-        <a type="button" class="btn btn-primary" href="../devguide/concepts/index.html">Get Started</a>
+        <a type="button" class="btn btn-primary" href="../conductor/devguide/concepts/index.html">Get Started</a> 
       </div>
     </div>
     <div class="col-6">
