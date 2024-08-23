@@ -13,6 +13,6 @@ const useStyles = makeStyles((theme) => ({
 
 export default function AppLogo() {
   const classes = useStyles();
-  const logoPath = getBasename() + 'logo.svg';
+  const logoPath = 'https://assets.conductor-oss.org/logo.png';
   return <img src={cleanDuplicateSlash(logoPath)} alt="Conductor" className={classes.logo} />;
 }
