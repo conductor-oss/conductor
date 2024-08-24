@@ -68,9 +68,9 @@ It has been observed, that the UI build may fail with an error message like
 953.6 info There appears to be trouble with your network connection. Retrying...
 ```
 
-This can happen, even if the network resources `yarn` tries to use are available, but there is too much network latency. `yarn` accepts the option `--network-timeout` to set a custom timeout in milliseconds.
+This does not necessarily mean, that the network is unavailable, but can be caused by too high latency, as well. `yarn` accepts the option `--network-timeout <#ms>` to set a custom timeout in milliseconds.
 
-For passing arguments to `yarn`, in [this Dockerfile](server/Dockerfile) the build arg `YARN_OPTS` has been added. This argument will be added to each `yarn` call. It is not compulsory to set this argument.
+For passing arguments to `yarn`, in [this Dockerfile](server/Dockerfile) the _optional_ build arg `YARN_OPTS` has been added. This argument will be added to each `yarn` call.
 
 When using one of the `docker-compose-*` files, you can set this via the environment variable `YARN_OPTS`, e.g.:
 
