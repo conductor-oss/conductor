@@ -72,7 +72,7 @@ This can happen, even if the network resources `yarn` tries to use are available
 
 For passing arguments to `yarn`, in [this Dockerfile](server/Dockerfile) the build arg `YARN_OPTS` has been added. This argument will be added to each `yarn` call. It is not compulsory to set this argument.
 
-When using one of the `docker-compose-*` files, you can set this via the eponymous environment variable `YARN_OPTS`, e.g.:
+When using one of the `docker-compose-*` files, you can set this via the environment variable `YARN_OPTS`, e.g.:
 
 ```
 YARN_OPTS='--network-timeout 10000000' docker compose -f docker-compose.yaml up
