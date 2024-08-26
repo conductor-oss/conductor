@@ -81,25 +81,48 @@ public abstract class ClientBase {
     }
 
     protected void delete(String url, Object... uriVariables) {
-        deleteWithUriVariables(null, url, uriVariables);
+        deleteWithUriVariables(null, null, url, uriVariables);
+    }
+
+    protected void delete(Map<String, Object> headers, String url, Object... uriVariables) {
+        deleteWithUriVariables(null, headers, url, uriVariables);
     }
 
     protected void deleteWithUriVariables(
             Object[] queryParams, String url, Object... uriVariables) {
-        delete(queryParams, url, uriVariables, null);
+        delete(queryParams, Map.of(), url, uriVariables, null);
+    }
+
+    protected void deleteWithUriVariables(
+            Object[] queryParams, Map<String, Object> headers, String url, Object... uriVariables) {
+        delete(queryParams, headers, url, uriVariables, null);
     }
 
     protected BulkResponse deleteWithRequestBody(Object[] queryParams, String url, Object body) {
-        return delete(queryParams, url, null, body);
+        return deleteWithRequestBody(queryParams, Map.of(), url, body);
+    }
+
+    protected BulkResponse deleteWithRequestBody(
+            Object[] queryParams, Map<String, Object> headers, String url, Object body) {
+        return delete(queryParams, headers, url, null, body);
     }
 
     private BulkResponse delete(
             Object[] queryParams, String url, Object[] uriVariables, Object body) {
+        return delete(queryParams, Map.of(), url, uriVariables, body);
+    }
+
+    private BulkResponse delete(
+            Object[] queryParams,
+            Map<String, Object> headers,
+            String url,
+            Object[] uriVariables,
+            Object body) {
         URI uri = null;
         BulkResponse response = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            response = requestHandler.delete(uri, body);
+            response = requestHandler.delete(uri, headers, body);
         } catch (UniformInterfaceException e) {
             handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
@@ -109,18 +132,32 @@ public abstract class ClientBase {
     }
 
     protected void put(String url, Object[] queryParams, Object request, Object... uriVariables) {
+        put(url, queryParams, Map.of(), request, uriVariables);
+    }
+
+    protected void put(
+            String url,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            Object request,
+            Object... uriVariables) {
         URI uri = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            requestHandler.getWebResourceBuilder(uri, request).put();
+            requestHandler.getWebResourceBuilder(uri, headers, request).put();
         } catch (RuntimeException e) {
             handleException(uri, e);
         }
     }
 
     protected void postForEntityWithRequestOnly(String url, Object request) {
+        postForEntityWithRequestOnly(url, Map.of(), request);
+    }
+
+    protected void postForEntityWithRequestOnly(
+            String url, Map<String, Object> headers, Object request) {
         Class<?> type = null;
-        postForEntity(url, request, null, type);
+        postForEntity(url, request, null, headers, type);
     }
 
     protected void postForEntityWithUriVariablesOnly(String url, Object... uriVariables) {
@@ -134,10 +171,21 @@ public abstract class ClientBase {
             Object[] queryParams,
             Class<T> responseType,
             Object... uriVariables) {
+        return postForEntity(url, request, queryParams, Map.of(), responseType, uriVariables);
+    }
+
+    protected <T> T postForEntity(
+            String url,
+            Object request,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            Class<T> responseType,
+            Object... uriVariables) {
         return postForEntity(
                 url,
                 request,
                 queryParams,
+                headers,
                 responseType,
                 builder -> builder.post(responseType),
                 uriVariables);
@@ -153,6 +201,24 @@ public abstract class ClientBase {
                 url,
                 request,
                 queryParams,
+                Map.of(),
+                responseType,
+                builder -> builder.post(responseType),
+                uriVariables);
+    }
+
+    protected <T> T postForEntity(
+            String url,
+            Object request,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            GenericType<T> responseType,
+            Object... uriVariables) {
+        return postForEntity(
+                url,
+                request,
+                queryParams,
+                headers,
                 responseType,
                 builder -> builder.post(responseType),
                 uriVariables);
@@ -165,10 +231,23 @@ public abstract class ClientBase {
             Object responseType,
             Function<Builder, T> postWithEntity,
             Object... uriVariables) {
+        return postForEntity(
+                url, request, queryParams, Map.of(), responseType, postWithEntity, uriVariables);
+    }
+
+    private <T> T postForEntity(
+            String url,
+            Object request,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            Object responseType,
+            Function<Builder, T> postWithEntity,
+            Object... uriVariables) {
         URI uri = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            Builder webResourceBuilder = requestHandler.getWebResourceBuilder(uri, request);
+            Builder webResourceBuilder =
+                    requestHandler.getWebResourceBuilder(uri, headers, request);
             if (responseType == null) {
                 webResourceBuilder.post();
                 return null;
@@ -185,7 +264,25 @@ public abstract class ClientBase {
     protected <T> T getForEntity(
             String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
         return getForEntity(
-                url, queryParams, response -> response.getEntity(responseType), uriVariables);
+                url,
+                queryParams,
+                Map.of(),
+                response -> response.getEntity(responseType),
+                uriVariables);
+    }
+
+    protected <T> T getForEntity(
+            String url,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            Class<T> responseType,
+            Object... uriVariables) {
+        return getForEntity(
+                url,
+                queryParams,
+                headers,
+                response -> response.getEntity(responseType),
+                uriVariables);
     }
 
     protected <T> T getForEntity(
@@ -194,16 +291,39 @@ public abstract class ClientBase {
                 url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
+    protected <T> T getForEntity(
+            String url,
+            Object[] queryParams,
+            Map<String, Object> headers,
+            GenericType<T> responseType,
+            Object... uriVariables) {
+        return getForEntity(
+                url,
+                queryParams,
+                headers,
+                response -> response.getEntity(responseType),
+                uriVariables);
+    }
+
     private <T> T getForEntity(
             String url,
             Object[] queryParams,
+            Function<ClientResponse, T> entityProvider,
+            Object... uriVariables) {
+        return getForEntity(url, queryParams, Map.of(), entityProvider, uriVariables);
+    }
+
+    private <T> T getForEntity(
+            String url,
+            Object[] queryParams,
+            Map<String, Object> headers,
             Function<ClientResponse, T> entityProvider,
             Object... uriVariables) {
         URI uri = null;
         ClientResponse clientResponse;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            clientResponse = requestHandler.get(uri);
+            clientResponse = requestHandler.get(uri, headers);
             if (clientResponse.getStatus() < 300) {
                 return entityProvider.apply(clientResponse);
             } else {

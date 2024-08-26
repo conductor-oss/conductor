@@ -13,6 +13,7 @@
 package com.netflix.conductor.client.http;
 
 import java.net.URI;
+import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
@@ -57,27 +58,54 @@ public class ClientRequestHandler {
     }
 
     public BulkResponse delete(URI uri, Object body) {
+        return delete(uri, Map.of(), body);
+    }
+
+    public BulkResponse delete(URI uri, Map<String, Object> headers, Object body) {
         if (body != null) {
-            return client.resource(uri)
+            return getWebResourceBuilder(client.resource(uri), headers)
                     .type(MediaType.APPLICATION_JSON_TYPE)
                     .delete(BulkResponse.class, body);
         } else {
-            client.resource(uri).delete();
+            getWebResourceBuilder(client.resource(uri), headers).delete();
         }
         return null;
     }
 
     public ClientResponse get(URI uri) {
-        return client.resource(uri)
+        return get(uri, Map.of());
+    }
+
+    public ClientResponse get(URI uri, Map<String, Object> headers) {
+        return getWebResourceBuilder(client.resource(uri), headers)
                 .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                 .get(ClientResponse.class);
     }
 
-    public WebResource.Builder getWebResourceBuilder(URI URI, Object entity) {
-        return client.resource(URI)
+    public WebResource.Builder getWebResourceBuilder(URI uri, Object entity) {
+        return getWebResourceBuilder(uri, Map.of(), entity);
+    }
+
+    public WebResource.Builder getWebResourceBuilder(
+            URI uri, Map<String, Object> headers, Object entity) {
+        return getWebResourceBuilder(client.resource(uri), headers)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(entity)
                 .accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
+    }
+
+    private WebResource.Builder getWebResourceBuilder(
+            WebResource resource, Map<String, Object> headers) {
+        WebResource.Builder builder = resource.getRequestBuilder();
+        if (headers == null || headers.isEmpty()) {
+            return builder;
+        }
+
+        for (Map.Entry<String, Object> entry : headers.entrySet()) {
+            builder = builder.header(entry.getKey(), entry.getValue());
+        }
+
+        return builder;
     }
 
     private boolean isNewerJacksonVersion() {

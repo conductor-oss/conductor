@@ -13,6 +13,7 @@
 package com.netflix.conductor.client.http;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 
@@ -91,8 +92,12 @@ public class MetadataClient extends ClientBase {
      * @param workflowDef the workflow definition
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
+        registerWorkflowDef(workflowDef, Map.of());
+    }
+
+    protected void registerWorkflowDef(WorkflowDef workflowDef, Map<String, Object> headers) {
         Validate.notNull(workflowDef, "Workflow definition cannot be null");
-        postForEntityWithRequestOnly("metadata/workflow", workflowDef);
+        postForEntityWithRequestOnly("metadata/workflow", headers, workflowDef);
     }
 
     public void validateWorkflowDef(WorkflowDef workflowDef) {
@@ -118,10 +123,16 @@ public class MetadataClient extends ClientBase {
      * @return Workflow definition for the given workflow and version
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
+        return getWorkflowDef(name, version, Map.of());
+    }
+
+    protected WorkflowDef getWorkflowDef(
+            String name, Integer version, Map<String, Object> headers) {
         Validate.notBlank(name, "name cannot be blank");
         return getForEntity(
                 "metadata/workflow/{name}",
                 new Object[] {"version", version},
+                headers,
                 WorkflowDef.class,
                 name);
     }

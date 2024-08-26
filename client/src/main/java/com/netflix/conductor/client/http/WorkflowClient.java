@@ -15,6 +15,7 @@ package com.netflix.conductor.client.http;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -116,6 +117,11 @@ public class WorkflowClient extends ClientBase {
      * @throws IllegalArgumentException if {@link StartWorkflowRequest#getName()} is empty.
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
+        return startWorkflow(startWorkflowRequest, Map.of());
+    }
+
+    protected String startWorkflow(
+            StartWorkflowRequest startWorkflowRequest, Map<String, Object> headers) {
         Validate.notNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
         Validate.notBlank(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
         Validate.isTrue(
@@ -173,6 +179,7 @@ public class WorkflowClient extends ClientBase {
                     "workflow",
                     startWorkflowRequest,
                     null,
+                    headers,
                     String.class,
                     startWorkflowRequest.getName());
         } catch (ConductorClientException e) {

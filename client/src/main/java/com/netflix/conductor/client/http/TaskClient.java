@@ -150,6 +150,15 @@ public class TaskClient extends ClientBase {
      */
     public List<Task> batchPollTasksByTaskType(
             String taskType, String workerId, int count, int timeoutInMillisecond) {
+        return batchPollTasksByTaskType(taskType, workerId, count, timeoutInMillisecond, Map.of());
+    }
+
+    protected List<Task> batchPollTasksByTaskType(
+            String taskType,
+            String workerId,
+            int count,
+            int timeoutInMillisecond,
+            Map<String, Object> headers) {
         Validate.notBlank(taskType, "Task type cannot be blank");
         Validate.notBlank(workerId, "Worker id cannot be blank");
         Validate.isTrue(count > 0, "Count must be greater than 0");
@@ -158,7 +167,8 @@ public class TaskClient extends ClientBase {
                 new Object[] {
                     "workerid", workerId, "count", count, "timeout", timeoutInMillisecond
                 };
-        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        List<Task> tasks =
+                getForEntity("tasks/poll/batch/{taskType}", params, headers, taskList, taskType);
         tasks.forEach(this::populateTaskPayloads);
         return tasks;
     }
@@ -176,6 +186,17 @@ public class TaskClient extends ClientBase {
      */
     public List<Task> batchPollTasksInDomain(
             String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
+        return batchPollTasksInDomain(
+                taskType, domain, workerId, count, timeoutInMillisecond, Map.of());
+    }
+
+    protected List<Task> batchPollTasksInDomain(
+            String taskType,
+            String domain,
+            String workerId,
+            int count,
+            int timeoutInMillisecond,
+            Map<String, Object> headers) {
         Validate.notBlank(taskType, "Task type cannot be blank");
         Validate.notBlank(workerId, "Worker id cannot be blank");
         Validate.isTrue(count > 0, "Count must be greater than 0");
@@ -191,7 +212,8 @@ public class TaskClient extends ClientBase {
                     "domain",
                     domain
                 };
-        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        List<Task> tasks =
+                getForEntity("tasks/poll/batch/{taskType}", params, headers, taskList, taskType);
         tasks.forEach(this::populateTaskPayloads);
         return tasks;
     }
@@ -236,8 +258,12 @@ public class TaskClient extends ClientBase {
      * @param taskResult the {@link TaskResult} of the executed task to be updated.
      */
     public void updateTask(TaskResult taskResult) {
+        updateTask(taskResult, Map.of());
+    }
+
+    protected void updateTask(TaskResult taskResult, Map<String, Object> headers) {
         Validate.notNull(taskResult, "Task result cannot be null");
-        postForEntityWithRequestOnly("tasks", taskResult);
+        postForEntityWithRequestOnly("tasks", headers, taskResult);
     }
 
     public Optional<String> evaluateAndUploadLargePayload(
