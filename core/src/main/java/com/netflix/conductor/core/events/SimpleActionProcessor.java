@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
@@ -32,7 +33,6 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import org.springframework.util.CollectionUtils;
 
 /**
  * Action Processor subscribes to the Event Actions queue and processes the actions (e.g. start
@@ -198,17 +198,18 @@ public class SimpleActionProcessor implements ActionProcessor {
 
             Map<String, Object> paramsMap = new HashMap<>();
             // extracting taskToDomain map from the event payload
-            paramsMap.put("taskToDomain","${taskToDomain}");
+            paramsMap.put("taskToDomain", "${taskToDomain}");
             Optional.ofNullable(params.getCorrelationId())
                     .ifPresent(value -> paramsMap.put("correlationId", value));
             Map<String, Object> replaced = parametersUtils.replace(paramsMap, payload);
 
-            // if taskToDomain is absent from event handler definition, and taskDomain Map is passed as a part of payload
+            // if taskToDomain is absent from event handler definition, and taskDomain Map is passed
+            // as a part of payload
             // then assign payload taskToDomain map to the new workflow instance
-            final Map<String, String> taskToDomain = params.getTaskToDomain() != null ?
-                    params.getTaskToDomain() :
-                    (Map<String, String>) replaced.get("taskToDomain");
-
+            final Map<String, String> taskToDomain =
+                    params.getTaskToDomain() != null
+                            ? params.getTaskToDomain()
+                            : (Map<String, String>) replaced.get("taskToDomain");
 
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);

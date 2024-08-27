@@ -126,7 +126,8 @@ public class TestSimpleActionProcessor {
 
         Object payload =
                 objectMapper.readValue(
-                        "{ \"testId\": \"test_1\", \"taskToDomain\":{\"testTask\":\"testDomain\"} }", Object.class);
+                        "{ \"testId\": \"test_1\", \"taskToDomain\":{\"testTask\":\"testDomain\"} }",
+                        Object.class);
 
         Map<String, String> taskToDomain = new HashMap<>();
         taskToDomain.put("testTask", "testDomain");
@@ -155,7 +156,6 @@ public class TestSimpleActionProcessor {
                 "testMessage", capturedValue.getWorkflowInput().get("conductor.event.messageId"));
         assertEquals("testEvent", capturedValue.getWorkflowInput().get("conductor.event.name"));
     }
-
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
