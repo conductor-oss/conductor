@@ -20,8 +20,8 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
-    testImplementation project(':conductor-client')
-    testImplementation project(':conductor-grpc-client')
+//    testImplementation project(':conductor-client')
+//    testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"

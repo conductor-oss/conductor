@@ -20,15 +20,12 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
 
-//    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
-//    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
-
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
 
     testImplementation project(':conductor-server')
-    testImplementation project(':conductor-client')
-    testImplementation project(':conductor-grpc-client')
+    //testImplementation project(':conductor-client')
+    //testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
