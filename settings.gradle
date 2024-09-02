@@ -55,7 +55,6 @@ include 'rest'
 include 'grpc'
 include 'grpc-server'
 
-include 'java-sdk'
 
 // community modules
 include 'workflow-event-listener'
