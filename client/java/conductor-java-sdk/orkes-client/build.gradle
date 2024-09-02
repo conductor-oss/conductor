@@ -1,0 +1,108 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'maven-publish'
+    id 'signing'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'groovy'
+}
+
+dependencies {
+    implementation project(':conductor-client')
+    implementation "com.squareup.okhttp3:okhttp:${versions.okHttp}"
+
+    // test dependencies
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junit}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${versions.junit}"
+
+    testImplementation "org.powermock:powermock-module-junit4:2.0.9"
+    testImplementation "org.powermock:powermock-api-mockito2:2.0.9"
+
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
+    testImplementation 'org.codehaus.groovy:groovy:3.0.15'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.6'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Orkes Conductor Client'
+                description = 'OSS & Orkes Conductor client (http)'
+                url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                scm {
+                    connection = 'scm:git:git://github.com/conductor-oss/conductor-java-sdk.git'
+                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor-java-sdk.git'
+                    url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        organization = 'Orkes'
+                        organizationUrl = 'https://orkes.io'
+                        name = 'Orkes Development Team'
+                        email = 'developers@orkes.io'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            if (project.hasProperty("mavenCentral")) {
+                println "Publishing to Sonatype Repository"
+                url = "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/"}"
+                credentials {
+                    username project.properties.username
+                    password project.properties.password
+                }
+            } else {
+                url = "s3://orkes-artifacts-repo/${project.version.endsWith('-SNAPSHOT') ? "snapshots" : "releases"}"
+                authentication {
+                    awsIm(AwsImAuthentication)
+                }
+            }
+        }
+    }
+}
+
+signing {
+    def signingKeyId = findProperty('signingKeyId')
+    if (signingKeyId) {
+        println 'Signing the artifact with keys'
+        signing {
+            def signingKey = findProperty('signingKey')
+            def signingPassword = findProperty('signingPassword')
+            if (signingKeyId && signingKey && signingPassword) {
+                useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            }
+
+            sign publishing.publications
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveFileName = "orkes-conductor-client-$version-all.jar"
+    mergeServiceFiles()
+}
+
+tasks.build {
+    dependsOn shadowJar
+}

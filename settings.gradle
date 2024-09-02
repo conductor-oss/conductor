@@ -35,8 +35,6 @@ include 'annotations-processor'
 include 'server'
 include 'common'
 include 'core'
-include 'client'
-include 'client-spring'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
@@ -56,7 +54,6 @@ include 'http-task'
 include 'rest'
 include 'grpc'
 include 'grpc-server'
-include 'grpc-client'
 
 include 'java-sdk'
 

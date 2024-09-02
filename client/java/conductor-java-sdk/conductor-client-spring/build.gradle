@@ -1,0 +1,76 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'maven-publish'
+    id 'signing'
+}
+
+compileJava {
+    sourceCompatibility = 17
+    targetCompatibility = 17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api project(":conductor-client")
+    api project(":sdk")
+
+    implementation 'org.springframework.boot:spring-boot-starter:3.3.0'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Conductor OSS Client Spring'
+                description = 'Spring autoconfig for Conductor Client and SDK'
+                url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                scm {
+                    connection = 'scm:git:git://github.com/conductor-oss/conductor-java-sdk.git'
+                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor-java-sdk.git'
+                    url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        organization = 'Orkes'
+                        organizationUrl = 'https://orkes.io'
+                        name = 'Orkes Development Team'
+                        email = 'developers@orkes.io'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            if (project.hasProperty("mavenCentral")) {
+                println "Publishing to Sonatype Repository"
+                url = "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/"}"
+                credentials {
+                    username project.properties.username
+                    password project.properties.password
+                }
+            } else {
+                url = "s3://orkes-artifacts-repo/${project.version.endsWith('-SNAPSHOT') ? "snapshots" : "releases"}"
+                authentication {
+                    awsIm(AwsImAuthentication)
+                }
+            }
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
