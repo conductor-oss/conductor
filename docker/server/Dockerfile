@@ -25,6 +25,7 @@ RUN ls -ltr
 # 1. Builder stage 2
 # ===========================================================================================================
 FROM alpine:3.20 AS ui-builder
+ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
@@ -36,7 +37,7 @@ WORKDIR /conductor/ui
 
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
-RUN yarn install && cp -r node_modules/monaco-editor public/ && yarn build
+RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
 RUN ls -ltr
 RUN echo "Done building UI"
 
