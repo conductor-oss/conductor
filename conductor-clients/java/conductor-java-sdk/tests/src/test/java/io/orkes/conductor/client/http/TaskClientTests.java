@@ -198,31 +198,10 @@ public class TaskClientTests {
 
     @Test
     public void testUnsupportedMethods() {
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.ack("taskName", "workerId"));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.removeTaskFromQueue("taskName", "taskId"));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.getPollData("taskName"));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.getAllPollData());
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.requeueAllPendingTasks());
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.search("freeText"));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> taskClient.searchV2("freeText"));
-
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
+        // Not supported by Orkes Conductor Server
+        var ex = Assertions.assertThrows(ConductorClientException.class,
                 () -> taskClient.searchV2(4, 20, "sort", "freeText", "query"));
+        Assertions.assertEquals(404, ex.getStatus());
     }
 
     private static class TaskOutput {

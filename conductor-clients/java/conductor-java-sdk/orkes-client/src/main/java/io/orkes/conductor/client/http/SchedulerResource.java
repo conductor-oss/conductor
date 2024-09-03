@@ -22,7 +22,6 @@ import com.netflix.conductor.client.http.ConductorClientResponse;
 
 import io.orkes.conductor.client.model.SaveScheduleRequest;
 import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecution;
-import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecutionModel;
 import io.orkes.conductor.client.model.TagObject;
 import io.orkes.conductor.client.model.WorkflowSchedule;
 
@@ -156,25 +155,6 @@ public class SchedulerResource {
                 .build();
 
         client.execute(request);
-    }
-
-    //FIXME Why do we even have search and searchV22?
-    public SearchResultWorkflowScheduleExecutionModel searchV22(
-            Integer start, Integer size, String sort, String freeText, String query) {
-        ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(Method.GET)
-                .path("/scheduler/search/executions")
-                .addQueryParam("start", start)
-                .addQueryParam("size", size)
-                .addQueryParam("sort", sort)
-                .addQueryParam("freeText", freeText)
-                .addQueryParam("query", query)
-                .build();
-
-        ConductorClientResponse<SearchResultWorkflowScheduleExecutionModel> resp = client.execute(request, new TypeReference<>() {
-        });
-
-        return resp.getData();
     }
 
     public SearchResultWorkflowScheduleExecution search(

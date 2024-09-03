@@ -26,7 +26,6 @@ import com.netflix.conductor.client.http.ConductorClientRequest;
 import com.netflix.conductor.client.http.ConductorClientResponse;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -200,35 +199,6 @@ public class OrkesTaskClient {
 
     public SearchResult<Task> searchV2(Integer start, Integer size, String sort, String freeText, String query) {
         return taskClient.searchV2(start, size, sort, freeText, query);
-    }
-
-    //FIXME Why would we want to keep these?
-    public Boolean ack(String taskId, String workerId) {
-        throw new UnsupportedOperationException("ack is no longer required");
-    }
-
-    public void removeTaskFromQueue(String taskType, String taskId) {
-        throw new UnsupportedOperationException("remove task from queue is no longer supported");
-    }
-
-    public List<PollData> getPollData(String taskType) {
-        throw new UnsupportedOperationException("get poll data is no longer supported");
-    }
-
-    public List<PollData> getAllPollData() {
-        throw new UnsupportedOperationException("get poll data is no longer supported");
-    }
-
-    public String requeueAllPendingTasks() {
-        throw new UnsupportedOperationException("requeue all pending task is no longer supported");
-    }
-
-    public SearchResult<TaskSummary> search(String query) {
-        throw new UnsupportedOperationException("search operation on tasks is not supported");
-    }
-
-    public SearchResult<Task> searchV2(String query) {
-        throw new UnsupportedOperationException("search operation on tasks is not supported");
     }
 
 }

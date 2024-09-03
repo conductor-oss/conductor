@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.client.http
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.netflix.conductor.client.exception.ConductorClientException
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import spock.lang.Subject
 
 import static ConductorClientRequest.builder
@@ -88,17 +90,18 @@ class MetadataClientSpec extends ClientSpecification {
             ex.message == "Name cannot be blank"
     }
 
-    //FIXME getAllWorkflowsWithLatestVersions method is missing in MetadataClient
-//    def "workflow get all definitions latest version"() {
-//        given:
-//            List<WorkflowDef> result = new ArrayList<WorkflowDef>()
-//
-//        when:
-//            metadataClient.getAllWorkflowsWithLatestVersions()
-//
-//        then:
-//            1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-//                getEntity(_) >> result
-//            }
-//    }
+    def "workflow get all definitions latest version"() {
+        given:
+            List<WorkflowDef> result = new ArrayList<WorkflowDef>()
+
+        when:
+           def ret = metadataClient.getAllWorkflowsWithLatestVersions()
+
+        then:
+            1 * apiClient.execute(builder()
+                    .method(ConductorClientRequest.Method.GET)
+                    .path('metadata/workflow/latest-versions')
+                    .build(), _) >> new ConductorClientResponse(200, [:], result)
+            ret == result
+    }
 }

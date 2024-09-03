@@ -54,7 +54,6 @@ public class SecretResource {
 
     }
 
-    //TODO why SET?
     public Set<String> listAllSecretNames() {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.GET)

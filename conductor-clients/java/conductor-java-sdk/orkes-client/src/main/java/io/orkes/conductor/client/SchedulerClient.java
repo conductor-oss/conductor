@@ -16,7 +16,6 @@ import java.util.List;
 
 import io.orkes.conductor.client.model.SaveScheduleRequest;
 import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecution;
-import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecutionModel;
 import io.orkes.conductor.client.model.TagObject;
 import io.orkes.conductor.client.model.WorkflowSchedule;
 
@@ -25,8 +24,7 @@ public interface SchedulerClient {
 
     List<WorkflowSchedule> getAllSchedules(String workflowName);
 
-    List<Long> getNextFewSchedules(
-            String cronExpression, Long scheduleStartTime, Long scheduleEndTime, Integer limit);
+    List<Long> getNextFewSchedules(String cronExpression, Long scheduleStartTime, Long scheduleEndTime, Integer limit);
 
     WorkflowSchedule getSchedule(String name);
 
@@ -42,8 +40,6 @@ public interface SchedulerClient {
 
     void saveSchedule(SaveScheduleRequest saveScheduleRequest);
 
-    @Deprecated
-    SearchResultWorkflowScheduleExecutionModel searchV22(Integer start, Integer size, String sort, String freeText, String query);
     SearchResultWorkflowScheduleExecution search(Integer start, Integer size, String sort, String freeText, String query);
 
     void setSchedulerTags(List<TagObject> body, String name);

@@ -180,19 +180,6 @@ public class WorkflowClientTests {
     }
 
     @Test
-    void testUnsupportedMethods() {
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> workflowClient.resetCallbacksForInProgressTasks(""));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> workflowClient.searchV2(""));
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> workflowClient.searchV2(0, 0, "", "", ""));
-    }
-
-    @Test
     void testExecuteWorkflow() {
         // TODO
     }

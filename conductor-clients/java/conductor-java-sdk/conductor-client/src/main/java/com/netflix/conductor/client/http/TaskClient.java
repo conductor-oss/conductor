@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
+import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -68,7 +69,7 @@ public final class TaskClient {
         Validate.notBlank(workerId, "Worker id cannot be blank");
 
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/poll/{taskType}")
                 .addPathParam("taskType", taskType)
                 .addQueryParam("workerid", workerId)
@@ -134,7 +135,7 @@ public final class TaskClient {
     public void updateTask(TaskResult taskResult) {
         Validate.notNull(taskResult, "Task result cannot be null");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
+                .method(Method.POST)
                 .path("/tasks")
                 .body(taskResult)
                 .build();
@@ -142,8 +143,7 @@ public final class TaskClient {
         client.execute(request);
     }
 
-    //TODO FIXME OSS MISMATCH
-    //implement evaluateAndUploadLargePayload - Upload to external storage
+    //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
     public Optional<String> evaluateAndUploadLargePayload(Map<String, Object> taskOutputData, String taskType) {
         throw new UnsupportedOperationException("No external storage support YET");
     }
@@ -159,7 +159,7 @@ public final class TaskClient {
     public Boolean ack(String taskId, String workerId) {
         Validate.notBlank(taskId, "Task id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
+                .method(Method.POST)
                 .path("tasks/{taskId}/ack")
                 .addPathParam("taskId", taskId)
                 .addQueryParam("workerid", workerId)
@@ -180,7 +180,7 @@ public final class TaskClient {
     public void logMessageForTask(String taskId, String logMessage) {
         Validate.notBlank(taskId, "Task id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
+                .method(Method.POST)
                 .path("/tasks/{taskId}/log")
                 .addPathParam("taskId", taskId)
                 .body(logMessage)
@@ -197,7 +197,7 @@ public final class TaskClient {
     public List<TaskExecLog> getTaskLogs(String taskId){
         Validate.notBlank(taskId, "Task id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/{taskId}/log")
                 .addPathParam("taskId", taskId)
                 .build();
@@ -217,7 +217,7 @@ public final class TaskClient {
     public Task getTaskDetails(String taskId) {
         Validate.notBlank(taskId, "Task id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/{taskId}")
                 .addPathParam("taskId", taskId)
                 .build();
@@ -238,7 +238,7 @@ public final class TaskClient {
         Validate.notBlank(taskType, "Task type cannot be blank");
         Validate.notBlank(taskId, "Task id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("tasks/queue/{taskType}/{taskId}")
                 .addPathParam("taskType", taskType)
                 .addPathParam("taskId", taskId)
@@ -254,7 +254,7 @@ public final class TaskClient {
     public int getQueueSizeForTask(String taskType, String domain, String isolationGroupId, String executionNamespace) {
         Validate.notBlank(taskType, "Task type cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/queue/size")  //FIXME Not supported by Orkes Conductor. Orkes Conductor only has "/tasks/queue/sizes"
                 .addQueryParam("taskType", taskType)
                 .addQueryParam("domain", domain)
@@ -275,8 +275,16 @@ public final class TaskClient {
      * @return returns the list of poll data for the task type
      */
     public List<PollData> getPollData(String taskType) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("get poll data is no longer supported");
+        Validate.notBlank(taskType, "Task type cannot be blank");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("/tasks/queue/polldata")
+                .addQueryParam("taskType", taskType)
+                .build();
+        ConductorClientResponse<List<PollData>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     /**
@@ -285,8 +293,14 @@ public final class TaskClient {
      * @return returns a list of poll data for all task types
      */
     public List<PollData> getAllPollData() {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("get poll data is no longer supported");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("/tasks/queue/polldata")
+                .build();
+        ConductorClientResponse<List<PollData>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     /**
@@ -295,11 +309,17 @@ public final class TaskClient {
      * @return returns the number of tasks that have been requeued
      */
     public String requeueAllPendingTasks() {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("requeue all pending task is no longer supported");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/tasks/queue/requeue")
+                .build();
+
+        ConductorClientResponse<String> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
-    //FIXME but why does it returs a String?!
     /**
      * Requeue pending tasks of a specific task type
      *
@@ -308,7 +328,7 @@ public final class TaskClient {
     public String requeuePendingTasksByTaskType(String taskType) {
         Validate.notBlank(taskType, "Task type cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
+                .method(Method.POST)
                 .path("/tasks/queue/requeue/{taskType}")
                 .addPathParam("taskType", taskType)
                 .build();
@@ -326,8 +346,16 @@ public final class TaskClient {
      *     query
      */
     public SearchResult<TaskSummary> search(String query) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("search operation on tasks is not supported");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("/tasks/search")
+                .addQueryParam("query", query)
+                .build();
+
+        ConductorClientResponse<SearchResult<TaskSummary>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     /**
@@ -337,8 +365,16 @@ public final class TaskClient {
      * @return returns the {@link SearchResult} containing the {@link Task} matching the query
      */
     public SearchResult<Task> searchV2(String query) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("search operation on tasks is not supported");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("tasks/search-v2")
+                .addQueryParam("query", query)
+                .build();
+
+        ConductorClientResponse<SearchResult<Task>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     /**
@@ -353,7 +389,7 @@ public final class TaskClient {
      */
     public SearchResult<TaskSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/search")
                 .addQueryParam("start", start)
                 .addQueryParam("size", size)
@@ -379,11 +415,23 @@ public final class TaskClient {
      * @return the {@link SearchResult} containing the {@link Task} that match the query
      */
     public SearchResult<Task> searchV2(Integer start, Integer size, String sort, String freeText, String query) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("search operation on tasks is not supported");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("tasks/search-v2")
+                .addQueryParam("start", start)
+                .addQueryParam("size", size)
+                .addQueryParam("sort", sort)
+                .addQueryParam("freeText", freeText)
+                .addQueryParam("query", query)
+                .build();
+
+        ConductorClientResponse<SearchResult<Task>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
-    //TODO FIXME OSS MISMATCH
+    //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
     //implement populateTaskPayloads - Download from external Storage and set input and output of task
     private void populateTaskPayloads(Task task) {
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())
@@ -394,7 +442,7 @@ public final class TaskClient {
 
     private List<Task> batchPoll(String taskType, String workerid, String domain, Integer count, Integer timeout) {
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/tasks/poll/batch/{taskType}")
                 .addPathParam("taskType", taskType)
                 .addQueryParam("workerid", workerid)

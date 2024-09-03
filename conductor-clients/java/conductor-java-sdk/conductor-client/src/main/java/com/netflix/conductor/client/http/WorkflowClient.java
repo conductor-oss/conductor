@@ -17,6 +17,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
+import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -29,7 +30,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import static com.netflix.conductor.client.http.ConductorClientRequest.Method.POST;
 
 public final class WorkflowClient {
 
@@ -71,7 +71,7 @@ public final class WorkflowClient {
                 "External Storage Path must not be set");
 
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(POST)
+                .method(Method.POST)
                 .path("/workflow")
                 .body(startWorkflowRequest)
                 .build();
@@ -92,7 +92,7 @@ public final class WorkflowClient {
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/workflow/{workflowId}")
                 .addPathParam("workflowId", workflowId)
                 .addQueryParam("includeTasks", includeTasks)
@@ -120,7 +120,7 @@ public final class WorkflowClient {
         Validate.notBlank(correlationId, "correlationId cannot be blank");
 
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/workflow/{name}/correlated/{correlationId}")
                 .addPathParam("name", name)
                 .addPathParam("correlationId", correlationId)
@@ -145,7 +145,7 @@ public final class WorkflowClient {
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
         Validate.notBlank(workflowId, "Workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.DELETE)
+                .method(Method.DELETE)
                 .path("/workflow/{workflowId}/remove")
                 .addPathParam("workflowId", workflowId)
                 .addQueryParam("archiveWorkflow", archiveWorkflow)
@@ -165,7 +165,7 @@ public final class WorkflowClient {
         Validate.isTrue(!workflowIds.isEmpty(), "workflow id cannot be blank");
 
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
+                .method(Method.POST)
                 .path("/workflow/bulk/terminate")
                 .addQueryParam("reason", reason)
                 .body(workflowIds)
@@ -213,7 +213,7 @@ public final class WorkflowClient {
     public void runDecider(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.PUT)
+                .method(Method.PUT)
                 .path("/workflow/decide/{workflowId}")
                 .addPathParam("workflowId", workflowId)
                 .build();
@@ -229,7 +229,7 @@ public final class WorkflowClient {
     public void pauseWorkflow(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.PUT)
+                .method(Method.PUT)
                 .path("/workflow/{workflowId}/pause")
                 .addPathParam("workflowId", workflowId)
                 .build();
@@ -245,7 +245,7 @@ public final class WorkflowClient {
     public void resumeWorkflow(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.PUT)
+                .method(Method.PUT)
                 .path("/workflow/{workflowId}/resume")
                 .addPathParam("workflowId", workflowId)
                 .build();
@@ -266,7 +266,7 @@ public final class WorkflowClient {
         //FIXME skipTaskRequest content is always empty
         SkipTaskRequest skipTaskRequest = new SkipTaskRequest();
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.PUT)
+                .method(Method.PUT)
                 .path("/workflow/{workflowId}/skiptask/{taskReferenceName}")
                 .addPathParam("workflowId", workflowId)
                 .addPathParam("taskReferenceName", taskReferenceName)
@@ -287,7 +287,7 @@ public final class WorkflowClient {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         Validate.notNull(rerunWorkflowRequest, "RerunWorkflowRequest cannot be null");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(POST)
+                .method(Method.POST)
                 .path("/workflow/{workflowId}/rerun")
                 .addPathParam("workflowId", workflowId)
                 .body(rerunWorkflowRequest)
@@ -310,7 +310,7 @@ public final class WorkflowClient {
     public void restart(String workflowId, boolean useLatestDefinitions) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(POST)
+                .method(Method.POST)
                 .path("/workflow/{workflowId}/restart")
                 .addPathParam("workflowId", workflowId)
                 .addQueryParam("useLatestDefinitions", useLatestDefinitions)
@@ -327,7 +327,7 @@ public final class WorkflowClient {
     public void retryLastFailedTask(String workflowId) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(POST)
+                .method(Method.POST)
                 .path("/workflow/{workflowId}/retry")
                 .addPathParam("workflowId", workflowId)
                 .build();
@@ -341,8 +341,13 @@ public final class WorkflowClient {
      * @param workflowId the id of the workflow
      */
     public void resetCallbacksForInProgressTasks(String workflowId) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("This call is not required");
+        Validate.notBlank(workflowId, "workflow id cannot be blank");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/workflow/{workflowId}/resetcallbacks")
+                .addPathParam("workflowId", workflowId)
+                .build();
+        client.execute(request);
     }
 
     /**
@@ -354,7 +359,7 @@ public final class WorkflowClient {
     public void terminateWorkflow(String workflowId, String reason) {
         Validate.notBlank(workflowId, "workflow id cannot be blank");
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.DELETE)
+                .method(Method.DELETE)
                 .path("/workflow/{workflowId}")
                 .addPathParam("workflowId", workflowId)
                 .addQueryParam("reason", reason)
@@ -380,8 +385,16 @@ public final class WorkflowClient {
      * @return the {@link SearchResult} containing the {@link Workflow} that match the query
      */
     public SearchResult<Workflow> searchV2(String query) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("Please use search() API");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("/workflow/search-v2")
+                .addQueryParam("query", query)
+                .build();
+
+        ConductorClientResponse<SearchResult<Workflow>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     /**
@@ -397,7 +410,7 @@ public final class WorkflowClient {
     public SearchResult<WorkflowSummary> search(
             Integer start, Integer size, String sort, String freeText, String query) {
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/workflow/search")
                 .addQueryParam("start", start)
                 .addQueryParam("size", size)
@@ -423,13 +436,25 @@ public final class WorkflowClient {
      * @return the {@link SearchResult} containing the {@link Workflow} that match the query
      */
     public SearchResult<Workflow> searchV2(Integer start, Integer size, String sort, String freeText, String query) {
-        //TODO FIXME OSS MISMATCH
-        throw new UnsupportedOperationException("Please use search() API");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("/workflow/search-v2")
+                .addQueryParam("start", start)
+                .addQueryParam("size", size)
+                .addQueryParam("sort", sort)
+                .addQueryParam("freeText", freeText)
+                .addQueryParam("query", query)
+                .build();
+
+        ConductorClientResponse<SearchResult<Workflow>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
     }
 
     public Workflow testWorkflow(WorkflowTestRequest testRequest) {
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(POST)
+                .method(Method.POST)
                 .path("/workflow/test")
                 .body(testRequest)
                 .build();
@@ -448,7 +473,7 @@ public final class WorkflowClient {
      * @param workflow the workflow for which the output is to be populated.
      */
     private void populateWorkflowOutput(Workflow workflow) {
-        //TODO FIXME OSS MISMATCH
+        //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             throw new UnsupportedOperationException("No external storage support");
         }
@@ -456,7 +481,7 @@ public final class WorkflowClient {
 
     private List<String> getRunningWorkflow(String name, Integer version, Long startTime, Long endTime) {
         ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.GET)
+                .method(Method.GET)
                 .path("/workflow/running/{name}")
                 .addPathParam("name", name)
                 .addQueryParam("version", version)

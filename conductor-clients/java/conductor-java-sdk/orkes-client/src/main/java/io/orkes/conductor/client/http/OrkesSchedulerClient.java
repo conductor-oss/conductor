@@ -19,7 +19,6 @@ import com.netflix.conductor.client.http.ConductorClient;
 import io.orkes.conductor.client.SchedulerClient;
 import io.orkes.conductor.client.model.SaveScheduleRequest;
 import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecution;
-import io.orkes.conductor.client.model.SearchResultWorkflowScheduleExecutionModel;
 import io.orkes.conductor.client.model.TagObject;
 import io.orkes.conductor.client.model.WorkflowSchedule;
 
@@ -83,15 +82,6 @@ public class OrkesSchedulerClient implements SchedulerClient {
     @Override
     public void saveSchedule(SaveScheduleRequest saveScheduleRequest) {
         schedulerResource.saveSchedule(saveScheduleRequest);
-    }
-
-    @Override
-    public SearchResultWorkflowScheduleExecutionModel searchV22(Integer start,
-                                                                Integer size,
-                                                                String sort,
-                                                                String freeText,
-                                                                String query) {
-        return schedulerResource.searchV22(start, size, sort, freeText, query);
     }
 
     @Override

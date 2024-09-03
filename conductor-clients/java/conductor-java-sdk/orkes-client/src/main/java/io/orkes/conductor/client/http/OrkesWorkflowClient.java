@@ -224,17 +224,4 @@ public class OrkesWorkflowClient implements AutoCloseable {
             executorService.shutdown();
         }
     }
-
-    //FIXME Why would we want to keep these?
-    public void resetCallbacksForInProgressTasks(String workflowId) {
-        throw new UnsupportedOperationException("This call is not required");
-    }
-
-    public void searchV2(String query) {
-        throw new UnsupportedOperationException("Please use search() API");
-    }
-
-    public void searchV2(Integer start, Integer size, String sort, String freeText, String query) {
-        throw new UnsupportedOperationException("Please use search() API");
-    }
 }

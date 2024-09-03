@@ -22,7 +22,6 @@ import io.orkes.conductor.sdk.examples.util.ClientUtil;
 
 import static io.orkes.conductor.sdk.examples.MetadataManagement.workflowDef;
 
-//TODO ORKES example
 /**
  * Examples for managing Workflow operations in Conductor
  *

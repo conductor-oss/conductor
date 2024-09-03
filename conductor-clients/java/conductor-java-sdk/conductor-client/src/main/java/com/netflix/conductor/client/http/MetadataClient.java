@@ -101,6 +101,18 @@ public final class MetadataClient {
         return resp.getData();
     }
 
+    public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.GET)
+                .path("metadata/workflow/latest-versions")
+                .build();
+
+        ConductorClientResponse<List<WorkflowDef>> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
+    }
+
     /**
      * Removes the workflow definition of a workflow from the conductor server. It does not remove
      * associated workflows. Use with caution.

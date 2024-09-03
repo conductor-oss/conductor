@@ -270,7 +270,7 @@ public class AnnotatedWorkerTests {
 
     @Test
     @DisplayName("it should honor the polling interval from annotations and config")
-    void pollingIntervalTest() throws NoSuchMethodException {
+    void pollingIntervalTest() {
         var config = new TestWorkerConfig();
 
         var worker = new MultipleInputParams();
@@ -306,15 +306,14 @@ public class AnnotatedWorkerTests {
     }
 
     @Test
-    @DisplayName("it should honor the polling interval from annotations and config")
-    void threadCountTest() throws NoSuchMethodException {
+    @DisplayName("thread count test")
+    void threadCountTest()  {
         var config = new TestWorkerConfig();
 
         var worker = new MultipleInputParams();
         var worker2 = new AnotherAnnotationInput();
 
-        AnnotatedWorkerExecutor annotatedWorkerExecutor =
-                new AnnotatedWorkerExecutor(mock(TaskClient.class), config);
+        AnnotatedWorkerExecutor annotatedWorkerExecutor = new AnnotatedWorkerExecutor(mock(TaskClient.class), config);
         annotatedWorkerExecutor.addBean(worker);
         annotatedWorkerExecutor.addBean(worker2);
 
