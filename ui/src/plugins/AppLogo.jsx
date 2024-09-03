@@ -1,6 +1,5 @@
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import { getBasename } from "../utils/helpers";
 import { cleanDuplicateSlash } from "./fetch";
 
 const useStyles = makeStyles((theme) => ({
