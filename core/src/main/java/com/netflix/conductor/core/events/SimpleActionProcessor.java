@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
@@ -196,9 +197,19 @@ public class SimpleActionProcessor implements ActionProcessor {
             Map<String, Object> workflowInput = parametersUtils.replace(inputParams, payload);
 
             Map<String, Object> paramsMap = new HashMap<>();
+            // extracting taskToDomain map from the event payload
+            paramsMap.put("taskToDomain", "${taskToDomain}");
             Optional.ofNullable(params.getCorrelationId())
                     .ifPresent(value -> paramsMap.put("correlationId", value));
             Map<String, Object> replaced = parametersUtils.replace(paramsMap, payload);
+
+            // if taskToDomain is absent from event handler definition, and taskDomain Map is passed
+            // as a part of payload
+            // then assign payload taskToDomain map to the new workflow instance
+            final Map<String, String> taskToDomain =
+                    params.getTaskToDomain() != null
+                            ? params.getTaskToDomain()
+                            : (Map<String, String>) replaced.get("taskToDomain");
 
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
@@ -212,7 +223,9 @@ public class SimpleActionProcessor implements ActionProcessor {
                             .orElse(params.getCorrelationId()));
             startWorkflowInput.setWorkflowInput(workflowInput);
             startWorkflowInput.setEvent(event);
-            startWorkflowInput.setTaskToDomain(params.getTaskToDomain());
+            if (!CollectionUtils.isEmpty(taskToDomain)) {
+                startWorkflowInput.setTaskToDomain(taskToDomain);
+            }
 
             String workflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
