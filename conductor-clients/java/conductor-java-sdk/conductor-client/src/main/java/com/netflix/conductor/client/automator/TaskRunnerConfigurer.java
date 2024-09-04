@@ -136,7 +136,9 @@ public class TaskRunnerConfigurer {
      */
     public void shutdown() {
         if (taskRunners != null) {
-            taskRunners.forEach(taskRunner -> taskRunner.shutdown(shutdownGracePeriodSeconds));
+            synchronized (taskRunners) {
+                taskRunners.forEach(taskRunner -> taskRunner.shutdown(shutdownGracePeriodSeconds));
+            }
         }
         scheduledExecutorService.shutdown();
     }

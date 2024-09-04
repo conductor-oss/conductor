@@ -306,8 +306,8 @@ public class AnnotatedWorkerTests {
     }
 
     @Test
-    @DisplayName("thread count test")
-    void threadCountTest()  {
+    @DisplayName("it should return the correct thread test count")
+    void threadCountTest() {
         var config = new TestWorkerConfig();
 
         var worker = new MultipleInputParams();
