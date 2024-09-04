@@ -14,8 +14,8 @@ package com.netflix.conductor.client.http
 
 import com.netflix.conductor.common.metadata.events.EventHandler
 
-import com.sun.jersey.api.client.ClientResponse
-import com.sun.jersey.api.client.WebResource
+import jakarta.ws.rs.client.Invocation
+import jakarta.ws.rs.core.Response
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -33,36 +33,47 @@ class EventClientSpec extends ClientSpecification {
         given:
         EventHandler handler = new EventHandler()
         URI uri = createURI("event")
+        Invocation.Builder builder = Mock(Invocation.Builder.class)
+        Response response = Mock(Response.class)
+
 
         when:
         eventClient.registerEventHandler(handler)
 
         then:
-        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
+        1 * requestHandler.getWebResourceBuilder(uri) >> builder
+        1 * builder.post(_) >> response
+        1 * response.getStatus() >> 200
     }
 
     def "update event handler"() {
         given:
         EventHandler handler = new EventHandler()
         URI uri = createURI("event")
+        Invocation.Builder builder = Mock(Invocation.Builder.class)
+        Response response = Mock(Response.class)
 
         when:
         eventClient.updateEventHandler(handler)
 
         then:
-        1 * requestHandler.getWebResourceBuilder(uri, handler) >> Mock(WebResource.Builder.class)
+        1 * requestHandler.getWebResourceBuilder(uri) >> builder
+        1 * builder.put(_) >> response
+        1 * response.getStatus() >> 200
     }
 
     def "unregister event handler"() {
         given:
         String eventName = "test"
         URI uri = createURI("event/$eventName")
+        Response response = Mock(Response.class)
 
         when:
         eventClient.unregisterEventHandler(eventName)
 
         then:
-        1 * requestHandler.delete(uri, null)
+        1 * requestHandler.delete(uri) >> response
+        1 * response.getStatus() >> 200
     }
 
     @Unroll
@@ -77,8 +88,8 @@ class EventClientSpec extends ClientSpecification {
 
         then:
         eventHandlers && eventHandlers.size() == 2
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> handlers
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> handlers
         }
 
         where:

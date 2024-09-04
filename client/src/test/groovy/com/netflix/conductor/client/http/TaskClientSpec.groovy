@@ -16,7 +16,7 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.SearchResult
 import com.netflix.conductor.common.run.TaskSummary
 
-import com.sun.jersey.api.client.ClientResponse
+import jakarta.ws.rs.core.Response
 import spock.lang.Subject
 
 class TaskClientSpec extends ClientSpecification {
@@ -42,8 +42,8 @@ class TaskClientSpec extends ClientSpecification {
         SearchResult<TaskSummary> searchResult = taskClient.search(query)
 
         then:
-        1 * requestHandler.get(uri) >>  Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >>  Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -64,8 +64,8 @@ class TaskClientSpec extends ClientSpecification {
         SearchResult<Task> searchResult = taskClient.searchV2('my_complex_query')
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -90,8 +90,8 @@ class TaskClientSpec extends ClientSpecification {
         SearchResult<TaskSummary> searchResult = taskClient.search(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits
@@ -116,8 +116,8 @@ class TaskClientSpec extends ClientSpecification {
         SearchResult<Task> searchResult = taskClient.searchV2(start, size, sort, freeText, query)
 
         then:
-        1 * requestHandler.get(uri) >> Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >> Mock(Response.class) {
+            readEntity(_) >> result
         }
 
         searchResult.totalHits == result.totalHits

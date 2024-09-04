@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Conductor Authors.
+ * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,27 +14,25 @@ package com.netflix.conductor.client.http;
 
 import java.net.URI;
 
-import javax.ws.rs.core.MediaType;
+import org.glassfish.jersey.client.ClientConfig;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.model.BulkResponse;
 
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.filter.ClientFilter;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class ClientRequestHandler {
     private final Client client;
 
-    public ClientRequestHandler(
-            ClientConfig config, ClientHandler handler, ClientFilter... filters) {
+    public ClientRequestHandler(ClientConfig config, ClientRequestFilter... filters) {
         ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
         // https://github.com/FasterXML/jackson-databind/issues/2683
@@ -43,40 +41,26 @@ public class ClientRequestHandler {
         }
 
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
-        config.getSingletons().add(provider);
+        config.register(provider);
 
-        if (handler == null) {
-            this.client = Client.create(config);
-        } else {
-            this.client = new Client(handler, config);
-        }
+        this.client = ClientBuilder.newClient(config);
 
-        for (ClientFilter filter : filters) {
-            this.client.addFilter(filter);
+        for (ClientRequestFilter filter : filters) {
+            this.client.register(filter);
         }
     }
 
-    public BulkResponse delete(URI uri, Object body) {
-        if (body != null) {
-            return client.resource(uri)
-                    .type(MediaType.APPLICATION_JSON_TYPE)
-                    .delete(BulkResponse.class, body);
-        } else {
-            client.resource(uri).delete();
-        }
-        return null;
+    public Response delete(URI uri) {
+        return client.target(uri).request().delete();
     }
 
-    public ClientResponse get(URI uri) {
-        return client.resource(uri)
-                .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                .get(ClientResponse.class);
+    public Response get(URI uri) {
+        return client.target(uri).request(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN).get();
     }
 
-    public WebResource.Builder getWebResourceBuilder(URI URI, Object entity) {
-        return client.resource(URI)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(entity)
+    public Invocation.Builder getWebResourceBuilder(URI uri) {
+        return client.target(uri)
+                .request(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
     }
 

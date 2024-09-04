@@ -15,7 +15,7 @@ package com.netflix.conductor.client.http
 import com.netflix.conductor.client.exception.ConductorClientException
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 
-import com.sun.jersey.api.client.ClientResponse
+import jakarta.ws.rs.core.Response
 import spock.lang.Subject
 
 class MetadataClientSpec extends ClientSpecification {
@@ -33,12 +33,14 @@ class MetadataClientSpec extends ClientSpecification {
         String workflowName = 'test'
         int version = 1
         URI uri = createURI("metadata/workflow/$workflowName/$version")
+        Response response = Mock(Response.class)
 
         when:
         metadataClient.unregisterWorkflowDef(workflowName, version)
 
         then:
-        1 * requestHandler.delete(uri, null)
+        1 * requestHandler.delete(uri) >> response
+        1 * response.getStatus() >> 200
     }
 
     def "workflow delete throws exception"() {
@@ -51,7 +53,7 @@ class MetadataClientSpec extends ClientSpecification {
         metadataClient.unregisterWorkflowDef(workflowName, version)
 
         then:
-        1 * requestHandler.delete(uri, null) >> { throw new RuntimeException(clientResponse) }
+        1 * requestHandler.delete(uri) >> { throw new RuntimeException() }
         def ex = thrown(ConductorClientException.class)
         ex.message == "Unable to invoke Conductor API with uri: $uri, runtime exception occurred"
     }
@@ -87,8 +89,8 @@ class MetadataClientSpec extends ClientSpecification {
         metadataClient.getAllWorkflowsWithLatestVersions()
 
         then:
-        1 * requestHandler.get(uri) >>  Mock(ClientResponse.class) {
-            getEntity(_) >> result
+        1 * requestHandler.get(uri) >>  Mock(Response.class) {
+            getEntity() >> result
         }
     }
 }
