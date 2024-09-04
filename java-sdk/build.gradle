@@ -6,6 +6,7 @@ dependencies {
     implementation project(':conductor-client')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:${revFasterXml}"
     implementation "com.google.guava:guava:${revGuava}"
     implementation "cglib:cglib:3.3.0"
     implementation "org.glassfish.jersey.core:jersey-client:${revJersey}"
