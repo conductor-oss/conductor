@@ -66,12 +66,12 @@ import okhttp3.internal.http.HttpMethod;
 
 public class ConductorClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConductorClient.class);
-    private final OkHttpClient okHttpClient;
-    private final String basePath;
+    protected final OkHttpClient okHttpClient;
+    protected final String basePath;
+    protected final ObjectMapper objectMapper;
     private final boolean verifyingSsl;
     private final InputStream sslCaCert;
     private final KeyManager[] keyManagers;
-    private final ObjectMapper objectMapper;
     private final List<HeaderSupplier> headerSuppliers;
 
     public static Builder builder() {
@@ -79,7 +79,7 @@ public class ConductorClient {
     }
 
     @SneakyThrows
-    private ConductorClient(Builder builder) {
+    protected ConductorClient(Builder builder) {
         builder.validateAndAssignDefaults();
         final OkHttpClient.Builder okHttpBuilder = builder.okHttpClientBuilder;
         this.objectMapper = builder.objectMapperSupplier.get();
@@ -265,7 +265,7 @@ public class ConductorClient {
         return RequestBody.create(content, MediaType.parse(contentType));
     }
 
-    private <T> T handleResponse(Response response, Type returnType) {
+    protected <T> T handleResponse(Response response, Type returnType) {
         if (!response.isSuccessful()) {
             String respBody = bodyAsString(response);
             throw new ConductorClientException(response.message(),
