@@ -25,6 +25,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -40,7 +42,7 @@ import io.orkes.conductor.client.model.WorkflowRun;
 import io.orkes.conductor.client.model.WorkflowStateUpdate;
 import io.orkes.conductor.client.model.WorkflowStatus;
 
-//TODO reset workflow?
+//TODO should this extend or not WorkflowClient?
 public class OrkesWorkflowClient implements AutoCloseable {
 
     private final WorkflowResource workflowResource;
@@ -216,6 +218,14 @@ public class OrkesWorkflowClient implements AutoCloseable {
 
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName) {
         workflowClient.skipTaskFromWorkflow(workflowId, taskReferenceName);
+    }
+
+    public SearchResult<WorkflowSummary> search(String query) {
+        return workflowClient.search(query);
+    }
+
+    public SearchResult<WorkflowSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
+        return workflowClient.search(start, size, sort, freeText, query);
     }
 
     @Override
