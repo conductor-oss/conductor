@@ -1,4 +1,4 @@
-rootProject.name = 'orkes-conductor-client'
+rootProject.name = 'conductor-java-sdk'
 include 'conductor-client'
 include 'orkes-client'
 include 'sdk'
