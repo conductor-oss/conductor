@@ -116,7 +116,7 @@ class TaskRunner {
                 threadCount,
                 pollingIntervalInMillis,
                 domain);
-        LOGGER.info("Polling errors for taskType {} will be printed at every {} occurance.", taskType, errorAt);
+        LOGGER.info("Polling errors for taskType {} will be printed at every {} occurrence.", taskType, errorAt);
     }
 
     public void pollAndExecute() {
@@ -369,12 +369,14 @@ class TaskRunner {
     }
 
     private void publish(TaskRunnerEvent event) {
+        if (listeners.get(event.getClass()) == null) {
+            return;
+        }
+
         CompletableFuture.runAsync(() -> {
             List<Consumer<? extends TaskRunnerEvent>> eventListeners = listeners.get(event.getClass());
-            if (eventListeners != null) {
-                for (Consumer<? extends TaskRunnerEvent> listener : eventListeners) {
-                    ((Consumer<TaskRunnerEvent>) listener).accept(event);
-                }
+            for (Consumer<? extends TaskRunnerEvent> listener : eventListeners) {
+                ((Consumer<TaskRunnerEvent>) listener).accept(event);
             }
         });
     }

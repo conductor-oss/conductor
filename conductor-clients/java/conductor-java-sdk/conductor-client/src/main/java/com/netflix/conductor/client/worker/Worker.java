@@ -72,6 +72,7 @@ public interface Worker {
     default String getIdentity() {
         String serverId;
         try {
+            // What if 2 workers run in the same host?
             serverId = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
             serverId = System.getenv("HOSTNAME");
