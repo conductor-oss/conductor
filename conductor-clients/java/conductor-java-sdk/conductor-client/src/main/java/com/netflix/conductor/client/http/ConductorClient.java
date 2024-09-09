@@ -287,7 +287,7 @@ public class ConductorClient {
         }
     }
 
-    private Request buildRequest(String method,
+    protected Request buildRequest(String method,
                                  String path,
                                  List<Param> pathParams,
                                  List<Param> queryParams,

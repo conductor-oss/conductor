@@ -13,15 +13,16 @@
 package io.orkes.conductor.client;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 
 import com.netflix.conductor.client.http.ConductorClient;
+import com.netflix.conductor.client.http.Param;
 
 import io.orkes.conductor.client.http.ApiCallback;
 import io.orkes.conductor.client.http.ApiException;
@@ -31,10 +32,7 @@ import io.orkes.conductor.client.http.Pair;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -58,62 +56,23 @@ public final class ApiClient extends ConductorClient {
     public Call buildCall(
             String path,
             String method,
+            List<Pair> pathParams,
             List<Pair> queryParams,
-            List<Pair> collectionQueryParams,
             Object body,
             Map<String, String> headers) {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(path).newBuilder();
-
-        if (queryParams != null) {
-            for (Pair param : queryParams) {
-                urlBuilder.addQueryParameter(param.getName(), param.getValue());
-            }
-        }
-
-        if (collectionQueryParams != null) {
-            for (Pair param : collectionQueryParams) {
-                urlBuilder.addQueryParameter(param.getName(), param.getValue());
-            }
-        }
-
-        RequestBody requestBody = null;
-        if (body != null) {
-            if (body instanceof String) {
-                requestBody = RequestBody.create((String) body, MediaType.parse("application/json; charset=utf-8"));
-            } else {
-                // Handle other body types (e.g., JSON objects) as needed
-                requestBody = RequestBody.create(body.toString(), MediaType.parse("application/json; charset=utf-8"));
-            }
-        }
-
-        Request.Builder requestBuilder = new Request.Builder()
-                .url(urlBuilder.build())
-                .method(method, requestBody);
-
-        if (headers != null) {
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                requestBuilder.addHeader(header.getKey(), header.getValue());
-            }
-        }
-
-        Request request = requestBuilder.build();
-
+        Request request = buildRequest(method, path, toParamList(pathParams), toParamList(queryParams), headers, body);
         return okHttpClient.newCall(request);
     }
 
-    /**
-     * Escape the given string to be used as URL query value.
-     *
-     * @param str String to be escaped
-     * @return Escaped string
-     */
-    @Deprecated
-    public String escapeString(String str) {
-        try {
-            return URLEncoder.encode(str, "utf8").replaceAll("\\+", "%20");
-        } catch (UnsupportedEncodingException e) {
-            return str;
+    private List<Param> toParamList(List<Pair> pairList) {
+        List<Param> params = new ArrayList<>();
+        if (pairList != null) {
+            params.addAll(pairList.stream()
+                    .map(it -> new Param(it.getName(), it.getValue()))
+                    .collect(Collectors.toList()));
         }
+
+        return params;
     }
 
     /**
@@ -169,10 +128,10 @@ public final class ApiClient extends ConductorClient {
      * Execute HTTP call and deserialize the HTTP response body into the given return type.
      *
      * @param returnType The return type used to deserialize HTTP response body
-     * @param <T> The return type corresponding to (same with) returnType
-     * @param call Call
+     * @param <T>        The return type corresponding to (same with) returnType
+     * @param call       Call
      * @return ApiResponse object containing response status, headers and data, which is a Java
-     *     object deserialized from response body and would be null when returnType is null.
+     * object deserialized from response body and would be null when returnType is null.
      * @throws ApiException If fail to execute the call
      */
     @Deprecated

@@ -17,13 +17,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
-import com.netflix.conductor.client.http.ConductorClient;
-
+import io.orkes.conductor.client.ApiClient;
 import io.orkes.conductor.client.AuthorizationClient;
 import io.orkes.conductor.client.OrkesClients;
 import io.orkes.conductor.client.SchedulerClient;
 import io.orkes.conductor.client.SecretClient;
-import io.orkes.conductor.client.http.OrkesAuthentication;
 import io.orkes.conductor.client.http.OrkesEventClient;
 import io.orkes.conductor.client.http.OrkesMetadataClient;
 import io.orkes.conductor.client.http.OrkesTaskClient;
@@ -35,25 +33,36 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrkesConductorClientAutoConfiguration {
 
+    public static final String CONDUCTOR_SERVER_URL ="conductor.server.url";
+    public static final String CONDUCTOR_SECURITY_CLIENT_KEY_ID ="conductor.security.client.key-id";
+    public static final String CONDUCTOR_SECURITY_CLIENT_SECRET ="conductor.security.client.secret";
     //TODO add more properties e.g.: ssl off, timeout settings, etc. and these should be client properties!!!
-    public static final String CONDUCTOR_SERVER_URL = "conductor.client.basepath";
+    public static final String CONDUCTOR_CLIENT_BASE_PATH = "conductor.client.basepath";
     public static final String CONDUCTOR_CLIENT_KEY_ID = "conductor.client.key-id";
     public static final String CONDUCTOR_CLIENT_SECRET = "conductor.client.secret";
 
     @Bean
-    public ConductorClient orkesConductorClient(Environment env) {
-        String basePath = env.getProperty(CONDUCTOR_SERVER_URL);
-        String keyId = env.getProperty(CONDUCTOR_CLIENT_KEY_ID);
-        String secret = env.getProperty(CONDUCTOR_CLIENT_SECRET);
+    public ApiClient orkesConductorClient(Environment env) {
+        String basePath = env.getProperty(CONDUCTOR_CLIENT_BASE_PATH);
+        if (basePath == null) {
+            basePath = env.getProperty(CONDUCTOR_SERVER_URL);
+        }
 
-        return ConductorClient.builder()
-                .basePath(basePath)
-                .addHeaderSupplier(new OrkesAuthentication(keyId, secret))
-                .build();
+        String keyId = env.getProperty(CONDUCTOR_CLIENT_KEY_ID);
+        if (keyId == null) {
+            keyId = env.getProperty(CONDUCTOR_SECURITY_CLIENT_KEY_ID);
+        }
+
+        String secret = env.getProperty(CONDUCTOR_CLIENT_SECRET);
+        if (secret == null) {
+            secret = env.getProperty(CONDUCTOR_SECURITY_CLIENT_SECRET);
+        }
+
+        return new ApiClient(basePath, keyId, secret);
     }
 
     @Bean
-    public OrkesClients orkesClients(ConductorClient client) {
+    public OrkesClients orkesClients(ApiClient client) {
         return new OrkesClients(client);
     }
 
