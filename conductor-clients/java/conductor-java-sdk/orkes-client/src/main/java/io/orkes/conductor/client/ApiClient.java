@@ -17,6 +17,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +33,7 @@ import io.orkes.conductor.client.http.Pair;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -45,6 +47,13 @@ public final class ApiClient extends ConductorClient {
     public ApiClient(String rootUri, String keyId, String secret) {
         super(ConductorClient.builder()
                 .basePath(rootUri)
+                .addHeaderSupplier(new OrkesAuthentication(keyId, secret)));
+    }
+
+    public ApiClient(String rootUri, String keyId, String secret, Consumer<OkHttpClient.Builder> configurer) {
+        super(ConductorClient.builder()
+                .basePath(rootUri)
+                .configureOkHttp(configurer)
                 .addHeaderSupplier(new OrkesAuthentication(keyId, secret)));
     }
 

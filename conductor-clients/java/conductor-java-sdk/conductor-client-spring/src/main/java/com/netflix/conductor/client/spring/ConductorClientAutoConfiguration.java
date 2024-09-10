@@ -12,12 +12,15 @@
  */
 package com.netflix.conductor.client.spring;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.ConductorClient;
@@ -27,8 +30,11 @@ import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
 import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ClientProperties.class)
+@Slf4j
 public class ConductorClientAutoConfiguration {
 
     @ConditionalOnMissingBean
@@ -54,17 +60,31 @@ public class ConductorClientAutoConfiguration {
 
     @ConditionalOnMissingBean
     @Bean(initMethod = "init", destroyMethod = "shutdown")
-    public TaskRunnerConfigurer taskRunnerConfigurer(TaskClient taskClient,
+    public TaskRunnerConfigurer taskRunnerConfigurer(Environment env,
+                                                     TaskClient taskClient,
                                                      ClientProperties clientProperties,
                                                      List<Worker> workers) {
-            return new TaskRunnerConfigurer.Builder(taskClient, workers)
-                    .withTaskThreadCount(clientProperties.getTaskThreadCount())
-                    .withThreadCount(clientProperties.getThreadCount())
-                    .withSleepWhenRetry((int) clientProperties.getSleepWhenRetryDuration().toMillis())
-                    .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
-                    .withTaskToDomain(clientProperties.getTaskToDomain())
-                    .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())
-                    .build();
+        Map<String, Integer> taskThreadCount = new HashMap<>();
+        for (Worker worker : workers) {
+            String key = "conductor.worker." + worker.getTaskDefName() + ".threadCount";
+            int threadCount = env.getProperty(key, Integer.class, 10);
+            log.info("Using {} threads for {} worker", threadCount, worker.getTaskDefName());
+            taskThreadCount.put(worker.getTaskDefName(), threadCount);
+        }
+
+        if (clientProperties.getTaskThreadCount() != null) {
+            clientProperties.getTaskThreadCount().putAll(taskThreadCount);
+        } else {
+            clientProperties.setTaskThreadCount(taskThreadCount);
+        }
+        return new TaskRunnerConfigurer.Builder(taskClient, workers)
+                .withTaskThreadCount(clientProperties.getTaskThreadCount())
+                .withThreadCount(clientProperties.getThreadCount())
+                .withSleepWhenRetry((int) clientProperties.getSleepWhenRetryDuration().toMillis())
+                .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
+                .withTaskToDomain(clientProperties.getTaskToDomain())
+                .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())
+                .build();
     }
 
     @Bean

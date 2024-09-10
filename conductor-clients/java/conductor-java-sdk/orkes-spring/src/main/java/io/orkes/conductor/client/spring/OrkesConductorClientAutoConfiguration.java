@@ -13,6 +13,7 @@
 package io.orkes.conductor.client.spring;
 
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -42,6 +43,7 @@ public class OrkesConductorClientAutoConfiguration {
     public static final String CONDUCTOR_CLIENT_SECRET = "conductor.client.secret";
 
     @Bean
+    @ConditionalOnMissingBean
     public ApiClient orkesConductorClient(Environment env) {
         String basePath = env.getProperty(CONDUCTOR_CLIENT_BASE_PATH);
         if (basePath == null) {
