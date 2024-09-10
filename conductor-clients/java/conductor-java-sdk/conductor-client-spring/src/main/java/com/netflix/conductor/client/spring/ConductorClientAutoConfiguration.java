@@ -77,6 +77,7 @@ public class ConductorClientAutoConfiguration {
         } else {
             clientProperties.setTaskThreadCount(taskThreadCount);
         }
+
         return new TaskRunnerConfigurer.Builder(taskClient, workers)
                 .withTaskThreadCount(clientProperties.getTaskThreadCount())
                 .withThreadCount(clientProperties.getThreadCount())
@@ -84,6 +85,7 @@ public class ConductorClientAutoConfiguration {
                 .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
                 .withTaskToDomain(clientProperties.getTaskToDomain())
                 .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())
+                .withTaskPollTimeout(clientProperties.getTaskPollTimeout())
                 .build();
     }
 

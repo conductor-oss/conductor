@@ -37,6 +37,8 @@ public class ClientProperties {
 
     private int shutdownGracePeriodSeconds = 10;
 
+    private int taskPollTimeout = 100;
+
     public String getRootUri() {
         return rootUri;
     }
@@ -99,5 +101,13 @@ public class ClientProperties {
 
     public void setTaskThreadCount(Map<String, Integer> taskThreadCount) {
         this.taskThreadCount = taskThreadCount;
+    }
+
+    public int getTaskPollTimeout() {
+        return taskPollTimeout;
+    }
+
+    public void setTaskPollTimeout(int taskPollTimeout) {
+        this.taskPollTimeout = taskPollTimeout;
     }
 }
