@@ -58,7 +58,7 @@ public class OrkesAuthentication implements HeaderSupplier {
         this.keyId = keyId;
         this.keySecret = keySecret;
         this.tokenRefreshInSeconds = getTokenRefreshInSeconds(tokenRefreshInSeconds);
-        this.tokenCache = CacheBuilder.newBuilder().expireAfterWrite(tokenRefreshInSeconds, TimeUnit.SECONDS).build();
+        this.tokenCache = CacheBuilder.newBuilder().expireAfterWrite(this.tokenRefreshInSeconds, TimeUnit.SECONDS).build();
         LOGGER.info("Setting token refresh interval to {} seconds", this.tokenRefreshInSeconds);
     }
 
