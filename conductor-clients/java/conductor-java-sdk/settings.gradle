@@ -1,0 +1,9 @@
+rootProject.name = 'conductor-java-sdk'
+include 'conductor-client'
+include 'orkes-client'
+include 'sdk'
+include 'examples'
+include 'tests'
+include 'orkes-spring'
+include 'conductor-client-spring'
+

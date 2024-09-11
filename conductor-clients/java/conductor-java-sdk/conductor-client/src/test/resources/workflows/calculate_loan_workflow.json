@@ -1,0 +1,41 @@
+{
+  "name": "test_workflow",
+  "description": "Edit or extend this sample workflow. Set the workflow name to get started",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fetch_user_details",
+      "taskReferenceName": "fetch_user_details",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "userEmail": "${workflow.input.userEmail}"
+      }
+    },
+    {
+      "name": "get_credit_score",
+      "taskReferenceName": "get_credit_score",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "userAccountNumber": "${fetch_user_details.output.userAccount}"
+      }
+    },
+    {
+      "name": "calculate_loan_amount",
+      "taskReferenceName": "calculate_loan_amount",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "creditRating": "${get_credit_score.output.creditRating}",
+        "loanAmount": "${workflow.input.loanAmount}"
+      }
+    }
+  ],
+  "inputParameters": [
+    "userEmail"
+  ],
+  "outputParameters": {
+    "accountNumber": "${fetch_user_details.output.userAccount}",
+    "creditRating": "${get_credit_score.output.creditRating}",
+    "authorizedLoanAmount": "${calculate_loan_amount.output.authorizedLoanAmount}"
+  },
+  "schemaVersion": 2
+}
