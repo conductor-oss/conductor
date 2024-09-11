@@ -40,4 +40,5 @@ dependencies {
     testImplementation "org.junit.vintage:junit-vintage-engine"
     testImplementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
     testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
 }
