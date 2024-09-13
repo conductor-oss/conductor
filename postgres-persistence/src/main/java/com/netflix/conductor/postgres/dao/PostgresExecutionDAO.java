@@ -903,7 +903,8 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
         String INSERT_EVENT_EXECUTION =
                 "INSERT INTO event_execution (event_handler_name, event_name, message_id, execution_id, json_data) "
-                        + "VALUES (?, ?, ?, ?, ?)";
+                        + "VALUES (?, ?, ?, ?, ?) "
+                        + "ON CONFLICT DO NOTHING";
         int count =
                 query(
                         connection,
