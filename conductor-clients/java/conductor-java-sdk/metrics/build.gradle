@@ -1,0 +1,90 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'maven-publish'
+    id 'signing'
+}
+
+dependencies {
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
+    implementation project(":conductor-client")
+
+    testImplementation 'org.mockito:mockito-core:5.4.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Orkes Conductor Metrics module'
+                description = 'OSS & Orkes Conductor Metrics'
+                url = 'https://github.com/conductor-oss/conductor.git'
+                scm {
+                    connection = 'scm:git:git://github.com/conductor-oss/conductor.git'
+                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor.git'
+                    url = 'https://github.com/conductor-oss/conductor.git'
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        organization = 'Orkes'
+                        organizationUrl = 'https://orkes.io'
+                        name = 'Orkes Development Team'
+                        email = 'developers@orkes.io'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            if (project.hasProperty("mavenCentral")) {
+                println "Publishing to Sonatype Repository"
+                url = "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? "content/repositories/snapshots/" : "service/local/staging/deploy/maven2/"}"
+                credentials {
+                    username project.properties.username
+                    password project.properties.password
+                }
+            } else {
+                url = "s3://orkes-artifacts-repo/${project.version.endsWith('-SNAPSHOT') ? "snapshots" : "releases"}"
+                authentication {
+                    awsIm(AwsImAuthentication)
+                }
+            }
+        }
+    }
+}
+
+signing {
+    def signingKeyId = findProperty('signingKeyId')
+    if (signingKeyId) {
+        println 'Signing the artifact with keys'
+        signing {
+            def signingKey = findProperty('signingKey')
+            def signingPassword = findProperty('signingPassword')
+            if (signingKeyId && signingKey && signingPassword) {
+                useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            }
+
+            sign publishing.publications
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

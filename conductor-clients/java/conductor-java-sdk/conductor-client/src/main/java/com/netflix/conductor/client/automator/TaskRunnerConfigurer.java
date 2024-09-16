@@ -24,10 +24,17 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.conductor.client.automator.events.PollCompleted;
+import com.netflix.conductor.client.automator.events.PollFailure;
+import com.netflix.conductor.client.automator.events.PollStarted;
+import com.netflix.conductor.client.automator.events.TaskExecutionCompleted;
+import com.netflix.conductor.client.automator.events.TaskExecutionFailure;
+import com.netflix.conductor.client.automator.events.TaskExecutionStarted;
 import com.netflix.conductor.client.automator.events.TaskRunnerEvent;
 import com.netflix.conductor.client.automator.filters.PollFilter;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.metrics.MetricsCollector;
 import com.netflix.conductor.client.worker.Worker;
 
 import com.google.common.base.Preconditions;
@@ -319,6 +326,28 @@ public class TaskRunnerConfigurer {
 
         public <T extends TaskRunnerEvent> Builder withListener(Class<T> eventType, Consumer<T> listener) {
             listeners.computeIfAbsent(eventType, k -> new LinkedList<>()).add(listener);
+            return this;
+        }
+
+        public Builder withMetricsCollector(MetricsCollector metricsCollector) {
+            listeners.computeIfAbsent(PollFailure.class, k -> new LinkedList<>())
+                    .add((Consumer<PollFailure>) metricsCollector::consume);
+
+            listeners.computeIfAbsent(PollCompleted.class, k -> new LinkedList<>())
+                    .add((Consumer<PollCompleted>) metricsCollector::consume);
+
+            listeners.computeIfAbsent(PollStarted.class, k -> new LinkedList<>())
+                    .add((Consumer<PollStarted>) metricsCollector::consume);
+
+            listeners.computeIfAbsent(TaskExecutionStarted.class, k -> new LinkedList<>())
+                    .add((Consumer<TaskExecutionStarted>) metricsCollector::consume);
+
+            listeners.computeIfAbsent(TaskExecutionCompleted.class, k -> new LinkedList<>())
+                    .add((Consumer<TaskExecutionCompleted>) metricsCollector::consume);
+
+            listeners.computeIfAbsent(TaskExecutionFailure.class, k -> new LinkedList<>())
+                    .add((Consumer<TaskExecutionFailure>) metricsCollector::consume);
+
             return this;
         }
     }

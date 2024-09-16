@@ -6,4 +6,4 @@ include 'examples'
 include 'tests'
 include 'orkes-spring'
 include 'conductor-client-spring'
-
+include 'metrics'
