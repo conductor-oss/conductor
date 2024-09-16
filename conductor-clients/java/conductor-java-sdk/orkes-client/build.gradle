@@ -35,11 +35,11 @@ publishing {
             pom {
                 name = 'Orkes Conductor Client'
                 description = 'OSS & Orkes Conductor client (http)'
-                url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                url = 'https://github.com/conductor-oss/conductor.git'
                 scm {
-                    connection = 'scm:git:git://github.com/conductor-oss/conductor-java-sdk.git'
-                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor-java-sdk.git'
-                    url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                    connection = 'scm:git:git://github.com/conductor-oss/conductor.git'
+                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor.git'
+                    url = 'https://github.com/conductor-oss/conductor.git'
                 }
                 licenses {
                     license {

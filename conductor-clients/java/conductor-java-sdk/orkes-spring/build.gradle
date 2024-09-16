@@ -30,11 +30,11 @@ publishing {
             pom {
                 name = 'Orkes Conductor Client/SDK Spring'
                 description = 'Spring autoconfig for Orkes Conductor Client and SDK'
-                url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                url = 'https://github.com/conductor-oss/conductor.git'
                 scm {
-                    connection = 'scm:git:git://github.com/conductor-oss/conductor-java-sdk.git'
-                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor-java-sdk.git'
-                    url = 'https://github.com/conductor-oss/conductor-java-sdk.git'
+                    connection = 'scm:git:git://github.com/conductor-oss/conductor.git'
+                    developerConnection = 'scm:git:ssh://github.com/conductor-oss/conductor.git'
+                    url = 'https://github.com/conductor-oss/conductor.git'
                 }
                 licenses {
                     license {
