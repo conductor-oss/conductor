@@ -21,7 +21,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Getter
 @ToString
-public class TaskRunnerEvent {
+public abstract class TaskRunnerEvent {
     private final Instant time = Instant.now();
     private final String taskType;
 }

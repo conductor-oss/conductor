@@ -15,6 +15,7 @@ package com.netflix.conductor.client.automator;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
@@ -369,16 +372,39 @@ class TaskRunner {
     }
 
     private void publish(TaskRunnerEvent event) {
-        if (listeners.get(event.getClass()) == null) {
+        if (noListeners(event)) {
             return;
         }
 
         CompletableFuture.runAsync(() -> {
-            List<Consumer<? extends TaskRunnerEvent>> eventListeners = listeners.get(event.getClass());
+            List<Consumer<? extends TaskRunnerEvent>> eventListeners = getEventListeners(event);
             for (Consumer<? extends TaskRunnerEvent> listener : eventListeners) {
                 ((Consumer<TaskRunnerEvent>) listener).accept(event);
             }
         });
+    }
+
+    private boolean noListeners(TaskRunnerEvent event) {
+        List<Consumer<? extends TaskRunnerEvent>> specificEventListeners = this.listeners.get(event.getClass());
+        List<Consumer<? extends TaskRunnerEvent>> promiscuousListeners = this.listeners.get(TaskRunnerEvent.class);
+
+        return (specificEventListeners == null || specificEventListeners.isEmpty())
+                && (promiscuousListeners == null || promiscuousListeners.isEmpty());
+    }
+
+    private List<Consumer<? extends TaskRunnerEvent>> getEventListeners(TaskRunnerEvent event) {
+        List<Consumer<? extends TaskRunnerEvent>> specificEventListeners = this.listeners.get(event.getClass());
+        List<Consumer<? extends TaskRunnerEvent>> promiscuousListeners = this.listeners.get(TaskRunnerEvent.class);
+        if (promiscuousListeners == null || promiscuousListeners.isEmpty()) {
+            return specificEventListeners;
+        }
+
+        if (specificEventListeners == null || specificEventListeners.isEmpty()) {
+            return promiscuousListeners;
+        }
+
+        return Stream.concat(specificEventListeners.stream(), promiscuousListeners.stream())
+                .collect(Collectors.toList());
     }
 
     private void handleException(Throwable t, TaskResult result, Worker worker, Task task) {
