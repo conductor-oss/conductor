@@ -1,6 +1,12 @@
 name: CI
 
-on: [ push, pull_request ]
+on:
+  push:
+    paths-ignore:
+      - 'conductor-clients/**'
+  pull_request:
+    paths-ignore:
+      - 'conductor-clients/**'
 
 jobs:
   build:
