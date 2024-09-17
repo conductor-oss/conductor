@@ -9,6 +9,8 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
 import { getBasename } from "./utils/helpers";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import AuthenticatedApp from "./AuthenticatedApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,16 +23,17 @@ const queryClient = new QueryClient({
 
 ReactDOM.render(
   //<React.StrictMode>
+  <GoogleOAuthProvider clientId='905736008528-ovf2gb2pq175j2o8le60lptf0taqjkf7.apps.googleusercontent.com'>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <BrowserRouter basename={getBasename()}>
         <CssBaseline />
         <ReactQueryDevtools initialIsOpen={true} />
-
-        <App />
+        <AuthenticatedApp />
       </BrowserRouter>
     </ThemeProvider>
-  </QueryClientProvider>,
+  </QueryClientProvider>
+  </GoogleOAuthProvider>,
   //</React.StrictMode>
   document.getElementById("root")
 );

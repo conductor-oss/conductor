@@ -3,7 +3,7 @@ import React from "react";
 import { Route, Switch } from "react-router-dom";
 import { makeStyles } from "@material-ui/styles";
 import { loader } from '@monaco-editor/react';
-import { Button, AppBar, Toolbar } from "@material-ui/core";
+import { Button, AppBar, Toolbar, Tooltip } from "@material-ui/core";
 import AppLogo from "./plugins/AppLogo";
 import NavLink from "./components/NavLink";
 
@@ -49,7 +49,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function App() {
+export default function App(props) {
   const classes = useStyles();
 
   return (
@@ -78,6 +78,17 @@ export default function App() {
 
           <div className={classes.toolbarRight}>
             <AppBarModules />
+            {props.profile && (
+              <Tooltip title="Logout" placement="bottom">
+                <Button onClick={props.logOut} title="Logout">
+                  <img
+                    src={props.profile.picture}
+                    style={{ width: 50, height: 50, borderRadius: 25 }}
+                    alt="user image"
+                  />
+                </Button>
+              </Tooltip>
+            )}
           </div>
         </Toolbar>
       </AppBar>
