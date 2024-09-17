@@ -1,0 +1,55 @@
+plugins {
+    id 'com.diffplug.spotless' version '6.+'
+}
+
+group = 'io.orkes.conductor'
+
+apply from: "$rootDir/versions.gradle"
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'com.diffplug.spotless'
+    group = 'io.orkes.conductor'
+
+    spotless {
+        java {
+            removeUnusedImports()
+            importOrder('java', 'javax', 'org', 'com.netflix', 'io.orkes', '', '\\#com.netflix', '\\#')
+            licenseHeaderFile("$rootDir/licenseheader.txt")
+        }
+    }
+
+    compileJava {
+        sourceCompatibility = 11
+        targetCompatibility = 11
+    }
+
+    dependencies {
+        // ### candidates to be shadowed ###
+        implementation "com.google.guava:guava:${versions.guava}"
+        // #################################
+
+        implementation "com.fasterxml.jackson.core:jackson-databind:${versions.jackson}"
+        implementation "com.fasterxml.jackson.core:jackson-core:${versions.jackson}"
+        implementation "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}"
+        implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${versions.jackson}"
+
+        implementation "org.slf4j:slf4j-api:${versions.slf4j}"
+        implementation "org.apache.commons:commons-lang3:${versions.commonsLang}"
+        annotationProcessor "org.projectlombok:lombok:${versions.lombok}"
+        compileOnly "org.projectlombok:lombok:${versions.lombok}"
+    }
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url "https://s01.oss.sonatype.org/content/repositories/releases/"
+        }
+    }
+
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+
+}
