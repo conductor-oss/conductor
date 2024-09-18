@@ -6,6 +6,10 @@ on:
     types:
       - completed
 
+# allow this workflow to update the status of the PR that triggered it
+permissions:
+  statuses: write
+
 jobs:
   integrations-tests:
     runs-on: ubuntu-latest

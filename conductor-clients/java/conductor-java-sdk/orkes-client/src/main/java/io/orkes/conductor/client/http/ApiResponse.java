@@ -19,7 +19,7 @@ import java.util.Map;
  * API response returned by API call.
  * <p>
  * This class exists to maintain backward compatibility and facilitate the migration for users
- * of orkes-conductor-client v2 to v3.
+ * of orkes-conductor-client v2.
  *
  * @param <T> The type of data that is deserialized from response body
  */

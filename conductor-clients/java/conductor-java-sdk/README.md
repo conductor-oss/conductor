@@ -1,4 +1,4 @@
-# Conductor Java Client/SDK V3
+# Conductor Java Client/SDK V4
 
 ## Overview
 
@@ -10,9 +10,9 @@ These changes are largely driven by **"dependency optimization"** and a redesign
 
 This client has a reduced dependency set. The aim is to minimize Classpath pollution and prevent potential conflicts.
 
-Take Netflix Eureka as an example, Spring Cloud users have reported version conflicts. Some of them weren't even using Eureka. So, we've decided to remove the direct dependency.
+Consider Netflix Eureka, a direct dependency of the OSS v3 client. Some users have reported version conflicts. To prevent these unnecessary conflicts and the hassle of managing exclusions in Gradle or Maven configurations, we’ve decided to remove this direct dependency.
 
-In the client it's used by the `TaskPollExecutor` before polling to make the following check:
+In OSS v3 client it's used by `TaskPollExecutor` before polling to make the following check:
 
 ```java
 if (eurekaClient != null
@@ -23,7 +23,7 @@ if (eurekaClient != null
 }
 ```
 
-You will be able to achieve the same with a `PollFilter`. It could look something like this:
+You will be able to achieve the same with a `PollFilter` (we plan to provide modules with some implementations). It could look something like this:
 
 ```java
  var runnerConfigurer = new TaskRunnerConfigurer
@@ -34,19 +34,15 @@ You will be able to achieve the same with a `PollFilter`. It could look somethin
         })
         .withListener(PollCompleted.class, (e) -> {
             log.info("Poll Completed {}", e);
-            var timer = prometheusRegistry.timer("poll_success", "type", e.getTaskType());
+            var timer = prometheusRegistry.timer("poll_completed", "type", e.getTaskType());
             timer.record(e.getDuration());
         })
-        .withListener(TaskExecutionFailure.class, (e) -> {
-            log.error("Task Execution Failure {}", e);
-            var counter = prometheusRegistry.counter("execute_failure", "type", e.getTaskType(), "id", e.getTaskId());
-            counter.increment();
-        })
         .build();
+
 runnerConfigurer.init();
 ```
 
-The telemetry part was also removed but you can achieve the same with Events and Listeners as shown in the example.
+The telemetry part was also removed but you can achieve the same with a MetricsCollector, or Events and Listeners as shown in the example.
 
 ### Breaking Changes
 
@@ -82,8 +78,13 @@ public Builder withEurekaClient(EurekaClient eurekaClient) {
 
 ## TODO
 
-- Stabilize the codebase
-- Complete documentation
-- Gather community feedback
-- Achieve production readiness
+Take a look at this board: https://github.com/orgs/conductor-oss/projects/3
+
+## Feedback
+
+We are building this based on feedback from our users and community. 
+
+We encourage everyone to share their thoughts and feedback! You can create new GitHub issues or comment on existing ones. You can also join our [Slack community](https://orkes-conductor.slack.com/) to connect with us.
+
+Thank you! ♥
 
