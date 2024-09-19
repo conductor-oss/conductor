@@ -1,0 +1,12 @@
+{
+  "properties": [
+    {
+      "name": "conductor.scylla.write-consistency-level",
+      "defaultValue": "LOCAL_QUORUM"
+    },
+    {
+      "name": "conductor.scylla.read-consistency-level",
+      "defaultValue": "LOCAL_QUORUM"
+    }
+  ]
+}
