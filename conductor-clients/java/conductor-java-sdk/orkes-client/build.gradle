@@ -7,6 +7,8 @@ plugins {
     id 'groovy'
 }
 
+group = 'io.orkes.conductor'
+
 dependencies {
     implementation project(':conductor-client')
     implementation "com.squareup.okhttp3:okhttp:${versions.okHttp}"

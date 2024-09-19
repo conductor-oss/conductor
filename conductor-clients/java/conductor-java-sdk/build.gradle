@@ -9,7 +9,7 @@ apply from: "$rootDir/versions.gradle"
 subprojects {
     apply plugin: 'java'
     apply plugin: 'com.diffplug.spotless'
-    group = 'io.orkes.conductor'
+    group = 'org.conductoross'
 
     spotless {
         java {

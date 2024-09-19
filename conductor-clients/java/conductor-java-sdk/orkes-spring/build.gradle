@@ -5,6 +5,8 @@ plugins {
     id 'signing'
 }
 
+group = 'io.orkes.conductor'
+
 compileJava {
     sourceCompatibility = 17
     targetCompatibility = 17
