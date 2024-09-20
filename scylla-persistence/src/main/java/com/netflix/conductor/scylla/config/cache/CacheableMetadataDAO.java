@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 
-import com.netflix.conductor.scylla.config.ScyllaProperties;
-import com.netflix.conductor.scylla.dao.ScyllaMetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
@@ -37,6 +35,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.scylla.config.ScyllaProperties;
+import com.netflix.conductor.scylla.dao.ScyllaMetadataDAO;
 
 import static com.netflix.conductor.scylla.config.cache.CachingConfig.TASK_DEF_CACHE;
 

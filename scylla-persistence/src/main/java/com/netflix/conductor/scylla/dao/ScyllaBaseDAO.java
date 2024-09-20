@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,20 +12,22 @@
  */
 package com.netflix.conductor.scylla.dao;
 
+import java.io.IOException;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.scylla.config.ScyllaProperties;
+
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.conductor.core.exception.NonTransientException;
-import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.scylla.config.ScyllaProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.UUID;
 
 import static com.netflix.conductor.scylla.util.Constants.*;
 
@@ -72,8 +74,7 @@ public abstract class ScyllaBaseDAO {
 
     private boolean initialized = false;
 
-    public ScyllaBaseDAO(
-            Session session, ObjectMapper objectMapper, ScyllaProperties properties) {
+    public ScyllaBaseDAO(Session session, ObjectMapper objectMapper, ScyllaProperties properties) {
         this.session = session;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -99,9 +100,9 @@ public abstract class ScyllaBaseDAO {
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
-                //Added task_in_progress
+                // Added task_in_progress
                 session.execute(getCreateTaskInProgressTableStatement());
-                //Added workflow_lookup
+                // Added workflow_lookup
                 session.execute(getCreateWorkflowLookupTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
                 session.execute(getCreateEventExecutionsTableStatement());
@@ -147,7 +148,7 @@ public abstract class ScyllaBaseDAO {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_LOOKUP)
                 .ifNotExists()
                 .addPartitionKey(TASK_ID_KEY, DataType.uuid())
-                .addColumn(SHARD_ID_KEY,DataType.cint())
+                .addColumn(SHARD_ID_KEY, DataType.cint())
                 .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
                 .getQueryString();
     }
@@ -159,7 +160,7 @@ public abstract class ScyllaBaseDAO {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_LOOKUP)
                 .ifNotExists()
                 .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
-                .addColumn(SHARD_ID_KEY,DataType.cint())
+                .addColumn(SHARD_ID_KEY, DataType.cint())
                 .getQueryString();
     }
 

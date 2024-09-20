@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,10 +14,11 @@ package com.netflix.conductor.scylla.util;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 import static com.netflix.conductor.scylla.util.Constants.*;
 
-//import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
+
+// import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 
 /**
  * DML statements
@@ -294,6 +295,7 @@ public class Statements {
                 .value(PAYLOAD_KEY, bindMarker())
                 .getQueryString();
     }
+
     /**
      * @return cql query statement to insert a new event execution into the "event_executions" table
      */
@@ -310,8 +312,8 @@ public class Statements {
     // Select Statements
 
     /**
-     * @return cql query statement to retrieve all workflows executions from the "workflows"
-     *     table by coorelationId
+     * @return cql query statement to retrieve all workflows executions from the "workflows" table
+     *     by coorelationId
      */
     public String getSelectWorkflowsByCorrelationIdStatement() {
         return QueryBuilder.select(PAYLOAD_KEY)
@@ -335,8 +337,8 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to retrieve all the tasks count from task_in_progress table
-     * per taskDefName and task_id
+     * @return cql query statement to retrieve all the tasks count from task_in_progress table per
+     *     taskDefName and task_id
      */
     public String getSelectTaskInProgressStatement() {
         return QueryBuilder.select()
@@ -348,7 +350,8 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to retrieve all the tasks count from task_in_progress table per taskDefName
+     * @return cql query statement to retrieve all the tasks count from task_in_progress table per
+     *     taskDefName
      */
     public String getSelectCountTaskInProgressPerTskDefStatement() {
         return QueryBuilder.select()
@@ -359,8 +362,8 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to update the task in task_in_progress table per taskDefName
-     * and task_id
+     * @return cql query statement to update the task in task_in_progress table per taskDefName and
+     *     task_id
      */
     public String getUpdateTaskInProgressStatement() {
         return QueryBuilder.update(keyspace, TABLE_TASK_IN_PROGRESS)
@@ -371,8 +374,8 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to delete the task in task_in_progress table per taskDefName
-     * and task_id
+     * @return cql query statement to delete the task in task_in_progress table per taskDefName and
+     *     task_id
      */
     public String getDeleteTaskInProgressStatement() {
         return QueryBuilder.delete()
@@ -412,7 +415,7 @@ public class Statements {
      *     table
      */
     public String getSelectWorkflowStatement() {
-        return QueryBuilder.select(PAYLOAD_KEY,VERSION)
+        return QueryBuilder.select(PAYLOAD_KEY, VERSION)
                 .from(keyspace, TABLE_WORKFLOWS)
                 .where(eq(WORKFLOW_ID_KEY, bindMarker()))
                 .and(eq(SHARD_ID_KEY, bindMarker()))
@@ -455,7 +458,7 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to retrieve the shard_id for a particular workflow_id  from the
+     * @return cql query statement to retrieve the shard_id for a particular workflow_id from the
      *     "workflow_lookup" table
      */
     public String getSelectShardFromWorkflowLookupTableStatement() {
@@ -545,8 +548,8 @@ public class Statements {
     }
 
     /**
-     * @return cql query statement to update shard_id to workflow_id mapping to the "workflow_lookup"
-     *     table
+     * @return cql query statement to update shard_id to workflow_id mapping to the
+     *     "workflow_lookup" table
      */
     public String getUpdateWorkflowLookupStatement() {
         return QueryBuilder.update(keyspace, TABLE_WORKFLOW_LOOKUP)

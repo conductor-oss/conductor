@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
-import com.netflix.conductor.scylla.config.ScyllaProperties;
-import com.netflix.conductor.scylla.util.Statements;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +34,8 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.scylla.config.ScyllaProperties;
+import com.netflix.conductor.scylla.util.Statements;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -44,12 +44,12 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskDef.ONE_HOUR;
 import static com.netflix.conductor.scylla.util.Constants.TASK_DEFINITION_KEY;
 import static com.netflix.conductor.scylla.util.Constants.TASK_DEFS_KEY;
 import static com.netflix.conductor.scylla.util.Constants.WORKFLOW_DEFINITION_KEY;
 import static com.netflix.conductor.scylla.util.Constants.WORKFLOW_DEF_INDEX_KEY;
 import static com.netflix.conductor.scylla.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
-import static com.netflix.conductor.common.metadata.tasks.TaskDef.ONE_HOUR;
 
 @Trace
 public class ScyllaMetadataDAO extends ScyllaBaseDAO implements MetadataDAO {

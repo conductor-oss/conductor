@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,12 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.scylla.config.ScyllaProperties;
-import com.netflix.conductor.scylla.util.Statements;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.scylla.config.ScyllaProperties;
+import com.netflix.conductor.scylla.util.Statements;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;

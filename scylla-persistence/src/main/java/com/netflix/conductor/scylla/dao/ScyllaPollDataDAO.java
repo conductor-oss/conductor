@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,10 +14,11 @@ package com.netflix.conductor.scylla.dao;
 
 import java.util.List;
 
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.dao.PollDataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.dao.PollDataDAO;
 
 /**
  * This is a dummy implementation and this feature is not implemented for Cassandra backed
@@ -29,7 +30,8 @@ public class ScyllaPollDataDAO implements PollDataDAO {
 
     @Override
     public void updateLastPollData(String taskDefName, String domain, String workerId) {
-        // LOGGER.info("Task ScyllaPollDataDAO.updateLastPollData NOT implemented in scylla persistence");
+        // LOGGER.info("Task ScyllaPollDataDAO.updateLastPollData NOT implemented in scylla
+        // persistence");
     }
 
     @Override

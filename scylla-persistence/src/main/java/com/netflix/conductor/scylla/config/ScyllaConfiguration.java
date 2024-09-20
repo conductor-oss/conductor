@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,12 +12,18 @@
  */
 package com.netflix.conductor.scylla.config;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.QueryLogger;
-import com.datastax.driver.core.Session;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.netflix.conductor.dao.EventHandlerDAO;
+import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.scylla.config.cache.CacheableEventHandlerDAO;
 import com.netflix.conductor.scylla.config.cache.CacheableMetadataDAO;
 import com.netflix.conductor.scylla.dao.ScyllaEventHandlerDAO;
@@ -26,17 +32,13 @@ import com.netflix.conductor.scylla.dao.ScyllaMetadataDAO;
 import com.netflix.conductor.scylla.dao.ScyllaPollDataDAO;
 import com.netflix.conductor.scylla.dao.ScyllaRateLimitingDAO;
 import com.netflix.conductor.scylla.util.Statements;
-import com.netflix.conductor.dao.EventHandlerDAO;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.RateLimitingDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.QueryLogger;
+import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ScyllaProperties.class)
@@ -52,12 +54,14 @@ public class ScyllaConfiguration {
 
         LOGGER.info("Connecting to scylla cluster with host:{}, port:{}", host, port);
 
-        Cluster cluster = Cluster.builder()
-                .withoutJMXReporting()
-                .withProtocolVersion(ProtocolVersion.V3)
-                .addContactPoint(host)
-                .withCredentials(properties.getUserName(), properties.getPassword())
-                .withPort(port).build();
+        Cluster cluster =
+                Cluster.builder()
+                        .withoutJMXReporting()
+                        .withProtocolVersion(ProtocolVersion.V3)
+                        .addContactPoint(host)
+                        .withCredentials(properties.getUserName(), properties.getPassword())
+                        .withPort(port)
+                        .build();
 
         Metadata metadata = cluster.getMetadata();
         LOGGER.info("Connected to cluster: {}", metadata.getClusterName());
@@ -80,8 +84,7 @@ public class ScyllaConfiguration {
 
     @Bean
     public QueryLogger queryLogger(Cluster cluster) {
-        QueryLogger queryLogger = QueryLogger.builder()
-                .build();
+        QueryLogger queryLogger = QueryLogger.builder().build();
         cluster.register(queryLogger);
         return queryLogger;
     }
@@ -128,6 +131,7 @@ public class ScyllaConfiguration {
     public Statements statements(ScyllaProperties scyllaProperties) {
         return new Statements(scyllaProperties.getKeyspace());
     }
+
     @Bean
     public RateLimitingDAO scyllaRateLimitingDAO() {
         return new ScyllaRateLimitingDAO();
