@@ -69,5 +69,6 @@ ext {
     revNats = '2.16.14'
     revStan = '2.2.3'
     revFlyway = '10.15.2'
+    revScylla = '3.11.5.0'
 
 }
