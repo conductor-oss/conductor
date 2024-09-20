@@ -34,7 +34,7 @@ dependencies {
 
     //Persistence
     implementation project(':conductor-redis-persistence')
-    implementation project(':conductor-cassandra-persistence')
+    //implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-scylla-persistence')

@@ -38,7 +38,7 @@ include 'core'
 include 'client'
 include 'client-spring'
 
-include 'cassandra-persistence'
+// include 'cassandra-persistence'
 include 'redis-persistence'
 
 include 'es6-persistence'
