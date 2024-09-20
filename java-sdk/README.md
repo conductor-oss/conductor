@@ -1,4 +1,9 @@
 # SDK for Conductor
+
+> **Note:** This module will be relocated to [conductor-clients/java/conductor-java-sdk/sdk](conductor-clients/java/conductor-java-sdk/sdk). As part of the Java Client v4 effort, it will also undergo several enhancements. 
+>
+> Expected completion date: 2024-10-15.
+ 
 Conductor SDK allows developers to create, test and execute workflows using code.
 
 There are three main features of the SDK: 
