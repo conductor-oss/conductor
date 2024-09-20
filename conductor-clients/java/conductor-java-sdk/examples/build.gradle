@@ -2,9 +2,6 @@ plugins {
     id 'java'
 }
 
-group 'io.orkes.conductor'
-version '3.0.0'
-
 repositories {
     mavenCentral()
 }
