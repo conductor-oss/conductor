@@ -564,7 +564,7 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
             LOGGER.debug("Update workflow - getPrevious workflow status {} - current Status {} for workflowId {} and prevVersion {} ",
                     prevWorkflow.getStatus(),
                     workflow.getStatus(),
-                    prevWorkflow.getWorkflowId(), prevWorkflow.getVersion());
+                    prevWorkflow.getWorkflowId(), prevWorkflow.getWorkflowDefinition().getVersion());
 
             String payload = toJson(workflow);
 
@@ -583,12 +583,12 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
     }
 
     private boolean attemptUpdateWorkflow(WorkflowModel workflow, WorkflowModel prevWorkflow,  String payload, Integer correlationId, Boolean isRetry) {
-        Integer currentVersion = prevWorkflow.getVersion() == 0 ? null : prevWorkflow.getVersion();
-        ResultSet resultSet = session.execute(updateWorkflowStatement.bind(payload, prevWorkflow.getVersion() + 1,
+        Integer currentVersion = prevWorkflow.getWorkflowDefinition().getVersion() == 0 ? null : prevWorkflow.getWorkflowDefinition().getVersion();
+        ResultSet resultSet = session.execute(updateWorkflowStatement.bind(payload, prevWorkflow.getWorkflowDefinition().getVersion() + 1,
                 UUID.fromString(workflow.getWorkflowId()), correlationId, currentVersion));
         if (resultSet.wasApplied()) {
             LOGGER.debug("Updated workflow with isRetry {} - current status {} for workflowId {} with version {}",
-                    isRetry, workflow.getStatus(), workflow.getWorkflowId(), prevWorkflow.getVersion() + 1);
+                    isRetry, workflow.getStatus(), workflow.getWorkflowId(), prevWorkflow.getWorkflowDefinition().getVersion() + 1);
             return true;
         }
         return false;
@@ -604,7 +604,7 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
                 workflow.setTasks(tasks);
             } else {
                 LOGGER.info("Concurrent update retriedVersion detected, update failed for workflow: {} with version {}",
-                        workflow.getWorkflowId(), retriedWorkflow.getVersion());
+                        workflow.getWorkflowId(), retriedWorkflow.getWorkflowDefinition().getVersion());
             }
         }
     }
@@ -691,7 +691,7 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
                     if (ENTITY_TYPE_WORKFLOW.equals(entityKey)) {
                         workflow = readValue(row.getString(PAYLOAD_KEY), WorkflowModel.class);
                         // Added version for version locking
-                        workflow.setVersion(row.getInt(VERSION));
+                        workflow.getWorkflowDefinition().setVersion(row.getInt(VERSION));
                     } else if (ENTITY_TYPE_TASK.equals(entityKey)) {
                         TaskModel task = readValue(row.getString(PAYLOAD_KEY), TaskModel.class);
                         tasks.add(task);
@@ -719,7 +719,7 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
                                                             row.getString(PAYLOAD_KEY),
                                                             WorkflowModel.class);
                                             // Added version for version locking
-                                            wf.setVersion(row.getInt(VERSION));
+                                            wf.getWorkflowDefinition().setVersion(row.getInt(VERSION));
                                             recordCassandraDaoRequests(
                                                     "getWorkflow", "n/a", wf.getWorkflowName());
                                             return wf;
