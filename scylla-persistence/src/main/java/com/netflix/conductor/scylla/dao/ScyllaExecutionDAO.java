@@ -1204,6 +1204,6 @@ public class ScyllaExecutionDAO extends ScyllaBaseDAO
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.redisLock = (RedisLock) applicationContext.getBean("provideRedisLock");
+        this.redisLock = (RedisLock) applicationContext.getBean("provideLock");
     }
 }
