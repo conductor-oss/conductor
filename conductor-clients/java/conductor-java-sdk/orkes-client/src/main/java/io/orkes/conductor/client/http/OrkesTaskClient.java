@@ -17,7 +17,6 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.commons.lang3.Validate;
 
@@ -151,10 +150,6 @@ public class OrkesTaskClient {
 
     public void updateTask(TaskResult taskResult) {
         taskClient.updateTask(taskResult);
-    }
-
-    public Optional<String> evaluateAndUploadLargePayload(Map<String, Object> taskOutputData, String taskType) {
-        return taskClient.evaluateAndUploadLargePayload(taskOutputData, taskType);
     }
 
     public void logMessageForTask(String taskId, String logMessage) {

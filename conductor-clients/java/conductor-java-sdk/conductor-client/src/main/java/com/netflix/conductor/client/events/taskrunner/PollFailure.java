@@ -10,14 +10,22 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.automator.events;
+package com.netflix.conductor.client.events.taskrunner;
 
+import java.time.Duration;
+
+import lombok.Getter;
 import lombok.ToString;
 
+@Getter
 @ToString
-public final class PollStarted extends TaskRunnerEvent {
+public final class PollFailure extends TaskRunnerEvent {
+    private final Duration duration;
+    private final Throwable cause;
 
-    public PollStarted(String taskType) {
+    public PollFailure(String taskType, long durationInMillis, Throwable cause) {
         super(taskType);
+        this.duration = Duration.ofMillis(durationInMillis);
+        this.cause = cause;
     }
 }
