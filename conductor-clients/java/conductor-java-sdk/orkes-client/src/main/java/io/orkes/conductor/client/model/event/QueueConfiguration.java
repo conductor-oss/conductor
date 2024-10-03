@@ -51,7 +51,6 @@ public abstract class QueueConfiguration {
         return this.queueName;
     }
 
-    //FIXME why? explain me why?
     @Deprecated
     public String getConfiguration() throws Exception {
         if (this.consumer == null) {
