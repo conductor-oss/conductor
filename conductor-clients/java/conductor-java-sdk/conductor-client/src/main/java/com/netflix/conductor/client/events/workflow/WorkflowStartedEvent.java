@@ -10,24 +10,24 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.automator.events;
-
-import java.time.Duration;
+package com.netflix.conductor.client.events.workflow;
 
 import lombok.Getter;
-import lombok.ToString;
 
 @Getter
-@ToString
-public final class TaskExecutionCompleted extends TaskRunnerEvent {
-    public final String taskId;
-    public final String workerId;
-    private final Duration duration;
+public class WorkflowStartedEvent extends WorkflowClientEvent {
 
-    public TaskExecutionCompleted(String taskType, String taskId, String workerId, long durationInMillis) {
-        super(taskType);
-        this.taskId = taskId;
-        this.workerId = workerId;
-        this.duration = Duration.ofMillis(durationInMillis);
+    private final boolean success;
+
+    private final Throwable throwable;
+
+    public WorkflowStartedEvent(String name, Integer version) {
+        this(name, version, true, null);
+    }
+
+    public WorkflowStartedEvent(String name, Integer version, boolean success, Throwable t) {
+        super(name, version);
+        this.success = success;
+        this.throwable = t;
     }
 }

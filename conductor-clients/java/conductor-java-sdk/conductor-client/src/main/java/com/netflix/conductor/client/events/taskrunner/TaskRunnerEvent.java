@@ -10,12 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.metrics;
+package com.netflix.conductor.client.events.taskrunner;
 
-import com.netflix.conductor.client.events.listeners.TaskClientListener;
-import com.netflix.conductor.client.events.listeners.TaskRunnerEventsListener;
-import com.netflix.conductor.client.events.listeners.WorkflowClientListener;
+import com.netflix.conductor.client.events.ConductorClientEvent;
 
-public interface MetricsCollector extends TaskRunnerEventsListener, WorkflowClientListener, TaskClientListener {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 
+@AllArgsConstructor
+@Getter
+@ToString
+public abstract class TaskRunnerEvent extends ConductorClientEvent {
+    private final String taskType;
 }

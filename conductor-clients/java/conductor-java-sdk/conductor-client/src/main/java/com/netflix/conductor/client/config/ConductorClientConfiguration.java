@@ -47,4 +47,11 @@ public interface ConductorClientConfiguration {
      *     and the task/workflow execution fails.
      */
     boolean isExternalPayloadStorageEnabled();
+
+    /**
+     * @return the flag which controls whether to enforce or not the barriers on the size
+     * of workflow and task payloads for both input and output.
+     * SEE: <a href="https://conductor-oss.github.io/conductor/documentation/advanced/externalpayloadstorage.html">External Payload Storage</a>
+     */
+    boolean isEnforceThresholds();
 }

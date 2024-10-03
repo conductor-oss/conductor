@@ -17,9 +17,9 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
-import com.netflix.conductor.client.automator.events.PollCompleted;
-import com.netflix.conductor.client.automator.events.PollFailure;
-import com.netflix.conductor.client.automator.events.TaskExecutionFailure;
+import com.netflix.conductor.client.events.taskrunner.PollCompleted;
+import com.netflix.conductor.client.events.taskrunner.PollFailure;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionFailure;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;

@@ -10,20 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.automator.events;
-
-import java.time.Duration;
+package com.netflix.conductor.client.events.workflow;
 
 import lombok.Getter;
-import lombok.ToString;
 
 @Getter
-@ToString
-public final class PollCompleted extends TaskRunnerEvent {
-    private final Duration duration;
+public class WorkflowInputPayloadSizeEvent extends WorkflowClientEvent {
 
-    public PollCompleted(String taskType, long durationInMillis) {
-        super(taskType);
-        this.duration = Duration.ofMillis(durationInMillis);
+    private final long size;
+
+    public WorkflowInputPayloadSizeEvent(String name, Integer version, long size) {
+        super(name, version);
+        this.size = size;
     }
 }

@@ -10,12 +10,16 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.metrics;
+package com.netflix.conductor.client.events.task;
 
-import com.netflix.conductor.client.events.listeners.TaskClientListener;
-import com.netflix.conductor.client.events.listeners.TaskRunnerEventsListener;
-import com.netflix.conductor.client.events.listeners.WorkflowClientListener;
+import lombok.Getter;
 
-public interface MetricsCollector extends TaskRunnerEventsListener, WorkflowClientListener, TaskClientListener {
+@Getter
+public class TaskResultPayloadSizeEvent extends TaskClientEvent {
+    private final long size;
 
+    public TaskResultPayloadSizeEvent(String taskType, long size) {
+        super(taskType);
+        this.size = size;
+    }
 }

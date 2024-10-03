@@ -10,18 +10,24 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.automator.events;
+package com.netflix.conductor.client.events.taskrunner;
 
-import java.time.Instant;
+import java.time.Duration;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
-@AllArgsConstructor
 @Getter
 @ToString
-public abstract class TaskRunnerEvent {
-    private final Instant time = Instant.now();
-    private final String taskType;
+public final class TaskExecutionCompleted extends TaskRunnerEvent {
+    public final String taskId;
+    public final String workerId;
+    private final Duration duration;
+
+    public TaskExecutionCompleted(String taskType, String taskId, String workerId, long durationInMillis) {
+        super(taskType);
+        this.taskId = taskId;
+        this.workerId = workerId;
+        this.duration = Duration.ofMillis(durationInMillis);
+    }
 }
