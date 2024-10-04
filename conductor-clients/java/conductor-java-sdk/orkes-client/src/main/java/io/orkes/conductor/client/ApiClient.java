@@ -17,7 +17,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +32,6 @@ import io.orkes.conductor.client.http.Pair;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -44,22 +42,18 @@ import okhttp3.Response;
 public final class ApiClient extends ConductorClient {
 
     public ApiClient(String rootUri, String keyId, String secret) {
-        super(ConductorClient.builder()
+        this(ApiClient.builder()
                 .basePath(rootUri)
-                .addHeaderSupplier(new OrkesAuthentication(keyId, secret)));
-    }
-
-    public ApiClient(String rootUri, String keyId, String secret, Consumer<OkHttpClient.Builder> configurer) {
-        super(ConductorClient.builder()
-                .basePath(rootUri)
-                .configureOkHttp(configurer)
-                .addHeaderSupplier(new OrkesAuthentication(keyId, secret)));
+                .credentials(keyId, secret));
     }
 
     public ApiClient(String rootUri) {
         super(rootUri);
     }
 
+    private ApiClient(ApiClientBuilder builder) {
+        super(builder);
+    }
 
     public Call buildCall(
             String path,
@@ -146,6 +140,23 @@ public final class ApiClient extends ConductorClient {
             return new ApiResponse<T>(response.code(), response.headers().toMultimap(), data);
         } catch (IOException e) {
             throw new ConductorClientException(e);
+        }
+    }
+
+    public static ApiClientBuilder builder() {
+        return new ApiClientBuilder();
+    }
+
+    public static class ApiClientBuilder extends Builder<ApiClientBuilder> {
+
+        public ApiClientBuilder credentials(String key, String secret) {
+            this.addHeaderSupplier(new OrkesAuthentication(key, secret));
+            return this;
+        }
+
+        @Override
+        public ApiClient build() {
+            return new ApiClient(this);
         }
     }
 
