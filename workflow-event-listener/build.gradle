@@ -12,6 +12,7 @@ dependencies {
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
     implementation "org.apache.commons:commons-lang3:"
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.14'
+    implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
