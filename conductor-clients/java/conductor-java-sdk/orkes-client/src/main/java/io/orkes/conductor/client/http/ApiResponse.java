@@ -23,7 +23,6 @@ import java.util.Map;
  *
  * @param <T> The type of data that is deserialized from response body
  */
-@Deprecated
 public class ApiResponse<T> {
     private final int statusCode;
     private final Map<String, List<String>> headers;

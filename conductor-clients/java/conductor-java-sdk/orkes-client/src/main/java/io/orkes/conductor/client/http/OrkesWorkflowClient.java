@@ -42,7 +42,6 @@ import io.orkes.conductor.client.model.WorkflowRun;
 import io.orkes.conductor.client.model.WorkflowStateUpdate;
 import io.orkes.conductor.client.model.WorkflowStatus;
 
-//TODO should this extend or not WorkflowClient?
 public class OrkesWorkflowClient implements AutoCloseable {
 
     private final WorkflowResource workflowResource;
@@ -72,65 +71,48 @@ public class OrkesWorkflowClient implements AutoCloseable {
         }
     }
 
+    @Deprecated
     public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask) {
         return executeWorkflowHttp(request, waitUntilTask);
     }
 
+    /**
+     * Synchronously executes a workflow
+     * @param request workflow execution request
+     * @param waitUntilTask waits until workflow has reached this task.
+     *                      Useful for executing it synchronously until this task and then continuing asynchronous execution
+     * @param waitForSeconds maximum amount of time to wait before returning
+     * @return WorkflowRun
+     */
     public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Integer waitForSeconds) {
         return executeWorkflowHttp(request, waitUntilTask, waitForSeconds);
     }
 
+    /**
+     * Synchronously executes a workflow
+     * @param request workflow execution request
+     * @param waitUntilTasks waits until workflow has reached one of these tasks.
+     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
+     *                       Useful when workflow has multiple branches to wait for any of the branches to reach the task
+     * @param waitForSeconds maximum amount of time to wait before returning
+     * @return WorkflowRun
+     */
     public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, List<String> waitUntilTasks, Integer waitForSeconds) {
         String waitUntilTask = String.join(",", waitUntilTasks);
         return executeWorkflowHttp(request, waitUntilTask, waitForSeconds);
     }
 
+    /**
+     * Synchronously executes a workflow
+     * @param request workflow execution request
+     * @param waitUntilTask waits until workflow has reached one of these tasks.
+     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
+     * @param waitTimeout maximum amount of time to wait before returning
+     * @return WorkflowRun
+     */
     public WorkflowRun executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Duration waitTimeout) throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<WorkflowRun> future = executeWorkflow(request, waitUntilTask);
         return future.get(waitTimeout.get(ChronoUnit.MILLIS), TimeUnit.MILLISECONDS);
-    }
-
-    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask) {
-        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
-        String requestId = UUID.randomUUID().toString();
-        executorService.submit(
-                () -> {
-                    try {
-                        WorkflowRun response = workflowResource.executeWorkflow(
-                                startWorkflowRequest,
-                                startWorkflowRequest.getName(),
-                                startWorkflowRequest.getVersion(),
-                                waitUntilTask,
-                                requestId);
-                        future.complete(response);
-                    } catch (Throwable t) {
-                        future.completeExceptionally(t);
-                    }
-                });
-
-        return future;
-    }
-
-    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask, Integer waitForSeconds) {
-        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
-        String requestId = UUID.randomUUID().toString();
-        executorService.submit(
-                () -> {
-                    try {
-                        WorkflowRun response = workflowResource.executeWorkflow(
-                                startWorkflowRequest,
-                                startWorkflowRequest.getName(),
-                                startWorkflowRequest.getVersion(),
-                                waitUntilTask,
-                                requestId,
-                                waitForSeconds);
-                        future.complete(response);
-                    } catch (Throwable t) {
-                        future.completeExceptionally(t);
-                    }
-                });
-
-        return future;
     }
 
     public void terminateWorkflowWithFailure(String workflowId, String reason, boolean triggerFailureWorkflow) {
@@ -233,5 +215,48 @@ public class OrkesWorkflowClient implements AutoCloseable {
         if (executorService != null) {
             executorService.shutdown();
         }
+    }
+
+    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask) {
+        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+        executorService.submit(
+                () -> {
+                    try {
+                        WorkflowRun response = workflowResource.executeWorkflow(
+                                startWorkflowRequest,
+                                startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion(),
+                                waitUntilTask,
+                                requestId);
+                        future.complete(response);
+                    } catch (Throwable t) {
+                        future.completeExceptionally(t);
+                    }
+                });
+
+        return future;
+    }
+
+    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask, Integer waitForSeconds) {
+        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+        executorService.submit(
+                () -> {
+                    try {
+                        WorkflowRun response = workflowResource.executeWorkflow(
+                                startWorkflowRequest,
+                                startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion(),
+                                waitUntilTask,
+                                requestId,
+                                waitForSeconds);
+                        future.complete(response);
+                    } catch (Throwable t) {
+                        future.completeExceptionally(t);
+                    }
+                });
+
+        return future;
     }
 }
