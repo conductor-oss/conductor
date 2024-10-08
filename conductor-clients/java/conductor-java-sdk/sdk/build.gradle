@@ -6,6 +6,7 @@ plugins {
 }
 
 ext {
+    artifactId = 'java-sdk'
     artifactName = 'Orkes Conductor SDK'
     artifactDescription = 'OSS & Orkes Conductor SDK'
 }
