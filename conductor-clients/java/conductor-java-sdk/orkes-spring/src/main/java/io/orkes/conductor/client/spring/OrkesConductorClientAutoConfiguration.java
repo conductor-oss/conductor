@@ -34,17 +34,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrkesConductorClientAutoConfiguration {
 
+    // Keeping these for backwards compatibility
     public static final String CONDUCTOR_SERVER_URL ="conductor.server.url";
     public static final String CONDUCTOR_SECURITY_CLIENT_KEY_ID ="conductor.security.client.key-id";
     public static final String CONDUCTOR_SECURITY_CLIENT_SECRET ="conductor.security.client.secret";
-    //TODO add more properties e.g.: ssl off, timeout settings, etc. and these should be client properties!!!
+
+    // Properties should be placed under "conductor.client"
     public static final String CONDUCTOR_CLIENT_BASE_PATH = "conductor.client.basepath";
     public static final String CONDUCTOR_CLIENT_KEY_ID = "conductor.client.key-id";
     public static final String CONDUCTOR_CLIENT_SECRET = "conductor.client.secret";
+    public static final String CONDUCTOR_CLIENT_CONNECT_TIMEOUT = "conductor.client.timeout.connect";
+    public static final String CONDUCTOR_CLIENT_READ_TIMEOUT = "conductor.client.timeout.read";
+    public static final String CONDUCTOR_CLIENT_WRITE_TIMEOUT = "conductor.client.timeout.write";
+    public static final String CONDUCTOR_CLIENT_VERIFYING_SSL = "conductor.client.verifying-ssl";
 
     @Bean
     @ConditionalOnMissingBean
     public ApiClient orkesConductorClient(Environment env) {
+        ApiClient.ApiClientBuilder builder = ApiClient.builder();
+
         String basePath = env.getProperty(CONDUCTOR_CLIENT_BASE_PATH);
         if (basePath == null) {
             basePath = env.getProperty(CONDUCTOR_SERVER_URL);
@@ -60,7 +68,30 @@ public class OrkesConductorClientAutoConfiguration {
             secret = env.getProperty(CONDUCTOR_SECURITY_CLIENT_SECRET);
         }
 
-        return new ApiClient(basePath, keyId, secret);
+        Long connectTimeout = env.getProperty(CONDUCTOR_CLIENT_CONNECT_TIMEOUT, Long.class);
+        if (connectTimeout != null) {
+            builder.connectTimeout(connectTimeout);
+        }
+
+        Long readTimeout = env.getProperty(CONDUCTOR_CLIENT_READ_TIMEOUT, Long.class);
+        if (readTimeout != null) {
+            builder.readTimeout(readTimeout);
+        }
+
+        Long writeTimeout = env.getProperty(CONDUCTOR_CLIENT_WRITE_TIMEOUT, Long.class);
+        if (writeTimeout != null) {
+            builder.writeTimeout(writeTimeout);
+        }
+
+        Boolean verifyingSsl = env.getProperty(CONDUCTOR_CLIENT_VERIFYING_SSL, Boolean.class);
+        if (verifyingSsl != null) {
+            builder.verifyingSsl(verifyingSsl);
+        }
+
+        return builder
+                .basePath(basePath)
+                .credentials(keyId, secret)
+                .build();
     }
 
     @Bean
