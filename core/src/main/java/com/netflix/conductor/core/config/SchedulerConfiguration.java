@@ -55,10 +55,10 @@ public class SchedulerConfiguration implements SchedulingConfigurer {
 
     @Bean(SWEEPER_EXECUTOR_NAME)
     public Executor sweeperExecutor(ConductorProperties properties) {
-         if (properties.getSweeperThreadCount() <= 0) {
-             throw new IllegalStateException(
-                     "conductor.app.sweeper-thread-count must be greater than 0.");
-         }
+        if (properties.getSweeperThreadCount() <= 0) {
+            throw new IllegalStateException(
+                    "conductor.app.sweeper-thread-count must be greater than 0.");
+        }
         ThreadFactory threadFactory =
                 new BasicThreadFactory.Builder().namingPattern("sweeper-thread-%d").build();
         return Executors.newFixedThreadPool(properties.getSweeperThreadCount(), threadFactory);
