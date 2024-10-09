@@ -25,8 +25,8 @@ class PublishConfigPlugin implements Plugin<Project> {
     private publicationConfig(Project project) {
         return {
             mavenJava(MavenPublication) {
-                if (project.ext.has('artifactId')) {
-                    artifactId = project.ext.artifactId
+                if (project.hasProperty('artifactId')) {
+                    artifactId = project.findProperty('artifactId')
                 }
 
                 from project.components.java
