@@ -1,5 +1,5 @@
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const target = process.env.WF_SERVER || "http://localhost:8080";
+const target = process.env.WF_SERVER || "http://172.28.48.1:8080";
 
 module.exports = function (app) {
   app.use(
