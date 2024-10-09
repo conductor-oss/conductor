@@ -150,6 +150,10 @@ public final class ApiClient extends ConductorClient {
     public static class ApiClientBuilder extends Builder<ApiClientBuilder> {
 
         public ApiClientBuilder credentials(String key, String secret) {
+            if (key == null || secret == null) {
+                throw new IllegalArgumentException("Key and secret must not be null");
+            }
+
             this.addHeaderSupplier(new OrkesAuthentication(key, secret));
             return this;
         }

@@ -10,6 +10,7 @@ plugins {
 group = 'io.orkes.conductor'
 
 ext {
+    artifactId = 'orkes-conductor-client'
     artifactName = 'Orkes Conductor Client'
     artifactDescription = 'Orkes Conductor client (http)'
 }

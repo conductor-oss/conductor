@@ -39,7 +39,7 @@ test {
 }
 
 shadowJar {
-    archiveFileName = "orkes-conductor-client-$version-all.jar"
+    archiveFileName = "conductor-client-$version-all.jar"
     mergeServiceFiles()
 }
 

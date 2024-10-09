@@ -14,6 +14,7 @@ package com.netflix.conductor.client.spring;
 
 import org.springframework.core.env.Environment;
 
+import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.executor.task.WorkerConfiguration;
 
 class SpringWorkerConfiguration extends WorkerConfiguration {
@@ -26,7 +27,11 @@ class SpringWorkerConfiguration extends WorkerConfiguration {
 
     @Override
     public int getPollingInterval(String taskName) {
-        return getProperty(taskName, "pollingInterval", Integer.class, 0);
+        Integer pollingInterval = getProperty(taskName, "pollingInterval", Integer.class, 0);
+        if (pollingInterval == 0) {
+            pollingInterval = getProperty(taskName, Worker.PROP_POLL_INTERVAL, Integer.class, 0);
+        }
+        return pollingInterval;
     }
 
     @Override
@@ -36,7 +41,7 @@ class SpringWorkerConfiguration extends WorkerConfiguration {
 
     @Override
     public String getDomain(String taskName) {
-        return getProperty(taskName, "domain", String.class, null);
+        return getProperty(taskName, Worker.PROP_DOMAIN, String.class, null);
     }
 
     private <T> T getProperty(String taskName, String property, Class<T> type, T defaultValue) {
