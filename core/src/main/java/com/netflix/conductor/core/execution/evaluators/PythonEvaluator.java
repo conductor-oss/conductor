@@ -12,44 +12,35 @@
  */
 package com.netflix.conductor.core.execution.evaluators;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.Map;
-import java.util.Properties;
 
-import org.python.core.PyObject;
-import org.python.util.PythonInterpreter;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
 
 @Component(PythonEvaluator.NAME)
 public class PythonEvaluator implements Evaluator {
     public static final String NAME = "python";
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonEvaluator.class);
 
     @Override
-    public Object evaluate(String expression, Object inputs) {
+    public Object evaluate(String expression, Object input) {
+        try (Context context = Context.newBuilder("python").allowAllAccess(true).build()) {
+            if (input instanceof Map) {
+                Map<String, Object> inputMap = (Map<String, Object>) input;
 
-        PythonInterpreter interpreter = null;
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        try {
-            Properties props = new Properties();
-            props.setProperty("python.import.site", "false");
-            PythonInterpreter.initialize(System.getProperties(), props, new String[] {});
-
-            interpreter = new PythonInterpreter();
-            interpreter.setOut(new PrintStream(outputStream));
-
-            if (inputs instanceof Map) {
-                Map<String, Object> input = (Map<String, Object>) inputs;
-
-                // Set variables in the interpreter
-                for (Map.Entry<String, Object> entry : input.entrySet()) {
-                    interpreter.set(entry.getKey(), entry.getValue());
+                // Set inputs as variables in the GraalVM context
+                for (Map.Entry<String, Object> entry : inputMap.entrySet()) {
+                    context.getBindings("python").putMember(entry.getKey(), entry.getValue());
                 }
+
                 // Build the global declaration dynamically
                 StringBuilder globalDeclaration = new StringBuilder("def evaluate():\n    global ");
-
-                for (Map.Entry<String, Object> entry : input.entrySet()) {
+                for (Map.Entry<String, Object> entry : inputMap.entrySet()) {
                     globalDeclaration.append(entry.getKey()).append(", ");
                 }
 
@@ -60,30 +51,28 @@ public class PythonEvaluator implements Evaluator {
                 globalDeclaration.append("\n");
 
                 // Wrap the expression in a function to handle multi-line statements
-                String wrappedExpression =
-                        globalDeclaration.toString() // Add global declaration line
-                                + "    "
-                                + expression.replace(
-                                        "\n", "\n    ") // Indent the original expression
-                                + "\n"
-                                + "result = evaluate()";
+                StringBuilder wrappedExpression = new StringBuilder(globalDeclaration);
+                for (String line : expression.split("\n")) {
+                    wrappedExpression.append("    ").append(line).append("\n");
+                }
+
+                // Add the call to the function and capture the result
+                wrappedExpression.append("\nresult = evaluate()");
 
                 // Execute the wrapped expression
-                interpreter.exec(wrappedExpression);
+                context.eval("python", wrappedExpression.toString());
 
                 // Get the result
-                PyObject result = interpreter.get("result");
-                return result.__tojava__(Object.class);
+                Value result = context.getBindings("python").getMember("result");
+
+                // Convert the result to a Java object and return it
+                return result.as(Object.class);
             } else {
                 return null;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        } finally {
-            if (interpreter != null) {
-                interpreter.close();
-            }
+            LOGGER.error("Error evaluating expression: {}", e.getMessage(), e);
+            throw new TerminateWorkflowException(e.getMessage());
         }
     }
 }
