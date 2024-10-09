@@ -8,6 +8,7 @@ plugins {
 group = 'io.orkes.conductor'
 
 ext {
+    artifactId = 'orkes-conductor-client-spring'
     artifactName = 'Orkes Conductor Client/SDK Spring'
     artifactDescription = 'Spring autoconfig for Orkes Conductor Client and SDK'
 }
