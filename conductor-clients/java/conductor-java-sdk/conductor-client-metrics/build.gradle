@@ -1,16 +1,16 @@
 plugins {
     id 'java-library'
     id 'idea'
-    id 'maven-publish'
-    id 'signing'
+//    id 'maven-publish'
+//    id 'signing'
 }
 
-ext {
-    artifactName = 'Conductor Client Metrics'
-    artifactDescription = 'Conductor Client Metrics'
-}
-
-apply plugin: 'publish-config'
+//ext {
+//    artifactName = 'Conductor Client Metrics'
+//    artifactDescription = 'Conductor Client Metrics'
+//}
+//
+//apply plugin: 'publish-config'
 
 dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
