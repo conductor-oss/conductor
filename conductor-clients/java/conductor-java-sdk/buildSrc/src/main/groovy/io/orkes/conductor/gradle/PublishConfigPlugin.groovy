@@ -3,6 +3,7 @@ package io.orkes.conductor.gradle
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import org.gradle.plugins.signing.SigningPlugin
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.authentication.aws.AwsImAuthentication
 
@@ -11,18 +12,35 @@ class PublishConfigPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.plugins.withType(MavenPublishPlugin) {
-            config(project)
+            publishingConfig(project)
+        }
+        project.plugins.withType(SigningPlugin) {
+            signingConfig(project)
         }
     }
 
-    private void config(Project project) {
+    def publishingConfig(Project project) {
         project.publishing {
             publications(publicationConfig(project))
             repositories(repositoriesConfig(project))
         }
     }
 
-    private publicationConfig(Project project) {
+    def signingConfig(Project project) {
+        project.signing {
+            def signingKeyId = project.findProperty('signingKeyId')
+            if (signingKeyId) {
+                def signingKey = project.findProperty('signingKey')
+                def signingPassword = project.findProperty('signingPassword')
+                if (signingKeyId && signingKey && signingPassword) {
+                    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+                }
+                sign project.publishing.publications
+            }
+        }
+    }
+
+    def publicationConfig(Project project) {
         return {
             mavenJava(MavenPublication) {
                 if (project.hasProperty('artifactId')) {
@@ -58,7 +76,7 @@ class PublishConfigPlugin implements Plugin<Project> {
         }
     }
 
-    private repositoriesConfig(Project project) {
+    def repositoriesConfig(Project project) {
         return {
             maven {
                 if (project.hasProperty("mavenCentral")) {
@@ -77,11 +95,11 @@ class PublishConfigPlugin implements Plugin<Project> {
         }
     }
 
-    private static String getS3BucketUrl(Project project) {
+    static String getS3BucketUrl(Project project) {
         return "s3://orkes-artifacts-repo/${project.version.endsWith('-SNAPSHOT') ? 'snapshots' : 'releases'}"
     }
 
-    private static String getMavenRepoUrl(Project project) {
+    static String getMavenRepoUrl(Project project) {
         return "https://s01.oss.sonatype.org/${project.version.endsWith('-SNAPSHOT') ? 'content/repositories/snapshots/' : 'service/local/staging/deploy/maven2/'}"
     }
 }
