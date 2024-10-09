@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Assertions;
 
 import com.netflix.conductor.client.http.ConductorClient;
 
+import io.orkes.conductor.client.ApiClient;
 import io.orkes.conductor.client.OrkesClients;
-import io.orkes.conductor.client.http.OrkesAuthentication;
 
 public class ClientTestUtil {
     private static final String ENV_ROOT_URI = "CONDUCTOR_SERVER_URL";
@@ -41,9 +41,9 @@ public class ClientTestUtil {
         String keySecret = getEnv(ENV_SECRET);
         Assertions.assertNotNull(keySecret, ENV_SECRET + " env not set");
 
-        return ConductorClient.builder()
+        return ApiClient.builder()
                 .basePath(basePath)
-                .addHeaderSupplier(new OrkesAuthentication(keyId, keySecret))
+                .credentials(keyId, keySecret)
                 .readTimeout(30_000)
                 .connectTimeout(30_000)
                 .writeTimeout(30_000)

@@ -16,7 +16,6 @@ package io.orkes.conductor.client.http;
  * This class exists to maintain backward compatibility and facilitate the migration for
  * users of orkes-conductor-client v2.
  */
-@Deprecated
 public class Pair {
     private String name = "";
     private String value = "";

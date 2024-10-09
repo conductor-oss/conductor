@@ -24,15 +24,11 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.client.automator.events.PollCompleted;
-import com.netflix.conductor.client.automator.events.PollFailure;
-import com.netflix.conductor.client.automator.events.PollStarted;
-import com.netflix.conductor.client.automator.events.TaskExecutionCompleted;
-import com.netflix.conductor.client.automator.events.TaskExecutionFailure;
-import com.netflix.conductor.client.automator.events.TaskExecutionStarted;
-import com.netflix.conductor.client.automator.events.TaskRunnerEvent;
 import com.netflix.conductor.client.automator.filters.PollFilter;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.events.dispatcher.EventDispatcher;
+import com.netflix.conductor.client.events.listeners.ListenerRegister;
+import com.netflix.conductor.client.events.taskrunner.TaskRunnerEvent;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.metrics.MetricsCollector;
 import com.netflix.conductor.client.worker.Worker;
@@ -56,7 +52,7 @@ public class TaskRunnerConfigurer {
     private final List<TaskRunner> taskRunners;
     private ScheduledExecutorService scheduledExecutorService;
     private final List<PollFilter> pollFilters;
-    private final Map<Class<? extends TaskRunnerEvent>, List<Consumer<? extends TaskRunnerEvent>>> listeners;
+    private final EventDispatcher<TaskRunnerEvent> eventDispatcher;
 
     /**
      * @see TaskRunnerConfigurer.Builder
@@ -76,7 +72,7 @@ public class TaskRunnerConfigurer {
         this.workers = new LinkedList<>();
         this.threadCount = builder.threadCount;
         this.pollFilters = builder.pollFilters;
-        this.listeners = builder.listeners;
+        this.eventDispatcher = builder.eventDispatcher;
         builder.workers.forEach(this.workers::add);
         taskRunners = new LinkedList<>();
     }
@@ -163,7 +159,7 @@ public class TaskRunnerConfigurer {
                 threadCountForTask,
                 taskPollTimeout,
                 pollFilters,
-                listeners);
+                eventDispatcher);
         // startWorker(worker) is executed by several threads.
         // taskRunners.add(taskRunner) without synchronization could lead to a race condition and unpredictable behavior,
         // including potential null values being inserted or corrupted state.
@@ -194,7 +190,7 @@ public class TaskRunnerConfigurer {
         private Map<String /* taskType */, Integer /* timeoutInMillisecond */> taskPollTimeout = new HashMap<>();
         private Map<String /* taskType */, Integer /* timeoutInMillisecond */> taskPollCount = new HashMap<>();
         private final List<PollFilter> pollFilters = new LinkedList<>();
-        private final Map<Class<? extends TaskRunnerEvent>, List<Consumer<? extends TaskRunnerEvent>>> listeners = new HashMap<>();
+        private final EventDispatcher<TaskRunnerEvent> eventDispatcher = new EventDispatcher<>();
 
         public Builder(TaskClient taskClient, Iterable<Worker> workers) {
             Preconditions.checkNotNull(taskClient, "TaskClient cannot be null");
@@ -325,29 +321,12 @@ public class TaskRunnerConfigurer {
         }
 
         public <T extends TaskRunnerEvent> Builder withListener(Class<T> eventType, Consumer<T> listener) {
-            listeners.computeIfAbsent(eventType, k -> new LinkedList<>()).add(listener);
+            eventDispatcher.register(eventType, listener);
             return this;
         }
 
         public Builder withMetricsCollector(MetricsCollector metricsCollector) {
-            listeners.computeIfAbsent(PollFailure.class, k -> new LinkedList<>())
-                    .add((Consumer<PollFailure>) metricsCollector::consume);
-
-            listeners.computeIfAbsent(PollCompleted.class, k -> new LinkedList<>())
-                    .add((Consumer<PollCompleted>) metricsCollector::consume);
-
-            listeners.computeIfAbsent(PollStarted.class, k -> new LinkedList<>())
-                    .add((Consumer<PollStarted>) metricsCollector::consume);
-
-            listeners.computeIfAbsent(TaskExecutionStarted.class, k -> new LinkedList<>())
-                    .add((Consumer<TaskExecutionStarted>) metricsCollector::consume);
-
-            listeners.computeIfAbsent(TaskExecutionCompleted.class, k -> new LinkedList<>())
-                    .add((Consumer<TaskExecutionCompleted>) metricsCollector::consume);
-
-            listeners.computeIfAbsent(TaskExecutionFailure.class, k -> new LinkedList<>())
-                    .add((Consumer<TaskExecutionFailure>) metricsCollector::consume);
-
+            ListenerRegister.register(metricsCollector, eventDispatcher);
             return this;
         }
     }

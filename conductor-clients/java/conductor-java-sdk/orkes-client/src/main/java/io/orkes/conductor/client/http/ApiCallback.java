@@ -15,7 +15,8 @@ package io.orkes.conductor.client.http;
 import java.util.List;
 import java.util.Map;
 
-@Deprecated
+import com.netflix.conductor.client.exception.ConductorClientException;
+
 /**
  * Callback for asynchronous API call.
  *
@@ -29,7 +30,7 @@ public interface ApiCallback<T> {
      * @param statusCode Status code of the response if available, otherwise it would be 0
      * @param responseHeaders Headers of the response if available, otherwise it would be null
      */
-    void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders);
+    void onFailure(ConductorClientException e, int statusCode, Map<String, List<String>> responseHeaders);
 
     /**
      * This is called when the API call succeeded.

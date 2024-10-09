@@ -10,26 +10,16 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.orkes.conductor.client.http;
+package com.netflix.conductor.client.events.task;
 
-import com.netflix.conductor.client.exception.ConductorClientException;
+import lombok.Getter;
 
+@Getter
+public class TaskResultPayloadSizeEvent extends TaskClientEvent {
+    private final long size;
 
-/**
- * This class exists to maintain backward compatibility and facilitate the migration
- * for users of orkes-conductor-client v2.
- */
-@Deprecated
-public class ApiException extends ConductorClientException {
-
-    public ApiException() {
-    }
-
-    public ApiException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public ApiException(String message) {
-        super(message);
+    public TaskResultPayloadSizeEvent(String taskType, long size) {
+        super(taskType);
+        this.size = size;
     }
 }

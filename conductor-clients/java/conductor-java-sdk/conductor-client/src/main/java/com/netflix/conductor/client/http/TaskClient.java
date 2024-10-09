@@ -12,6 +12,10 @@
  */
 package com.netflix.conductor.client.http;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,28 +23,58 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
+import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
+import com.netflix.conductor.client.events.dispatcher.EventDispatcher;
+import com.netflix.conductor.client.events.listeners.ListenerRegister;
+import com.netflix.conductor.client.events.listeners.TaskClientListener;
+import com.netflix.conductor.client.events.task.TaskClientEvent;
+import com.netflix.conductor.client.events.task.TaskPayloadUsedEvent;
+import com.netflix.conductor.client.events.task.TaskResultPayloadSizeEvent;
+import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 /** Client for conductor task management including polling for task, updating task status etc. */
+@Slf4j
 public final class TaskClient {
+
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+
+    private final ConductorClientConfiguration conductorClientConfiguration;
+
+    private final EventDispatcher<TaskClientEvent> eventDispatcher = new EventDispatcher<>();
+
+    private PayloadStorage payloadStorage;
 
     private ConductorClient client;
 
     /** Creates a default task client */
     public TaskClient() {
+        // client will be set once root uri is set
+        this(null, new DefaultConductorClientConfiguration());
     }
 
     public TaskClient(ConductorClient client) {
+        this(client, new DefaultConductorClientConfiguration());
+    }
+
+    public TaskClient(ConductorClient client, ConductorClientConfiguration config) {
         this.client = client;
+        this.payloadStorage = new PayloadStorage(client);
+        this.conductorClientConfiguration = config;
     }
 
     /**
@@ -54,6 +88,11 @@ public final class TaskClient {
             client.shutdown();
         }
         client = new ConductorClient(rootUri);
+        payloadStorage = new PayloadStorage(client);
+    }
+
+    public void registerListener(TaskClientListener listener) {
+        ListenerRegister.register(listener, eventDispatcher);
     }
 
     /**
@@ -143,11 +182,36 @@ public final class TaskClient {
         client.execute(request);
     }
 
-    //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
     public Optional<String> evaluateAndUploadLargePayload(Map<String, Object> taskOutputData, String taskType) {
-        throw new UnsupportedOperationException("No external storage support YET");
-    }
+        if (!conductorClientConfiguration.isEnforceThresholds()) {
+            return Optional.empty();
+        }
 
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            objectMapper.writeValue(byteArrayOutputStream, taskOutputData);
+            byte[] taskOutputBytes = byteArrayOutputStream.toByteArray();
+            long taskResultSize = taskOutputBytes.length;
+            eventDispatcher.publish(new TaskResultPayloadSizeEvent(taskType, taskResultSize));
+            long payloadSizeThreshold = conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024L;
+            if (taskResultSize > payloadSizeThreshold) {
+                if (!conductorClientConfiguration.isExternalPayloadStorageEnabled()  || taskResultSize
+                        > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB() * 1024L) {
+                    throw new IllegalArgumentException(
+                            String.format("The TaskResult payload size: %d is greater than the permissible %d bytes",
+                                    taskResultSize, payloadSizeThreshold));
+                }
+                eventDispatcher.publish(new TaskPayloadUsedEvent(taskType,
+                        ExternalPayloadStorage.Operation.WRITE.name(),
+                        ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name()));
+                return Optional.of(uploadToExternalPayloadStorage(taskOutputBytes, taskResultSize));
+            }
+            return Optional.empty();
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to update task: %s with task result", taskType);
+            log.error(errorMsg, e);
+            throw new ConductorClientException(e);
+        }
+    }
     /**
      * Ack for the task poll.
      *
@@ -431,12 +495,31 @@ public final class TaskClient {
         return resp.getData();
     }
 
-    //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
-    //implement populateTaskPayloads - Download from external Storage and set input and output of task
     private void populateTaskPayloads(Task task) {
-        if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())
-                || StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
-            throw new UnsupportedOperationException("No external storage support");
+        if (!conductorClientConfiguration.isEnforceThresholds()) {
+            return;
+        }
+
+        if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
+            eventDispatcher.publish(new TaskPayloadUsedEvent(task.getTaskDefName(),
+                    ExternalPayloadStorage.Operation.READ.name(),
+                    ExternalPayloadStorage.PayloadType.TASK_INPUT.name()));
+            task.setInputData(
+                    downloadFromExternalStorage(
+                            ExternalPayloadStorage.PayloadType.TASK_INPUT,
+                            task.getExternalInputPayloadStoragePath()));
+            task.setExternalInputPayloadStoragePath(null);
+        }
+
+        if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+            eventDispatcher.publish(new TaskPayloadUsedEvent(task.getTaskDefName(),
+                    ExternalPayloadStorage.Operation.READ.name(),
+                    ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name()));
+            task.setOutputData(
+                    downloadFromExternalStorage(
+                            ExternalPayloadStorage.PayloadType.TASK_OUTPUT,
+                            task.getExternalOutputPayloadStoragePath()));
+            task.setExternalOutputPayloadStoragePath(null);
         }
     }
 
@@ -455,5 +538,29 @@ public final class TaskClient {
         });
 
         return resp.getData();
+    }
+
+    private String uploadToExternalPayloadStorage(byte[] payloadBytes, long payloadSize) {
+        ExternalStorageLocation externalStorageLocation =
+                payloadStorage.getLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, "");
+        payloadStorage.upload(
+                externalStorageLocation.getUri(),
+                new ByteArrayInputStream(payloadBytes),
+                payloadSize);
+        return externalStorageLocation.getPath();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> downloadFromExternalStorage(ExternalPayloadStorage.PayloadType payloadType, String path) {
+        Validate.notBlank(path, "uri cannot be blank");
+        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.READ,
+                payloadType, path);
+        try (InputStream inputStream = payloadStorage.download(externalStorageLocation.getUri())) {
+            return objectMapper.readValue(inputStream, Map.class);
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to download payload from external storage location: %s", path);
+            log.error(errorMsg, e);
+            throw new ConductorClientException(e);
+        }
     }
 }

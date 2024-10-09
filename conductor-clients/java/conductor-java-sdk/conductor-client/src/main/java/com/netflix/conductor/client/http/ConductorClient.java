@@ -74,38 +74,38 @@ public class ConductorClient {
     private final KeyManager[] keyManagers;
     private final List<HeaderSupplier> headerSuppliers;
 
-    public static Builder builder() {
-        return new Builder();
+    public static Builder<?> builder() {
+        return new Builder<>();
     }
 
     @SneakyThrows
-    protected ConductorClient(Builder builder) {
+    protected ConductorClient(Builder<?> builder) {
         builder.validateAndAssignDefaults();
         final OkHttpClient.Builder okHttpBuilder = builder.okHttpClientBuilder;
         this.objectMapper = builder.objectMapperSupplier.get();
-        this.basePath = builder.basePath();
-        this.verifyingSsl = builder.verifyingSsl();
-        this.sslCaCert = builder.sslCaCert();
-        this.keyManagers = builder.keyManagers();
+        this.basePath = builder.basePath;
+        this.verifyingSsl = builder.verifyingSsl;
+        this.sslCaCert = builder.sslCaCert;
+        this.keyManagers = builder.keyManagers;
         this.headerSuppliers = builder.headerSupplier();
 
-        if (builder.connectTimeout() > -1) {
-            okHttpBuilder.connectTimeout(builder.connectTimeout(), TimeUnit.MILLISECONDS);
+        if (builder.connectTimeout > -1) {
+            okHttpBuilder.connectTimeout(builder.connectTimeout, TimeUnit.MILLISECONDS);
         }
 
-        if (builder.readTimeout() > -1) {
-            okHttpBuilder.readTimeout(builder.readTimeout(), TimeUnit.MILLISECONDS);
+        if (builder.readTimeout > -1) {
+            okHttpBuilder.readTimeout(builder.readTimeout, TimeUnit.MILLISECONDS);
         }
 
-        if (builder.writeTimeout() > -1) {
-            okHttpBuilder.writeTimeout(builder.writeTimeout(), TimeUnit.MILLISECONDS);
+        if (builder.writeTimeout > -1) {
+            okHttpBuilder.writeTimeout(builder.writeTimeout, TimeUnit.MILLISECONDS);
         }
 
-        if (builder.getProxy() != null) {
-            okHttpBuilder.proxy(builder.getProxy());
+        if (builder.proxy != null) {
+            okHttpBuilder.proxy(builder.proxy);
         }
 
-        ConnectionPoolConfig connectionPoolConfig = builder.getConnectionPoolConfig();
+        ConnectionPoolConfig connectionPoolConfig = builder.connectionPoolConfig;
         if (connectionPoolConfig != null) {
             okHttpBuilder.connectionPool(new ConnectionPool(
                     connectionPoolConfig.getMaxIdleConnections(),
@@ -125,11 +125,11 @@ public class ConductorClient {
     }
 
     public ConductorClient() {
-        this(new Builder());
+        this(new Builder<>());
     }
 
     public ConductorClient(String basePath) {
-        this(new Builder().basePath(basePath));
+        this(new Builder<>().basePath(basePath));
     }
 
     public String getBasePath() {
@@ -433,7 +433,7 @@ public class ConductorClient {
         }
     }
 
-    public static class Builder {
+    public static class Builder<T extends Builder<T>>  {
         private final OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient.Builder();
         private String basePath = "http://localhost:8080/api";
         private boolean verifyingSsl = true;
@@ -447,85 +447,54 @@ public class ConductorClient {
         private Supplier<ObjectMapper> objectMapperSupplier = () -> new ObjectMapperProvider().getObjectMapper();
         private final List<HeaderSupplier> headerSuppliers = new ArrayList<>();
 
-        public String basePath() {
-            return basePath;
+        protected T self() {
+            //noinspection unchecked
+            return (T) this;
         }
 
-        public Builder basePath(String basePath) {
+        public T basePath(String basePath) {
             this.basePath = basePath;
-            return this;
+            return self();
         }
 
-        public boolean verifyingSsl() {
-            return verifyingSsl;
-        }
-
-        public Builder verifyingSsl(boolean verifyingSsl) {
+        public T verifyingSsl(boolean verifyingSsl) {
             this.verifyingSsl = verifyingSsl;
-            return this;
+            return self();
         }
 
-        public InputStream sslCaCert() {
-            return sslCaCert;
-        }
-
-        public Builder sslCaCert(InputStream sslCaCert) {
+        public T sslCaCert(InputStream sslCaCert) {
             this.sslCaCert = sslCaCert;
-            return this;
+            return self();
         }
 
-        public KeyManager[] keyManagers() {
-            return keyManagers;
-        }
-
-        public Builder keyManagers(KeyManager[] keyManagers) {
+        public T keyManagers(KeyManager[] keyManagers) {
             this.keyManagers = keyManagers;
-            return this;
+            return self();
         }
 
-        public long connectTimeout() {
-            return connectTimeout;
-        }
-
-        public Builder connectTimeout(long connectTimeout) {
+        public T connectTimeout(long connectTimeout) {
             this.connectTimeout = connectTimeout;
-            return this;
+            return self();
         }
 
-        public long readTimeout() {
-            return readTimeout;
-        }
-
-        public Builder readTimeout(long readTimeout) {
+        public T readTimeout(long readTimeout) {
             this.readTimeout = readTimeout;
-            return this;
+            return self();
         }
 
-        public long writeTimeout() {
-            return writeTimeout;
-        }
-
-        public Builder writeTimeout(long writeTimeout) {
+        public T writeTimeout(long writeTimeout) {
             this.writeTimeout = writeTimeout;
-            return this;
+            return self();
         }
 
-        public Builder proxy(Proxy proxy) {
+        public T proxy(Proxy proxy) {
             this.proxy = proxy;
-            return this;
+            return self();
         }
 
-        public ConnectionPoolConfig getConnectionPoolConfig() {
-            return this.connectionPoolConfig;
-        }
-
-        public Builder connectionPoolConfig(ConnectionPoolConfig config) {
+        public T connectionPoolConfig(ConnectionPoolConfig config) {
             this.connectionPoolConfig = config;
-            return this;
-        }
-
-        Proxy getProxy() {
-            return proxy;
+            return self();
         }
 
         /**
@@ -534,9 +503,9 @@ public class ConductorClient {
          * @param configurer
          * @return
          */
-        public Builder configureOkHttp(Consumer<OkHttpClient.Builder> configurer) {
+        public T configureOkHttp(Consumer<OkHttpClient.Builder> configurer) {
             configurer.accept(this.okHttpClientBuilder);
-            return this;
+            return self();
         }
 
         /**
@@ -545,17 +514,17 @@ public class ConductorClient {
          * @param objectMapperSupplier
          * @return
          */
-        public Builder objectMapperSupplier(Supplier<ObjectMapper> objectMapperSupplier) {
+        public T objectMapperSupplier(Supplier<ObjectMapper> objectMapperSupplier) {
             this.objectMapperSupplier = objectMapperSupplier;
-            return this;
+            return self();
         }
 
-        public Builder addHeaderSupplier(HeaderSupplier headerSupplier) {
+        public T addHeaderSupplier(HeaderSupplier headerSupplier) {
             this.headerSuppliers.add(headerSupplier);
-            return this;
+            return self();
         }
 
-        public List<HeaderSupplier> headerSupplier() {
+        protected List<HeaderSupplier> headerSupplier() {
             return headerSuppliers;
         }
 
@@ -563,7 +532,7 @@ public class ConductorClient {
             return new ConductorClient(this);
         }
 
-        void validateAndAssignDefaults() {
+        protected void validateAndAssignDefaults() {
             if (StringUtils.isBlank(basePath)) {
                 throw new IllegalArgumentException("basePath cannot be blank");
             }
@@ -571,7 +540,6 @@ public class ConductorClient {
             if (basePath.endsWith("/")) {
                 basePath = basePath.substring(0, basePath.length() - 1);
             }
-
         }
     }
 }

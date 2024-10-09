@@ -10,26 +10,19 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.automator.events;
-
-import java.time.Duration;
+package com.netflix.conductor.client.events.task;
 
 import lombok.Getter;
-import lombok.ToString;
 
 @Getter
-@ToString
-public final class TaskExecutionFailure extends TaskRunnerEvent {
-    public final String taskId;
-    public final String workerId;
-    private final Duration duration;
-    private final Throwable cause;
+public class TaskPayloadUsedEvent extends TaskClientEvent {
 
-    public TaskExecutionFailure(String taskType, String taskId, String workerId, Throwable cause, long durationInMillis) {
+    private final String operation;
+    private final String payloadType;
+
+    public TaskPayloadUsedEvent(String taskType, String operation, String payloadType) {
         super(taskType);
-        this.cause = cause;
-        this.taskId = taskId;
-        this.workerId = workerId;
-        this.duration = Duration.ofMillis(durationInMillis);
+        this.operation = operation;
+        this.payloadType = payloadType;
     }
 }

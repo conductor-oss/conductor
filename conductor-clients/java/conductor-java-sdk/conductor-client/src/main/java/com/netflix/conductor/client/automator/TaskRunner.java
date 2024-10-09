@@ -19,29 +19,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.client.automator.events.PollCompleted;
-import com.netflix.conductor.client.automator.events.PollFailure;
-import com.netflix.conductor.client.automator.events.PollStarted;
-import com.netflix.conductor.client.automator.events.TaskExecutionCompleted;
-import com.netflix.conductor.client.automator.events.TaskExecutionFailure;
-import com.netflix.conductor.client.automator.events.TaskExecutionStarted;
-import com.netflix.conductor.client.automator.events.TaskRunnerEvent;
 import com.netflix.conductor.client.automator.filters.PollFilter;
 import com.netflix.conductor.client.config.PropertyFactory;
+import com.netflix.conductor.client.events.dispatcher.EventDispatcher;
+import com.netflix.conductor.client.events.taskrunner.PollCompleted;
+import com.netflix.conductor.client.events.taskrunner.PollFailure;
+import com.netflix.conductor.client.events.taskrunner.PollStarted;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionCompleted;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionFailure;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionStarted;
+import com.netflix.conductor.client.events.taskrunner.TaskRunnerEvent;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -66,7 +63,7 @@ class TaskRunner {
     private String domain;
     private volatile boolean pollingAndExecuting = true;
     private final List<PollFilter> pollFilters;
-    private final Map<Class<? extends TaskRunnerEvent>, List<Consumer<? extends TaskRunnerEvent>>> listeners;
+    private final EventDispatcher<TaskRunnerEvent> eventDispatcher;
 
     TaskRunner(Worker worker,
                TaskClient taskClient,
@@ -76,7 +73,7 @@ class TaskRunner {
                int threadCount,
                int taskPollTimeout,
                List<PollFilter> pollFilters,
-               Map<Class<? extends TaskRunnerEvent>, List<Consumer<? extends TaskRunnerEvent>>> listeners) {
+               EventDispatcher<TaskRunnerEvent> eventDispatcher) {
         this.worker = worker;
         this.taskClient = taskClient;
         this.updateRetryCount = updateRetryCount;
@@ -85,7 +82,7 @@ class TaskRunner {
         this.taskType = worker.getTaskDefName();
         this.permits = new Semaphore(threadCount);
         this.pollFilters = pollFilters;
-        this.listeners = listeners;
+        this.eventDispatcher = eventDispatcher;
 
         //1. Is there a worker level override?
         this.domain = PropertyFactory.getString(taskType, Worker.PROP_DOMAIN, null);
@@ -167,7 +164,7 @@ class TaskRunner {
     }
 
     private List<Task> pollTasksForWorker() {
-        publish(new PollStarted(taskType));
+        eventDispatcher.publish(new PollStarted(taskType));
 
         if (worker.paused()) {
             LOGGER.trace("Worker {} has been paused. Not polling anymore!", worker.getClass());
@@ -199,7 +196,7 @@ class TaskRunner {
             stopwatch.stop();
             long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
             LOGGER.debug("Time taken to poll {} task with a batch size of {} is {} ms", taskType, tasks.size(), elapsed);
-            publish(new PollCompleted(taskType, elapsed));
+            eventDispatcher.publish(new PollCompleted(taskType, elapsed));
         } catch (Throwable e) {
             permits.release(pollCount - tasks.size());
 
@@ -219,7 +216,7 @@ class TaskRunner {
             }
 
             long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            publish(new PollFailure(taskType, elapsed, e));
+            eventDispatcher.publish(new PollFailure(taskType, elapsed, e));
         }
 
         return tasks;
@@ -243,7 +240,7 @@ class TaskRunner {
             };
 
     private void processTask(Task task) {
-        publish(new TaskExecutionStarted(taskType, task.getTaskId(), worker.getIdentity()));
+        eventDispatcher.publish(new TaskExecutionStarted(taskType, task.getTaskId(), worker.getIdentity()));
         LOGGER.trace("Executing task: {} of type: {} in worker: {} at {}", task.getTaskId(), taskType, worker.getClass().getSimpleName(), worker.getIdentity());
         LOGGER.trace("task {} is getting executed after {} ms of getting polled", task.getTaskId(), (System.currentTimeMillis() - task.getStartTime()));
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -280,7 +277,7 @@ class TaskRunner {
                     worker.getIdentity());
             result = worker.execute(task);
             stopwatch.stop();
-            publish(new TaskExecutionCompleted(taskType, task.getTaskId(), worker.getIdentity(), stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+            eventDispatcher.publish(new TaskExecutionCompleted(taskType, task.getTaskId(), worker.getIdentity(), stopwatch.elapsed(TimeUnit.MILLISECONDS)));
             result.setWorkflowInstanceId(task.getWorkflowInstanceId());
             result.setTaskId(task.getTaskId());
             result.setWorkerId(worker.getIdentity());
@@ -288,7 +285,7 @@ class TaskRunner {
             if (stopwatch.isRunning()) {
                 stopwatch.stop();
             }
-            publish(new TaskExecutionFailure(taskType, task.getTaskId(), worker.getIdentity(), e, stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+            eventDispatcher.publish(new TaskExecutionFailure(taskType, task.getTaskId(), worker.getIdentity(), e, stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 
             LOGGER.error(
                     "Unable to execute task: {} of type: {}",
@@ -350,10 +347,15 @@ class TaskRunner {
         }
     }
 
-    //FIXME
     private Optional<String> upload(TaskResult result, String taskType) {
-        // do nothing
-        return Optional.empty();
+        try {
+            return taskClient.evaluateAndUploadLargePayload(result.getOutputData(), taskType);
+        } catch (IllegalArgumentException iae) {
+            result.setReasonForIncompletion(iae.getMessage());
+            result.setOutputData(null);
+            result.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+            return Optional.empty();
+        }
     }
 
     private <T, R> R retryOperation(Function<T, R> operation, int count, T input, String opName) {
@@ -368,42 +370,6 @@ class TaskRunner {
             }
         }
         throw new RuntimeException("Exhausted retries performing " + opName);
-    }
-
-    private void publish(TaskRunnerEvent event) {
-        if (noListeners(event)) {
-            return;
-        }
-
-        CompletableFuture.runAsync(() -> {
-            List<Consumer<? extends TaskRunnerEvent>> eventListeners = getEventListeners(event);
-            for (Consumer<? extends TaskRunnerEvent> listener : eventListeners) {
-                ((Consumer<TaskRunnerEvent>) listener).accept(event);
-            }
-        });
-    }
-
-    private boolean noListeners(TaskRunnerEvent event) {
-        List<Consumer<? extends TaskRunnerEvent>> specificEventListeners = this.listeners.get(event.getClass());
-        List<Consumer<? extends TaskRunnerEvent>> promiscuousListeners = this.listeners.get(TaskRunnerEvent.class);
-
-        return (specificEventListeners == null || specificEventListeners.isEmpty())
-                && (promiscuousListeners == null || promiscuousListeners.isEmpty());
-    }
-
-    private List<Consumer<? extends TaskRunnerEvent>> getEventListeners(TaskRunnerEvent event) {
-        List<Consumer<? extends TaskRunnerEvent>> specificEventListeners = this.listeners.get(event.getClass());
-        List<Consumer<? extends TaskRunnerEvent>> promiscuousListeners = this.listeners.get(TaskRunnerEvent.class);
-        if (promiscuousListeners == null || promiscuousListeners.isEmpty()) {
-            return specificEventListeners;
-        }
-
-        if (specificEventListeners == null || specificEventListeners.isEmpty()) {
-            return promiscuousListeners;
-        }
-
-        return Stream.concat(specificEventListeners.stream(), promiscuousListeners.stream())
-                .collect(Collectors.toList());
     }
 
     private void handleException(Throwable t, TaskResult result, Worker worker, Task task) {

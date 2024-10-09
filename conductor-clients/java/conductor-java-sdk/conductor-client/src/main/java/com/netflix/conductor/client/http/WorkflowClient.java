@@ -12,16 +12,33 @@
  */
 package com.netflix.conductor.client.http;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
+import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
+import com.netflix.conductor.client.events.dispatcher.EventDispatcher;
+import com.netflix.conductor.client.events.listeners.ListenerRegister;
+import com.netflix.conductor.client.events.listeners.WorkflowClientListener;
+import com.netflix.conductor.client.events.workflow.WorkflowClientEvent;
+import com.netflix.conductor.client.events.workflow.WorkflowInputPayloadSizeEvent;
+import com.netflix.conductor.client.events.workflow.WorkflowPayloadUsedEvent;
+import com.netflix.conductor.client.events.workflow.WorkflowStartedEvent;
+import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -29,18 +46,36 @@ import com.netflix.conductor.common.run.WorkflowTestRequest;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
-
+@Slf4j
 public final class WorkflowClient {
+
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+
+    private final ConductorClientConfiguration conductorClientConfiguration;
+
+    private final EventDispatcher<WorkflowClientEvent> eventDispatcher = new EventDispatcher<>();
 
     private ConductorClient client;
 
+    private PayloadStorage payloadStorage;
+
     /** Creates a default workflow client */
     public WorkflowClient() {
+        // client will be set once root uri is set
+        this(null, new DefaultConductorClientConfiguration());
     }
 
     public WorkflowClient(ConductorClient client) {
+        this(client, new DefaultConductorClientConfiguration());
+    }
+
+    public WorkflowClient(ConductorClient client, ConductorClientConfiguration config) {
         this.client = client;
+        this.payloadStorage = new PayloadStorage(client);
+        this.conductorClientConfiguration = config;
     }
 
     /**
@@ -54,6 +89,11 @@ public final class WorkflowClient {
             client.shutdown();
         }
         client = new ConductorClient(rootUri);
+        payloadStorage = new PayloadStorage(client);
+    }
+
+    public void registerListener(WorkflowClientListener listener) {
+        ListenerRegister.register(listener, eventDispatcher);
     }
 
     /**
@@ -70,6 +110,10 @@ public final class WorkflowClient {
                 StringUtils.isBlank(startWorkflowRequest.getExternalInputPayloadStoragePath()),
                 "External Storage Path must not be set");
 
+        if (conductorClientConfiguration.isEnforceThresholds()) {
+            checkAndUploadToExternalStorage(startWorkflowRequest);
+        }
+
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow")
@@ -79,7 +123,57 @@ public final class WorkflowClient {
         ConductorClientResponse<String> resp = client.execute(request, new TypeReference<>() {
         });
 
+        eventDispatcher.publish(new WorkflowStartedEvent(startWorkflowRequest.getName(), startWorkflowRequest.getVersion()));
         return resp.getData();
+    }
+
+    private void checkAndUploadToExternalStorage(StartWorkflowRequest startWorkflowRequest) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            objectMapper.writeValue(byteArrayOutputStream, startWorkflowRequest.getInput());
+            byte[] workflowInputBytes = byteArrayOutputStream.toByteArray();
+            long workflowInputSize = workflowInputBytes.length;
+            eventDispatcher.publish(new WorkflowInputPayloadSizeEvent(startWorkflowRequest.getName(),
+                    startWorkflowRequest.getVersion(), workflowInputSize));
+
+            if (workflowInputSize > conductorClientConfiguration.getWorkflowInputPayloadThresholdKB() * 1024L) {
+                if (!conductorClientConfiguration.isExternalPayloadStorageEnabled() ||
+                        (workflowInputSize > conductorClientConfiguration.getWorkflowInputMaxPayloadThresholdKB() * 1024L)) {
+                    String errorMsg = String.format("Input payload larger than the allowed threshold of: %d KB",
+                                    conductorClientConfiguration.getWorkflowInputPayloadThresholdKB());
+                    throw new ConductorClientException(errorMsg);
+                } else {
+                    eventDispatcher.publish(new WorkflowPayloadUsedEvent(startWorkflowRequest.getName(),
+                            startWorkflowRequest.getVersion(),
+                            ExternalPayloadStorage.Operation.WRITE.name(),
+                            ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.name()));
+
+                    String externalStoragePath = uploadToExternalPayloadStorage(
+                                    workflowInputBytes,
+                                    workflowInputSize);
+                    startWorkflowRequest.setExternalInputPayloadStoragePath(externalStoragePath);
+                    startWorkflowRequest.setInput(null);
+                }
+            }
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to start workflow:%s, version:%s",
+                            startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
+            log.error(errorMsg, e);
+
+            eventDispatcher.publish(new WorkflowStartedEvent(startWorkflowRequest.getName(),
+                    startWorkflowRequest.getVersion(), false, e));
+
+            throw new ConductorClientException(e);
+        }
+    }
+
+    private String uploadToExternalPayloadStorage(byte[] payloadBytes, long payloadSize) {
+        ExternalStorageLocation externalStorageLocation =
+                payloadStorage.getLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, "");
+        payloadStorage.upload(
+                externalStorageLocation.getUri(),
+                new ByteArrayInputStream(payloadBytes),
+                payloadSize);
+        return externalStorageLocation.getPath();
     }
 
     /**
@@ -465,7 +559,6 @@ public final class WorkflowClient {
         return resp.getData();
     }
 
-
     /**
      * Populates the workflow output from external payload storage if the external storage path is
      * specified.
@@ -473,9 +566,26 @@ public final class WorkflowClient {
      * @param workflow the workflow for which the output is to be populated.
      */
     private void populateWorkflowOutput(Workflow workflow) {
-        //TODO FIXME OSS MISMATCH - https://github.com/conductor-oss/conductor-java-sdk/issues/27
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
-            throw new UnsupportedOperationException("No external storage support");
+            eventDispatcher.publish(new WorkflowPayloadUsedEvent(workflow.getWorkflowName(),
+                    workflow.getWorkflowVersion(),
+                    ExternalPayloadStorage.Operation.READ.name(),
+                    ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name()));
+            workflow.setOutput(downloadFromExternalStorage(workflow.getExternalOutputPayloadStoragePath()));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> downloadFromExternalStorage(String path) {
+        Validate.notBlank(path, "uri cannot be blank");
+        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.READ,
+                ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT, path);
+        try (InputStream inputStream = payloadStorage.download(externalStorageLocation.getUri())) {
+            return objectMapper.readValue(inputStream, Map.class);
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to download payload from external storage location: %s", path);
+            log.error(errorMsg, e);
+            throw new ConductorClientException(e);
         }
     }
 

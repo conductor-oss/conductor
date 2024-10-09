@@ -15,12 +15,17 @@ package com.netflix.conductor.client.metrics.prometheus;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.netflix.conductor.client.automator.events.PollCompleted;
-import com.netflix.conductor.client.automator.events.PollFailure;
-import com.netflix.conductor.client.automator.events.PollStarted;
-import com.netflix.conductor.client.automator.events.TaskExecutionCompleted;
-import com.netflix.conductor.client.automator.events.TaskExecutionFailure;
-import com.netflix.conductor.client.automator.events.TaskExecutionStarted;
+import com.netflix.conductor.client.events.task.TaskPayloadUsedEvent;
+import com.netflix.conductor.client.events.task.TaskResultPayloadSizeEvent;
+import com.netflix.conductor.client.events.taskrunner.PollCompleted;
+import com.netflix.conductor.client.events.taskrunner.PollFailure;
+import com.netflix.conductor.client.events.taskrunner.PollStarted;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionCompleted;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionFailure;
+import com.netflix.conductor.client.events.taskrunner.TaskExecutionStarted;
+import com.netflix.conductor.client.events.workflow.WorkflowInputPayloadSizeEvent;
+import com.netflix.conductor.client.events.workflow.WorkflowPayloadUsedEvent;
+import com.netflix.conductor.client.events.workflow.WorkflowStartedEvent;
 import com.netflix.conductor.client.metrics.MetricsCollector;
 
 import com.sun.net.httpserver.HttpServer;
@@ -31,8 +36,12 @@ public class PrometheusMetricsCollector implements MetricsCollector {
 
     private static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
 
+    private static final int DEFAULT_PORT = 9991;
+
+    private static final String DEFAULT_ENDPOINT = "/metrics";
+
     public  void startServer() throws IOException {
-        startServer(9991, "/metrics");
+        startServer(DEFAULT_PORT, DEFAULT_ENDPOINT);
     }
 
     public void startServer(int port, String endpoint) throws IOException {
@@ -82,5 +91,30 @@ public class PrometheusMetricsCollector implements MetricsCollector {
     public void consume(TaskExecutionFailure e) {
         var timer = prometheusRegistry.timer("task_execution_failure", "type", e.getTaskType());
         timer.record(e.getDuration());
+    }
+
+    @Override
+    public void consume(TaskPayloadUsedEvent e) {
+        //TODO implement
+    }
+
+    @Override
+    public void consume(TaskResultPayloadSizeEvent e) {
+        //TODO implement
+    }
+
+    @Override
+    public void consume(WorkflowPayloadUsedEvent event) {
+        //TODO implement
+    }
+
+    @Override
+    public void consume(WorkflowInputPayloadSizeEvent event) {
+        //TODO implement
+    }
+
+    @Override
+    public void consume(WorkflowStartedEvent event) {
+        //TODO implement
     }
 }
