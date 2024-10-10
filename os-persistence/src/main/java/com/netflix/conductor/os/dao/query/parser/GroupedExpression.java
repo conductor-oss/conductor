@@ -12,13 +12,12 @@
  */
 package com.netflix.conductor.os.dao.query.parser;
 
-import com.netflix.conductor.os.dao.query.parser.Expression;
-import com.netflix.conductor.os.dao.query.parser.FilterProvider;
-import com.netflix.conductor.os.dao.query.parser.internal.AbstractNode;
-import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
+import java.io.InputStream;
+
 import org.opensearch.index.query.QueryBuilder;
 
-import java.io.InputStream;
+import com.netflix.conductor.os.dao.query.parser.internal.AbstractNode;
+import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
 
 /**
  * @author Viren

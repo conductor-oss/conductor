@@ -12,29 +12,16 @@
  */
 package com.netflix.conductor.os.dao.index;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.exception.NonTransientException;
-import com.netflix.conductor.core.exception.TransientException;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.os.config.OpenSearchProperties;
-import com.netflix.conductor.os.dao.index.BulkRequestWrapper;
-import com.netflix.conductor.os.dao.index.OpenSearchBaseDAO;
-import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
-import com.netflix.conductor.metrics.Monitors;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -69,15 +56,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.os.config.OpenSearchProperties;
+import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 @Trace
 public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
@@ -118,8 +118,8 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     private final String logIndexPrefix;
 
     private final String clusterHealthColor;
-    private final RestHighLevelClient elasticSearchClient;
-    private final RestClient elasticSearchAdminClient;
+    private final RestHighLevelClient openSearchClient;
+    private final RestClient openSearchAdminClient;
     private final ExecutorService executorService;
     private final ExecutorService logExecutorService;
     private final ConcurrentHashMap<String, BulkRequests> bulkRequests;
@@ -139,8 +139,8 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             ObjectMapper objectMapper) {
 
         this.objectMapper = objectMapper;
-        this.elasticSearchAdminClient = restClientBuilder.build();
-        this.elasticSearchClient = new RestHighLevelClient(restClientBuilder);
+        this.openSearchAdminClient = restClientBuilder.build();
+        this.openSearchClient = new RestHighLevelClient(restClientBuilder);
         this.clusterHealthColor = properties.getClusterHealthColor();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = properties.getIndexBatchSize();
@@ -267,7 +267,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 request.setEntity(entity);
                 String test =
                         IOUtils.toString(
-                                elasticSearchAdminClient
+                                openSearchAdminClient
                                         .performRequest(request)
                                         .getEntity()
                                         .getContent());
@@ -324,11 +324,11 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         params.put("wait_for_status", this.clusterHealthColor);
         Request request = new Request("GET", "/_cluster/health");
         request.addParameters(params);
-        elasticSearchAdminClient.performRequest(request);
+        openSearchAdminClient.performRequest(request);
     }
 
     /**
-     * Adds an index to elasticsearch if it does not exist.
+     * Adds an index to opensearch if it does not exist.
      *
      * @param index The name of the index to create.
      * @param mappingFilename Index mapping filename
@@ -353,7 +353,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                         new NStringEntity(
                                 objectMapper.writeValueAsString(root),
                                 ContentType.APPLICATION_JSON));
-                elasticSearchAdminClient.performRequest(request);
+                openSearchAdminClient.performRequest(request);
                 logger.info("Added '{}' index", index);
             } catch (ResponseException e) {
 
@@ -379,7 +379,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     }
 
     /**
-     * Adds an index to elasticsearch if it does not exist.
+     * Adds an index to opensearch if it does not exist.
      *
      * @param index The name of the index to create.
      * @throws IOException If an error occurred during requests to ES.
@@ -404,7 +404,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 Request request = new Request(HttpMethod.PUT, resourcePath);
                 request.setEntity(
                         new NStringEntity(setting.toString(), ContentType.APPLICATION_JSON));
-                elasticSearchAdminClient.performRequest(request);
+                openSearchAdminClient.performRequest(request);
                 logger.info("Added '{}' index", index);
             } catch (ResponseException e) {
 
@@ -453,7 +453,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                             ContentType.APPLICATION_JSON);
             Request request = new Request(HttpMethod.PUT, resourcePath);
             request.setEntity(entity);
-            elasticSearchAdminClient.performRequest(request);
+            openSearchAdminClient.performRequest(request);
             logger.info("Added '{}' mapping", mappingType);
         } else {
             logger.info("Mapping '{}' already exists", mappingType);
@@ -470,7 +470,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
      */
     public boolean doesResourceExist(final String resourcePath) throws IOException {
         Request request = new Request(HttpMethod.HEAD, resourcePath);
-        Response response = elasticSearchAdminClient.performRequest(request);
+        Response response = openSearchAdminClient.performRequest(request);
         return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
     }
 
@@ -496,7 +496,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                     new IndexRequest(workflowIndexName)
                             .id(workflowId)
                             .source(docBytes, XContentType.JSON);
-            elasticSearchClient.index(request, RequestOptions.DEFAULT);
+            openSearchClient.index(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -564,7 +564,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         }
 
         try {
-            elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            openSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -599,7 +599,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse response =
-                    elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return mapTaskExecLogsResponse(response);
         } catch (Exception e) {
@@ -634,7 +634,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse response =
-                    elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
             return mapGetMessagesResponse(response);
         } catch (Exception e) {
             logger.error("Failed to get messages for queue: {}", queue, e);
@@ -671,7 +671,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse response =
-                    elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                    openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return mapEventExecutionsResponse(response);
         } catch (Exception e) {
@@ -823,7 +823,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         DeleteRequest request = new DeleteRequest(workflowIndexName, workflowId);
 
         try {
-            DeleteResponse response = elasticSearchClient.delete(request, RequestOptions.DEFAULT);
+            DeleteResponse response = openSearchClient.delete(request, RequestOptions.DEFAULT);
 
             if (response.getResult() == DocWriteResponse.Result.NOT_FOUND) {
                 logger.error("Index removal failed - document not found by id: {}", workflowId);
@@ -861,7 +861,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             request.doc(source);
 
             logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-            elasticSearchClient.update(request, RequestOptions.DEFAULT);
+            openSearchClient.update(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating workflow: {}",
@@ -897,7 +897,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         DeleteRequest request = new DeleteRequest(taskIndexName, taskId);
 
         try {
-            DeleteResponse response = elasticSearchClient.delete(request, RequestOptions.DEFAULT);
+            DeleteResponse response = openSearchClient.delete(request, RequestOptions.DEFAULT);
 
             if (response.getResult() != DocWriteResponse.Result.DELETED) {
                 logger.error("Index removal failed - task not found by id: {}", workflowId);
@@ -941,7 +941,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             request.doc(source);
 
             logger.debug("Updating task: {} of workflow: {} with {}", taskId, workflowId, source);
-            elasticSearchClient.update(request, RequestOptions.DEFAULT);
+            openSearchClient.update(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating task: {} of workflow: {}",
@@ -976,10 +976,10 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         GetRequest request = new GetRequest(workflowIndexName, workflowInstanceId);
         GetResponse response;
         try {
-            response = elasticSearchClient.get(request, RequestOptions.DEFAULT);
+            response = openSearchClient.get(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
             logger.error(
-                    "Unable to get Workflow: {} from ElasticSearch index: {}",
+                    "Unable to get Workflow: {} from openSearch index: {}",
                     workflowInstanceId,
                     workflowIndexName,
                     e);
@@ -994,7 +994,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         }
 
         logger.debug(
-                "Unable to find Workflow: {} in ElasticSearch index: {}.",
+                "Unable to find Workflow: {} in openSearch index: {}.",
                 workflowInstanceId,
                 workflowIndexName);
         return null;
@@ -1073,7 +1073,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         SearchRequest searchRequest = new SearchRequest(indexName);
         searchRequest.source(searchSourceBuilder);
 
-        SearchResponse response = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+        SearchResponse response = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
         List<String> result = new LinkedList<>();
         response.getHits().forEach(hit -> result.add(hit.getId()));
@@ -1116,7 +1116,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         SearchRequest searchRequest = new SearchRequest(indexName);
         searchRequest.source(searchSourceBuilder);
 
-        SearchResponse response = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+        SearchResponse response = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
         return mapSearchResult(response, idOnly, clazz);
     }
 
@@ -1140,7 +1140,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                                                     hit.getSourceAsString(), clazz);
                                         } catch (JsonProcessingException e) {
                                             logger.error(
-                                                    "Failed to de-serialize elasticsearch from source: {}",
+                                                    "Failed to de-serialize opensearch from source: {}",
                                                     hit.getSourceAsString(),
                                                     e);
                                         }
@@ -1196,8 +1196,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
         String indexName = getIndexName(docType);
         CountRequest countRequest = new CountRequest(new String[] {indexName}, queryBuilder);
-        CountResponse countResponse =
-                elasticSearchClient.count(countRequest, RequestOptions.DEFAULT);
+        CountResponse countResponse = openSearchClient.count(countRequest, RequestOptions.DEFAULT);
         return countResponse.getCount();
     }
 
@@ -1284,7 +1283,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             retryTemplate.execute(
-                    context -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
+                    context -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

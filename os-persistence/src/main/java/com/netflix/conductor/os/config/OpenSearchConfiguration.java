@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.os.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.os.dao.index.OpenSearchRestDAO;
+import java.net.URL;
+import java.util.List;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -33,8 +33,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
-import java.net.URL;
-import java.util.List;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.os.dao.index.OpenSearchRestDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(OpenSearchProperties.class)
@@ -49,7 +51,7 @@ public class OpenSearchConfiguration {
     }
 
     @Bean
-    public RestClientBuilder elasticRestClientBuilder(OpenSearchProperties properties) {
+    public RestClientBuilder osRestClientBuilder(OpenSearchProperties properties) {
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
 
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
@@ -61,7 +63,7 @@ public class OpenSearchConfiguration {
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
             log.info(
-                    "Configure ElasticSearch with BASIC authentication. User:{}",
+                    "Configure OpenSearch with BASIC authentication. User:{}",
                     properties.getUsername());
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(
@@ -72,26 +74,24 @@ public class OpenSearchConfiguration {
                     httpClientBuilder ->
                             httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         } else {
-            log.info("Configure ElasticSearch with no authentication.");
+            log.info("Configure OpenSearch with no authentication.");
         }
         return builder;
     }
 
-    @Primary // If you are including this project, it's assumed you want ES to be your indexing
-    // mechanism
+    @Primary
     @Bean
-    public IndexDAO es7IndexDAO(
+    public IndexDAO osIndexDAO(
             RestClientBuilder restClientBuilder,
-            @Qualifier("es7RetryTemplate") RetryTemplate retryTemplate,
+            @Qualifier("osRetryTemplate") RetryTemplate retryTemplate,
             OpenSearchProperties properties,
             ObjectMapper objectMapper) {
         String url = properties.getUrl();
-        return new OpenSearchRestDAO(
-                restClientBuilder, retryTemplate, properties, objectMapper);
+        return new OpenSearchRestDAO(restClientBuilder, retryTemplate, properties, objectMapper);
     }
 
     @Bean
-    public RetryTemplate es7RetryTemplate() {
+    public RetryTemplate osRetryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
         fixedBackOffPolicy.setBackOffPeriod(1000L);

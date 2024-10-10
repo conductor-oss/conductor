@@ -12,13 +12,9 @@
  */
 package com.netflix.conductor.os.dao.index;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.os.dao.query.parser.Expression;
-import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
+import java.io.IOException;
+import java.util.ArrayList;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.index.query.BoolQueryBuilder;
@@ -26,8 +22,14 @@ import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.QueryStringQueryBuilder;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.os.dao.query.parser.Expression;
+import com.netflix.conductor.os.dao.query.parser.internal.ParserException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 abstract class OpenSearchBaseDAO implements IndexDAO {
 
@@ -70,8 +72,8 @@ abstract class OpenSearchBaseDAO implements IndexDAO {
         return text;
     }
 
-    org.opensearch.index.query.BoolQueryBuilder boolQueryBuilder(String expression, String queryString)
-            throws ParserException {
+    org.opensearch.index.query.BoolQueryBuilder boolQueryBuilder(
+            String expression, String queryString) throws ParserException {
         QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
         if (StringUtils.isNotEmpty(expression)) {
             Expression exp = Expression.fromString(expression);

@@ -12,9 +12,6 @@
  */
 package com.netflix.conductor.os.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.convert.DurationUnit;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
@@ -22,6 +19,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.elasticsearch")
 public class OpenSearchProperties {

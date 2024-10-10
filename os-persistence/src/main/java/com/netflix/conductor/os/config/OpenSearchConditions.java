@@ -33,10 +33,7 @@ public class OpenSearchConditions {
         static class enabledIndexing {}
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(
-                name = "conductor.elasticsearch.version",
-                havingValue = "os",
-                matchIfMissing = true)
+        @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "opensearch")
         static class enabledOS {}
     }
 }

@@ -51,17 +51,17 @@ services:
     image: opensearchproject/opensearch:latest
     environment:
       - plugins.security.disabled=true
-      - cluster.name=opensearch-cluster # Name the cluster
-      - node.name=conductor-opensearch # Name the node that will run in this container
-      - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
-      - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
+      - cluster.name=conductor
+      - node.name=conductor-node
+      - discovery.seed_hosts=conductor-node
+      - cluster.initial_cluster_manager_nodes=conductor-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Conductor123!
     volumes:
       - esdata-conductor:/usr/share/opensearch/data
     networks:
       - internal
     ports:
-      - 9201:9200
+      - 9200:9200
     healthcheck:
       test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s
@@ -77,12 +77,12 @@ services:
     image: opensearchproject/opensearch-dashboards:latest
     container_name: opensearch-dashboards
     ports:
-      - 5601:5601 # Map host port 5601 to container port 5601
+      - 5601:5601
     expose:
-      - "5601" # Expose port 5601 for web access to OpenSearch Dashboards
+      - "5601"
     environment:
       - 'OPENSEARCH_HOSTS=["http://conductor-opensearch:9200"]'
-      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" # disables security dashboards plugin in OpenSearch Dashboards
+      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" 
     networks:
       - internal
 

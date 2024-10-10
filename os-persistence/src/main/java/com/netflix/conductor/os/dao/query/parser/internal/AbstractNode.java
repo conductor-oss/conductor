@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.os.dao.query.parser.internal;
 
-import com.netflix.conductor.os.dao.query.parser.internal.FunctionThrowingException;
-
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.HashSet;

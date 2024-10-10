@@ -12,8 +12,6 @@
  */
 package com.netflix.conductor.os.dao.query.parser.internal;
 
-import com.netflix.conductor.os.dao.query.parser.internal.AbstractNode;
-
 import java.io.InputStream;
 
 /**

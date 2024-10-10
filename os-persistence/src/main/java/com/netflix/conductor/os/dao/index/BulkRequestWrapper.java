@@ -12,12 +12,12 @@
  */
 package com.netflix.conductor.os.dao.index;
 
+import java.util.Objects;
+
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
 import org.springframework.lang.NonNull;
-
-import java.util.Objects;
 
 /** Thread-safe wrapper for {@link BulkRequest}. */
 class BulkRequestWrapper {
