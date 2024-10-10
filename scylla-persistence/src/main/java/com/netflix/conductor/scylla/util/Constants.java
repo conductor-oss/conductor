@@ -27,6 +27,7 @@ public interface Constants {
     String TABLE_EVENT_EXECUTIONS = "event_executions";
 
     String TABLE_TASK_IN_PROGRESS = "task_in_progress";
+    String TABLE_POLL_DATA = "poll_data";
 
     String WORKFLOW_ID_KEY = "workflow_id";
     String SHARD_ID_KEY = "shard_id";
@@ -45,6 +46,9 @@ public interface Constants {
     String WORKFLOW_DEF_NAME_VERSION_KEY = "workflow_def_name_version";
     String TASK_DEFS_KEY = "task_defs";
     String TASK_DEFINITION_KEY = "task_definition";
+    String DOMAIN_KEY = "domain";
+    String WORKER_ID_KEY = "worker_id";
+    String LAST_POLL_TIME_KEY = "last_poll_time";
     String HANDLERS_KEY = "handlers";
     String EVENT_HANDLER_NAME_KEY = "event_handler_name";
     String EVENT_HANDLER_KEY = "event_handler";

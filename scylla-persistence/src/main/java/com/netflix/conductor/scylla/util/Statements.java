@@ -667,6 +667,44 @@ public class Statements {
                 .getQueryString();
     }
 
+    /**
+     * @return cql query statement to insert poll data into the "poll_data" table
+     */
+    public String getInsertPollDataStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_POLL_DATA)
+                .value(TASK_DEF_NAME_KEY, bindMarker())
+                .value(DOMAIN_KEY, bindMarker())
+                .value(WORKER_ID_KEY, bindMarker())
+                .value(LAST_POLL_TIME_KEY, bindMarker())
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve all poll data by task Def Name from the "poll_data"
+     *     table
+     */
+    public String getSelectAllPollDataByTaskDefNameStatement() {
+        return QueryBuilder.select()
+                .all()
+                .from(keyspace, TABLE_POLL_DATA)
+                .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve all poll data by task Def Name and domain from the
+     *     "poll_data" table
+     */
+    public String getSelectPollDataByTaskDefNameAndDomainStatement() {
+        return QueryBuilder.select()
+                .all()
+                .from(keyspace, TABLE_POLL_DATA)
+                .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+                .and(eq(DOMAIN_KEY, bindMarker()))
+                .limit(1)
+                .getQueryString();
+    }
+
     // Select Statements
 
     /**

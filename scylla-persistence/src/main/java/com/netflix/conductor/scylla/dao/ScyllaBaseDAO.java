@@ -100,6 +100,7 @@ public abstract class ScyllaBaseDAO {
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
+                session.execute(getCreatePollDataTableStatement());
                 // Added task_in_progress
                 session.execute(getCreateTaskInProgressTableStatement());
                 // Added workflow_lookup
@@ -197,6 +198,16 @@ public abstract class ScyllaBaseDAO {
                 .addPartitionKey(TASK_DEFS_KEY, DataType.text())
                 .addClusteringColumn(TASK_DEF_NAME_KEY, DataType.text())
                 .addColumn(TASK_DEFINITION_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    private String getCreatePollDataTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_POLL_DATA)
+                .ifNotExists()
+                .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
+                .addClusteringColumn(DOMAIN_KEY, DataType.text())
+                .addColumn(WORKER_ID_KEY, DataType.text())
+                .addColumn(LAST_POLL_TIME_KEY, DataType.bigint())
                 .getQueryString();
     }
 

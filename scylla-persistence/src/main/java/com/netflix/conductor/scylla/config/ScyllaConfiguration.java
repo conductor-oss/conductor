@@ -123,8 +123,12 @@ public class ScyllaConfiguration {
     }
 
     @Bean
-    public ScyllaPollDataDAO scyllaPollDataDAO() {
-        return new ScyllaPollDataDAO();
+    public ScyllaPollDataDAO scyllaPollDataDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            ScyllaProperties properties,
+            Statements statements) {
+        return new ScyllaPollDataDAO(session, objectMapper, properties, statements);
     }
 
     @Bean
