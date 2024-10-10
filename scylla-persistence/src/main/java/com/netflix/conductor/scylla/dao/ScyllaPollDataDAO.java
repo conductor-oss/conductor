@@ -72,7 +72,9 @@ public class ScyllaPollDataDAO extends ScyllaBaseDAO implements PollDataDAO {
     @Override
     public void updateLastPollData(String taskDefName, String domain, String workerId) {
         try {
-            session.execute(updateLastPollDataStatement.bind(taskDefName, domain, workerId));
+            session.execute(
+                    updateLastPollDataStatement.bind(
+                            taskDefName, domain, workerId, System.currentTimeMillis()));
             recordCassandraDaoRequests("storeEventHandler");
         } catch (DriverException e) {
             Monitors.error(CLASS_NAME, "insertOrUpdateEventHandler");
