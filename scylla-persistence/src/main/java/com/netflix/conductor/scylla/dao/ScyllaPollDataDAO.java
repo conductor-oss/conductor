@@ -71,6 +71,9 @@ public class ScyllaPollDataDAO extends ScyllaBaseDAO implements PollDataDAO {
 
     @Override
     public void updateLastPollData(String taskDefName, String domain, String workerId) {
+        if (domain == null) {
+            domain = "";
+        }
         try {
             session.execute(
                     updateLastPollDataStatement.bind(
@@ -89,6 +92,9 @@ public class ScyllaPollDataDAO extends ScyllaBaseDAO implements PollDataDAO {
     @Override
     public PollData getPollData(String taskDefName, String domain) {
         try {
+            if (domain == null) {
+                domain = "";
+            }
             ResultSet resultSet = session.execute(selectPollDataStatement.bind(taskDefName));
             List<Row> rows = resultSet.all();
             if (rows.size() == 0) {
