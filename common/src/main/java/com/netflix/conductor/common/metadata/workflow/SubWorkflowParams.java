@@ -45,7 +45,7 @@ public class SubWorkflowParams {
 
     private IdempotencyStrategy idempotencyStrategy;
 
-    //Priority of the sub workflow, not set inherits from the parent
+    // Priority of the sub workflow, not set inherits from the parent
     private Integer priority;
 
     public String getIdempotencyKey() {
