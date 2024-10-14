@@ -1,84 +1,31 @@
-# Conductor Java Client/SDK V4
+# Conductor Java SDK v4
 
-## Overview
+[Conductor](https://www.conductor-oss.org/) is the leading open-source orchestration platform allowing developers to build highly scalable distributed applications.
 
-**This project is currently in incubating status**. 
+This Gradle project includes multiple modules that enable developers to manage, create, test, and run workflows and execute workers.
 
-It is under active development and subject to changes as it evolves. While the core features are functional, the project is not yet considered stable, and breaking changes may occur as we refine the architecture and add new functionality.
+## Projects
 
-These changes are largely driven by **"dependency optimization"** and a redesign of the client to introduces filters, events and listeners to allow extensibility through callbacks or Event-Driven Architecture, IoC.
+The Conductor Java SDK v4 is organized into several key modules to help developers build and manage workflows and workers with ease
 
-This client has a reduced dependency set. The aim is to minimize Classpath pollution and prevent potential conflicts.
+- **[conductor-client](conductor-client/README.md)**: This module provides the core client library to interact with Conductor through its HTTP API, enabling the creation, execution, and management of workflows, while also providing a framework for building workers.
 
-Consider Netflix Eureka, a direct dependency of the OSS v3 client. Some users have reported version conflicts. To prevent these unnecessary conflicts and the hassle of managing exclusions in Gradle or Maven configurations, we’ve decided to remove this direct dependency.
+- **[conductor-client-metrics](conductor-client-metrics/README.md)**: (Incubating) Provides metrics and monitoring capabilities for Conductor clients. 
 
-In OSS v3 client it's used by `TaskPollExecutor` before polling to make the following check:
+- **[conductor-client-spring](conductor-client-spring/README.md)**: Provides Spring framework configurations, simplifying the use of Conductor client in Spring-based applications.
 
-```java
-if (eurekaClient != null
-        && !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP)
-        && !discoveryOverride) {
-    LOGGER.debug("Instance is NOT UP in discovery - will not poll");
-    return;
-}
-```
+- **[examples](examples/README.md)**: Samples demonstrating how to use the Conductor Java SDK to create and manage workflows, tasks, and workers. These examples provide practical starting points for developers integrating Conductor into their applications.
 
-You will be able to achieve the same with a `PollFilter` (we plan to provide modules with some implementations). It could look something like this:
+- **[sdk](sdk/README.md)**: The SDK module allows developers to create, test and execute workflows using code.
 
-```java
- var runnerConfigurer = new TaskRunnerConfigurer
-        .Builder(taskClient, List.of(new ApprovalWorker()))
-        .withThreadCount(10)
-        .withPollFilter((String taskType, String domain) -> {
-            return eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP);
-        })
-        .withListener(PollCompleted.class, (e) -> {
-            log.info("Poll Completed {}", e);
-            var timer = prometheusRegistry.timer("poll_completed", "type", e.getTaskType());
-            timer.record(e.getDuration());
-        })
-        .build();
+- **orkes-client**: Extends the Conductor client by adding authentication needed for Orkes Conductor, and includes additional clients for interacting with endpoints specific to the Orkes-hosted Conductor platform.
 
-runnerConfigurer.init();
-```
+- **orkes-spring**: Provides Spring framework configurations, simplifying the use of Orkes Conductor client in Spring-based applications.
 
-The telemetry part was also removed but you can achieve the same with a MetricsCollector, or Events and Listeners as shown in the example.
 
-### Breaking Changes
+## Roadmap
 
-While we aim to minimize breaking changes, there are a few areas where such changes are necessary. 
-
-Below are two specific examples of where changes may affect your existing code:
-
-#### (1) Jersey Config
-
-The `WorkflowClient` and other clients will retain the same methods, but constructors with dependencies on Jersey are being removed. For example:
-
-```java
-public WorkflowClient(ClientConfig config, ClientHandler handler) {
-     this(config, new DefaultConductorClientConfiguration(), handler);
-}
-```
-
-#### (2) Eureka Client
-
-In the Worker API we've removed the Eureka Client configuration option (from `TaskRunnerConfigurer`).
-
-```java
-* @param eurekaClient Eureka client - used to identify if the server is in discovery or
- *     not. When the server goes out of discovery, the polling is terminated. If passed
- *     null, discovery check is not done.
- * @return Builder instance
- */
-public Builder withEurekaClient(EurekaClient eurekaClient) {
-    this.eurekaClient = eurekaClient;
-    return this;
-}
-```
-
-## TODO
-
-Take a look at this board: https://github.com/orgs/conductor-oss/projects/3
+For insights into the Conductor project's future plans and upcoming features, check out the roadmap here: [Conductor OSS Roadmap](https://github.com/orgs/conductor-oss/projects/3).
 
 ## Feedback
 
