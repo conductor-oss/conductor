@@ -22,19 +22,20 @@ import org.apache.commons.lang3.time.DateUtils;
 
 public class DateTimeUtils {
 
-    private static final String[] patterns =
+    private static final String[] DATE_PATTERNS =
             new String[] {"yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm z", "yyyy-MM-dd"};
+    private static final Pattern DURATION_PATTERN =
+            Pattern.compile(
+                    """
+                    \\s*(?:(\\d+)\\s*(?:days?|d))?\
+                    \\s*(?:(\\d+)\\s*(?:hours?|hrs?|h))?\
+                    \\s*(?:(\\d+)\\s*(?:minutes?|mins?|m))?\
+                    \\s*(?:(\\d+)\\s*(?:seconds?|secs?|s))?\
+                    \\s*""",
+                    Pattern.CASE_INSENSITIVE);
 
     public static Duration parseDuration(String text) {
-        Matcher m =
-                Pattern.compile(
-                                "\\s*(?:(\\d+)\\s*(?:days?|d))?"
-                                        + "\\s*(?:(\\d+)\\s*(?:hours?|hrs?|h))?"
-                                        + "\\s*(?:(\\d+)\\s*(?:minutes?|mins?|m))?"
-                                        + "\\s*(?:(\\d+)\\s*(?:seconds?|secs?|s))?"
-                                        + "\\s*",
-                                Pattern.CASE_INSENSITIVE)
-                        .matcher(text);
+        Matcher m = DURATION_PATTERN.matcher(text);
         if (!m.matches()) throw new IllegalArgumentException("Not valid duration: " + text);
 
         int days = (m.start(1) == -1 ? 0 : Integer.parseInt(m.group(1)));
@@ -45,6 +46,6 @@ public class DateTimeUtils {
     }
 
     public static Date parseDate(String date) throws ParseException {
-        return DateUtils.parseDate(date, patterns);
+        return DateUtils.parseDate(date, DATE_PATTERNS);
     }
 }
