@@ -39,6 +39,9 @@ public class PostgresProperties {
 
     private boolean onlyIndexOnStatusChange = false;
 
+    /** The boolean indicating whether data migrations should be executed */
+    private boolean applyDataMigrations = true;
+
     public String schema = "public";
 
     public boolean allowFullTextQueries = true;
@@ -81,6 +84,14 @@ public class PostgresProperties {
 
     public void setOnlyIndexOnStatusChange(boolean onlyIndexOnStatusChange) {
         this.onlyIndexOnStatusChange = onlyIndexOnStatusChange;
+    }
+
+    public boolean isApplyDataMigrations() {
+        return applyDataMigrations;
+    }
+
+    public void setApplyDataMigrations(boolean applyDataMigrations) {
+        this.applyDataMigrations = applyDataMigrations;
     }
 
     public Integer getDeadlockRetryMax() {
