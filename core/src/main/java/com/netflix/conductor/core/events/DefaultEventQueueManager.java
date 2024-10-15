@@ -164,6 +164,13 @@ public class DefaultEventQueueManager extends LifecycleAwareComponent implements
                         }
                     });
 
+            Map<String, Map<String, Long>> eventToQueueSize = getQueueSizes();
+            eventToQueueSize.forEach(
+                    (event, queueMap) -> {
+                        Map.Entry<String, Long> queueSize = queueMap.entrySet().iterator().next();
+                        Monitors.recordEventQueueDepth(queueSize.getKey(), queueSize.getValue());
+                    });
+
             LOGGER.debug("Event queues: {}", eventToQueueMap.keySet());
             LOGGER.debug("Stored queue: {}", events);
             LOGGER.debug("Removed queue: {}", removed);
