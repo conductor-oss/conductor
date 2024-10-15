@@ -16,10 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
@@ -32,13 +36,15 @@ import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
+@AutoConfigureOrder(Ordered.LOWEST_PRECEDENCE)
 @EnableConfigurationProperties(ClientProperties.class)
 @Slf4j
 public class ConductorClientAutoConfiguration {
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "conductor.client", name = "rootUri")
     public ConductorClient conductorClient(ClientProperties clientProperties) {
         // TODO allow configuration of other properties via application.properties
         return ConductorClient.builder()
@@ -46,20 +52,23 @@ public class ConductorClientAutoConfiguration {
                 .build();
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public TaskClient taskClient(ConductorClient client) {
         return new TaskClient(client);
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public AnnotatedWorkerExecutor annotatedWorkerExecutor(TaskClient taskClient) {
         return new AnnotatedWorkerExecutor(taskClient);
     }
 
-    @ConditionalOnMissingBean
     @Bean(initMethod = "init", destroyMethod = "shutdown")
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ConductorClient.class)
     public TaskRunnerConfigurer taskRunnerConfigurer(Environment env,
                                                      TaskClient taskClient,
                                                      ClientProperties clientProperties,
@@ -90,12 +99,15 @@ public class ConductorClientAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ConductorClient.class)
     public WorkflowExecutor workflowExecutor(ConductorClient client, AnnotatedWorkerExecutor annotatedWorkerExecutor) {
         return new WorkflowExecutor(client, annotatedWorkerExecutor);
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ConductorClient.class)
     public WorkflowClient workflowClient(ConductorClient client) {
         return new WorkflowClient(client);
     }

@@ -1,0 +1,2 @@
+com.netflix.conductor.client.spring.ConductorClientAutoConfiguration
+com.netflix.conductor.client.spring.ConductorWorkerAutoConfiguration

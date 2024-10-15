@@ -13,9 +13,10 @@
 package io.orkes.conductor.client.spring;
 
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import io.orkes.conductor.client.ApiClient;
@@ -30,7 +31,7 @@ import io.orkes.conductor.client.http.OrkesWorkflowClient;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @Slf4j
 public class OrkesConductorClientAutoConfiguration {
 
@@ -95,41 +96,56 @@ public class OrkesConductorClientAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public OrkesClients orkesClients(ApiClient client) {
         return new OrkesClients(client);
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public OrkesTaskClient orkesTaskClient(OrkesClients clients) {
         return clients.getTaskClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public OrkesMetadataClient orkesMetadataClient(OrkesClients clients) {
         return clients.getMetadataClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public OrkesWorkflowClient orkesWorkflowClient(OrkesClients clients) {
         return clients.getWorkflowClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public AuthorizationClient orkesAuthorizationClient(OrkesClients clients) {
         return clients.getAuthorizationClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public OrkesEventClient orkesEventClient(OrkesClients clients) {
         return clients.getEventClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public SchedulerClient orkesSchedulerClient(OrkesClients clients) {
         return clients.getSchedulerClient();
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(ApiClient.class)
     public SecretClient orkesSecretClient(OrkesClients clients) {
         return clients.getSecretClient();
     }
