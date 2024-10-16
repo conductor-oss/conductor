@@ -12,7 +12,6 @@ import {
   useWorkflowNamesAndVersions,
 } from "../../data/workflow";
 import WorkflowDAG from "../../components/diagram/WorkflowDAG";
-import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import {
   configureMonaco,
@@ -23,6 +22,7 @@ import SaveWorkflowDialog from "./SaveWorkflowDialog";
 import update from "immutability-helper";
 import { usePushHistory } from "../../components/NavLink";
 import { timestampRenderer } from "../../utils/helpers";
+import { WorkflowVisualizer } from "orkes-workflow-visualizer";
 
 import {
   KeyboardArrowLeftRounded,
@@ -67,8 +67,8 @@ const useStyles = makeStyles({
     gap: 8,
   },
   editorLineDecorator: {
-    backgroundColor: "rgb(45, 45, 45, 0.1)"
-  }
+    backgroundColor: "rgb(45, 45, 45, 0.1)",
+  },
 });
 
 const actions = {
@@ -240,21 +240,26 @@ export default function Workflow() {
   };
 
   const handleWorkflowNodeClick = (node) => {
-    let editor = editorRef.current.getModel()
-    let searchResult = editor.findMatches(`"taskReferenceName": "${node.ref}"`)
-    if (searchResult.length){
-      editorRef.current.revealLineInCenter(searchResult[0]?.range?.startLineNumber, 0);
-      setDecorations(editorRef.current.deltaDecorations(decorations, [
-        {
-          range: searchResult[0]?.range,
-          options: {
-            isWholeLine: true,
-            inlineClassName: classes.editorLineDecorator
-          }
-        }
-      ]))
+    let editor = editorRef.current.getModel();
+    let searchResult = editor.findMatches(`"taskReferenceName": "${node.ref}"`);
+    if (searchResult.length) {
+      editorRef.current.revealLineInCenter(
+        searchResult[0]?.range?.startLineNumber,
+        0
+      );
+      setDecorations(
+        editorRef.current.deltaDecorations(decorations, [
+          {
+            range: searchResult[0]?.range,
+            options: {
+              isWholeLine: true,
+              inlineClassName: classes.editorLineDecorator,
+            },
+          },
+        ])
+      );
     }
-  }
+  };
 
   return (
     <>
@@ -369,8 +374,17 @@ export default function Workflow() {
           className={classes.resizer}
           onMouseDown={(e) => handleMouseDown(e)}
         />
-        <div className={classes.workflowGraph}>
-          {dag && <WorkflowGraph dag={dag} onClick={handleWorkflowNodeClick} />}
+        <div className={classes.workflowGraph} style={{ overflow: "scroll" }}>
+          {dag && dag?.workflowDef && (
+            <WorkflowVisualizer
+              maxHeightOverride
+              pannable
+              zoomable
+              zoom={0.7}
+              data={dag?.workflowDef}
+              onClick={(e, data) => handleWorkflowNodeClick({ ref: data?.id })}
+            />
+          )}
         </div>
       </div>
     </>
