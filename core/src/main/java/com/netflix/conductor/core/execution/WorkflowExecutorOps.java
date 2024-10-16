@@ -1806,13 +1806,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @param workflowId The workflow to be evaluated at higher priority
      */
     private void expediteLazyWorkflowEvaluation(String workflowId) {
-        if (queueDAO.containsMessage(DECIDER_QUEUE, workflowId)) {
-            queueDAO.postpone(DECIDER_QUEUE, workflowId, EXPEDITED_PRIORITY, 0);
-        } else {
-            queueDAO.push(DECIDER_QUEUE, workflowId, EXPEDITED_PRIORITY, 0);
-        }
-
-        LOGGER.info("Pushed workflow {} to {} for expedited evaluation", workflowId, DECIDER_QUEUE);
+        decide(workflowId);
     }
 
     private static boolean isJoinOnFailedPermissive(List<String> joinOn, WorkflowModel workflow) {
