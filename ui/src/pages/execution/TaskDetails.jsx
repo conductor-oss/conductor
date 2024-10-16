@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tabs, Tab, Paper } from "../../components";
 import Timeline from "./Timeline";
 import TaskList from "./TaskList";
-import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import { makeStyles } from "@material-ui/styles";
+import { WorkflowVisualizer } from "orkes-workflow-visualizer";
 
 const useStyles = makeStyles({
   taskWrapper: {
@@ -32,11 +32,14 @@ export default function TaskDetails({
         </Tabs>
 
         {tabIndex === 0 && (
-          <WorkflowGraph
-            selectedTask={selectedTask}
+          <WorkflowVisualizer
+            maxHeightOverride
+            pannable
+            zoomable
+            zoom={0.7}
+            data={dag?.execution}
             executionMode={true}
-            dag={dag}
-            onClick={setSelectedTask}
+            onClick={(e, data) => setSelectedTask({ ref: data?.id })}
           />
         )}
         {tabIndex === 1 && (
