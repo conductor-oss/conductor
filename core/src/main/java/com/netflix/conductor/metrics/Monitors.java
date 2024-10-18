@@ -235,6 +235,10 @@ public class Monitors {
                 StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
+    public static void recordEventQueueDepth(String queueType, long size) {
+        gauge(classQualifier, "event_queue_depth", size, "queueType", queueType);
+    }
+
     public static void recordTaskInProgress(String taskType, long size, String ownerApp) {
         gauge(
                 classQualifier,
