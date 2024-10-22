@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution.mapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,10 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
+            joinTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
+        }
 
         return List.of(joinTask);
     }
