@@ -68,13 +68,19 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
     }
 
     @Override
-    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
+    @CachePut(
+            value = EVENT_HANDLER_CACHE,
+            key = "#eventHandler.name",
+            condition = "#eventHandler != null")
     public void addEventHandler(EventHandler eventHandler) {
         scyllaEventHandlerDAO.addEventHandler(eventHandler);
     }
 
     @Override
-    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
+    @CachePut(
+            value = EVENT_HANDLER_CACHE,
+            key = "#eventHandler.name",
+            condition = "#eventHandler != null")
     public void updateEventHandler(EventHandler eventHandler) {
         scyllaEventHandlerDAO.updateEventHandler(eventHandler);
     }

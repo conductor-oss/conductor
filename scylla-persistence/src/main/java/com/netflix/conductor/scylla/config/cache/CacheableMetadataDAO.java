@@ -72,14 +72,14 @@ public class CacheableMetadataDAO implements MetadataDAO {
     }
 
     @Override
-    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name", condition = "#taskDef != null")
     public TaskDef createTaskDef(TaskDef taskDef) {
         scyllaMetadataDAO.createTaskDef(taskDef);
         return taskDef;
     }
 
     @Override
-    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name", condition = "#taskDef != null")
     public TaskDef updateTaskDef(TaskDef taskDef) {
         return scyllaMetadataDAO.updateTaskDef(taskDef);
     }
