@@ -30,6 +30,9 @@ public class ArchivingWorkflowListenerConfiguration {
             ExecutionDAOFacade executionDAOFacade, ArchivingWorkflowListenerProperties properties) {
         if (properties.getTtlDuration().getSeconds() > 0) {
             return new ArchivingWithTTLWorkflowStatusListener(executionDAOFacade, properties);
+        } else if (properties.getWorkflowArchivalType()
+                == ArchivingWorkflowListenerProperties.ArchivalType.S3) {
+            return new ArchivingWorkflowToS3(executionDAOFacade, properties);
         } else {
             return new ArchivingWorkflowStatusListener(executionDAOFacade);
         }
