@@ -94,6 +94,14 @@ bootJar {
     archiveClassifier = 'boot'
 }
 
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact bootJar
+        }
+    }
+}
+
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
 // This will configure a BuildInfo task named bootBuildInfo
 springBoot {
