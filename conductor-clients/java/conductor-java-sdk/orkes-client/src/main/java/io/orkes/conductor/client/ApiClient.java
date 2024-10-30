@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
@@ -150,8 +151,8 @@ public final class ApiClient extends ConductorClient {
     public static class ApiClientBuilder extends Builder<ApiClientBuilder> {
 
         public ApiClientBuilder credentials(String key, String secret) {
-            if (key == null || secret == null) {
-                throw new IllegalArgumentException("Key and secret must not be null");
+            if (StringUtils.isBlank(key) || StringUtils.isBlank(secret)) {
+                throw new IllegalArgumentException("Key and secret must not be blank (null or empty)");
             }
 
             this.addHeaderSupplier(new OrkesAuthentication(key, secret));

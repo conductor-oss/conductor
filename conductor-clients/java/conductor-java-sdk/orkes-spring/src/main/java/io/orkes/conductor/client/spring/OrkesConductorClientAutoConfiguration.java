@@ -12,11 +12,16 @@
  */
 package io.orkes.conductor.client.spring;
 
-
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+
+import com.netflix.conductor.client.spring.ClientProperties;
 
 import io.orkes.conductor.client.ApiClient;
 import io.orkes.conductor.client.AuthorizationClient;
@@ -30,106 +35,95 @@ import io.orkes.conductor.client.http.OrkesWorkflowClient;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @Slf4j
+@EnableConfigurationProperties(ClientProperties.class)
+@Import(OrkesClientProperties.class)
 public class OrkesConductorClientAutoConfiguration {
 
-    // Keeping these for backwards compatibility
-    public static final String CONDUCTOR_SERVER_URL ="conductor.server.url";
-    public static final String CONDUCTOR_SECURITY_CLIENT_KEY_ID ="conductor.security.client.key-id";
-    public static final String CONDUCTOR_SECURITY_CLIENT_SECRET ="conductor.security.client.secret";
-
-    // Properties should be placed under "conductor.client"
-    public static final String CONDUCTOR_CLIENT_BASE_PATH = "conductor.client.basepath";
-    public static final String CONDUCTOR_CLIENT_KEY_ID = "conductor.client.key-id";
-    public static final String CONDUCTOR_CLIENT_SECRET = "conductor.client.secret";
-    public static final String CONDUCTOR_CLIENT_CONNECT_TIMEOUT = "conductor.client.timeout.connect";
-    public static final String CONDUCTOR_CLIENT_READ_TIMEOUT = "conductor.client.timeout.read";
-    public static final String CONDUCTOR_CLIENT_WRITE_TIMEOUT = "conductor.client.timeout.write";
-    public static final String CONDUCTOR_CLIENT_VERIFYING_SSL = "conductor.client.verifying-ssl";
-
     @Bean
+    @Primary
     @ConditionalOnMissingBean
-    public ApiClient orkesConductorClient(Environment env) {
-        ApiClient.ApiClientBuilder builder = ApiClient.builder();
-
-        String basePath = env.getProperty(CONDUCTOR_CLIENT_BASE_PATH);
+    public ApiClient orkesConductorClient(ClientProperties clientProperties,
+                                          OrkesClientProperties orkesClientProperties) {
+        var basePath = StringUtils.isBlank(clientProperties.getRootUri()) ? clientProperties.getBasePath() : clientProperties.getRootUri();
         if (basePath == null) {
-            basePath = env.getProperty(CONDUCTOR_SERVER_URL);
+            basePath = orkesClientProperties.getConductorServerUrl();
         }
 
-        String keyId = env.getProperty(CONDUCTOR_CLIENT_KEY_ID);
-        if (keyId == null) {
-            keyId = env.getProperty(CONDUCTOR_SECURITY_CLIENT_KEY_ID);
+        if (basePath == null) {
+            return null;
         }
 
-        String secret = env.getProperty(CONDUCTOR_CLIENT_SECRET);
-        if (secret == null) {
-            secret = env.getProperty(CONDUCTOR_SECURITY_CLIENT_SECRET);
-        }
-
-        Long connectTimeout = env.getProperty(CONDUCTOR_CLIENT_CONNECT_TIMEOUT, Long.class);
-        if (connectTimeout != null) {
-            builder.connectTimeout(connectTimeout);
-        }
-
-        Long readTimeout = env.getProperty(CONDUCTOR_CLIENT_READ_TIMEOUT, Long.class);
-        if (readTimeout != null) {
-            builder.readTimeout(readTimeout);
-        }
-
-        Long writeTimeout = env.getProperty(CONDUCTOR_CLIENT_WRITE_TIMEOUT, Long.class);
-        if (writeTimeout != null) {
-            builder.writeTimeout(writeTimeout);
-        }
-
-        Boolean verifyingSsl = env.getProperty(CONDUCTOR_CLIENT_VERIFYING_SSL, Boolean.class);
-        if (verifyingSsl != null) {
-            builder.verifyingSsl(verifyingSsl);
-        }
-
-        return builder
+        var builder = ApiClient.builder()
                 .basePath(basePath)
-                .credentials(keyId, secret)
-                .build();
+                .connectTimeout(clientProperties.getTimeout().getConnect())
+                .readTimeout(clientProperties.getTimeout().getRead())
+                .writeTimeout(clientProperties.getTimeout().getWrite())
+                .verifyingSsl(clientProperties.isVerifyingSsl());
+
+
+        if (orkesClientProperties.getKeyId() != null) {
+            builder.credentials(orkesClientProperties.getKeyId(), orkesClientProperties.getSecret());
+        } else if (orkesClientProperties.getSecurityKeyId() != null) {
+            builder.credentials(orkesClientProperties.getSecurityKeyId(), orkesClientProperties.getSecuritySecret());
+        }
+
+        return builder.build();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public OrkesClients orkesClients(ApiClient client) {
         return new OrkesClients(client);
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public OrkesTaskClient orkesTaskClient(OrkesClients clients) {
         return clients.getTaskClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public OrkesMetadataClient orkesMetadataClient(OrkesClients clients) {
         return clients.getMetadataClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public OrkesWorkflowClient orkesWorkflowClient(OrkesClients clients) {
         return clients.getWorkflowClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public AuthorizationClient orkesAuthorizationClient(OrkesClients clients) {
         return clients.getAuthorizationClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public OrkesEventClient orkesEventClient(OrkesClients clients) {
         return clients.getEventClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public SchedulerClient orkesSchedulerClient(OrkesClients clients) {
         return clients.getSchedulerClient();
     }
 
     @Bean
+    @ConditionalOnBean(ApiClient.class)
+    @ConditionalOnMissingBean
     public SecretClient orkesSecretClient(OrkesClients clients) {
         return clients.getSecretClient();
     }

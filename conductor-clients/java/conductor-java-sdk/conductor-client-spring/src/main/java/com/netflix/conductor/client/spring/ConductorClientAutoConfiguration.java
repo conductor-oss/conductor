@@ -16,10 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
@@ -32,34 +36,46 @@ import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(ClientProperties.class)
+@AutoConfiguration
 @Slf4j
+@AutoConfigureOrder(Ordered.LOWEST_PRECEDENCE)
+@EnableConfigurationProperties(ClientProperties.class)
 public class ConductorClientAutoConfiguration {
 
-    @ConditionalOnMissingBean
     @Bean
-    public ConductorClient conductorClient(ClientProperties clientProperties) {
-        // TODO allow configuration of other properties via application.properties
-        return ConductorClient.builder()
-                .basePath(clientProperties.getRootUri())
-                .build();
+    @ConditionalOnMissingBean
+    public ConductorClient conductorClient(ClientProperties properties) {
+        var basePath = StringUtils.isBlank(properties.getRootUri()) ? properties.getBasePath() : properties.getRootUri();
+        if (basePath == null) {
+            return null;
+        }
+
+        var builder = ConductorClient.builder()
+                .basePath(basePath)
+                .connectTimeout(properties.getTimeout().getConnect())
+                .readTimeout(properties.getTimeout().getRead())
+                .writeTimeout(properties.getTimeout().getWrite())
+                .verifyingSsl(properties.isVerifyingSsl());
+        return builder.build();
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public TaskClient taskClient(ConductorClient client) {
         return new TaskClient(client);
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public AnnotatedWorkerExecutor annotatedWorkerExecutor(TaskClient taskClient) {
         return new AnnotatedWorkerExecutor(taskClient);
     }
 
-    @ConditionalOnMissingBean
     @Bean(initMethod = "init", destroyMethod = "shutdown")
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public TaskRunnerConfigurer taskRunnerConfigurer(Environment env,
                                                      TaskClient taskClient,
                                                      ClientProperties clientProperties,
@@ -90,12 +106,15 @@ public class ConductorClientAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public WorkflowExecutor workflowExecutor(ConductorClient client, AnnotatedWorkerExecutor annotatedWorkerExecutor) {
         return new WorkflowExecutor(client, annotatedWorkerExecutor);
     }
 
-    @ConditionalOnMissingBean
     @Bean
+    @ConditionalOnBean(ConductorClient.class)
+    @ConditionalOnMissingBean
     public WorkflowClient workflowClient(ConductorClient client) {
         return new WorkflowClient(client);
     }

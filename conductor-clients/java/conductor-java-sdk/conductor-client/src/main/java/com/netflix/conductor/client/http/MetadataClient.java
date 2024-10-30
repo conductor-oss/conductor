@@ -104,7 +104,7 @@ public final class MetadataClient {
     public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.GET)
-                .path("metadata/workflow/latest-versions")
+                .path("/metadata/workflow/latest-versions")
                 .build();
 
         ConductorClientResponse<List<WorkflowDef>> resp = client.execute(request, new TypeReference<>() {

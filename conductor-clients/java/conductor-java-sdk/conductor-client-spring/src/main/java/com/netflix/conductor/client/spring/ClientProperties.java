@@ -21,7 +21,39 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("conductor.client")
 public class ClientProperties {
 
+    public static class Timeout {
+        private int connect = -1;
+        private int read = -1;
+        private int write = -1;
+
+        public int getConnect() {
+            return connect;
+        }
+
+        public void setConnect(int connect) {
+            this.connect = connect;
+        }
+
+        public int getRead() {
+            return read;
+        }
+
+        public void setRead(int read) {
+            this.read = read;
+        }
+
+        public int getWrite() {
+            return write;
+        }
+
+        public void setWrite(int write) {
+            this.write = write;
+        }
+    }
+
     private String rootUri;
+
+    private String basePath;
 
     private String workerNamePrefix = "workflow-worker-%d";
 
@@ -38,6 +70,26 @@ public class ClientProperties {
     private int shutdownGracePeriodSeconds = 10;
 
     private int taskPollTimeout = 100;
+
+    private Timeout timeout = new Timeout();
+
+    private boolean verifyingSsl = true;
+
+    public void setVerifyingSsl(boolean verifyingSsl) {
+        this.verifyingSsl = verifyingSsl;
+    }
+
+    public boolean isVerifyingSsl() {
+        return verifyingSsl;
+    }
+
+    public Timeout getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(Timeout timeout) {
+        this.timeout = timeout;
+    }
 
     public String getRootUri() {
         return rootUri;
@@ -109,5 +161,13 @@ public class ClientProperties {
 
     public void setTaskPollTimeout(int taskPollTimeout) {
         this.taskPollTimeout = taskPollTimeout;
+    }
+
+    public String getBasePath() {
+        return basePath;
+    }
+
+    public void setBasePath(String basePath) {
+        this.basePath = basePath;
     }
 }
