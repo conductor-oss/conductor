@@ -55,24 +55,21 @@ public class OrkesConductorClientAutoConfiguration {
             return null;
         }
 
-        String key = null;
-        String secret = null;
-        if (orkesClientProperties.getKeyId() != null) {
-            key = orkesClientProperties.getKeyId();
-            secret = orkesClientProperties.getSecret();
-        } else if (orkesClientProperties.getSecurityKeyId() != null) {
-            key = orkesClientProperties.getSecurityKeyId();
-            secret = orkesClientProperties.getSecuritySecret();
-        }
-
-        return ApiClient.builder()
+        var builder = ApiClient.builder()
                 .basePath(basePath)
-                .credentials(key, secret)
                 .connectTimeout(clientProperties.getTimeout().getConnect())
                 .readTimeout(clientProperties.getTimeout().getRead())
                 .writeTimeout(clientProperties.getTimeout().getWrite())
-                .verifyingSsl(clientProperties.isVerifyingSsl())
-                .build();
+                .verifyingSsl(clientProperties.isVerifyingSsl());
+
+
+        if (orkesClientProperties.getKeyId() != null) {
+            builder.credentials(orkesClientProperties.getKeyId(), orkesClientProperties.getSecret());
+        } else if (orkesClientProperties.getSecurityKeyId() != null) {
+            builder.credentials(orkesClientProperties.getSecurityKeyId(), orkesClientProperties.getSecuritySecret());
+        }
+
+        return builder.build();
     }
 
     @Bean
