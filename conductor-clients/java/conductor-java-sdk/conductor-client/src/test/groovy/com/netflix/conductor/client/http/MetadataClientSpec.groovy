@@ -100,7 +100,7 @@ class MetadataClientSpec extends ClientSpecification {
         then:
             1 * apiClient.execute(builder()
                     .method(ConductorClientRequest.Method.GET)
-                    .path('metadata/workflow/latest-versions')
+                    .path('/metadata/workflow/latest-versions')
                     .build(), _) >> new ConductorClientResponse(200, [:], result)
             ret == result
     }
