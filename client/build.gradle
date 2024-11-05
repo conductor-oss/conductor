@@ -28,6 +28,7 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
     implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
+    runtimeOnly "com.amazonaws:aws-java-sdk-sts:${revAwsSdk}"
 
     implementation "com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
