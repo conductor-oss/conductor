@@ -14,7 +14,10 @@ package io.orkes.conductor.client.http;
 
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.orkes.conductor.client.SchedulerClient;
@@ -24,11 +27,23 @@ import io.orkes.conductor.client.model.WorkflowSchedule;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.Commons;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class SchedulerClientTests  {
     private final String NAME = "test_sdk_java_scheduler_name";
     private final String CRON_EXPRESSION = "0 * * * * *";
 
     private final SchedulerClient schedulerClient = ClientTestUtil.getOrkesClients().getSchedulerClient();
+
+    @BeforeEach
+    void beforeEach() {
+        schedulerClient.deleteSchedule(NAME);
+    }
+
+    @AfterEach
+    void afterEach() {
+        schedulerClient.deleteSchedule(NAME);
+    }
 
     @Test
     void testMethods() {
@@ -37,13 +52,13 @@ public class SchedulerClientTests  {
         schedulerClient.saveSchedule(getSaveScheduleRequest());
         Assertions.assertTrue(schedulerClient.getAllSchedules(Commons.WORKFLOW_NAME).size() > 0);
         WorkflowSchedule workflowSchedule = schedulerClient.getSchedule(NAME);
-        Assertions.assertEquals(NAME, workflowSchedule.getName());
-        Assertions.assertEquals(CRON_EXPRESSION, workflowSchedule.getCronExpression());
+        assertEquals(NAME, workflowSchedule.getName());
+        assertEquals(CRON_EXPRESSION, workflowSchedule.getCronExpression());
         Assertions.assertFalse(schedulerClient.search(0, 10, "ASC", "*", "").getResults().isEmpty());
         schedulerClient.setSchedulerTags(getTagObject(), NAME);
-        Assertions.assertEquals(getTagObject(), schedulerClient.getSchedulerTags(NAME));
+        assertEquals(getTagObject(), schedulerClient.getSchedulerTags(NAME));
         schedulerClient.deleteSchedulerTags(getTagObject(), NAME);
-        Assertions.assertEquals(0, schedulerClient.getSchedulerTags(NAME).size());
+        assertEquals(0, schedulerClient.getSchedulerTags(NAME).size());
         schedulerClient.pauseSchedule(NAME);
         workflowSchedule = schedulerClient.getSchedule(NAME);
         Assertions.assertTrue(workflowSchedule.isPaused());
@@ -60,7 +75,20 @@ public class SchedulerClientTests  {
         schedulerClient.requeueAllExecutionRecords();
     }
 
-    SaveScheduleRequest getSaveScheduleRequest() {
+    @Test
+    @DisplayName("It should set the timezone to Europe/Madrid")
+    void testTimeZoneId() {
+        var schedule = new SaveScheduleRequest()
+                .name(NAME)
+                .cronExpression(CRON_EXPRESSION)
+                .startWorkflowRequest(Commons.getStartWorkflowRequest())
+                .zoneId("Europe/Madrid");
+        schedulerClient.saveSchedule(schedule);
+        var savedSchedule = schedulerClient.getSchedule(NAME);
+        assertEquals("Europe/Madrid", savedSchedule.getZoneId());
+    }
+
+    private SaveScheduleRequest getSaveScheduleRequest() {
         return new SaveScheduleRequest()
                 .name(NAME)
                 .cronExpression(CRON_EXPRESSION)

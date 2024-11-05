@@ -43,6 +43,8 @@ public class WorkflowSchedule {
 
     private Long updatedTime = null;
 
+    private String zoneId;
+
     public WorkflowSchedule createTime(Long createTime) {
         this.createTime = createTime;
         return this;
@@ -184,5 +186,18 @@ public class WorkflowSchedule {
 
     public void setUpdatedTime(Long updatedTime) {
         this.updatedTime = updatedTime;
+    }
+
+    public String getZoneId() {
+        return zoneId;
+    }
+
+    public void setZoneId(String zoneId) {
+        this.zoneId = zoneId;
+    }
+
+    public WorkflowSchedule zoneId(String zoneId) {
+        this.zoneId = zoneId;
+        return this;
     }
 }
