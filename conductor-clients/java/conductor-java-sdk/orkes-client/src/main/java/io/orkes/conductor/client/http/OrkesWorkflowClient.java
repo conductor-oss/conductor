@@ -112,7 +112,7 @@ public class OrkesWorkflowClient implements AutoCloseable {
      */
     public WorkflowRun executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Duration waitTimeout) throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<WorkflowRun> future = executeWorkflow(request, waitUntilTask);
-        return future.get(waitTimeout.get(ChronoUnit.MILLIS), TimeUnit.MILLISECONDS);
+        return future.get(waitTimeout.get(ChronoUnit.SECONDS), TimeUnit.SECONDS);
     }
 
     public void terminateWorkflowWithFailure(String workflowId, String reason, boolean triggerFailureWorkflow) {
