@@ -630,7 +630,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
             executionDAOFacade.updateWorkflow(workflow);
-            workflowStatusListener.onWorkflowTerminatedIfEnabled(workflow);
             Monitors.recordWorkflowTermination(
                     workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
             LOGGER.info("Workflow {} is terminated because of {}", workflowId, reason);
@@ -697,6 +696,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
             List<String> erroredTasks = cancelNonTerminalTasks(workflow);
+            workflowStatusListener.onWorkflowTerminatedIfEnabled(workflow);
             if (!erroredTasks.isEmpty()) {
                 throw new NonTransientException(
                         String.format(
