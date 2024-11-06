@@ -29,6 +29,7 @@ dependencies {
 
     implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch7}"
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
+    implementation "org.elasticsearch:elasticsearch-x-content:${revElasticSearch7}"
 
     testImplementation "net.java.dev.jna:jna:5.7.0"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
