@@ -1,0 +1,48 @@
+/*
+ *  Copyright 2024 Conductor Authors.
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+dependencies {
+    implementation project(':conductor-common-persistence')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.retry:spring-retry'
+
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.apache.commons:commons-lang3"
+    implementation "com.oracle.database.jdbc:ojdbc8"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.flywaydb:flyway-core:${revFlyway}"
+    implementation "org.flywaydb:flyway-database-oracle" // Will only be used for JUnits. Superceding 6+ version will takeover in runtime
+
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation project(':conductor-server')
+    testImplementation project(':conductor-client')
+
+	testImplementation "org.flywaydb:flyway-database-oracle" // Downgraded to support Unit Tests on Oracle 11G. Will be reverted after Github Actions support 18C XE based CICD.
+	testImplementation "org.testcontainers:oracle-xe:${revTestContainer}"
+    testImplementation "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
+    testImplementation project(':conductor-core').sourceSets.test.output
+    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+    testImplementation project(':conductor-common-persistence').sourceSets.test.output
+}
+
+test {
+    //the SQL unit tests must run within the same JVM to share the same embedded DB
+    maxParallelForks = 1
+}
