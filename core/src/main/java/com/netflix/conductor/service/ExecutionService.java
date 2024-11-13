@@ -56,6 +56,7 @@ public class ExecutionService {
     private final TaskStatusListener taskStatusListener;
 
     private final long queueTaskMessagePostponeSecs;
+    private final boolean isEventExecutionPersistenceEnabled;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
@@ -76,6 +77,10 @@ public class ExecutionService {
 
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
+
+        this.isEventExecutionPersistenceEnabled =
+                properties.isEventExecutionPersistenceEnabled();
+
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
     }
@@ -576,15 +581,25 @@ public class ExecutionService {
     }
 
     public boolean addEventExecution(EventExecution eventExecution) {
-        return executionDAOFacade.addEventExecution(eventExecution);
+        if(isEventExecutionPersistenceEnabled)
+        {
+            return executionDAOFacade.addEventExecution(eventExecution);
+        }
+        return true;
     }
 
     public void removeEventExecution(EventExecution eventExecution) {
-        executionDAOFacade.removeEventExecution(eventExecution);
+        if(isEventExecutionPersistenceEnabled)
+        {
+            executionDAOFacade.removeEventExecution(eventExecution);
+        }
     }
 
     public void updateEventExecution(EventExecution eventExecution) {
-        executionDAOFacade.updateEventExecution(eventExecution);
+        if(isEventExecutionPersistenceEnabled)
+        {
+            executionDAOFacade.updateEventExecution(eventExecution);
+        }
     }
 
     /**

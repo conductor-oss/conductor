@@ -60,6 +60,9 @@ public class ConductorProperties {
     /** Used to enable/disable the workflow execution lock. */
     private boolean workflowExecutionLockEnabled = false;
 
+    /** Used to enable/disable the duplicate message delivery persistence. */
+    private boolean eventExecutionPersistenceEnabled = true;
+
     /** The time (in milliseconds) for which the lock is leased for. */
     private Duration lockLeaseTime = Duration.ofMillis(60000);
 
@@ -297,6 +300,13 @@ public class ConductorProperties {
 
     public void setWorkflowExecutionLockEnabled(boolean workflowExecutionLockEnabled) {
         this.workflowExecutionLockEnabled = workflowExecutionLockEnabled;
+    }
+
+    public boolean isEventExecutionPersistenceEnabled() {
+        return eventExecutionPersistenceEnabled;
+    }
+    public void setEventExecutionPersistenceEnabled(boolean eventExecutionPersistenceEnabled) {
+        this.eventExecutionPersistenceEnabled = eventExecutionPersistenceEnabled;
     }
 
     public Duration getLockLeaseTime() {
