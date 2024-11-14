@@ -78,8 +78,7 @@ public class ExecutionService {
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
 
-        this.isEventExecutionPersistenceEnabled =
-                properties.isEventExecutionPersistenceEnabled();
+        this.isEventExecutionPersistenceEnabled = properties.isEventExecutionPersistenceEnabled();
 
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
@@ -581,23 +580,20 @@ public class ExecutionService {
     }
 
     public boolean addEventExecution(EventExecution eventExecution) {
-        if(isEventExecutionPersistenceEnabled)
-        {
+        if (isEventExecutionPersistenceEnabled) {
             return executionDAOFacade.addEventExecution(eventExecution);
         }
         return true;
     }
 
     public void removeEventExecution(EventExecution eventExecution) {
-        if(isEventExecutionPersistenceEnabled)
-        {
+        if (isEventExecutionPersistenceEnabled) {
             executionDAOFacade.removeEventExecution(eventExecution);
         }
     }
 
     public void updateEventExecution(EventExecution eventExecution) {
-        if(isEventExecutionPersistenceEnabled)
-        {
+        if (isEventExecutionPersistenceEnabled) {
             executionDAOFacade.updateEventExecution(eventExecution);
         }
     }

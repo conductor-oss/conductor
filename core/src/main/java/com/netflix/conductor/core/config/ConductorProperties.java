@@ -305,6 +305,7 @@ public class ConductorProperties {
     public boolean isEventExecutionPersistenceEnabled() {
         return eventExecutionPersistenceEnabled;
     }
+
     public void setEventExecutionPersistenceEnabled(boolean eventExecutionPersistenceEnabled) {
         this.eventExecutionPersistenceEnabled = eventExecutionPersistenceEnabled;
     }
