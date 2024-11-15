@@ -77,7 +77,7 @@ docker compose -f docker/docker-compose.yaml up
 #### Create your first workflow
 
 ##### To create a workflow, navigate to the UI:
-* http://localhost:5000
+* http://localhost:8127
 
 ##### Or use the REST API with your preferred HTTP client
 * http://localhost:8080
