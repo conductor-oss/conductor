@@ -120,23 +120,23 @@ public class OrkesWorkflowClient implements AutoCloseable {
         workflowResource.terminateWithAReason(workflowId, reason, triggerFailureWorkflow);
     }
 
-    public BulkResponse<String> pauseWorkflow(List<String> workflowIds) {
+    public BulkResponse pauseWorkflow(List<String> workflowIds) {
         return bulkResource.pauseWorkflows(workflowIds);
     }
 
-    public BulkResponse<String> restartWorkflow(List<String> workflowIds, Boolean useLatestDefinitions) {
+    public BulkResponse restartWorkflow(List<String> workflowIds, Boolean useLatestDefinitions) {
         return bulkResource.restartWorkflows(workflowIds, useLatestDefinitions);
     }
 
-    public BulkResponse<String> resumeWorkflow(List<String> workflowIds) {
+    public BulkResponse resumeWorkflow(List<String> workflowIds) {
         return bulkResource.resumeWorkflows(workflowIds);
     }
 
-    public BulkResponse<String> retryWorkflow(List<String> workflowIds) {
+    public BulkResponse retryWorkflow(List<String> workflowIds) {
         return bulkResource.retryWorkflows(workflowIds);
     }
 
-    public BulkResponse<String> terminateWorkflowsWithFailure(List<String> workflowIds, String reason, boolean triggerFailureWorkflow) {
+    public BulkResponse terminateWorkflowsWithFailure(List<String> workflowIds, String reason, boolean triggerFailureWorkflow) {
         return bulkResource.terminateWorkflows(workflowIds, reason, triggerFailureWorkflow);
     }
 
