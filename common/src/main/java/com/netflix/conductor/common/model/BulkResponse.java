@@ -22,12 +22,12 @@ import java.util.Objects;
  * Response object to return a list of succeeded entities and a map of failed ones, including error
  * message, for the bulk request.
  */
-public class BulkResponse {
+public class BulkResponse<T> {
 
     /** Key - entityId Value - error message processing this entity */
     private final Map<String, String> bulkErrorResults;
 
-    private final List<String> bulkSuccessfulResults;
+    private final List<T> bulkSuccessfulResults;
     private final String message = "Bulk Request has been processed.";
 
     public BulkResponse() {
@@ -35,7 +35,7 @@ public class BulkResponse {
         this.bulkErrorResults = new HashMap<>();
     }
 
-    public List<String> getBulkSuccessfulResults() {
+    public List<T> getBulkSuccessfulResults() {
         return bulkSuccessfulResults;
     }
 
@@ -43,8 +43,8 @@ public class BulkResponse {
         return bulkErrorResults;
     }
 
-    public void appendSuccessResponse(String id) {
-        bulkSuccessfulResults.add(id);
+    public void appendSuccessResponse(T result) {
+        bulkSuccessfulResults.add(result);
     }
 
     public void appendFailedResponse(String id, String errorMessage) {
