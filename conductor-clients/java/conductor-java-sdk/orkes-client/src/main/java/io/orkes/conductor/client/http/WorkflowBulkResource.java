@@ -31,7 +31,7 @@ class WorkflowBulkResource {
         this.client = client;
     }
 
-    BulkResponse pauseWorkflows(List<String> workflowIds) {
+    BulkResponse<String> pauseWorkflows(List<String> workflowIds) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.PUT)
                 .path("/workflow/bulk/pause")
@@ -44,7 +44,7 @@ class WorkflowBulkResource {
         return resp.getData();
     }
 
-    BulkResponse restartWorkflows(List<String> workflowIds, Boolean useLatestDefinitions) {
+    BulkResponse<String> restartWorkflows(List<String> workflowIds, Boolean useLatestDefinitions) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/bulk/restart")
@@ -58,7 +58,7 @@ class WorkflowBulkResource {
         return resp.getData();
     }
 
-    BulkResponse resumeWorkflows(List<String> workflowIds) {
+    BulkResponse<String> resumeWorkflows(List<String> workflowIds) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.PUT)
                 .path("/workflow/bulk/resume")
@@ -71,7 +71,7 @@ class WorkflowBulkResource {
         return resp.getData();
     }
 
-    BulkResponse retryWorkflows(List<String> workflowIds) {
+    BulkResponse<String> retryWorkflows(List<String> workflowIds) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/bulk/retry")
