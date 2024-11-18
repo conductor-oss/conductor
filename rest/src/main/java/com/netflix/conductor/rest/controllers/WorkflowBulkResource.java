@@ -14,7 +14,6 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
 
-import com.netflix.conductor.model.WorkflowModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.WorkflowBulkService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -153,7 +153,7 @@ public class WorkflowBulkResource {
     public BulkResponse<WorkflowModel> searchWorkflow(
             @RequestBody List<String> workflowIds,
             @RequestParam(value = "includeTasks", defaultValue = "true", required = false)
-            boolean includeTasks) {
+                    boolean includeTasks) {
         return workflowBulkService.searchWorkflow(workflowIds, includeTasks);
     }
 }

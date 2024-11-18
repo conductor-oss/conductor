@@ -14,10 +14,10 @@ package com.netflix.conductor.service;
 
 import java.util.List;
 
-import com.netflix.conductor.model.WorkflowModel;
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.model.WorkflowModel;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;

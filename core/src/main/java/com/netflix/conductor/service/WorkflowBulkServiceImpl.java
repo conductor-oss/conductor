@@ -14,7 +14,6 @@ package com.netflix.conductor.service;
 
 import java.util.List;
 
-import com.netflix.conductor.model.WorkflowModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,7 @@ import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.model.WorkflowModel;
 
 @Audit
 @Trace
@@ -44,7 +44,7 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      *
      * @param workflowIds - list of workflow Ids to perform pause operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> pauseWorkflow(List<String> workflowIds) {
 
@@ -71,7 +71,7 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      *
      * @param workflowIds - list of workflow Ids to perform resume operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> resumeWorkflow(List<String> workflowIds) {
         BulkResponse<String> bulkResponse = new BulkResponse<>();
@@ -94,10 +94,10 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Restart the list of workflows.
      *
-     * @param workflowIds          - list of workflow Ids to perform restart operation on
+     * @param workflowIds - list of workflow Ids to perform restart operation on
      * @param useLatestDefinitions if true, use latest workflow and task definitions upon restart
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> restart(List<String> workflowIds, boolean useLatestDefinitions) {
         BulkResponse<String> bulkResponse = new BulkResponse<>();
@@ -122,7 +122,7 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      *
      * @param workflowIds - list of workflow Ids to perform retry operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> retry(List<String> workflowIds) {
         BulkResponse<String> bulkResponse = new BulkResponse<>();
@@ -146,10 +146,10 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * Terminate workflows execution.
      *
      * @param workflowIds - list of workflow Ids to perform terminate operation on
-     * @param reason      - description to be specified for the terminated workflow for future
-     *                    references.
+     * @param reason - description to be specified for the terminated workflow for future
+     *     references.
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> terminate(List<String> workflowIds, String reason) {
         BulkResponse<String> bulkResponse = new BulkResponse<>();
@@ -172,7 +172,7 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Removes a list of workflows from the system.
      *
-     * @param workflowIds     List of WorkflowIDs of the workflows you want to remove from system.
+     * @param workflowIds List of WorkflowIDs of the workflows you want to remove from system.
      * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      */
     public BulkResponse<String> deleteWorkflow(List<String> workflowIds, boolean archiveWorkflow) {
@@ -198,11 +198,11 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Terminates execution for workflows in a list, then removes each workflow.
      *
-     * @param workflowIds     List of workflow IDs to terminate and delete.
-     * @param reason          Reason for terminating the workflow.
+     * @param workflowIds List of workflow IDs to terminate and delete.
+     * @param reason Reason for terminating the workflow.
      * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      * @return bulk response object containing a list of succeeded workflows and a list of failed
-     * ones with errors
+     *     ones with errors
      */
     public BulkResponse<String> terminateRemove(
             List<String> workflowIds, String reason, boolean archiveWorkflow) {
@@ -238,16 +238,18 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     /**
      * Fetch workflow details for given workflowIds.
      *
-     * @param workflowIds  List of workflow IDs to terminate and delete.
+     * @param workflowIds List of workflow IDs to terminate and delete.
      * @param includeTasks includes tasks from workflow
      * @return bulk response object containing a list of workflow details
      */
     @Override
-    public BulkResponse<WorkflowModel> searchWorkflow(List<String> workflowIds, boolean includeTasks) {
+    public BulkResponse<WorkflowModel> searchWorkflow(
+            List<String> workflowIds, boolean includeTasks) {
         BulkResponse<WorkflowModel> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
-                WorkflowModel workflowModel = workflowExecutor.getWorkflow(workflowId, includeTasks);
+                WorkflowModel workflowModel =
+                        workflowExecutor.getWorkflow(workflowId, includeTasks);
                 bulkResponse.appendSuccessResponse(workflowModel);
             } catch (Exception e) {
                 LOGGER.error(
@@ -260,6 +262,4 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
         }
         return bulkResponse;
     }
-
-
 }
