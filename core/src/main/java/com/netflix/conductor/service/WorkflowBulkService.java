@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.List;
 
+import com.netflix.conductor.model.WorkflowModel;
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.model.BulkResponse;
@@ -86,4 +87,13 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             String reason,
             boolean archiveWorkflow);
+
+    BulkResponse<WorkflowModel> searchWorkflow(
+            @NotEmpty(message = "WorkflowIds list cannot be null.")
+                    @Size(
+                            max = MAX_REQUEST_ITEMS,
+                            message =
+                                    "Cannot process more than {max} workflows. Please use multiple requests.")
+                    List<String> workflowIds,
+            boolean includeTasks);
 }
