@@ -69,7 +69,7 @@ public interface MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    BulkResponse updateWorkflowDef(
+    BulkResponse<String> updateWorkflowDef(
             @NotNull(message = "WorkflowDef list name cannot be null or empty")
                     @Size(min = 1, message = "WorkflowDefList is empty")
                     List<@NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef>

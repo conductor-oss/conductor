@@ -124,8 +124,8 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    public BulkResponse updateWorkflowDef(List<WorkflowDef> workflowDefList) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (WorkflowDef workflowDef : workflowDefList) {
             try {
                 updateWorkflowDef(workflowDef);
