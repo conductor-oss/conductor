@@ -336,7 +336,7 @@ public class MetadataServiceTest {
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
 
-        BulkResponse bulkResponse =
+        BulkResponse<String> bulkResponse =
                 metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
 
@@ -366,7 +366,7 @@ public class MetadataServiceTest {
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
 
-        BulkResponse bulkResponse =
+        BulkResponse<String> bulkResponse =
                 metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
 

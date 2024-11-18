@@ -84,7 +84,7 @@ class WorkflowBulkResource {
         return resp.getData();
     }
 
-    public BulkResponse terminateWorkflows(List<String> workflowIds, String reason, boolean triggerFailureWorkflow) {
+    public BulkResponse<String> terminateWorkflows(List<String> workflowIds, String reason, boolean triggerFailureWorkflow) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/bulk/terminate")

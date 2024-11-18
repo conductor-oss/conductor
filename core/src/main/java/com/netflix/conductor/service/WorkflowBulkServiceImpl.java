@@ -45,9 +45,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse pauseWorkflow(List<String> workflowIds) {
+    public BulkResponse<String> pauseWorkflow(List<String> workflowIds) {
 
-        BulkResponse bulkResponse = new BulkResponse();
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.pauseWorkflow(workflowId);
@@ -72,8 +72,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse resumeWorkflow(List<String> workflowIds) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> resumeWorkflow(List<String> workflowIds) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.resumeWorkflow(workflowId);
@@ -98,8 +98,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> restart(List<String> workflowIds, boolean useLatestDefinitions) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.restart(workflowId, useLatestDefinitions);
@@ -123,8 +123,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse retry(List<String> workflowIds) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> retry(List<String> workflowIds) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.retry(workflowId, false);
@@ -150,8 +150,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse terminate(List<String> workflowIds, String reason) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> terminate(List<String> workflowIds, String reason) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.terminateWorkflow(workflowId, reason);
@@ -174,8 +174,8 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param workflowIds List of WorkflowIDs of the workflows you want to remove from system.
      * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      */
-    public BulkResponse deleteWorkflow(List<String> workflowIds, boolean archiveWorkflow) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> deleteWorkflow(List<String> workflowIds, boolean archiveWorkflow) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowService.deleteWorkflow(
@@ -203,9 +203,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @return bulk response object containing a list of succeeded workflows and a list of failed
      *     ones with errors
      */
-    public BulkResponse terminateRemove(
+    public BulkResponse<String> terminateRemove(
             List<String> workflowIds, String reason, boolean archiveWorkflow) {
-        BulkResponse bulkResponse = new BulkResponse();
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (String workflowId : workflowIds) {
             try {
                 workflowExecutor.terminateWorkflow(workflowId, reason);

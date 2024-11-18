@@ -255,7 +255,7 @@ public final class WorkflowClient {
      * @param reason the reason to be logged and displayed
      * @return the {@link BulkResponse} contains bulkErrorResults and bulkSuccessfulResults
      */
-    public BulkResponse terminateWorkflows(List<String> workflowIds, String reason) {
+    public BulkResponse<String> terminateWorkflows(List<String> workflowIds, String reason) {
         Validate.isTrue(!workflowIds.isEmpty(), "workflow id cannot be blank");
 
         ConductorClientRequest request = ConductorClientRequest.builder()
