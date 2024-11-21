@@ -4,6 +4,10 @@ import Timeline from "./Timeline";
 import TaskList from "./TaskList";
 import { makeStyles } from "@material-ui/styles";
 import { WorkflowVisualizer } from "orkes-workflow-visualizer";
+import {
+  pendingTaskSelection,
+  taskWithLatestIteration,
+} from "../../utils/helpers";
 
 const useStyles = makeStyles({
   taskWrapper: {
@@ -18,6 +22,7 @@ export default function TaskDetails({
   dag,
   selectedTask,
   setSelectedTask,
+  setSelectedNode,
 }) {
   const [tabIndex, setTabIndex] = useState(0);
   const classes = useStyles();
@@ -39,7 +44,16 @@ export default function TaskDetails({
             zoom={0.7}
             data={dag?.execution}
             executionMode={true}
-            onClick={(e, data) => setSelectedTask({ ref: data?.id })}
+            onClick={(e, data) => {
+              const selectedTaskRefName =
+                data?.data?.task?.executionData?.status === "PENDING"
+                  ? pendingTaskSelection(data?.data?.task)?.workflowTask
+                      ?.taskReferenceName
+                  : taskWithLatestIteration(execution?.tasks, data?.id)
+                      ?.referenceTaskName;
+              setSelectedNode(data);
+              setSelectedTask({ ref: selectedTaskRefName });
+            }}
           />
         )}
         {tabIndex === 1 && (
