@@ -66,7 +66,6 @@ public class MetadataServiceTest {
         public ConductorProperties properties() {
             ConductorProperties properties = mock(ConductorProperties.class);
             when(properties.isOwnerEmailMandatory()).thenReturn(true);
-            when(properties.isOwnerEmailMandatory()).thenReturn(true);
 
             return properties;
         }
