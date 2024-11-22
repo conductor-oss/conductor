@@ -26,13 +26,13 @@ import static org.mockito.Mockito.when;
 public class NameValidatorTest {
     @Test
     public void nameWithAllowedCharactersIsValid() {
-        NameValidator nameValidator = new NameValidator();
+        ValidNameConstraint.NameValidator nameValidator = new ValidNameConstraint.NameValidator();
         assertTrue(nameValidator.isValid("workflowDef", null));
     }
 
     @Test
     public void nonAllowedCharactersInNameIsInvalid() {
-        NameValidator nameValidator = new NameValidator();
+        ValidNameConstraint.NameValidator nameValidator = new ValidNameConstraint.NameValidator();
         ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
         ConstraintValidatorContext.ConstraintViolationBuilder builder =
                 mock(ConstraintValidatorContext.ConstraintViolationBuilder.class);
@@ -46,7 +46,7 @@ public class NameValidatorTest {
     // Null should be tested by @NotEmpty or @NotNull
     @Test
     public void nullIsValid() {
-        NameValidator nameValidator = new NameValidator();
+        ValidNameConstraint.NameValidator nameValidator = new ValidNameConstraint.NameValidator();
         assertTrue(nameValidator.isValid(null, null));
     }
 }
