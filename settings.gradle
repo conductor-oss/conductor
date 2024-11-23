@@ -52,6 +52,7 @@ include 'redis-concurrency-limit'
 
 include 'json-jq-task'
 include 'http-task'
+include 'grpc-task'
 
 include 'rest'
 include 'grpc'

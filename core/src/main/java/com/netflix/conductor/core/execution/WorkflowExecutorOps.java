@@ -1045,7 +1045,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      *     method does not acquire the lock on the workflow and should ony be called / overridden if
      *     No locking is required or lock is acquired externally
      */
-    private WorkflowModel decide(WorkflowModel workflow) {
+    @Override
+    public WorkflowModel decide(WorkflowModel workflow) {
         if (workflow.getStatus().isTerminal()) {
             if (!workflow.getStatus().isSuccessful()) {
                 cancelNonTerminalTasks(workflow);
@@ -1371,7 +1372,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return executionDAOFacade.getWorkflowModel(workflowId, includeTasks);
     }
 
-    private void addTaskToQueue(TaskModel task) {
+    @Override
+    public void addTaskToQueue(TaskModel task) {
         // put in queue
         String taskQueueName = QueueUtils.getQueueName(task);
         if (task.getCallbackAfterSeconds() > 0) {
@@ -1767,7 +1769,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.getTasks().addAll(scheduledLoopOverTasks);
     }
 
-    private TaskDef getTaskDefinition(TaskModel task) {
+    @Override
+    public TaskDef getTaskDefinition(TaskModel task) {
         return task.getTaskDefinition()
                 .orElseGet(
                         () ->

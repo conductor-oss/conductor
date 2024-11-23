@@ -12,8 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
-import java.util.List;
-
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -22,6 +21,9 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+
+import java.util.List;
+import java.util.Map;
 
 public interface WorkflowExecutor {
 
@@ -106,6 +108,12 @@ public interface WorkflowExecutor {
     WorkflowModel decide(String workflowId);
 
     /**
+     * @param workflow the workflow to be evaluated
+     * @return updated workflow
+     */
+    WorkflowModel decide(WorkflowModel workflow);
+
+    /**
      * @param workflowId id of the workflow to be terminated
      * @param reason termination reason to be recorded
      */
@@ -159,4 +167,23 @@ public interface WorkflowExecutor {
      * @return id of the workflow
      */
     String startWorkflow(StartWorkflowInput input);
+
+    default String startWorkflow(String name, Integer version,
+                                 String correlationId,
+                                 Map<String, Object> workflowInput,
+                                 String externalInputPayloadStoragePath, String event,
+                                 Map<String, String> taskToDomain) {
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setName(name);
+        input.setVersion(version);
+        input.setCorrelationId(correlationId);
+        input.setWorkflowInput(workflowInput);
+        input.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
+        input.setEvent(event);
+        input.setTaskToDomain(taskToDomain);
+        return startWorkflow(input);
+    }
+
+    TaskDef getTaskDefinition(TaskModel task);
+    public void addTaskToQueue(TaskModel task);
 }

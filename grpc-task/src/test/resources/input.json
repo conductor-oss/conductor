@@ -1,0 +1,117 @@
+{
+  "id": 123,
+  "name": "Test ComplexMessage",
+  "nested_list": [
+    {
+      "key": "nested_key_1",
+      "values": ["value1", "value2"]
+    },
+    {
+      "key": "nested_key_2",
+      "values": ["value3", "value4"]
+    }
+  ],
+  "nested_map": {
+    "map_key_1": {
+      "key": "map_nested_key_1",
+      "values": ["nested_map_value1", "nested_map_value2"]
+    },
+    "map_key_2": {
+      "key": "map_nested_key_2",
+      "values": ["nested_map_value3", "nested_map_value4"]
+    }
+  },
+  "map_of_lists": {
+    "list_key_1": {
+      "values": ["list_value1", "list_value2"]
+    },
+    "list_key_2": {
+      "values": ["list_value3", "list_value4"]
+    }
+  },
+  "map_of_maps": {
+    "outer_key_1": {
+      "entries": {
+        "inner_key_1": 100,
+        "inner_key_2": 200
+      }
+    },
+    "outer_key_2": {
+      "entries": {
+        "inner_key_3": 300,
+        "inner_key_4": 400
+      }
+    }
+  },
+  "map_of_message_lists": {
+    "message_list_key_1": {
+      "items": [
+        {
+          "description": "SubMessage 1",
+          "timestamp": "2023-07-21T15:33:20.123Z"
+        },
+        {
+          "description": "SubMessage 2",
+          "timestamp": "2023-07-21T15:33:20.123Z"
+        }
+      ]
+    }
+  },
+  "nested_map_message_list": [
+    {
+      "outer_key": "outer_key_1",
+      "inner_map": {
+        "inner_map_key_1": {
+          "values": ["inner_map_value1", "inner_map_value2"]
+        },
+        "inner_map_key_2": {
+          "values": ["inner_map_value3", "inner_map_value4"]
+        }
+      }
+    }
+  ],
+  "deeply_nested_list": [
+    {
+      "id": "deeply_nested_1",
+      "complex_map": {
+        "deep_key_1": {
+          "entries": {
+            "key_1": 500,
+            "key_2": 600
+          }
+        }
+      },
+      "complex_list": [
+        {
+          "outer_key": "deep_outer_key_1",
+          "inner_map": {
+            "deep_inner_key_1": {
+              "values": ["deep_value1", "deep_value2"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "created_at": "2023-07-21T15:33:20.123Z",
+  "current_status": "ACTIVE",
+  "special_string": "This is a special string",
+  "repeated_maps": [
+    {
+      "data": {
+        "rep_map_key_1": 700,
+        "rep_map_key_2": 800
+      }
+    },
+    {
+      "data": {
+        "rep_map_key_3": 900,
+        "rep_map_key_4": 1000
+      }
+    }
+  ],
+  "status_map": {
+    "status_key_1": "ACTIVE",
+    "status_key_2": "INACTIVE"
+  }
+}
