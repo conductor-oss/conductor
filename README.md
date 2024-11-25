@@ -7,7 +7,7 @@
 
 [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://GitHub.com/Netflix/conductor-oss/releases)
 [![License](https://img.shields.io/github/license/conductor-oss/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2hmxn0i3n-_W~a9rWMbvMoYmlJo3Y15g)
+[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)
 [![Community Forum](https://img.shields.io/badge/Discourse-Join%20the%20Community-blue?logo=discourse&logoColor=white)](https://community.orkes.io)
 [![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 [![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor?style=social)](https://github.com/conductor-oss/conductor/stargazers)
@@ -131,7 +131,7 @@ If you would like to participate in the roadmap and development, [please reach o
 
 # Documentation and Community
 * **Official Documentation:** [Conductor documentation](https://docs.conductor-oss.org/index.html) contains detailed explanations of workflow concepts, API reference, and guides.
-* **Conductor Slack:** [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2hmxn0i3n-_W~a9rWMbvMoYmlJo3Y15g) channel for community discussions and support.
+* **Conductor Slack:** [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) channel for community discussions and support.
 * **Orkes Community Discourse:** [Hosted by Orkes.io](https://community.orkes.io) on Discourse, you can engage the Conductor & Orkes community, ask questions, and contribute ideas. 
 - - -
 # License
