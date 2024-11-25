@@ -67,7 +67,7 @@ public @interface TaskTimeoutConstraint {
             }
 
             // Check if timeoutSeconds is greater than totalTimeoutSeconds
-            if (taskDef.getTimeoutSeconds() > 0
+            if (taskDef.getTimeoutSeconds() > 0 && taskDef.getTotalTimeoutSeconds() > 0
                     && taskDef.getTimeoutSeconds() > taskDef.getTotalTimeoutSeconds()) {
                 valid = false;
                 String message =
