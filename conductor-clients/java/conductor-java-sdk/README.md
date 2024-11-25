@@ -31,7 +31,7 @@ For insights into the Conductor project's future plans and upcoming features, ch
 
 We are building this based on feedback from our users and community. 
 
-We encourage everyone to share their thoughts and feedback! You can create new GitHub issues or comment on existing ones. You can also join our [Slack community](https://orkes-conductor.slack.com/) to connect with us.
+We encourage everyone to share their thoughts and feedback! You can create new GitHub issues or comment on existing ones. You can also join our [Slack community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) to connect with us.
 
 Thank you! ♥
 
