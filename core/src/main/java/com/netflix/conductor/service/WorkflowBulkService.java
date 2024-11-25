@@ -17,6 +17,7 @@ import java.util.List;
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.model.WorkflowModel;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -26,7 +27,7 @@ public interface WorkflowBulkService {
 
     int MAX_REQUEST_ITEMS = 1000;
 
-    BulkResponse pauseWorkflow(
+    BulkResponse<String> pauseWorkflow(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -34,7 +35,7 @@ public interface WorkflowBulkService {
                                     "Cannot process more than {max} workflows. Please use multiple requests.")
                     List<String> workflowIds);
 
-    BulkResponse resumeWorkflow(
+    BulkResponse<String> resumeWorkflow(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -42,7 +43,7 @@ public interface WorkflowBulkService {
                                     "Cannot process more than {max} workflows. Please use multiple requests.")
                     List<String> workflowIds);
 
-    BulkResponse restart(
+    BulkResponse<String> restart(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -51,7 +52,7 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             boolean useLatestDefinitions);
 
-    BulkResponse retry(
+    BulkResponse<String> retry(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -59,7 +60,7 @@ public interface WorkflowBulkService {
                                     "Cannot process more than {max} workflows. Please use multiple requests.")
                     List<String> workflowIds);
 
-    BulkResponse terminate(
+    BulkResponse<String> terminate(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -68,7 +69,7 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             String reason);
 
-    BulkResponse deleteWorkflow(
+    BulkResponse<String> deleteWorkflow(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -77,7 +78,7 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             boolean archiveWorkflow);
 
-    BulkResponse terminateRemove(
+    BulkResponse<String> terminateRemove(
             @NotEmpty(message = "WorkflowIds list cannot be null.")
                     @Size(
                             max = MAX_REQUEST_ITEMS,
@@ -86,4 +87,13 @@ public interface WorkflowBulkService {
                     List<String> workflowIds,
             String reason,
             boolean archiveWorkflow);
+
+    BulkResponse<WorkflowModel> searchWorkflow(
+            @NotEmpty(message = "WorkflowIds list cannot be null.")
+                    @Size(
+                            max = MAX_REQUEST_ITEMS,
+                            message =
+                                    "Cannot process more than {max} workflows. Please use multiple requests.")
+                    List<String> workflowIds,
+            boolean includeTasks);
 }
