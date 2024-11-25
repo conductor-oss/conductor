@@ -97,19 +97,27 @@ public class Task {
     @ProtoField(id = 9)
     private String taskDefName;
 
-    /** Time when the task was scheduled */
+    /**
+     * Time when the task was scheduled
+     */
     @ProtoField(id = 10)
     private long scheduledTime;
 
-    /** Time when the task was first polled */
+    /**
+     * Time when the task was first polled
+     */
     @ProtoField(id = 11)
     private long startTime;
 
-    /** Time when the task completed executing */
+    /**
+     * Time when the task completed executing
+     */
     @ProtoField(id = 12)
     private long endTime;
 
-    /** Time when the task was last updated */
+    /**
+     * Time when the task was last updated
+     */
     @ProtoField(id = 13)
     private long updateTime;
 
@@ -202,10 +210,14 @@ public class Task {
     @ProtoField(id = 42)
     private boolean subworkflowChanged;
 
+    @ProtoField(id = 43)
+    private long firstStartTime;
+
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
 
-    public Task() {}
+    public Task() {
+    }
 
     /**
      * @return Type of the task
@@ -417,7 +429,7 @@ public class Task {
 
     /**
      * @return True if the task has completed its lifecycle within conductor (from start to
-     *     completion to being updated in the datastore)
+     * completion to being updated in the datastore)
      */
     public boolean isExecuted() {
         return executed;
@@ -479,7 +491,7 @@ public class Task {
 
     /**
      * @param responseTimeoutSeconds - timeout for task to send response. After this timeout, the
-     *     task will be re-queued
+     *                               task will be re-queued
      */
     public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
@@ -661,7 +673,7 @@ public class Task {
 
     /**
      * @param externalInputPayloadStoragePath the external storage path where the task input payload
-     *     is stored
+     *                                        is stored
      */
     public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
         this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
@@ -676,7 +688,7 @@ public class Task {
 
     /**
      * @param externalOutputPayloadStoragePath the external storage path where the task output
-     *     payload is stored
+     *                                         payload is stored
      */
     public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
@@ -716,7 +728,9 @@ public class Task {
         return iteration > 0;
     }
 
-    /** * @return the priority defined on workflow */
+    /**
+     * @return the priority defined on workflow
+     */
     public int getWorkflowPriority() {
         return workflowPriority;
     }
@@ -744,8 +758,8 @@ public class Task {
             return this.getOutputData() != null && this.getOutputData().get("subWorkflowId") != null
                     ? (String) this.getOutputData().get("subWorkflowId")
                     : this.getInputData() != null
-                            ? (String) this.getInputData().get("subWorkflowId")
-                            : null;
+                    ? (String) this.getInputData().get("subWorkflowId")
+                    : null;
         }
     }
 
@@ -763,6 +777,14 @@ public class Task {
 
     public void setParentTaskId(String parentTaskId) {
         this.parentTaskId = parentTaskId;
+    }
+
+    public long getFirstStartTime() {
+        return firstStartTime;
+    }
+
+    public void setFirstStartTime(long firstStartTime) {
+        this.firstStartTime = firstStartTime;
     }
 
     public Task copy() {
@@ -798,17 +820,18 @@ public class Task {
         copy.setSubWorkflowId(getSubWorkflowId());
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
+        copy.setFirstStartTime(firstStartTime);
         return copy;
     }
 
     /**
      * @return a deep copy of the task instance To be used inside copy Workflow method to provide a
-     *     valid deep copied object. Note: This does not copy the following fields:
-     *     <ul>
-     *       <li>retried
-     *       <li>updateTime
-     *       <li>retriedTaskId
-     *     </ul>
+     * valid deep copied object. Note: This does not copy the following fields:
+     * <ul>
+     *   <li>retried
+     *   <li>updateTime
+     *   <li>retriedTaskId
+     * </ul>
      */
     public Task deepCopy() {
         Task deepCopy = copy();
@@ -819,6 +842,7 @@ public class Task {
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
         deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 
@@ -919,6 +943,9 @@ public class Task {
                 + ", subworkflowChanged='"
                 + subworkflowChanged
                 + '\''
+                + ", firstStartTime='"
+                + firstStartTime
+                + '\''
                 + '}';
     }
 
@@ -966,14 +993,15 @@ public class Task {
                 && Objects.equals(getInputMessage(), task.getInputMessage())
                 && Objects.equals(getOutputMessage(), task.getOutputMessage())
                 && Objects.equals(
-                        getExternalInputPayloadStoragePath(),
-                        task.getExternalInputPayloadStoragePath())
+                getExternalInputPayloadStoragePath(),
+                task.getExternalInputPayloadStoragePath())
                 && Objects.equals(
-                        getExternalOutputPayloadStoragePath(),
-                        task.getExternalOutputPayloadStoragePath())
+                getExternalOutputPayloadStoragePath(),
+                task.getExternalOutputPayloadStoragePath())
                 && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId())
                 && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace())
-                && Objects.equals(getParentTaskId(), task.getParentTaskId());
+                && Objects.equals(getParentTaskId(), task.getParentTaskId())
+                && Objects.equals(getFirstStartTime(), task.getFirstStartTime());
     }
 
     @Override
@@ -1016,6 +1044,7 @@ public class Task {
                 getExternalOutputPayloadStoragePath(),
                 getIsolationGroupId(),
                 getExecutionNameSpace(),
-                getParentTaskId());
+                getParentTaskId(),
+                getFirstStartTime());
     }
 }
