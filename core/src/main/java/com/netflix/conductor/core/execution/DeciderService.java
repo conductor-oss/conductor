@@ -628,6 +628,7 @@ public class DeciderService {
         rescheduled.setScheduledTime(0);
         rescheduled.setStartTime(0);
         rescheduled.setEndTime(0);
+        rescheduled.setFirstStartTime(task.getFirstStartTime());
         rescheduled.setWorkerId(null);
 
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
@@ -710,20 +711,26 @@ public class DeciderService {
         }
 
         long timeout = 1000L * taskDef.getTimeoutSeconds();
+        long totalTaskTimeout = 1000L * taskDef.getTotalTimeoutSeconds();
         long now = System.currentTimeMillis();
         long elapsedTime =
                 now - (task.getStartTime() + ((long) task.getStartDelayInSeconds() * 1000L));
 
-        if (elapsedTime < timeout) {
+        long elapsedTimeFromFirstTaskExecution =
+                now - (task.getFirstStartTime() + ((long) task.getStartDelayInSeconds() * 1000L));
+
+        if (elapsedTimeFromFirstTaskExecution < totalTaskTimeout && elapsedTime < timeout) {
             return;
         }
 
         String reason =
                 String.format(
                         "Task timed out after %d seconds. Timeout configured as %d seconds. "
+                                + "Total Task Timeout configured as %d seconds. "
                                 + "Timeout policy configured to %s",
                         elapsedTime / 1000L,
                         taskDef.getTimeoutSeconds(),
+                        taskDef.getTotalTimeoutSeconds(),
                         taskDef.getTimeoutPolicy().name());
         timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
     }
@@ -773,6 +780,10 @@ public class DeciderService {
             case RETRY:
                 task.setStatus(TIMED_OUT);
                 task.setReasonForIncompletion(reason);
+                if (task.isTotalTimeOutExpired()) {
+                    throw new TerminateWorkflowException(
+                            reason, WorkflowModel.Status.TIMED_OUT, task);
+                }
                 return;
             case TIME_OUT_WF:
                 task.setStatus(TIMED_OUT);
