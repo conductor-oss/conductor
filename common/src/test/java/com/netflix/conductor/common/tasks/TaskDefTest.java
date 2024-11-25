@@ -80,6 +80,7 @@ public class TaskDefTest {
         taskDef.setName("test-task");
         taskDef.setRetryCount(1);
         taskDef.setTimeoutSeconds(1000);
+        taskDef.setTotalTimeoutSeconds(900);
         taskDef.setResponseTimeoutSeconds(1);
         taskDef.setOwnerEmail("blah@gmail.com");
 
@@ -92,7 +93,7 @@ public class TaskDefTest {
         assertTrue(
                 validationErrors.toString(),
                 validationErrors.contains(
-                        "TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 0"));
+                        "TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 900"));
     }
 
     @Test
