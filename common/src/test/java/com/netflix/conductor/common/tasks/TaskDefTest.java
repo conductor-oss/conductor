@@ -91,7 +91,8 @@ public class TaskDefTest {
 
         assertTrue(
                 validationErrors.toString(),
-                validationErrors.contains("TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 0"));
+                validationErrors.contains(
+                        "TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 0"));
     }
 
     @Test
