@@ -43,7 +43,7 @@ public class TaskDef extends Auditable {
     private String description;
 
     private int // Default
-    retryCount = 3;
+            retryCount = 3;
 
     private long timeoutSeconds;
 
