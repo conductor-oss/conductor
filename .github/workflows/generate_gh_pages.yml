@@ -13,6 +13,6 @@ jobs:
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
-          GITHUB_TOKEN: ${{ secrets.DOCSITE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yml
           REQUIREMENTS: requirements.txt
