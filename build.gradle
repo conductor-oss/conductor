@@ -147,7 +147,7 @@ configure(allprojects - project(':conductor-grpc')) {
     }
 }
 
-['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness', 'client'].each {
+['core', 'redis-concurrency-limit', 'test-harness', 'client'].each {
     configure(project(":conductor-$it")) {
         spotless {
             groovy {

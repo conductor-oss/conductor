@@ -6,7 +6,6 @@ dependencies {
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-core')
     testImplementation project(':conductor-redis-persistence')
-    testImplementation project(':conductor-cassandra-persistence')
     testImplementation project(':conductor-es7-persistence')
     testImplementation project(':conductor-grpc-server')
     testImplementation project(':conductor-client')
