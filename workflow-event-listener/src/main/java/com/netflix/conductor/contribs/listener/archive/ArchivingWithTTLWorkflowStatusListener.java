@@ -62,7 +62,8 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
         try {
             LOGGER.info("Gracefully shutdown executor service");
             scheduledThreadPoolExecutor.shutdown();
-            if (scheduledThreadPoolExecutor.awaitTermination(delayArchiveSeconds, TimeUnit.SECONDS)) {
+            if (scheduledThreadPoolExecutor.awaitTermination(
+                    delayArchiveSeconds, TimeUnit.SECONDS)) {
                 LOGGER.debug("tasks completed, shutting down");
             } else {
                 LOGGER.warn("Forcing shutdown after waiting for {} seconds", delayArchiveSeconds);
@@ -93,7 +94,10 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     @Override
     public void onWorkflowTerminated(WorkflowModel workflow) {
         LOGGER.info("Archiving workflow {} on termination", workflow.getWorkflowId());
-        LOGGER.info("workflow {} is not in COMPLETED state ({})", workflow.getWorkflowId(), workflow.getStatus());
+        LOGGER.info(
+                "workflow {} is not in COMPLETED state ({})",
+                workflow.getWorkflowId(),
+                workflow.getStatus());
         if (delayArchiveSeconds > 0) {
             scheduledThreadPoolExecutor.schedule(
                     new DelayArchiveWorkflow(workflow, executionDAOFacade),

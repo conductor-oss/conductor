@@ -13,8 +13,8 @@
 package com.netflix.conductor.oracle.dao;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -28,7 +28,6 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
@@ -42,7 +41,6 @@ import com.netflix.conductor.oracle.util.ExecutorsUtil;
 import com.netflix.conductor.oracle.util.Query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -94,17 +92,17 @@ public class OracleExecutionDAO extends OracleBaseDAO
     public List<TaskModel> getPendingTasksByWorkflow(String taskDefName, String workflowId) {
         // @formatter:off
         String GET_IN_PROGRESS_TASKS_FOR_WORKFLOW =
-            "SELECT json_data FROM task_in_progress tip "
-                    + "INNER JOIN task t ON t.task_id = tip.task_id "
-                    + "WHERE task_def_name = ? AND workflow_id = ?";
+                "SELECT json_data FROM task_in_progress tip "
+                        + "INNER JOIN task t ON t.task_id = tip.task_id "
+                        + "WHERE task_def_name = ? AND workflow_id = ?";
         // @formatter:on
 
         return queryWithTransaction(
-            GET_IN_PROGRESS_TASKS_FOR_WORKFLOW,
-            q ->
-                q.addParameter(taskDefName)
-                .addParameter(workflowId)
-                .executeAndFetch(TaskModel.class));
+                GET_IN_PROGRESS_TASKS_FOR_WORKFLOW,
+                q ->
+                        q.addParameter(taskDefName)
+                                .addParameter(workflowId)
+                                .executeAndFetch(TaskModel.class));
     }
 
     @Override
@@ -217,7 +215,6 @@ public class OracleExecutionDAO extends OracleBaseDAO
                 task.getTaskDefName(),
                 limit,
                 getInProgressTaskCount(task.getTaskDefName()));
-
 
         String taskId = task.getTaskId();
 
@@ -420,7 +417,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
         return queryWithTransaction(
                 GET_IN_PROGRESS_TASK_COUNT, q -> q.addParameter(taskDefName).executeCount());
     }
- 
+
     @Override
     public List<WorkflowModel> getWorkflowsByType(
             String workflowName, Long startTime, Long endTime) {
@@ -463,7 +460,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
                                             e);
                                 }
                             });
-                });         
+                });
         return workflows;
     }
 
@@ -506,7 +503,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
                     "Unable to remove event execution " + eventExecution.getId(), e);
         }
     }
-    
+
     @Override
     public void updateEventExecution(EventExecution eventExecution) {
         try {
@@ -524,8 +521,9 @@ public class OracleExecutionDAO extends OracleBaseDAO
             withTransaction(
                     tx -> {
                         for (int i = 0; i < max; i++) {
-                            String executionId = messageId + "_" + i; 
-                            // see SimpleEventProcessor.handle to understand how the execution id is set
+                            String executionId = messageId + "_" + i;
+                            // see SimpleEventProcessor.handle to understand
+                            // how the execution id is set
                             EventExecution ee =
                                     readEventExecution(
                                             tx,
@@ -548,8 +546,6 @@ public class OracleExecutionDAO extends OracleBaseDAO
             throw new NonTransientException(message, e);
         }
     }
-
-
 
     @Override
     public void updateLastPollData(String taskDefName, String domain, String workerId) {
@@ -921,7 +917,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
     private void updateInProgressStatus(Connection connection, TaskModel task, String inProgress) {
         String UPDATE_IN_PROGRESS_TASK_STATUS =
                 "UPDATE task_in_progress SET in_progress_status = ?, modified_on = CURRENT_TIMESTAMP "
-                    + "WHERE task_def_name = ? AND task_id = ?";
+                        + "WHERE task_def_name = ? AND task_id = ?";
 
         execute(
                 connection,
@@ -935,18 +931,18 @@ public class OracleExecutionDAO extends OracleBaseDAO
 
     private boolean insertEventExecution(Connection connection, EventExecution eventExecution) {
         String INSERT_EVENT_EXECUTION =
-            "INSERT INTO event_execution (event_handler_name, event_name, message_id, execution_id, json_data) VALUES (?, ?, ?, ?, ?) ";
+                "INSERT INTO event_execution (event_handler_name, event_name, message_id, execution_id, json_data) VALUES (?, ?, ?, ?, ?) ";
         int count =
-            query(
-                connection,
-                INSERT_EVENT_EXECUTION,
-                q ->
-                        q.addParameter(eventExecution.getName())
-                                .addParameter(eventExecution.getEvent())
-                                .addParameter(eventExecution.getMessageId())
-                                .addParameter(eventExecution.getId())
-                                .addJsonParameter(eventExecution)
-                                .executeUpdate());
+                query(
+                        connection,
+                        INSERT_EVENT_EXECUTION,
+                        q ->
+                                q.addParameter(eventExecution.getName())
+                                        .addParameter(eventExecution.getEvent())
+                                        .addParameter(eventExecution.getMessageId())
+                                        .addParameter(eventExecution.getId())
+                                        .addJsonParameter(eventExecution)
+                                        .executeUpdate());
         return count > 0;
     }
 
@@ -954,7 +950,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
         // @formatter:off
         String UPDATE_EVENT_EXECUTION =
                 "UPDATE event_execution SET json_data = ?, modified_on = CURRENT_TIMESTAMP "
-                    + "WHERE event_handler_name = ? AND event_name = ? AND message_id = ? AND execution_id = ?";
+                        + "WHERE event_handler_name = ? AND event_name = ? AND message_id = ? AND execution_id = ?";
         // @formatter:on
 
         execute(
@@ -993,7 +989,7 @@ public class OracleExecutionDAO extends OracleBaseDAO
         // @formatter:off
         String GET_EVENT_EXECUTION =
                 "SELECT json_data FROM event_execution "
-                    + "WHERE event_handler_name = ? AND event_name = ? AND message_id = ? AND execution_id = ?";
+                        + "WHERE event_handler_name = ? AND event_name = ? AND message_id = ? AND execution_id = ?";
         // @formatter:on
         return query(
                 connection,
@@ -1009,9 +1005,6 @@ public class OracleExecutionDAO extends OracleBaseDAO
     private List<String> findAllTasksInProgressInOrderOfArrival(TaskModel task, int limit) {
         String GET_IN_PROGRESS_TASKS_WITH_LIMIT =
                 "SELECT task_id FROM task_in_progress WHERE task_def_name = ? ORDER BY created_on FETCH FIRST ? ROWS ONLY";
-                //"SELECT task_id FROM ( SELECT task_id FROM task_in_progress WHERE task_def_name = ? ORDER BY created_on ) WHERE ROWNUM <= ?";
-                //Postgres:     "SELECT task_id FROM task_in_progress WHERE task_def_name = ? ORDER BY created_on LIMIT ?";
-                //MLI02-Oracle: "SELECT task_id FROM task_in_progress WHERE task_def_name = ? AND ROWNUM <= ? ORDER BY created_on";
 
         return queryWithTransaction(
                 GET_IN_PROGRESS_TASKS_WITH_LIMIT,
@@ -1024,8 +1017,10 @@ public class OracleExecutionDAO extends OracleBaseDAO
     private void validate(TaskModel task) {
         Preconditions.checkNotNull(task, "task object cannot be null");
         Preconditions.checkNotNull(task.getTaskId(), "Task id cannot be null");
-        Preconditions.checkNotNull(task.getWorkflowInstanceId(), "Workflow instance id cannot be null");
-        Preconditions.checkNotNull(task.getReferenceTaskName(), "Task reference name cannot be null");
+        Preconditions.checkNotNull(
+                task.getWorkflowInstanceId(), "Workflow instance id cannot be null");
+        Preconditions.checkNotNull(
+                task.getReferenceTaskName(), "Task reference name cannot be null");
     }
 
     private void insertOrUpdatePollData(Connection connection, PollData pollData, String domain) {
@@ -1050,7 +1045,6 @@ public class OracleExecutionDAO extends OracleBaseDAO
             if (rowsUpdated == 0) {
                 String INSERT_POLL_DATA =
                         "INSERT INTO poll_data(queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
-                        //"INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT (queue_name,domain) DO UPDATE SET json_data=excluded.json_data, modified_on=excluded.modified_on";
                 execute(
                         connection,
                         INSERT_POLL_DATA,
@@ -1084,5 +1078,4 @@ public class OracleExecutionDAO extends OracleBaseDAO
         return queryWithTransaction(
                 GET_ALL_POLL_DATA, q -> q.addParameter(queueName).executeAndFetch(PollData.class));
     }
-
 }

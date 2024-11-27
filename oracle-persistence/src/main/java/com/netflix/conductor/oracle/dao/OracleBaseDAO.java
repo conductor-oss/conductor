@@ -46,7 +46,8 @@ public abstract class OracleBaseDAO {
 
     private final RetryTemplate retryTemplate;
 
-    protected OracleBaseDAO(RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
+    protected OracleBaseDAO(
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         this.retryTemplate = retryTemplate;
         this.objectMapper = objectMapper;
         this.dataSource = dataSource;

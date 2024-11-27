@@ -528,7 +528,6 @@ public class Query implements AutoCloseable {
         throw new NonTransientException("Cannot convert type " + vName + " to " + rName);
     }
 
-
     protected Integer convertInt(Object value) {
         if (null == value) {
             return null;

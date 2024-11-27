@@ -42,5 +42,4 @@ public class OracleProperties {
     public void setDeadlockRetryMax(Integer deadlockRetryMax) {
         this.deadlockRetryMax = deadlockRetryMax;
     }
-    
 }

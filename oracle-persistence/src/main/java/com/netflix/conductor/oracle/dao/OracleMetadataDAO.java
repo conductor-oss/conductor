@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.oracle.dao;
 
-import java.sql.Clob;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +53,7 @@ public class OracleMetadataDAO extends OracleBaseDAO implements MetadataDAO, Eve
         super(retryTemplate, objectMapper, dataSource);
 
         long cacheRefreshTime = properties.getTaskDefCacheRefreshInterval().getSeconds();
-  
+
         this.scheduledExecutorService =
                 Executors.newSingleThreadScheduledExecutor(
                         ExecutorsUtil.newNamedThreadFactory("oracle-metadata-"));
@@ -470,7 +469,7 @@ public class OracleMetadataDAO extends OracleBaseDAO implements MetadataDAO, Eve
             // @formatter:off
             final String UPDATE_WORKFLOW_DEF_QUERY =
                     "UPDATE meta_workflow_def SET json_data = ?, modified_on = CURRENT_TIMESTAMP "
-                        + "WHERE name = ? AND version = ?";
+                            + "WHERE name = ? AND version = ?";
             // @formatter:on
 
             execute(

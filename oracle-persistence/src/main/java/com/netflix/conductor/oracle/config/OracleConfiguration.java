@@ -14,7 +14,7 @@ package com.netflix.conductor.oracle.config;
 
 import java.sql.SQLException;
 import java.util.Optional;
-import java.util.Map;
+
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
@@ -25,11 +25,12 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+
 import com.netflix.conductor.dao.*;
 import com.netflix.conductor.oracle.dao.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -61,6 +62,7 @@ public class OracleConfiguration {
         logger.info("Initialized Oracle Configuration ...");
         return new OracleMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
     }
+
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
     public ExecutionDAO oracleExecutionDAO(
@@ -70,6 +72,7 @@ public class OracleConfiguration {
         logger.info("Initialized Oracle Configuration ...");
         return new OracleExecutionDAO(retryTemplate, objectMapper, dataSource);
     }
+
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
     public QueueDAO oracleQueueDAO(

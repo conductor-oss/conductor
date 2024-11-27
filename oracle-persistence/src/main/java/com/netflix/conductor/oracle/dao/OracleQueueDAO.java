@@ -41,9 +41,7 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
     private final ScheduledExecutorService scheduledExecutorService;
 
     public OracleQueueDAO(
-            RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            DataSource dataSource) {
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
 
         this.scheduledExecutorService =
@@ -218,8 +216,8 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
                                     while (rs.next()) {
                                         String queueName = rs.getString("queue_name");
                                         Long size = rs.getLong("size");
-                                        //String queueName = rs.getString(1);
-                                        //Long size = rs.getLong(2);
+                                        // String queueName = rs.getString(1);
+                                        // Long size = rs.getLong(2);
                                         detail.put(queueName, size);
                                     }
                                     return detail;
@@ -230,8 +228,10 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
     public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose() {
         // @formatter:off
         StringBuilder sqlBuilder = new StringBuilder("SELECT queue_name, ");
-        sqlBuilder.append("(SELECT count(*) FROM queue_message WHERE popped = 'N' AND queue_name = q.queue_name), ");
-        sqlBuilder.append("(SELECT count(*) FROM queue_message WHERE popped = 'Y' AND queue_name = q.queue_name) ");
+        sqlBuilder.append(
+                "(SELECT count(*) FROM queue_message WHERE popped = 'N' AND queue_name = q.queue_name), ");
+        sqlBuilder.append(
+                "(SELECT count(*) FROM queue_message WHERE popped = 'Y' AND queue_name = q.queue_name) ");
         sqlBuilder.append("FROM queue q");
         final String GET_QUEUES_DETAIL_VERBOSE = sqlBuilder.toString();
         // @formatter:on
@@ -247,15 +247,17 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
                                         String queueName = rs.getString("queue_name");
                                         Long size = rs.getLong("size");
                                         Long queueUnacked = rs.getLong("uacked");
-                                        //String queueName = rs.getString(1);
-                                        //Long size = rs.getLong(2);
-                                        //Long queueUnacked = rs.getLong(3);
+                                        // String queueName = rs.getString(1);
+                                        // Long size = rs.getLong(2);
+                                        // Long queueUnacked = rs.getLong(3);
                                         result.put(
                                                 queueName,
                                                 ImmutableMap.of(
                                                         "a",
                                                         ImmutableMap
-                                                                .of( // sharding not implemented, returning only one shard with all the info
+                                                                .of( // sharding not implemented,
+                                                                        // returning only one shard
+                                                                        // with all the info
                                                                         "size",
                                                                         size,
                                                                         "uacked",
@@ -311,7 +313,7 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
                 EXISTS_MESSAGE,
                 q -> q.addParameter(queueName).addParameter(messageId).exists());
     }
-    
+
     private void pushMessage(
             Connection connection,
             String queueName,
@@ -368,11 +370,9 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
         }
 
         final String PEEK_MESSAGES =
-        "SELECT message_id, priority, payload FROM queue_message "
-                + "WHERE queue_name = ? AND popped = 'N' AND deliver_on <= (CURRENT_TIMESTAMP + NUMTODSINTERVAL(1/1000000, 'SECOND')) "
-                + "ORDER BY priority DESC, deliver_on, created_on FETCH FIRST ? ROWS ONLY ";
-        //MLID-02: "SELECT message_id, priority, payload FROM queue_message WHERE queue_name = ? AND popped = 'N' AND deliver_on <= (CURRENT_TIMESTAMP + NUMTODSINTERVAL(1/1000000,'SECOND')) AND ROWNUM <= ? ORDER BY priority DESC, deliver_on, created_on";
-        //MySQL: "SELECT message_id, priority, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
+                "SELECT message_id, priority, payload FROM queue_message "
+                        + "WHERE queue_name = ? AND popped = 'N' AND deliver_on <= (CURRENT_TIMESTAMP + NUMTODSINTERVAL(1/1000000, 'SECOND')) "
+                        + "ORDER BY priority DESC, deliver_on, created_on FETCH FIRST ? ROWS ONLY ";
 
         return query(
                 connection,
@@ -398,16 +398,16 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
             Connection connection, String queueName, int count, int timeout) {
         long start = System.currentTimeMillis();
         List<Message> messages = peekMessages(connection, queueName, count);
-        
+
         while (messages.size() < count && ((System.currentTimeMillis() - start) < timeout)) {
-                Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
-                messages = peekMessages(connection, queueName, count);
+            Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
+            messages = peekMessages(connection, queueName, count);
         }
-        
+
         if (messages.isEmpty()) {
-                return messages;
+            return messages;
         }
-        
+
         List<Message> poppedMessages = new ArrayList<>();
         for (Message message : messages) {
             final String POP_MESSAGE =
@@ -434,8 +434,7 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
                 "SELECT 1 FROM DUAL WHERE EXISTS(SELECT 1 FROM queue WHERE queue_name = ?)";
         boolean exists = query(connection, EXISTS_QUEUE, q -> q.addParameter(queueName).exists());
         if (!exists) {
-            final String CREATE_QUEUE =
-                    "INSERT INTO queue (queue_name) VALUES (?)";
+            final String CREATE_QUEUE = "INSERT INTO queue (queue_name) VALUES (?)";
             execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
         }
     }
@@ -444,5 +443,4 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
     public boolean containsMessage(String queueName, String messageId) {
         return getWithRetriedTransactions(tx -> existsMessage(tx, queueName, messageId));
     }
-    
 }
