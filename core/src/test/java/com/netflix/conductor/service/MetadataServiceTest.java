@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 @EnableAutoConfiguration
 public class MetadataServiceTest {
 
@@ -64,6 +66,7 @@ public class MetadataServiceTest {
         public ConductorProperties properties() {
             ConductorProperties properties = mock(ConductorProperties.class);
             when(properties.isOwnerEmailMandatory()).thenReturn(true);
+
             return properties;
         }
 
@@ -415,7 +418,7 @@ public class MetadataServiceTest {
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
-                            "Workflow name cannot contain the following set of characters: ':'"));
+                            "Invalid name 'invalid:name'. Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #"));
             throw ex;
         }
         fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
@@ -434,7 +437,7 @@ public class MetadataServiceTest {
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
-                            "Workflow name cannot contain the following set of characters: ':'"));
+                            "Invalid name 'invalid:name'. Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #"));
             throw ex;
         }
         fail("metadataService.validateWorkflowDef did not throw ConstraintViolationException !");

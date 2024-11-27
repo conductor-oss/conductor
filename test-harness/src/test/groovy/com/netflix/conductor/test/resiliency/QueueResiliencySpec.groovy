@@ -14,6 +14,7 @@ package com.netflix.conductor.test.resiliency
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -36,6 +37,7 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
  * 2. Succeeds
  * 3. Doesn't involve QueueDAO
  */
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired
