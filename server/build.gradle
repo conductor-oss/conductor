@@ -27,7 +27,6 @@ dependencies {
     implementation project(':conductor-awssqs-event-queue')
 
     //External Payload Storage
-    implementation project(':conductor-azureblob-storage')
     //implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
 
