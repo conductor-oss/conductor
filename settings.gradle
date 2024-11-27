@@ -40,8 +40,6 @@ include 'client-spring'
 
 include 'redis-persistence'
 
-include 'es6-persistence'
-
 include 'redis-lock'
 
 include 'awss3-storage'

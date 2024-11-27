@@ -35,7 +35,7 @@ dependencies {
     //implementation project(':conductor-mysql-persistence')
     implementation project(':conductor-oracle-persistence')
 
-    //Indexing (note: Elasticsearch 6 is deprecated)
+    //Indexing
     implementation project(':conductor-es7-persistence')
 
 
