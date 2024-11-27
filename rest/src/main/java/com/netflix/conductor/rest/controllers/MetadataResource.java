@@ -59,7 +59,7 @@ public class MetadataResource {
 
     @PutMapping("/workflow")
     @Operation(summary = "Create or update workflow definition")
-    public BulkResponse update(@RequestBody List<WorkflowDef> workflowDefs) {
+    public BulkResponse<String> update(@RequestBody List<WorkflowDef> workflowDefs) {
         return metadataService.updateWorkflowDef(workflowDefs);
     }
 

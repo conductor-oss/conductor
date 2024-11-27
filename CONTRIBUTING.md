@@ -13,7 +13,7 @@ I have a question!
 We have a dedicated [discussion forum](https://github.com/conductor-oss/conductor/discussions) for asking "how to" questions and to discuss ideas. The discussion forum is a great place to start if you're considering creating a feature request or work on a Pull Request.
 *Please do not create issues to ask questions.*
 
-Conductor users hangout in the [Slack channel](https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg).  Join the channel for more real-time communication!
+Conductor users hangout in the [Slack channel](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA).  Join the channel for more real-time communication!
 
 I want to contribute!
 ------

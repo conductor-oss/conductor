@@ -472,7 +472,7 @@ public class TaskDef extends Auditable {
         return totalTimeoutSeconds;
     }
 
-    public void setTotalTimeoutSeconds(@NotNull long totalTimeoutSeconds) {
+    public void setTotalTimeoutSeconds(long totalTimeoutSeconds) {
         this.totalTimeoutSeconds = totalTimeoutSeconds;
     }
 

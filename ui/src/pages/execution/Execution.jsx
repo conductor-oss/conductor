@@ -126,6 +126,7 @@ export default function Execution() {
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(INIT_DRAWER_WIDTH);
+  const [selectedNode, setSelectedNode] = useState();
 
   const [tabIndex, setTabIndex] = useQueryState("tabIndex", 0);
   const [selectedTaskRison, setSelectedTaskRison] = useQueryState("task", "");
@@ -222,7 +223,12 @@ export default function Execution() {
                   </div>
                 )}
                 <div className={classes.frItem}>
-                  <NavLink newTab path={`/workflowDef/${execution.workflowName}`}>Definition</NavLink>
+                  <NavLink
+                    newTab
+                    path={`/workflowDef/${execution.workflowName}`}
+                  >
+                    Definition
+                  </NavLink>
                 </div>
                 <SecondaryButton onClick={refresh} style={{ marginRight: 10 }}>
                   Refresh
@@ -260,6 +266,7 @@ export default function Execution() {
                   execution={execution}
                   setSelectedTask={setSelectedTask}
                   selectedTask={selectedTask}
+                  setSelectedNode={setSelectedNode}
                 />
               )}
               {tabIndex === 1 && <ExecutionSummary execution={execution} />}
@@ -302,6 +309,8 @@ export default function Execution() {
                 className={classes.rightPanel}
                 selectedTask={selectedTask}
                 dag={dag}
+                execution={execution}
+                selectedNode={selectedNode}
                 onTaskChange={setSelectedTask}
               />
             </div>

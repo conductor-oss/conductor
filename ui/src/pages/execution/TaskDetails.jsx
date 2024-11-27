@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tabs, Tab, Paper } from "../../components";
 import Timeline from "./Timeline";
 import TaskList from "./TaskList";
-import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import { makeStyles } from "@material-ui/styles";
+import { WorkflowVisualizer } from "orkes-workflow-visualizer";
+import {
+  pendingTaskSelection,
+  taskWithLatestIteration,
+} from "../../utils/helpers";
 
 const useStyles = makeStyles({
   taskWrapper: {
@@ -18,6 +22,7 @@ export default function TaskDetails({
   dag,
   selectedTask,
   setSelectedTask,
+  setSelectedNode,
 }) {
   const [tabIndex, setTabIndex] = useState(0);
   const classes = useStyles();
@@ -32,11 +37,23 @@ export default function TaskDetails({
         </Tabs>
 
         {tabIndex === 0 && (
-          <WorkflowGraph
-            selectedTask={selectedTask}
+          <WorkflowVisualizer
+            maxHeightOverride
+            pannable
+            zoomable
+            zoom={0.7}
+            data={dag?.execution}
             executionMode={true}
-            dag={dag}
-            onClick={setSelectedTask}
+            onClick={(e, data) => {
+              const selectedTaskRefName =
+                data?.data?.task?.executionData?.status === "PENDING"
+                  ? pendingTaskSelection(data?.data?.task)?.workflowTask
+                      ?.taskReferenceName
+                  : taskWithLatestIteration(execution?.tasks, data?.id)
+                      ?.referenceTaskName;
+              setSelectedNode(data);
+              setSelectedTask({ ref: selectedTaskRefName });
+            }}
           />
         )}
         {tabIndex === 1 && (

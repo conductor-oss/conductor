@@ -580,7 +580,7 @@ export default class WorkflowDAG {
       return this.taskResultsById.get(taskPointer.id);
     } else {
       const node = this.graph.node(taskPointer.ref);
-      return _.last(node.taskResults);
+      return _.last(node?.taskResults);
     }
   }
 }
