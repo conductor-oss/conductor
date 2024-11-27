@@ -45,7 +45,6 @@ include 'es6-persistence'
 include 'redis-lock'
 
 include 'awss3-storage'
-include 'awssqs-event-queue'
 
 include 'redis-concurrency-limit'
 

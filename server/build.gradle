@@ -24,7 +24,6 @@ dependencies {
     implementation project(':conductor-amqp')
     implementation project(':conductor-nats')
     implementation project(':conductor-nats-streaming')
-    implementation project(':conductor-awssqs-event-queue')
 
     //External Payload Storage
     implementation project(':conductor-awss3-storage')
