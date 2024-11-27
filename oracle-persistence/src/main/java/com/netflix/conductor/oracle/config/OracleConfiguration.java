@@ -59,7 +59,7 @@ public class OracleConfiguration {
             DataSource dataSource,
             OracleProperties properties) {
         logger.info("Initialized Oracle Configuration ...");
-        return new OracleMetadataDAO(objectMapper, dataSource, retryTemplate, properties);
+        return new OracleMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
     }
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
@@ -68,7 +68,7 @@ public class OracleConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         logger.info("Initialized Oracle Configuration ...");
-        return new OracleExecutionDAO(objectMapper, dataSource, retryTemplate);
+        return new OracleExecutionDAO(retryTemplate, objectMapper, dataSource);
     }
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
@@ -77,7 +77,7 @@ public class OracleConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         logger.info("Initialized Oracle Configuration ...");
-        return new OracleQueueDAO(objectMapper, dataSource, retryTemplate);
+        return new OracleQueueDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

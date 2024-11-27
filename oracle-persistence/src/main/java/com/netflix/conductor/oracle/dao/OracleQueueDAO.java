@@ -15,6 +15,7 @@ package com.netflix.conductor.oracle.dao;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,6 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.oracle.config.OracleProperties;
 import com.netflix.conductor.oracle.util.ExecutorsUtil;
 import com.netflix.conductor.oracle.util.Query;
 
@@ -43,8 +43,7 @@ public class OracleQueueDAO extends OracleBaseDAO implements QueueDAO {
     public OracleQueueDAO(
             RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            DataSource dataSource,
-            OracleProperties properties) {
+            DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
 
         this.scheduledExecutorService =

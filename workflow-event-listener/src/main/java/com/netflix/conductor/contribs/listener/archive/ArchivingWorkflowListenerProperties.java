@@ -112,21 +112,11 @@ public class ArchivingWorkflowListenerProperties {
     }
 
     /** The time to delay the archival of workflow */
-    public int getWorkflowFirstArchivalDelay() {
+    public int getWorkflowArchivalDelay() {
         return environment.getProperty(
-                "conductor.workflow-status-listener.archival.firstDelaySeconds",
+                "conductor.workflow-status-listener.archival.delaySeconds",
                 Integer.class,
                 environment.getProperty(
                         "conductor.app.asyncUpdateDelaySeconds", Integer.class, 60));
-    }
-
-    public int getWorkflowSecondArchivalDelay() {
-        int firstDelay = getWorkflowFirstArchivalDelay();
-        int secondDelay =
-                environment.getProperty(
-                        "conductor.workflow-status-listener.archival.secondDelaySeconds",
-                        Integer.class,
-                        0);
-        return Math.max(firstDelay, secondDelay);
     }
 }
