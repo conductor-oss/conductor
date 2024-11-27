@@ -17,9 +17,9 @@ import java.util.*;
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
+import com.netflix.conductor.common.constraints.ValidNameConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -39,8 +39,7 @@ public class WorkflowDef extends Auditable {
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
-    @NoSemiColonConstraint(
-            message = "Workflow name cannot contain the following set of characters: ':'")
+    @ValidNameConstraint
     private String name;
 
     @ProtoField(id = 2)

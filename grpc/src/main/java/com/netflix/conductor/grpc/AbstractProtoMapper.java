@@ -729,6 +729,7 @@ public abstract class AbstractProtoMapper {
             to.setSubWorkflowId( from.getSubWorkflowId() );
         }
         to.setSubworkflowChanged( from.isSubworkflowChanged() );
+        to.setFirstStartTime( from.getFirstStartTime() );
         return to.build();
     }
 
@@ -788,6 +789,7 @@ public abstract class AbstractProtoMapper {
         to.setIteration( from.getIteration() );
         to.setSubWorkflowId( from.getSubWorkflowId() );
         to.setSubworkflowChanged( from.getSubworkflowChanged() );
+        to.setFirstStartTime( from.getFirstStartTime() );
         return to;
     }
 
@@ -875,6 +877,7 @@ public abstract class AbstractProtoMapper {
         if (from.getBaseType() != null) {
             to.setBaseType( from.getBaseType() );
         }
+        to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         return to.build();
     }
 
@@ -904,6 +907,7 @@ public abstract class AbstractProtoMapper {
         to.setPollTimeoutSeconds( from.getPollTimeoutSeconds() );
         to.setBackoffScaleFactor( from.getBackoffScaleFactor() );
         to.setBaseType( from.getBaseType() );
+        to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         return to;
     }
 
