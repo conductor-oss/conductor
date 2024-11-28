@@ -67,7 +67,6 @@ include 'common-persistence'
 include 'oracle-persistence'
 include 'metrics'
 include 'es7-persistence'
-include 'amqp'
 include 'nats'
 include 'nats-streaming'
 
