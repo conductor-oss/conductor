@@ -8,6 +8,7 @@ Conductor server with support for the following backend:
 2. Postgres
 3. Mysql
 4. Cassandra
+5. Oracle
 
 ### Docker File for Server and UI
 
@@ -29,10 +30,11 @@ Refer to the table below for various supported backend and required configuratio
 > | redis      | conductor.db.type=redis_standalone |
 > | mysql      | conductor.db.type=mysql            |
 > | cassandra  | conductor.db.type=cassandra        |    
+> | oracle     | conductor.db.type=oracle           |   
 >
 
 Conductor using Elasticsearch for indexing the workflow data.  
-Currently, Elasticsearch 6 and 7 are supported.
+Currently, Elasticsearch 7 is supported.
 
 We welcome community contributions for other indexing backends.
 
@@ -44,11 +46,10 @@ TODO: Link to the helm charts
 ## Run Docker Compose Locally
 ### Use the docker-compose to bring up the local conductor server.
 
-| Docker Compose                                               | Description                |
-|--------------------------------------------------------------|----------------------------|
-| [docker-compose.yaml](docker-compose.yaml)                   | Redis + Elasticsearch 7    |
-| [docker-compose-postgres.yaml](docker-compose-postgres.yaml) | Postgres + Elasticsearch 7 |
-| [docker-compose-mysql.yaml](docker-compose-mysql.yaml)    | Mysql + Elasticsearch 7    |
+| Docker Compose                                                   | Description                |
+|------------------------------------------------------------------|----------------------------|
+| [docker-compose.yaml](docker-compose.yaml)                       | Redis + Elasticsearch 7    |
+| [docker-compose-oracle-es7.yaml](docker-compose-oracle-es7.yaml) | oracle + Elasticsearch 7   |
 
 ### Network errors during UI build with yarn
 

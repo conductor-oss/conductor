@@ -10,7 +10,8 @@ services:
       context: ../
       dockerfile: docker/server/Dockerfile
       args:
-        YARN_OPTS: ${YARN_OPTS}
+        YARN_OPTS: --network-timeout 10000000
+        #YARN_OPTS: ${YARN_OPTS}
     networks:
       - internal
     ports:
