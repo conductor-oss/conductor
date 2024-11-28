@@ -65,8 +65,6 @@ include 'common-persistence'
 include 'oracle-persistence'
 include 'metrics'
 include 'es7-persistence'
-include 'nats'
-include 'nats-streaming'
 
 include 'test-harness'
 
