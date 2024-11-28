@@ -24,7 +24,7 @@ dependencies {
     testImplementation "com.google.guava:guava:${revGuava}"
     testImplementation "org.springframework:spring-web"
 
-    testImplementation "redis.clients:jedis:${revJedis}"
+    //testImplementation "redis.clients:jedis:${revJedis}"
     testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
