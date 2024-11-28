@@ -706,7 +706,6 @@ public class DeciderService {
         }
         if (task.getStatus().isTerminal()
                 || taskDef.getTimeoutSeconds() <= 0
-                || taskDef.getTotalTimeoutSeconds() <= 0
                 || task.getStartTime() <= 0) {
             return;
         }
