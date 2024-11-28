@@ -30,7 +30,6 @@ dependencies {
 
     //Persistence
     implementation project(':conductor-redis-persistence')
-    //implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-oracle-persistence')
 
     //Indexing
