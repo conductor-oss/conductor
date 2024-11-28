@@ -11,7 +11,7 @@ dependencies {
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-grpc-client')
-    implementation project(':conductor-redis-persistence')
+    implementation project(':conductor-oracle-persistence')
 
 
     implementation "com.fasterxml.jackson.core:jackson-databind"

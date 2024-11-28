@@ -5,7 +5,7 @@ dependencies {
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation project(':conductor-redis-persistence')
+    implementation project(':conductor-oracle-persistence')
     implementation project(':conductor-task-status-listener')
     implementation project(':conductor-annotations')
 

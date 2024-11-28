@@ -23,9 +23,7 @@ dependencies {
     //External Payload Storage
     implementation project(':conductor-awss3-storage')
 
-
     //Persistence
-    implementation project(':conductor-redis-persistence')
     implementation project(':conductor-oracle-persistence')
 
     //Indexing
