@@ -30,7 +30,6 @@ dependencies {
     implementation project(':conductor-es7-persistence')
 
     implementation project(':conductor-redis-lock')
-    implementation project(':conductor-redis-concurrency-limit')
 
     //System Tasks
     implementation project(':conductor-http-task')

@@ -42,8 +42,6 @@ include 'redis-lock'
 
 include 'awss3-storage'
 
-include 'redis-concurrency-limit'
-
 include 'json-jq-task'
 include 'http-task'
 
