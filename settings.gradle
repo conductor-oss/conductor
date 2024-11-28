@@ -38,8 +38,6 @@ include 'core'
 include 'client'
 include 'client-spring'
 
-include 'redis-lock'
-
 include 'awss3-storage'
 
 include 'json-jq-task'

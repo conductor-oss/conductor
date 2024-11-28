@@ -1,9 +1,0 @@
-dependencies {
-    implementation project(':conductor-core')
-    compileOnly 'org.springframework.boot:spring-boot-starter'
-
-    implementation "org.apache.commons:commons-lang3"
-    implementation "org.redisson:redisson:${revRedisson}"
-
-    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
-}
