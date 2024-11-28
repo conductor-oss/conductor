@@ -21,7 +21,6 @@ dependencies {
     implementation project(':conductor-grpc-server')
 
     //Event Systems
-    implementation project(':conductor-amqp')
     implementation project(':conductor-nats')
     implementation project(':conductor-nats-streaming')
 
