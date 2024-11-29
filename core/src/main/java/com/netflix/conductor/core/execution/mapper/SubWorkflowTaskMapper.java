@@ -78,6 +78,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         TaskModel subWorkflowTask = taskMapperContext.createTaskModel();
         subWorkflowTask.setTaskType(TASK_TYPE_SUB_WORKFLOW);
         subWorkflowTask.addInput("subWorkflowName", subWorkflowName);
+        subWorkflowTask.addInput("priority", resolvedParams.get("priority"));
         subWorkflowTask.addInput("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.addInput("subWorkflowTaskToDomain", subWorkflowTaskToDomain);
         subWorkflowTask.addInput("subWorkflowDefinition", subWorkflowDefinition);
@@ -111,6 +112,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
             WorkflowModel workflowModel, SubWorkflowParams subWorkflowParams) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", subWorkflowParams.getName());
+        params.put("priority", subWorkflowParams.getPriority());
 
         Integer version = subWorkflowParams.getVersion();
         if (version != null) {
