@@ -719,8 +719,16 @@ public class DeciderService {
         long elapsedTimeFromFirstTaskExecution =
                 now - (task.getFirstStartTime() + ((long) task.getStartDelayInSeconds() * 1000L));
 
-        if (elapsedTimeFromFirstTaskExecution < totalTaskTimeout && elapsedTime < timeout) {
-            return;
+        if (totalTaskTimeout > 0) {
+            // If totalTaskTimeout is greater than 0, check both conditions
+            if (elapsedTimeFromFirstTaskExecution < totalTaskTimeout && elapsedTime < timeout) {
+                return;
+            }
+        } else {
+            // If totalTaskTimeout is not greater than 0, only check the timeout condition
+            if (elapsedTime < timeout) {
+                return;
+            }
         }
 
         String reason =
