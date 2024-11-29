@@ -25,6 +25,7 @@ dependencies {
     implementation project(':conductor-nats')
     implementation project(':conductor-nats-streaming')
     implementation project(':conductor-awssqs-event-queue')
+    implementation project(':conductor-kafka-event-queue')
 
     //External Payload Storage
     implementation project(':conductor-azureblob-storage')
