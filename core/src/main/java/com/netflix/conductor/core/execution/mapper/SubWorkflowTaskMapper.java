@@ -85,7 +85,8 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        if (subWorkflowParams.getPriority() != null && !StringUtils.isEmpty(subWorkflowParams.getPriority().toString())) {
+        if (subWorkflowParams.getPriority() != null
+                && !StringUtils.isEmpty(subWorkflowParams.getPriority().toString())) {
             int priority = Integer.parseInt(subWorkflowParams.getPriority().toString());
             subWorkflowTask.setWorkflowPriority(priority);
         }
