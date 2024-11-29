@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.*;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -83,8 +84,9 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        if (subWorkflowParams.getPriority() != null) {
-            subWorkflowTask.setWorkflowPriority(subWorkflowParams.getPriority());
+        if (subWorkflowParams.getPriority() != null && !StringUtils.isEmpty(subWorkflowParams.getPriority().toString())) {
+            int priority = Integer.parseInt(subWorkflowParams.getPriority().toString());
+            subWorkflowTask.setWorkflowPriority(priority);
         }
         LOGGER.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
         return List.of(subWorkflowTask);
