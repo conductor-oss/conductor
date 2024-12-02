@@ -16,7 +16,33 @@ https://kafka.apache.org/
 
 ## kafka-event-queue
 
-Provides ability to consume messages from Kafka
+Provides ability to consume messages from Kafka.
+
+## Usage
+
+To use it in an event handler prefix the event with `kafka` followed by the topic. 
+
+Example:
+```json
+{
+    "name": "kafka_test_event_handler",
+    "event": "kafka:conductor-event",
+    "actions": [
+      {
+        "action": "start_workflow",
+        "start_workflow": {
+          "name": "workflow_triggered_by_kafka",
+          "input": {
+            "inlineValue": 1
+          }
+        },
+        "expandInlineJSON": true
+      }
+    ],
+    "active": true
+}
+```
+
 
 ## Configuration
 
