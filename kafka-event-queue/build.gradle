@@ -34,11 +34,11 @@ dependencies {
     runtimeOnly 'ch.qos.logback:logback-classic:1.4.11'
 }
 
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true // Enable standard output
-    }
-}
+// test {
+//     testLogging {
+//         events "passed", "skipped", "failed"
+//         showStandardStreams = true // Enable standard output
+//     }
+// }
 
 
