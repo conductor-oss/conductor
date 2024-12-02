@@ -1,7 +1,3 @@
-plugins {
-    id 'java'
-}
-
 dependencies {
     // Core Conductor dependencies
     implementation project(':conductor-common')
@@ -26,6 +22,7 @@ dependencies {
     // Test dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation project(':conductor-common').sourceSets.test.output
+    
 
     // Add Kafka client dependency
     implementation 'org.apache.kafka:kafka-clients:3.5.1'
@@ -35,6 +32,13 @@ dependencies {
 
     // Add SLF4J binding for logging with Logback
     runtimeOnly 'ch.qos.logback:logback-classic:1.4.11'
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true // Enable standard output
+    }
 }
 
 

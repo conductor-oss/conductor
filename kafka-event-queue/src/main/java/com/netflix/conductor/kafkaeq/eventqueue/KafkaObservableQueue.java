@@ -72,6 +72,27 @@ public class KafkaObservableQueue implements ObservableQueue {
         this.adminClient = AdminClient.create(adminConfig);
     }
 
+    public KafkaObservableQueue(
+            String topic,
+            Consumer<String, String> kafkaConsumer,
+            Producer<String, String> kafkaProducer,
+            AdminClient adminClient,
+            KafkaEventQueueProperties properties) {
+        this.topic = topic;
+        this.kafkaConsumer = kafkaConsumer;
+        this.kafkaProducer = kafkaProducer;
+        this.adminClient = adminClient;
+        this.properties = properties;
+        this.pollTimeInMS = properties.getPollTimeDuration().toMillis();
+        this.dlqTopic = properties.getDlqTopic();
+        this.autoCommitEnabled =
+                Boolean.parseBoolean(
+                        properties
+                                .toConsumerConfig()
+                                .getOrDefault(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
+                                .toString());
+    }
+
     @Override
     public Observable<Message> observe() {
         return Observable.create(
