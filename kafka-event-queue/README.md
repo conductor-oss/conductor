@@ -20,9 +20,10 @@ Provides ability to consume messages from Kafka.
 
 ## Usage
 
-To use it in an event handler prefix the event with `kafka` followed by the topic. 
+To use it in an event handler prefix the event with `kafka` followed by the topic.
 
 Example:
+
 ```json
 {
     "name": "kafka_test_event_handler",
@@ -33,7 +34,7 @@ Example:
         "start_workflow": {
           "name": "workflow_triggered_by_kafka",
           "input": {
-            "inlineValue": 1
+            "payload": "${payload}"
           }
         },
         "expandInlineJSON": true
@@ -43,6 +44,27 @@ Example:
 }
 ```
 
+The data from the kafka event has the format:
+
+```json
+{
+    "key": "key-1",
+    "headers": {
+        "header-1": "value1"
+    },
+    "payload": {
+        "first": "Marcelo",
+        "middle": "Billie",
+        "last": "Mertz"
+    }
+}
+```
+
+* `key` is the key field in Kafka message.
+* `headers` is the headers in the kafka message.
+* `payload` is the message of the Kafka message.
+
+To access them in the event handler use for example `"${payload}"` to access the payload property, which contains the kafka message data.
 
 ## Configuration
 
