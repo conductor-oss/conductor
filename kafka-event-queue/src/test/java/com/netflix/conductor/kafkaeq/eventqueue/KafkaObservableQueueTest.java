@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
@@ -27,6 +26,7 @@ import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.header.Headers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +37,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -89,12 +91,27 @@ public class KafkaObservableQueueTest {
     }
 
     @Test
-    public void testObserve() throws Exception {
-        // Prepare mock consumer records
+    public void testObserveWithHeaders() throws Exception {
+        // Prepare mock consumer records with diverse headers, keys, and payloads
         List<ConsumerRecord<String, String>> records =
                 List.of(
                         new ConsumerRecord<>("test-topic", 0, 0, "key-1", "payload-1"),
-                        new ConsumerRecord<>("test-topic", 0, 1, "key-2", "payload-2"));
+                        new ConsumerRecord<>("test-topic", 0, 1, "key-2", "{\"field\":\"value\"}"),
+                        new ConsumerRecord<>("test-topic", 0, 2, null, "null-key-payload"),
+                        new ConsumerRecord<>("test-topic", 0, 3, "key-3", ""),
+                        new ConsumerRecord<>("test-topic", 0, 4, "key-4", "12345"),
+                        new ConsumerRecord<>(
+                                "test-topic",
+                                0,
+                                5,
+                                "key-5",
+                                "{\"complex\":{\"nested\":\"value\"}}"));
+
+        // Add headers to each ConsumerRecord
+        for (int i = 0; i < records.size(); i++) {
+            ConsumerRecord<String, String> record = records.get(i);
+            record.headers().add("header-key-" + i, ("header-value-" + i).getBytes());
+        }
 
         ConsumerRecords<String, String> consumerRecords =
                 new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), records));
@@ -102,9 +119,8 @@ public class KafkaObservableQueueTest {
         // Mock the KafkaConsumer poll behavior
         when(mockKafkaConsumer.poll(any(Duration.class)))
                 .thenReturn(consumerRecords)
-                .thenReturn(
-                        new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls return
-        // empty
+                .thenReturn(new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls
+        // return empty
 
         // Start the queue
         queue.start();
@@ -124,20 +140,49 @@ public class KafkaObservableQueueTest {
 
         // Assert results
         assertNotNull(queue);
-        assertEquals(2, found.size());
-        assertEquals("payload-1", found.get(0).getPayload());
-        assertEquals("payload-2", found.get(1).getPayload());
+        assertEquals(6, found.size()); // Expect all 6 messages to be processed
+
+        assertEquals("0-0", found.get(0).getId());
+        assertEquals("0-1", found.get(1).getId());
+        assertEquals("0-2", found.get(2).getId());
+        assertEquals("0-3", found.get(3).getId());
+        assertEquals("0-4", found.get(4).getId());
+        assertEquals("0-5", found.get(5).getId());
+
+        // Validate headers
+        for (int i = 0; i < records.size(); i++) {
+            ConsumerRecord<String, String> record = records.get(i);
+            assertNotNull(record.headers());
+            assertEquals(1, record.headers().toArray().length);
+            assertEquals(
+                    "header-value-" + i,
+                    new String(record.headers().lastHeader("header-key-" + i).value()));
+        }
     }
 
     @Test
-    public void testObserveReadsKafkaValue() {
-        // Prepare mock Kafka records
+    public void testObserveWithComplexPayload() throws Exception {
+        // Prepare mock consumer records with diverse headers, keys, and payloads
         List<ConsumerRecord<String, String>> records =
                 List.of(
                         new ConsumerRecord<>(
-                                "test-topic", 0, 0, "key1", "{\"testKey\": \"testValue1\"}"),
+                                "test-topic", 0, 0, "key-1", "{\"data\":\"payload-1\"}"),
+                        new ConsumerRecord<>("test-topic", 0, 1, "key-2", "{\"field\":\"value\"}"),
+                        new ConsumerRecord<>("test-topic", 0, 2, null, "null-key-payload"),
+                        new ConsumerRecord<>("test-topic", 0, 3, "key-3", ""),
+                        new ConsumerRecord<>("test-topic", 0, 4, "key-4", "12345"),
                         new ConsumerRecord<>(
-                                "test-topic", 0, 1, "key2", "{\"testKey\": \"testValue2\"}"));
+                                "test-topic",
+                                0,
+                                5,
+                                "key-5",
+                                "{\"complex\":{\"nested\":\"value\"}}"));
+
+        // Add headers to each ConsumerRecord
+        for (int i = 0; i < records.size(); i++) {
+            ConsumerRecord<String, String> record = records.get(i);
+            record.headers().add("header-key-" + i, ("header-value-" + i).getBytes());
+        }
 
         ConsumerRecords<String, String> consumerRecords =
                 new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), records));
@@ -145,30 +190,104 @@ public class KafkaObservableQueueTest {
         // Mock the KafkaConsumer poll behavior
         when(mockKafkaConsumer.poll(any(Duration.class)))
                 .thenReturn(consumerRecords)
-                .thenReturn(
-                        new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls return
-        // empty
+                .thenReturn(new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls
+        // return empty
 
         // Start the queue
         queue.start();
 
-        // Collect messages from observe
-        List<Message> collectedMessages = new CopyOnWriteArrayList<>();
+        // Collect emitted messages
+        List<Message> found = new ArrayList<>();
         Observable<Message> observable = queue.observe();
         assertNotNull(observable);
-        observable.subscribe(collectedMessages::add);
+        observable.subscribe(found::add);
 
         // Allow polling to run
         try {
-            Thread.sleep(1000);
+            Thread.sleep(1000); // Adjust duration if necessary
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        // Verify results
-        assertEquals(2, collectedMessages.size());
-        assertEquals("{\"testKey\": \"testValue1\"}", collectedMessages.get(0).getPayload());
-        assertEquals("{\"testKey\": \"testValue2\"}", collectedMessages.get(1).getPayload());
+        // Assert results
+        assertNotNull(queue);
+        assertEquals(6, found.size()); // Expect all 6 messages to be processed
+
+        // Validate individual message payloads, keys, and headers in the structured
+        ObjectMapper objectMapper = new ObjectMapper();
+        // JSON format
+        for (int i = 0; i < records.size(); i++) {
+            ConsumerRecord<String, String> record = records.get(i);
+            Message message = found.get(i);
+
+            String expectedPayload =
+                    constructJsonMessage(
+                            objectMapper,
+                            record.key(),
+                            record.headers().toArray().length > 0
+                                    ? extractHeaders(record.headers())
+                                    : Collections.emptyMap(),
+                            record.value());
+
+            assertEquals(expectedPayload, message.getPayload());
+        }
+    }
+
+    private Map<String, String> extractHeaders(Headers headers) {
+        Map<String, String> headerMap = new HashMap<>();
+        headers.forEach(header -> headerMap.put(header.key(), new String(header.value())));
+        return headerMap;
+    }
+
+    private String constructJsonMessage(
+            ObjectMapper objectMapper, String key, Map<String, String> headers, String payload) {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        json.append("\"key\":\"").append(key != null ? key : "").append("\",");
+
+        // Serialize headers to JSON, handling potential errors
+        String headersJson = toJson(objectMapper, headers);
+        if (headersJson != null) {
+            json.append("\"headers\":").append(headersJson).append(",");
+        } else {
+            json.append("\"headers\":{}")
+                    .append(","); // Default to an empty JSON object if headers are invalid
+        }
+
+        json.append("\"payload\":");
+
+        // Detect if the payload is valid JSON
+        if (isJsonValid(objectMapper, payload)) {
+            json.append(payload); // Embed JSON object directly
+        } else {
+            json.append(payload != null ? "\"" + payload + "\"" : "null"); // Treat as plain text
+        }
+
+        json.append("}");
+        return json.toString();
+    }
+
+    private boolean isJsonValid(ObjectMapper objectMapper, String json) {
+        if (json == null || json.isEmpty()) {
+            return false;
+        }
+        try {
+            objectMapper.readTree(json); // Parses the JSON to check validity
+            return true;
+        } catch (JsonProcessingException e) {
+            return false;
+        }
+    }
+
+    protected String toJson(ObjectMapper objectMapper, Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            return null;
+        }
     }
 
     @Test

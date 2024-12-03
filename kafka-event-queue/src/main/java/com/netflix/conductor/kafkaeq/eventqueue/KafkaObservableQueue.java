@@ -25,6 +25,7 @@ import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.subscriptions.Subscriptions;
 
@@ -50,6 +53,7 @@ public class KafkaObservableQueue implements ObservableQueue {
     private final Map<String, Long> unacknowledgedMessages = new ConcurrentHashMap<>();
     private volatile boolean running = false;
     private final KafkaEventQueueProperties properties;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public KafkaObservableQueue(
             String topic,
@@ -117,18 +121,37 @@ public class KafkaObservableQueue implements ObservableQueue {
                                                     String messageId =
                                                             record.partition()
                                                                     + "-"
-                                                                    + record.offset(); // Message ID
-                                                    // based on
-                                                    // partition
-                                                    // and
-
+                                                                    + record.offset();
+                                                    String key = record.key();
                                                     String value = record.value();
+                                                    Map<String, String> headers = new HashMap<>();
+
+                                                    // Extract headers
+                                                    if (record.headers() != null) {
+                                                        for (Header header : record.headers()) {
+                                                            headers.put(
+                                                                    header.key(),
+                                                                    new String(header.value()));
+                                                        }
+                                                    }
+
+                                                    // Log the details
                                                     LOGGER.debug(
-                                                            "MessageId: {} value: {}",
+                                                            "Input values MessageId: {} Key: {} Headers: {} Value: {}",
                                                             messageId,
+                                                            key,
+                                                            headers,
                                                             value);
+
+                                                    // Construct message
+                                                    String jsonMessage =
+                                                            constructJsonMessage(
+                                                                    key, headers, value);
+                                                    LOGGER.debug("Payload: {}", jsonMessage);
+
                                                     Message message =
-                                                            new Message(messageId, value, null);
+                                                            new Message(
+                                                                    messageId, jsonMessage, null);
 
                                                     unacknowledgedMessages.put(
                                                             messageId, record.offset());
@@ -154,6 +177,58 @@ public class KafkaObservableQueue implements ObservableQueue {
 
                     subscriber.add(Subscriptions.create(this::stop));
                 });
+    }
+
+    private String constructJsonMessage(String key, Map<String, String> headers, String payload) {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        json.append("\"key\":\"").append(key != null ? key : "").append("\",");
+
+        // Serialize headers to JSON, handling potential errors
+        String headersJson = toJson(headers);
+        if (headersJson != null) {
+            json.append("\"headers\":").append(headersJson).append(",");
+        } else {
+            json.append("\"headers\":{}")
+                    .append(","); // Default to an empty JSON object if headers are invalid
+        }
+
+        json.append("\"payload\":");
+
+        // Detect if the payload is valid JSON
+        if (isJsonValid(payload)) {
+            json.append(payload); // Embed JSON object directly
+        } else {
+            json.append(payload != null ? "\"" + payload + "\"" : "null"); // Treat as plain text
+        }
+
+        json.append("}");
+        return json.toString();
+    }
+
+    private boolean isJsonValid(String json) {
+        if (json == null || json.isEmpty()) {
+            return false;
+        }
+        try {
+            objectMapper.readTree(json); // Parses the JSON to check validity
+            return true;
+        } catch (JsonProcessingException e) {
+            return false;
+        }
+    }
+
+    protected String toJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            // Log the error and return a placeholder or null
+            LOGGER.error("Failed to convert object to JSON: {}", value, ex);
+            return null;
+        }
     }
 
     @Override
