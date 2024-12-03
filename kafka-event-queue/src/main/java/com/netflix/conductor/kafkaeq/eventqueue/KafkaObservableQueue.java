@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
+import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -164,12 +165,16 @@ public class KafkaObservableQueue implements ObservableQueue {
                                                 }
                                             }
 
+                                            Monitors.recordEventQueueMessagesProcessed(
+                                                    QUEUE_TYPE, this.topic, messages.size());
                                             return Observable.from(messages);
                                         } catch (Exception e) {
                                             LOGGER.error(
                                                     "Error while polling Kafka for topic: {}",
                                                     topic,
                                                     e);
+                                            Monitors.recordObservableQMessageReceivedErrors(
+                                                    QUEUE_TYPE);
                                             return Observable.error(e);
                                         }
                                     })
