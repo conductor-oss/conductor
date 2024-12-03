@@ -114,19 +114,22 @@ public class KafkaObservableQueue implements ObservableQueue {
 
                                             for (ConsumerRecord<String, String> record : records) {
                                                 try {
-                                                    Message message =
-                                                            new Message(
-                                                                    record.partition()
-                                                                            + "-"
-                                                                            + record
-                                                                                    .offset(), // Message ID based on partition and
-                                                                    // offset
-                                                                    record.value(),
-                                                                    null);
                                                     String messageId =
                                                             record.partition()
                                                                     + "-"
-                                                                    + record.offset();
+                                                                    + record.offset(); // Message ID
+                                                    // based on
+                                                    // partition
+                                                    // and
+
+                                                    String value = record.value();
+                                                    LOGGER.debug(
+                                                            "MessageId: {} value: {}",
+                                                            messageId,
+                                                            value);
+                                                    Message message =
+                                                            new Message(messageId, value, null);
+
                                                     unacknowledgedMessages.put(
                                                             messageId, record.offset());
                                                     messages.add(message);

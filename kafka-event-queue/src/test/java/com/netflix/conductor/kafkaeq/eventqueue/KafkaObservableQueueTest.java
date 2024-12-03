@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
@@ -102,8 +103,8 @@ public class KafkaObservableQueueTest {
         when(mockKafkaConsumer.poll(any(Duration.class)))
                 .thenReturn(consumerRecords)
                 .thenReturn(
-                        new ConsumerRecords<>(
-                                Collections.emptyMap())); // Subsequent polls return empty
+                        new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls return
+        // empty
 
         // Start the queue
         queue.start();
@@ -126,6 +127,48 @@ public class KafkaObservableQueueTest {
         assertEquals(2, found.size());
         assertEquals("payload-1", found.get(0).getPayload());
         assertEquals("payload-2", found.get(1).getPayload());
+    }
+
+    @Test
+    public void testObserveReadsKafkaValue() {
+        // Prepare mock Kafka records
+        List<ConsumerRecord<String, String>> records =
+                List.of(
+                        new ConsumerRecord<>(
+                                "test-topic", 0, 0, "key1", "{\"testKey\": \"testValue1\"}"),
+                        new ConsumerRecord<>(
+                                "test-topic", 0, 1, "key2", "{\"testKey\": \"testValue2\"}"));
+
+        ConsumerRecords<String, String> consumerRecords =
+                new ConsumerRecords<>(Map.of(new TopicPartition("test-topic", 0), records));
+
+        // Mock the KafkaConsumer poll behavior
+        when(mockKafkaConsumer.poll(any(Duration.class)))
+                .thenReturn(consumerRecords)
+                .thenReturn(
+                        new ConsumerRecords<>(Collections.emptyMap())); // Subsequent polls return
+        // empty
+
+        // Start the queue
+        queue.start();
+
+        // Collect messages from observe
+        List<Message> collectedMessages = new CopyOnWriteArrayList<>();
+        Observable<Message> observable = queue.observe();
+        assertNotNull(observable);
+        observable.subscribe(collectedMessages::add);
+
+        // Allow polling to run
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Verify results
+        assertEquals(2, collectedMessages.size());
+        assertEquals("{\"testKey\": \"testValue1\"}", collectedMessages.get(0).getPayload());
+        assertEquals("{\"testKey\": \"testValue2\"}", collectedMessages.get(1).getPayload());
     }
 
     @Test
@@ -191,8 +234,8 @@ public class KafkaObservableQueueTest {
                             // Simulate a successful send with mock metadata
                             callback.onCompletion(
                                     new RecordMetadata(
-                                            new TopicPartition(
-                                                    "test-topic", 0), // Topic and partition
+                                            new TopicPartition("test-topic", 0), // Topic and
+                                            // partition
                                             0, // Base offset
                                             0, // Log append time
                                             0, // Create time
