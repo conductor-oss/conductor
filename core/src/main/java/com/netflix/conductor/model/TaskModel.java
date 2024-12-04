@@ -94,9 +94,6 @@ public class TaskModel {
     /** Time when the task was last updated */
     private long updateTime;
 
-    /** Time when first task started */
-    private long firstStartTime;
-
     private int startDelayInSeconds;
 
     private String retriedTaskId;
