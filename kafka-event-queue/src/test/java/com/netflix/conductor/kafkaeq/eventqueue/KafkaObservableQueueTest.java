@@ -416,6 +416,66 @@ public class KafkaObservableQueueTest {
     }
 
     @Test
+    public void testSizeWhenTopicExists() throws Exception {
+        // Mock topic description
+        TopicDescription topicDescription =
+                new TopicDescription(
+                        "test-topic",
+                        false,
+                        List.of(new TopicPartitionInfo(0, null, List.of(), List.of())));
+
+        // Mock offsets
+        Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> offsets =
+                Map.of(
+                        new TopicPartition("test-topic", 0),
+                        new ListOffsetsResult.ListOffsetsResultInfo(
+                                10L, // Offset value
+                                0L, // Log append time (can be 0 if not available)
+                                Optional.empty() // Leader epoch (optional, use a default value like
+                                // 100)
+                                ));
+
+        // Mock AdminClient behavior for describeTopics
+        DescribeTopicsResult mockDescribeTopicsResult = mock(DescribeTopicsResult.class);
+        when(mockDescribeTopicsResult.topicNameValues())
+                .thenReturn(Map.of("test-topic", KafkaFuture.completedFuture(topicDescription)));
+        when(mockAdminClient.describeTopics(anyCollection())).thenReturn(mockDescribeTopicsResult);
+
+        // Mock AdminClient behavior for listOffsets
+        ListOffsetsResult mockListOffsetsResult = mock(ListOffsetsResult.class);
+        when(mockListOffsetsResult.all()).thenReturn(KafkaFuture.completedFuture(offsets));
+        when(mockAdminClient.listOffsets(anyMap())).thenReturn(mockListOffsetsResult);
+
+        // Call size
+        long size = queue.size();
+
+        // Verify
+        assertEquals(10L, size);
+    }
+
+    @Test
+    public void testSizeWhenTopicDoesNotExist() throws Exception {
+        // Mock KafkaFuture to simulate a topic-not-found exception
+        KafkaFuture<TopicDescription> failedFuture = mock(KafkaFuture.class);
+        when(failedFuture.get())
+                .thenThrow(
+                        new org.apache.kafka.common.errors.UnknownTopicOrPartitionException(
+                                "Topic not found"));
+
+        // Mock DescribeTopicsResult
+        DescribeTopicsResult mockDescribeTopicsResult = mock(DescribeTopicsResult.class);
+        when(mockDescribeTopicsResult.topicNameValues())
+                .thenReturn(Map.of("test-topic", failedFuture));
+        when(mockAdminClient.describeTopics(anyCollection())).thenReturn(mockDescribeTopicsResult);
+
+        // Call size
+        long size = queue.size();
+
+        // Verify the result
+        assertEquals(-1L, size); // Return -1 for non-existent topics
+    }
+
+    @Test
     public void testLifecycle() {
         queue.start();
         assertTrue(queue.isRunning());

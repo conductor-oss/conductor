@@ -14,6 +14,7 @@ package com.netflix.conductor.kafkaeq.eventqueue;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -368,11 +369,16 @@ public class KafkaObservableQueue implements ObservableQueue {
 
     @Override
     public long size() {
+        if (topicExists(this.topic) == false) {
+            LOGGER.info("Topic '{}' not available, will refresh metadata.", this.topic);
+            refreshMetadata(this.topic);
+        }
+
         long topicSize = getTopicSizeUsingAdminClient();
         if (topicSize != -1) {
-            LOGGER.info("Topic size for 'conductor-event': {}", topicSize);
+            LOGGER.info("Topic size for '{}': {}", this.topic, topicSize);
         } else {
-            LOGGER.error("Failed to fetch topic size for 'conductor-event'");
+            LOGGER.error("Failed to fetch topic size for '{}'", this.topic);
         }
 
         return topicSize;
@@ -380,7 +386,6 @@ public class KafkaObservableQueue implements ObservableQueue {
 
     private long getTopicSizeUsingAdminClient() {
         try {
-            // Fetch metadata for the topic asynchronously
             KafkaFuture<TopicDescription> topicDescriptionFuture =
                     adminClient
                             .describeTopics(Collections.singletonList(topic))
@@ -397,17 +402,28 @@ public class KafkaObservableQueue implements ObservableQueue {
             }
 
             // Fetch offsets asynchronously
+            KafkaFuture<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>>
+                    offsetsFuture = adminClient.listOffsets(offsetRequest).all();
+
             Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> offsets =
-                    adminClient.listOffsets(offsetRequest).all().get();
+                    offsetsFuture.get();
 
             // Calculate total size by summing offsets
             return offsets.values().stream()
                     .mapToLong(ListOffsetsResult.ListOffsetsResultInfo::offset)
                     .sum();
+        } catch (ExecutionException e) {
+            if (e.getCause()
+                    instanceof org.apache.kafka.common.errors.UnknownTopicOrPartitionException) {
+                LOGGER.warn("Topic '{}' does not exist or partitions unavailable.", topic);
+            } else {
+                LOGGER.error("Error fetching offsets for topic '{}': {}", topic, e.getMessage());
+            }
         } catch (Exception e) {
-            LOGGER.error("Error fetching topic size using AdminClient for topic: {}", topic, e);
-            return -1;
+            LOGGER.error(
+                    "General error fetching offsets for topic '{}': {}", topic, e.getMessage());
         }
+        return -1;
     }
 
     @Override
@@ -559,5 +575,57 @@ public class KafkaObservableQueue implements ObservableQueue {
                         "Failed to initialize KafkaObservableQueue for topic: " + topic, e);
             }
         }
+    }
+
+    private boolean topicExists(String topic) {
+        try {
+            KafkaFuture<TopicDescription> future =
+                    adminClient
+                            .describeTopics(Collections.singletonList(topic))
+                            .topicNameValues()
+                            .get(topic);
+
+            future.get(); // Attempt to fetch metadata
+            return true;
+        } catch (ExecutionException e) {
+            if (e.getCause()
+                    instanceof org.apache.kafka.common.errors.UnknownTopicOrPartitionException) {
+                LOGGER.warn("Topic '{}' does not exist.", topic);
+                return false;
+            }
+            LOGGER.error("Error checking if topic '{}' exists: {}", topic, e.getMessage());
+            return false;
+        } catch (Exception e) {
+            LOGGER.error("General error checking if topic '{}' exists: {}", topic, e.getMessage());
+            return false;
+        }
+    }
+
+    private void refreshMetadata(String topic) {
+        adminClient
+                .describeTopics(Collections.singletonList(topic))
+                .topicNameValues()
+                .get(topic)
+                .whenComplete(
+                        (topicDescription, exception) -> {
+                            if (exception != null) {
+                                if (exception.getCause()
+                                        instanceof
+                                        org.apache.kafka.common.errors
+                                                .UnknownTopicOrPartitionException) {
+                                    LOGGER.warn("Topic '{}' still does not exist.", topic);
+                                } else {
+                                    LOGGER.error(
+                                            "Error refreshing metadata for topic '{}': {}",
+                                            topic,
+                                            exception.getMessage());
+                                }
+                            } else {
+                                LOGGER.info(
+                                        "Metadata refreshed for topic '{}': Partitions = {}",
+                                        topic,
+                                        topicDescription.partitions());
+                            }
+                        });
     }
 }

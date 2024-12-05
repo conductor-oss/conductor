@@ -31,9 +31,6 @@ public class KafkaEventQueueProperties {
     @NotBlank(message = "Bootstrap servers must not be blank")
     private String bootstrapServers = "kafka:29092";
 
-    /** Primary topic for the Kafka queue. */
-    private String topic = "conductor-event";
-
     /** Dead Letter Queue (DLQ) topic for failed messages. */
     private String dlqTopic = "conductor-dlq";
 
@@ -56,14 +53,6 @@ public class KafkaEventQueueProperties {
 
     public void setBootstrapServers(String bootstrapServers) {
         this.bootstrapServers = bootstrapServers;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
     }
 
     public String getDlqTopic() {

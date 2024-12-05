@@ -83,9 +83,6 @@ conductor.default-event-queue.type=kafka
 # the bootstrap server ot use. 
 conductor.event-queues.kafka.bootstrap-servers=kafka:29092
 
-# The topic to listen to
-conductor.event-queues.kafka.topic=conductor-event
-
 # The dead letter queue to use for events that had some error.
 conductor.event-queues.kafka.dlq-topic=conductor-dlq
 
