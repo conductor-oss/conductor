@@ -193,7 +193,7 @@ public final class TaskClient {
         Validate.notNull(taskResult, "Task result cannot be null");
         ConductorClientRequest request = ConductorClientRequest.builder()
             .method(Method.POST)
-            .path("/tasks")
+            .path("/tasks/v2")
             .body(taskResult)
             .build();
 

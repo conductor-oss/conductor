@@ -67,6 +67,7 @@ class TaskRunner {
     private final List<PollFilter> pollFilters;
     private final EventDispatcher<TaskRunnerEvent> eventDispatcher;
     private final LinkedBlockingQueue<Task> tasksTobeExecuted;
+    private final boolean enableUpdateV2;
 
     TaskRunner(Worker worker,
                TaskClient taskClient,
@@ -87,7 +88,8 @@ class TaskRunner {
         this.pollFilters = pollFilters;
         this.eventDispatcher = eventDispatcher;
         this.tasksTobeExecuted = new LinkedBlockingQueue<>();
-
+        this.enableUpdateV2 = Boolean.valueOf(System.getProperty("taskUpdateV2", "false"));
+        LOGGER.info("taskUpdateV2 is set to {}", this.enableUpdateV2);
         //1. Is there a worker level override?
         this.domain = PropertyFactory.getString(taskType, Worker.PROP_DOMAIN, null);
         if (this.domain == null) {
@@ -230,10 +232,10 @@ class TaskRunner {
         if (count < 1) {
             return Collections.emptyList();
         }
+        LOGGER.trace("in memory queue size for tasks: {}", tasksTobeExecuted.size());
         List<Task> polled = new ArrayList<>(count);
         tasksTobeExecuted.drainTo(polled, count);
         if(!polled.isEmpty()) {
-            System.out.println("Returning " + polled.size() + " from memory");
             return polled;
         }
         String workerId = worker.getIdentity();
@@ -338,10 +340,20 @@ class TaskRunner {
                 result.setExternalOutputPayloadStoragePath(optionalExternalStorageLocation.get());
                 result.setOutputData(null);
             }
-
-            Task nextTask = retryOperation(taskClient::updateTaskV2, count, result, "updateTaskV2");
-            if(nextTask != null) {
-                tasksTobeExecuted.add(nextTask);
+            if(enableUpdateV2) {
+                Task nextTask = retryOperation(taskClient::updateTaskV2, count, result, "updateTaskV2");
+                if (nextTask != null) {
+                    tasksTobeExecuted.add(nextTask);
+                }
+            } else {
+                retryOperation(
+                    (TaskResult taskResult) -> {
+                        taskClient.updateTask(taskResult);
+                        return null;
+                    },
+                    count,
+                    result,
+                    "updateTask");
             }
 
         } catch (Exception e) {
