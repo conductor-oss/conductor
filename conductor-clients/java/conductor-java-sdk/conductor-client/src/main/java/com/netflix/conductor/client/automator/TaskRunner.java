@@ -14,6 +14,7 @@ package com.netflix.conductor.client.automator;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -64,6 +66,7 @@ class TaskRunner {
     private volatile boolean pollingAndExecuting = true;
     private final List<PollFilter> pollFilters;
     private final EventDispatcher<TaskRunnerEvent> eventDispatcher;
+    private final LinkedBlockingQueue<Task> tasksTobeExecuted;
 
     TaskRunner(Worker worker,
                TaskClient taskClient,
@@ -83,6 +86,7 @@ class TaskRunner {
         this.permits = new Semaphore(threadCount);
         this.pollFilters = pollFilters;
         this.eventDispatcher = eventDispatcher;
+        this.tasksTobeExecuted = new LinkedBlockingQueue<>();
 
         //1. Is there a worker level override?
         this.domain = PropertyFactory.getString(taskType, Worker.PROP_DOMAIN, null);
@@ -191,7 +195,7 @@ class TaskRunner {
         Stopwatch stopwatch = Stopwatch.createStarted(); //TODO move this to the top?
         try {
             LOGGER.trace("Polling task of type: {} in domain: '{}' with size {}", taskType, domain, pollCount);
-            tasks = pollTask(domain, pollCount);
+            tasks = pollTask(pollCount);
             permits.release(pollCount - tasks.size());        //release extra permits
             stopwatch.stop();
             long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -222,9 +226,15 @@ class TaskRunner {
         return tasks;
     }
 
-    private List<Task> pollTask(String domain, int count) {
+    private List<Task> pollTask(int count) {
         if (count < 1) {
             return Collections.emptyList();
+        }
+        List<Task> polled = new ArrayList<>(count);
+        tasksTobeExecuted.drainTo(polled, count);
+        if(!polled.isEmpty()) {
+            System.out.println("Returning " + polled.size() + " from memory");
+            return polled;
         }
         String workerId = worker.getIdentity();
         LOGGER.debug("poll {} in the domain {} with batch size {}", taskType, domain, count);
@@ -329,14 +339,11 @@ class TaskRunner {
                 result.setOutputData(null);
             }
 
-            retryOperation(
-                    (TaskResult taskResult) -> {
-                        taskClient.updateTask(taskResult);
-                        return null;
-                    },
-                    count,
-                    result,
-                    "updateTask");
+            Task nextTask = retryOperation(taskClient::updateTaskV2, count, result, "updateTaskV2");
+            if(nextTask != null) {
+                tasksTobeExecuted.add(nextTask);
+            }
+
         } catch (Exception e) {
             worker.onErrorUpdate(task);
             LOGGER.error(
