@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.service.WorkflowService;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +29,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.service.TaskService;
+import com.netflix.conductor.service.WorkflowService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
