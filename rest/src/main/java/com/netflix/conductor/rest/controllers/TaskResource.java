@@ -32,12 +32,18 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.service.TaskService;
+import com.netflix.conductor.service.WorkflowService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
@@ -45,9 +51,11 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 public class TaskResource {
 
     private final TaskService taskService;
+    private final WorkflowService workflowService;
 
-    public TaskResource(TaskService taskService) {
+    public TaskResource(TaskService taskService, WorkflowService workflowService) {
         this.taskService = taskService;
+        this.workflowService = workflowService;
     }
 
     @GetMapping("/poll/{tasktype}")
@@ -80,7 +88,20 @@ public class TaskResource {
     @PostMapping(produces = TEXT_PLAIN_VALUE)
     @Operation(summary = "Update a task")
     public String updateTask(@RequestBody TaskResult taskResult) {
-        return taskService.updateTask(taskResult);
+        taskService.updateTask(taskResult);
+        return taskResult.getTaskId();
+    }
+
+    @PostMapping("/update-v2")
+    @Operation(summary = "Update a task and return the next available task to be processed")
+    public ResponseEntity<Task> updateTaskV2(@RequestBody @Valid TaskResult taskResult) {
+        TaskModel updatedTask = taskService.updateTask(taskResult);
+        if (updatedTask == null) {
+            return ResponseEntity.noContent().build();
+        }
+        String taskType = updatedTask.getTaskType();
+        String domain = updatedTask.getDomain();
+        return poll(taskType, taskResult.getWorkerId(), domain);
     }
 
     @PostMapping(value = "/{workflowId}/{taskRefName}/{status}", produces = TEXT_PLAIN_VALUE)
@@ -93,6 +114,33 @@ public class TaskResource {
             @RequestBody Map<String, Object> output) {
 
         return taskService.updateTask(workflowId, taskRefName, status, workerId, output);
+    }
+
+    @PostMapping(
+            value = "/{workflowId}/{taskRefName}/{status}/sync",
+            produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Update a task By Ref Name synchronously and return the updated workflow")
+    public Workflow updateTaskSync(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("taskRefName") String taskRefName,
+            @PathVariable("status") TaskResult.Status status,
+            @RequestParam(value = "workerid", required = false) String workerId,
+            @RequestBody Map<String, Object> output) {
+
+        Task pending = taskService.getPendingTaskForWorkflow(workflowId, taskRefName);
+        if (pending == null) {
+            throw new NotFoundException(
+                    String.format(
+                            "Found no running task %s of workflow %s to update",
+                            taskRefName, workflowId));
+        }
+
+        TaskResult taskResult = new TaskResult(pending);
+        taskResult.setStatus(status);
+        taskResult.getOutputData().putAll(output);
+        taskResult.setWorkerId(workerId);
+        taskService.updateTask(taskResult);
+        return workflowService.getExecutionStatus(pending.getWorkflowInstanceId(), true);
     }
 
     @PostMapping("/{taskId}/log")
