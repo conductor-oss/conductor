@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.service.WorkflowService;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
@@ -47,11 +49,13 @@ public class TaskResourceTest {
     private TaskService mockTaskService;
 
     private TaskResource taskResource;
+    private WorkflowService workflowService;
 
     @Before
     public void before() {
         this.mockTaskService = mock(TaskService.class);
-        this.taskResource = new TaskResource(this.mockTaskService);
+        this.workflowService = mock(WorkflowService.class);
+        this.taskResource = new TaskResource(this.mockTaskService, this.workflowService);
     }
 
     @Test
@@ -86,7 +90,9 @@ public class TaskResourceTest {
         TaskResult taskResult = new TaskResult();
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId("123");
-        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn("123");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("123");
+        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn(taskModel);
         assertEquals("123", taskResource.updateTask(taskResult));
     }
 
