@@ -39,37 +39,6 @@ import static org.mockito.Mockito.mock;
 
 public class AnnotatedWorkerTests {
 
-    static class Car {
-        String brand;
-
-        String getBrand() {
-            return brand;
-        }
-
-        void setBrand(String brand) {
-            this.brand = brand;
-        }
-    }
-
-    static class Bike {
-        String brand;
-
-        String getBrand() {
-            return brand;
-        }
-
-        void setBrand(String brand) {
-            this.brand = brand;
-        }
-    }
-
-    static class CarWorker {
-        @WorkerTask("test_1")
-        public @OutputParam("result") List<Car> doWork(@InputParam("input") List<Car> input) {
-            return input;
-        }
-    }
-
     @Test
     @DisplayName("it should handle null values when InputParam is a List")
     void nullListAsInputParam() throws NoSuchMethodException {
