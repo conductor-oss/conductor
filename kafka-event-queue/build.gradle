@@ -1,0 +1,44 @@
+dependencies {
+    // Core Conductor dependencies
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    // Spring Boot support
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // Apache Commons Lang for utility classes
+    implementation 'org.apache.commons:commons-lang3'
+
+    // Reactive programming support with RxJava
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    // SBMTODO: Remove Guava dependency if possible
+    // Guava should only be included if specifically needed
+    implementation "com.google.guava:guava:${revGuava}"
+
+    // Removed AWS SQS SDK as we are transitioning to Kafka
+    // implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
+
+    // Test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation project(':conductor-common').sourceSets.test.output
+    
+
+    // Add Kafka client dependency
+    implementation 'org.apache.kafka:kafka-clients:3.5.1'
+
+    // Add SLF4J API for logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+
+    // Add SLF4J binding for logging with Logback
+    runtimeOnly 'ch.qos.logback:logback-classic:1.4.11'
+}
+
+// test {
+//     testLogging {
+//         events "passed", "skipped", "failed"
+//         showStandardStreams = true // Enable standard output
+//     }
+// }
+
+
