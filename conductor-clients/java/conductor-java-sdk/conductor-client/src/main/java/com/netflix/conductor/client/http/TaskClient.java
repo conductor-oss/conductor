@@ -182,6 +182,26 @@ public final class TaskClient {
         client.execute(request);
     }
 
+    /**
+     * Updates the result of a task execution. If the size of the task output payload is bigger than
+     * {@link ExternalPayloadStorage}, if enabled, else the task is marked as
+     * FAILED_WITH_TERMINAL_ERROR.
+     *
+     * @param taskResult the {@link TaskResult} of the executed task to be updated.
+     */
+    public Task updateTaskV2(TaskResult taskResult) {
+        Validate.notNull(taskResult, "Task result cannot be null");
+        ConductorClientRequest request = ConductorClientRequest.builder()
+            .method(Method.POST)
+            .path("/tasks/update-v2")
+            .body(taskResult)
+            .build();
+
+        ConductorClientResponse<Task> response = client.execute(request, new TypeReference<>() {
+        });
+        return response.getData();
+    }
+
     public Optional<String> evaluateAndUploadLargePayload(Map<String, Object> taskOutputData, String taskType) {
         if (!conductorClientConfiguration.isEnforceThresholds()) {
             return Optional.empty();

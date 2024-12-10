@@ -148,6 +148,10 @@ public class OrkesTaskClient {
         return taskClient.batchPollTasksInDomain(taskType, domain, workerId, count, timeoutInMillisecond);
     }
 
+    public Task updateTaskV2(TaskResult taskResult) {
+        return taskClient.updateTaskV2(taskResult);
+    }
+
     public void updateTask(TaskResult taskResult) {
         taskClient.updateTask(taskResult);
     }

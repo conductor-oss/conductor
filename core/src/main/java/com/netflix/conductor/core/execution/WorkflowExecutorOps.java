@@ -712,16 +712,16 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     /**
      * @param taskResult the task result to be updated.
-     * @throws IllegalArgumentException if the {@link TaskResult} is null.
+     * @throws IllegalArgumentException if the {@link TaskResult} is null. @Returns Updated task
      * @throws NotFoundException if the Task is not found.
      */
     @Override
-    public void updateTask(TaskResult taskResult) {
+    public TaskModel updateTask(TaskResult taskResult) {
         if (taskResult == null) {
             throw new IllegalArgumentException("Task object is null");
         } else if (taskResult.isExtendLease()) {
             extendLease(taskResult);
-            return;
+            return null;
         }
 
         String workflowId = taskResult.getWorkflowInstanceId();
@@ -750,7 +750,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     taskQueueName);
             Monitors.recordUpdateConflict(
                     task.getTaskType(), workflowInstance.getWorkflowName(), task.getStatus());
-            return;
+            return task;
         }
 
         if (workflowInstance.getStatus().isTerminal()) {
@@ -765,7 +765,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     task.getTaskType(),
                     workflowInstance.getWorkflowName(),
                     workflowInstance.getStatus());
-            return;
+            return task;
         }
 
         // for system tasks, setting to SCHEDULED would mean restarting the task which is
@@ -885,6 +885,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
         }
+        return task;
     }
 
     private void notifyTaskStatusListener(TaskModel task) {
