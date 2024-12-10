@@ -48,9 +48,9 @@ export default function TaskDetails({
               const selectedTaskRefName =
                 data?.data?.task?.executionData?.status === "PENDING"
                   ? pendingTaskSelection(data?.data?.task)?.workflowTask
-                      ?.taskReferenceName
-                  : taskWithLatestIteration(execution?.tasks, data?.id)
-                      ?.referenceTaskName;
+                    ?.taskReferenceName
+                  : taskWithLatestIteration(execution?.tasks, { ref: data.id })
+                    ?.referenceTaskName;
               setSelectedNode(data);
               setSelectedTask({ ref: selectedTaskRefName });
             }}

@@ -48,7 +48,7 @@ export function astToQuery(node) {
 
     return `${wrapper ? "(" : ""}${clauses.join(` ${combinator} `)}${
       wrapper ? ")" : ""
-    }`;
+      }`;
   } else {
     return "";
   }
@@ -99,16 +99,24 @@ export function getBasename() {
   return _.isEmpty(basename) ? "/" : basename;
 }
 
-export const taskWithLatestIteration = (tasksList, taskReferenceName) => {
-  const filteredTasks = tasksList?.filter(
-    (task) =>
-      task?.workflowTask?.taskReferenceName === taskReferenceName ||
-      task?.referenceTaskName === taskReferenceName
-  );
+export const taskWithLatestIteration = (tasksList = [], selectedTask) => {
+  const taskReferenceName = selectedTask?.ref;
+
+  const findTaskByReferenceName = (task) =>
+    task?.workflowTask?.taskReferenceName === taskReferenceName ||
+    task?.referenceTaskName === taskReferenceName;
+
+  const findTaskById = (task) => task?.taskId === selectedTask?.id;
+
+  // If reference name is not provided, use taskId to find the task
+  const findTask = selectedTask?.ref == null ? findTaskById : findTaskByReferenceName;
+
+  const filteredTasks = tasksList?.filter(findTask);
 
   if (filteredTasks && filteredTasks.length === 1) {
     // task without any retry/iteration
-    return _nth(filteredTasks, 0);
+    const targetTask = _nth(filteredTasks, 0);
+    return targetTask;
   } else if (filteredTasks && filteredTasks.length > 1) {
     const result = filteredTasks.reduce(
       (acc, task, idx) => {
@@ -121,9 +129,11 @@ export const taskWithLatestIteration = (tasksList, taskReferenceName) => {
     );
 
     if (result?.idx > -1) {
-      return _nth(filteredTasks, result.idx);
+      const targetTask = _nth(filteredTasks, result.idx);
+      return targetTask;
     }
   }
+
   return undefined;
 };
 
