@@ -8,6 +8,7 @@ dependencies {
     implementation "com.google.guava:guava:${revGuava}"
 
     implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
+    runtimeOnly "com.amazonaws:aws-java-sdk-sts:${revAwsSdk}"
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 

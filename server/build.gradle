@@ -76,6 +76,7 @@ dependencies {
 
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    runtimeOnly "com.amazonaws:aws-java-sdk-sts:${revAwsSdk}"
 
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')
