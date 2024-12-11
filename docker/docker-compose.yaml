@@ -43,25 +43,22 @@ services:
     networks:
       - internal
     ports:
-      - 6379:6379
+      - 7379:6379
     healthcheck:
       test: [ "CMD", "redis-cli","ping" ]
 
-  conductor-opensearch:
-    image: opensearchproject/opensearch:latest
+  conductor-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
     environment:
-      - plugins.security.disabled=true
-      - cluster.name=conductor
-      - node.name=conductor-node
-      - discovery.seed_hosts=conductor-node
-      - cluster.initial_cluster_manager_nodes=conductor-node
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Conductor123!
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - xpack.security.enabled=false
+      - discovery.type=single-node
     volumes:
-      - esdata-conductor:/usr/share/opensearch/data
+      - esdata-conductor:/usr/share/elasticsearch/data
     networks:
       - internal
     ports:
-      - 9200:9200
+      - 9201:9200
     healthcheck:
       test: curl http://localhost:9200/_cluster/health -o /dev/null
       interval: 5s
@@ -72,19 +69,6 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
-    container_name: opensearch-dashboards
-    ports:
-      - 5601:5601
-    expose:
-      - "5601"
-    environment:
-      - 'OPENSEARCH_HOSTS=["http://conductor-opensearch:9200"]'
-      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" 
-    networks:
-      - internal
 
 volumes:
   esdata-conductor:
