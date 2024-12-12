@@ -261,8 +261,8 @@ public class ExecutionService {
         workflowExecutor.terminateWorkflow(workflowId, reason);
     }
 
-    public void updateTask(TaskResult taskResult) {
-        workflowExecutor.updateTask(taskResult);
+    public TaskModel updateTask(TaskResult taskResult) {
+        return workflowExecutor.updateTask(taskResult);
     }
 
     public List<Task> getTasks(String taskType, String startKey, int count) {

@@ -81,5 +81,5 @@ YARN_OPTS='--network-timeout 10000000' docker compose -f docker-compose.yaml up
 When building a Docker image using `docker`, you must call it like e.g.
 
 ```
-docker build --build-arg='YARN_OPTS=--network-timeout 10000000' .. -f server/Dockerfile -t oss-conductor:v3.21.4
+docker build --build-arg='YARN_OPTS=--network-timeout 10000000' .. -f server/Dockerfile -t oss-conductor:v3.21.9
 ```

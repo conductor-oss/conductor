@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.*;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -77,14 +78,17 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         TaskModel subWorkflowTask = taskMapperContext.createTaskModel();
         subWorkflowTask.setTaskType(TASK_TYPE_SUB_WORKFLOW);
         subWorkflowTask.addInput("subWorkflowName", subWorkflowName);
+        subWorkflowTask.addInput("priority", resolvedParams.get("priority"));
         subWorkflowTask.addInput("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.addInput("subWorkflowTaskToDomain", subWorkflowTaskToDomain);
         subWorkflowTask.addInput("subWorkflowDefinition", subWorkflowDefinition);
         subWorkflowTask.addInput("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setStatus(TaskModel.Status.SCHEDULED);
         subWorkflowTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
-        if (subWorkflowParams.getPriority() != null) {
-            subWorkflowTask.setWorkflowPriority(subWorkflowParams.getPriority());
+        if (subWorkflowParams.getPriority() != null
+                && !StringUtils.isEmpty(subWorkflowParams.getPriority().toString())) {
+            int priority = Integer.parseInt(subWorkflowParams.getPriority().toString());
+            subWorkflowTask.setWorkflowPriority(priority);
         }
         LOGGER.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
         return List.of(subWorkflowTask);
@@ -109,6 +113,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
             WorkflowModel workflowModel, SubWorkflowParams subWorkflowParams) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", subWorkflowParams.getName());
+        params.put("priority", subWorkflowParams.getPriority());
 
         Integer version = subWorkflowParams.getVersion();
         if (version != null) {

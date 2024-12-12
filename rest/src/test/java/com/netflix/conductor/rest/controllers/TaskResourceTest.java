@@ -29,7 +29,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.service.TaskService;
+import com.netflix.conductor.service.WorkflowService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,11 +49,13 @@ public class TaskResourceTest {
     private TaskService mockTaskService;
 
     private TaskResource taskResource;
+    private WorkflowService workflowService;
 
     @Before
     public void before() {
         this.mockTaskService = mock(TaskService.class);
-        this.taskResource = new TaskResource(this.mockTaskService);
+        this.workflowService = mock(WorkflowService.class);
+        this.taskResource = new TaskResource(this.mockTaskService, this.workflowService);
     }
 
     @Test
@@ -86,7 +90,9 @@ public class TaskResourceTest {
         TaskResult taskResult = new TaskResult();
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId("123");
-        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn("123");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("123");
+        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn(taskModel);
         assertEquals("123", taskResource.updateTask(taskResult));
     }
 

@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.context.TestPropertySource;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -33,6 +34,7 @@ import jakarta.validation.ValidatorFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 public class WorkflowDefValidatorTest {
 
     @Before

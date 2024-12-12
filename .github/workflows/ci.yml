@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     paths-ignore:
-      - 'conductor-clients/**'
+      - "conductor-clients/**"
   pull_request:
     paths-ignore:
-      - 'conductor-clients/**'
+      - "conductor-clients/**"
 
 jobs:
   build:
@@ -21,8 +21,8 @@ jobs:
       - name: Set up Zulu JDK 17
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: "zulu"
+          java-version: "17"
       - name: Cache SonarCloud packages
         uses: actions/cache@v3
         with:
@@ -53,20 +53,20 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         if: always()
         with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          report_paths: "**/build/test-results/test/TEST-*.xml"
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
-          path: '**/build/reports'
+          path: "**/build/reports"
       - name: Store Buildscan URL
         uses: actions/upload-artifact@v3
         with:
           name: build-scan
-          path: 'buildscan.log'
+          path: "buildscan.log"
   build-ui:
     runs-on: ubuntu-latest
-    container: cypress/browsers:node14.17.6-chrome100-ff98
+    container: cypress/browsers:node-22.11.0-chrome-130.0.6723.116-1-ff-132.0.1-edge-130.0.2849.68-1
     defaults:
       run:
         working-directory: ui
@@ -81,15 +81,15 @@ jobs:
 
       - name: Run E2E Tests
         uses: cypress-io/github-action@v4
-        with: 
+        with:
           working-directory: ui
           install: false
           start: yarn run serve-build
-          wait-on: 'http://localhost:5000'
-      
+          wait-on: "http://localhost:5000"
+
       - name: Run Component Tests
         uses: cypress-io/github-action@v4
-        with: 
+        with:
           working-directory: ui
           install: false
           component: true
@@ -100,11 +100,10 @@ jobs:
         with:
           name: cypress-screenshots
           path: ui/cypress/screenshots
-      
+
       - name: Archive test videos
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: cypress-videos
           path: ui/cypress/videos
-

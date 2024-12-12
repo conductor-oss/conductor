@@ -1,6 +1,7 @@
 import { format, formatDuration, intervalToDuration } from "date-fns";
 import _ from "lodash";
-import packageJson from '../../package.json';
+import packageJson from "../../package.json";
+import _nth from "lodash/nth";
 
 export function timestampRenderer(date) {
   if (_.isNil(date)) return null;
@@ -91,9 +92,45 @@ export function isEmptyIterable(iterable) {
 }
 
 export function getBasename() {
-  let basename = '/';
-  try{
+  let basename = "/";
+  try {
     basename = new URL(packageJson.homepage).pathname;
-  } catch(e) {}
-  return _.isEmpty(basename) ? '/' : basename;
+  } catch (e) {}
+  return _.isEmpty(basename) ? "/" : basename;
 }
+
+export const taskWithLatestIteration = (tasksList, taskReferenceName) => {
+  const filteredTasks = tasksList?.filter(
+    (task) =>
+      task?.workflowTask?.taskReferenceName === taskReferenceName ||
+      task?.referenceTaskName === taskReferenceName
+  );
+
+  if (filteredTasks && filteredTasks.length === 1) {
+    // task without any retry/iteration
+    return _nth(filteredTasks, 0);
+  } else if (filteredTasks && filteredTasks.length > 1) {
+    const result = filteredTasks.reduce(
+      (acc, task, idx) => {
+        if (task?.seq && acc?.seqNumber < Number(task.seq)) {
+          return { seqNumber: Number(task.seq), idx };
+        }
+        return acc;
+      },
+      { seqNumber: 0, idx: -1 }
+    );
+
+    if (result?.idx > -1) {
+      return _nth(filteredTasks, result.idx);
+    }
+  }
+  return undefined;
+};
+
+export const pendingTaskSelection = (task) => {
+  const result = {
+    ...task?.executionData,
+    workflowTask: task,
+  };
+  return result;
+};

@@ -101,6 +101,10 @@ public class ConductorClient {
             okHttpBuilder.writeTimeout(builder.writeTimeout, TimeUnit.MILLISECONDS);
         }
 
+        if (builder.callTimeout > -1) {
+            okHttpBuilder.callTimeout(builder.callTimeout, TimeUnit.MILLISECONDS);
+        }
+
         if (builder.proxy != null) {
             okHttpBuilder.proxy(builder.proxy);
         }
@@ -442,6 +446,7 @@ public class ConductorClient {
         private long connectTimeout = -1;
         private long readTimeout = -1;
         private long writeTimeout = -1;
+        private long callTimeout = -1;
         private Proxy proxy;
         private ConnectionPoolConfig connectionPoolConfig;
         private Supplier<ObjectMapper> objectMapperSupplier = () -> new ObjectMapperProvider().getObjectMapper();
@@ -484,6 +489,11 @@ public class ConductorClient {
 
         public T writeTimeout(long writeTimeout) {
             this.writeTimeout = writeTimeout;
+            return self();
+        }
+
+        public T callTimeout(long callTimeout) {
+            this.callTimeout = callTimeout;
             return self();
         }
 

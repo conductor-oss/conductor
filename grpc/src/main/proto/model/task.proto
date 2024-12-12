@@ -61,4 +61,5 @@ message Task {
     int32 iteration = 40;
     string sub_workflow_id = 41;
     bool subworkflow_changed = 42;
+    int64 first_start_time = 43;
 }
