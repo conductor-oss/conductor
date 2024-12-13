@@ -42,7 +42,10 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration workflowOffsetTimeout = Duration.ofSeconds(30);
 
-    /** The maximum timeout duration to set when a workflow is pushed to the decider queue. */
+    /**
+     * The maximum timeout duration to set when a workflow with running task is pushed to the
+     * decider queue.
+     */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration maxPostponeDurationSeconds = Duration.ofSeconds(3600);
 
