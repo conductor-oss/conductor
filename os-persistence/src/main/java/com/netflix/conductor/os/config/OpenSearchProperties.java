@@ -58,7 +58,7 @@ public class OpenSearchProperties {
     private int indexShardCount = 5;
 
     /** The number of replicas that the index will be configured to have */
-    private int indexReplicasCount = 1;
+    private int indexReplicasCount = 0;
 
     /** The number of task log results that will be returned in the response */
     private int taskLogResultLimit = 10;

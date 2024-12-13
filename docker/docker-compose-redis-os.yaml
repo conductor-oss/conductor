@@ -3,7 +3,7 @@ version: '2.3'
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-redis.properties
+      - CONFIG_PROP=config-redis-os.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
     image: conductor:server
     container_name: conductor-server
@@ -23,10 +23,10 @@ services:
       timeout: 30s
       retries: 12
     links:
-      - conductor-elasticsearch:es
+      - conductor-opensearch:os
       - conductor-redis:rs
     depends_on:
-      conductor-elasticsearch:
+      conductor-opensearch:
         condition: service_healthy
       conductor-redis:
         condition: service_healthy
@@ -48,14 +48,13 @@ services:
       test: [ "CMD", "redis-cli","ping" ]
 
   conductor-opensearch:
-    image: opensearchproject/opensearch:latest
+    image: opensearchproject/opensearch:2.18.0
     environment:
       - plugins.security.disabled=true
       - cluster.name=opensearch-cluster # Name the cluster
       - node.name=conductor-opensearch # Name the node that will run in this container
       - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
       - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Conductor123!
     volumes:
       - esdata-conductor:/usr/share/opensearch/data
     networks:
@@ -72,19 +71,6 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
-    container_name: opensearch-dashboards
-    ports:
-      - 5601:5601 # Map host port 5601 to container port 5601
-    expose:
-      - "5601" # Expose port 5601 for web access to OpenSearch Dashboards
-    environment:
-      - 'OPENSEARCH_HOSTS=["http://conductor-opensearch:9200"]'
-      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" # disables security dashboards plugin in OpenSearch Dashboards
-    networks:
-      - internal
 
 volumes:
   esdata-conductor:
