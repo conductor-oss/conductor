@@ -204,6 +204,8 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
