@@ -118,6 +118,7 @@ nav:
 theme: 
   name: material
   logo: img/logo.svg
+  custom_dir: docs/overrides
   features:
     - navigation.tabs
     - navigation.tabs.sticky
