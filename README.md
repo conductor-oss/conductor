@@ -1,4 +1,11 @@
-![Conductor OSS Logo](https://assets.conductor-oss.org/logo.png "Conductor OSS")
+
+<picture>
+  <!-- Dark mode logo -->
+  <source srcset="https://github.com/user-attachments/assets/104b3a67-6013-4622-8075-a45da3a9e726" media="(prefers-color-scheme: dark)">
+  <!-- Light mode logo -->
+  <img src="https://assets.conductor-oss.org/logo.png" alt="Logo">
+</picture>
+
 
 <h1 align="center" style="border-bottom: none">
     Scalable Workflow Orchestration
