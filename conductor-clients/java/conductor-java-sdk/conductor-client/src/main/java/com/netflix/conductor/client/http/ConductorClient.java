@@ -266,7 +266,7 @@ public class ConductorClient {
             content = objectMapper.writeValueAsString(body);
         }
 
-        return RequestBody.create(content, MediaType.parse(contentType));
+        return RequestBody.create(MediaType.parse(contentType), content);
     }
 
     protected <T> T handleResponse(Response response, Type returnType) {
@@ -345,7 +345,7 @@ public class ConductorClient {
         if (body == null && "DELETE".equals(method)) {
             return null;
         } else if (body == null) {
-            return RequestBody.create("", MediaType.parse(contentType));
+            return RequestBody.create(MediaType.parse(contentType), "");
         }
 
         return serialize(contentType, body);
