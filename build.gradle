@@ -60,7 +60,7 @@ allprojects {
 
             resolutionStrategy.eachDependency { details ->
                 if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
-                    details.useVersion "2.15.2"
+                    details.useVersion "2.18.0"
                 }
             }
         }

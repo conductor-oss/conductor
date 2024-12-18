@@ -70,6 +70,7 @@ include 'mysql-persistence'
 include 'postgres-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'os-persistence'
 include 'azureblob-storage'
 include 'postgres-external-storage'
 include 'amqp'
@@ -79,5 +80,5 @@ include 'kafka-event-queue'
 
 include 'test-harness'
 
-
 rootProject.children.each {it.name="conductor-${it.name}"}
+

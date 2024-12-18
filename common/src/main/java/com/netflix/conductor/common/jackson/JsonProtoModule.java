@@ -122,12 +122,14 @@ public class JsonProtoModule extends SimpleModule {
             JsonNode value = root.get(JSON_VALUE);
 
             if (type == null || !type.isTextual()) {
-                ctxt.reportMappingException(
+                ctxt.reportBadDefinition(
+                        type.getClass(),
                         "invalid '@type' field when deserializing ProtoBuf Any object");
             }
 
             if (value == null || !value.isTextual()) {
-                ctxt.reportMappingException(
+                ctxt.reportBadDefinition(
+                        type.getClass(),
                         "invalid '@value' field when deserializing ProtoBuf Any object");
             }
 

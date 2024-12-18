@@ -41,6 +41,7 @@
     "url-parse": "^1.5.1",
     "use-local-storage-state": "^10.0.0",
     "xss": "^1.0.8",
+    "yarn": "^1.22.22",
     "yup": "^0.32.11"
   },
   "scripts": {

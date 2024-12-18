@@ -15,9 +15,13 @@ package com.netflix.conductor.dao;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import com.netflix.conductor.core.events.queue.Message;
 
 /** DAO responsible for managing queuing for the tasks. */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+@Component
 public interface QueueDAO {
 
     /**
