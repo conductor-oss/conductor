@@ -869,10 +869,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             task.getTaskId(), workflowId);
             LOGGER.error(errorMsg, e);
         }
-
-        taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
-        executionDAOFacade.addTaskExecLog(taskResult.getLogs());
-
+        List<TaskExecLog> taskLogs = taskResult.getLogs();
+        Optional.ofNullable(taskLogs)
+          .ifPresent(
+                  logs -> {
+                      logs.forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
+                      executionDAOFacade.addTaskExecLog(taskLogs);
+                  });
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
             long lastDuration = task.getEndTime() - task.getStartTime();
