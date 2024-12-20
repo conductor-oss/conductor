@@ -16,15 +16,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.regex.Pattern;
 
 import org.apache.http.HttpHost;
+import org.junit.After;
+import org.junit.Before;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
-import org.junit.After;
-import org.junit.Before;
 import org.springframework.retry.support.RetryTemplate;
 
 public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {

@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.os.dao.index;
 
+import org.junit.Test;
+import org.mockito.Mockito;
 import org.opensearch.action.bulk.BulkRequestBuilder;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
-import org.junit.Test;
-import org.mockito.Mockito;
 
 public class TestBulkRequestBuilderWrapper {
     BulkRequestBuilder builder = Mockito.mock(BulkRequestBuilder.class);
