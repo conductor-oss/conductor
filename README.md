@@ -18,7 +18,7 @@
 [![Community Forum](https://img.shields.io/badge/Discourse-Join%20the%20Community-blue?logo=discourse&logoColor=white)](https://community.orkes.io)
 [![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 [![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor?style=social)](https://github.com/conductor-oss/conductor/stargazers)
-
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Conductor%20Guru-006BFF)](https://gurubase.io/g/conductor)
 
 
 Conductor is a platform _originally_ created at **Netflix** to orchestrate microservices and events. [Conductor OSS](https://conductor-oss.org) is maintained by the team of developers at [Orkes.io](https://orkes.io/) along with members of the open source community.
