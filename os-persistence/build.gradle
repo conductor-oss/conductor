@@ -1,0 +1,52 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'java'
+}
+
+configurations {
+    // Prevent shaded dependencies from being published, while keeping them available to tests
+    shadow.extendsFrom compileOnly
+    testRuntime.extendsFrom compileOnly
+}
+
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-common-persistence')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.retry:spring-retry'
+
+    implementation "commons-io:commons-io:${revCommonsIo}"
+    implementation "org.apache.commons:commons-lang3"
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
+
+    implementation 'org.opensearch.client:opensearch-java:2.18.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation "org.opensearch.client:opensearch-rest-client:2.18.0"
+    implementation "org.opensearch.client:opensearch-rest-high-level-client:2.18.0"
+
+    testImplementation "net.java.dev.jna:jna:5.7.0"
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
+    testImplementation "org.testcontainers:testcontainers:1.20.4"
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+    testImplementation 'org.springframework.retry:spring-retry'
+
+}
+
+// Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier = null
+
+    // Service files are not included by default.
+    mergeServiceFiles {
+        include 'META-INF/services/*'
+        include 'META-INF/maven/*'
+    }
+}
+jar.dependsOn shadowJar
