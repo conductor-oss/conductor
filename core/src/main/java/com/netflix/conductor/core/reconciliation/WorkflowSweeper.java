@@ -144,6 +144,13 @@ public class WorkflowSweeper {
                                     ? taskModel.getResponseTimeoutSeconds() + 1
                                     : workflowOffsetTimeout;
                 }
+
+                if (postponeDurationSeconds
+                        > properties.getMaxPostponeDurationSeconds().getSeconds()) {
+                    postponeDurationSeconds =
+                            properties.getMaxPostponeDurationSeconds().getSeconds();
+                }
+
                 break;
             } else if (taskModel.getStatus() == Status.SCHEDULED) {
                 Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
