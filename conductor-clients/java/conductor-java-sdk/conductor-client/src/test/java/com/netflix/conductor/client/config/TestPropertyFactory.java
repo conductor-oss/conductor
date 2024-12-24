@@ -12,16 +12,17 @@
  */
 package com.netflix.conductor.client.config;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class TestPropertyFactory {
 
@@ -30,14 +31,14 @@ public class TestPropertyFactory {
         Worker worker = Worker.create("Test2", TaskResult::new);
         assertNotNull(worker.getIdentity());
         boolean paused = worker.paused();
-        assertFalse("Paused? " + paused, paused);
+        assertFalse(paused);
     }
 
     @Test
     public void test() {
 
         int val = PropertyFactory.getInteger("workerB", "pollingInterval", 100);
-        assertEquals("got: " + val, 2, val);
+        assertEquals(2, val);
         assertEquals(
                 100, PropertyFactory.getInteger("workerB", "propWithoutValue", 100).intValue());
 
@@ -67,6 +68,6 @@ public class TestPropertyFactory {
     public void testProperty() {
         Worker worker = Worker.create("Test", TaskResult::new);
         boolean paused = worker.paused();
-        assertTrue("Paused? " + paused, paused);
+        assertTrue(paused);
     }
 }
