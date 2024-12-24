@@ -38,7 +38,7 @@ class WorkflowBulkResource {
                 .body(workflowIds)
                 .build();
 
-        ConductorClientResponse<BulkResponse> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<BulkResponse<String>> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
@@ -52,7 +52,7 @@ class WorkflowBulkResource {
                 .body(workflowIds)
                 .build();
 
-        ConductorClientResponse<BulkResponse> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<BulkResponse<String>> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
@@ -65,7 +65,7 @@ class WorkflowBulkResource {
                 .body(workflowIds)
                 .build();
 
-        ConductorClientResponse<BulkResponse> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<BulkResponse<String>> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
@@ -78,7 +78,7 @@ class WorkflowBulkResource {
                 .body(workflowIds)
                 .build();
 
-        ConductorClientResponse<BulkResponse> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<BulkResponse<String>> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
@@ -93,7 +93,7 @@ class WorkflowBulkResource {
                 .body(workflowIds)
                 .build();
 
-        ConductorClientResponse<BulkResponse> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<BulkResponse<String>> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
