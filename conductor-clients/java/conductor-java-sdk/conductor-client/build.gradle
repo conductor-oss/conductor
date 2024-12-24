@@ -21,8 +21,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junit}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${versions.junit}"
 
-    testImplementation "org.powermock:powermock-module-junit4:2.0.9"
-    testImplementation "org.powermock:powermock-api-mockito2:2.0.9"
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
 
     testImplementation 'org.spockframework:spock-core:2.3-groovy-3.0'
     testImplementation 'org.codehaus.groovy:groovy:3.0.15'
@@ -36,6 +35,7 @@ java {
 
 test {
     useJUnitPlatform()
+    maxParallelForks = 1
 }
 
 shadowJar {

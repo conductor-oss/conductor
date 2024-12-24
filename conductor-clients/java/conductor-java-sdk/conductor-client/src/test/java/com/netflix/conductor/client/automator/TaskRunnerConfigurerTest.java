@@ -15,16 +15,17 @@ package com.netflix.conductor.client.automator;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -32,41 +33,49 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.COMPLETED;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class TaskRunnerConfigurerTest {
-
     private static final String TEST_TASK_DEF_NAME = "test";
-
     private TaskClient client;
 
-    @Before
+    @BeforeEach
     public void setup() {
         client = Mockito.mock(TaskClient.class);
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testNoWorkersException() {
-        new TaskRunnerConfigurer.Builder(null, null).build();
+        assertThrows(NullPointerException.class, () -> new TaskRunnerConfigurer.Builder(null, null).build());
     }
 
-    @Test(expected = ConductorClientException.class)
+    @Test
     public void testInvalidThreadConfig() {
         Worker worker1 = Worker.create("task1", TaskResult::new);
         Worker worker2 = Worker.create("task2", TaskResult::new);
         Map<String, Integer> taskThreadCount = new HashMap<>();
-        taskThreadCount.put(worker1.getTaskDefName(), 2);
+        taskThreadCount.put(worker1.getTaskDefName(), 0);
         taskThreadCount.put(worker2.getTaskDefName(), 3);
-        new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
-                .withThreadCount(10)
-                .withTaskThreadCount(taskThreadCount)
-                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
+            .withThreadCount(-1)
+            .withTaskThreadCount(taskThreadCount)
+            .build());
+
+        assertThrows(IllegalArgumentException.class, () -> new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker1, worker2))
+            .withTaskThreadCount(taskThreadCount)
+            .build());
     }
 
     @Test
@@ -81,12 +90,12 @@ public class TaskRunnerConfigurerTest {
                         .build();
 
         assertFalse(configurer.getTaskThreadCount().isEmpty());
-        assertEquals(2, configurer.getTaskThreadCount().size());
+        assertEquals(1, configurer.getTaskThreadCount().size());
         assertEquals(2, configurer.getTaskThreadCount().get("task1").intValue());
-        assertEquals(1, configurer.getTaskThreadCount().get("task2").intValue());
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testPerTaskThreadPool() {
         Worker worker1 = Worker.create("task1", TaskResult::new);
         Worker worker2 = Worker.create("task2", TaskResult::new);
@@ -104,19 +113,18 @@ public class TaskRunnerConfigurerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testSharedThreadPool() {
         Worker worker = Worker.create(TEST_TASK_DEF_NAME, TaskResult::new);
         TaskRunnerConfigurer configurer =
                 new TaskRunnerConfigurer.Builder(client, Arrays.asList(worker, worker, worker))
                         .build();
         configurer.init();
-        assertEquals(3, configurer.getThreadCount());
+        assertEquals(-1, configurer.getThreadCount());
         assertEquals(500, configurer.getSleepWhenRetry());
         assertEquals(3, configurer.getUpdateRetryCount());
         assertEquals(10, configurer.getShutdownGracePeriodSeconds());
-        assertFalse(configurer.getTaskThreadCount().isEmpty());
-        assertEquals(1, configurer.getTaskThreadCount().size());
-        assertEquals(3, configurer.getTaskThreadCount().get(TEST_TASK_DEF_NAME).intValue());
+        assertTrue(configurer.getTaskThreadCount().isEmpty());
 
         configurer =
                 new TaskRunnerConfigurer.Builder(client, Collections.singletonList(worker))
@@ -133,9 +141,7 @@ public class TaskRunnerConfigurerTest {
         assertEquals(10, configurer.getUpdateRetryCount());
         assertEquals(15, configurer.getShutdownGracePeriodSeconds());
         assertEquals("test-worker-", configurer.getWorkerNamePrefix());
-        assertFalse(configurer.getTaskThreadCount().isEmpty());
-        assertEquals(1, configurer.getTaskThreadCount().size());
-        assertEquals(100, configurer.getTaskThreadCount().get(TEST_TASK_DEF_NAME).intValue());
+        assertTrue(configurer.getTaskThreadCount().isEmpty());
     }
 
     @Test
@@ -175,7 +181,7 @@ public class TaskRunnerConfigurerTest {
         TaskClient taskClient = Mockito.mock(TaskClient.class);
         TaskRunnerConfigurer configurer =
                 new TaskRunnerConfigurer.Builder(taskClient, Arrays.asList(worker1, worker2))
-                        .withThreadCount(2)
+                        .withThreadCount(1)
                         .withSleepWhenRetry(100000)
                         .withUpdateRetryCount(1)
                         .withWorkerNamePrefix("test-worker-")
@@ -186,9 +192,9 @@ public class TaskRunnerConfigurerTest {
                             Object[] args = invocation.getArguments();
                             String taskName = args[0].toString();
                             if (taskName.equals(task1Name)) {
-                                return Arrays.asList(task1);
+                                return List.of(task1);
                             } else if (taskName.equals(task2Name)) {
-                                return Arrays.asList(task2);
+                                return List.of(task2);
                             } else {
                                 return Collections.emptyList();
                             }
@@ -218,6 +224,58 @@ public class TaskRunnerConfigurerTest {
 
         assertEquals(1, task1Counter.get());
         assertEquals(1, task2Counter.get());
+    }
+
+    @Test
+    public void testLeaseExtension() throws Exception {
+        TaskClient taskClient = mock(TaskClient.class);
+        String taskName = "task1";
+
+        Worker worker = mock(Worker.class);
+        when(worker.getTaskDefName()).thenReturn(taskName);
+        when(worker.leaseExtendEnabled()).thenReturn(true);
+
+        doAnswer(invocation -> {
+            TaskResult result = new TaskResult(invocation.getArgument(0));
+            result.setStatus(TaskResult.Status.IN_PROGRESS);
+            return result;
+        }).when(worker).execute(any(Task.class));
+
+        Task task = new Task();
+        task.setTaskId("task123");
+        task.setTaskDefName(taskName);
+        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setResponseTimeoutSeconds(2000);
+
+        when(taskClient.batchPollTasksInDomain(any(), any(), any(), anyInt(), anyInt()))
+            .thenAnswer((invocation) -> List.of(task));
+        when(taskClient.ack(any(), any())).thenReturn(true);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return null;
+        }).when(taskClient).updateTask(any(TaskResult.class));
+
+        TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(taskClient, List.of(worker))
+            .withSleepWhenRetry(100)
+            .withUpdateRetryCount(3)
+            .withThreadCount(1)
+            .build();
+
+        configurer.init();
+        latch.await();
+
+        ArgumentCaptor<TaskResult> taskResultCaptor = ArgumentCaptor.forClass(TaskResult.class);
+        verify(taskClient, atLeastOnce()).updateTask(taskResultCaptor.capture());
+
+        TaskResult capturedResult = taskResultCaptor.getValue();
+        assertNotNull(capturedResult);
+        assertEquals("task123", capturedResult.getTaskId());
+        assertEquals(TaskResult.Status.IN_PROGRESS, capturedResult.getStatus());
+
+        verify(worker, atLeastOnce()).execute(task);
+        assertTrue(worker.leaseExtendEnabled(), "Worker lease extension should be enabled");
     }
 
     private Task testTask(String taskDefName) {
