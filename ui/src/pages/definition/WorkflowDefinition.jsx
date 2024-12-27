@@ -378,6 +378,7 @@ export default function Workflow() {
           {dag && dag?.workflowDef && (
             <WorkflowVisualizer
               maxHeightOverride
+              maxWidthOverride
               pannable
               zoomable
               zoom={0.7}
