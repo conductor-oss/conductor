@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'conductor-clients/java/conductor-java-sdk/**'
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
