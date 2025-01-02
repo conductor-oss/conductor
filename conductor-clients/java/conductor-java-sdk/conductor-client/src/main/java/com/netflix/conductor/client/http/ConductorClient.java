@@ -452,6 +452,8 @@ public class ConductorClient {
         private Supplier<ObjectMapper> objectMapperSupplier = () -> new ObjectMapperProvider().getObjectMapper();
         private final List<HeaderSupplier> headerSuppliers = new ArrayList<>();
 
+        private boolean useEnvVariables = false;
+
         protected T self() {
             //noinspection unchecked
             return (T) this;
@@ -538,7 +540,19 @@ public class ConductorClient {
             return headerSuppliers;
         }
 
+        public T useEnvVariables(boolean useEnvVariables) {
+            this.useEnvVariables = useEnvVariables;
+            return self();
+        }
+
+        protected boolean isUseEnvVariables() {
+            return this.useEnvVariables;
+        }
+
         public ConductorClient build() {
+            if (useEnvVariables) {
+                applyEnvVariables();
+            }
             return new ConductorClient(this);
         }
 
@@ -549,6 +563,15 @@ public class ConductorClient {
 
             if (basePath.endsWith("/")) {
                 basePath = basePath.substring(0, basePath.length() - 1);
+            }
+        }
+
+        protected void applyEnvVariables() {
+            String conductorServerUrl = System.getenv("CONDUCTOR_SERVER_URL");
+            if (conductorServerUrl != null) {
+                this.basePath(conductorServerUrl);
+            } else {
+                throw new RuntimeException("env variable CONDUCTOR_SERVER_URL is not set");
             }
         }
     }

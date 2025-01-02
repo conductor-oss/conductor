@@ -12,45 +12,24 @@
  */
 package io.orkes.conductor.client.util;
 
-import org.junit.jupiter.api.Assertions;
-
 import com.netflix.conductor.client.http.ConductorClient;
 
 import io.orkes.conductor.client.ApiClient;
 import io.orkes.conductor.client.OrkesClients;
 
 public class ClientTestUtil {
-    private static final String ENV_ROOT_URI = "CONDUCTOR_SERVER_URL";
-    private static final String ENV_KEY_ID = "CONDUCTOR_SERVER_AUTH_KEY";
-    private static final String ENV_SECRET = "CONDUCTOR_SERVER_AUTH_SECRET";
-    private static final ConductorClient CLIENT = getClient();
+    private static final ConductorClient CLIENT = ApiClient.builder()
+            .useEnvVariables(true)
+            .readTimeout(30_000)
+            .connectTimeout(30_000)
+            .writeTimeout(30_000)
+            .build();
 
     public static OrkesClients getOrkesClients() {
         return new OrkesClients(CLIENT);
     }
 
     public static ConductorClient getClient() {
-        if (CLIENT != null) {
-            return CLIENT;
-        }
-
-        String basePath = getEnv(ENV_ROOT_URI);
-        Assertions.assertNotNull(basePath, ENV_ROOT_URI + " env not set");
-        String keyId = getEnv(ENV_KEY_ID);
-        Assertions.assertNotNull(keyId, ENV_KEY_ID + " env not set");
-        String keySecret = getEnv(ENV_SECRET);
-        Assertions.assertNotNull(keySecret, ENV_SECRET + " env not set");
-
-        return ApiClient.builder()
-                .basePath(basePath)
-                .credentials(keyId, keySecret)
-                .readTimeout(30_000)
-                .connectTimeout(30_000)
-                .writeTimeout(30_000)
-                .build();
-    }
-
-    private static String getEnv(String key) {
-        return System.getenv(key);
+        return CLIENT;
     }
 }
