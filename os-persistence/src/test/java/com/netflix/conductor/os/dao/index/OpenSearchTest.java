@@ -12,22 +12,22 @@
  */
 package com.netflix.conductor.os.dao.index;
 
-import com.netflix.conductor.os.config.OpenSearchProperties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.os.config.OpenSearchProperties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testcontainers.utility.DockerImageName;
 
 @ContextConfiguration(
         classes = {TestObjectMapperConfiguration.class, OpenSearchTest.TestConfiguration.class})
@@ -46,7 +46,10 @@ public abstract class OpenSearchTest {
     }
 
     protected static OpensearchContainer<?> container =
-            new OpensearchContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.18.0")); // this should match the client version
+            new OpensearchContainer<>(
+                    DockerImageName.parse(
+                            "opensearchproject/opensearch:2.18.0")); // this should match the client
+    // version
 
     @Autowired protected ObjectMapper objectMapper;
 
