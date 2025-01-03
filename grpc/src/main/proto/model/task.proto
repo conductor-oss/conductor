@@ -62,4 +62,6 @@ message Task {
     string sub_workflow_id = 41;
     bool subworkflow_changed = 42;
     int64 first_start_time = 43;
+    int32 publish_count = 44;
+    int64 last_publish_time = 45;
 }

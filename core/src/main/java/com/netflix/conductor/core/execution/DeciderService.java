@@ -29,13 +29,16 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.TaskLog;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -68,12 +71,24 @@ public class DeciderService {
 
     private final Map<String, TaskMapper> taskMappers;
 
+    private final TaskStatusListener taskStatusListener;
+    private final ExecutionDAOFacade executionDAOFacade;
+
+    private static final int MAX_PUBLISH_COUNT = 2;
+
+    private static final String TASK_PUBLISH_TIMEOUT_IN_SECONDS =
+            "ENV_TASK_PUBLISH_TIMEOUT_IN_SECONDS";
+
+    private long taskPublishTimeoutInMilliSeconds = 900000;
+
     public DeciderService(
             IDGenerator idGenerator,
             ParametersUtils parametersUtils,
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
+            TaskStatusListener taskStatusListener,
+            ExecutionDAOFacade executionDAOFacade,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
@@ -84,6 +99,14 @@ public class DeciderService {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
+        this.taskStatusListener = taskStatusListener;
+        this.executionDAOFacade = executionDAOFacade;
+        this.taskPublishTimeoutInMilliSeconds =
+                Long.parseLong(System.getenv().getOrDefault(TASK_PUBLISH_TIMEOUT_IN_SECONDS, "900"))
+                        * 1000L;
+        LOGGER.info(
+                "Task publish timeout is set to {} milliseconds",
+                this.taskPublishTimeoutInMilliSeconds);
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -186,6 +209,7 @@ public class DeciderService {
             if (taskDefinition.isPresent()) {
                 checkTaskTimeout(taskDefinition.get(), pendingTask);
                 checkTaskPollTimeout(taskDefinition.get(), pendingTask);
+                checkTaskPublishTimeout(taskDefinition.get(), pendingTask);
                 // If the task has not been updated for "responseTimeoutSeconds" then mark task as
                 // TIMED_OUT
                 if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
@@ -761,6 +785,88 @@ public class DeciderService {
                         pollTimeout / 1000L,
                         taskDef.getTimeoutPolicy().name());
         timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
+    @VisibleForTesting
+    void checkTaskPublishTimeout(TaskDef taskDef, TaskModel task) {
+        // this method is to check whether tasks in SCHEDULED state are updated with in a specific
+        // period of time
+        // if the status is not in SCHEDULED state then there is no need to verify timeout in this
+        // method
+        // also if its not scheduled earlier and scheduledTime is zero, we dont need to verify the
+        // timeout
+        if (!task.getStatus().equals(SCHEDULED) || task.getScheduledTime() == 0) {
+            return;
+        }
+
+        // only SIMPLE tasks timeout needs to be tested here. Other tasks are executed internally.
+        // Only SIMPLE tasks are
+        // executed outside of conductor. Only SIMPLE tasks needs a status update from SCHEDULED
+        // state within TASK_PUBLISH_TIMEOUT_IN_SECONDS
+        if (!task.getWorkflowTask().getType().equals(TaskType.SIMPLE.name())) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long publishDuration = currentTime - task.getScheduledTime();
+        if (task.getLastPublishTime() > 0) {
+            publishDuration = currentTime - task.getLastPublishTime();
+        }
+        // check the publishDuration is greater than TASK_PUBLISH_TIMEOUT_IN_SECONDS
+        if (publishDuration > taskPublishTimeoutInMilliSeconds) {
+            TaskLog taskLog = new TaskLog(task.toTask());
+            // if its greater, then check publishcount is greater than MAX_PUBLISH_COUNT
+            if (task.getPublishCount() >= MAX_PUBLISH_COUNT) {
+                // if publish count is also greater check the publishDuration again to terminate the
+                // workflow
+                long terminationTime = 181 * 24 * 3600 * 1000L; // 181 days
+                long timeSinceScheduled = currentTime - task.getScheduledTime();
+                // we need to timeout old tasks as well. hence checking for scheduledtime instead of
+                // lastpublishtime. Existing tasks which are
+                // scheduled long back needs to be timedout
+                if (timeSinceScheduled > terminationTime) {
+                    String reason =
+                            String.format(
+                                    "PublishCount %s greater than or equal to MAX_PUBLISH_COUNT. LastPublishTime %s ScheduleTime %s CurrentTime %s PublishDuration %s. Hence terminating workflow",
+                                    task.getPublishCount(),
+                                    new Date(task.getLastPublishTime()),
+                                    new Date(task.getScheduledTime()),
+                                    new Date(currentTime),
+                                    publishDuration);
+                    LOGGER.info(
+                            "PublishCount {} greater than or equal to MAX_PUBLISH_COUNT. LastPublishTime {} ScheduleTime {} CurrentTime {} PublishDuration {} TaskData {}. Hence terminating workflow",
+                            task.getPublishCount(),
+                            new Date(task.getLastPublishTime()),
+                            new Date(task.getScheduledTime()),
+                            new Date(currentTime),
+                            publishDuration,
+                            taskLog.toLogString());
+                    task.setStatus(TIMED_OUT);
+                    task.setReasonForIncompletion(reason);
+                    // as the task is in SCHEDULED state for more than 181 days, its a system
+                    // failure and the task needs to be terminated
+                    // no need to consider whether the task is optional or not.
+                    throw new TerminateWorkflowException(
+                            reason, WorkflowModel.Status.TIMED_OUT, task);
+                }
+            } else {
+                // if the publishcount is less than MAX_PUBLISH_COUNT then publish the task and
+                // increase publishcount
+                // we need republish for MAX_PUBLISH_COUNT time before terminating it.
+                LOGGER.info(
+                        "PublishDuration {} is greater than taskPublishTimeout {}. Hence republishing task notification. PublishCount {} LastPublishTime {} ScheduleTime {} TaskData {}",
+                        publishDuration,
+                        taskPublishTimeoutInMilliSeconds,
+                        task.getPublishCount(),
+                        new Date(task.getLastPublishTime()),
+                        new Date(task.getScheduledTime()),
+                        taskLog.toLogString());
+                task.setPublishCount(task.getPublishCount() + 1);
+                task.setLastPublishTime(System.currentTimeMillis());
+                executionDAOFacade.updateTask(task);
+                taskStatusListener.onTaskScheduled(task);
+            }
+        }
     }
 
     void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, TaskModel task) {
