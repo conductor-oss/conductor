@@ -213,4 +213,26 @@ public interface ExecutionDAO {
      * @param eventExecution Event execution to be removed
      */
     void removeEventExecution(EventExecution eventExecution);
+
+    /**
+     * Adds the distributed lock if it does not exist with expiration time as timeToExpireInSeconds.
+     *
+     * @param key
+     * @param value
+     * @param expireTimeInSeconds
+     * @return null if unable to add, OK if successfully added
+     */
+    default String addLock(String key, String value, int expireTimeInSeconds) {
+        return null;
+    }
+
+    /**
+     * Removes the lock with key
+     *
+     * @param key
+     * @return 1 is successful, 0 if unsuccessful
+     */
+    default Long removeLock(String key) {
+        return null;
+    }
 }
