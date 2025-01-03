@@ -13,6 +13,7 @@
 package com.netflix.conductor.dao;
 
 import java.util.List;
+import java.util.Set;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -213,6 +214,15 @@ public interface ExecutionDAO {
      * @param eventExecution Event execution to be removed
      */
     void removeEventExecution(EventExecution eventExecution);
+
+    /**
+     * Return all workflow ids involved in the parent workflow. Parent workflow is identified by
+     * correlation id
+     *
+     * @param correlationId
+     * @return List of workflow ids involved in a parent workflow
+     */
+    Set<String> getWorkflowIdSetByCorrelationId(String correlationId);
 
     /**
      * Adds the distributed lock if it does not exist with expiration time as timeToExpireInSeconds.

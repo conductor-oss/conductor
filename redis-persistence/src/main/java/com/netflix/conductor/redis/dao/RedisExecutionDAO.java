@@ -791,4 +791,12 @@ public class RedisExecutionDAO extends BaseDynoDAO
     public Long removeLock(String key) {
         return jedisProxy.del(nsKey(SIMPLE_LOCK, key));
     }
+
+    public Set<String> getWorkflowIdSetByCorrelationId(String correlationId) {
+        Set<String> idSet = jedisProxy.smembers(nsKey(CORR_ID_TO_WORKFLOWS, correlationId));
+        if (idSet == null) {
+            idSet = new HashSet<>();
+        }
+        return idSet;
+    }
 }

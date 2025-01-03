@@ -867,4 +867,9 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
             throw new TransientException(errorMsg, e);
         }
     }
+
+    public Set<String> getWorkflowIdSetByCorrelationId(String correlationId) {
+        throw new UnsupportedOperationException(
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+    }
 }
