@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
+import com.netflix.conductor.redis.dynoqueue.RedisPinger;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
@@ -28,7 +29,7 @@ abstract class JedisCommandsConfigurer {
 
     @Bean
     public HostSupplier hostSupplier(RedisProperties properties) {
-        return new ConfigurationHostSupplier(properties);
+        return new ConfigurationHostSupplier(properties, new RedisPinger());
     }
 
     @Bean(name = DEFAULT_CLIENT_INJECTION_NAME)

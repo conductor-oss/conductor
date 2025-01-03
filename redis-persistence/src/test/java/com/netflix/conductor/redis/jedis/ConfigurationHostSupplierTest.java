@@ -19,28 +19,33 @@ import org.junit.Test;
 
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
+import com.netflix.conductor.redis.dynoqueue.RedisPinger;
 import com.netflix.dyno.connectionpool.Host;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConfigurationHostSupplierTest {
 
     private RedisProperties properties;
+    private RedisPinger pinger;
 
     private ConfigurationHostSupplier configurationHostSupplier;
 
     @Before
     public void setUp() {
         properties = mock(RedisProperties.class);
-        configurationHostSupplier = new ConfigurationHostSupplier(properties);
+        pinger = mock(RedisPinger.class);
+        configurationHostSupplier = new ConfigurationHostSupplier(properties, pinger);
     }
 
     @Test
     public void getHost() {
         when(properties.getHosts()).thenReturn("dyno1:8102:us-east-1c");
+        when(pinger.pingWithRetry(any())).thenReturn(true);
 
         List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(1, hosts.size());
@@ -55,6 +60,7 @@ public class ConfigurationHostSupplierTest {
     @Test
     public void getMultipleHosts() {
         when(properties.getHosts()).thenReturn("dyno1:8102:us-east-1c;dyno2:8103:us-east-1c");
+        when(pinger.pingWithRetry(any())).thenReturn(true);
 
         List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(2, hosts.size());
@@ -75,6 +81,7 @@ public class ConfigurationHostSupplierTest {
     @Test
     public void getAuthenticatedHost() {
         when(properties.getHosts()).thenReturn("redis1:6432:us-east-1c:password");
+        when(pinger.pingWithRetry(any())).thenReturn(true);
 
         List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(1, hosts.size());
