@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.event.WorkflowCreationEvent;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
@@ -50,6 +52,7 @@ import com.netflix.conductor.core.execution.tasks.*;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -93,7 +96,7 @@ public class TestWorkflowExecutor {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
         public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper);
+            return new SubWorkflow(objectMapper, mock(StartWorkflowOperation.class));
         }
 
         @Bean(TASK_TYPE_LAMBDA)
@@ -151,6 +154,8 @@ public class TestWorkflowExecutor {
 
     @Autowired private Map<String, Evaluator> evaluators;
 
+    private ApplicationEventPublisher eventPublisher;
+
     @Before
     public void init() {
         executionDAOFacade = mock(ExecutionDAOFacade.class);
@@ -160,6 +165,7 @@ public class TestWorkflowExecutor {
         taskStatusListener = mock(TaskStatusListener.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         executionLockService = mock(ExecutionLockService.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
 
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
         IDGenerator idGenerator = new IDGenerator();
@@ -224,7 +230,8 @@ public class TestWorkflowExecutor {
                         executionLockService,
                         systemTaskRegistry,
                         parametersUtils,
-                        idGenerator);
+                        idGenerator,
+                        eventPublisher);
     }
 
     @Test
@@ -2104,6 +2111,20 @@ public class TestWorkflowExecutor {
         assertTrue(workflow.getOutput().containsKey("conductor.failure_workflow"));
         assertNotNull(workflow.getFailedTaskId());
         assertTrue(!workflow.getFailedReferenceTaskNames().isEmpty());
+
+        ArgumentCaptor<WorkflowCreationEvent> argumentCaptor =
+                ArgumentCaptor.forClass(WorkflowCreationEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(argumentCaptor.capture());
+        StartWorkflowInput startWorkflowInput = argumentCaptor.getValue().getStartWorkflowInput();
+
+        assertEquals(workflow.getCorrelationId(), startWorkflowInput.getCorrelationId());
+        assertEquals(
+                workflow.getWorkflowId(), startWorkflowInput.getWorkflowInput().get("workflowId"));
+        assertEquals(
+                failedTask.getTaskId(), startWorkflowInput.getWorkflowInput().get("failureTaskId"));
+        assertNotNull(
+                failedTask.getTaskId(),
+                startWorkflowInput.getWorkflowInput().get("failedWorkflow"));
     }
 
     @Test

@@ -12,11 +12,7 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +30,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -41,10 +38,7 @@ import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
@@ -57,6 +51,11 @@ public class WorkflowServiceTest {
         @Bean
         public WorkflowExecutor workflowExecutor() {
             return mock(WorkflowExecutor.class);
+        }
+
+        @Bean
+        public StartWorkflowOperation startWorkflowOperation() {
+            return mock(StartWorkflowOperation.class);
         }
 
         @Bean
@@ -73,8 +72,10 @@ public class WorkflowServiceTest {
         public WorkflowService workflowService(
                 WorkflowExecutor workflowExecutor,
                 ExecutionService executionService,
-                MetadataService metadataService) {
-            return new WorkflowServiceImpl(workflowExecutor, executionService, metadataService);
+                MetadataService metadataService,
+                StartWorkflowOperation startWorkflowOperation) {
+            return new WorkflowServiceImpl(
+                    workflowExecutor, executionService, metadataService, startWorkflowOperation);
         }
     }
 
