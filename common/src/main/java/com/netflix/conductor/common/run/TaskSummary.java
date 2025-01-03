@@ -89,6 +89,22 @@ public class TaskSummary {
     private int workflowPriority;
 
     @ProtoField(id = 20)
+    private String taskDescription;
+
+    @ProtoField(id = 21)
+    private String referenceTaskName;
+
+    @ProtoField(id = 22)
+    private int retryCount;
+
+    /*
+     * In Netflix/conductor "domain" ProtoField number is 20.
+     * Since 20,21 and 22 are already used, using 23 for "domain".
+     *
+     * https://protobuf.dev/programming-guides/proto2/#consequences
+     * https://groups.google.com/g/protobuf/c/tdJua5Q_ewU
+     */
+    @ProtoField(id = 23)
     private String domain;
 
     public TaskSummary() {}
@@ -112,6 +128,11 @@ public class TaskSummary {
         this.status = task.getStatus();
         this.reasonForIncompletion = task.getReasonForIncompletion();
         this.queueWaitTime = task.getQueueWaitTime();
+        if (task.getWorkflowTask() != null) {
+            this.taskDescription = task.getWorkflowTask().getDescription();
+        }
+        this.referenceTaskName = task.getReferenceTaskName();
+        this.retryCount = task.getRetryCount();
         this.domain = task.getDomain();
         if (task.getInputData() != null) {
             this.input = SummaryUtil.serializeInputOutput(task.getInputData());
@@ -402,6 +423,48 @@ public class TaskSummary {
     }
 
     /**
+     * @return the taskDescription
+     */
+    public String getTaskDescription() {
+        return taskDescription;
+    }
+
+    /**
+     * @param taskDescription the taskDescription to set
+     */
+    public void setTaskDescription(String taskDescription) {
+        this.taskDescription = taskDescription;
+    }
+
+    /**
+     * @return the referenceTaskName
+     */
+    public String getReferenceTaskName() {
+        return referenceTaskName;
+    }
+
+    /**
+     * @param referenceTaskName the referenceTaskName to set
+     */
+    public void setReferenceTaskName(String referenceTaskName) {
+        this.referenceTaskName = referenceTaskName;
+    }
+
+    /**
+     * @return the retryCount
+     */
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    /**
+     * @param retryCount the retryCount to set
+     */
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    /**
      * @return the domain that the task was scheduled in
      */
     public String getDomain() {
@@ -439,6 +502,9 @@ public class TaskSummary {
                 && Objects.equals(getTaskDefName(), that.getTaskDefName())
                 && getTaskType().equals(that.getTaskType())
                 && getTaskId().equals(that.getTaskId())
+                && Objects.equals(getTaskDescription(), that.getTaskDescription())
+                && Objects.equals(getReferenceTaskName(), that.getReferenceTaskName())
+                && getRetryCount() == that.getRetryCount()
                 && Objects.equals(getDomain(), that.getDomain());
     }
 
@@ -460,6 +526,9 @@ public class TaskSummary {
                 getTaskType(),
                 getTaskId(),
                 getWorkflowPriority(),
+                getTaskDescription(),
+                getReferenceTaskName(),
+                getRetryCount(),
                 getDomain());
     }
 }
