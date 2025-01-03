@@ -33,7 +33,7 @@ import com.netflix.dyno.connectionpool.impl.utils.CollectionUtils;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
 import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
-import com.netflix.dyno.queues.shard.DynoShardSupplier;
+import com.netflix.dyno.queues.shard.SingleShardSupplier;
 
 import com.google.inject.ProvisionException;
 import redis.clients.jedis.commands.JedisCommands;
@@ -57,7 +57,7 @@ public class RedisCommonConfiguration {
         }
         String localDC =
                 properties.getAvailabilityZone().replaceAll(properties.getDataCenterRegion(), "");
-        return new DynoShardSupplier(hostSupplier, properties.getDataCenterRegion(), localDC);
+        return new SingleShardSupplier("custom");
     }
 
     @Bean
