@@ -29,6 +29,7 @@ public interface Worker {
     String PROP_ALL_WORKERS = "all";
     String PROP_LOG_INTERVAL = "log_interval";
     String PROP_POLL_INTERVAL = "poll_interval";
+    String PROP_LEASE_EXTEND_ENABLED = "leaseExtendEnabled";
     String PROP_PAUSED = "paused";
 
     /**
@@ -89,6 +90,10 @@ public interface Worker {
      */
     default int getPollingInterval() {
         return PropertyFactory.getInteger(getTaskDefName(), PROP_POLL_INTERVAL, 1000);
+    }
+
+    default boolean leaseExtendEnabled() {
+        return PropertyFactory.getBoolean(getTaskDefName(), PROP_LEASE_EXTEND_ENABLED, false);
     }
 
     static Worker create(String taskType, Function<Task, TaskResult> executor) {

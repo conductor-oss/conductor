@@ -39,6 +39,7 @@ export default function TaskDetails({
         {tabIndex === 0 && (
           <WorkflowVisualizer
             maxHeightOverride
+            maxWidthOverride
             pannable
             zoomable
             zoom={0.7}
@@ -48,9 +49,9 @@ export default function TaskDetails({
               const selectedTaskRefName =
                 data?.data?.task?.executionData?.status === "PENDING"
                   ? pendingTaskSelection(data?.data?.task)?.workflowTask
-                    ?.taskReferenceName
+                      ?.taskReferenceName
                   : taskWithLatestIteration(execution?.tasks, { ref: data.id })
-                    ?.referenceTaskName;
+                      ?.referenceTaskName;
               setSelectedNode(data);
               setSelectedTask({ ref: selectedTaskRefName });
             }}
