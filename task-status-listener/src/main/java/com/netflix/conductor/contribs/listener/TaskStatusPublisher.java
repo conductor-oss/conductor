@@ -100,6 +100,12 @@ public class TaskStatusPublisher implements TaskStatusListener {
         this.rcm = rcm;
         this.executionDAOFacade = executionDAOFacade;
         this.subscribedTaskStatusList = subscribedTaskStatuses;
+        if (this.subscribedTaskStatusList.isEmpty()) {
+            LOGGER.error(
+                    "SubscribedTaskStatusList is empty, none of the notification will be sent.");
+        } else {
+            LOGGER.info("SubscribedTaskStatusList {}", this.subscribedTaskStatusList);
+        }
         validateSubscribedTaskStatuses(subscribedTaskStatuses);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
