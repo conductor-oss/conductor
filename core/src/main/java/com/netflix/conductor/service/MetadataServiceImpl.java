@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+import javax.script.ScriptException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +30,11 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -118,7 +123,40 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public void updateWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setUpdateTime(System.currentTimeMillis());
+        validateScriptExpression(workflowDef);
         metadataDAO.updateWorkflowDef(workflowDef);
+    }
+
+    /** This function is used to eval condition script before saving the workflow */
+    private void validateScriptExpression(WorkflowDef workflowDef) {
+        List<WorkflowTask> tasks =
+                workflowDef.getTasks().stream()
+                        .filter(
+                                t ->
+                                        t.getType().equalsIgnoreCase("decision")
+                                                || t.getType().equalsIgnoreCase("switch"))
+                        .collect(Collectors.toList());
+        for (WorkflowTask task : tasks) {
+            String taskType = task.getType();
+            String case0 = task.getCaseExpression();
+
+            Map<String, Object> map = task.getInputParameters();
+            if (task.getType().equalsIgnoreCase("decision")
+                    || task.getType().equalsIgnoreCase("switch")) {
+                try {
+                    if (task.getCaseExpression() != null) {
+                        Object returnValue = ScriptEvaluator.eval(task.getCaseExpression(), map);
+                    } else if (task.getEvaluatorType().equalsIgnoreCase("javascript")) {
+                        Object returnValue = ScriptEvaluator.eval(task.getExpression(), map);
+                    }
+                } catch (ScriptException e) {
+                    throw new IllegalArgumentException(
+                            String.format(
+                                    "Decision task condition is not well formated: %s",
+                                    e.getMessage()));
+                }
+            }
+        }
     }
 
     /**
@@ -171,6 +209,7 @@ public class MetadataServiceImpl implements MetadataService {
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         workflowDef.setCreateTime(System.currentTimeMillis());
+        validateScriptExpression(workflowDef);
         metadataDAO.createWorkflowDef(workflowDef);
     }
 
