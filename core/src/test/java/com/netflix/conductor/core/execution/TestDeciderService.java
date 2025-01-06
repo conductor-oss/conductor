@@ -253,19 +253,19 @@ public class TestDeciderService {
 
         TaskModel taskPublishCount = new TaskModel();
         taskPublishCount.setTaskType(taskType.getName());
-        taskPublishCount.setScheduledTime(System.currentTimeMillis() - 120_000);
+        taskPublishCount.setScheduledTime(System.currentTimeMillis() - 900000 - 1);
         taskPublishCount.setStatus(TaskModel.Status.SCHEDULED);
         taskPublishCount.setWorkflowTask(workflowTask);
         deciderService.checkTaskPublishTimeout(taskType, taskPublishCount);
         assertEquals(1, taskPublishCount.getPublishCount());
 
-        taskPublishCount.setLastPublishTime(System.currentTimeMillis() - 120000);
+        taskPublishCount.setLastPublishTime(System.currentTimeMillis() - 900000 - 1);
         deciderService.checkTaskPublishTimeout(taskType, taskPublishCount);
         assertEquals(2, taskPublishCount.getPublishCount());
 
         boolean exceptionCreated = false;
         try {
-            taskPublishCount.setLastPublishTime(System.currentTimeMillis() - 120000);
+            taskPublishCount.setLastPublishTime(System.currentTimeMillis() - 900000 - 1);
             taskPublishCount.setScheduledTime(System.currentTimeMillis() - 182 * 24 * 3600 * 1000L);
             deciderService.checkTaskPublishTimeout(taskType, taskPublishCount);
         } catch (TerminateWorkflowException excep) {
