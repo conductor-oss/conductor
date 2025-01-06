@@ -33,8 +33,8 @@ jobs:
           ./gradlew -p tests test
         env:
           CONDUCTOR_SERVER_URL: ${{ secrets.CONDUCTOR_SERVER_URL }}
-          CONDUCTOR_SERVER_AUTH_KEY: ${{ secrets.CONDUCTOR_SERVER_AUTH_KEY }}
-          CONDUCTOR_SERVER_AUTH_SECRET: ${{ secrets.CONDUCTOR_SERVER_AUTH_SECRET }}
+          CONDUCTOR_AUTH_KEY: ${{ secrets.CONDUCTOR_AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ secrets.CONDUCTOR_AUTH_SECRET }}
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: always()
