@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.contribs.listener.statuschange;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 @JsonFilter("SecretRemovalFilter")
 class StatusChangeNotification extends WorkflowSummary {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusChangePublisher.class);
+    private String domainGroupMoId = "";
+    private String accountMoId = "";
     private ObjectMapper objectMapper = new ObjectMapper();
     private StatusNotifier statusNotifier;
 
@@ -48,6 +51,21 @@ class StatusChangeNotification extends WorkflowSummary {
                 throw new RuntimeException(e);
             }
         }
+
+        boolean isFusionMetaPresent = workflow.getInput().containsKey("_ioMeta");
+        if (!isFusionMetaPresent) {
+            return;
+        }
+
+        LinkedHashMap fusionMeta = (LinkedHashMap) workflow.getInput().get("_ioMeta");
+        domainGroupMoId =
+                fusionMeta.containsKey("DomainGroupMoId")
+                        ? fusionMeta.get("DomainGroupMoId").toString()
+                        : "";
+        accountMoId =
+                fusionMeta.containsKey("AccountMoId")
+                        ? fusionMeta.get("AccountMoId").toString()
+                        : "";
     }
 
     public StatusNotifier getStatusNotifier() {
@@ -95,5 +113,13 @@ class StatusChangeNotification extends WorkflowSummary {
             throw new RuntimeException(e);
         }
         return jsonString;
+    }
+
+    public String getDomainGroupMoId() {
+        return domainGroupMoId;
+    }
+
+    public String getAccountMoId() {
+        return accountMoId;
     }
 }
