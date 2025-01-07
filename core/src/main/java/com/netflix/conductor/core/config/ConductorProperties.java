@@ -229,16 +229,15 @@ public class ConductorProperties {
     private int taskExecLogSizeLimit = 10;
 
     /**
-     * This threshold defines the default number of executions after which SystemTasks implementing
-     * getEvaluationOffset should begin postponing execution.
+     * This property defines the number of poll counts (executions) after which SystemTasks
+     * implementing getEvaluationOffset should begin postponing the next execution.
      *
      * @see
      *     com.netflix.conductor.core.execution.tasks.WorkflowSystemTask#getEvaluationOffset(TaskModel,
      *     long)
      * @see com.netflix.conductor.core.execution.tasks.Join#getEvaluationOffset(TaskModel, long)
      */
-    private int systemTaskPostponeThreshold =
-            200; // 10 seconds based on default systemTaskWorkerPollInterval of 50ms
+    private int systemTaskPostponeThreshold = 200;
 
     /**
      * Timeout used by {@link com.netflix.conductor.core.execution.tasks.SystemTaskWorker} when
