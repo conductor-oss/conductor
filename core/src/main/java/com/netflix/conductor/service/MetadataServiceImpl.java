@@ -145,9 +145,9 @@ public class MetadataServiceImpl implements MetadataService {
                     || task.getType().equalsIgnoreCase("switch")) {
                 try {
                     if (task.getCaseExpression() != null) {
-                        Object returnValue = ScriptEvaluator.eval(task.getCaseExpression(), map);
-                    } else if (task.getEvaluatorType().equalsIgnoreCase("javascript")) {
-                        Object returnValue = ScriptEvaluator.eval(task.getExpression(), map);
+                        ScriptEvaluator.eval(task.getCaseExpression(), map);
+                    } else if ("javascript".equalsIgnoreCase(task.getEvaluatorType())) {
+                        ScriptEvaluator.eval(task.getExpression(), map);
                     }
                 } catch (ScriptException e) {
                     throw new IllegalArgumentException(
