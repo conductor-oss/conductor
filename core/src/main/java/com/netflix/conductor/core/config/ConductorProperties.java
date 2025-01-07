@@ -241,11 +241,11 @@ public class ConductorProperties {
             200; // 10 seconds based on default systemTaskWorkerPollInterval of 50ms
 
     /**
-     * Timeout in milliseconds used by {@link
-     * com.netflix.conductor.core.execution.tasks.SystemTaskWorker} when polling, i.e.: call to
-     * {@link com.netflix.conductor.dao.QueueDAO#pop(String, int, int)}.
+     * Timeout used by {@link com.netflix.conductor.core.execution.tasks.SystemTaskWorker} when
+     * polling, i.e.: call to {@link com.netflix.conductor.dao.QueueDAO#pop(String, int, int)}.
      */
-    private int systemTaskQueuePopTimeout = 200;
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration systemTaskQueuePopTimeout = Duration.ofMillis(100);
 
     public String getStack() {
         return stack;
@@ -597,11 +597,11 @@ public class ConductorProperties {
         return systemTaskPostponeThreshold;
     }
 
-    public int getSystemTaskQueuePopTimeout() {
+    public Duration getSystemTaskQueuePopTimeout() {
         return systemTaskQueuePopTimeout;
     }
 
-    public void setSystemTaskQueuePopTimeout(int systemTaskQueuePopTimeout) {
+    public void setSystemTaskQueuePopTimeout(Duration systemTaskQueuePopTimeout) {
         this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
     }
 }
