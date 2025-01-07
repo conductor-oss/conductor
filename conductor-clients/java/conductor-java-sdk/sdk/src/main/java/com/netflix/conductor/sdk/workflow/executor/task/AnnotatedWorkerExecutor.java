@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.metrics.MetricsCollector;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
@@ -49,6 +50,8 @@ public class AnnotatedWorkerExecutor {
     protected Map<String, Integer> workerToPollingInterval = new HashMap<>();
 
     protected Map<String, String> workerDomains = new HashMap<>();
+
+    private MetricsCollector metricsCollector;
 
     private static final Set<String> scannedPackages = new HashSet<>();
 
@@ -197,12 +200,14 @@ public class AnnotatedWorkerExecutor {
         LOGGER.info("Starting workers with threadCount {}", workerToThreadCount);
         LOGGER.info("Worker domains {}", workerDomains);
 
-        taskRunner =
-                new TaskRunnerConfigurer.Builder(taskClient, workers)
-                        .withTaskThreadCount(workerToThreadCount)
-                        .withTaskToDomain(workerDomains)
-                        .build();
+        var builder = new TaskRunnerConfigurer.Builder(taskClient, workers)
+                .withTaskThreadCount(workerToThreadCount)
+                .withTaskToDomain(workerDomains);
+        if (metricsCollector != null) {
+            builder.withMetricsCollector(metricsCollector);
+        }
 
+        taskRunner = builder.build();
         taskRunner.init();
     }
 
@@ -214,5 +219,13 @@ public class AnnotatedWorkerExecutor {
     @VisibleForTesting
     TaskRunnerConfigurer getTaskRunner() {
         return taskRunner;
+    }
+
+    public MetricsCollector getMetricsCollector() {
+        return metricsCollector;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

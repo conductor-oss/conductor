@@ -15,6 +15,7 @@ package com.netflix.conductor.client.spring;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -30,6 +31,7 @@ import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.client.metrics.MetricsCollector;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
 import com.netflix.conductor.sdk.workflow.executor.task.AnnotatedWorkerExecutor;
@@ -79,7 +81,8 @@ public class ConductorClientAutoConfiguration {
     public TaskRunnerConfigurer taskRunnerConfigurer(Environment env,
                                                      TaskClient taskClient,
                                                      ClientProperties clientProperties,
-                                                     List<Worker> workers) {
+                                                     List<Worker> workers,
+                                                     Optional<MetricsCollector> metricsCollector) {
         Map<String, Integer> taskThreadCount = new HashMap<>();
         for (Worker worker : workers) {
             String key = "conductor.worker." + worker.getTaskDefName() + ".threadCount";
@@ -94,15 +97,16 @@ public class ConductorClientAutoConfiguration {
             clientProperties.setTaskThreadCount(taskThreadCount);
         }
 
-        return new TaskRunnerConfigurer.Builder(taskClient, workers)
+        TaskRunnerConfigurer.Builder builder = new TaskRunnerConfigurer.Builder(taskClient, workers)
                 .withTaskThreadCount(clientProperties.getTaskThreadCount())
                 .withThreadCount(clientProperties.getThreadCount())
                 .withSleepWhenRetry((int) clientProperties.getSleepWhenRetryDuration().toMillis())
                 .withUpdateRetryCount(clientProperties.getUpdateRetryCount())
                 .withTaskToDomain(clientProperties.getTaskToDomain())
                 .withShutdownGracePeriodSeconds(clientProperties.getShutdownGracePeriodSeconds())
-                .withTaskPollTimeout(clientProperties.getTaskPollTimeout())
-                .build();
+                .withTaskPollTimeout(clientProperties.getTaskPollTimeout());
+        metricsCollector.ifPresent(builder::withMetricsCollector);
+        return builder.build();
     }
 
     @Bean
