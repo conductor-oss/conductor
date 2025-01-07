@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.integration
 
+import com.netflix.conductor.core.operation.StartWorkflowOperation
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.Task
@@ -39,6 +40,9 @@ class DynamicForkJoinSpec extends AbstractSpecification {
 
     @Autowired
     SubWorkflow subWorkflowTask
+
+    @Autowired
+    StartWorkflowOperation startWorkflowOperation;
 
     @Shared
     def DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest"
@@ -866,7 +870,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowDef.ownerEmail = 'test@harness.com'
 
         def startWorkflowInput = new StartWorkflowInput(name: workflowDef.name, version: workflowDef.version, workflowInput: workflowInput, workflowDefinition: workflowDef)
-        def workflowInstanceId = workflowExecutor.startWorkflow(startWorkflowInput)
+        def workflowInstanceId = startWorkflowOperation.execute(startWorkflowInput)
 
         then: "verify that workflow failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
