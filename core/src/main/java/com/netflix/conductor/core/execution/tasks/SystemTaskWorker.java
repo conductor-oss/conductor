@@ -52,6 +52,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
     private final ExecutionService executionService;
+    private final int queuePopTimeout;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
@@ -67,6 +68,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.executionService = executionService;
+        this.queuePopTimeout = (int) properties.getSystemTaskQueuePopTimeout().toMillis();
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
     }
@@ -114,7 +116,8 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
-            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, 200);
+            List<String> polledTaskIds =
+                    queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
