@@ -55,8 +55,9 @@ services:
       - node.name=conductor-opensearch # Name the node that will run in this container
       - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
       - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=P4zzW)rd>>123_
     volumes:
-      - esdata-conductor:/usr/share/opensearch/data
+      - osdata-conductor:/usr/share/opensearch/data
     networks:
       - internal
     ports:
@@ -73,7 +74,7 @@ services:
         max-file: "3"
 
 volumes:
-  esdata-conductor:
+  osdata-conductor:
     driver: local
 
 networks:
