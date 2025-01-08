@@ -33,9 +33,11 @@ import org.testcontainers.utility.DockerImageName;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -49,6 +51,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("unchecked")
@@ -360,12 +364,19 @@ public class HttpTaskTest {
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
         SystemTaskRegistry systemTaskRegistry = mock(SystemTaskRegistry.class);
 
+        TaskStatusListener mockTaskStatusListener = mock(TaskStatusListener.class);
+        ExecutionDAOFacade mockExecutionDAOFacade = mock(ExecutionDAOFacade.class);
+        doNothing().when(mockTaskStatusListener).onTaskScheduled(any());
+        doNothing().when(mockExecutionDAOFacade).updateTask(any());
+
         new DeciderService(
                         new IDGenerator(),
                         parametersUtils,
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        mockTaskStatusListener,
+                        mockExecutionDAOFacade,
                         Collections.emptyMap(),
                         Duration.ofMinutes(60))
                 .decide(workflow);

@@ -41,6 +41,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -61,6 +62,7 @@ import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -93,6 +95,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -178,6 +182,11 @@ public class TestDeciderOutcomes {
         taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
+        TaskStatusListener mockTaskStatusListener = mock(TaskStatusListener.class);
+        ExecutionDAOFacade mockExecutionDAOFacade = mock(ExecutionDAOFacade.class);
+        doNothing().when(mockTaskStatusListener).onTaskScheduled(any());
+        doNothing().when(mockExecutionDAOFacade).updateTask(any());
+
         this.deciderService =
                 new DeciderService(
                         new IDGenerator(),
@@ -185,6 +194,8 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        mockTaskStatusListener,
+                        mockExecutionDAOFacade,
                         taskMappers,
                         Duration.ofMinutes(60));
     }

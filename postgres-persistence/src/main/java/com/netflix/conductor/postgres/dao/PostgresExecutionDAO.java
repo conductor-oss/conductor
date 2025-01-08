@@ -1007,4 +1007,9 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
         Preconditions.checkNotNull(
                 task.getReferenceTaskName(), "Task reference name cannot be null");
     }
+
+    public Set<String> getWorkflowIdSetByCorrelationId(String correlationId) {
+        throw new UnsupportedOperationException(
+                "This method is not implemented in PostgresExecutionDAO. Please use ExecutionDAOFacade instead.");
+    }
 }

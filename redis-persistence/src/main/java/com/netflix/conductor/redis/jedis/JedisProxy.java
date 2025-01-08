@@ -32,6 +32,7 @@ import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
 import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 
 import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
@@ -227,5 +228,9 @@ public class JedisProxy {
 
     public Long scard(String key) {
         return jedisCommands.scard(key);
+    }
+
+    public String set(String key, String value, SetParams setParams) {
+        return jedisCommands.set(key, value, setParams);
     }
 }

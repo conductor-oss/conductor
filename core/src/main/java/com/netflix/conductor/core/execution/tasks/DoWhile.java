@@ -39,11 +39,28 @@ public class DoWhile extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DoWhile.class);
 
+    private String TASK_DO_WHILE_MAX_ALLOWED_ITERATION = "task.dowhile.max.allowed.iteration";
+    private int TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE = 100;
+
+    private int MAX_ALLOWED_ITERATION = TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE;
+
     private final ParametersUtils parametersUtils;
 
     public DoWhile(ParametersUtils parametersUtils) {
         super(TASK_TYPE_DO_WHILE);
         this.parametersUtils = parametersUtils;
+        String maxValueString =
+                System.getProperty(
+                        TASK_DO_WHILE_MAX_ALLOWED_ITERATION,
+                        String.valueOf(TASK_DO_WHILE_MAX_ALLOWED_ITERATION_DEFAULT_VALUE));
+        try {
+            MAX_ALLOWED_ITERATION = Integer.parseInt(maxValueString);
+            LOGGER.info("Max Allowed Iteration is set to {}", MAX_ALLOWED_ITERATION);
+        } catch (Exception ee) {
+            LOGGER.error(
+                    "Error while setting MAX_ALLOWED_ITERATION. Configured value {} is not a number",
+                    maxValueString);
+        }
     }
 
     @Override
@@ -147,6 +164,22 @@ public class DoWhile extends WorkflowSystemTask {
                     doWhileTaskModel.getTaskId(),
                     shouldContinue);
             if (shouldContinue) {
+                if (doWhileTaskModel.getIteration() == MAX_ALLOWED_ITERATION) {
+                    String message =
+                            String.format(
+                                    "Terminating Loop <%s>. Maximum %d iteration is allowed for task id %s",
+                                    doWhileTaskModel.getReferenceTaskName(),
+                                    MAX_ALLOWED_ITERATION,
+                                    doWhileTaskModel.getTaskId());
+                    LOGGER.error(message);
+                    LOGGER.error(
+                            "Marking task {} failed with error workflowId {} correlationId {}",
+                            doWhileTaskModel.getTaskId(),
+                            workflow.getWorkflowId(),
+                            workflow.getCorrelationId());
+                    return updateLoopTask(
+                            doWhileTaskModel, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, message);
+                }
                 doWhileTaskModel.setIteration(doWhileTaskModel.getIteration() + 1);
                 doWhileTaskModel.addOutput("iteration", doWhileTaskModel.getIteration());
                 return scheduleNextIteration(doWhileTaskModel, workflow, workflowExecutor);
@@ -235,6 +268,12 @@ public class DoWhile extends WorkflowSystemTask {
                 taskModel.getTaskId(),
                 taskModel.getIteration() + 1);
         taskModel.setStatus(TaskModel.Status.COMPLETED);
+        return true;
+    }
+
+    private boolean updateLoopTask(TaskModel task, TaskModel.Status status, String failureReason) {
+        task.setReasonForIncompletion(failureReason);
+        task.setStatus(status);
         return true;
     }
 

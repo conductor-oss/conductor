@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
@@ -61,6 +63,25 @@ public class Join extends WorkflowSystemTask {
             }
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
+
+            // Check if task has more retries before evaluating if JOIN can be processed
+            WorkflowTask workflowTask = forkedTask.getWorkflowTask();
+            if (workflowTask != null) {
+                TaskDef taskDefinition = workflowTask.getTaskDefinition();
+                if (taskDefinition != null) {
+                    if (!taskStatus.isSuccessful()
+                            && taskStatus.isRetriable()
+                            && forkedTask.getRetryCount() < taskDefinition.getRetryCount()) {
+                        task.setStatus(TaskModel.Status.SKIPPED);
+                        failureReason.append(
+                                String.format(
+                                        "Join task evaluation for workflow %s is skipped since forked task %s has retries",
+                                        workflow.getWorkflowId(), forkedTask.getTaskId()));
+                        task.setReasonForIncompletion(failureReason.toString());
+                        return false;
+                    }
+                }
+            }
 
             // Only add to task output if it's not empty
             if (!forkedTask.getOutputData().isEmpty()) {

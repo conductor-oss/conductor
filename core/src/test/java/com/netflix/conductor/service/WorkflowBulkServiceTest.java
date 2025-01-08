@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 import jakarta.validation.ConstraintViolationException;
@@ -55,9 +56,17 @@ public class WorkflowBulkServiceTest {
         }
 
         @Bean
+        ExecutionDAOFacade executionDAOFacade() {
+            return mock(ExecutionDAOFacade.class);
+        }
+
+        @Bean
         public WorkflowBulkService workflowBulkService(
-                WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
-            return new WorkflowBulkServiceImpl(workflowExecutor, workflowService);
+                WorkflowExecutor workflowExecutor,
+                WorkflowService workflowService,
+                ExecutionDAOFacade executionDAOFacade) {
+            return new WorkflowBulkServiceImpl(
+                    workflowExecutor, workflowService, executionDAOFacade);
         }
     }
 

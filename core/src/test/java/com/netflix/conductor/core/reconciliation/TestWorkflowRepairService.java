@@ -24,6 +24,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.*;
+import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -37,12 +38,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestWorkflowRepairService {
 
@@ -202,7 +198,8 @@ public class TestWorkflowRepairService {
         task.setTaskId("abcd");
         task.setCallbackAfterSeconds(60);
 
-        WorkflowSystemTask workflowSystemTask = new SubWorkflow(new ObjectMapper());
+        WorkflowSystemTask workflowSystemTask =
+                new SubWorkflow(new ObjectMapper(), mock(StartWorkflowOperation.class));
         when(systemTaskRegistry.get(TASK_TYPE_SUB_WORKFLOW)).thenReturn(workflowSystemTask);
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
