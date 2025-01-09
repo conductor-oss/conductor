@@ -530,10 +530,15 @@ public class WorkflowTask {
     }
 
     /**
-     * @param taskDefinition Task definition
+     * Sets the TaskDef for this instance. If the passed TaskDef does not have a name,
+     * this method will set it to the name of the current instance.
+     *
+     * NOTE: This method mutates the passed TaskDef object.
+     *
+     * @param taskDefinition The TaskDef to set. It may be modified by this method.
      */
     public void setTaskDefinition(TaskDef taskDefinition) {
-        if (taskDefinition != null && taskDefinition.getName() == null) {
+        if (taskDefinition != null) {
             taskDefinition.setName(this.name);
         }
         this.taskDefinition = taskDefinition;
