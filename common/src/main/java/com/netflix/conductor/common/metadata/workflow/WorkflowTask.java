@@ -538,7 +538,7 @@ public class WorkflowTask {
      * @param taskDefinition The TaskDef to set. It may be modified by this method.
      */
     public void setTaskDefinition(TaskDef taskDefinition) {
-        if (taskDefinition != null) {
+        if (taskDefinition != null && taskDefinition.getName() == null) {
             taskDefinition.setName(this.name);
         }
         this.taskDefinition = taskDefinition;
