@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -29,6 +30,7 @@ import jakarta.validation.ValidatorFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class WorkflowTaskTest {
@@ -75,5 +77,25 @@ public class WorkflowTaskTest {
         assertTrue(
                 validationErrors.contains(
                         "WorkflowTask taskReferenceName name cannot be empty or null"));
+    }
+
+    @Test
+    public void testSetTaskDefinition() {
+        WorkflowTask workflowTask = new WorkflowTask();
+        TaskDef taskDef = new TaskDef();
+
+        // Case 1: taskDefinition is not null and taskDefinition.getName() is null
+        taskDef.setName(null);
+        workflowTask.setTaskDefinition(taskDef);
+        assertEquals(workflowTask.getName(), taskDef.getName());
+
+        // Case 2: taskDefinition is not null and taskDefinition.getName() is not null
+        taskDef.setName("existingName");
+        workflowTask.setTaskDefinition(taskDef);
+        assertEquals("existingName", taskDef.getName());
+
+        // Case 3: taskDefinition is null
+        workflowTask.setTaskDefinition(null);
+        assertNull(workflowTask.getTaskDefinition());
     }
 }
