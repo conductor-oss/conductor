@@ -533,6 +533,9 @@ public class WorkflowTask {
      * @param taskDefinition Task definition
      */
     public void setTaskDefinition(TaskDef taskDefinition) {
+        if (taskDefinition != null && taskDefinition.getName() == null) {
+            taskDefinition.setName(this.name);
+        }
         this.taskDefinition = taskDefinition;
     }
 
