@@ -21,9 +21,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowTestRequest;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.Http;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
@@ -182,6 +185,28 @@ public class WorkflowClientTests {
     @Test
     void testExecuteWorkflow() {
         // TODO
+    }
+
+    @Test
+    void testWorkflow() {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("testable-task");
+        task.setTaskReferenceName("testable-task-ref");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testable-flow");
+        workflowDef.setTasks(List.of(task));
+
+        WorkflowTestRequest testRequest = new WorkflowTestRequest();
+        testRequest.setName("testable-flow");
+        testRequest.setWorkflowDef(workflowDef);
+        testRequest.setTaskRefToMockOutput(Map.of(
+            "testable-task-ref",
+            List.of(new WorkflowTestRequest.TaskMock(TaskResult.Status.COMPLETED, Map.of("result", "ok")))
+        ));
+
+        Workflow workflow = workflowClient.testWorkflow(testRequest);
+        Assertions.assertEquals("ok", workflow.getOutput().get("result"));
     }
 
     StartWorkflowRequest getStartWorkflowRequest() {

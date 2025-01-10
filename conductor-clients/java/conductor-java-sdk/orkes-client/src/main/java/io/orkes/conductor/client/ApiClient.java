@@ -52,6 +52,10 @@ public final class ApiClient extends ConductorClient {
         super(rootUri);
     }
 
+    public ApiClient() {
+        this(builder().useEnvVariables(true));
+    }
+
     private ApiClient(ApiClientBuilder builder) {
         super(builder);
     }
@@ -161,7 +165,29 @@ public final class ApiClient extends ConductorClient {
 
         @Override
         public ApiClient build() {
+            if (isUseEnvVariables()) {
+                applyEnvVariables();
+            }
+
             return new ApiClient(this);
+        }
+
+        protected void applyEnvVariables() {
+            super.applyEnvVariables();
+
+            String conductorAuthKey = System.getenv("CONDUCTOR_AUTH_KEY");
+            if (conductorAuthKey == null) {
+                conductorAuthKey = System.getenv("CONDUCTOR_SERVER_AUTH_KEY"); // for backwards compatibility
+            }
+
+            String conductorAuthSecret = System.getenv("CONDUCTOR_AUTH_SECRET");
+            if (conductorAuthSecret == null) {
+                conductorAuthSecret = System.getenv("CONDUCTOR_SERVER_AUTH_SECRET"); // for backwards compatibility
+            }
+
+            if (conductorAuthKey != null && conductorAuthSecret != null) {
+                this.credentials(conductorAuthKey, conductorAuthSecret);
+            }
         }
     }
 

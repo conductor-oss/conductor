@@ -36,6 +36,7 @@ import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.run.WorkflowTestRequest;
 
 import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
 import io.orkes.conductor.client.model.WorkflowRun;
@@ -200,6 +201,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
 
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName) {
         workflowClient.skipTaskFromWorkflow(workflowId, taskReferenceName);
+    }
+
+    public Workflow testWorkflow(WorkflowTestRequest testRequest) {
+        return workflowClient.testWorkflow(testRequest);
     }
 
     public SearchResult<WorkflowSummary> search(String query) {

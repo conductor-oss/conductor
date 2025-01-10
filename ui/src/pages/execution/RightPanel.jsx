@@ -46,7 +46,7 @@ export default function RightPanel({
   const taskResult =
     selectedNode?.data?.task?.executionData?.status === "PENDING"
       ? pendingTaskSelection(selectedNode?.data?.task)
-      : taskWithLatestIteration(execution?.tasks, selectedTask?.ref);
+      : taskWithLatestIteration(execution?.tasks, selectedTask);
 
   const dfOptions = useMemo(
     () => dag && dag.getSiblings(selectedTask),

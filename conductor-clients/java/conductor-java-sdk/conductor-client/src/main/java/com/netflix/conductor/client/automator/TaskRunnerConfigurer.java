@@ -260,6 +260,9 @@ public class TaskRunnerConfigurer {
         public TaskRunnerConfigurer.Builder withTaskThreadCount(
                 Map<String, Integer> taskToThreadCount) {
             this.taskToThreadCount = taskToThreadCount;
+            if (taskToThreadCount.values().stream().anyMatch(v -> v < 1)) {
+                throw new IllegalArgumentException("No. of threads cannot be less than 1");
+            }
             return this;
         }
 
