@@ -149,7 +149,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
     @Override
     public void onTaskScheduled(TaskModel task) {
         if (subscribedTaskStatusList.contains(TaskModel.Status.SCHEDULED.name())) {
-            enqueueTask(task);
+            enqueueTask(task.copyWithDeepInputOutput());
         }
     }
 
@@ -191,7 +191,7 @@ public class TaskStatusPublisher implements TaskStatusListener {
     @Override
     public void onTaskInProgress(TaskModel task) {
         if (subscribedTaskStatusList.contains(TaskModel.Status.IN_PROGRESS.name())) {
-            enqueueTask(task);
+            enqueueTask(task.copyWithDeepInputOutput());
         }
     }
 

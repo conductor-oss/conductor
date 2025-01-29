@@ -12,23 +12,30 @@
  */
 package com.netflix.conductor.model;
 
+import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.utils.SummaryUtil;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.protobuf.Any;
 
 public class TaskModel {
+    private static final Logger logger = LoggerFactory.getLogger(SummaryUtil.class);
 
     public enum Status {
         IN_PROGRESS(false, true, true),
@@ -637,6 +644,14 @@ public class TaskModel {
         return copy;
     }
 
+    public TaskModel copyWithDeepInputOutput() {
+        TaskModel copy = new TaskModel();
+        BeanUtils.copyProperties(this, copy);
+        copy.inputData = deepCopyInputOutput(this.inputData);
+        copy.outputData = deepCopyInputOutput(this.outputData);
+        return copy;
+    }
+
     public void externalizeInput(String path) {
         this.inputPayload = this.inputData;
         this.inputData = new HashMap<>();
@@ -920,5 +935,34 @@ public class TaskModel {
         this.outputData.clear();
         this.outputPayload.clear();
         this.externalOutputPayloadStoragePath = null;
+    }
+
+    private Map<String, Object> deepCopyInputOutput(Map<String, Object> map) {
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        long startCpuTime = threadMXBean.getThreadCpuTime(Thread.currentThread().getId());
+
+        try {
+            if (map == null) {
+                return null;
+            }
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            try {
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+                oos.writeObject(map);
+                oos.close();
+
+                ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+                ObjectInputStream ois = new ObjectInputStream(bis);
+                return (Map<String, Object>) ois.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                logger.error("Exception while creating a deep copy of input or output");
+                throw new RuntimeException(e);
+            }
+        } finally {
+            long endCpuTime = threadMXBean.getThreadCpuTime(Thread.currentThread().getId());
+            long ns = endCpuTime - startCpuTime;
+            logger.info("************ deepCopyInputOutput: " + ns / 1000000000 + " ms");
+        }
     }
 }
