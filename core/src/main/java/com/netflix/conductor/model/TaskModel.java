@@ -13,8 +13,6 @@
 package com.netflix.conductor.model;
 
 import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -938,31 +936,23 @@ public class TaskModel {
     }
 
     private Map<String, Object> deepCopyInputOutput(Map<String, Object> map) {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        long startCpuTime = threadMXBean.getThreadCpuTime(Thread.currentThread().getId());
+        if (map == null) {
+            return null;
+        }
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bos)) {
 
-        try {
-            if (map == null) {
-                return null;
-            }
+            oos.writeObject(map);
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            try {
-                ObjectOutputStream oos = new ObjectOutputStream(bos);
-                oos.writeObject(map);
-                oos.close();
-
-                ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-                ObjectInputStream ois = new ObjectInputStream(bis);
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+                    ObjectInputStream ois = new ObjectInputStream(bis)) {
                 return (Map<String, Object>) ois.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                logger.error("Exception while creating a deep copy of input or output");
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                throw e;
             }
-        } finally {
-            long endCpuTime = threadMXBean.getThreadCpuTime(Thread.currentThread().getId());
-            long ns = endCpuTime - startCpuTime;
-            logger.info("************ deepCopyInputOutput: " + ns / 1000000000 + " ms");
+        } catch (IOException | ClassNotFoundException e) {
+            logger.error("Exception while creating a deep copy of input or output");
+            throw new RuntimeException(e);
         }
     }
 }
