@@ -188,6 +188,97 @@ public class WorkflowTask {
     @ProtoField(id = 32)
     private boolean permissive;
 
+    @ProtoField(id = 33)
+    private CircuitBreakerConfig circuitBreakerConfig;
+
+    @ProtoField(id = 34)
+    private BulkheadConfig bulkheadConfig;
+
+    @ProtoMessage
+    public static class CircuitBreakerConfig {
+        @ProtoField(id = 1)
+        private int failureRateThreshold;
+
+        @ProtoField(id = 2)
+        private int slidingWindowSize;
+
+        @ProtoField(id = 3)
+        private int minimumNumberOfCalls;
+
+        @ProtoField(id = 4)
+        private int waitDurationInOpenState;
+
+        @ProtoField(id = 5)
+        private int permittedNumberOfCallsInHalfOpenState;
+
+        // Getters and setters
+        public int getFailureRateThreshold() {
+            return failureRateThreshold;
+        }
+
+        public void setFailureRateThreshold(int failureRateThreshold) {
+            this.failureRateThreshold = failureRateThreshold;
+        }
+
+        public int getSlidingWindowSize() {
+            return slidingWindowSize;
+        }
+
+        public void setSlidingWindowSize(int slidingWindowSize) {
+            this.slidingWindowSize = slidingWindowSize;
+        }
+
+        public int getMinimumNumberOfCalls() {
+            return minimumNumberOfCalls;
+        }
+
+        public void setMinimumNumberOfCalls(int minimumNumberOfCalls) {
+            this.minimumNumberOfCalls = minimumNumberOfCalls;
+        }
+
+        public int getWaitDurationInOpenState() {
+            return waitDurationInOpenState;
+        }
+
+        public void setWaitDurationInOpenState(int waitDurationInOpenState) {
+            this.waitDurationInOpenState = waitDurationInOpenState;
+        }
+
+        public int getPermittedNumberOfCallsInHalfOpenState() {
+            return permittedNumberOfCallsInHalfOpenState;
+        }
+
+        public void setPermittedNumberOfCallsInHalfOpenState(int permittedNumberOfCallsInHalfOpenState) {
+            this.permittedNumberOfCallsInHalfOpenState = permittedNumberOfCallsInHalfOpenState;
+        }
+    }
+
+    @ProtoMessage
+    public static class BulkheadConfig {
+        @ProtoField(id = 1)
+        private int maxConcurrentCalls;
+
+        @ProtoField(id = 2)
+        private int maxWaitDuration;
+
+        // Getters and setters
+        public int getMaxConcurrentCalls() {
+            return maxConcurrentCalls;
+        }
+
+        public void setMaxConcurrentCalls(int maxConcurrentCalls) {
+            this.maxConcurrentCalls = maxConcurrentCalls;
+        }
+
+        public int getMaxWaitDuration() {
+            return maxWaitDuration;
+        }
+
+        public void setMaxWaitDuration(int maxWaitDuration) {
+            this.maxWaitDuration = maxWaitDuration;
+        }
+    }
+
     /**
      * @return the name
      */
@@ -344,6 +435,22 @@ public class WorkflowTask {
      */
     public void setDynamicTaskNameParam(String dynamicTaskNameParam) {
         this.dynamicTaskNameParam = dynamicTaskNameParam;
+    }
+
+    public CircuitBreakerConfig getCircuitBreakerConfig() {
+        return circuitBreakerConfig;
+    }
+
+    public void setCircuitBreakerConfig(CircuitBreakerConfig circuitBreakerConfig) {
+        this.circuitBreakerConfig = circuitBreakerConfig;
+    }
+
+    public BulkheadConfig getBulkheadConfig() {
+        return bulkheadConfig;
+    }
+
+    public void setBulkheadConfig(BulkheadConfig bulkheadConfig) {
+        this.bulkheadConfig = bulkheadConfig;
     }
 
     /**
