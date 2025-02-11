@@ -248,7 +248,8 @@ public class WorkflowTask {
             return permittedNumberOfCallsInHalfOpenState;
         }
 
-        public void setPermittedNumberOfCallsInHalfOpenState(int permittedNumberOfCallsInHalfOpenState) {
+        public void setPermittedNumberOfCallsInHalfOpenState(
+                int permittedNumberOfCallsInHalfOpenState) {
             this.permittedNumberOfCallsInHalfOpenState = permittedNumberOfCallsInHalfOpenState;
         }
     }
