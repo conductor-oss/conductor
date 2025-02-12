@@ -489,7 +489,6 @@ public class TaskDef extends Auditable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         TaskDef taskDef = (TaskDef) o;
         return getRetryCount() == taskDef.getRetryCount()
                 && getTimeoutSeconds() == taskDef.getTimeoutSeconds()
