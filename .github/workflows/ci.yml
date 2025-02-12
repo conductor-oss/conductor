@@ -55,12 +55,12 @@ jobs:
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: "**/build/reports"
       - name: Store Buildscan URL
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-scan
           path: "buildscan.log"
@@ -95,14 +95,14 @@ jobs:
           component: true
 
       - name: Archive test screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: cypress-screenshots
           path: ui/cypress/screenshots
 
       - name: Archive test videos
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: cypress-videos
