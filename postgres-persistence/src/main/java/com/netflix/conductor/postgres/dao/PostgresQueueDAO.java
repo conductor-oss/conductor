@@ -450,30 +450,44 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         }
 
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true WHERE message_id IN ("
-                        + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
-                        + "deliver_on <= (current_timestamp + (1000 ||' microseconds')::interval) "
-                        + "ORDER BY priority DESC, deliver_on, created_on LIMIT ? FOR UPDATE SKIP LOCKED"
-                        + ") RETURNING message_id, priority, payload";
+                "WITH _queue_ids AS (SELECT message_id FROM queue_message"
+                        + " WHERE queue_name=?  AND popped=false AND deliver_on <= (current_timestamp + (1000 ||' microseconds')::interval)"
+                        + " ORDER BY priority DESC, deliver_on, created_on LIMIT ? FOR UPDATE SKIP LOCKED) UPDATE queue_message SET popped = true WHERE message_id = ANY(SELECT message_id FROM _queue_ids LIMIT ?)"
+                        + " RETURNING message_id, priority, payload";
 
-        return query(
-                connection,
-                POP_QUERY,
-                p ->
-                        p.addParameter(queueName)
-                                .addParameter(count)
-                                .executeAndFetch(
-                                        rs -> {
-                                            List<Message> results = new ArrayList<>();
-                                            while (rs.next()) {
-                                                Message m = new Message();
-                                                m.setId(rs.getString("message_id"));
-                                                m.setPriority(rs.getInt("priority"));
-                                                m.setPayload(rs.getString("payload"));
-                                                results.add(m);
-                                            }
-                                            return results;
-                                        }));
+        List<Message> result =
+                query(
+                        connection,
+                        POP_QUERY,
+                        p ->
+                                p.addParameter(queueName)
+                                        .addParameter(count)
+                                        .addParameter(count)
+                                        .executeAndFetch(
+                                                rs -> {
+                                                    List<Message> results = new ArrayList<>();
+                                                    while (rs.next()) {
+                                                        Message m = new Message();
+                                                        m.setId(rs.getString("message_id"));
+                                                        m.setPriority(rs.getInt("priority"));
+                                                        m.setPayload(rs.getString("payload"));
+                                                        results.add(m);
+                                                    }
+                                                    return results;
+                                                }));
+        if (result != null && result.size() > count) {
+            logger.error(
+                    "popMessages from Queue {}: result.size() > count --- size is {} count is {}",
+                    queueName,
+                    result.size(),
+                    count);
+            throw new IllegalStateException(
+                    "popMessages: result.size() > count --- size is "
+                            + result.size()
+                            + " count is "
+                            + count);
+        }
+        return result;
     }
 
     @Override
