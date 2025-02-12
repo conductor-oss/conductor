@@ -8,9 +8,9 @@ dependencies {
     testImplementation project(':conductor-redis-persistence')
     testImplementation project(':conductor-cassandra-persistence')
     testImplementation project(':conductor-es7-persistence')
-    testImplementation project(':conductor-grpc-server')
+//    testImplementation project(':conductor-grpc-server')
     testImplementation project(':conductor-client')
-    testImplementation project(':conductor-grpc-client')
+//    testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-json-jq-task')
     testImplementation project(':conductor-http-task')
 

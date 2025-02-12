@@ -24,16 +24,24 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Import;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.sqlite.dao.*;
+import com.netflix.conductor.sqlite.dao.metadata.SqliteEventHandlerMetadataDAO;
+import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
+import com.netflix.conductor.sqlite.dao.metadata.SqliteTaskMetadataDAO;
+import com.netflix.conductor.sqlite.dao.metadata.SqliteWorkflowMetadataDAO;
+
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.*;
+import jakarta.annotation.PostConstruct;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(SqliteProperties.class)
@@ -70,10 +78,35 @@ public class SqliteConfiguration {
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
     public SqliteMetadataDAO sqliteMetadataDAO(
+            SqliteTaskMetadataDAO taskMetadataDAO,
+            SqliteWorkflowMetadataDAO workflowMetadataDAO,
+            SqliteEventHandlerMetadataDAO eventHandlerMetadataDAO) {
+        return new SqliteMetadataDAO(taskMetadataDAO, workflowMetadataDAO, eventHandlerMetadataDAO);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    public SqliteEventHandlerMetadataDAO sqliteEventHandlerMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteEventHandlerMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    public SqliteWorkflowMetadataDAO sqliteWorkflowMetadataDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             SqliteProperties properties) {
-        return new SqliteMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
+        return new SqliteWorkflowMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    public SqliteTaskMetadataDAO sqliteTaskMetadataDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteTaskMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
