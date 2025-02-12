@@ -1,18 +1,33 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.sqlite.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.sqlite.config.SqliteProperties;
-import com.netflix.conductor.sqlite.util.ExecutorsUtil;
-import org.springframework.retry.support.RetryTemplate;
-
-import javax.sql.DataSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
+
+import org.springframework.retry.support.RetryTemplate;
+
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.sqlite.config.SqliteProperties;
+import com.netflix.conductor.sqlite.util.ExecutorsUtil;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
@@ -37,29 +52,21 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
                 TimeUnit.MILLISECONDS);
         logger.debug("{} is ready to serve", SqliteBaseDAO.class.getName());
 
-//        if (properties.getExperimentalQueueNotify()) {
-//            this.queueListener = new PostgresQueueListener(dataSource, properties);
-//        }
+        //        if (properties.getExperimentalQueueNotify()) {
+        //            this.queueListener = new PostgresQueueListener(dataSource, properties);
+        //        }
     }
 
-    private void processAllUnacks() {
-
-    }
+    private void processAllUnacks() {}
 
     @Override
-    public void push(String queueName, String id, long offsetTimeInSecond) {
-
-    }
+    public void push(String queueName, String id, long offsetTimeInSecond) {}
 
     @Override
-    public void push(String queueName, String id, int priority, long offsetTimeInSecond) {
-
-    }
+    public void push(String queueName, String id, int priority, long offsetTimeInSecond) {}
 
     @Override
-    public void push(String queueName, List<Message> messages) {
-
-    }
+    public void push(String queueName, List<Message> messages) {}
 
     @Override
     public boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond) {
@@ -67,7 +74,8 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     }
 
     @Override
-    public boolean pushIfNotExists(String queueName, String id, int priority, long offsetTimeInSecond) {
+    public boolean pushIfNotExists(
+            String queueName, String id, int priority, long offsetTimeInSecond) {
         return false;
     }
 
@@ -82,9 +90,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     }
 
     @Override
-    public void remove(String queueName, String messageId) {
-
-    }
+    public void remove(String queueName, String messageId) {}
 
     @Override
     public int getSize(String queueName) {
@@ -102,9 +108,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     }
 
     @Override
-    public void flush(String queueName) {
-
-    }
+    public void flush(String queueName) {}
 
     @Override
     public Map<String, Long> queuesDetail() {

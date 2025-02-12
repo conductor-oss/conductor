@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.sqlite.util;
 
-
 import java.sql.SQLException;
 
 /**
