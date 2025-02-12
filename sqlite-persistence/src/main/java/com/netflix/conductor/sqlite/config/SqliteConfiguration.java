@@ -17,7 +17,6 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
-import com.netflix.conductor.sqlite.dao.*;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +29,9 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+
+import com.netflix.conductor.sqlite.dao.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
 
@@ -52,14 +54,15 @@ public class SqliteConfiguration {
     @Bean(initMethod = "migrate")
     @PostConstruct
     public Flyway flywayForPrimaryDb() {
-        FluentConfiguration config =  Flyway.configure()
-                .dataSource(dataSource)  // SQLite doesn't need username/password
-                .locations("classpath:db/migration_sqlite")  // Location of migration files
-                .sqlMigrationPrefix("V")  // V1, V2, etc.
-                .sqlMigrationSeparator("__")  // V1__description
-                .mixed(true)  // Allow mixed migrations (both versioned and repeatable)
-                .validateOnMigrate(true)
-                .cleanDisabled(false);
+        FluentConfiguration config =
+                Flyway.configure()
+                        .dataSource(dataSource) // SQLite doesn't need username/password
+                        .locations("classpath:db/migration_sqlite") // Location of migration files
+                        .sqlMigrationPrefix("V") // V1, V2, etc.
+                        .sqlMigrationSeparator("__") // V1__description
+                        .mixed(true) // Allow mixed migrations (both versioned and repeatable)
+                        .validateOnMigrate(true)
+                        .cleanDisabled(false);
 
         return new Flyway(config);
     }
@@ -111,9 +114,7 @@ public class SqliteConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(
-            name = "conductor.workflow-execution-lock.type",
-            havingValue = "sqlite")
+    @ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "sqlite")
     public SqliteLocksDAO sqliteLockDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {

@@ -1,6 +1,28 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.sqlite.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
+
+import org.springframework.retry.support.RetryTemplate;
+
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -8,15 +30,8 @@ import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.ExecutorsUtil;
-import org.springframework.retry.support.RetryTemplate;
 
-import javax.sql.DataSource;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SqliteMetadataDAO extends SqliteBaseDAO implements MetadataDAO, EventHandlerDAO {
 
@@ -61,19 +76,13 @@ public class SqliteMetadataDAO extends SqliteBaseDAO implements MetadataDAO, Eve
     }
 
     @Override
-    public void removeTaskDef(String name) {
-
-    }
+    public void removeTaskDef(String name) {}
 
     @Override
-    public void createWorkflowDef(WorkflowDef def) {
-
-    }
+    public void createWorkflowDef(WorkflowDef def) {}
 
     @Override
-    public void updateWorkflowDef(WorkflowDef def) {
-
-    }
+    public void updateWorkflowDef(WorkflowDef def) {}
 
     @Override
     public Optional<WorkflowDef> getLatestWorkflowDef(String name) {
@@ -86,9 +95,7 @@ public class SqliteMetadataDAO extends SqliteBaseDAO implements MetadataDAO, Eve
     }
 
     @Override
-    public void removeWorkflowDef(String name, Integer version) {
-
-    }
+    public void removeWorkflowDef(String name, Integer version) {}
 
     @Override
     public List<WorkflowDef> getAllWorkflowDefs() {
@@ -101,19 +108,13 @@ public class SqliteMetadataDAO extends SqliteBaseDAO implements MetadataDAO, Eve
     }
 
     @Override
-    public void addEventHandler(EventHandler eventHandler) {
-
-    }
+    public void addEventHandler(EventHandler eventHandler) {}
 
     @Override
-    public void updateEventHandler(EventHandler eventHandler) {
-
-    }
+    public void updateEventHandler(EventHandler eventHandler) {}
 
     @Override
-    public void removeEventHandler(String name) {
-
-    }
+    public void removeEventHandler(String name) {}
 
     @Override
     public List<EventHandler> getAllEventHandlers() {

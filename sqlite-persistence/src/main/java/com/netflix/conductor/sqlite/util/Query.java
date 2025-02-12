@@ -12,18 +12,20 @@
  */
 package com.netflix.conductor.sqlite.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.core.exception.NonTransientException;
+import java.io.IOException;
+import java.sql.*;
+import java.sql.Date;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.sql.Date;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.netflix.conductor.core.exception.NonTransientException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a {@link PreparedStatement} that is wrapped with convenience methods and utilities.

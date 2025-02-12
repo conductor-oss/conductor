@@ -1,6 +1,24 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.sqlite.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.concurrent.*;
+
+import javax.sql.DataSource;
+
+import org.springframework.retry.support.RetryTemplate;
+
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
@@ -8,15 +26,11 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
-import org.springframework.retry.support.RetryTemplate;
 
-import javax.sql.DataSource;
-import java.util.List;
-import java.util.concurrent.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
+public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
     private final SqliteProperties properties;
     private final ExecutorService executorService;
@@ -35,37 +49,33 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
         this.properties = properties;
         this.executorService = null;
         //  this.properties = properties;
-       // this.onlyIndexOnStatusChange = properties.getOnlyIndexOnStatusChange();
+        // this.onlyIndexOnStatusChange = properties.getOnlyIndexOnStatusChange();
 
-        //int maximumPoolSize = properties.getAsyncMaxPoolSize();
-        //int workerQueueSize = properties.getAsyncWorkerQueueSize();
+        // int maximumPoolSize = properties.getAsyncMaxPoolSize();
+        // int workerQueueSize = properties.getAsyncWorkerQueueSize();
 
         // Set up a workerpool for performing async operations.
-//        this.executorService =
-//                new ThreadPoolExecutor(
-//                        CORE_POOL_SIZE,
-//                        maximumPoolSize,
-//                        KEEP_ALIVE_TIME,
-//                        TimeUnit.MINUTES,
-//                        new LinkedBlockingQueue<>(workerQueueSize),
-//                        (runnable, executor) -> {
-//                            logger.warn(
-//                                    "Request {} to async dao discarded in executor {}",
-//                                    runnable,
-//                                    executor);
-//                            Monitors.recordDiscardedIndexingCount("indexQueue");
-//                        });
+        //        this.executorService =
+        //                new ThreadPoolExecutor(
+        //                        CORE_POOL_SIZE,
+        //                        maximumPoolSize,
+        //                        KEEP_ALIVE_TIME,
+        //                        TimeUnit.MINUTES,
+        //                        new LinkedBlockingQueue<>(workerQueueSize),
+        //                        (runnable, executor) -> {
+        //                            logger.warn(
+        //                                    "Request {} to async dao discarded in executor {}",
+        //                                    runnable,
+        //                                    executor);
+        //                            Monitors.recordDiscardedIndexingCount("indexQueue");
+        //                        });
     }
 
     @Override
-    public void setup() throws Exception {
-
-    }
+    public void setup() throws Exception {}
 
     @Override
-    public void indexWorkflow(WorkflowSummary workflow) {
-
-    }
+    public void indexWorkflow(WorkflowSummary workflow) {}
 
     @Override
     public CompletableFuture<Void> asyncIndexWorkflow(WorkflowSummary workflow) {
@@ -73,9 +83,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void indexTask(TaskSummary task) {
-
-    }
+    public void indexTask(TaskSummary task) {}
 
     @Override
     public CompletableFuture<Void> asyncIndexTask(TaskSummary task) {
@@ -83,29 +91,31 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort) {
+    public SearchResult<String> searchWorkflows(
+            String query, String freeText, int start, int count, List<String> sort) {
         return null;
     }
 
     @Override
-    public SearchResult<WorkflowSummary> searchWorkflowSummary(String query, String freeText, int start, int count, List<String> sort) {
+    public SearchResult<WorkflowSummary> searchWorkflowSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
         return null;
     }
 
     @Override
-    public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
+    public SearchResult<String> searchTasks(
+            String query, String freeText, int start, int count, List<String> sort) {
         return null;
     }
 
     @Override
-    public SearchResult<TaskSummary> searchTaskSummary(String query, String freeText, int start, int count, List<String> sort) {
+    public SearchResult<TaskSummary> searchTaskSummary(
+            String query, String freeText, int start, int count, List<String> sort) {
         return null;
     }
 
     @Override
-    public void removeWorkflow(String workflowId) {
-
-    }
+    public void removeWorkflow(String workflowId) {}
 
     @Override
     public CompletableFuture<Void> asyncRemoveWorkflow(String workflowId) {
@@ -113,19 +123,16 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
-
-    }
+    public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {}
 
     @Override
-    public CompletableFuture<Void> asyncUpdateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
+    public CompletableFuture<Void> asyncUpdateWorkflow(
+            String workflowInstanceId, String[] keys, Object[] values) {
         return null;
     }
 
     @Override
-    public void removeTask(String workflowId, String taskId) {
-
-    }
+    public void removeTask(String workflowId, String taskId) {}
 
     @Override
     public CompletableFuture<Void> asyncRemoveTask(String workflowId, String taskId) {
@@ -133,12 +140,11 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void updateTask(String workflowId, String taskId, String[] keys, Object[] values) {
-
-    }
+    public void updateTask(String workflowId, String taskId, String[] keys, Object[] values) {}
 
     @Override
-    public CompletableFuture<Void> asyncUpdateTask(String workflowId, String taskId, String[] keys, Object[] values) {
+    public CompletableFuture<Void> asyncUpdateTask(
+            String workflowId, String taskId, String[] keys, Object[] values) {
         return null;
     }
 
@@ -148,9 +154,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void addTaskExecutionLogs(List<TaskExecLog> logs) {
-
-    }
+    public void addTaskExecutionLogs(List<TaskExecLog> logs) {}
 
     @Override
     public CompletableFuture<Void> asyncAddTaskExecutionLogs(List<TaskExecLog> logs) {
@@ -163,9 +167,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void addEventExecution(EventExecution eventExecution) {
-
-    }
+    public void addEventExecution(EventExecution eventExecution) {}
 
     @Override
     public List<EventExecution> getEventExecutions(String event) {
@@ -178,9 +180,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO  {
     }
 
     @Override
-    public void addMessage(String queue, Message msg) {
-
-    }
+    public void addMessage(String queue, Message msg) {}
 
     @Override
     public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
