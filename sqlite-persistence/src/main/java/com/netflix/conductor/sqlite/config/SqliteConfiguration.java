@@ -39,7 +39,6 @@ import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteTaskMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteWorkflowMetadataDAO;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 
