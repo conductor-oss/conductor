@@ -34,6 +34,9 @@ public class SubWorkflowParams {
 
     private IdempotencyStrategy idempotencyStrategy;
 
+    // Priority of the sub workflow, not set inherits from the parent
+    private Integer priority;
+
     public String getIdempotencyKey() {
         return idempotencyKey;
     }
@@ -149,5 +152,13 @@ public class SubWorkflowParams {
         }
         SubWorkflowParams that = (SubWorkflowParams) o;
         return Objects.equals(getName(), that.getName()) && Objects.equals(getVersion(), that.getVersion()) && Objects.equals(getTaskToDomain(), that.getTaskToDomain()) && Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition());
+    }
+
+    public Integer getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Integer priority) {
+        this.priority = priority;
     }
 }
