@@ -114,7 +114,7 @@ public abstract class SqliteBaseDAO {
         }
     }
 
-    <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
+    protected <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
             return retryTemplate.execute(context -> getWithTransaction(function));
         } catch (Exception e) {

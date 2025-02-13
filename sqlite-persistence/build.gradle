@@ -21,6 +21,15 @@ dependencies {
 
 
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
+
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation project(':conductor-server')
+    testImplementation project(':conductor-client')
+    testImplementation project(':conductor-grpc-client')
+    testImplementation project(':conductor-es7-persistence')
+
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+    testImplementation project(':conductor-common-persistence').sourceSets.test.output
 }
 
 test {

@@ -36,3 +36,5 @@ build/
 # asdf version file
 .tool-versions
 
+
+.qodo
