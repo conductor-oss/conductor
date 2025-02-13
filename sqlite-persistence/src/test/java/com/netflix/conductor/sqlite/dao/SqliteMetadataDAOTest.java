@@ -185,6 +185,8 @@ public class SqliteMetadataDAOTest {
         def.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
         def.setUpdatedBy("unit_test2");
         def.setUpdateTime(2L);
+        def.setRateLimitFrequencyInSeconds(1);
+        def.setRateLimitPerFrequency(1);
 
         metadataDAO.createTaskDef(def);
 

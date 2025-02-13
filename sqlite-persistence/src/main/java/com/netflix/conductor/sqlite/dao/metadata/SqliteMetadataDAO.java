@@ -15,8 +15,6 @@ package com.netflix.conductor.sqlite.dao.metadata;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Component;
-
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -25,7 +23,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 
 import lombok.RequiredArgsConstructor;
 
-@Component
 @RequiredArgsConstructor
 public class SqliteMetadataDAO implements MetadataDAO, EventHandlerDAO {
 

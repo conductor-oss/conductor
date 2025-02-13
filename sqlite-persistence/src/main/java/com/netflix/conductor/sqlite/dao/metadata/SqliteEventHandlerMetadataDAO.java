@@ -18,9 +18,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.exception.ConflictException;
@@ -30,8 +28,6 @@ import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
-@Component
-@ConditionalOnProperty(name = "conductor.db.type", havingValue = "sqlite")
 public class SqliteEventHandlerMetadataDAO extends SqliteBaseDAO {
 
     public SqliteEventHandlerMetadataDAO(
