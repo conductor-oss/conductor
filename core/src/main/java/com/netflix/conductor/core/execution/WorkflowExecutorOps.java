@@ -442,6 +442,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setScheduledTime(0);
         taskToBeRetried.setStartTime(0);
         taskToBeRetried.setEndTime(0);
+        taskToBeRetried.setFirstStartTime(task.getFirstStartTime());
         taskToBeRetried.setWorkerId(null);
         taskToBeRetried.setReasonForIncompletion(null);
         taskToBeRetried.setSeq(0);
@@ -1513,7 +1514,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (task.getStatus() != null
                         && !task.getStatus().isTerminal()
                         && task.getStartTime() == 0) {
-                    task.setStartTime(System.currentTimeMillis());
+                    long currTime = System.currentTimeMillis();
+                    task.setStartTime(currTime);
+                    task.setFirstStartTime(currTime);
                 }
                 if (!workflowSystemTask.isAsync()) {
                     try {
