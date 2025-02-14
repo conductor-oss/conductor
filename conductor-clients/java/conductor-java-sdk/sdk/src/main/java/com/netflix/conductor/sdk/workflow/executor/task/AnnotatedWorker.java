@@ -18,11 +18,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -128,7 +124,7 @@ public class AnnotatedWorker implements Worker {
             Annotation[] paramAnnotation = parameterAnnotations[i];
             if(containsWorkflowInstanceIdInputParamAnnotation(paramAnnotation)) {
                 validateParameterForWorkflowInstanceId(parameters[i]);
-                values[i] = task.getWorkflowInstanceId();
+                values[i] = getWorkflowInstanceId(task, parameters[i]);
             } else if (paramAnnotation.length > 0) {
                 Type type = parameters[i].getParameterizedType();
                 Class<?> parameterType = parameterTypes[i];
@@ -148,10 +144,18 @@ public class AnnotatedWorker implements Worker {
     }
 
     private void validateParameterForWorkflowInstanceId(Parameter parameter) {
-        if(!parameter.getType().equals(String.class)){
+        if(!parameter.getType().equals(String.class) && !parameter.getType().equals(UUID.class)) {
             throw new IllegalArgumentException(
                     "Parameter " + parameter + " is annotated with " + WorkflowInstanceIdInputParam.class.getSimpleName() +
-                            " but is not of type " + String.class.getSimpleName() + ".");
+                            " but is not of type " + String.class.getSimpleName() + " or " + UUID.class.getSimpleName() + ".");
+        }
+    }
+
+    private Object getWorkflowInstanceId(final Task task, final Parameter parameter) {
+        if(parameter.getType().equals(String.class)) {
+            return task.getWorkflowInstanceId();
+        } else {
+            return UUID.fromString(task.getWorkflowInstanceId());
         }
     }
 

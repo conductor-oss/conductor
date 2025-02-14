@@ -310,7 +310,7 @@ public class AnnotatedWorkerTests {
         assertEquals(2, taskThreadCount.get("test_2"));
     }
 
-    static class WorkflowInstanceIdInputParamWorker {
+    static class WorkflowInstanceIdInputParamAsStringWorker {
         @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
         public Map<String, Object> doWork(
                 @WorkflowInstanceIdInputParam String workflowInstanceId) {
@@ -319,9 +319,9 @@ public class AnnotatedWorkerTests {
     }
 
     @Test
-    @DisplayName("it should handle workflowinstanceid input param")
-    void workflowInstanceIdInputParam() throws NoSuchMethodException {
-        var worker = new WorkflowInstanceIdInputParamWorker();
+    @DisplayName("it should handle workflow instance id input param for String parameter type")
+    void workflowInstanceIdInputParamAsString() throws NoSuchMethodException {
+        var worker = new WorkflowInstanceIdInputParamAsStringWorker();
         var annotatedWorker =
                 new AnnotatedWorker(
                         "test_1",
@@ -341,6 +341,37 @@ public class AnnotatedWorkerTests {
         assertEquals(workflowInstanceId, actual);
     }
 
+    static class WorkflowInstanceIdInputParamAsUuidWorker {
+        @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
+        public Map<String, Object> doWork(
+                @WorkflowInstanceIdInputParam UUID workflowInstanceId) {
+            return Map.of("workflowInstanceId", workflowInstanceId);
+        }
+    }
+
+    @Test
+    @DisplayName("it should handle workflow instance id input param for UUID parameter type")
+    void workflowInstanceIdInputParamAsUuid() throws NoSuchMethodException {
+        var worker = new WorkflowInstanceIdInputParamAsUuidWorker();
+        var annotatedWorker =
+                new AnnotatedWorker(
+                        "test_1",
+                        worker.getClass().getMethod("doWork", UUID.class),
+                        worker);
+
+        var task = new Task();
+        var workflowInstanceId = UUID.randomUUID();
+        task.setWorkflowInstanceId(workflowInstanceId.toString());
+        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setTaskId(UUID.randomUUID().toString());
+
+        var result0 = annotatedWorker.execute(task);
+        var outputData = result0.getOutputData();
+
+        var actual = (UUID) outputData.get("workflowInstanceId");
+        assertEquals(workflowInstanceId, actual);
+    }
+
     static class InvalidWorkflowInstanceIdInputParamWorker {
         @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
         public Map<String, Object> doWork(
@@ -350,8 +381,8 @@ public class AnnotatedWorkerTests {
     }
 
     @Test
-    @DisplayName("it should handle workflowinstanceid input param")
-    void ionvalidWorkflowInstanceIdInputParam() throws NoSuchMethodException {
+    @DisplayName("it should throw exception if type of parameter is invalid for workflow instance id")
+    void invalidWorkflowInstanceIdInputParam() throws NoSuchMethodException {
         var worker = new InvalidWorkflowInstanceIdInputParamWorker();
         var annotatedWorker =
                 new AnnotatedWorker(
