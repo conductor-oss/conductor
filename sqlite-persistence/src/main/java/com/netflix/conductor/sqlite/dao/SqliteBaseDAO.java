@@ -85,6 +85,7 @@ public abstract class SqliteBaseDAO {
         try (Connection tx = dataSource.getConnection()) {
             boolean previousAutoCommitMode = tx.getAutoCommit();
             tx.setAutoCommit(false);
+            tx.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             try {
                 // Enable foreign keys for SQLite
@@ -130,6 +131,7 @@ public abstract class SqliteBaseDAO {
         try (Connection tx = dataSource.getConnection()) {
             boolean previousAutoCommitMode = tx.getAutoCommit();
             tx.setAutoCommit(false);
+            tx.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             try {
                 // Enable foreign keys for SQLite
