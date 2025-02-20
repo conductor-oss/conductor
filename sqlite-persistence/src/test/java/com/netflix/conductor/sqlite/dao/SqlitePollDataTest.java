@@ -1,14 +1,26 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.sqlite.dao;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.dao.PollDataDAO;
-import com.netflix.conductor.sqlite.config.SqliteConfiguration;
-import com.netflix.conductor.sqlite.util.Query;
+import javax.sql.DataSource;
+
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,36 +33,37 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.dao.PollDataDAO;
+import com.netflix.conductor.sqlite.config.SqliteConfiguration;
+import com.netflix.conductor.sqlite.util.Query;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
 @ContextConfiguration(
         classes = {
-                TestObjectMapperConfiguration.class,
-                SqliteConfiguration.class,
-                FlywayAutoConfiguration.class
+            TestObjectMapperConfiguration.class,
+            SqliteConfiguration.class,
+            FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)
 @TestPropertySource(
         properties = {
-                "conductor.app.asyncIndexingEnabled=false",
-                "conductor.elasticsearch.version=0",
-                "conductor.indexing.type=sqlite",
-                "spring.flyway.clean-disabled=false"
+            "conductor.app.asyncIndexingEnabled=false",
+            "conductor.elasticsearch.version=0",
+            "conductor.indexing.type=sqlite",
+            "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
 public class SqlitePollDataTest {
 
-    @Autowired
-    private PollDataDAO pollDataDAO;
+    @Autowired private PollDataDAO pollDataDAO;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -58,8 +71,7 @@ public class SqlitePollDataTest {
     @Autowired
     private DataSource dataSource;
 
-    @Autowired
-    Flyway flyway;
+    @Autowired Flyway flyway;
 
     // clean the database between tests.
     @Before
