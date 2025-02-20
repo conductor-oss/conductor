@@ -91,7 +91,7 @@ public class WorkflowSweeper {
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
             long decideStartTime = System.currentTimeMillis();
-            workflow = workflowExecutor.decide(workflow.getWorkflowId());
+            workflow = workflowExecutor.decideWithoutLock(workflow.getWorkflowId());
             Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);

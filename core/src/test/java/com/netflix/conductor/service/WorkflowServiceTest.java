@@ -271,7 +271,7 @@ public class WorkflowServiceTest {
     @Test
     public void testDecideWorkflow() {
         workflowService.decideWorkflow("test");
-        verify(workflowExecutor, times(1)).decide(anyString());
+        verify(workflowExecutor, times(1)).decideWithLock(anyString());
     }
 
     @Test

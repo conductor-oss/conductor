@@ -248,7 +248,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
 
-        0 * workflowExecutor.decide(workflowId) // verify that workflow is NOT decided
+        0 * workflowExecutor.decideWithLock(workflowId) // verify that workflow is NOT decided
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set
@@ -276,7 +276,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        1 * workflowExecutor.decideWithLock(workflowId) // verify that workflow is decided
 
         task.status == TaskModel.Status.COMPLETED
         task.startTime != 0 // verify that startTime is set
@@ -307,7 +307,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
             throw new RuntimeException("unknown system task failure")
         }
 
-        0 * workflowExecutor.decide(workflowId) // verify that workflow is NOT decided
+        0 * workflowExecutor.decideWithLock(workflowId) // verify that workflow is NOT decided
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set
@@ -336,7 +336,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
         1 * queueDAO.remove(queueName, taskId)
 
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        1 * workflowExecutor.decideWithLock(workflowId) // verify that workflow is decided
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set

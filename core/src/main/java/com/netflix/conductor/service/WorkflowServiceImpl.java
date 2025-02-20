@@ -238,7 +238,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param workflowId WorkflowId of the workflow.
      */
     public void decideWorkflow(String workflowId) {
-        workflowExecutor.decide(workflowId);
+        workflowExecutor.decideWithLock(workflowId);
     }
 
     /**

@@ -194,7 +194,7 @@ public class AsyncSystemTaskExecutor {
             }
             // if the current task execution has completed, then the workflow needs to be evaluated
             if (hasTaskExecutionCompleted) {
-                workflowExecutor.decide(workflowId);
+                workflowExecutor.decideWithLock(workflowId);
             }
         }
     }

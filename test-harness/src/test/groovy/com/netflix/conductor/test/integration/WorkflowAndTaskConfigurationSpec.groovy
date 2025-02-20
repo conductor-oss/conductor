@@ -13,10 +13,8 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 
-import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -106,7 +104,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
 
         when: "A decide is executed on the workflow"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "verify that the workflow is still running and the first optional task has failed and the retry has kicked in"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -121,7 +119,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         when: "Poll the optional task again and do not complete it and run decide"
         workflowExecutionService.poll('task_optional', 'task1.integration.worker')
         Thread.sleep(5000)
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "Ensure that the workflow is updated"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -178,7 +176,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
 
         when: "A decide is executed on the workflow"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "verify that the workflow is still running and the first permissive task has failed and the retry has kicked in"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -197,7 +195,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         then: "Verify that the task_permissive was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry2)
 
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "Ensure that the workflow is updated"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -255,7 +253,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
 
         when: "A decide is executed on the workflow"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "verify that the workflow is still running and the first permissive optional task has failed and the retry has kicked in"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -270,7 +268,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         when: "Poll the permissive optional task again and do not complete it and run decide"
         workflowExecutionService.poll('task_optional', 'task1.integration.worker')
         Thread.sleep(5000)
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "Ensure that the workflow is updated"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -308,7 +306,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(TEMPLATED_LINEAR_WORKFLOW, 1,
                 correlationId, workflowInput,
                 null)
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
         def pollAndCompleteTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
 
         then: "Verify that input template is processed"
@@ -831,7 +829,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         !task2Try1
 
         when: "A decide is run explicitly"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         and: "The next task is polled again"
         def task2Try2 = workflowExecutionService.poll('integration_task_2', 'task2.integration.worker')
@@ -885,7 +883,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         Thread.sleep(3000)
 
         and: "A decide is executed on the workflow"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "verify that the workflow is in running state and a replacement task has been scheduled due to time out"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

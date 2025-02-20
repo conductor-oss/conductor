@@ -85,7 +85,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
                 correlationId, input, null)
 
         then: "verify that the workflow is in a RUNNING state"
-        workflowExecutor.decide(rootWorkflowId)
+        workflowExecutor.decideWithLock(rootWorkflowId)
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -120,7 +120,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
         midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
-        workflowExecutor.decide(midLevelWorkflowId)
+        workflowExecutor.decideWithLock(midLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -254,7 +254,7 @@ class HierarchicalForkJoinSubworkflowRerunSpec extends AbstractSpecification {
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
-        workflowExecutor.decide(newMidLevelWorkflowId)
+        workflowExecutor.decideWithLock(newMidLevelWorkflowId)
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4

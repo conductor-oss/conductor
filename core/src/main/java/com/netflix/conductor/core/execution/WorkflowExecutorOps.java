@@ -243,7 +243,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         metadataMapperService.populateWorkflowWithDefinitions(workflow);
-        decide(workflowId);
+        decideWithLock(workflowId);
 
         updateAndPushParents(workflow, "restarted");
     }
@@ -883,7 +883,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
-            decide(workflowId);
+            decideWithLock(workflowId);
         }
         return task;
     }
@@ -1016,25 +1016,33 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return executionDAOFacade.getRunningWorkflowIds(workflowName, version);
     }
 
-    /** Records a metric for the "decide" process. */
     @Override
-    public WorkflowModel decide(String workflowId) {
+    public WorkflowModel decideWithLock(String workflowId) {
+        return decide(workflowId, true);
+    }
+
+    @Override
+    public WorkflowModel decideWithoutLock(String workflowId) {
+        return decide(workflowId, false);
+    }
+
+    /** Records a metric for the "decide" process. */
+    private WorkflowModel decide(String workflowId, boolean withLock) {
         StopWatch watch = new StopWatch();
         watch.start();
-        if (!executionLockService.acquireLock(workflowId)) {
-            return null;
-        }
         try {
-
+            if (withLock && !executionLockService.acquireLock(workflowId)) {
+                return null;
+            }
             WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
             if (workflow == null) {
-                // This can happen if the workflowId is incorrect
                 return null;
             }
             return decide(workflow);
-
         } finally {
-            executionLockService.releaseLock(workflowId);
+            if (withLock) {
+                executionLockService.releaseLock(workflowId);
+            }
             watch.stop();
             Monitors.recordWorkflowDecisionTime(watch.getTime());
         }
@@ -1299,7 +1307,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
-        decide(workflowId);
+        decideWithLock(workflowId);
     }
 
     /**
@@ -1364,7 +1372,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             taskToBeSkipped.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
         executionDAOFacade.createTasks(Collections.singletonList(taskToBeSkipped));
-        decide(workflow.getWorkflowId());
+        decideWithLock(workflow.getWorkflowId());
     }
 
     @Override
@@ -1650,7 +1658,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
 
-            decide(workflowId);
+            decideWithLock(workflowId);
             return true;
         }
 
@@ -1740,7 +1748,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
             executionDAOFacade.updateTask(rerunFromTask);
-            decide(workflow.getWorkflowId());
+            decideWithLock(workflow.getWorkflowId());
             return true;
         }
         return false;

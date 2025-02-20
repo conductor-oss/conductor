@@ -103,7 +103,13 @@ public interface WorkflowExecutor {
      * @param workflowId id of the workflow to be evaluated
      * @return updated workflow
      */
-    WorkflowModel decide(String workflowId);
+    WorkflowModel decideWithLock(String workflowId);
+
+    /**
+     * @param workflowId id of the workflow to be evaluated
+     * @return updated workflow
+     */
+    WorkflowModel decideWithoutLock(String workflowId);
 
     /**
      * @param workflowId id of the workflow to be terminated

@@ -70,7 +70,7 @@ class KafkaPublishTaskSpec extends AbstractSpecification {
         workflowExecutionService.updateTask(taskResult)
 
         and: "Then run a decide to move the workflow forward"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         and: "Get the updated workflow after the task result has been updated"
         def updatedWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
@@ -115,7 +115,7 @@ class KafkaPublishTaskSpec extends AbstractSpecification {
         workflowExecutionService.updateTask(taskResult)
 
         and: "Then run a decide to move the workflow forward"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         and: "Get the updated workflow after the task result has been updated"
         def updatedWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)

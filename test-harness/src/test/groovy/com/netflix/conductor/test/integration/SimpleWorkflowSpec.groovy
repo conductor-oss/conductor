@@ -265,7 +265,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
 
         when: "The processing of the polled task takes more time than the response time out"
         Thread.sleep(10000)
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         then: "Expect a new task to be added to the queue in place of the timed out task"
         queueDAO.getSize('task_rt') == 1
@@ -297,7 +297,7 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         queueDAO.processUnacks(polledTaskRtTry2.taskDefName)
 
         and: "run the decide process on the workflow"
-        workflowExecutor.decide(workflowInstanceId)
+        workflowExecutor.decideWithLock(workflowInstanceId)
 
         and: "poll for the task and then complete the task 'task_rt' "
         def pollAndCompleteTaskTry3 = workflowTestUtil.pollAndCompleteTask('task_rt', 'task1.integration.worker.testTimeout', ['op': 'task1.done'])

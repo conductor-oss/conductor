@@ -2091,7 +2091,7 @@ public class TestWorkflowExecutor {
                 .thenReturn(workflow);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
 
-        workflowExecutor.decide(workflow.getWorkflowId());
+        workflowExecutor.decideWithLock(workflow.getWorkflowId());
 
         assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
         assertTrue(workflow.getOutput().containsKey("conductor.failure_workflow"));
