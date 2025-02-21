@@ -17,6 +17,8 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -135,7 +137,6 @@ public class SqliteConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "sqlite")
     public SqliteIndexDAO sqliteIndexDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
@@ -146,10 +147,10 @@ public class SqliteConfiguration {
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
     @ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "sqlite")
-    public SqliteLocksDAO sqliteLockDAO(
+    public Lock sqliteLockDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
-        return new SqliteLocksDAO(retryTemplate, objectMapper, dataSource);
+        return new LocalOnlyLock();
     }
 
     @Bean

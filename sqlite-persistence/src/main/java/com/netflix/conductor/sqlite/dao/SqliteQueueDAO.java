@@ -190,7 +190,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
         final String UPDATE_UNACK_TIMEOUT =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on =  WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = ? WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
                         UPDATE_UNACK_TIMEOUT,
@@ -350,7 +350,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     public boolean resetOffsetTime(String queueName, String id) {
         long offsetTimeInSecond = 0; // Reset to 0
         final String SET_OFFSET_TIME =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = datetime(current_timestamp + ('? seconds')) \n"
+                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = datetime(CURRENT_TIMESTAMP, '+' || ? || ' seconds')"
                         + "WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
