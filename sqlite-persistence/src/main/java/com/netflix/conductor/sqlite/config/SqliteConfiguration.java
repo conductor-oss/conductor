@@ -120,9 +120,8 @@ public class SqliteConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public SqlitePollDataDAO sqlitePollDataDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            SqliteProperties properties) {
-        return new SqlitePollDataDAO(retryTemplate, objectMapper, dataSource, properties);
+            ObjectMapper objectMapper) {
+        return new SqlitePollDataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
