@@ -188,6 +188,16 @@ public class WorkflowTask {
     @ProtoField(id = 32)
     private boolean permissive;
 
+    private WorkflowDef inlineWorkflow;
+
+    public WorkflowDef getInlineWorkflow() {
+        return this.inlineWorkflow;
+    }
+
+    public void setInlineWorkflow(WorkflowDef inlineWorkflow) {
+        this.inlineWorkflow = inlineWorkflow;
+    }
+
     /**
      * @return the name
      */
@@ -613,6 +623,9 @@ public class WorkflowTask {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
 
         switch (TaskType.of(type)) {
+            case INLINE_WORKFLOW:
+                workflowTaskLists.add(inlineWorkflow.collectTasks());
+                break;
             case DECISION:
             case SWITCH:
                 workflowTaskLists.addAll(decisionCases.values());
@@ -645,6 +658,14 @@ public class WorkflowTask {
         TaskType taskType = TaskType.of(type);
 
         switch (taskType) {
+            case INLINE_WORKFLOW:
+                WorkflowTask inlineWfTask = inlineWorkflow.getTaskByRefName(taskReferenceName);
+                if (inlineWfTask != null) {
+                    return inlineWorkflow
+                            .getTaskByRefName(taskReferenceName)
+                            .next(taskReferenceName, parent);
+                }
+                return null;
             case DO_WHILE:
             case DECISION:
             case SWITCH:

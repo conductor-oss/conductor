@@ -376,7 +376,7 @@ public class WorkflowDef extends Auditable {
             return null;
         }
 
-        Iterator<WorkflowTask> iterator = tasks.iterator();
+        Iterator<WorkflowTask> iterator = tasks().iterator();
         while (iterator.hasNext()) {
             WorkflowTask task = iterator.next();
             if (task.getTaskReferenceName().equals(taskReferenceName)) {
@@ -401,6 +401,17 @@ public class WorkflowDef extends Auditable {
             return iterator.next();
         }
         return null;
+    }
+
+    private List<WorkflowTask> tasks() {
+        List<WorkflowTask> allTasks = new ArrayList<>();
+        for (WorkflowTask task : tasks) {
+            allTasks.add(task);
+            if (task.getInlineWorkflow() != null) {
+                allTasks.addAll(task.getInlineWorkflow().tasks());
+            }
+        }
+        return allTasks;
     }
 
     public WorkflowTask getTaskByRefName(String taskReferenceName) {

@@ -74,6 +74,99 @@ public class TestWorkflowDef {
     }
 
     @Test
+    public void testGetNextTask_InlineSubWf() {
+        WorkflowDef sub = new WorkflowDef();
+        sub.setName("sub_workflow");
+        sub.setVersion(1);
+        sub.setSchemaVersion(2);
+
+        WorkflowTask forkJoin = new WorkflowTask();
+        forkJoin.setWorkflowTaskType(TaskType.FORK_JOIN);
+        forkJoin.setForkTasks(
+                List.of(
+                        List.of(
+                                createWorkflowTask("simple_fork_task_sub_1"),
+                                createWorkflowTask("simple_fork_task_sub_2"))));
+        forkJoin.setTaskReferenceName("fork_ref");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setWorkflowTaskType(TaskType.JOIN);
+        join.setJoinOn(List.of("simple_fork_task_sub_1", "simple_fork_task_sub_2"));
+        join.setTaskReferenceName("join_ref");
+
+        sub.getTasks().add(createWorkflowTask("simple_task_sub_1"));
+        sub.getTasks().add(forkJoin);
+        sub.getTasks().add(join);
+        sub.getTasks().add(createWorkflowTask("simple_task_sub_2"));
+
+        WorkflowTask task = new WorkflowTask();
+
+        task.setName("sub_wf_task");
+        task.setTaskReferenceName("sub_wf_task_ref");
+        task.setWorkflowTaskType(TaskType.INLINE_WORKFLOW);
+        task.setInlineWorkflow(sub);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("workflow");
+        def.setVersion(1);
+        def.setSchemaVersion(2);
+        def.getTasks().add(createWorkflowTask("simple_task_1"));
+        def.getTasks().add(task);
+        def.getTasks().add(createWorkflowTask("simple_task_2"));
+
+        // Workflow tasks :
+        // simple_task_1 ->
+        //                  sub_wf_task_ref [ simple_task_sub_1, fork_ref [simple_fork_task_sub_1,
+        // simple_fork_task_sub_2], join_ref, simple_task_sub_2]
+        // simple_task_2
+        WorkflowTask next = def.getNextTask("simple_task_1");
+        assertNotNull(next);
+        assertEquals("sub_wf_task_ref", next.getTaskReferenceName());
+
+        String refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, next);
+        assertEquals("simple_task_sub_1", next.getTaskReferenceName());
+
+        refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, next);
+        assertEquals("fork_ref", next.getTaskReferenceName());
+
+        // Let's go through forks
+        refName = next.getTaskReferenceName();
+        WorkflowTask forkedTask = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, forkedTask);
+        // Next to forked task is join
+        assertEquals("join_ref", forkedTask.getTaskReferenceName());
+
+        refName = forkedTask.getTaskReferenceName();
+        forkedTask = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, forkedTask);
+        // Next to join task is simple_task_sub_2
+        assertEquals("simple_task_sub_2", forkedTask.getTaskReferenceName());
+
+        refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, next);
+        assertEquals("join_ref", next.getTaskReferenceName());
+
+        refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, next);
+        assertEquals("simple_task_sub_2", next.getTaskReferenceName());
+
+        refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNotNull("No next task found for " + refName, next);
+        assertEquals("simple_task_2", next.getTaskReferenceName());
+
+        refName = next.getTaskReferenceName();
+        next = def.getNextTask(refName);
+        assertNull(next);
+    }
+
+    @Test
     public void testGetNextTask_Decision() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test_workflow");
