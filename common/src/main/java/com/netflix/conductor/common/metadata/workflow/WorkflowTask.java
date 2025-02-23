@@ -624,7 +624,7 @@ public class WorkflowTask {
 
         switch (TaskType.of(type)) {
             case INLINE_WORKFLOW:
-                workflowTaskLists.add(inlineWorkflow.collectTasks());
+                workflowTaskLists.add(inlineWorkflow.getTasks());
                 break;
             case DECISION:
             case SWITCH:

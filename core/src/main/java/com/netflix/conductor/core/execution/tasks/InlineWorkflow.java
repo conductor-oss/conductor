@@ -14,8 +14,10 @@ package com.netflix.conductor.core.execution.tasks;
 
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -24,12 +26,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INLINE_WORKFLOW;
 
+import java.util.Map;
+
 @Slf4j
 @Component(TASK_TYPE_INLINE_WORKFLOW)
 public class InlineWorkflow extends WorkflowSystemTask {
 
-    public InlineWorkflow(ObjectMapper objectMapper) {
+    private final ParametersUtils parametersUtils;
+    public InlineWorkflow(ParametersUtils parametersUtils) {
         super(TASK_TYPE_INLINE_WORKFLOW);
+        this.parametersUtils = parametersUtils;
     }
 
     @Override
@@ -40,8 +46,6 @@ public class InlineWorkflow extends WorkflowSystemTask {
         for (WorkflowTask workflowTask : task.getWorkflowTask().getInlineWorkflow().getTasks()) {
             String refName = workflowTask.getTaskReferenceName();
             TaskModel taskInWf = workflow.getTaskByRefName(refName);
-            log.info(
-                    "Task {} is done? {}", refName, taskInWf == null ? null : taskInWf.getStatus());
             if (taskInWf != null && !taskInWf.getStatus().isTerminal()) {
                 allDone = false;
                 break;
@@ -49,6 +53,11 @@ public class InlineWorkflow extends WorkflowSystemTask {
         }
         if (allDone) {
             task.setStatus(TaskModel.Status.COMPLETED);
+            TaskDef taskDef = task.getTaskDefinition().orElse(null);
+            Map<String, Object> output = parametersUtils.getTaskInputV2(task.getWorkflowTask()
+                .getInlineWorkflow()
+                .getOutputParameters(), workflow, task.getTaskId(), taskDef);
+            task.setOutputData(output);
             return true;
         }
         return false;
