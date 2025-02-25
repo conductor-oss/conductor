@@ -38,11 +38,5 @@ public class ElasticSearchConditions {
                 havingValue = "7",
                 matchIfMissing = true)
         static class enabledES7 {}
-
-        @ConditionalOnProperty(
-                name = "conductor.indexing.type",
-                havingValue = "elasticsearch",
-                matchIfMissing = true)
-        static class enableElasticSearchIndexing {}
     }
 }
