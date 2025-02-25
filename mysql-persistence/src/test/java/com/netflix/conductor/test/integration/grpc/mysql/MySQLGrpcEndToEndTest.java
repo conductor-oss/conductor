@@ -36,7 +36,8 @@ import com.netflix.conductor.test.integration.grpc.AbstractGrpcEndToEndTest;
             "spring.datasource.hikari.maximum-pool-size=8",
             "spring.datasource.hikari.minimum-idle=300000",
             "conductor.elasticsearch.version=7",
-            "conductor.app.workflow.name-validation.enabled=true"
+            "conductor.app.workflow.name-validation.enabled=true",
+            "conductor.indexing.enabled=false"
         })
 public class MySQLGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
