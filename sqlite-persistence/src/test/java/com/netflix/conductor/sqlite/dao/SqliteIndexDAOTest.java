@@ -79,7 +79,6 @@ public class SqliteIndexDAOTest {
     // clean the database between tests.
     @Before
     public void before() {
-        System.out.println("hey here");
         flyway.clean();
         flyway.migrate();
     }

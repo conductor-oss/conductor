@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
             FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = "spring.flyway.clean-disabled=true")
+@SpringBootTest(properties = "spring.flyway.clean-disabled=false")
 public class SqliteMetadataDAOTest {
 
     @Autowired private SqliteMetadataDAO metadataDAO;
