@@ -21,8 +21,10 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
