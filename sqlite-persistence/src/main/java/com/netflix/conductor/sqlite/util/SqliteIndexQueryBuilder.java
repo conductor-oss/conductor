@@ -88,7 +88,9 @@ public class SqliteIndexQueryBuilder {
             } else if (operator.equals("JSON_CONTAINS")) {
                 // SQLite JSON1 extension query
                 return "json_extract(json_data, ?) IS NOT NULL";
-            } else {
+            } else if(operator.equals("LIKE")) {
+                return "lower(" + attribute + ") LIKE ?";
+            }else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " datetime(?)";
                 } else {
@@ -151,8 +153,8 @@ public class SqliteIndexQueryBuilder {
         this.start = start;
         this.count = count;
         this.sort = sort;
-        this.allowFullTextQueries = false;
-        this.allowJsonQueries = false;
+        this.allowFullTextQueries = true;
+        this.allowJsonQueries = true;
         this.parseQuery(query);
         this.parseFreeText(freeText);
     }
@@ -211,21 +213,12 @@ public class SqliteIndexQueryBuilder {
 
     private void parseFreeText(String freeText) {
         if (!StringUtils.isEmpty(freeText) && !freeText.equals("*")) {
-            if (allowJsonQueries && freeText.startsWith("{") && freeText.endsWith("}")) {
                 Condition cond = new Condition();
                 cond.setAttribute("json_data");
-                cond.setOperator("JSON_CONTAINS");
+                cond.setOperator("LIKE");
                 String[] values = {freeText};
-                cond.setValues(Arrays.asList(values));
+                cond.setValues(Arrays.stream(values).map(v -> "%" + v.toLowerCase() + "%").collect(Collectors.toList()));
                 conditions.add(cond);
-            } else if (allowFullTextQueries) {
-                Condition cond = new Condition();
-                cond.setAttribute("json_data");
-                cond.setOperator("MATCH");
-                String[] values = {freeText};
-                cond.setValues(Arrays.asList(values));
-                conditions.add(cond);
-            }
         }
     }
 
