@@ -12,7 +12,18 @@
  */
 package com.netflix.conductor.sqlite.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+
+import javax.sql.DataSource;
+
+import org.springframework.retry.support.RetryTemplate;
+
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
@@ -23,16 +34,8 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.SqliteIndexQueryBuilder;
-import org.springframework.retry.support.RetryTemplate;
 
-import javax.sql.DataSource;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
@@ -51,10 +54,10 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
             SqliteProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
         this.properties = properties;
-        this.onlyIndexOnStatusChange = false; //properties.getOnlyIndexOnStatusChange();
+        this.onlyIndexOnStatusChange = properties.getOnlyIndexOnStatusChange();
 
-        int maximumPoolSize = 10; //properties.getAsyncMaxPoolSize();
-        int workerQueueSize = 2; //properties.getAsyncWorkerQueueSize();
+        int maximumPoolSize = properties.getAsyncMaxPoolSize();
+        int workerQueueSize = properties.getAsyncWorkerQueueSize();
 
         // Set up a workerpool for performing async operations.
         this.executorService =
@@ -77,11 +80,11 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
                 "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, json_data) "
-                + " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
-                + " DO UPDATE SET correlation_id = excluded.correlation_id, workflow_type = excluded.workflow_type, "
-                + " start_time = excluded.start_time, status = excluded.status, json_data = excluded.json_data, "
-                + " update_time = excluded.update_time "
-                + " WHERE excluded.update_time >= workflow_index.update_time";
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
+                        + " DO UPDATE SET correlation_id = excluded.correlation_id, workflow_type = excluded.workflow_type, "
+                        + " start_time = excluded.start_time, status = excluded.status, json_data = excluded.json_data, "
+                        + " update_time = excluded.update_time "
+                        + " WHERE excluded.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
             INSERT_WORKFLOW_INDEX_SQL += " AND workflow_index.status != excluded.status";
@@ -292,10 +295,13 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     public void removeTask(String workflowId, String taskId) {
         String REMOVE_TASK_SQL = "DELETE FROM task_index WHERE task_id = ?";
         String REMOVE_TASK_EXECUTION_SQL = "DELETE FROM task_execution_logs WHERE task_id =?";
-        withTransaction(connection -> {
-            queryWithTransaction(REMOVE_TASK_SQL, q -> q.addParameter(taskId).executeUpdate());
-            queryWithTransaction(REMOVE_TASK_EXECUTION_SQL, q -> q.addParameter(taskId).executeUpdate());
-        });
+        withTransaction(
+                connection -> {
+                    queryWithTransaction(
+                            REMOVE_TASK_SQL, q -> q.addParameter(taskId).executeUpdate());
+                    queryWithTransaction(
+                            REMOVE_TASK_EXECUTION_SQL, q -> q.addParameter(taskId).executeUpdate());
+                });
     }
 
     @Override

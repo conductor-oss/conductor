@@ -53,7 +53,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
         this.scheduledExecutorService =
                 Executors.newSingleThreadScheduledExecutor(
-                        ExecutorsUtil.newNamedThreadFactory("postgres-queue-"));
+                        ExecutorsUtil.newNamedThreadFactory("sqlite-queue-"));
         this.scheduledExecutorService.scheduleAtFixedRate(
                 this::processAllUnacks,
                 UNACK_SCHEDULE_MS,

@@ -17,8 +17,6 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
-import com.netflix.conductor.core.sync.Lock;
-import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +33,8 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.core.sync.Lock;
+import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import com.netflix.conductor.sqlite.dao.*;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteEventHandlerMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
@@ -97,9 +97,8 @@ public class SqliteConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public SqliteWorkflowMetadataDAO sqliteWorkflowMetadataDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            SqliteProperties properties) {
-        return new SqliteWorkflowMetadataDAO(retryTemplate, objectMapper, dataSource, properties);
+            ObjectMapper objectMapper) {
+        return new SqliteWorkflowMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
@@ -137,6 +136,7 @@ public class SqliteConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "sqlite")
     public SqliteIndexDAO sqliteIndexDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,

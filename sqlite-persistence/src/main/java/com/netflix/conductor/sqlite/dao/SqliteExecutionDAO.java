@@ -53,7 +53,7 @@ public class SqliteExecutionDAO extends SqliteBaseDAO
         super(retryTemplate, objectMapper, dataSource);
         this.scheduledExecutorService =
                 Executors.newSingleThreadScheduledExecutor(
-                        ExecutorsUtil.newNamedThreadFactory("postgres-execution-"));
+                        ExecutorsUtil.newNamedThreadFactory("sqlite-execution-"));
     }
 
     private static String dateStr(Long timeInMs) {
@@ -177,7 +177,7 @@ public class SqliteExecutionDAO extends SqliteBaseDAO
     }
 
     /**
-     * This is a dummy implementation and this feature is not for Postgres backed Conductor
+     * This is a dummy implementation and this feature is not for sqlite backed Conductor
      *
      * @param task: which needs to be evaluated whether it is rateLimited or not
      */

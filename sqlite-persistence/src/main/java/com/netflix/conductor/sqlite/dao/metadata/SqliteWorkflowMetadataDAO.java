@@ -23,7 +23,6 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,10 +31,7 @@ import com.google.common.base.Preconditions;
 public class SqliteWorkflowMetadataDAO extends SqliteBaseDAO {
 
     public SqliteWorkflowMetadataDAO(
-            RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            DataSource dataSource,
-            SqliteProperties properties) {
+            RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
     }
 

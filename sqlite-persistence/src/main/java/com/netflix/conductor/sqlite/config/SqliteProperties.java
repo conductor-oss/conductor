@@ -24,6 +24,12 @@ public class SqliteProperties {
 
     private Integer deadlockRetryMax = 3;
 
+    private boolean onlyIndexOnStatusChange = false;
+
+    private Integer asyncMaxPoolSize = 10;
+
+    private Integer asyncWorkerQueueSize = 10;
+
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
@@ -38,5 +44,17 @@ public class SqliteProperties {
 
     public void setDeadlockRetryMax(Integer deadlockRetryMax) {
         this.deadlockRetryMax = deadlockRetryMax;
+    }
+
+    public int getAsyncMaxPoolSize() {
+        return asyncMaxPoolSize;
+    }
+
+    public int getAsyncWorkerQueueSize() {
+        return asyncWorkerQueueSize;
+    }
+
+    public boolean getOnlyIndexOnStatusChange() {
+        return onlyIndexOnStatusChange;
     }
 }

@@ -39,16 +39,16 @@ public class SqliteIndexQueryBuilder {
     private boolean allowFullTextQueries;
 
     private static final String[] VALID_FIELDS = {
-            "workflow_id",
-            "correlation_id",
-            "workflow_type",
-            "start_time",
-            "status",
-            "task_id",
-            "task_type",
-            "task_def_name",
-            "update_time",
-            "json_data"
+        "workflow_id",
+        "correlation_id",
+        "workflow_type",
+        "start_time",
+        "status",
+        "task_id",
+        "task_type",
+        "task_def_name",
+        "update_time",
+        "json_data"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -81,16 +81,19 @@ public class SqliteIndexQueryBuilder {
         public String getQueryFragment() {
             if (operator.equals("IN")) {
                 // Create proper IN clause for SQLite
-                return attribute + " IN (" + String.join(",", Collections.nCopies(values.size(), "?")) + ")";
+                return attribute
+                        + " IN ("
+                        + String.join(",", Collections.nCopies(values.size(), "?"))
+                        + ")";
             } else if (operator.equals("MATCH")) {
                 // SQLite FTS5 full-text search
                 return "json_data MATCH ?";
             } else if (operator.equals("JSON_CONTAINS")) {
                 // SQLite JSON1 extension query
                 return "json_extract(json_data, ?) IS NOT NULL";
-            } else if(operator.equals("LIKE")) {
+            } else if (operator.equals("LIKE")) {
                 return "lower(" + attribute + ") LIKE ?";
-            }else {
+            } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " datetime(?)";
                 } else {
@@ -119,7 +122,8 @@ public class SqliteIndexQueryBuilder {
 
         private String millisToUtc(String millis) {
             Long startTimeMilli = Long.parseLong(millis);
-            ZonedDateTime startDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTimeMilli), ZoneOffset.UTC);
+            ZonedDateTime startDate =
+                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTimeMilli), ZoneOffset.UTC);
             return DateTimeFormatter.ISO_DATE_TIME.format(startDate);
         }
 
@@ -161,30 +165,32 @@ public class SqliteIndexQueryBuilder {
 
     public String getQuery() {
         String queryString = "";
-        List<Condition> validConditions = conditions.stream()
-                .filter(c -> c.isValid())
-                .collect(Collectors.toList());
+        List<Condition> validConditions =
+                conditions.stream().filter(c -> c.isValid()).collect(Collectors.toList());
         if (validConditions.size() > 0) {
-            queryString = " WHERE " + String.join(
-                    " AND ",
-                    validConditions.stream()
-                            .map(c -> c.getQueryFragment())
-                            .collect(Collectors.toList()));
+            queryString =
+                    " WHERE "
+                            + String.join(
+                                    " AND ",
+                                    validConditions.stream()
+                                            .map(c -> c.getQueryFragment())
+                                            .collect(Collectors.toList()));
         }
         return "SELECT json_data FROM " + table + queryString + getSort() + " LIMIT ? OFFSET ?";
     }
 
     public String getCountQuery() {
         String queryString = "";
-        List<Condition> validConditions = conditions.stream()
-                .filter(c -> c.isValid())
-                .collect(Collectors.toList());
+        List<Condition> validConditions =
+                conditions.stream().filter(c -> c.isValid()).collect(Collectors.toList());
         if (validConditions.size() > 0) {
-            queryString = " WHERE " + String.join(
-                    " AND ",
-                    validConditions.stream()
-                            .map(c -> c.getQueryFragment())
-                            .collect(Collectors.toList()));
+            queryString =
+                    " WHERE "
+                            + String.join(
+                                    " AND ",
+                                    validConditions.stream()
+                                            .map(c -> c.getQueryFragment())
+                                            .collect(Collectors.toList()));
         }
         return "SELECT COUNT(*) FROM " + table + queryString;
     }
@@ -213,12 +219,15 @@ public class SqliteIndexQueryBuilder {
 
     private void parseFreeText(String freeText) {
         if (!StringUtils.isEmpty(freeText) && !freeText.equals("*")) {
-                Condition cond = new Condition();
-                cond.setAttribute("json_data");
-                cond.setOperator("LIKE");
-                String[] values = {freeText};
-                cond.setValues(Arrays.stream(values).map(v -> "%" + v.toLowerCase() + "%").collect(Collectors.toList()));
-                conditions.add(cond);
+            Condition cond = new Condition();
+            cond.setAttribute("json_data");
+            cond.setOperator("LIKE");
+            String[] values = {freeText};
+            cond.setValues(
+                    Arrays.stream(values)
+                            .map(v -> "%" + v.toLowerCase() + "%")
+                            .collect(Collectors.toList()));
+            conditions.add(cond);
         }
     }
 

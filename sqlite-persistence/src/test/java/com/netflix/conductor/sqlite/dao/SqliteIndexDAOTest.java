@@ -12,20 +12,19 @@
  */
 package com.netflix.conductor.sqlite.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.TaskSummary;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.sqlite.config.SqliteConfiguration;
-import com.netflix.conductor.sqlite.util.Query;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.*;
+
+import javax.sql.DataSource;
+
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,31 +34,34 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
-import java.util.*;
+import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.sqlite.config.SqliteConfiguration;
+import com.netflix.conductor.sqlite.util.Query;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 
 @ContextConfiguration(
         classes = {
-                TestObjectMapperConfiguration.class,
-                SqliteConfiguration.class,
-                FlywayAutoConfiguration.class
+            TestObjectMapperConfiguration.class,
+            SqliteConfiguration.class,
+            FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)
 @TestPropertySource(
         properties = {
-                "conductor.app.asyncIndexingEnabled=false",
-                "conductor.elasticsearch.version=0",
-                "conductor.indexing.type=sqlite",
-                "conductor.db.type=sqlite",
-                "spring.flyway.clean-disabled=false"
+            "conductor.app.asyncIndexingEnabled=false",
+            "conductor.elasticsearch.version=0",
+            "conductor.indexing.type=sqlite",
+            "conductor.db.type=sqlite",
+            "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
 public class SqliteIndexDAOTest {
@@ -134,7 +136,8 @@ public class SqliteIndexDAOTest {
                 result.get(0).get("workflow_type"));
         TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(wfs.getStartTime());
         Timestamp startTime = Timestamp.from(Instant.from(ta));
-        assertEquals("Start time does not match", startTime.toString(), result.get(0).get("start_time"));
+        assertEquals(
+                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
         assertEquals(
                 "Status does not match", wfs.getStatus().toString(), result.get(0).get("status"));
     }
@@ -161,10 +164,14 @@ public class SqliteIndexDAOTest {
                 result.get(0).get("task_def_name"));
         TemporalAccessor startTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getStartTime());
         Timestamp startTime = Timestamp.from(Instant.from(startTa));
-        assertEquals("Start time does not match", startTime.toString(), result.get(0).get("start_time"));
+        assertEquals(
+                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
         TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getUpdateTime());
         Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
-        assertEquals("Update time does not match", updateTime.toString(), result.get(0).get("update_time"));
+        assertEquals(
+                "Update time does not match",
+                updateTime.toString(),
+                result.get(0).get("update_time"));
         assertEquals(
                 "Status does not match", ts.getStatus().toString(), result.get(0).get("status"));
         assertEquals(
@@ -352,27 +359,27 @@ public class SqliteIndexDAOTest {
                 results.getResults().get(0).getWorkflowId());
     }
 
-// json working not working
-//    @Test
-//    public void testJsonSearchWorkflowSummary() {
-//        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-summary");
-//        wfs.setVersion(3);
-//
-//        indexDAO.indexWorkflow(wfs);
-//
-//        String freeText = "{\"correlationId\":\"not-the-id\"}";
-//        SearchResult<WorkflowSummary> results =
-//                indexDAO.searchWorkflowSummary("", freeText, 0, 15, new ArrayList());
-//        assertEquals("Wrong number of results returned", 0, results.getResults().size());
-//
-//        freeText = "{\"correlationId\":\"correlation-id\", \"version\":3}";
-//        results = indexDAO.searchWorkflowSummary("", freeText, 0, 15, new ArrayList());
-//        assertEquals("No results returned", 1, results.getResults().size());
-//        assertEquals(
-//                "Wrong workflow returned",
-//                wfs.getWorkflowId(),
-//                results.getResults().get(0).getWorkflowId());
-//    }
+    // json working not working
+    //    @Test
+    //    public void testJsonSearchWorkflowSummary() {
+    //        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-summary");
+    //        wfs.setVersion(3);
+    //
+    //        indexDAO.indexWorkflow(wfs);
+    //
+    //        String freeText = "{\"correlationId\":\"not-the-id\"}";
+    //        SearchResult<WorkflowSummary> results =
+    //                indexDAO.searchWorkflowSummary("", freeText, 0, 15, new ArrayList());
+    //        assertEquals("Wrong number of results returned", 0, results.getResults().size());
+    //
+    //        freeText = "{\"correlationId\":\"correlation-id\", \"version\":3}";
+    //        results = indexDAO.searchWorkflowSummary("", freeText, 0, 15, new ArrayList());
+    //        assertEquals("No results returned", 1, results.getResults().size());
+    //        assertEquals(
+    //                "Wrong workflow returned",
+    //                wfs.getWorkflowId(),
+    //                results.getResults().get(0).getWorkflowId());
+    //    }
 
     @Test
     public void testSearchWorkflowSummaryPagination() {
