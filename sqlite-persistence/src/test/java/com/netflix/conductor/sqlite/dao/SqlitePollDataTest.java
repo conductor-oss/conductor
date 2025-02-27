@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,21 +10,21 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.postgres.dao;
+package com.netflix.conductor.sqlite.dao;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
@@ -36,20 +36,20 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.dao.PollDataDAO;
-import com.netflix.conductor.postgres.config.PostgresConfiguration;
-import com.netflix.conductor.postgres.util.Query;
+import com.netflix.conductor.sqlite.config.SqliteConfiguration;
+import com.netflix.conductor.sqlite.util.Query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @ContextConfiguration(
         classes = {
             TestObjectMapperConfiguration.class,
-            PostgresConfiguration.class,
+            SqliteConfiguration.class,
             FlywayAutoConfiguration.class
         })
 @RunWith(SpringRunner.class)
@@ -57,13 +57,11 @@ import static org.junit.Assert.*;
         properties = {
             "conductor.app.asyncIndexingEnabled=false",
             "conductor.elasticsearch.version=0",
-            "conductor.indexing.type=postgres",
-            "conductor.postgres.pollDataFlushInterval=0",
-            "conductor.postgres.pollDataCacheValidityPeriod=0",
+            "conductor.indexing.type=sqlite",
             "spring.flyway.clean-disabled=false"
         })
 @SpringBootTest
-public class PostgresPollDataDAONoCacheTest {
+public class SqlitePollDataTest {
 
     @Autowired private PollDataDAO pollDataDAO;
 
@@ -80,7 +78,7 @@ public class PostgresPollDataDAONoCacheTest {
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table poll_data").executeUpdate();
+            conn.prepareStatement("delete from poll_data").executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
