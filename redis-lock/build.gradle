@@ -4,6 +4,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
     implementation "org.redisson:redisson:${revRedisson}"
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
 }
