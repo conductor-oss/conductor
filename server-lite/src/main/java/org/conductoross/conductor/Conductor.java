@@ -22,13 +22,43 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.core.io.FileSystemResource;
+
+import com.netflix.conductor.core.config.SchedulerConfiguration;
+import com.netflix.conductor.core.events.DefaultEventProcessor;
+import com.netflix.conductor.core.events.DefaultEventQueueManager;
+import com.netflix.conductor.core.events.queue.ConductorEventQueueProvider;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.HumanTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.DoWhile;
+import com.netflix.conductor.core.execution.tasks.Event;
+import com.netflix.conductor.core.execution.tasks.ExclusiveJoin;
+import com.netflix.conductor.core.execution.tasks.Human;
+import com.netflix.conductor.core.execution.tasks.Inline;
+import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.core.execution.tasks.SetVariable;
+import com.netflix.conductor.core.execution.tasks.StartWorkflow;
+import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.Terminate;
+import com.netflix.conductor.core.execution.tasks.Wait;
+import com.netflix.conductor.rest.config.RestConfiguration;
 
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
 // In case that SQL database is selected this class will be imported back in the appropriate
 // database persistence module.
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
-@ComponentScan(basePackages = {"com.netflix.conductor", "io.orkes.conductor"})
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@ComponentScan(basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"}, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {RestConfiguration.class}))
 public class Conductor {
 
     private static final Logger log = LoggerFactory.getLogger(Conductor.class);

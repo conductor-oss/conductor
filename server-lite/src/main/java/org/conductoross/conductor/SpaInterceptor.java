@@ -32,13 +32,13 @@ public class SpaInterceptor implements HandlerInterceptor {
             HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
         String path = request.getRequestURI();
-        log.trace("Service SPA page {}", path);
+        log.info("Service SPA page {}", path);
 
         // Skip API, health checks, actuator, and static resources
         if (path.startsWith("/api/")
                 || path.equals("/health")
+                || path.equals("/api-docs")
                 || path.equals("/error")
-                || path.startsWith("/actuator/")
                 || path.contains(".")) {
             return true;
         }
