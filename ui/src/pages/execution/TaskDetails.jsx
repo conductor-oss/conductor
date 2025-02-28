@@ -8,6 +8,7 @@ import {
   pendingTaskSelection,
   taskWithLatestIteration,
 } from "../../utils/helpers";
+import { useFetchForWorkflowDefinition } from "../../utils/helperFunctions";
 
 const useStyles = makeStyles({
   taskWrapper: {
@@ -26,6 +27,8 @@ export default function TaskDetails({
 }) {
   const [tabIndex, setTabIndex] = useState(0);
   const classes = useStyles();
+  const { fetchForWorkflowDefinition, extractSubWorkflowNames } =
+    useFetchForWorkflowDefinition();
 
   return (
     <div className={classes.taskWrapper}>
@@ -55,6 +58,15 @@ export default function TaskDetails({
               setSelectedNode(data);
               setSelectedTask({ ref: selectedTaskRefName });
             }}
+            subWorkflowFetcher={async (workflowName, version) =>
+              await fetchForWorkflowDefinition({
+                workflowName: workflowName,
+                currentVersion: version,
+                collapseWorkflowList: extractSubWorkflowNames(
+                  execution?.workflowDefinition
+                ),
+              })
+            }
           />
         )}
         {tabIndex === 1 && (

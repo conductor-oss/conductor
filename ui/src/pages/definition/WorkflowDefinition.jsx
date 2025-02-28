@@ -28,6 +28,7 @@ import {
   KeyboardArrowLeftRounded,
   KeyboardArrowRightRounded,
 } from "@material-ui/icons";
+import { useFetchForWorkflowDefinition } from "../../utils/helperFunctions";
 
 const minCodePanelWidth = 500;
 const useStyles = makeStyles({
@@ -127,6 +128,9 @@ export default function Workflow() {
     isFetching,
     refetch: refetchWorkflow,
   } = useWorkflowDef(workflowName, workflowVersion, NEW_WORKFLOW_TEMPLATE);
+
+  const { fetchForWorkflowDefinition, extractSubWorkflowNames } =
+    useFetchForWorkflowDefinition();
 
   const workflowJson = useMemo(
     () => (workflowDef ? JSON.stringify(workflowDef, null, 2) : ""),
@@ -384,6 +388,13 @@ export default function Workflow() {
               zoom={0.7}
               data={dag?.workflowDef}
               onClick={(e, data) => handleWorkflowNodeClick({ ref: data?.id })}
+              subWorkflowFetcher={async (workflowName, version) =>
+                await fetchForWorkflowDefinition({
+                  workflowName: workflowName,
+                  currentVersion: version,
+                  collapseWorkflowList: extractSubWorkflowNames(workflowDef),
+                })
+              }
             />
           )}
         </div>
@@ -391,7 +402,6 @@ export default function Workflow() {
     </>
   );
 }
-
 function versionTime(versionObj) {
   return (
     versionObj &&
