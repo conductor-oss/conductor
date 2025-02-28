@@ -2514,6 +2514,18 @@
     "@typescript-eslint/types" "5.30.6"
     eslint-visitor-keys "^3.3.0"
 
+"@use-gesture/core@10.3.1":
+  version "10.3.1"
+  resolved "https://registry.yarnpkg.com/@use-gesture/core/-/core-10.3.1.tgz#976c9421e905f0079d49822cfd5c2e56b808fc56"
+  integrity sha512-WcINiDt8WjqBdUXye25anHiNxPc0VOrlT8F6LLkU6cycrOGUDyY/yyFmsg3k8i5OLvv25llc0QC45GhR/C8llw==
+
+"@use-gesture/react@^10.2.21":
+  version "10.3.1"
+  resolved "https://registry.yarnpkg.com/@use-gesture/react/-/react-10.3.1.tgz#17a743a894d9bd9a0d1980c618f37f0164469867"
+  integrity sha512-Yy19y6O2GJq8f7CHf7L0nxL8bf4PZCPaVOCgJrusOeFHY1LvHgYXnmnXg6N5iwAnbgbZCDjo60SiM6IPJi9C5g==
+  dependencies:
+    "@use-gesture/core" "10.3.1"
+
 "@volar/language-core@2.4.10", "@volar/language-core@~2.4.1":
   version "2.4.10"
   resolved "https://registry.npmjs.org/@volar/language-core/-/language-core-2.4.10.tgz"
@@ -5170,6 +5182,11 @@ dom-serializer@^1.0.1:
     domelementtype "^2.0.1"
     domhandler "^4.2.0"
     entities "^2.0.0"
+
+dom-to-image@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/dom-to-image/-/dom-to-image-2.6.0.tgz#8a503608088c87b1c22f9034ae032e1898955867"
+  integrity sha512-Dt0QdaHmLpjURjU7Tnu3AgYSF2LuOmksSGsUcE6ItvJoCWTBEmiMXcqBdNSAm9+QbbwD7JMoVsuuKX6ZVQv1qA==
 
 domelementtype@1:
   version "1.3.1"
@@ -9046,11 +9063,12 @@ optionator@^0.9.1:
     type-check "^0.4.0"
     word-wrap "^1.2.5"
 
-orkes-workflow-visualizer@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/orkes-workflow-visualizer/-/orkes-workflow-visualizer-1.0.1.tgz#18b48a4ab00673cdfd3ee070bdc1083d4df296ea"
-  integrity sha512-vIoliMzp3q6CB0z8kIFYgbqF/VtOINgbb9QvmX8ALWXdIHEQoCKL7j+w9Y1fns0WoWiIny/TVqxkeVPdUjXbMg==
+orkes-workflow-visualizer@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/orkes-workflow-visualizer/-/orkes-workflow-visualizer-1.1.0.tgz#11c2b122522e239b6a1be51c2756d6dd7968c673"
+  integrity sha512-MkwpM4C37iKPYerTIRZ4rO/43P5wmg6CgtngBHw7G9RTWGpLwCqIcNt+7GyDxu0n0JjysP4d/hJNM2fpOudgNQ==
   dependencies:
+    "@use-gesture/react" "^10.2.21"
     date-fns "^2.29.3"
     lodash "^4.17.21"
     phosphor-react "^1.4.1"
