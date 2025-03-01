@@ -124,7 +124,7 @@ public class AnnotatedWorker implements Worker {
             Annotation[] paramAnnotation = parameterAnnotations[i];
             if(containsWorkflowInstanceIdInputParamAnnotation(paramAnnotation)) {
                 validateParameterForWorkflowInstanceId(parameters[i]);
-                values[i] = getWorkflowInstanceId(task, parameters[i]);
+                values[i] = task.getWorkflowInstanceId();
             } else if (paramAnnotation.length > 0) {
                 Type type = parameters[i].getParameterizedType();
                 Class<?> parameterType = parameterTypes[i];
@@ -144,18 +144,10 @@ public class AnnotatedWorker implements Worker {
     }
 
     private void validateParameterForWorkflowInstanceId(Parameter parameter) {
-        if(!parameter.getType().equals(String.class) && !parameter.getType().equals(UUID.class)) {
+        if(!parameter.getType().equals(String.class)) {
             throw new IllegalArgumentException(
                     "Parameter " + parameter + " is annotated with " + WorkflowInstanceIdInputParam.class.getSimpleName() +
-                            " but is not of type " + String.class.getSimpleName() + " or " + UUID.class.getSimpleName() + ".");
-        }
-    }
-
-    private Object getWorkflowInstanceId(final Task task, final Parameter parameter) {
-        if(parameter.getType().equals(String.class)) {
-            return task.getWorkflowInstanceId();
-        } else {
-            return UUID.fromString(task.getWorkflowInstanceId());
+                            " but is not of type " + String.class.getSimpleName() + ".");
         }
     }
 
