@@ -18,11 +18,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -33,6 +29,7 @@ import com.netflix.conductor.sdk.workflow.def.tasks.DynamicFork;
 import com.netflix.conductor.sdk.workflow.def.tasks.DynamicForkInput;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
+import com.netflix.conductor.sdk.workflow.task.WorkflowInstanceIdInputParam;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,7 +122,10 @@ public class AnnotatedWorker implements Worker {
         Object[] values = new Object[parameterTypes.length];
         for (int i = 0; i < parameterTypes.length; i++) {
             Annotation[] paramAnnotation = parameterAnnotations[i];
-            if (paramAnnotation != null && paramAnnotation.length > 0) {
+            if(containsWorkflowInstanceIdInputParamAnnotation(paramAnnotation)) {
+                validateParameterForWorkflowInstanceId(parameters[i]);
+                values[i] = task.getWorkflowInstanceId();
+            } else if (paramAnnotation.length > 0) {
                 Type type = parameters[i].getParameterizedType();
                 Class<?> parameterType = parameterTypes[i];
                 values[i] = getInputValue(task, parameterType, type, paramAnnotation);
@@ -135,6 +135,20 @@ public class AnnotatedWorker implements Worker {
         }
 
         return values;
+    }
+
+    private boolean containsWorkflowInstanceIdInputParamAnnotation(Annotation[] annotations) {
+        return Arrays.stream(annotations)
+                .map(Annotation::annotationType)
+                .anyMatch(WorkflowInstanceIdInputParam.class::equals);
+    }
+
+    private void validateParameterForWorkflowInstanceId(Parameter parameter) {
+        if(!parameter.getType().equals(String.class)) {
+            throw new IllegalArgumentException(
+                    "Parameter " + parameter + " is annotated with " + WorkflowInstanceIdInputParam.class.getSimpleName() +
+                            " but is not of type " + String.class.getSimpleName() + ".");
+        }
     }
 
     private Object getInputValue(
