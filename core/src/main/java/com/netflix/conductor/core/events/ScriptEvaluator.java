@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.events;
 
+import java.util.List;
+
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -22,6 +24,18 @@ import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 public class ScriptEvaluator {
 
     private static ScriptEngine engine;
+
+    private static final List<String> FORBIDDEN_PATTERNS =
+            List.of(
+                    "java\\.lang\\.Runtime",
+                    "java\\.io\\.File",
+                    "System\\.exit",
+                    "ProcessBuilder",
+                    "exec\\(",
+                    "getClass\\(",
+                    "invoke\\(",
+                    "new\\s+java\\.lang\\.reflect\\.",
+                    "Class\\.forName");
 
     private ScriptEvaluator() {}
 
@@ -48,6 +62,7 @@ public class ScriptEvaluator {
      * @return Generic object, the result of the evaluated expression.
      */
     public static Object eval(String script, Object input) throws ScriptException {
+        validateScript(script);
         initEngine(false);
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
@@ -89,5 +104,19 @@ public class ScriptEvaluator {
             return ((Number) input).doubleValue() > 0;
         }
         return false;
+    }
+
+    /**
+     * Validates the script for security risks.
+     *
+     * @param script Script to be validated.
+     * @throws ScriptException
+     */
+    private static void validateScript(String script) throws ScriptException {
+        for (String pattern : FORBIDDEN_PATTERNS) {
+            if (script.matches("(?s).*" + pattern + ".*")) {
+                throw new ScriptException("Unsafe script detected: " + pattern);
+            }
+        }
     }
 }
