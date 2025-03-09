@@ -4,7 +4,11 @@ on:
     types:
       - released
       - prereleased
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0)'
+        required: true
 permissions:
   contents: read
 
