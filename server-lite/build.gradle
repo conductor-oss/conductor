@@ -86,7 +86,7 @@ jar {
 
 bootJar {
     mainClass = 'org.conductoross.conductor.Conductor'
-    archiveClassifier = 'boot'
+    archiveClassifier = 'lite'
 }
 
 publishing {
