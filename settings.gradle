@@ -33,6 +33,7 @@ include 'annotations'
 include 'annotations-processor'
 
 include 'server'
+include 'server-lite'
 include 'common'
 include 'core'
 include 'client'
