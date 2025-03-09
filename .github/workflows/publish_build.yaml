@@ -16,6 +16,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     name: Build and Publish the server-lite
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Set up Zulu JDK 17
