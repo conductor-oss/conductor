@@ -85,7 +85,7 @@ jar {
 }
 
 bootJar {
-    mainClass = 'com.netflix.conductor.Conductor'
+    mainClass = 'org.conductoross.conductor.Conductor'
     archiveClassifier = 'boot'
 }
 
