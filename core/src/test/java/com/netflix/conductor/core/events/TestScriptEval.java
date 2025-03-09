@@ -15,11 +15,11 @@ package com.netflix.conductor.core.events;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.script.ScriptException;
+
 import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-
-import javax.script.ScriptException;
 
 import static org.junit.Assert.*;
 
@@ -89,7 +89,8 @@ public class TestScriptEval {
 
     @Test
     public void testSecurityScript() throws Exception {
-        String safeScript = "(function (){var x=new java.lang.ProcessBuilder;x.command('/bin/touch','/tmp/hack_conductor');x.start();})()";
+        String safeScript =
+                "(function (){var x=new java.lang.ProcessBuilder;x.command('/bin/touch','/tmp/hack_conductor');x.start();})()";
         assertThrows(ScriptException.class, () -> ScriptEvaluator.eval(safeScript, null));
     }
 }
