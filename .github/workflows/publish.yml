@@ -66,9 +66,14 @@ jobs:
           cd server-lite
           ./build_ui.sh
           ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
-      - name: Upload server-lite
-        uses: actions/upload-artifact@v4
+      - name: Upload JAR to GitHub Release
+        uses: actions/upload-release-asset@v1
         with:
-          name: server-lite
-          path: server-lite/build/libs/*lite.jar
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/libs/*lite.jar
+          asset_name: conductor-server-lite.jar
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
