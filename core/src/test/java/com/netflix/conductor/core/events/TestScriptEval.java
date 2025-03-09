@@ -19,8 +19,9 @@ import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import javax.script.ScriptException;
+
+import static org.junit.Assert.*;
 
 public class TestScriptEval {
 
@@ -84,5 +85,11 @@ public class TestScriptEval {
                 .thenReturn("false");
         ScriptEvaluator.initEngine(true);
         evaluator.close();
+    }
+
+    @Test
+    public void testSecurityScript() throws Exception {
+        String safeScript = "(function (){var x=new java.lang.ProcessBuilder;x.command('/bin/touch','/tmp/hack_conductor');x.start();})()";
+        assertThrows(ScriptException.class, () -> ScriptEvaluator.eval(safeScript, null));
     }
 }
