@@ -40,12 +40,12 @@ jobs:
           export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo Publishing version $PUBLISH_VERSION
           cd server-lite
-          ./build_ui.sh
+#          ./build_ui.sh
           ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
       - name: Upload JAR to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: server-lite/build/libs/*lite.jar
+          files: server-lite/build/libs/*standalone.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
