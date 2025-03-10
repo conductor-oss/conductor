@@ -94,9 +94,6 @@ public class TaskModel {
     /** Time when the task was last updated */
     private long updateTime;
 
-    /** Time when first task started */
-    private long firstStartTime;
-
     private int startDelayInSeconds;
 
     private String retriedTaskId;
@@ -149,6 +146,11 @@ public class TaskModel {
 
     // Timeout after which the wait task should be marked as completed
     private long waitTimeout;
+
+    // Total task Timeout after which the task should be marked as terminated
+    private long firstStartTime;
+
+    private boolean isTotalTimeOutExpired;
 
     /**
      * Used to note that a sub workflow associated with SUB_WORKFLOW task has an action performed on
@@ -639,6 +641,22 @@ public class TaskModel {
         this.outputPayload = data;
     }
 
+    public long getFirstStartTime() {
+        return firstStartTime;
+    }
+
+    public void setFirstStartTime(long firstStartTime) {
+        this.firstStartTime = firstStartTime;
+    }
+
+    public boolean isTotalTimeOutExpired() {
+        return isTotalTimeOutExpired;
+    }
+
+    public void setTotalTimeOutExpired(boolean totalTimeOutExpired) {
+        isTotalTimeOutExpired = totalTimeOutExpired;
+    }
+
     @Override
     public String toString() {
         return "TaskModel{"
@@ -741,6 +759,9 @@ public class TaskModel {
                 + '\''
                 + ", subworkflowChanged="
                 + subworkflowChanged
+                + '\''
+                + ", firstStartTime="
+                + firstStartTime
                 + '}';
     }
 
@@ -794,7 +815,9 @@ public class TaskModel {
                         taskModel.getExternalOutputPayloadStoragePath())
                 && Objects.equals(getExecutionNameSpace(), taskModel.getExecutionNameSpace())
                 && Objects.equals(getIsolationGroupId(), taskModel.getIsolationGroupId())
-                && Objects.equals(getSubWorkflowId(), taskModel.getSubWorkflowId());
+                && Objects.equals(getSubWorkflowId(), taskModel.getSubWorkflowId())
+                && Objects.equals(getFirstStartTime(), taskModel.getFirstStartTime())
+                && isTotalTimeOutExpired == taskModel.isTotalTimeOutExpired();
     }
 
     @Override
@@ -841,7 +864,9 @@ public class TaskModel {
                 getIsolationGroupId(),
                 getIteration(),
                 getSubWorkflowId(),
-                isSubworkflowChanged());
+                isSubworkflowChanged(),
+                getFirstStartTime(),
+                isTotalTimeOutExpired);
     }
 
     public Task toTask() {
