@@ -78,6 +78,8 @@ include 'amqp'
 include 'nats'
 include 'nats-streaming'
 include 'kafka-event-queue'
+include 'ai'
+include 'ai-worker'
 
 include 'test-harness'
 
