@@ -30,11 +30,10 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
+import com.netflix.conductor.sdk.workflow.task.WorkflowInstanceIdInputParam;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.mock;
 
 public class AnnotatedWorkerTests {
@@ -309,5 +308,64 @@ public class AnnotatedWorkerTests {
         assertNotNull(taskThreadCount);
         assertEquals(3, taskThreadCount.get("test_1"));
         assertEquals(2, taskThreadCount.get("test_2"));
+    }
+
+    static class WorkflowInstanceIdInputParamAsStringWorker {
+        @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
+        public Map<String, Object> doWork(
+                @WorkflowInstanceIdInputParam String workflowInstanceId) {
+            return Map.of("workflowInstanceId", workflowInstanceId);
+        }
+    }
+
+    @Test
+    @DisplayName("it should handle workflow instance id input param for String parameter type")
+    void workflowInstanceIdInputParamAsString() throws NoSuchMethodException {
+        var worker = new WorkflowInstanceIdInputParamAsStringWorker();
+        var annotatedWorker =
+                new AnnotatedWorker(
+                        "test_1",
+                        worker.getClass().getMethod("doWork", String.class),
+                        worker);
+
+        var task = new Task();
+        var workflowInstanceId = UUID.randomUUID().toString();
+        task.setWorkflowInstanceId(workflowInstanceId);
+        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setTaskId(UUID.randomUUID().toString());
+
+        var result0 = annotatedWorker.execute(task);
+        var outputData = result0.getOutputData();
+
+        var actual = (String) outputData.get("workflowInstanceId");
+        assertEquals(workflowInstanceId, actual);
+    }
+
+    static class InvalidWorkflowInstanceIdInputParamWorker {
+        @WorkerTask(value = "test_1", threadCount = 3, pollingInterval = 333)
+        public Map<String, Object> doWork(
+                @WorkflowInstanceIdInputParam int workflowInstanceId) {
+            return Map.of("workflowInstanceId", workflowInstanceId);
+        }
+    }
+
+    @Test
+    @DisplayName("it should throw exception if type of parameter is invalid for workflow instance id")
+    void invalidWorkflowInstanceIdInputParam() throws NoSuchMethodException {
+        var worker = new InvalidWorkflowInstanceIdInputParamWorker();
+        var annotatedWorker =
+                new AnnotatedWorker(
+                        "test_1",
+                        worker.getClass().getMethod("doWork", int.class),
+                        worker);
+
+        var task = new Task();
+        var workflowInstanceId = UUID.randomUUID().toString();
+        task.setWorkflowInstanceId(workflowInstanceId);
+        task.setStatus(Task.Status.IN_PROGRESS);
+        task.setTaskId(UUID.randomUUID().toString());
+
+        final RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> annotatedWorker.execute(task));
+        assertInstanceOf(IllegalArgumentException.class, runtimeException.getCause());
     }
 }

@@ -1,17 +1,23 @@
-name: Publish Conductor OSS toMaven Central
+name: Publish Conductor OSS Server Lite
 on:
   release:
     types:
       - released
       - prereleased
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0)'
+        required: true
 permissions:
   contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    name: Gradle Build and Publish
+    name: Build and Publish the server-lite
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Set up Zulu JDK 17
@@ -28,13 +34,18 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Publish release
+      - name: Create Standalone server
         run: |
-          export VERSION="${{github.ref_name}}"
+          export VERSION="${{ github.event.inputs.version }}"
           export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo Publishing version $PUBLISH_VERSION
-          ./gradlew publish -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
+          cd server-lite
+          ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
+      - name: Upload JAR to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: server-lite/build/libs/*standalone.jar
         env:
-          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
