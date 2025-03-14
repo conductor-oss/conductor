@@ -127,7 +127,7 @@ public final class WorkflowClient {
         return resp.getData();
     }
 
-    private void checkAndUploadToExternalStorage(StartWorkflowRequest startWorkflowRequest) {
+    public void checkAndUploadToExternalStorage(StartWorkflowRequest startWorkflowRequest) {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             objectMapper.writeValue(byteArrayOutputStream, startWorkflowRequest.getInput());
             byte[] workflowInputBytes = byteArrayOutputStream.toByteArray();
@@ -565,7 +565,7 @@ public final class WorkflowClient {
      *
      * @param workflow the workflow for which the output is to be populated.
      */
-    private void populateWorkflowOutput(Workflow workflow) {
+    public void populateWorkflowOutput(Workflow workflow) {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             eventDispatcher.publish(new WorkflowPayloadUsedEvent(workflow.getWorkflowName(),
                     workflow.getWorkflowVersion(),
