@@ -40,6 +40,7 @@ import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
+import com.netflix.conductor.core.listener.WorkflowStatusListener.WorkflowEventType;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -234,6 +235,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         try {
             executionDAOFacade.createWorkflow(workflow);
+            // Notify on workflow started.
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.RESTARTED);
         } catch (Exception e) {
             Monitors.recordWorkflowStartError(
                     workflowDef.getName(), WorkflowContext.get().getClientApp());
@@ -317,6 +320,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
+
+            try {
+                WorkflowStatusListener.WorkflowEventType event =
+                        WorkflowStatusListener.WorkflowEventType.valueOf(operation.toUpperCase());
+                notifyWorkflowStatusListener(parentWorkflow, event);
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Unknown workflow operation: {}", operation);
+            }
+
             expediteLazyWorkflowEvaluation(parentWorkflowId);
 
             workflow = parentWorkflow;
@@ -387,6 +399,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
         LOGGER.info(
                 "Workflow {} that failed due to '{}' was retried",
                 workflow.toShortString(),
@@ -495,6 +508,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             workflow = completeWorkflow(workflow);
         }
         cancelNonTerminalTasks(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.FINALIZED);
     }
 
     /**
@@ -547,7 +561,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         executionDAOFacade.updateWorkflow(workflow);
         LOGGER.debug("Completed workflow execution for {}", workflow.getWorkflowId());
-        workflowStatusListener.onWorkflowCompletedIfEnabled(workflow);
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.COMPLETED);
         Monitors.recordWorkflowCompletion(
                 workflow.getWorkflowName(),
                 workflow.getEndTime() - workflow.getCreateTime(),
@@ -630,6 +644,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             String workflowId = workflow.getWorkflowId();
             workflow.setReasonForIncompletion(reason);
             executionDAOFacade.updateWorkflow(workflow);
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.TERMINATED);
             Monitors.recordWorkflowTermination(
                     workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
             LOGGER.info("Workflow {} is terminated because of {}", workflowId, reason);
@@ -696,7 +711,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getWorkflowName(), workflow.getWorkflowId());
 
             List<String> erroredTasks = cancelNonTerminalTasks(workflow);
-            workflowStatusListener.onWorkflowTerminatedIfEnabled(workflow);
             if (!erroredTasks.isEmpty()) {
                 throw new NonTransientException(
                         String.format(
@@ -1207,7 +1221,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
         if (erroredTasks.isEmpty()) {
             try {
-                workflowStatusListener.onWorkflowFinalizedIfEnabled(workflow);
                 queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
             } catch (Exception e) {
                 LOGGER.error(
@@ -1259,6 +1272,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             workflow.setStatus(status);
             executionDAOFacade.updateWorkflow(workflow);
+
+            // Notify on workflow paused.
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.PAUSED);
         } finally {
             executionLockService.releaseLock(workflowId);
         }
@@ -1299,6 +1315,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
         executionDAOFacade.updateWorkflow(workflow);
+        // Notify on workflow resumed.
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.RESUMED);
         decide(workflowId);
     }
 
@@ -1649,7 +1667,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getPriority(),
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
-
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.RERAN);
             decide(workflowId);
             return true;
         }
@@ -1698,6 +1716,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getPriority(),
                     properties.getWorkflowOffsetTimeout().getSeconds());
             executionDAOFacade.updateWorkflow(workflow);
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
+
             // update tasks in datastore to update workflow-tasks relationship for archived
             // workflows
             executionDAOFacade.updateTasks(workflow.getTasks());
@@ -1908,6 +1928,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getWorkflowName(),
                     workflow.getWorkflowId());
             executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
             decide(workflow);
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
@@ -1930,6 +1951,47 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflowDef.getName(), WorkflowContext.get().getClientApp());
 
             throw new IllegalArgumentException("NULL input passed when starting workflow");
+        }
+    }
+
+    private void notifyWorkflowStatusListener(WorkflowModel workflow, WorkflowEventType event) {
+        try {
+            switch (event) {
+                case STARTED:
+                    workflowStatusListener.onWorkflowStartedIfEnabled(workflow);
+                    break;
+                case RERAN:
+                    workflowStatusListener.onWorkflowRerunIfEnabled(workflow);
+                    break;
+                case RETRIED:
+                    workflowStatusListener.onWorkflowRetriedIfEnabled(workflow);
+                    break;
+                case PAUSED:
+                    workflowStatusListener.onWorkflowPausedIfEnabled(workflow);
+                    break;
+                case RESUMED:
+                    workflowStatusListener.onWorkflowResumedIfEnabled(workflow);
+                    break;
+                case RESTARTED:
+                    workflowStatusListener.onWorkflowRestartedIfEnabled(workflow);
+                    break;
+                case COMPLETED:
+                    workflowStatusListener.onWorkflowCompletedIfEnabled(workflow);
+                    break;
+                case TERMINATED:
+                    workflowStatusListener.onWorkflowTerminatedIfEnabled(workflow);
+                    break;
+                case FINALIZED:
+                    workflowStatusListener.onWorkflowFinalizedIfEnabled(workflow);
+                    break;
+                default:
+                    return;
+            }
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Error while notifying WorkflowStatusListener for workflow: {}",
+                    workflow.getWorkflowId(),
+                    e);
         }
     }
 }

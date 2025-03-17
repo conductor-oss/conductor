@@ -97,6 +97,10 @@
         {
           "value": "queue_publisher",
           "description": "Use the publisher implementation which publishes a message to the underlying queue implementation upon termination or completion as the workflow status listener."
+        },
+        {
+          "value": "kafka",
+          "description": "Use this publisher to publish workflow status changed to Kafka. The events published are the following Termination, Completion, Finalization, Started, Rearan, Retried, Paused, Resumed, Restarted, Finalized."
         }
       ]
     },
