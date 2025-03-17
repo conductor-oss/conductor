@@ -1,0 +1,51 @@
+name: Publish Conductor OSS Server Lite
+on:
+  release:
+    types:
+      - released
+      - prereleased
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0)'
+        required: true
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Build and Publish the server-lite
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Zulu JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Create Standalone server
+        run: |
+          export VERSION="${{ github.event.inputs.version }}"
+          export PUBLISH_VERSION=`echo ${VERSION:1}`
+          echo Publishing version $PUBLISH_VERSION
+          cd server-lite
+          ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
+      - name: Upload JAR to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: server-lite/build/libs/*standalone.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

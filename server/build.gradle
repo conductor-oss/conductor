@@ -38,6 +38,7 @@ dependencies {
     implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-mysql-persistence')
+    implementation project(':conductor-sqlite-persistence')
 
     //Indexing (note: Elasticsearch 6 is deprecated)
     implementation project(':conductor-os-persistence')
@@ -68,6 +69,7 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-web'
     implementation "redis.clients:jedis:${revJedis}"
     implementation "org.postgresql:postgresql:${revPostgres}"
+    implementation "org.apache.lucene:lucene-core:${revApacheLucene}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
