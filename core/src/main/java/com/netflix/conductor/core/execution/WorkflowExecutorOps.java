@@ -129,7 +129,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     "Workflow is in terminal state. Status = %s", workflow.getStatus());
         }
 
-        // Get SIMPLE tasks in SCHEDULED state that have callbackAfterSeconds > 0 and set the
+        // Get SIMPLE tasks in SCHEDULED state that have callbackAfterSeconds > 0 and
+        // set the
         // callbackAfterSeconds to 0
         workflow.getTasks().stream()
                 .filter(
@@ -219,7 +220,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new NotFoundException("Workflow: %s is non-restartable", workflow);
         }
 
-        // Reset the workflow in the primary datastore and remove from indexer; then re-create it
+        // Reset the workflow in the primary datastore and remove from indexer; then
+        // re-create it
         executionDAOFacade.resetWorkflow(workflowId);
 
         workflow.getTasks().clear();
@@ -336,9 +338,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     private void retry(WorkflowModel workflow) {
-        // Get all FAILED or CANCELED tasks that are not COMPLETED (or reach other terminal states)
+        // Get all FAILED or CANCELED tasks that are not COMPLETED (or reach other
+        // terminal states)
         // on further executions.
-        // // Eg: for Seq of tasks task1.CANCELED, task1.COMPLETED, task1 shouldn't be retried.
+        // // Eg: for Seq of tasks task1.CANCELED, task1.COMPLETED, task1 shouldn't be
+        // retried.
         // Throw an exception if there are no FAILED tasks.
         // Handle JOIN task CANCELED status as special case.
         Map<String, TaskModel> retriableMap = new HashMap<>();
@@ -378,7 +382,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
         }
 
-        // if workflow TIMED_OUT due to timeoutSeconds configured in the workflow definition,
+        // if workflow TIMED_OUT due to timeoutSeconds configured in the workflow
+        // definition,
         // it may not have any unsuccessful tasks that can be retried
         if (retriableMap.values().size() == 0
                 && workflow.getStatus() != WorkflowModel.Status.TIMED_OUT) {
@@ -405,7 +410,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.toShortString(),
                 lastReasonForIncompletion);
 
-        // taskToBeRescheduled would set task `retried` to true, and hence it's important to
+        // taskToBeRescheduled would set task `retried` to true, and hence it's
+        // important to
         // updateTasks after obtaining task copy from taskToBeRescheduled.
         final WorkflowModel finalWorkflow = workflow;
         List<TaskModel> retriableTasks =
@@ -415,7 +421,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         .collect(Collectors.toList());
 
         dedupAndAddTasks(workflow, retriableTasks);
-        // Note: updateTasks before updateWorkflow might fail when Workflow is archived and doesn't
+        // Note: updateTasks before updateWorkflow might fail when Workflow is archived
+        // and doesn't
         // exist in primary store.
         executionDAOFacade.updateTasks(workflow.getTasks());
         scheduleTask(workflow, retriableTasks);
@@ -469,13 +476,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.getInputData().putAll(taskInput);
 
         task.setRetried(true);
-        // since this task is being retried and a retry has been computed, task lifecycle is
+        // since this task is being retried and a retry has been computed, task
+        // lifecycle is
         // complete
         task.setExecuted(true);
         return taskToBeRetried;
     }
 
     private void endExecution(WorkflowModel workflow, TaskModel terminateTask) {
+        boolean raiseFinalizedNotification = false;
         if (terminateTask != null) {
             String terminationStatus =
                     (String)
@@ -503,12 +512,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             } else {
                 workflow.setReasonForIncompletion(reason);
                 workflow = completeWorkflow(workflow);
+                raiseFinalizedNotification = true;
             }
         } else {
             workflow = completeWorkflow(workflow);
+            raiseFinalizedNotification = true;
         }
-        cancelNonTerminalTasks(workflow);
-        notifyWorkflowStatusListener(workflow, WorkflowEventType.FINALIZED);
+        cancelNonTerminalTasks(workflow, raiseFinalizedNotification);
     }
 
     /**
@@ -611,7 +621,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             try {
                 deciderService.updateWorkflowOutput(workflow, null);
             } catch (Exception e) {
-                // catch any failure in this step and continue the execution of terminating workflow
+                // catch any failure in this step and continue the execution of terminating
+                // workflow
                 LOGGER.error(
                         "Failed to update output data for workflow: {}",
                         workflow.getWorkflowId(),
@@ -782,7 +793,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return task;
         }
 
-        // for system tasks, setting to SCHEDULED would mean restarting the task which is
+        // for system tasks, setting to SCHEDULED would mean restarting the task which
+        // is
         // undesirable
         // for worker tasks, set status to SCHEDULED and push to the queue
         if (!systemTaskRegistry.isSystemTask(task.getTaskType())
@@ -861,7 +873,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 break;
         }
 
-        // Throw a TransientException if below operations fail to avoid workflow inconsistencies.
+        // Throw a TransientException if below operations fail to avoid workflow
+        // inconsistencies.
         try {
             executionDAOFacade.updateTask(task);
         } catch (Exception e) {
@@ -1186,6 +1199,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     @VisibleForTesting
     List<String> cancelNonTerminalTasks(WorkflowModel workflow) {
+        return cancelNonTerminalTasks(workflow, true);
+    }
+
+    List<String> cancelNonTerminalTasks(WorkflowModel workflow, boolean raiseFinalized) {
         List<String> erroredTasks = new ArrayList<>();
         // Update non-terminal tasks' status to CANCELED
         for (TaskModel task : workflow.getTasks()) {
@@ -1221,6 +1238,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
         if (erroredTasks.isEmpty()) {
             try {
+                if (raiseFinalized) {
+                    notifyWorkflowStatusListener(workflow, WorkflowEventType.FINALIZED);
+                }
                 queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
             } catch (Exception e) {
                 LOGGER.error(
@@ -1520,7 +1540,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
-            // Traverse through all the system tasks, start the sync tasks, in case of async queue
+            // Traverse through all the system tasks, start the sync tasks, in case of async
+            // queue
             // the tasks
             for (TaskModel task : systemTasks) {
                 WorkflowSystemTask workflowSystemTask = systemTaskRegistry.get(task.getTaskType());
@@ -1565,7 +1586,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new TerminateWorkflowException(errorMsg);
         }
 
-        // On addTaskToQueue failures, ignore the exceptions and let WorkflowRepairService take care
+        // On addTaskToQueue failures, ignore the exceptions and let
+        // WorkflowRepairService take care
         // of republishing the messages to the queue.
         try {
             addTaskToQueue(tasksToBeQueued);
@@ -1768,7 +1790,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     @Override
     public void scheduleNextIteration(TaskModel loopTask, WorkflowModel workflow) {
-        // Schedule only first loop over task. Rest will be taken care in Decider Service when this
+        // Schedule only first loop over task. Rest will be taken care in Decider
+        // Service when this
         // task will get completed.
         List<TaskModel> scheduledLoopOverTasks =
                 deciderService.getTasksToBeScheduled(
@@ -1906,7 +1929,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflowDefinition.getName(), WorkflowContext.get().getClientApp());
             LOGGER.error("Unable to start workflow: {}", workflowDefinition.getName(), e);
 
-            // It's possible the remove workflow call hits an exception as well, in that case we
+            // It's possible the remove workflow call hits an exception as well, in that
+            // case we
             // want to log both errors to help diagnosis.
             try {
                 executionDAOFacade.removeWorkflow(workflowId, false);
