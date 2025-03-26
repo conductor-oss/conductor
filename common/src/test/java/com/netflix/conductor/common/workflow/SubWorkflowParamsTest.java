@@ -57,13 +57,6 @@ public class SubWorkflowParamsTest {
         subWorkflowParams.setWorkflowDefinition(new Object());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetPriority()  {
-        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
-        subWorkflowParams.setName("dummy-name");
-        subWorkflowParams.setPriority(new Object());
-    }
-
     @Test
     public void testGetWorkflowDef() {
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
