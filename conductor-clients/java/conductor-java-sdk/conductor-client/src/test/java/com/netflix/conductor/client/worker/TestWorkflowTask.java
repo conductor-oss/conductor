@@ -12,9 +12,11 @@
  */
 package com.netflix.conductor.client.worker;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,5 +73,28 @@ public class TestWorkflowTask {
             assertNotNull(tasks);
             assertEquals(1, tasks.size());
         }
+    }
+
+    @Test
+    public void testSubworkflowParams() throws Exception {
+
+        WorkflowDef subWorkflowDef;
+        WorkflowDef mainWorkflowDef;
+        try (InputStream inputStream = TestWorkflowTask.class.getResourceAsStream("/workflows/sub_workflow.json")) {
+            if (inputStream == null) {
+                throw new IOException("Resource not found: " + "/workflows/sub_workflow.json");
+            }
+            subWorkflowDef = objectMapper.readValue(inputStream, WorkflowDef.class);
+        }
+
+        try (InputStream inputStream = TestWorkflowTask.class.getResourceAsStream("/workflows/main_workflow.json")) {
+            if (inputStream == null) {
+                throw new IOException("Resource not found: " + "/workflows/main_workflow.json");
+            }
+            mainWorkflowDef = objectMapper.readValue(inputStream, WorkflowDef.class);
+        }
+
+        assertEquals("${fetchPriority.output.priority}", mainWorkflowDef.getTasks().get(1).getSubWorkflowParam().getPriority().toString());
+        assertEquals(subWorkflowDef.getName(), mainWorkflowDef.getTasks().get(1).getSubWorkflowParam().getName());
     }
 }
