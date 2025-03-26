@@ -16,13 +16,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
