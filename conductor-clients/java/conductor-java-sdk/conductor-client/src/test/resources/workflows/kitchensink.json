@@ -387,8 +387,7 @@
                 "timeoutSeconds": 0,
                 "variables": {},
                 "inputTemplate": {}
-              },
-              "priority": "$5 < 15 ? 7:21"
+              }
             },
             "joinOn": [],
             "optional": false,
