@@ -10,21 +10,20 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.worker;
+package com.netflix.conductor.common.metadata.workflow;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class WorkflowDefDeserializationTest {
 
@@ -38,16 +37,14 @@ class WorkflowDefDeserializationTest {
     @Test
     @DisplayName("Should correctly deserialize subworkflow priority as a dynamic expression")
     public void testSubworkflowPriorityDeserialization() throws Exception {
-        WorkflowDef mainWorkflowDef;
         try (InputStream inputStream = getClass().getResourceAsStream("/workflows/main_workflow.json")) {
             if (inputStream == null) {
                 throw new IOException("Resource not found: /workflows/main_workflow.json");
             }
-            mainWorkflowDef = objectMapper.readValue(inputStream, WorkflowDef.class);
+            WorkflowDef mainWorkflowDef = objectMapper.readValue(inputStream, WorkflowDef.class);
+            Assertions.assertEquals("${fetchPriority.output.priority}",
+                    mainWorkflowDef.getTasks().get(1).getSubWorkflowParam().getPriority().toString(),
+                    "Subworkflow priority should be deserialized as a dynamic expression");
         }
-
-        assertEquals("${fetchPriority.output.priority}",
-                mainWorkflowDef.getTasks().get(1).getSubWorkflowParam().getPriority().toString(),
-                "Subworkflow priority should be deserialized as a dynamic expression");
     }
 }
