@@ -1,0 +1,25 @@
+{
+  "name": "main_workflow_with_priority",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fetch_priority_config",
+      "taskReferenceName": "fetchPriority",
+      "type": "SIMPLE",
+      "outputParameters": {
+        "priority": 42
+      }
+    },
+    {
+      "name": "sub_workflow_example",
+      "taskReferenceName": "subWorkflowTask",
+      "type": "SUB_WORKFLOW",
+      "subWorkflowParam": {
+        "name": "sub_workflow_example",
+        "version": 1,
+        "priority": "${fetchPriority.output.priority}"
+      }
+    }
+  ],
+  "schemaVersion": 2
+}
