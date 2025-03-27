@@ -12,14 +12,18 @@
  */
 package com.netflix.conductor.client.worker;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import java.io.IOException;
-import java.io.InputStream;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class WorkflowDefDeserializationTest {
