@@ -14,7 +14,6 @@ package com.netflix.conductor.core.events;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
@@ -61,11 +60,11 @@ public class ScriptEvaluator {
 
     public static void initEngine(boolean reInit) {
         if (engine == null || reInit) {
+            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
             if ("true".equalsIgnoreCase(getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
-                NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
-                engine = factory.getScriptEngine("--language=es6");
+                engine = factory.getScriptEngine("--language=es6", "--no-java");
             } else {
-                engine = new ScriptEngineManager().getEngineByName("Nashorn");
+                engine = factory.getScriptEngine("--no-java");
             }
         }
         if (engine == null) {

@@ -19,7 +19,6 @@ import java.util.Map;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
@@ -103,11 +102,11 @@ public class Javascript extends Task<Javascript> {
      */
     public Javascript validate() {
         ScriptEngine scriptEngine;
+        NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
         if ("true".equalsIgnoreCase(System.getenv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
-            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
-            scriptEngine = factory.getScriptEngine("--language=es6");
+            scriptEngine = factory.getScriptEngine("--language=es6", "--no-java");
         } else {
-            scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+            scriptEngine = factory.getScriptEngine("--no-java");
         }
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
@@ -137,11 +136,11 @@ public class Javascript extends Task<Javascript> {
     public Object test(Map<String, Object> input) {
 
         ScriptEngine scriptEngine;
+        NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
         if ("true".equalsIgnoreCase(System.getenv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
-            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
-            scriptEngine = factory.getScriptEngine("--language=es6");
+            scriptEngine = factory.getScriptEngine("--language=es6", "--no-java");
         } else {
-            scriptEngine = new ScriptEngineManager().getEngineByName("Nashorn");
+            scriptEngine = factory.getScriptEngine("--no-java");
         }
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
