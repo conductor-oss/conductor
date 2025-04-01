@@ -136,12 +136,11 @@ public class Javascript extends Task<Javascript> {
     public Object test(Map<String, Object> input) {
 
         ScriptEngine scriptEngine;
+        NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
         if ("true".equalsIgnoreCase(System.getenv("CONDUCTOR_NASHORN_ES6_ENABLED"))) {
-            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
             scriptEngine = factory.getScriptEngine("--language=es6", "--no-java");
         } else {
-            NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
-            scriptEngine = factory.getScriptEngine("--language=es6", "--no-java");
+            scriptEngine = factory.getScriptEngine("--no-java");
         }
         if (scriptEngine == null) {
             LOGGER.error("missing " + ENGINE + " engine.  Ensure you are running supported JVM");
