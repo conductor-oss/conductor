@@ -112,7 +112,19 @@ public class ServiceRegistryClientTest {
         assertEquals(actualService.getType(), ServiceRegistry.Type.gRPC);
         assertEquals(actualService.getServiceURI(), "localhost:50051");
         assertEquals(actualService.getMethods().size(), 0);
+        int size = actualService.getMethods().size();
 
+        ServiceMethod method = new ServiceMethod();
+        method.setOperationName("TestOperation");
+        method.setMethodName("addBySdkTest");
+        method.setMethodType("GET");
+        method.setInputType("newHttpInputType");
+        method.setOutputType("newHttpOutputType");
+
+        client.addOrUpdateServiceMethod(GRPC_SERVICE_NAME, method);
+        actualService = client.getService(GRPC_SERVICE_NAME);
+        assertEquals(size + 1, actualService.getMethods().size());
+        
         byte[] binaryData;
         try (InputStream inputStream = getClass().getResourceAsStream("/compiled.bin")) {
             binaryData = inputStream.readAllBytes();
