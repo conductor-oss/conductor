@@ -1,8 +1,9 @@
 ---
-hide: 
+hide:
   - navigation
   - toc
 ---
+
 <div class="home">
 <div class="hero">
   <div class="row justify-content-center align-items-center">
@@ -14,7 +15,7 @@ hide:
         Conductor is a platform originally created at Netflix to orchestrate workflows that span across microservices.
       </div >
       <div style="display: flex; margin-top: 45px;">
-        <a type="button" class="btn btn-primary" href="../conductor/devguide/concepts/index.html">Get Started</a> 
+        <a type="button" class="btn btn-primary" href="https://docs.conductor-oss.org/devguide/concepts/index.html">Get Started</a> 
       </div>
     </div>
     <div class="col-6">
@@ -22,7 +23,6 @@ hide:
     </div>
   </div>
 </div>
-
 
 <div class="bullets">
   <div class="row justify-content-center">
@@ -120,7 +120,6 @@ hide:
     </div>
   </div>
 </div>
-
 
 <div class="compare">
   <div class="container">
