@@ -13,16 +13,8 @@
 package io.orkes.conductor.client;
 
 import com.netflix.conductor.client.http.ConductorClient;
-
-import io.orkes.conductor.client.http.OrkesAuthorizationClient;
-import io.orkes.conductor.client.http.OrkesEventClient;
-import io.orkes.conductor.client.http.OrkesIntegrationClient;
-import io.orkes.conductor.client.http.OrkesMetadataClient;
-import io.orkes.conductor.client.http.OrkesPromptClient;
-import io.orkes.conductor.client.http.OrkesSchedulerClient;
-import io.orkes.conductor.client.http.OrkesSecretClient;
-import io.orkes.conductor.client.http.OrkesTaskClient;
-import io.orkes.conductor.client.http.OrkesWorkflowClient;
+import com.netflix.conductor.client.http.ServiceRegistryClient;
+import io.orkes.conductor.client.http.*;
 
 public class OrkesClients {
 
@@ -52,7 +44,9 @@ public class OrkesClients {
         return new OrkesSchedulerClient(client);
     }
 
-    public Servi
+    public ServiceRegistryClient getServiceRegistryClient() {
+        return new ServiceRegistryClient(client);
+    }
 
     public OrkesSecretClient getSecretClient() {
         return new OrkesSecretClient(client);

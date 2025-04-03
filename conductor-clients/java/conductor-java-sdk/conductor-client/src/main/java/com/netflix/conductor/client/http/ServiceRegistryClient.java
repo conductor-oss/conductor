@@ -12,10 +12,8 @@
  */
 package com.netflix.conductor.client.http;
 
-import java.util.List;
-
-import org.apache.commons.lang3.Validate;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
@@ -24,10 +22,11 @@ import com.netflix.conductor.common.model.CircuitBreakerTransitionResponse;
 import com.netflix.conductor.common.model.ProtoRegistryEntry;
 import com.netflix.conductor.common.model.ServiceMethod;
 import com.netflix.conductor.common.model.ServiceRegistry;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import org.apache.commons.lang3.Validate;
+
+import java.util.List;
 
 /**
  * Client for the Service Registry API
@@ -295,6 +294,7 @@ public final class ServiceRegistryClient {
                 .path("/registry/service/protos/{registryName}/{filename}")
                 .addPathParam("registryName", registryName)
                 .addPathParam("filename", filename)
+                .addHeaderParam("Content-Type", "application/octet-stream")
                 .body(data)
                 .build();
 

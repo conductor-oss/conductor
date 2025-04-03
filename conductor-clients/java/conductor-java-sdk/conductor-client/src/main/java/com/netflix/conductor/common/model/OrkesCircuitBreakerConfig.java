@@ -16,15 +16,13 @@ import lombok.Data;
 
 @Data
 public class OrkesCircuitBreakerConfig {
-    private float failureRateThreshold; // Percentage (e.g., 50.0 for 50%)
-    private int slidingWindowSize;
-    private int minimumNumberOfCalls;
-    private long waitDurationInOpenState; // In millisec
-    private int permittedNumberOfCallsInHalfOpenState;
-
-    private float slowCallRateThreshold; // Percentage of slow calls
-    private long slowCallDurationThreshold; // Defines "slow" call duration in milliSec
-    private boolean automaticTransitionFromOpenToHalfOpenEnabled; // Auto transition
-    private long maxWaitDurationInHalfOpenState; // Max time in HALF-OPEN state
-
+    private Float failureRateThreshold; // Using Float instead of float
+    private Integer slidingWindowSize;
+    private Integer minimumNumberOfCalls;
+    private Long waitDurationInOpenState;
+    private Integer permittedNumberOfCallsInHalfOpenState;
+    private Float slowCallRateThreshold;
+    private Long slowCallDurationThreshold;
+    private Boolean automaticTransitionFromOpenToHalfOpenEnabled;
+    private Long maxWaitDurationInHalfOpenState;
 }

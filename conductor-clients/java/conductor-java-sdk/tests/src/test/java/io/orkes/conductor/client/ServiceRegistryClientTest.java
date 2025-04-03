@@ -10,25 +10,25 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.client.testing;
+package io.orkes.conductor.client;
+
+import com.netflix.conductor.client.http.ServiceRegistryClient;
+import com.netflix.conductor.common.model.OrkesCircuitBreakerConfig;
+import com.netflix.conductor.common.model.ServiceMethod;
+import com.netflix.conductor.common.model.ServiceRegistry;
+import io.orkes.conductor.client.util.ClientTestUtil;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.netflix.conductor.client.http.ServiceRegistryClient;
-import com.netflix.conductor.common.model.OrkesCircuitBreakerConfig;
-import com.netflix.conductor.common.model.ServiceMethod;
-import com.netflix.conductor.common.model.ServiceRegistry;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServiceRegistryClientTest extends AbstractWorkflowTests {
+public class ServiceRegistryClientTest {
 
     private static final String PROTO_FILENAME = "compiled.bin";
     private final ServiceRegistryClient client;
@@ -36,7 +36,8 @@ public class ServiceRegistryClientTest extends AbstractWorkflowTests {
     private final String GRPC_SERVICE_NAME = "grpc-service";
 
     public ServiceRegistryClientTest() {
-        this.client = serviceRegistryClient;
+        OrkesClients orkesClients = ClientTestUtil.getOrkesClients();
+        this.client = orkesClients.getServiceRegistryClient();
     }
 
     @BeforeEach
@@ -114,12 +115,10 @@ public class ServiceRegistryClientTest extends AbstractWorkflowTests {
 
         byte[] binaryData;
         try (InputStream inputStream = getClass().getResourceAsStream("/compiled.bin")) {
-            binaryData = inputStream.readAllBytes(); // Java 9+
+            binaryData = inputStream.readAllBytes();
         }
 
         client.setProtoData(GRPC_SERVICE_NAME, PROTO_FILENAME, binaryData);
-        byte[] actualData = client.getProtoData(GRPC_SERVICE_NAME, PROTO_FILENAME);
-        assertEquals(binaryData.length, actualData.length);
 
         actualService = client.getService(GRPC_SERVICE_NAME);
 

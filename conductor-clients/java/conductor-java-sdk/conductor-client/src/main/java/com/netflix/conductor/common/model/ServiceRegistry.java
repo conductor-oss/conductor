@@ -34,8 +34,6 @@ public class ServiceRegistry {
     }
 
     @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class Config {
         private OrkesCircuitBreakerConfig circuitBreakerConfig = new OrkesCircuitBreakerConfig();
     }
