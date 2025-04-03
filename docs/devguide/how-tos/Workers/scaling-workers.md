@@ -8,9 +8,8 @@ Workers execute business logic in workflow applications. Scaling and optimizing 
 
 Conductor servers publish metrics that help monitor worker health. Learn how to use these metrics with [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/).
 
-:::tip
-Each of the following metrics includes `taskType` as a tag. Use this tag to monitor metrics for a specific task.
-:::
+
+**Tip**: Each of the following metrics includes `taskType` as a tag. Use this tag to monitor metrics for a specific task.
 
 ## Pending requests (Gauge)​
 
@@ -50,6 +49,4 @@ If the value is too high (more than a few seconds), check the following:
 - The number of workers. If they are all busy, consider increasing the number of workers.
 - The worker polling interval. Reduce it if necessary.
 
-:::note
-Reducing the polling interval may increase API requests to the server, which could trigger system limits.
-:::
+**Note**: Reducing the polling interval may increase API requests to the server, which could trigger system limits.
