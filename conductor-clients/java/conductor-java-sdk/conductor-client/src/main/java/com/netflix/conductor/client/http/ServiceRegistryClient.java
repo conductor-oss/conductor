@@ -1,19 +1,33 @@
+/*
+ * Copyright 2025 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.client.http;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+
+import org.apache.commons.lang3.Validate;
+
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
+import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.model.CircuitBreakerTransitionResponse;
 import com.netflix.conductor.common.model.ProtoRegistryEntry;
 import com.netflix.conductor.common.model.ServiceMethod;
 import com.netflix.conductor.common.model.ServiceRegistry;
-import org.apache.commons.lang3.Validate;
-import lombok.extern.slf4j.Slf4j;
-import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 
-import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Client for the Service Registry API
@@ -25,7 +39,9 @@ public final class ServiceRegistryClient {
     private final ConductorClientConfiguration conductorClientConfiguration;
     private ConductorClient client;
 
-    /** Creates a default service registry client */
+    /**
+     * Creates a default service registry client
+     */
     public ServiceRegistryClient() {
         // client will be set once root uri is set
         this(null, new DefaultConductorClientConfiguration());
@@ -65,7 +81,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<List<ServiceRegistry>> resp = client.execute(request,
-                new TypeReference<List<ServiceRegistry>>() {});
+                new TypeReference<List<ServiceRegistry>>() {
+                });
         return resp.getData();
     }
 
@@ -85,7 +102,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<ServiceRegistry> resp = client.execute(request,
-                new TypeReference<ServiceRegistry>() {});
+                new TypeReference<ServiceRegistry>() {
+                });
         return resp.getData();
     }
 
@@ -103,7 +121,8 @@ public final class ServiceRegistryClient {
                 .body(serviceRegistry)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
@@ -120,7 +139,8 @@ public final class ServiceRegistryClient {
                 .addPathParam("name", name)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
@@ -139,7 +159,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<CircuitBreakerTransitionResponse> resp = client.execute(request,
-                new TypeReference<CircuitBreakerTransitionResponse>() {});
+                new TypeReference<CircuitBreakerTransitionResponse>() {
+                });
         return resp.getData();
     }
 
@@ -159,7 +180,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<CircuitBreakerTransitionResponse> resp = client.execute(request,
-                new TypeReference<CircuitBreakerTransitionResponse>() {});
+                new TypeReference<CircuitBreakerTransitionResponse>() {
+                });
         return resp.getData();
     }
 
@@ -179,7 +201,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<CircuitBreakerTransitionResponse> resp = client.execute(request,
-                new TypeReference<CircuitBreakerTransitionResponse>() {});
+                new TypeReference<CircuitBreakerTransitionResponse>() {
+                });
         return resp.getData();
     }
 
@@ -187,7 +210,7 @@ public final class ServiceRegistryClient {
      * Add or update a service method
      *
      * @param registryName The name of the registry
-     * @param method The service method to add or update
+     * @param method       The service method to add or update
      */
     public void addOrUpdateServiceMethod(String registryName, ServiceMethod method) {
         Validate.notBlank(registryName, "Registry name cannot be blank");
@@ -200,16 +223,17 @@ public final class ServiceRegistryClient {
                 .body(method)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
      * Remove a method from a service
      *
      * @param registryName The name of the registry
-     * @param serviceName The name of the service
-     * @param method The method name
-     * @param methodType The method type
+     * @param serviceName  The name of the service
+     * @param method       The method name
+     * @param methodType   The method type
      */
     public void removeMethod(String registryName, String serviceName, String method, String methodType) {
         Validate.notBlank(registryName, "Registry name cannot be blank");
@@ -226,14 +250,15 @@ public final class ServiceRegistryClient {
                 .addQueryParam("methodType", methodType)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
      * Get proto data for a service
      *
      * @param registryName The name of the registry
-     * @param filename The proto filename
+     * @param filename     The proto filename
      * @return The proto data as byte array
      */
     public byte[] getProtoData(String registryName, String filename) {
@@ -248,7 +273,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<byte[]> resp = client.execute(request,
-                new TypeReference<byte[]>() {});
+                new TypeReference<byte[]>() {
+                });
         return resp.getData();
     }
 
@@ -256,8 +282,8 @@ public final class ServiceRegistryClient {
      * Set proto data for a service
      *
      * @param registryName The name of the registry
-     * @param filename The proto filename
-     * @param data The proto data as byte array
+     * @param filename     The proto filename
+     * @param data         The proto data as byte array
      */
     public void setProtoData(String registryName, String filename, byte[] data) {
         Validate.notBlank(registryName, "Registry name cannot be blank");
@@ -272,14 +298,15 @@ public final class ServiceRegistryClient {
                 .body(data)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
      * Delete a proto file
      *
      * @param registryName The name of the registry
-     * @param filename The proto filename to delete
+     * @param filename     The proto filename to delete
      */
     public void deleteProto(String registryName, String filename) {
         Validate.notBlank(registryName, "Registry name cannot be blank");
@@ -292,7 +319,8 @@ public final class ServiceRegistryClient {
                 .addPathParam("filename", filename)
                 .build();
 
-        client.execute(request, new TypeReference<Void>() {});
+        client.execute(request, new TypeReference<Void>() {
+        });
     }
 
     /**
@@ -311,14 +339,15 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<List<ProtoRegistryEntry>> resp = client.execute(request,
-                new TypeReference<List<ProtoRegistryEntry>>() {});
+                new TypeReference<List<ProtoRegistryEntry>>() {
+                });
         return resp.getData();
     }
 
     /**
      * Discover methods for a service
      *
-     * @param name The name of the service
+     * @param name   The name of the service
      * @param create Whether to create discovered methods
      * @return List of discovered service methods
      */
@@ -333,7 +362,8 @@ public final class ServiceRegistryClient {
                 .build();
 
         ConductorClientResponse<List<ServiceMethod>> resp = client.execute(request,
-                new TypeReference<List<ServiceMethod>>() {});
+                new TypeReference<List<ServiceMethod>>() {
+                });
         return resp.getData();
     }
 }

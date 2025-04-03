@@ -20,12 +20,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.netflix.conductor.client.http.ServiceRegistryClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 
 import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.MetadataClient;
+import com.netflix.conductor.client.http.ServiceRegistryClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
