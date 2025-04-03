@@ -52,6 +52,8 @@ public class OrkesClients {
         return new OrkesSchedulerClient(client);
     }
 
+    public Servi
+
     public OrkesSecretClient getSecretClient() {
         return new OrkesSecretClient(client);
     }
