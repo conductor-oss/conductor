@@ -24,15 +24,11 @@ public class Integration {
 
     private Category category;
     private Map<String, Object> configuration;
-    private String createdBy;
-    private Long createdOn;
     private String description;
     private Boolean enabled;
     private long modelsCount;
     private String name;
     private List<TagObject> tags;
     private String type;
-    private String updatedBy;
-    private Long updatedOn;
 
 }
