@@ -23,7 +23,7 @@ public class SchemaDef extends Auditable {
 
     private String name;
 
-    private final int version = 1;
+    private int version = 1;
 
     private Type type;
 
@@ -33,4 +33,44 @@ public class SchemaDef extends Auditable {
     // Externalized schema definition (eg. via AVRO, Protobuf registry)
     // If using Orkes Schema registry, this points to the name of the schema in the registry
     private String externalRef;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public Map<String, Object> getData() {
+        return data;
+    }
+
+    public void setData(Map<String, Object> data) {
+        this.data = data;
+    }
+
+    public String getExternalRef() {
+        return externalRef;
+    }
+
+    public void setExternalRef(String externalRef) {
+        this.externalRef = externalRef;
+    }
 }
