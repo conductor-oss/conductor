@@ -14,11 +14,17 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Map;
 
+import com.google.protobuf.Any;
+
 public class SkipTaskRequest {
 
     private Map<String, Object> taskInput;
 
     private Map<String, Object> taskOutput;
+
+    private Any taskInputMessage;
+
+    private Any taskOutputMessage;
 
     public Map<String, Object> getTaskInput() {
         return taskInput;
@@ -34,6 +40,22 @@ public class SkipTaskRequest {
 
     public void setTaskOutput(Map<String, Object> taskOutput) {
         this.taskOutput = taskOutput;
+    }
+
+    public Any getTaskInputMessage() {
+        return taskInputMessage;
+    }
+
+    public void setTaskInputMessage(Any taskInputMessage) {
+        this.taskInputMessage = taskInputMessage;
+    }
+
+    public Any getTaskOutputMessage() {
+        return taskOutputMessage;
+    }
+
+    public void setTaskOutputMessage(Any taskOutputMessage) {
+        this.taskOutputMessage = taskOutputMessage;
     }
 
 }

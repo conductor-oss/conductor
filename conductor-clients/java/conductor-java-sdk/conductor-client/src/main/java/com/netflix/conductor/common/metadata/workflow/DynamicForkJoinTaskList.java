@@ -16,8 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.annotations.protogen.ProtoField;
+import com.netflix.conductor.annotations.protogen.ProtoMessage;
+
+@ProtoMessage
 public class DynamicForkJoinTaskList {
 
+    @ProtoField(id = 1)
     private List<DynamicForkJoinTask> dynamicTasks = new ArrayList<>();
 
     public void add(String taskName, String workflowName, String referenceName, Map<String, Object> input) {
