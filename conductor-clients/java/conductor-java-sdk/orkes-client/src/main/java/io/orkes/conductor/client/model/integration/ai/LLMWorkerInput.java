@@ -29,5 +29,15 @@ public class LLMWorkerInput {
     private List<String> stopWords;
     private int maxTokens;
     private int maxResults = 1;
+    private String newField; // Example of a new field added from server POJO
+
+    // Getters and setters for newField
+    public String getNewField() {
+        return newField;
+    }
+
+    public void setNewField(String newField) {
+        this.newField = newField;
+    }
 
 }
