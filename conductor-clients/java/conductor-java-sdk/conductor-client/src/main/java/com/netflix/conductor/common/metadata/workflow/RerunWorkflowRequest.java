@@ -26,6 +26,8 @@ public class RerunWorkflowRequest {
 
     private String correlationId;
 
+    private String newField; // Assuming this is the new field from the server POJO
+
     public String getReRunFromWorkflowId() {
         return reRunFromWorkflowId;
     }
@@ -64,5 +66,13 @@ public class RerunWorkflowRequest {
 
     public void setCorrelationId(String correlationId) {
         this.correlationId = correlationId;
+    }
+
+    public String getNewField() {
+        return newField;
+    }
+
+    public void setNewField(String newField) {
+        this.newField = newField;
     }
 }
