@@ -87,8 +87,6 @@ public class WorkflowTask {
     // Populates for the tasks of the decision type
     private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
-    private String dynamicForkJoinTasksParam;
-
     private String dynamicForkTasksParam;
 
     private String dynamicForkTasksInputParamName;
@@ -305,16 +303,6 @@ public class WorkflowTask {
     @Deprecated
     public String getCaseValueParam() {
         return caseValueParam;
-    }
-
-    @Deprecated
-    public String getDynamicForkJoinTasksParam() {
-        return dynamicForkJoinTasksParam;
-    }
-
-    @Deprecated
-    public void setDynamicForkJoinTasksParam(String dynamicForkJoinTasksParam) {
-        this.dynamicForkJoinTasksParam = dynamicForkJoinTasksParam;
     }
 
     public String getDynamicForkTasksParam() {
