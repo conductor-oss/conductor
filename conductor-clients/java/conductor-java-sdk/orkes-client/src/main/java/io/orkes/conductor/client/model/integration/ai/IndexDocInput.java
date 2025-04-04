@@ -1,3 +1,4 @@
+```java
 /*
  * Copyright 2024 Conductor Authors.
  * <p>
@@ -38,6 +39,8 @@ public class IndexDocInput {
     private int chunkOverlap;
     private Map<String, Object> metadata;
     private Integer dimensions;
+    private String newFieldFromServer; // Example new field from server
+
     public String getNamespace() {
         if(namespace == null) {
             return docId;
@@ -52,4 +55,13 @@ public class IndexDocInput {
     public int getChunkOverlap() {
         return chunkOverlap > 0 ? chunkOverlap : 400;
     }
+
+    public String getNewFieldFromServer() {
+        return newFieldFromServer;
+    }
+
+    public void setNewFieldFromServer(String newFieldFromServer) {
+        this.newFieldFromServer = newFieldFromServer;
+    }
 }
+```
