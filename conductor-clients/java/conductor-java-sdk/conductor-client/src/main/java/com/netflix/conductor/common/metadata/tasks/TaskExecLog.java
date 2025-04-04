@@ -75,6 +75,7 @@ public class TaskExecLog {
         this.createdTime = createdTime;
     }
 
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -86,6 +87,7 @@ public class TaskExecLog {
         return createdTime == that.createdTime && Objects.equals(log, that.log) && Objects.equals(taskId, that.taskId);
     }
 
+    @Override
     public int hashCode() {
         return Objects.hash(log, taskId, createdTime);
     }

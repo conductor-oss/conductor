@@ -51,6 +51,8 @@ public class TaskResult {
 
     private boolean extendLease;
 
+    private com.google.protobuf.Any outputMessage;
+
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
         this.taskId = task.getTaskId();
@@ -231,6 +233,14 @@ public class TaskResult {
 
     public void setExtendLease(boolean extendLease) {
         this.extendLease = extendLease;
+    }
+
+    public com.google.protobuf.Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(com.google.protobuf.Any outputMessage) {
+        this.outputMessage = outputMessage;
     }
 
     public String toString() {
