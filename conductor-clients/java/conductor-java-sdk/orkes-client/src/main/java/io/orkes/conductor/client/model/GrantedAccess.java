@@ -1,3 +1,4 @@
+```java
 /*
  * Copyright 2022 Conductor Authors.
  * <p>
@@ -94,3 +95,4 @@ public class GrantedAccess {
         this.target = target;
     }
 }
+```
