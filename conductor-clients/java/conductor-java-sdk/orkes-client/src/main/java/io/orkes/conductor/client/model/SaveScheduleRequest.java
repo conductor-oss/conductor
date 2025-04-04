@@ -41,6 +41,8 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
+    private String description = null;
+
     public SaveScheduleRequest createdBy(String createdBy) {
         this.createdBy = createdBy;
         return this;
@@ -217,5 +219,18 @@ public class SaveScheduleRequest {
     public SaveScheduleRequest zoneId(String zoneId) {
         this.zoneId = zoneId;
         return this;
+    }
+
+    public SaveScheduleRequest description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
