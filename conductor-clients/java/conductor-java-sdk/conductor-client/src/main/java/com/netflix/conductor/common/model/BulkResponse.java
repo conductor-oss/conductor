@@ -60,10 +60,9 @@ public class BulkResponse<T> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof BulkResponse)) {
+        if (!(o instanceof BulkResponse that)) {
             return false;
         }
-        BulkResponse that = (BulkResponse) o;
         return Objects.equals(bulkSuccessfulResults, that.bulkSuccessfulResults) && Objects.equals(bulkErrorResults, that.bulkErrorResults);
     }
 
