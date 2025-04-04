@@ -22,6 +22,8 @@ public enum Category {
 
     RELATIONAL_DB,
 
-    MESSAGE_BROKER
+    MESSAGE_BROKER,
+
+    GIT
 
 }
