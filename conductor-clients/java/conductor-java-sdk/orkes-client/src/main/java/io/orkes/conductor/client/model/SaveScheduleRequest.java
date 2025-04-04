@@ -39,7 +39,9 @@ public class SaveScheduleRequest {
 
     private String updatedBy = null;
 
-    private String zoneId;
+    private String zoneId = "UTC";
+
+    private String description = null;
 
     public SaveScheduleRequest createdBy(String createdBy) {
         this.createdBy = createdBy;
@@ -217,5 +219,18 @@ public class SaveScheduleRequest {
     public SaveScheduleRequest zoneId(String zoneId) {
         this.zoneId = zoneId;
         return this;
+    }
+
+    public SaveScheduleRequest description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

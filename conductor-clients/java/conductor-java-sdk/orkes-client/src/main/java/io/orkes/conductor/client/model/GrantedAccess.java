@@ -60,6 +60,8 @@ public class GrantedAccess {
 
     private TargetRef target = null;
 
+    private String tag = null;
+
     public GrantedAccess access(List<AccessEnum> access) {
         this.access = access;
         return this;
@@ -92,5 +94,18 @@ public class GrantedAccess {
 
     public void setTarget(TargetRef target) {
         this.target = target;
+    }
+
+    public GrantedAccess tag(String tag) {
+        this.tag = tag;
+        return this;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
     }
 }
