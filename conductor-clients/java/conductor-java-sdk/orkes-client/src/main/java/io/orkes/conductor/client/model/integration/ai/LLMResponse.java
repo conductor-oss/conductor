@@ -22,5 +22,6 @@ public class LLMResponse {
     private String finishReason;
     private int tokenUsed;
 
-
+    // Add new fields from server POJO if any
+    // Remove fields not present in server POJO if any
 }
