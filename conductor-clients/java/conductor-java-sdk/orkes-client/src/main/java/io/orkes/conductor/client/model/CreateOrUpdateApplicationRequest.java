@@ -19,6 +19,7 @@ import lombok.ToString;
 @ToString
 public class CreateOrUpdateApplicationRequest {
     private String name = null;
+    private String description = null;
 
     public CreateOrUpdateApplicationRequest name(String name) {
         this.name = name;
@@ -36,6 +37,24 @@ public class CreateOrUpdateApplicationRequest {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public CreateOrUpdateApplicationRequest description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    /**
+     * Application&#x27;s description
+     *
+     * @return description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
 }
