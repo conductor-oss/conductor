@@ -575,7 +575,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new ConflictException("Cannot terminate a COMPLETED workflow.");
         }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
-        terminateWorkflow(workflow, reason, null);
+        terminateWorkflow(workflow, reason, null, false);
     }
 
     /**
@@ -586,10 +586,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      */
     @Override
     public WorkflowModel terminateWorkflow(
-            WorkflowModel workflow, String reason, String failureWorkflow) {
+            WorkflowModel workflow, String reason, String failureWorkflow, boolean lockAcquired) {
         try {
-            executionLockService.acquireLock(workflow.getWorkflowId(), 60000);
-
+            if (!lockAcquired) {
+                executionLockService.acquireLock(workflow.getWorkflowId(), 60000);
+            }
             if (!workflow.getStatus().isTerminal()) {
                 workflow.setStatus(WorkflowModel.Status.TERMINATED);
             }
@@ -705,8 +706,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             return workflow;
         } finally {
-            executionLockService.releaseLock(workflow.getWorkflowId());
-            executionLockService.deleteLock(workflow.getWorkflowId());
+            if (!lockAcquired) {
+                executionLockService.releaseLock(workflow.getWorkflowId());
+                executionLockService.deleteLock(workflow.getWorkflowId());
+            }
         }
     }
 
@@ -1602,7 +1605,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.updateTask(terminateWorkflowException.getTask());
         }
         return terminateWorkflow(
-                workflow, terminateWorkflowException.getMessage(), failureWorkflow);
+                workflow, terminateWorkflowException.getMessage(), failureWorkflow, true);
     }
 
     private boolean rerunWF(

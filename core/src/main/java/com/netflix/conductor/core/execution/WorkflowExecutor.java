@@ -117,7 +117,8 @@ public interface WorkflowExecutor {
      * @param failureWorkflow the failure workflow (if any) to be triggered as a result of this
      *     termination
      */
-    WorkflowModel terminateWorkflow(WorkflowModel workflow, String reason, String failureWorkflow);
+    WorkflowModel terminateWorkflow(
+            WorkflowModel workflow, String reason, String failureWorkflow, boolean lockAcquired);
 
     /**
      * @param workflowId
