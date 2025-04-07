@@ -1,15 +1,3 @@
-/*
- * Copyright 2022 Conductor Authors.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
@@ -20,6 +8,8 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+
+import com.google.protobuf.Any;
 
 public class Task {
 
@@ -130,6 +120,10 @@ public class Task {
 
     private String domain;
 
+    private Any inputMessage;
+
+    private Any outputMessage;
+
     // id 31 is reserved
     private int rateLimitPerFrequency;
 
@@ -157,6 +151,8 @@ public class Task {
 
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
+
+    private long firstStartTime;
 
     public Task() {
     }
@@ -565,6 +561,22 @@ public class Task {
         this.domain = domain;
     }
 
+    public Any getInputMessage() {
+        return inputMessage;
+    }
+
+    public void setInputMessage(Any inputMessage) {
+        this.inputMessage = inputMessage;
+    }
+
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
     /**
      * @return {@link Optional} containing the task definition if available
      */
@@ -699,6 +711,14 @@ public class Task {
         this.parentTaskId = parentTaskId;
     }
 
+    public long getFirstStartTime() {
+        return firstStartTime;
+    }
+
+    public void setFirstStartTime(long firstStartTime) {
+        this.firstStartTime = firstStartTime;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -719,6 +739,8 @@ public class Task {
         copy.setTaskId(taskId);
         copy.setWorkflowTask(workflowTask);
         copy.setDomain(domain);
+        copy.setInputMessage(inputMessage);
+        copy.setOutputMessage(outputMessage);
         copy.setRateLimitPerFrequency(rateLimitPerFrequency);
         copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
@@ -730,6 +752,7 @@ public class Task {
         copy.setSubWorkflowId(getSubWorkflowId());
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
+        copy.setFirstStartTime(firstStartTime);
         return copy;
     }
 
@@ -751,11 +774,12 @@ public class Task {
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
         deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 
     public String toString() {
-        return "Task{" + "taskType='" + taskType + '\'' + ", status=" + status + ", inputData=" + inputData + ", referenceTaskName='" + referenceTaskName + '\'' + ", retryCount=" + retryCount + ", seq=" + seq + ", correlationId='" + correlationId + '\'' + ", pollCount=" + pollCount + ", taskDefName='" + taskDefName + '\'' + ", scheduledTime=" + scheduledTime + ", startTime=" + startTime + ", endTime=" + endTime + ", updateTime=" + updateTime + ", startDelayInSeconds=" + startDelayInSeconds + ", retriedTaskId='" + retriedTaskId + '\'' + ", retried=" + retried + ", executed=" + executed + ", callbackFromWorker=" + callbackFromWorker + ", responseTimeoutSeconds=" + responseTimeoutSeconds + ", workflowInstanceId='" + workflowInstanceId + '\'' + ", workflowType='" + workflowType + '\'' + ", taskId='" + taskId + '\'' + ", reasonForIncompletion='" + reasonForIncompletion + '\'' + ", callbackAfterSeconds=" + callbackAfterSeconds + ", workerId='" + workerId + '\'' + ", outputData=" + outputData + ", workflowTask=" + workflowTask + ", domain='" + domain + '\'' + ", rateLimitPerFrequency=" + rateLimitPerFrequency + ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds + ", workflowPriority=" + workflowPriority + ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' + ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' + ", isolationGroupId='" + isolationGroupId + '\'' + ", executionNameSpace='" + executionNameSpace + '\'' + ", subworkflowChanged='" + subworkflowChanged + '\'' + '}';
+        return "Task{" + "taskType='" + taskType + '\'' + ", status=" + status + ", inputData=" + inputData + ", referenceTaskName='" + referenceTaskName + '\'' + ", retryCount=" + retryCount + ", seq=" + seq + ", correlationId='" + correlationId + '\'' + ", pollCount=" + pollCount + ", taskDefName='" + taskDefName + '\'' + ", scheduledTime=" + scheduledTime + ", startTime=" + startTime + ", endTime=" + endTime + ", updateTime=" + updateTime + ", startDelayInSeconds=" + startDelayInSeconds + ", retriedTaskId='" + retriedTaskId + '\'' + ", retried=" + retried + ", executed=" + executed + ", callbackFromWorker=" + callbackFromWorker + ", responseTimeoutSeconds=" + responseTimeoutSeconds + ", workflowInstanceId='" + workflowInstanceId + '\'' + ", workflowType='" + workflowType + '\'' + ", taskId='" + taskId + '\'' + ", reasonForIncompletion='" + reasonForIncompletion + '\'' + ", callbackAfterSeconds=" + callbackAfterSeconds + ", workerId='" + workerId + '\'' + ", outputData=" + outputData + ", workflowTask=" + workflowTask + ", domain='" + domain + '\'' + ", inputMessage='" + inputMessage + '\'' + ", outputMessage='" + outputMessage + '\'' + ", rateLimitPerFrequency=" + rateLimitPerFrequency + ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds + ", workflowPriority=" + workflowPriority + ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' + ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' + ", isolationGroupId='" + isolationGroupId + '\'' + ", executionNameSpace='" + executionNameSpace + '\'' + ", subworkflowChanged='" + subworkflowChanged + '\'' + ", firstStartTime='" + firstStartTime + '\'' + '}';
     }
 
     public boolean equals(Object o) {
@@ -766,10 +790,10 @@ public class Task {
             return false;
         }
         Task task = (Task) o;
-        return getRetryCount() == task.getRetryCount() && getSeq() == task.getSeq() && getPollCount() == task.getPollCount() && getScheduledTime() == task.getScheduledTime() && getStartTime() == task.getStartTime() && getEndTime() == task.getEndTime() && getUpdateTime() == task.getUpdateTime() && getStartDelayInSeconds() == task.getStartDelayInSeconds() && isRetried() == task.isRetried() && isExecuted() == task.isExecuted() && isCallbackFromWorker() == task.isCallbackFromWorker() && getResponseTimeoutSeconds() == task.getResponseTimeoutSeconds() && getCallbackAfterSeconds() == task.getCallbackAfterSeconds() && getRateLimitPerFrequency() == task.getRateLimitPerFrequency() && getRateLimitFrequencyInSeconds() == task.getRateLimitFrequencyInSeconds() && Objects.equals(getTaskType(), task.getTaskType()) && getStatus() == task.getStatus() && getIteration() == task.getIteration() && getWorkflowPriority() == task.getWorkflowPriority() && Objects.equals(getInputData(), task.getInputData()) && Objects.equals(getReferenceTaskName(), task.getReferenceTaskName()) && Objects.equals(getCorrelationId(), task.getCorrelationId()) && Objects.equals(getTaskDefName(), task.getTaskDefName()) && Objects.equals(getRetriedTaskId(), task.getRetriedTaskId()) && Objects.equals(getWorkflowInstanceId(), task.getWorkflowInstanceId()) && Objects.equals(getWorkflowType(), task.getWorkflowType()) && Objects.equals(getTaskId(), task.getTaskId()) && Objects.equals(getReasonForIncompletion(), task.getReasonForIncompletion()) && Objects.equals(getWorkerId(), task.getWorkerId()) && Objects.equals(getOutputData(), task.getOutputData()) && Objects.equals(getWorkflowTask(), task.getWorkflowTask()) && Objects.equals(getDomain(), task.getDomain()) && Objects.equals(getExternalInputPayloadStoragePath(), task.getExternalInputPayloadStoragePath()) && Objects.equals(getExternalOutputPayloadStoragePath(), task.getExternalOutputPayloadStoragePath()) && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId()) && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace()) && Objects.equals(getParentTaskId(), task.getParentTaskId());
+        return getRetryCount() == task.getRetryCount() && getSeq() == task.getSeq() && getPollCount() == task.getPollCount() && getScheduledTime() == task.getScheduledTime() && getStartTime() == task.getStartTime() && getEndTime() == task.getEndTime() && getUpdateTime() == task.getUpdateTime() && getStartDelayInSeconds() == task.getStartDelayInSeconds() && isRetried() == task.isRetried() && isExecuted() == task.isExecuted() && isCallbackFromWorker() == task.isCallbackFromWorker() && getResponseTimeoutSeconds() == task.getResponseTimeoutSeconds() && getCallbackAfterSeconds() == task.getCallbackAfterSeconds() && getRateLimitPerFrequency() == task.getRateLimitPerFrequency() && getRateLimitFrequencyInSeconds() == task.getRateLimitFrequencyInSeconds() && Objects.equals(getTaskType(), task.getTaskType()) && getStatus() == task.getStatus() && getIteration() == task.getIteration() && getWorkflowPriority() == task.getWorkflowPriority() && Objects.equals(getInputData(), task.getInputData()) && Objects.equals(getReferenceTaskName(), task.getReferenceTaskName()) && Objects.equals(getCorrelationId(), task.getCorrelationId()) && Objects.equals(getTaskDefName(), task.getTaskDefName()) && Objects.equals(getRetriedTaskId(), task.getRetriedTaskId()) && Objects.equals(getWorkflowInstanceId(), task.getWorkflowInstanceId()) && Objects.equals(getWorkflowType(), task.getWorkflowType()) && Objects.equals(getTaskId(), task.getTaskId()) && Objects.equals(getReasonForIncompletion(), task.getReasonForIncompletion()) && Objects.equals(getWorkerId(), task.getWorkerId()) && Objects.equals(getOutputData(), task.getOutputData()) && Objects.equals(getWorkflowTask(), task.getWorkflowTask()) && Objects.equals(getDomain(), task.getDomain()) && Objects.equals(getInputMessage(), task.getInputMessage()) && Objects.equals(getOutputMessage(), task.getOutputMessage()) && Objects.equals(getExternalInputPayloadStoragePath(), task.getExternalInputPayloadStoragePath()) && Objects.equals(getExternalOutputPayloadStoragePath(), task.getExternalOutputPayloadStoragePath()) && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId()) && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace()) && Objects.equals(getParentTaskId(), task.getParentTaskId()) && Objects.equals(getFirstStartTime(), task.getFirstStartTime());
     }
 
     public int hashCode() {
-        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getWorkflowPriority(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath(), getIsolationGroupId(), getExecutionNameSpace(), getParentTaskId());
+        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getWorkflowPriority(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath(), getIsolationGroupId(), getExecutionNameSpace(), getParentTaskId(), getFirstStartTime());
     }
 }
