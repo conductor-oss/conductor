@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -12,13 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
+import java.util.List;
+
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+
 import io.orkes.conductor.common.metadata.tags.Tag;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import java.util.List;
 
 @EqualsAndHashCode
 @ToString
