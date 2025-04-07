@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -70,6 +70,10 @@ public class WorkflowScheduleExecutionModel {
     private String workflowId = null;
 
     private String workflowName = null;
+
+    private String zoneId = "UTC";
+
+    private String orgId = null;
 
     public WorkflowScheduleExecutionModel executionId(String executionId) {
         this.executionId = executionId;
@@ -200,5 +204,31 @@ public class WorkflowScheduleExecutionModel {
 
     public void setWorkflowName(String workflowName) {
         this.workflowName = workflowName;
+    }
+
+    public WorkflowScheduleExecutionModel zoneId(String zoneId) {
+        this.zoneId = zoneId;
+        return this;
+    }
+
+    public String getZoneId() {
+        return zoneId;
+    }
+
+    public void setZoneId(String zoneId) {
+        this.zoneId = zoneId;
+    }
+
+    public WorkflowScheduleExecutionModel orgId(String orgId) {
+        this.orgId = orgId;
+        return this;
+    }
+
+    public String getOrgId() {
+        return orgId;
+    }
+
+    public void setOrgId(String orgId) {
+        this.orgId = orgId;
     }
 }
