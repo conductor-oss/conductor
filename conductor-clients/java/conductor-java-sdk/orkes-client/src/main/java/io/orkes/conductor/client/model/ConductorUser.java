@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -33,6 +33,10 @@ public class ConductorUser {
     private List<Role> roles = null;
 
     private String uuid = null;
+
+    private Boolean encryptedId = null;
+
+    private String encryptedIdDisplayValue = null;
 
     public ConductorUser applicationUser(Boolean applicationUser) {
         this.applicationUser = applicationUser;
@@ -126,5 +130,21 @@ public class ConductorUser {
 
     public void setUuid(String uuid) {
         this.uuid = uuid;
+    }
+
+    public Boolean getEncryptedId() {
+        return encryptedId;
+    }
+
+    public void setEncryptedId(Boolean encryptedId) {
+        this.encryptedId = encryptedId;
+    }
+
+    public String getEncryptedIdDisplayValue() {
+        return encryptedIdDisplayValue;
+    }
+
+    public void setEncryptedIdDisplayValue(String encryptedIdDisplayValue) {
+        this.encryptedIdDisplayValue = encryptedIdDisplayValue;
     }
 }
