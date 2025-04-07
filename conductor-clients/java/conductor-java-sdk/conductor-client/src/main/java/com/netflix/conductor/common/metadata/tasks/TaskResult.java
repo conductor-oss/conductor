@@ -19,6 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.protobuf.Any;
+
 /**
  * Result of the task execution.
  */
@@ -42,6 +44,8 @@ public class TaskResult {
     private Status status;
 
     private Map<String, Object> outputData = new HashMap<>();
+
+    private Any outputMessage;
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
@@ -179,6 +183,14 @@ public class TaskResult {
         return this;
     }
 
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
     /**
      * @return Task execution logs
      */
@@ -234,7 +246,7 @@ public class TaskResult {
     }
 
     public String toString() {
-        return "TaskResult{" + "workflowInstanceId='" + workflowInstanceId + '\'' + ", taskId='" + taskId + '\'' + ", reasonForIncompletion='" + reasonForIncompletion + '\'' + ", callbackAfterSeconds=" + callbackAfterSeconds + ", workerId='" + workerId + '\'' + ", status=" + status + ", outputData=" + outputData + ", logs=" + logs + ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' + ", subWorkflowId='" + subWorkflowId + '\'' + ", extendLease='" + extendLease + '\'' + '}';
+        return "TaskResult{" + "workflowInstanceId='" + workflowInstanceId + '\'' + ", taskId='" + taskId + '\'' + ", reasonForIncompletion='" + reasonForIncompletion + '\'' + ", callbackAfterSeconds=" + callbackAfterSeconds + ", workerId='" + workerId + '\'' + ", status=" + status + ", outputData=" + outputData + ", outputMessage=" + outputMessage + ", logs=" + logs + ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' + ", subWorkflowId='" + subWorkflowId + '\'' + ", extendLease='" + extendLease + '\'' + '}';
     }
 
     public static TaskResult complete() {
