@@ -24,8 +24,8 @@ public class PromptTemplateTestRequest {
     private String model;
     private String prompt;
     private Map<String, Object> promptVariables;
-    private List<String> stopWords;
     private Double temperature;
     private Double topP;
+    private List<String> stopWords;
 
 }
