@@ -18,7 +18,6 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-
 @EqualsAndHashCode
 @ToString
 public class UpsertUserRequest {
