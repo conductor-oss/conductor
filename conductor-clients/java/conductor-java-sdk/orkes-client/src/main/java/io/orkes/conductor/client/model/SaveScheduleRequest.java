@@ -15,8 +15,6 @@ package io.orkes.conductor.client.model;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 import lombok.EqualsAndHashCode;
-
-
 import lombok.ToString;
 
 @EqualsAndHashCode
