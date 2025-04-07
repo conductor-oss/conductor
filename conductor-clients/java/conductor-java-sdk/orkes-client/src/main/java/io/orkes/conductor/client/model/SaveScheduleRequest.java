@@ -21,6 +21,15 @@ import lombok.ToString;
 @ToString
 public class SaveScheduleRequest {
 
+    /**
+     * Simple hello function
+     * @return greeting message
+     */
+    public String hello() {
+        return "Hello from SaveScheduleRequest!";
+    }
+
+
     private String createdBy = null;
 
     private String cronExpression = null;
