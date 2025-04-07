@@ -13,9 +13,12 @@
 package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import io.orkes.conductor.common.metadata.tags.Tag;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+
+import java.util.List;
 
 @EqualsAndHashCode
 @ToString
@@ -44,6 +47,10 @@ public class WorkflowSchedule {
     private Long updatedTime = null;
 
     private String zoneId;
+
+    private List<Tag> tags = null;
+
+    private String description = null;
 
     public WorkflowSchedule createTime(Long createTime) {
         this.createTime = createTime;
@@ -199,5 +206,31 @@ public class WorkflowSchedule {
     public WorkflowSchedule zoneId(String zoneId) {
         this.zoneId = zoneId;
         return this;
+    }
+
+    public WorkflowSchedule tags(List<Tag> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
+    }
+
+    public WorkflowSchedule description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
