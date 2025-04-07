@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -65,10 +65,6 @@ public class WorkflowTask {
 
     private String dynamicTaskNameParam;
 
-    private String caseValueParam;
-
-    private String caseExpression;
-
     private String scriptExpression;
 
     public static class WorkflowTaskList {
@@ -86,8 +82,6 @@ public class WorkflowTask {
 
     // Populates for the tasks of the decision type
     private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
-
-    private String dynamicForkJoinTasksParam;
 
     private String dynamicForkTasksParam;
 
@@ -125,13 +119,6 @@ public class WorkflowTask {
     private String evaluatorType;
 
     private String expression;
-
-    /*
-    Map of events to be emitted when the task status changed.
-    key can be comma separated values of the status changes prefixed with "on"<STATUS>
-    */
-    // @ProtoField(id = 29)
-    private Map<String, List<StateChangeEvent>> onStateChange = new HashMap<>();
 
     private String joinStatus;
 
@@ -297,26 +284,6 @@ public class WorkflowTask {
         this.dynamicTaskNameParam = dynamicTaskNameParam;
     }
 
-    /**
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     * @return the caseValueParam
-     */
-    @Deprecated
-    public String getCaseValueParam() {
-        return caseValueParam;
-    }
-
-    @Deprecated
-    public String getDynamicForkJoinTasksParam() {
-        return dynamicForkJoinTasksParam;
-    }
-
-    @Deprecated
-    public void setDynamicForkJoinTasksParam(String dynamicForkJoinTasksParam) {
-        this.dynamicForkJoinTasksParam = dynamicForkJoinTasksParam;
-    }
-
     public String getDynamicForkTasksParam() {
         return dynamicForkTasksParam;
     }
@@ -331,39 +298,6 @@ public class WorkflowTask {
 
     public void setDynamicForkTasksInputParamName(String dynamicForkTasksInputParamName) {
         this.dynamicForkTasksInputParamName = dynamicForkTasksInputParamName;
-    }
-
-    /**
-     * @param caseValueParam the caseValueParam to set
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public void setCaseValueParam(String caseValueParam) {
-        this.caseValueParam = caseValueParam;
-    }
-
-    /**
-     * @return A javascript expression for decision cases. The result should be a scalar value that
-     *     is used to decide the case branches.
-     * @see #getDecisionCases()
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public String getCaseExpression() {
-        return caseExpression;
-    }
-
-    /**
-     * @param caseExpression A javascript expression for decision cases. The result should be a
-     *     scalar value that is used to decide the case branches.
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public void setCaseExpression(String caseExpression) {
-        this.caseExpression = caseExpression;
     }
 
     public String getScriptExpression() {
@@ -698,14 +632,6 @@ public class WorkflowTask {
             }
         }
         return null;
-    }
-
-    public Map<String, List<StateChangeEvent>> getOnStateChange() {
-        return onStateChange;
-    }
-
-    public void setOnStateChange(Map<String, List<StateChangeEvent>> onStateChange) {
-        this.onStateChange = onStateChange;
     }
 
     public String toString() {
