@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Data;
-
 
 @Data
 public class IndexedDoc {
