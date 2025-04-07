@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -13,75 +13,58 @@
 package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import io.orkes.conductor.common.metadata.tags.Tag;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+
+import java.util.List;
 
 @EqualsAndHashCode
 @ToString
 public class WorkflowSchedule {
 
-    private Long createTime = null;
-
-    private String createdBy = null;
-
-    private String cronExpression = null;
+    private List<Tag> tags = null;
 
     private String name = null;
 
-    private Boolean paused = null;
+    private String cronExpression = null;
 
     private Boolean runCatchupScheduleInstances = null;
 
-    private Long scheduleEndTime = null;
+    private Boolean paused = null;
 
-    private Long scheduleStartTime = null;
+    private String pausedReason = null;
 
     private StartWorkflowRequest startWorkflowRequest = null;
 
-    private String updatedBy = null;
+    private String zoneId;
+
+    private Long scheduleStartTime = null;
+
+    private Long scheduleEndTime = null;
+
+    private Long createTime = null;
 
     private Long updatedTime = null;
 
-    private String zoneId;
+    private String createdBy = null;
 
-    public WorkflowSchedule createTime(Long createTime) {
-        this.createTime = createTime;
+    private String updatedBy = null;
+
+    private String description = null;
+
+    public WorkflowSchedule tags(List<Tag> tags) {
+        this.tags = tags;
         return this;
     }
 
-    public Long getCreateTime() {
-        return createTime;
+    public List<Tag> getTags() {
+        return tags;
     }
 
-    public void setCreateTime(Long createTime) {
-        this.createTime = createTime;
-    }
-
-    public WorkflowSchedule createdBy(String createdBy) {
-        this.createdBy = createdBy;
-        return this;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public WorkflowSchedule cronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
-        return this;
-    }
-
-    public String getCronExpression() {
-        return cronExpression;
-    }
-
-    public void setCronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
     }
 
     public WorkflowSchedule name(String name) {
@@ -97,17 +80,17 @@ public class WorkflowSchedule {
         this.name = name;
     }
 
-    public WorkflowSchedule paused(Boolean paused) {
-        this.paused = paused;
+    public WorkflowSchedule cronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
         return this;
     }
 
-    public Boolean isPaused() {
-        return paused;
+    public String getCronExpression() {
+        return cronExpression;
     }
 
-    public void setPaused(Boolean paused) {
-        this.paused = paused;
+    public void setCronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
     }
 
     public WorkflowSchedule runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
@@ -123,30 +106,30 @@ public class WorkflowSchedule {
         this.runCatchupScheduleInstances = runCatchupScheduleInstances;
     }
 
-    public WorkflowSchedule scheduleEndTime(Long scheduleEndTime) {
-        this.scheduleEndTime = scheduleEndTime;
+    public WorkflowSchedule paused(Boolean paused) {
+        this.paused = paused;
         return this;
     }
 
-    public Long getScheduleEndTime() {
-        return scheduleEndTime;
+    public Boolean isPaused() {
+        return paused;
     }
 
-    public void setScheduleEndTime(Long scheduleEndTime) {
-        this.scheduleEndTime = scheduleEndTime;
+    public void setPaused(Boolean paused) {
+        this.paused = paused;
     }
 
-    public WorkflowSchedule scheduleStartTime(Long scheduleStartTime) {
-        this.scheduleStartTime = scheduleStartTime;
+    public WorkflowSchedule pausedReason(String pausedReason) {
+        this.pausedReason = pausedReason;
         return this;
     }
 
-    public Long getScheduleStartTime() {
-        return scheduleStartTime;
+    public String getPausedReason() {
+        return pausedReason;
     }
 
-    public void setScheduleStartTime(Long scheduleStartTime) {
-        this.scheduleStartTime = scheduleStartTime;
+    public void setPausedReason(String pausedReason) {
+        this.pausedReason = pausedReason;
     }
 
     public WorkflowSchedule startWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
@@ -162,17 +145,56 @@ public class WorkflowSchedule {
         this.startWorkflowRequest = startWorkflowRequest;
     }
 
-    public WorkflowSchedule updatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    public WorkflowSchedule zoneId(String zoneId) {
+        this.zoneId = zoneId;
         return this;
     }
 
-    public String getUpdatedBy() {
-        return updatedBy;
+    public String getZoneId() {
+        return zoneId;
     }
 
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
+    public void setZoneId(String zoneId) {
+        this.zoneId = zoneId;
+    }
+
+    public WorkflowSchedule scheduleStartTime(Long scheduleStartTime) {
+        this.scheduleStartTime = scheduleStartTime;
+        return this;
+    }
+
+    public Long getScheduleStartTime() {
+        return scheduleStartTime;
+    }
+
+    public void setScheduleStartTime(Long scheduleStartTime) {
+        this.scheduleStartTime = scheduleStartTime;
+    }
+
+    public WorkflowSchedule scheduleEndTime(Long scheduleEndTime) {
+        this.scheduleEndTime = scheduleEndTime;
+        return this;
+    }
+
+    public Long getScheduleEndTime() {
+        return scheduleEndTime;
+    }
+
+    public void setScheduleEndTime(Long scheduleEndTime) {
+        this.scheduleEndTime = scheduleEndTime;
+    }
+
+    public WorkflowSchedule createTime(Long createTime) {
+        this.createTime = createTime;
+        return this;
+    }
+
+    public Long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
     }
 
     public WorkflowSchedule updatedTime(Long updatedTime) {
@@ -188,16 +210,42 @@ public class WorkflowSchedule {
         this.updatedTime = updatedTime;
     }
 
-    public String getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(String zoneId) {
-        this.zoneId = zoneId;
-    }
-
-    public WorkflowSchedule zoneId(String zoneId) {
-        this.zoneId = zoneId;
+    public WorkflowSchedule createdBy(String createdBy) {
+        this.createdBy = createdBy;
         return this;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public WorkflowSchedule updatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+        return this;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public WorkflowSchedule description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
