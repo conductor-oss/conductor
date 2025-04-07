@@ -16,16 +16,12 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import io.orkes.conductor.common.metadata.tags.Tag;
-
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
 public class WorkflowSchedule {
-
-    private List<Tag> tags = null;
 
     private String name = null;
 
@@ -54,24 +50,6 @@ public class WorkflowSchedule {
     private String updatedBy = null;
 
     private String description = null;
-
-    public WorkflowSchedule tags(List<Tag> tags) {
-        this.tags = tags;
-        return this;
-    }
-
-    public List<Tag> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<Tag> tags) {
-        this.tags = tags;
-    }
-
-    public WorkflowSchedule name(String name) {
-        this.name = name;
-        return this;
-    }
 
     public String getName() {
         return name;

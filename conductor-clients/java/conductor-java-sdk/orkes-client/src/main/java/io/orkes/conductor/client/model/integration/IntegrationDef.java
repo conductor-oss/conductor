@@ -12,7 +12,6 @@
  */
 package io.orkes.conductor.client.model.integration;
 
-import java.util.List;
 import java.util.Set;
 
 import lombok.Data;
@@ -28,5 +27,4 @@ public class IntegrationDef {
     private String name;
     private Set<String> tags;
     private String type;
-    private List<IntegrationDefFormField> configuration;
 }
