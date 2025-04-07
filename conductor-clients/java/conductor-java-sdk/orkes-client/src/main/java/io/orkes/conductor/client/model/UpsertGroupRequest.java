@@ -25,7 +25,7 @@ import lombok.ToString;
 public class UpsertGroupRequest {
     /**
      * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
-     * WORKFLOW_DEF, TASK_DEF
+     * WORKFLOW_DEF, TASK_DEF, WORKFLOW_SCHEDULE
      */
     public enum InnerEnum {
         CREATE("CREATE"),
@@ -116,7 +116,7 @@ public class UpsertGroupRequest {
 
     /**
      * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
-     * WORKFLOW_DEF, TASK_DEF
+     * WORKFLOW_DEF, TASK_DEF, WORKFLOW_SCHEDULE
      *
      * @return defaultAccess
      */
