@@ -15,20 +15,13 @@ package io.orkes.conductor.client.model;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 import lombok.EqualsAndHashCode;
+
+
 import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
 public class SaveScheduleRequest {
-
-    /**
-     * Simple hello function
-     * @return greeting message
-     */
-    public String hello() {
-        return "Hello from SaveScheduleRequest!";
-    }
-
 
     private String createdBy = null;
 
