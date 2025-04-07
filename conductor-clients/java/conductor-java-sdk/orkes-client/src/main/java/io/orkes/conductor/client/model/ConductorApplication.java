@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -24,6 +24,12 @@ public class ConductorApplication {
     private String id = null;
 
     private String name = null;
+
+    private String updatedBy = null;
+
+    private Long createTime = null;
+
+    private Long updateTime = null;
 
     public ConductorApplication createdBy(String createdBy) {
         this.createdBy = createdBy;
@@ -62,5 +68,44 @@ public class ConductorApplication {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ConductorApplication updatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+        return this;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public ConductorApplication createTime(Long createTime) {
+        this.createTime = createTime;
+        return this;
+    }
+
+    public Long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
+
+    public ConductorApplication updateTime(Long updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
+
+    public Long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
     }
 }
