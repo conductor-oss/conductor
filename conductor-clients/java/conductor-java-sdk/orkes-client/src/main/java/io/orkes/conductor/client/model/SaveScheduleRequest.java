@@ -1,4 +1,3 @@
-```
 /*
  * Copyright 2022 Conductor Authors.
  * <p>
@@ -143,4 +142,3 @@ public class SaveScheduleRequest {
         return this;
     }
 }
-```
