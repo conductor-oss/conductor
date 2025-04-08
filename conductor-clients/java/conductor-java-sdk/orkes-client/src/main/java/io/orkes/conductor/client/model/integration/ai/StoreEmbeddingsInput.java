@@ -16,13 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.*;
-import lombok.EqualsAndHashCode;
 
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class StoreEmbeddingsInput extends LLMWorkerInput {
 
     private String vectorDB;

@@ -63,14 +63,6 @@ public class WorkflowTask {
 
     public static class WorkflowTaskList {
 
-        public List<WorkflowTask> getTasks() {
-            return tasks;
-        }
-
-        public void setTasks(List<WorkflowTask> tasks) {
-            this.tasks = tasks;
-        }
-
         private List<WorkflowTask> tasks;
     }
 

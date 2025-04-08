@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

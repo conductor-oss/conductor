@@ -44,101 +44,11 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
-    public SaveScheduleRequest createdBy(String createdBy) {
-        this.createdBy = createdBy;
-        return this;
-    }
-
-    /**
-     * Get createdBy
-     *
-     * @return createdBy
-     */
-
-    public SaveScheduleRequest cronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
-        return this;
-    }
-
-    /**
-     * Get cronExpression
-     *
-     * @return cronExpression
-     */
-
-    public SaveScheduleRequest name(String name) {
-        this.name = name;
-        return this;
-    }
-
-    /**
-     * Get name
-     *
-     * @return name
-     */
-
-    public SaveScheduleRequest paused(Boolean paused) {
-        this.paused = paused;
-        return this;
-    }
-
-    /**
-     * Get paused
-     *
-     * @return paused
-     */
-
-    public SaveScheduleRequest runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
-        this.runCatchupScheduleInstances = runCatchupScheduleInstances;
-        return this;
-    }
-
-    /**
-     * Get runCatchupScheduleInstances
-     *
-     * @return runCatchupScheduleInstances
-     */
-
-    public SaveScheduleRequest scheduleEndTime(Long scheduleEndTime) {
-        this.scheduleEndTime = scheduleEndTime;
-        return this;
-    }
-
-    /**
-     * Get scheduleEndTime
-     *
-     * @return scheduleEndTime
-     */
-
-    public SaveScheduleRequest scheduleStartTime(Long scheduleStartTime) {
-        this.scheduleStartTime = scheduleStartTime;
-        return this;
-    }
-
-    /**
-     * Get scheduleStartTime
-     *
-     * @return scheduleStartTime
-     */
-
-    public SaveScheduleRequest startWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
-        this.startWorkflowRequest = startWorkflowRequest;
-        return this;
-    }
-
-    /**
-     * Get startWorkflowRequest
-     *
-     * @return startWorkflowRequest
-     */
-
-    public SaveScheduleRequest updatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-        return this;
-    }
-
-    public SaveScheduleRequest zoneId(String zoneId) {
-        this.zoneId = zoneId;
+    public SaveScheduleRequest addSampleRefItem(SampleRef sampleRefItem) {
+        if (this.sampleRef == null) {
+            this.sampleRef = new ArrayList<>();
+        }
+        this.sampleRef.add(sampleRefItem);
         return this;
     }
 }

@@ -24,6 +24,9 @@ public class SubjectRef {
 
     private String id = null;
 
+    /**
+     * User, role or group
+     */
     public enum TypeEnum {
         USER("USER"),
         ROLE("ROLE"),
@@ -56,12 +59,4 @@ public class SubjectRef {
     }
 
     private TypeEnum type = null;
-
-    public SubjectRef addSampleRefItem(SampleRef sampleRefItem) {
-        if (this.sampleRef == null) {
-            this.sampleRef = new ArrayList<>();
-        }
-        this.sampleRef.add(sampleRefItem);
-        return this;
-    }
 }

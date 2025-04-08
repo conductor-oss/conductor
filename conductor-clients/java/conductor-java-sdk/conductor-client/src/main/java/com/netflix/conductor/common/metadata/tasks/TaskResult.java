@@ -82,22 +82,11 @@ public class TaskResult {
         }
     }
 
-    /**
-     * Adds output
-     *
-     * @param key output field
-     * @param value value
-     * @return current instance
-     */
     public TaskResult addOutputData(String key, Object value) {
         this.outputData.put(key, value);
         return this;
     }
 
-    /**
-     * @param log Log line to be added
-     * @return Instance of TaskResult
-     */
     public TaskResult log(String log) {
         this.logs.add(new TaskExecLog(log));
         return this;

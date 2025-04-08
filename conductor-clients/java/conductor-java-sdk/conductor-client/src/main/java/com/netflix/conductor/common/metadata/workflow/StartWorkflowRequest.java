@@ -44,4 +44,49 @@ public class StartWorkflowRequest {
     private String idempotencyKey;
 
     private IdempotencyStrategy idempotencyStrategy;
+
+    public StartWorkflowRequest withName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public StartWorkflowRequest withVersion(Integer version) {
+        this.version = version;
+        return this;
+    }
+
+    public StartWorkflowRequest withCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+        return this;
+    }
+
+    public StartWorkflowRequest withExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+        return this;
+    }
+
+    public StartWorkflowRequest withPriority(Integer priority) {
+        this.priority = priority;
+        return this;
+    }
+
+    public StartWorkflowRequest withInput(Map<String, Object> input) {
+        this.input = input;
+        return this;
+    }
+
+    public StartWorkflowRequest withTaskToDomain(Map<String, String> taskToDomain) {
+        this.taskToDomain = taskToDomain;
+        return this;
+    }
+
+    public StartWorkflowRequest withWorkflowDef(WorkflowDef workflowDef) {
+        this.workflowDef = workflowDef;
+        return this;
+    }
+
+    public StartWorkflowRequest withCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+        return this;
+    }
 }

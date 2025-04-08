@@ -75,6 +75,12 @@ public class Group {
         return this;
     }
 
+    /**
+     * Get defaultAccess
+     *
+     * @return defaultAccess
+     */
+    
     public Group addRolesItem(Role rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();

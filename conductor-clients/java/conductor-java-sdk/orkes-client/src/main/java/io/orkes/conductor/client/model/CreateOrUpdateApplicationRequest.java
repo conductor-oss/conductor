@@ -23,9 +23,4 @@ import lombok.*;
 public class CreateOrUpdateApplicationRequest {
     private String name = null;
 
-    public CreateOrUpdateApplicationRequest name(String name) {
-        this.name = name;
-        return this;
-    }
-
 }

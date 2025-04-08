@@ -59,4 +59,12 @@ public class TargetRef {
     }
 
     private TypeEnum type = null;
+
+    public TargetRef addSampleRefItem(SampleRef sampleRefItem) {
+        if (this.sampleRef == null) {
+            this.sampleRef = new ArrayList<>();
+        }
+        this.sampleRef.add(sampleRefItem);
+        return this;
+    }
 }
