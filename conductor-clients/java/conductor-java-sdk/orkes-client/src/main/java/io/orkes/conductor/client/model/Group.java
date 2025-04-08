@@ -17,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Group {
     /** Gets or Sets inner */
     public enum InnerEnum {
@@ -64,11 +67,6 @@ public class Group {
 
     private List<Role> roles = null;
 
-    public Group defaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-        return this;
-    }
-
     public Group putDefaultAccessItem(String key, List<String> defaultAccessItem) {
         if (this.defaultAccess == null) {
             this.defaultAccess = new HashMap<>();
@@ -83,76 +81,11 @@ public class Group {
      * @return defaultAccess
      */
     
-    public Map<String, List<String>> getDefaultAccess() {
-        return defaultAccess;
-    }
-
-    public void setDefaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-    }
-
-    public Group description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * Get description
-     *
-     * @return description
-     */
-    
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Group id(String id) {
-        this.id = id;
-        return this;
-    }
-
-    /**
-     * Get id
-     *
-     * @return id
-     */
-    
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public Group roles(List<Role> roles) {
-        this.roles = roles;
-        return this;
-    }
-
     public Group addRolesItem(Role rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();
         }
         this.roles.add(rolesItem);
         return this;
-    }
-
-    /**
-     * Get roles
-     *
-     * @return roles
-     */
-    
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<Role> roles) {
-        this.roles = roles;
     }
 }
