@@ -15,11 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthorizationRequest {
     /**
      * The set of access which is granted or removed
@@ -62,53 +65,8 @@ public class AuthorizationRequest {
 
     private TargetRef target = null;
 
-    public AuthorizationRequest access(List<AccessEnum> access) {
-        this.access = access;
-        return this;
-    }
-
     public AuthorizationRequest addAccessItem(AccessEnum accessItem) {
         this.access.add(accessItem);
         return this;
     }
-
-    /**
-     * The set of access which is granted or removed
-     *
-     * @return access
-     */
-    public List<AccessEnum> getAccess() {
-        return access;
-    }
-
-    public void setAccess(List<AccessEnum> access) {
-        this.access = access;
-    }
-
-    public AuthorizationRequest subject(SubjectRef subject) {
-        this.subject = subject;
-        return this;
-    }
-
-    public SubjectRef getSubject() {
-        return subject;
-    }
-
-    public void setSubject(SubjectRef subject) {
-        this.subject = subject;
-    }
-
-    public AuthorizationRequest target(TargetRef target) {
-        this.target = target;
-        return this;
-    }
-
-    public TargetRef getTarget() {
-        return target;
-    }
-
-    public void setTarget(TargetRef target) {
-        this.target = target;
-    }
-
 }
