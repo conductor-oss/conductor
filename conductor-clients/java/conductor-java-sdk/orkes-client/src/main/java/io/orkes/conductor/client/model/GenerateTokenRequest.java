@@ -23,6 +23,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 public final class GenerateTokenRequest {
-    private final String keyId;
-    private final String keySecret;
+    private String keyId;
+    private String keySecret;
 }
