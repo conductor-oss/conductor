@@ -12,11 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Subject {
 
     private String id = null;
@@ -54,29 +57,11 @@ public class Subject {
 
     private TypeEnum type = null;
 
-    public Subject id(String id) {
-        this.id = id;
+    public Subject addSampleRefItem(SampleRef sampleRefItem) {
+        if (this.sampleRef == null) {
+            this.sampleRef = new ArrayList<>();
+        }
+        this.sampleRef.add(sampleRefItem);
         return this;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public Subject type(TypeEnum type) {
-        this.type = type;
-        return this;
-    }
-
-    public TypeEnum getType() {
-        return type;
-    }
-
-    public void setType(TypeEnum type) {
-        this.type = type;
     }
 }
