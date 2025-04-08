@@ -28,6 +28,12 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in
  * the Workflow definition are saved as part of {@link WorkflowDef#getTasks}
  */
+import lombok.*;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkflowTask {
 
     public static class CacheConfig {
@@ -35,22 +41,6 @@ public class WorkflowTask {
         private String key;
 
         private int ttlInSecond;
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public int getTtlInSecond() {
-            return ttlInSecond;
-        }
-
-        public void setTtlInSecond(int ttlInSecond) {
-            this.ttlInSecond = ttlInSecond;
-        }
     }
 
     private String name;
