@@ -18,6 +18,12 @@ import java.util.Objects;
 
 import com.netflix.conductor.common.utils.TaskUtils;
 
+import lombok.*;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SubWorkflowParams {
 
     private String name;
@@ -37,81 +43,6 @@ public class SubWorkflowParams {
     // Priority of the sub workflow, not set inherits from the parent
     private Object priority;
 
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
-    }
-
-    public IdempotencyStrategy getIdempotencyStrategy() {
-        return idempotencyStrategy;
-    }
-
-    public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
-        this.idempotencyStrategy = idempotencyStrategy;
-    }
-
-    /**
-     * @return the name
-     */
-    public String getName() {
-        if (workflowDefinition != null) {
-            if (workflowDefinition instanceof WorkflowDef) {
-                return ((WorkflowDef) workflowDefinition).getName();
-            }
-        }
-        return name;
-    }
-
-    /**
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return the version
-     */
-    public Integer getVersion() {
-        if (workflowDefinition != null) {
-            if (workflowDefinition instanceof WorkflowDef) {
-                return ((WorkflowDef) workflowDefinition).getVersion();
-            }
-        }
-        return version;
-    }
-
-    /**
-     * @param version the version to set
-     */
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    /**
-     * @return the taskToDomain
-     */
-    public Map<String, String> getTaskToDomain() {
-        return taskToDomain;
-    }
-
-    /**
-     * @param taskToDomain the taskToDomain to set
-     */
-    public void setTaskToDomain(Map<String, String> taskToDomain) {
-        this.taskToDomain = taskToDomain;
-    }
-
-    /**
-     * @return the workflowDefinition as an Object
-     */
-    public Object getWorkflowDefinition() {
-        return workflowDefinition;
-    }
-
     @Deprecated
     public void setWorkflowDef(WorkflowDef workflowDef) {
         this.setWorkflowDefinition(workflowDef);
@@ -122,9 +53,6 @@ public class SubWorkflowParams {
         return (WorkflowDef) workflowDefinition;
     }
 
-    /**
-     * @param workflowDef the workflowDefinition to set
-     */
     public void setWorkflowDefinition(Object workflowDef) {
         if (workflowDef == null) {
             this.workflowDefinition = null;
@@ -152,12 +80,5 @@ public class SubWorkflowParams {
         }
         SubWorkflowParams that = (SubWorkflowParams) o;
         return Objects.equals(getName(), that.getName()) && Objects.equals(getVersion(), that.getVersion()) && Objects.equals(getTaskToDomain(), that.getTaskToDomain()) && Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition());
-    }
-
-    public Object getPriority() {
-        return priority;
-    }
-    public void setPriority(Object priority) {
-        this.priority = priority;
     }
 }
