@@ -94,6 +94,31 @@ public class TaskDef extends Auditable {
 
     private boolean enforceSchema;
 
+    public TaskDef(String name) {
+        this.name = name;
+    }
+
+    public TaskDef(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public TaskDef(String name, String description, int retryCount, long timeoutSeconds) {
+        this.name = name;
+        this.description = description;
+        this.retryCount = retryCount;
+        this.timeoutSeconds = timeoutSeconds;
+    }
+
+    public TaskDef(String name, String description, String ownerEmail, int retryCount, long timeoutSeconds, long responseTimeoutSeconds) {
+        this.name = name;
+        this.description = description;
+        this.ownerEmail = ownerEmail;
+        this.retryCount = retryCount;
+        this.timeoutSeconds = timeoutSeconds;
+        this.responseTimeoutSeconds = responseTimeoutSeconds;
+    }
+
     public int concurrencyLimit() {
         return concurrentExecLimit == null ? 0 : concurrentExecLimit;
     }
