@@ -44,11 +44,4 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
-    public SaveScheduleRequest addSampleRefItem(SampleRef sampleRefItem) {
-        if (this.sampleRef == null) {
-            this.sampleRef = new ArrayList<>();
-        }
-        this.sampleRef.add(sampleRefItem);
-        return this;
-    }
 }

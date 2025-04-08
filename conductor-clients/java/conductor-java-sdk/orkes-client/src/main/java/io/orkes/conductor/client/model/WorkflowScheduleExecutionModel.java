@@ -74,11 +74,4 @@ public class WorkflowScheduleExecutionModel {
 
     private String workflowName = null;
 
-    public WorkflowScheduleExecutionModel addSampleRefItem(SampleRef sampleRefItem) {
-        if (this.sampleRef == null) {
-            this.sampleRef = new ArrayList<>();
-        }
-        this.sampleRef.add(sampleRefItem);
-        return this;
-    }
 }
