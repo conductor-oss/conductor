@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -12,14 +12,11 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Subject {
 
     private String id = null;
@@ -57,4 +54,29 @@ public class Subject {
 
     private TypeEnum type = null;
 
+    public Subject id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Subject type(TypeEnum type) {
+        this.type = type;
+        return this;
+    }
+
+    public TypeEnum getType() {
+        return type;
+    }
+
+    public void setType(TypeEnum type) {
+        this.type = type;
+    }
 }
