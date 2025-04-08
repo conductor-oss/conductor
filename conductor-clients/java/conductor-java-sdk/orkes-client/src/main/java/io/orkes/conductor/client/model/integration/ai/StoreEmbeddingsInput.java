@@ -15,11 +15,12 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class StoreEmbeddingsInput extends LLMWorkerInput {
 
     private String vectorDB;
