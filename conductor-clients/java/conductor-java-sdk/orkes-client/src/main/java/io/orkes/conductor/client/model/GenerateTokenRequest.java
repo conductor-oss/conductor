@@ -12,9 +12,9 @@
  */
 package io.orkes.conductor.client.model;
 
+import lombok.*;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.*;
 
 @EqualsAndHashCode
 @ToString

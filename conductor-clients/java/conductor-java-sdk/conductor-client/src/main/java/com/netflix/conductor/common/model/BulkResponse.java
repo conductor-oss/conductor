@@ -12,18 +12,10 @@
  */
 package com.netflix.conductor.common.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Response object to return a list of succeeded entities and a map of failed ones, including error
- * message, for the bulk request.
- *
- * @param <T> the type of entities included in the successful results
- */
 import lombok.*;
 
 @Data

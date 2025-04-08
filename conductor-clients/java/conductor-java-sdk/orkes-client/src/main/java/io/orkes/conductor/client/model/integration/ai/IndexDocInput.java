@@ -15,15 +15,14 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class IndexDocInput {
 
     private String llmProvider;

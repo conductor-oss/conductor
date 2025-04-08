@@ -14,9 +14,6 @@ package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.Objects;
 
-/**
- * Model that represents the task's execution log.
- */
 import lombok.*;
 
 @Data

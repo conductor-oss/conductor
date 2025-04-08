@@ -15,9 +15,6 @@ package com.netflix.conductor.common.metadata.tasks;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
