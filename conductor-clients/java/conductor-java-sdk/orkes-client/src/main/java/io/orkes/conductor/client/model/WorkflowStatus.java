@@ -15,12 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkflowStatus {
 
     private String correlationId = null;
@@ -66,61 +68,11 @@ public class WorkflowStatus {
 
     private String workflowId = null;
 
-    public WorkflowStatus correlationId(String correlationId) {
-        this.correlationId = correlationId;
-        return this;
-    }
-
-    /**
-     * Get correlationId
-     *
-     * @return correlationId
-     */
-
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
-    public WorkflowStatus output(Map<String, Object> output) {
-        this.output = output;
-        return this;
-    }
-
     public WorkflowStatus putOutputItem(String key, Object outputItem) {
         if (this.output == null) {
             this.output = new HashMap<>();
         }
         this.output.put(key, outputItem);
-        return this;
-    }
-
-    public Map<String, Object> getOutput() {
-        return output;
-    }
-
-    public void setOutput(Map<String, Object> output) {
-        this.output = output;
-    }
-
-    public WorkflowStatus status(StatusEnum status) {
-        this.status = status;
-        return this;
-    }
-
-    public StatusEnum getStatus() {
-        return status;
-    }
-
-    public void setStatus(StatusEnum status) {
-        this.status = status;
-    }
-
-    public WorkflowStatus variables(Map<String, Object> variables) {
-        this.variables = variables;
         return this;
     }
 
@@ -131,26 +83,4 @@ public class WorkflowStatus {
         this.variables.put(key, variablesItem);
         return this;
     }
-
-    public Map<String, Object> getVariables() {
-        return variables;
-    }
-
-    public void setVariables(Map<String, Object> variables) {
-        this.variables = variables;
-    }
-
-    public WorkflowStatus workflowId(String workflowId) {
-        this.workflowId = workflowId;
-        return this;
-    }
-
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
-    }
-
 }
