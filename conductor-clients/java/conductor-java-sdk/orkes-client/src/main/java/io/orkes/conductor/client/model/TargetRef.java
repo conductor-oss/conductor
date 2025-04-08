@@ -12,14 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
-/**
- * The object over which access is being granted or removed
- */
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TargetRef {
 
     private String id = null;
@@ -58,44 +58,5 @@ public class TargetRef {
         }
     }
 
-
     private TypeEnum type = null;
-
-    public TargetRef id(String id) {
-        this.id = id;
-        return this;
-    }
-
-    /**
-     * Get id
-     * 
-     * @return id
-     **/
-    
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public TargetRef type(TypeEnum type) {
-        this.type = type;
-        return this;
-    }
-
-    /**
-     * Get type
-     * 
-     * @return type
-     **/
-    
-    public TypeEnum getType() {
-        return type;
-    }
-
-    public void setType(TypeEnum type) {
-        this.type = type;
-    }
 }
