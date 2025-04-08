@@ -15,19 +15,16 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GrantedAccessResponse {
     private List<GrantedAccess> grantedAccess = null;
-
-    public GrantedAccessResponse grantedAccess(List<GrantedAccess> grantedAccess) {
-        this.grantedAccess = grantedAccess;
-        return this;
-    }
 
     public GrantedAccessResponse addGrantedAccessItem(GrantedAccess grantedAccessItem) {
         if (this.grantedAccess == null) {
@@ -35,13 +32,5 @@ public class GrantedAccessResponse {
         }
         this.grantedAccess.add(grantedAccessItem);
         return this;
-    }
-    
-    public List<GrantedAccess> getGrantedAccess() {
-        return grantedAccess;
-    }
-
-    public void setGrantedAccess(List<GrantedAccess> grantedAccess) {
-        this.grantedAccess = grantedAccess;
     }
 }
