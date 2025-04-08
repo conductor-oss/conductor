@@ -12,21 +12,18 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
-/**
- * User, group or role which is granted/removed access
- */
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SubjectRef {
 
     private String id = null;
 
-    /**
-     * User, role or group
-     */
     public enum TypeEnum {
         USER("USER"),
         ROLE("ROLE"),
@@ -58,44 +55,10 @@ public class SubjectRef {
         }
     }
 
-
     private TypeEnum type = null;
 
-    public SubjectRef id(String id) {
-        this.id = id;
+    public SubjectRef addTypeEnumItem(TypeEnum typeEnumItem) {
+        this.type = typeEnumItem;
         return this;
-    }
-
-    /**
-     * Get id
-     *
-     * @return id
-     */
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public SubjectRef type(TypeEnum type) {
-        this.type = type;
-        return this;
-    }
-
-    /**
-     * User, role or group
-     *
-     * @return type
-     */
-
-    public TypeEnum getType() {
-        return type;
-    }
-
-    public void setType(TypeEnum type) {
-        this.type = type;
     }
 }
