@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -12,17 +12,16 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.*;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+@RequiredArgsConstructor
 @EqualsAndHashCode
 @ToString
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class GenerateTokenRequest {
-    private String keyId;
-    private String keySecret;
+@Getter
+public final class GenerateTokenRequest {
+    private final String keyId;
+    private final String keySecret;
 }
