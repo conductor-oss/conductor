@@ -18,7 +18,7 @@ dependencies {
 
     implementation "redis.clients:jedis:${revJedis}"
     implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
-    implementation('com.thoughtworks.xstream:xstream:1.4.20')
+    implementation('com.thoughtworks.xstream:xstream:1.4.21')
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
