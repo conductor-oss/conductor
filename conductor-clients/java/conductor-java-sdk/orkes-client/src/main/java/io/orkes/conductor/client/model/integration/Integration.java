@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -27,15 +27,11 @@ public class Integration {
 
     private Category category;
     private Map<String, Object> configuration;
-    private String createdBy;
-    private Long createdOn;
     private String description;
     private Boolean enabled;
     private long modelsCount;
     private String name;
     private List<TagObject> tags;
     private String type;
-    private String updatedBy;
-    private Long updatedOn;
 
 }
