@@ -24,29 +24,22 @@ import java.util.Objects;
  *
  * @param <T> the type of entities included in the successful results
  */
+import lombok.*;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BulkResponse<T> {
 
     /**
      * Key - entityId Value - error message processing this entity
      */
-    private final Map<String, String> bulkErrorResults;
+    private Map<String, String> bulkErrorResults;
 
-    private final List<T> bulkSuccessfulResults;
+    private List<T> bulkSuccessfulResults;
 
-    private final String message = "Bulk Request has been processed.";
-
-    public BulkResponse() {
-        this.bulkSuccessfulResults = new ArrayList<>();
-        this.bulkErrorResults = new HashMap<>();
-    }
-
-    public List<T> getBulkSuccessfulResults() {
-        return bulkSuccessfulResults;
-    }
-
-    public Map<String, String> getBulkErrorResults() {
-        return bulkErrorResults;
-    }
+    private String message = "Bulk Request has been processed.";
 
     public void appendSuccessResponse(T result) {
         bulkSuccessfulResults.add(result);
