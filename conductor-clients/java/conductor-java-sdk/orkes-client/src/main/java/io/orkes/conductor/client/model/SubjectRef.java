@@ -57,8 +57,11 @@ public class SubjectRef {
 
     private TypeEnum type = null;
 
-    public SubjectRef addTypeEnumItem(TypeEnum typeEnumItem) {
-        this.type = typeEnumItem;
+    public SubjectRef addSampleRefItem(SampleRef sampleRefItem) {
+        if (this.sampleRef == null) {
+            this.sampleRef = new ArrayList<>();
+        }
+        this.sampleRef.add(sampleRefItem);
         return this;
     }
 }

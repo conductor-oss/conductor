@@ -28,9 +28,4 @@ public class CreateOrUpdateApplicationRequest {
         return this;
     }
 
-    /**
-     * Application&#x27;s name e.g.: Payment Processors
-     *
-     * @return name
-     */
 }

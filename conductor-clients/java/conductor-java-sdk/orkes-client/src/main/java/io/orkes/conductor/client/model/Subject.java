@@ -56,4 +56,9 @@ public class Subject {
     }
 
     private TypeEnum type = null;
+
+    public Subject addTypeItem(TypeEnum typeItem) {
+        this.type = typeItem;
+        return this;
+    }
 }

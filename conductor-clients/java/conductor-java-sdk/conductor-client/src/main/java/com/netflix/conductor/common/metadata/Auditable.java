@@ -12,10 +12,11 @@
  */
 package com.netflix.conductor.common.metadata;
 
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class Auditable {

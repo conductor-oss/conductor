@@ -43,37 +43,6 @@ public class SubWorkflowParams {
     // Priority of the sub workflow, not set inherits from the parent
     private Object priority;
 
-    /** 
-     * @return the name
-     */
-    public String getName() {
-        if (workflowDefinition != null) {
-            if (workflowDefinition instanceof WorkflowDef) {
-                return ((WorkflowDef) workflowDefinition).getName();
-            }
-        }
-        return name;
-    }
-
-    /** 
-     * @return the version
-     */
-    public Integer getVersion() {
-        if (workflowDefinition != null) {
-            if (workflowDefinition instanceof WorkflowDef) {
-                return ((WorkflowDef) workflowDefinition).getVersion();
-            }
-        }
-        return version;
-    }
-
-    /** 
-     * @return the workflowDefinition as an Object
-     */
-    public Object getWorkflowDefinition() {
-        return workflowDefinition;
-    }
-
     @Deprecated
     public void setWorkflowDef(WorkflowDef workflowDef) {
         this.setWorkflowDefinition(workflowDef);
@@ -84,9 +53,6 @@ public class SubWorkflowParams {
         return (WorkflowDef) workflowDefinition;
     }
 
-    /** 
-     * @param workflowDef the workflowDefinition to set
-     */
     public void setWorkflowDefinition(Object workflowDef) {
         if (workflowDef == null) {
             this.workflowDefinition = null;

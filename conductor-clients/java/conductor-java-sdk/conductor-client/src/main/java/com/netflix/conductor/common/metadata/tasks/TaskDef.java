@@ -24,7 +24,6 @@ import com.netflix.conductor.common.metadata.SchemaDef;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskDef extends Auditable {
