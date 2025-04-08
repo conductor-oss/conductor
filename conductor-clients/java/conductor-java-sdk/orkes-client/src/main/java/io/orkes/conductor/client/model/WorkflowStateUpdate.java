@@ -16,9 +16,12 @@ import java.util.Map;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkflowStateUpdate {
     private String taskReferenceName;
     private Map<String, Object> variables;
