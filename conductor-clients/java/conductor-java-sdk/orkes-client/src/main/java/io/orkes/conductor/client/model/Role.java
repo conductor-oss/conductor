@@ -15,41 +15,19 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Role {
 
     private String name = null;
 
     private List<Permission> permissions = null;
-
-    public Role name(String name) {
-        this.name = name;
-        return this;
-    }
-
-    /**
-     * Get name
-     *
-     * @return name
-     */
-    
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Role permissions(List<Permission> permissions) {
-        this.permissions = permissions;
-        return this;
-    }
 
     public Role addPermissionsItem(Permission permissionsItem) {
         if (this.permissions == null) {
@@ -57,19 +35,5 @@ public class Role {
         }
         this.permissions.add(permissionsItem);
         return this;
-    }
-
-    /**
-     * Get permissions
-     *
-     * @return permissions
-     */
-    
-    public List<Permission> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(List<Permission> permissions) {
-        this.permissions = permissions;
     }
 }
