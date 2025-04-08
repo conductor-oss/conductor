@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -30,8 +30,6 @@ public class BulkResponse<T> {
 
     private List<T> bulkSuccessfulResults;
 
-    private String message = "Bulk Request has been processed.";
-
     public void appendSuccessResponse(T result) {
         bulkSuccessfulResults.add(result);
     }
@@ -52,10 +50,10 @@ public class BulkResponse<T> {
     }
 
     public int hashCode() {
-        return Objects.hash(bulkSuccessfulResults, bulkErrorResults, message);
+        return Objects.hash(bulkSuccessfulResults, bulkErrorResults);
     }
 
     public String toString() {
-        return "BulkResponse{" + "bulkSuccessfulResults=" + bulkSuccessfulResults + ", bulkErrorResults=" + bulkErrorResults + ", message='" + message + '\'' + '}';
+        return "BulkResponse{" + "bulkSuccessfulResults=" + bulkSuccessfulResults + ", bulkErrorResults=" + bulkErrorResults + '}';
     }
 }
