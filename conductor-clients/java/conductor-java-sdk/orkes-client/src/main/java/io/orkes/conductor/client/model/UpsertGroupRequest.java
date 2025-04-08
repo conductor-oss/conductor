@@ -17,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpsertGroupRequest {
     /**
      * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
@@ -98,13 +101,7 @@ public class UpsertGroupRequest {
 
     }
 
-
     private List<RolesEnum> roles = null;
-
-    public UpsertGroupRequest defaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-        return this;
-    }
 
     public UpsertGroupRequest putDefaultAccessItem(String key, List<String> defaultAccessItem) {
         if (this.defaultAccess == null) {
@@ -120,38 +117,6 @@ public class UpsertGroupRequest {
      *
      * @return defaultAccess
      */
-    public Map<String, List<String>> getDefaultAccess() {
-        return defaultAccess;
-    }
-
-    public void setDefaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-    }
-
-    public UpsertGroupRequest description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * A general description of the group
-     *
-     * @return description
-     */
-    
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public UpsertGroupRequest roles(List<RolesEnum> roles) {
-        this.roles = roles;
-        return this;
-    }
-
     public UpsertGroupRequest addRolesItem(RolesEnum rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();
@@ -165,13 +130,5 @@ public class UpsertGroupRequest {
      *
      * @return roles
      */
-    
-    public List<RolesEnum> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<RolesEnum> roles) {
-        this.roles = roles;
-    }
 
 }
