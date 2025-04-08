@@ -18,6 +18,11 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkflowDef extends Auditable {
 
     public enum TimeoutPolicy {
