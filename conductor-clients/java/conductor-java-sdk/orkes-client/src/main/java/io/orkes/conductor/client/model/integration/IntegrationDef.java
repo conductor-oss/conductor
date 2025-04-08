@@ -14,9 +14,12 @@ package io.orkes.conductor.client.model.integration;
 
 import java.util.List;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class IntegrationDef {
 
     private Category category;
