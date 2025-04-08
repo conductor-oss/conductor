@@ -57,11 +57,4 @@ public class SubjectRef {
 
     private TypeEnum type = null;
 
-    public SubjectRef addGrantedAccessItem(GrantedAccess grantedAccessItem) {
-        if (this.grantedAccess == null) {
-            this.grantedAccess = new ArrayList<>();
-        }
-        this.grantedAccess.add(grantedAccessItem);
-        return this;
-    }
 }
