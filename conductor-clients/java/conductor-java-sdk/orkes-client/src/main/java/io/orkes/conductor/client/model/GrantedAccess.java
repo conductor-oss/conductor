@@ -15,11 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GrantedAccess {
     /**
      * Gets or Sets access
@@ -60,37 +63,11 @@ public class GrantedAccess {
 
     private TargetRef target = null;
 
-    public GrantedAccess access(List<AccessEnum> access) {
-        this.access = access;
-        return this;
-    }
-
     public GrantedAccess addAccessItem(AccessEnum accessItem) {
         if (this.access == null) {
             this.access = new ArrayList<>();
         }
         this.access.add(accessItem);
         return this;
-    }
-
-    public List<AccessEnum> getAccess() {
-        return access;
-    }
-
-    public void setAccess(List<AccessEnum> access) {
-        this.access = access;
-    }
-
-    public GrantedAccess target(TargetRef target) {
-        this.target = target;
-        return this;
-    }
-
-    public TargetRef getTarget() {
-        return target;
-    }
-
-    public void setTarget(TargetRef target) {
-        this.target = target;
     }
 }
