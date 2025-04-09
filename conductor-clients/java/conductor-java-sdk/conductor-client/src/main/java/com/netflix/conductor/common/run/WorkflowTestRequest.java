@@ -20,12 +20,12 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class WorkflowTestRequest extends StartWorkflowRequest {
