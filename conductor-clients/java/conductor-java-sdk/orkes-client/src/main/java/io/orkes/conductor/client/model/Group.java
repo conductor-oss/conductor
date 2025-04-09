@@ -67,6 +67,11 @@ public class Group {
 
     private List<Role> roles = null;
 
+    public Group defaultAccess(Map<String, List<String>> defaultAccess) {
+        this.defaultAccess = defaultAccess;
+        return this;
+    }
+
     public Group putDefaultAccessItem(String key, List<String> defaultAccessItem) {
         if (this.defaultAccess == null) {
             this.defaultAccess = new HashMap<>();
@@ -75,11 +80,20 @@ public class Group {
         return this;
     }
 
-    /**
-     * Get defaultAccess
-     *
-     * @return defaultAccess
-     */
+    public Group description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public Group id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public Group roles(List<Role> roles) {
+        this.roles = roles;
+        return this;
+    }
     
     public Group addRolesItem(Role rolesItem) {
         if (this.roles == null) {

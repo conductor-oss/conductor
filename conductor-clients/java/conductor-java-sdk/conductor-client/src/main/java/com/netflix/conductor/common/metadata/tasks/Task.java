@@ -15,6 +15,9 @@ package com.netflix.conductor.common.metadata.tasks;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -160,6 +163,63 @@ public class Task {
 
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
+
+    public long getQueueWaitTime() {
+        if (this.startTime > 0 && this.scheduledTime > 0) {
+            if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
+                long waitTime = System.currentTimeMillis() - (this.updateTime + (getCallbackAfterSeconds() * 1000));
+                return waitTime > 0 ? waitTime : 0;
+            } else {
+                return this.startTime - this.scheduledTime;
+            }
+        }
+        return 0L;
+    }
+
+    public void incrementPollCount() {
+        ++this.pollCount;
+    }
+
+    public String getTaskDefName() {
+        if (taskDefName == null || "".equals(taskDefName)) {
+            taskDefName = taskType;
+        }
+        return taskDefName;
+    }
+
+    public com.netflix.conductor.common.metadata.tasks.Task setWorkflowType(String workflowType) {
+        this.workflowType = workflowType;
+        return this;
+    }
+
+    public void setReasonForIncompletion(String reasonForIncompletion) {
+        this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
+    }
+
+    public Optional<TaskDef> getTaskDefinition() {
+        return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
+    }
+
+    public boolean isLoopOverTask() {
+        return iteration > 0;
+    }
+
+    public String getSubWorkflowId() {
+        // For backwards compatibility
+        if (StringUtils.isNotBlank(subWorkflowId)) {
+            return subWorkflowId;
+        } else {
+            return this.getOutputData() != null && this.getOutputData().get("subWorkflowId") != null ? (String) this.getOutputData().get("subWorkflowId") : this.getInputData() != null ? (String) this.getInputData().get("subWorkflowId") : null;
+        }
+    }
+
+    public void setSubWorkflowId(String subWorkflowId) {
+        this.subWorkflowId = subWorkflowId;
+        // For backwards compatibility
+        if (this.getOutputData() != null && this.getOutputData().containsKey("subWorkflowId")) {
+            this.getOutputData().put("subWorkflowId", subWorkflowId);
+        }
+    }
 
     public Task copy() {
         Task copy = new Task();

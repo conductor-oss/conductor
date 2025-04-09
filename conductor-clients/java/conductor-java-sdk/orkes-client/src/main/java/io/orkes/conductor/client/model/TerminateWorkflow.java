@@ -26,4 +26,14 @@ public class TerminateWorkflow {
 
     private String workflowId = null;
 
+    public TerminateWorkflow terminationReason(String terminationReason) {
+        this.terminationReason = terminationReason;
+        return this;
+    }
+
+    public TerminateWorkflow workflowId(String workflowId) {
+        this.workflowId = workflowId;
+        return this;
+    }
+
 }

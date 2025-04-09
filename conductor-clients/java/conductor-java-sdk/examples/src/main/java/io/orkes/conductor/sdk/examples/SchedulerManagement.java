@@ -59,8 +59,8 @@ public class SchedulerManagement {
     private void createSchedule() {
         // Create save schedule request
         SaveScheduleRequest saveScheduleRequest = new SaveScheduleRequest();
-        saveScheduleRequest.setCreatedBy("test@orkes.io");
-        saveScheduleRequest.setCronExpression(cron);
+        saveScheduleRequest.createdBy("test@orkes.io");
+        saveScheduleRequest.cronExpression(cron);
         saveScheduleRequest.setName(scheduleName);
         // Create start workflow request
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
@@ -83,13 +83,13 @@ public class SchedulerManagement {
 
         // Verify the schedule is paused
         WorkflowSchedule workflowSchedule = schedulerClient.getSchedule(scheduleName);
-        System.out.println(workflowSchedule.getPaused());
+        System.out.println(workflowSchedule.isPaused());
 
         /// Resume schedule
         schedulerClient.resumeSchedule(scheduleName);
         // Verify the schedule is resumed
         WorkflowSchedule workflowSchedule1 = schedulerClient.getSchedule(scheduleName);
-        System.out.println(!workflowSchedule1.getPaused());
+        System.out.println(!workflowSchedule1.isPaused());
 
         // Example to get schedule, pause, resume, find next schedules, list scheduled executions
 

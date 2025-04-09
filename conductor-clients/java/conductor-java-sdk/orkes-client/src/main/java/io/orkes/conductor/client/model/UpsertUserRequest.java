@@ -63,6 +63,11 @@ public class UpsertUserRequest {
 
     private List<RolesEnum> roles = null;
 
+    public UpsertUserRequest groups(List<String> groups) {
+        this.groups = groups;
+        return this;
+    }
+
     public UpsertUserRequest addGroupsItem(String groupsItem) {
         if (this.groups == null) {
             this.groups = new ArrayList<>();
@@ -71,11 +76,16 @@ public class UpsertUserRequest {
         return this;
     }
 
-    /**
-     * Ids of the groups this user belongs to
-     *
-     * @return groups
-     */
+    public UpsertUserRequest name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public UpsertUserRequest roles(List<RolesEnum> roles) {
+        this.roles = roles;
+        return this;
+    }
+
     public UpsertUserRequest addRolesItem(RolesEnum rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();

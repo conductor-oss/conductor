@@ -59,4 +59,14 @@ public class SubjectRef {
     }
 
     private TypeEnum type = null;
+
+    public SubjectRef id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public SubjectRef type(TypeEnum type) {
+        this.type = type;
+        return this;
+    }
 }

@@ -30,4 +30,8 @@ public abstract class Auditable {
     private String createdBy;
 
     private String updatedBy;
+
+    public Long getUpdateTime() {
+        return updateTime == null ? 0 : updateTime;
+    }
 }

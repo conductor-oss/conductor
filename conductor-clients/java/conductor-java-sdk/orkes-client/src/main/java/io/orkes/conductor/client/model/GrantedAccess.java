@@ -63,6 +63,16 @@ public class GrantedAccess {
 
     private TargetRef target = null;
 
+    public GrantedAccess access(List<AccessEnum> access) {
+        this.access = access;
+        return this;
+    }
+
+    public GrantedAccess target(TargetRef target) {
+        this.target = target;
+        return this;
+    }
+
     public GrantedAccess addAccessItem(AccessEnum accessItem) {
         if (this.access == null) {
             this.access = new ArrayList<>();

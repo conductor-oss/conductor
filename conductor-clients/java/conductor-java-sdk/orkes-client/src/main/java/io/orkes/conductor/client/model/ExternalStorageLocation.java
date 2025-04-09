@@ -24,4 +24,14 @@ public class ExternalStorageLocation {
     private String path = null;
 
     private String uri = null;
+
+    public ExternalStorageLocation path(String path) {
+        this.path = path;
+        return this;
+    }
+
+    public ExternalStorageLocation uri(String uri) {
+        this.uri = uri;
+        return this;
+    }
 }

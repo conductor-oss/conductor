@@ -29,6 +29,16 @@ public class Role {
 
     private List<Permission> permissions = null;
 
+    public Role name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Role permissions(List<Permission> permissions) {
+        this.permissions = permissions;
+        return this;
+    }
+
     public Role addPermissionsItem(Permission permissionsItem) {
         if (this.permissions == null) {
             this.permissions = new ArrayList<>();

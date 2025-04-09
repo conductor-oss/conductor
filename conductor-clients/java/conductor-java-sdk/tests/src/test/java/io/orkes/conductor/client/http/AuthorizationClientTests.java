@@ -169,7 +169,7 @@ public class AuthorizationClientTests {
 
         String newName = "ansdjansdjna";
         authorizationClient.updateApplication(
-                 CreateOrUpdateApplicationRequest.builder().name(newName).build(), application.getId());
+                new CreateOrUpdateApplicationRequest().name(newName), application.getId());
         Assertions.assertEquals(newName, authorizationClient.getApplication(application.getId()).getName());
 
         authorizationClient.deleteApplication(application.getId());
@@ -178,7 +178,7 @@ public class AuthorizationClientTests {
     @Test
     void testGrantPermissionsToGroup() {
         AuthorizationRequest request = new AuthorizationRequest();
-        request.setAccess(Arrays.asList(AuthorizationRequest.AccessEnum.READ));
+        request.access(Arrays.asList(AuthorizationRequest.AccessEnum.READ));
         SubjectRef subject = new SubjectRef();
         subject.setId("worker-test-group31dfe7a4-bd85-4ccc-9571-7c0e018ebc32");
         subject.setType(SubjectRef.TypeEnum.GROUP);
@@ -193,7 +193,7 @@ public class AuthorizationClientTests {
     @Test
     void testGrantPermissionsToDomain() {
         AuthorizationRequest request = new AuthorizationRequest();
-        request.setAccess(Arrays.asList(AuthorizationRequest.AccessEnum.EXECUTE));
+        request.access(Arrays.asList(AuthorizationRequest.AccessEnum.EXECUTE));
         SubjectRef subject = new SubjectRef();
         subject.setId("conductoruser1@gmail.com");
         subject.setType(SubjectRef.TypeEnum.USER);
@@ -297,14 +297,13 @@ public class AuthorizationClientTests {
     }
 
     UpsertGroupRequest getUpsertGroupRequest() {
-        return UpsertGroupRequest.builder()
+        return new UpsertGroupRequest()
                 .defaultAccess(
                         Map.of(
                                 TypeEnum.WORKFLOW_DEF.getValue(), getAccessListAll(),
                                 TypeEnum.TASK_DEF.getValue(), getAccessListAll()))
                 .description("Group used for SDK testing")
-                .roles(List.of(RolesEnum.ADMIN))
-                .build();
+                .roles(List.of(RolesEnum.ADMIN));
     }
 
     UpsertUserRequest getUpserUserRequest() {
@@ -323,7 +322,7 @@ public class AuthorizationClientTests {
 
     AuthorizationRequest getAuthorizationRequest() {
         AuthorizationRequest request = new AuthorizationRequest();
-        request.setAccess(Arrays.asList(AuthorizationRequest.AccessEnum.READ));
+        request.access(Arrays.asList(AuthorizationRequest.AccessEnum.READ));
         SubjectRef subject = new SubjectRef();
         subject.setId("worker-test-group31dfe7a4-bd85-4ccc-9571-7c0e018ebc32");
         subject.setType(SubjectRef.TypeEnum.GROUP);

@@ -12,15 +12,12 @@
  */
 package com.netflix.conductor.common.model;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import lombok.*;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class BulkResponse<T> {
 
@@ -32,6 +29,11 @@ public class BulkResponse<T> {
     private List<T> bulkSuccessfulResults;
 
     private String message = "Bulk Request has been processed.";
+
+    public BulkResponse() {
+        this.bulkSuccessfulResults = new ArrayList<>();
+        this.bulkErrorResults = new HashMap<>();
+    }
 
     public void appendSuccessResponse(T result) {
         bulkSuccessfulResults.add(result);

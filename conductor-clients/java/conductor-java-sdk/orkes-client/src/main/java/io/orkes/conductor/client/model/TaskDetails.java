@@ -33,11 +33,31 @@ public class TaskDetails {
 
     private String workflowId = null;
 
+    public TaskDetails output(Map<String, Object> output) {
+        this.output = output;
+        return this;
+    }
+
     public TaskDetails putOutputItem(String key, Object outputItem) {
         if (this.output == null) {
             this.output = new HashMap<>();
         }
         this.output.put(key, outputItem);
+        return this;
+    }
+
+    public TaskDetails taskId(String taskId) {
+        this.taskId = taskId;
+        return this;
+    }
+
+    public TaskDetails taskRefName(String taskRefName) {
+        this.taskRefName = taskRefName;
+        return this;
+    }
+
+    public TaskDetails workflowId(String workflowId) {
+        this.workflowId = workflowId;
         return this;
     }
 

@@ -57,4 +57,14 @@ public class Subject {
 
     private TypeEnum type = null;
 
+    public Subject id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public Subject type(TypeEnum type) {
+        this.type = type;
+        return this;
+    }
+
 }

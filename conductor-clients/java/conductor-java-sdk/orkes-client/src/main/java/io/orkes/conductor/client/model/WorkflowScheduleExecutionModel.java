@@ -74,4 +74,55 @@ public class WorkflowScheduleExecutionModel {
 
     private String workflowName = null;
 
+    public WorkflowScheduleExecutionModel executionId(String executionId) {
+        this.executionId = executionId;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel executionTime(Long executionTime) {
+        this.executionTime = executionTime;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel reason(String reason) {
+        this.reason = reason;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel scheduleName(String scheduleName) {
+        this.scheduleName = scheduleName;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel scheduledTime(Long scheduledTime) {
+        this.scheduledTime = scheduledTime;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel stackTrace(String stackTrace) {
+        this.stackTrace = stackTrace;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel startWorkflowRequest(
+            StartWorkflowRequest startWorkflowRequest) {
+        this.startWorkflowRequest = startWorkflowRequest;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel state(StateEnum state) {
+        this.state = state;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel workflowId(String workflowId) {
+        this.workflowId = workflowId;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel workflowName(String workflowName) {
+        this.workflowName = workflowName;
+        return this;
+    }
+
 }

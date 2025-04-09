@@ -15,6 +15,8 @@ package com.netflix.conductor.common.run;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -116,6 +118,10 @@ public class Workflow extends Auditable {
         return getCreateTime();
     }
 
+    public void setStartTime(long startTime) {
+        this.setCreateTime(startTime);
+    }
+
     /**
      * @return the input
      */
@@ -189,6 +195,11 @@ public class Workflow extends Auditable {
             throw new NullPointerException("Workflow definition is null");
         }
         return workflowDefinition.getVersion();
+    }
+
+
+    public boolean hasParent() {
+        return StringUtils.isNotEmpty(parentWorkflowId);
     }
 
     public Task getTaskByRefName(String refName) {

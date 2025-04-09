@@ -47,6 +47,11 @@ public class EventExecution {
 
     private Map<String, Object> output = new HashMap<>();
 
+    public EventExecution(String id, String messageId) {
+        this.id = id;
+        this.messageId = messageId;
+    }
+
     public boolean equals(Object o) {
         if (this == o) {
             return true;

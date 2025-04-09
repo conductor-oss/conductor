@@ -103,6 +103,21 @@ public class UpsertGroupRequest {
 
     private List<RolesEnum> roles = null;
 
+    public UpsertGroupRequest defaultAccess(Map<String, List<String>> defaultAccess) {
+        this.defaultAccess = defaultAccess;
+        return this;
+    }
+
+    public UpsertGroupRequest description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public UpsertGroupRequest roles(List<RolesEnum> roles) {
+        this.roles = roles;
+        return this;
+    }
+
     public UpsertGroupRequest putDefaultAccessItem(String key, List<String> defaultAccessItem) {
         if (this.defaultAccess == null) {
             this.defaultAccess = new HashMap<>();

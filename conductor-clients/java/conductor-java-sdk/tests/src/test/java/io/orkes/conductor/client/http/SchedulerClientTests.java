@@ -61,10 +61,10 @@ public class SchedulerClientTests  {
         assertEquals(0, schedulerClient.getSchedulerTags(NAME).size());
         schedulerClient.pauseSchedule(NAME);
         workflowSchedule = schedulerClient.getSchedule(NAME);
-        Assertions.assertTrue(workflowSchedule.getPaused());
+        Assertions.assertTrue(workflowSchedule.isPaused());
         schedulerClient.resumeSchedule(NAME);
         workflowSchedule = schedulerClient.getSchedule(NAME);
-        Assertions.assertFalse(workflowSchedule.getPaused());
+        Assertions.assertFalse(workflowSchedule.isPaused());
         schedulerClient.deleteSchedule(NAME);
     }
 
@@ -78,23 +78,21 @@ public class SchedulerClientTests  {
     @Test
     @DisplayName("It should set the timezone to Europe/Madrid")
     void testTimeZoneId() {
-        var schedule = SaveScheduleRequest.builder()
+        var schedule = new SaveScheduleRequest()
                 .name(NAME)
                 .cronExpression(CRON_EXPRESSION)
                 .startWorkflowRequest(Commons.getStartWorkflowRequest())
-                .zoneId("Europe/Madrid")
-                .build();
+                .zoneId("Europe/Madrid");
         schedulerClient.saveSchedule(schedule);
         var savedSchedule = schedulerClient.getSchedule(NAME);
         assertEquals("Europe/Madrid", savedSchedule.getZoneId());
     }
 
     private SaveScheduleRequest getSaveScheduleRequest() {
-        return SaveScheduleRequest.builder()
+        return new SaveScheduleRequest()
                 .name(NAME)
                 .cronExpression(CRON_EXPRESSION)
-                .startWorkflowRequest(Commons.getStartWorkflowRequest())
-                .build();
+                .startWorkflowRequest(Commons.getStartWorkflowRequest());
     }
 
     private List<TagObject> getTagObject() {

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.lang3.StringUtils;
+
 import lombok.*;
 
 @Data
@@ -75,6 +77,10 @@ public class TaskResult {
                 this.status = Status.valueOf(task.getStatus().name());
                 break;
         }
+    }
+
+    public void setReasonForIncompletion(String reasonForIncompletion) {
+        this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
     }
 
     public TaskResult addOutputData(String key, Object value) {

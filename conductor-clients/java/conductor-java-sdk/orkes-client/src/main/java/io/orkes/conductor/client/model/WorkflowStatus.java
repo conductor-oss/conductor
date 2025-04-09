@@ -68,6 +68,16 @@ public class WorkflowStatus {
 
     private String workflowId = null;
 
+    public WorkflowStatus correlationId(String correlationId) {
+        this.correlationId = correlationId;
+        return this;
+    }
+
+    public WorkflowStatus output(Map<String, Object> output) {
+        this.output = output;
+        return this;
+    }
+
     public WorkflowStatus putOutputItem(String key, Object outputItem) {
         if (this.output == null) {
             this.output = new HashMap<>();
@@ -76,11 +86,26 @@ public class WorkflowStatus {
         return this;
     }
 
+    public WorkflowStatus status(StatusEnum status) {
+        this.status = status;
+        return this;
+    }
+
+    public WorkflowStatus variables(Map<String, Object> variables) {
+        this.variables = variables;
+        return this;
+    }
+
     public WorkflowStatus putVariablesItem(String key, Object variablesItem) {
         if (this.variables == null) {
             this.variables = new HashMap<>();
         }
         this.variables.put(key, variablesItem);
+        return this;
+    }
+
+    public WorkflowStatus workflowId(String workflowId) {
+        this.workflowId = workflowId;
         return this;
     }
 }

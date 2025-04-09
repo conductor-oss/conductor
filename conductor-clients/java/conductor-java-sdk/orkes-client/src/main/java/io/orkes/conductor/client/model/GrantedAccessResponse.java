@@ -26,6 +26,11 @@ import lombok.*;
 public class GrantedAccessResponse {
     private List<GrantedAccess> grantedAccess = null;
 
+    public GrantedAccessResponse grantedAccess(List<GrantedAccess> grantedAccess) {
+        this.grantedAccess = grantedAccess;
+        return this;
+    }
+
     public GrantedAccessResponse addGrantedAccessItem(GrantedAccess grantedAccessItem) {
         if (this.grantedAccess == null) {
             this.grantedAccess = new ArrayList<>();

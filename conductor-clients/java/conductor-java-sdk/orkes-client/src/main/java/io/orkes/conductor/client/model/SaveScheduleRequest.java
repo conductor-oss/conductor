@@ -44,10 +44,53 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
-    // Adding to support Backward compatibility
-    @Deprecated
     public SaveScheduleRequest createdBy(String createdBy) {
         this.createdBy = createdBy;
+        return this;
+    }
+
+    public SaveScheduleRequest cronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
+        return this;
+    }
+
+    public SaveScheduleRequest name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public SaveScheduleRequest paused(Boolean paused) {
+        this.paused = paused;
+        return this;
+    }
+
+    public SaveScheduleRequest runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
+        this.runCatchupScheduleInstances = runCatchupScheduleInstances;
+        return this;
+    }
+
+    public SaveScheduleRequest scheduleEndTime(Long scheduleEndTime) {
+        this.scheduleEndTime = scheduleEndTime;
+        return this;
+    }
+
+    public SaveScheduleRequest scheduleStartTime(Long scheduleStartTime) {
+        this.scheduleStartTime = scheduleStartTime;
+        return this;
+    }
+
+    public SaveScheduleRequest startWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
+        this.startWorkflowRequest = startWorkflowRequest;
+        return this;
+    }
+
+    public SaveScheduleRequest updatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+        return this;
+    }
+
+    public SaveScheduleRequest zoneId(String zoneId) {
+        this.zoneId = zoneId;
         return this;
     }
 

@@ -37,6 +37,36 @@ public class ConductorUser {
 
     private String uuid = null;
 
+    public ConductorUser applicationUser(Boolean applicationUser) {
+        this.applicationUser = applicationUser;
+        return this;
+    }
+
+    public ConductorUser groups(List<Group> groups) {
+        this.groups = groups;
+        return this;
+    }
+
+    public ConductorUser id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public ConductorUser name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public ConductorUser roles(List<Role> roles) {
+        this.roles = roles;
+        return this;
+    }
+
+    public ConductorUser uuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
     public ConductorUser addGroupsItem(Group groupsItem) {
         if (this.groups == null) {
             this.groups = new ArrayList<>();

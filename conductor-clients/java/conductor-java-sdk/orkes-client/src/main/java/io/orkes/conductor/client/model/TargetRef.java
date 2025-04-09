@@ -60,4 +60,14 @@ public class TargetRef {
 
     private TypeEnum type = null;
 
+    public TargetRef id(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public TargetRef type(TypeEnum type) {
+        this.type = type;
+        return this;
+    }
+
 }

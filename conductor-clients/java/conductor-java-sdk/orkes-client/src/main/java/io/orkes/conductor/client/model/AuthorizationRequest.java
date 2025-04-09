@@ -65,8 +65,24 @@ public class AuthorizationRequest {
 
     private TargetRef target = null;
 
+
+    public AuthorizationRequest access(List<AccessEnum> access) {
+        this.access = access;
+        return this;
+    }
+
     public AuthorizationRequest addAccessItem(AccessEnum accessItem) {
         this.access.add(accessItem);
+        return this;
+    }
+
+    public AuthorizationRequest subject(SubjectRef subject) {
+        this.subject = subject;
+        return this;
+    }
+
+    public AuthorizationRequest target(TargetRef target) {
+        this.target = target;
         return this;
     }
 }

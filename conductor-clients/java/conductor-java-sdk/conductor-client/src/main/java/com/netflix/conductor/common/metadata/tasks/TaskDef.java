@@ -119,6 +119,24 @@ public class TaskDef extends Auditable {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 
+    /**
+     * @return rateLimitPerFrequency The max number of tasks that will be allowed to be executed per
+     *     rateLimitFrequencyInSeconds.
+     */
+    public Integer getRateLimitPerFrequency() {
+        return rateLimitPerFrequency == null ? 0 : rateLimitPerFrequency;
+    }
+
+    /**
+     * @return rateLimitFrequencyInSeconds: The time bucket that is used to rate limit tasks based
+     *     on {@link #getRateLimitPerFrequency()} If null or not set, then defaults to 1 second
+     */
+    public Integer getRateLimitFrequencyInSeconds() {
+        return rateLimitFrequencyInSeconds == null ? 1 : rateLimitFrequencyInSeconds;
+    }
+
+
+
     public int concurrencyLimit() {
         return concurrentExecLimit == null ? 0 : concurrentExecLimit;
     }

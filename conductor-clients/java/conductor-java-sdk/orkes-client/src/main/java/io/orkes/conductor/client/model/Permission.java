@@ -23,4 +23,9 @@ import lombok.*;
 public class Permission {
 
     private String name = null;
+
+    public Permission name(String name) {
+        this.name = name;
+        return this;
+    }
 }

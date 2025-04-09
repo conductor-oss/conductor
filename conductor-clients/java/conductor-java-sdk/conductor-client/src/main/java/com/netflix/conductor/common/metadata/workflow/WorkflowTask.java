@@ -123,6 +123,12 @@ public class WorkflowTask {
         this.type = type.name();
     }
 
+    public Boolean isRateLimited() {
+        return rateLimited != null && rateLimited;
+    }
+
+
+
     private Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
         switch(TaskType.of(type)) {
