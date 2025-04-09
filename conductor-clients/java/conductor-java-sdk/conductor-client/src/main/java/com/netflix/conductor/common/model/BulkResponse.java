@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.common.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,9 +29,9 @@ public class BulkResponse<T> {
     /**
      * Key - entityId Value - error message processing this entity
      */
-    private Map<String, String> bulkErrorResults;
+    private Map<String, String> bulkErrorResults = new HashMap<>();
 
-    private List<T> bulkSuccessfulResults;
+    private List<T> bulkSuccessfulResults = new ArrayList<>();
 
     private String message = "Bulk Request has been processed.";
 
