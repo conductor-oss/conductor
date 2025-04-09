@@ -117,6 +117,12 @@ public class WorkflowTask {
 
     private boolean permissive;
 
+    // Adding to support Backward compatibility
+    @Deprecated
+    public void setWorkflowTaskType(TaskType type) {
+        this.type = type.name();
+    }
+
     private Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
         switch(TaskType.of(type)) {

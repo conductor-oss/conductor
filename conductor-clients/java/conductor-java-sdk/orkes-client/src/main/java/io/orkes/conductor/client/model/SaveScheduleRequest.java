@@ -44,4 +44,11 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
+    // Adding to support Backward compatibility
+    @Deprecated
+    public SaveScheduleRequest createdBy(String createdBy) {
+        this.createdBy = createdBy;
+        return this;
+    }
+
 }

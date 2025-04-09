@@ -73,6 +73,10 @@ public class WorkflowSchedule {
         return this;
     }
 
+    public Boolean isPaused() {
+        return paused;
+    }
+
     public WorkflowSchedule runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
         this.runCatchupScheduleInstances = runCatchupScheduleInstances;
         return this;

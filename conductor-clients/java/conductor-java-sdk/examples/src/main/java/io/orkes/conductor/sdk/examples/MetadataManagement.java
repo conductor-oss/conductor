@@ -120,7 +120,7 @@ public class MetadataManagement {
         workflowTask.setTaskReferenceName(taskName);
         workflowTask.setName(taskName);
         workflowTask.setTaskReferenceName(taskName);
-        workflowTask.setType(TaskType.SIMPLE.name());
+        workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
         workflowTask.setInputParameters(Map.of("value", "${workflow.input.value}", "order", "123"));
         workflowTask.setTaskDefinition(taskDef);
 
@@ -129,7 +129,7 @@ public class MetadataManagement {
         workflowTask2.setName(taskName3);
         workflowTask2.setTaskReferenceName(taskName2);
         workflowTask2.setTaskReferenceName(taskName2);
-        workflowTask2.setType(TaskType.INLINE.name());
+        workflowTask2.setWorkflowTaskType(TaskType.INLINE);
         workflowTask2.setInputParameters(
                 Map.of(
                         "inlineValue",

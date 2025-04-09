@@ -34,4 +34,12 @@ public class DynamicForkJoinTask {
     private Map<String, Object> input = new HashMap<>();
 
     private String type = TaskType.SIMPLE.name();
+
+    public DynamicForkJoinTask(String taskName, String workflowName, String referenceName, Map<String, Object> input) {
+        super();
+        this.taskName = taskName;
+        this.workflowName = workflowName;
+        this.referenceName = referenceName;
+        this.input = input;
+    }
 }

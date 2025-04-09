@@ -93,7 +93,7 @@ public class ForkJoin extends Task<ForkJoin> {
             joinWorkflowTask = joinTasks.get(0);
         } else {
             joinWorkflowTask = new WorkflowTask();
-            joinWorkflowTask.setType(TaskType.JOIN.name());
+            joinWorkflowTask.setWorkflowTaskType(TaskType.JOIN);
             joinWorkflowTask.setTaskReferenceName(getTaskReferenceName() + "_join");
             joinWorkflowTask.setName(joinWorkflowTask.getTaskReferenceName());
             joinWorkflowTask.setJoinOn(fork.getJoinOn());

@@ -205,7 +205,7 @@ public abstract class Task<T> {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName(name);
         workflowTask.setTaskReferenceName(taskReferenceName);
-        workflowTask.setType(type.name());
+        workflowTask.setWorkflowTaskType(type);
         workflowTask.setDescription(description);
         workflowTask.setInputParameters(input);
         workflowTask.setStartDelay(startDelay);
