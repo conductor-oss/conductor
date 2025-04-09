@@ -498,6 +498,7 @@ public class TestDeciderService {
         taskType.setName("test");
         taskType.setTimeoutPolicy(TimeoutPolicy.RETRY);
         taskType.setTimeoutSeconds(1);
+        taskType.setTotalTimeoutSeconds(1_000);
 
         TaskModel task = new TaskModel();
         task.setTaskType(taskType.getName());
