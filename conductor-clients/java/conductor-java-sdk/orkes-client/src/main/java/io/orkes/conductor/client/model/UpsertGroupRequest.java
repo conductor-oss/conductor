@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -27,7 +27,7 @@ import lombok.*;
 @AllArgsConstructor
 public class UpsertGroupRequest {
     /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
+     * a default Map<TargetType, Set<Access> to share permissions, allowed target types:
      * WORKFLOW_DEF, TASK_DEF
      */
     public enum InnerEnum {
@@ -112,7 +112,7 @@ public class UpsertGroupRequest {
     }
 
     /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
+     * a default Map<TargetType, Set<Access> to share permissions, allowed target types:
      * WORKFLOW_DEF, TASK_DEF
      *
      * @return defaultAccess
