@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.*;
 
@@ -27,7 +28,7 @@ import lombok.*;
 @AllArgsConstructor
 public class UpsertGroupRequest {
     /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
+     * a default Map<TargetType, Set<Access> to share permissions, allowed target types:
      * WORKFLOW_DEF, TASK_DEF
      */
     public enum InnerEnum {
@@ -101,7 +102,7 @@ public class UpsertGroupRequest {
 
     }
 
-    private List<RolesEnum> roles = null;
+    private Set<String> roles = null;
 
     public UpsertGroupRequest putDefaultAccessItem(String key, List<String> defaultAccessItem) {
         if (this.defaultAccess == null) {
@@ -112,7 +113,7 @@ public class UpsertGroupRequest {
     }
 
     /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
+     * a default Map<TargetType, Set<Access> to share permissions, allowed target types:
      * WORKFLOW_DEF, TASK_DEF
      *
      * @return defaultAccess
