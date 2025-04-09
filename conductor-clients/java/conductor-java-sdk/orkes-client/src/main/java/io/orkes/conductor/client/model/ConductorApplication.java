@@ -28,6 +28,12 @@ public class ConductorApplication {
 
     private String name = null;
 
+    private String updatedBy = null;
+
+    private Long createTime = null;
+
+    private Long updateTime = null;
+
     public ConductorApplication createdBy(String createdBy) {
         this.createdBy = createdBy;
         return this;

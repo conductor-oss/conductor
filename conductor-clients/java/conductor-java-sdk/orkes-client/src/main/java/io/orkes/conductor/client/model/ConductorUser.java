@@ -37,6 +37,10 @@ public class ConductorUser {
 
     private String uuid = null;
 
+    private Boolean encryptedId = null;
+    
+    private String encryptedIdDisplayValue = null;
+
     public ConductorUser addGroupsItem(Group groupsItem) {
         if (this.groups == null) {
             this.groups = new ArrayList<>();

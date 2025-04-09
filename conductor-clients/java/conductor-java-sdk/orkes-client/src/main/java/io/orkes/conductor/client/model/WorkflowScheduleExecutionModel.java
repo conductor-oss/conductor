@@ -74,4 +74,8 @@ public class WorkflowScheduleExecutionModel {
 
     private String workflowName = null;
 
+    private String zoneId = "UTC";
+
+    private String orgId = null;
+
 }

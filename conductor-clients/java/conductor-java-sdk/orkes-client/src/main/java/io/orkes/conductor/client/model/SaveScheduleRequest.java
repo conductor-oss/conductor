@@ -44,6 +44,8 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
+    private String description = null;
+
     // Adding to support Backward compatibility
     @Deprecated
     public SaveScheduleRequest createdBy(String createdBy) {

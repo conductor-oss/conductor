@@ -63,6 +63,8 @@ public class GrantedAccess {
 
     private TargetRef target = null;
 
+    private String tag;
+
     public GrantedAccess addAccessItem(AccessEnum accessItem) {
         if (this.access == null) {
             this.access = new ArrayList<>();

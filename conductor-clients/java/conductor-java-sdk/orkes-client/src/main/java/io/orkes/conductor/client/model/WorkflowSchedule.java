@@ -12,7 +12,11 @@
  */
 package io.orkes.conductor.client.model;
 
+import java.util.List;
+
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+
+import io.orkes.conductor.common.metadata.tags.Tag;
 
 import lombok.*;
 
@@ -47,6 +51,12 @@ public class WorkflowSchedule {
     private Long updatedTime = null;
 
     private String zoneId;
+
+    private List<Tag> tags = null;
+
+    private String pausedReason = null;
+
+    private String description = null;
 
     public WorkflowSchedule createTime(Long createTime) {
         this.createTime = createTime;
