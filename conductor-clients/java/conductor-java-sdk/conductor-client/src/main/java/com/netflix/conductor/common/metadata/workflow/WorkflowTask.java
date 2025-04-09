@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -51,10 +51,6 @@ public class WorkflowTask {
 
     private String dynamicTaskNameParam;
 
-    private String caseValueParam;
-
-    private String caseExpression;
-
     private String scriptExpression;
 
     public static class WorkflowTaskList {
@@ -64,8 +60,6 @@ public class WorkflowTask {
 
     // Populates for the tasks of the decision type
     private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
-
-    private String dynamicForkJoinTasksParam;
 
     private String dynamicForkTasksParam;
 
@@ -104,7 +98,7 @@ public class WorkflowTask {
 
     private String expression;
 
-    /*
+    /* 
     Map of events to be emitted when the task status changed.
     key can be comma separated values of the status changes prefixed with "on"<STATUS>
     */
