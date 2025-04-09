@@ -19,6 +19,15 @@ import java.util.Map;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WorkflowTestRequest extends StartWorkflowRequest {
 
     // Map of task reference name to mock output for the task
@@ -82,19 +91,4 @@ public class WorkflowTestRequest extends StartWorkflowRequest {
         }
     }
 
-    public Map<String, List<TaskMock>> getTaskRefToMockOutput() {
-        return taskRefToMockOutput;
-    }
-
-    public void setTaskRefToMockOutput(Map<String, List<TaskMock>> taskRefToMockOutput) {
-        this.taskRefToMockOutput = taskRefToMockOutput;
-    }
-
-    public Map<String, WorkflowTestRequest> getSubWorkflowTestRequest() {
-        return subWorkflowTestRequest;
-    }
-
-    public void setSubWorkflowTestRequest(Map<String, WorkflowTestRequest> subWorkflowTestRequest) {
-        this.subWorkflowTestRequest = subWorkflowTestRequest;
-    }
 }
