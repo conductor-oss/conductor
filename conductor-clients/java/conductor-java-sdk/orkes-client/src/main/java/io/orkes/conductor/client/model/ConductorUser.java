@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -36,6 +37,10 @@ public class ConductorUser {
     private List<Role> roles = null;
 
     private String uuid = null;
+
+    private Boolean encryptedId = null;
+    
+    private String encryptedIdDisplayValue = null;
 
     public ConductorUser addGroupsItem(Group groupsItem) {
         if (this.groups == null) {
