@@ -47,6 +47,14 @@ public class ConductorUser {
         return this;
     }
 
+    public ConductorUser addGroupsItem(Group groupsItem) {
+        if (this.groups == null) {
+            this.groups = new ArrayList<>();
+        }
+        this.groups.add(groupsItem);
+        return this;
+    }
+
     public ConductorUser id(String id) {
         this.id = id;
         return this;
@@ -64,14 +72,6 @@ public class ConductorUser {
 
     public ConductorUser uuid(String uuid) {
         this.uuid = uuid;
-        return this;
-    }
-
-    public ConductorUser addGroupsItem(Group groupsItem) {
-        if (this.groups == null) {
-            this.groups = new ArrayList<>();
-        }
-        this.groups.add(groupsItem);
         return this;
     }
 
