@@ -68,16 +68,16 @@ public class GrantedAccess {
         return this;
     }
 
-    public GrantedAccess target(TargetRef target) {
-        this.target = target;
-        return this;
-    }
-
     public GrantedAccess addAccessItem(AccessEnum accessItem) {
         if (this.access == null) {
             this.access = new ArrayList<>();
         }
         this.access.add(accessItem);
+        return this;
+    }
+
+    public GrantedAccess target(TargetRef target) {
+        this.target = target;
         return this;
     }
 }

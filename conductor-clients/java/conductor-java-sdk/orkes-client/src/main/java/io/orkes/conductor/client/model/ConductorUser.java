@@ -70,16 +70,16 @@ public class ConductorUser {
         return this;
     }
 
-    public ConductorUser uuid(String uuid) {
-        this.uuid = uuid;
-        return this;
-    }
-
     public ConductorUser addRolesItem(Role rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();
         }
         this.roles.add(rolesItem);
+        return this;
+    }
+
+    public ConductorUser uuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 }

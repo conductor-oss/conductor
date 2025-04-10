@@ -108,6 +108,14 @@ public class UpsertGroupRequest {
         return this;
     }
 
+    public UpsertGroupRequest putDefaultAccessItem(String key, List<String> defaultAccessItem) {
+        if (this.defaultAccess == null) {
+            this.defaultAccess = new HashMap<>();
+        }
+        this.defaultAccess.put(key, defaultAccessItem);
+        return this;
+    }
+
     public UpsertGroupRequest description(String description) {
         this.description = description;
         return this;
@@ -118,20 +126,6 @@ public class UpsertGroupRequest {
         return this;
     }
 
-    public UpsertGroupRequest putDefaultAccessItem(String key, List<String> defaultAccessItem) {
-        if (this.defaultAccess == null) {
-            this.defaultAccess = new HashMap<>();
-        }
-        this.defaultAccess.put(key, defaultAccessItem);
-        return this;
-    }
-
-    /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
-     * WORKFLOW_DEF, TASK_DEF
-     *
-     * @return defaultAccess
-     */
     public UpsertGroupRequest addRolesItem(RolesEnum rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();
@@ -139,11 +133,5 @@ public class UpsertGroupRequest {
         this.roles.add(rolesItem);
         return this;
     }
-
-    /**
-     * Get roles
-     *
-     * @return roles
-     */
 
 }
