@@ -42,6 +42,10 @@ public class ConductorUser {
         return this;
     }
 
+    public Boolean isApplicationUser() {
+        return applicationUser;
+    }
+
     public ConductorUser groups(List<Group> groups) {
         this.groups = groups;
         return this;
