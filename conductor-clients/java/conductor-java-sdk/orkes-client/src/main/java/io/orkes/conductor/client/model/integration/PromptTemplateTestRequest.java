@@ -15,9 +15,12 @@ package io.orkes.conductor.client.model.integration;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PromptTemplateTestRequest {
 
     private String llmProvider;

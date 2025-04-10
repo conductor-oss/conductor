@@ -14,13 +14,42 @@ package io.orkes.conductor.client.model.integration;
 
 import java.util.Map;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class IntegrationApiUpdate {
 
     private Map<String, Object> configuration;
     private String description;
     private Boolean enabled;
+    private Long maxTokens;
+    private Frequency frequency;
+
+    @Getter
+    public enum Frequency {
+        DAILY("daily"), WEEKLY("weekly"), MONTHLY("monthly");
+
+        @JsonProperty
+        private final String value;
+
+        Frequency(String value) {
+            this.value = value;
+        }
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public static Frequency fromValue(String value) {
+            for (Frequency frequency : values()) {
+                if (frequency.getValue().equalsIgnoreCase(value)) {
+                    return frequency;
+                }
+            }
+            throw new IllegalArgumentException("Unknown frequency: " + value);
+        }
+    }
 
 }

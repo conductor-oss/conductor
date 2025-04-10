@@ -12,16 +12,17 @@
  */
 package io.orkes.conductor.client.model;
 
+import lombok.*;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-@RequiredArgsConstructor
 @EqualsAndHashCode
 @ToString
-@Getter
-public final class GenerateTokenRequest {
-    private final String keyId;
-    private final String keySecret;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GenerateTokenRequest {
+    private String keyId;
+    private String keySecret;
 }

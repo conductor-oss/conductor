@@ -17,9 +17,12 @@ import java.util.Map;
 
 import io.orkes.conductor.client.model.TagObject;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Integration {
 
     private Category category;

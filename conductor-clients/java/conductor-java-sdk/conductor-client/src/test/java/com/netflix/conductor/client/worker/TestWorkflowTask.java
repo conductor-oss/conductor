@@ -42,9 +42,7 @@ public class TestWorkflowTask {
         WorkflowTask task = new WorkflowTask();
         task.setType("Hello");
         task.setName("name");
-
         String json = objectMapper.writeValueAsString(task);
-
         WorkflowTask read = objectMapper.readValue(json, WorkflowTask.class);
         assertNotNull(read);
         assertEquals(task.getName(), read.getName());
@@ -53,9 +51,7 @@ public class TestWorkflowTask {
         task = new WorkflowTask();
         task.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
         task.setName("name");
-
         json = objectMapper.writeValueAsString(task);
-
         read = objectMapper.readValue(json, WorkflowTask.class);
         assertNotNull(read);
         assertEquals(task.getName(), read.getName());

@@ -14,11 +14,12 @@ package io.orkes.conductor.client.model.integration.ai;
 
 import java.util.List;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
-@Data
 @EqualsAndHashCode(callSuper = true)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChatCompletion extends LLMWorkerInput {
     private List<ChatMessage> messages;
 
