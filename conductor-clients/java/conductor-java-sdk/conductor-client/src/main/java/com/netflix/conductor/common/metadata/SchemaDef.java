@@ -22,10 +22,7 @@ public class SchemaDef extends Auditable {
 
     private Type type;
 
-    // Schema definition stored here
     private Map<String, Object> data;
 
-    // Externalized schema definition (eg. via AVRO, Protobuf registry)
-    // If using Orkes Schema registry, this points to the name of the schema in the registry
     private String externalRef;
 }
