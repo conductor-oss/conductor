@@ -58,7 +58,7 @@ public class TestDynamicForkJoinTaskPojoMethods {
         Map<String, Object> input = new HashMap<>();
         input.put("key1", "value1");
 
-        DynamicForkJoinTask task = new DynamicForkJoinTask(taskName, workflowName, referenceName, input, type);
+        DynamicForkJoinTask task = new DynamicForkJoinTask(taskName, workflowName, referenceName, type, input);
 
         assertEquals(taskName, task.getTaskName());
         assertEquals(workflowName, task.getWorkflowName());

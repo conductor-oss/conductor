@@ -37,7 +37,10 @@ class TestGrantedAccessPojoMethods {
         );
         TargetRef targetRef = new TargetRef();
 
-        GrantedAccess grantedAccess = new GrantedAccess(accessList, targetRef);
+        // Create using available methods instead of constructor
+        GrantedAccess grantedAccess = new GrantedAccess();
+        grantedAccess.setAccess(accessList);
+        grantedAccess.setTarget(targetRef);
 
         assertEquals(accessList, grantedAccess.getAccess());
         assertEquals(targetRef, grantedAccess.getTarget());
@@ -51,10 +54,10 @@ class TestGrantedAccessPojoMethods {
         );
         TargetRef targetRef = new TargetRef();
 
-        GrantedAccess grantedAccess = GrantedAccess.builder()
+        // Use fluent interface methods instead of builder
+        GrantedAccess grantedAccess = new GrantedAccess()
                 .access(accessList)
-                .target(targetRef)
-                .build();
+                .target(targetRef);
 
         assertEquals(accessList, grantedAccess.getAccess());
         assertEquals(targetRef, grantedAccess.getTarget());
@@ -142,12 +145,17 @@ class TestGrantedAccessPojoMethods {
 
     @Test
     void testEqualsAndHashCode() {
-        // Create two identical objects
+        // Create two identical objects using available methods
         List<GrantedAccess.AccessEnum> accessList1 = Arrays.asList(GrantedAccess.AccessEnum.READ);
         TargetRef targetRef1 = new TargetRef();
 
-        GrantedAccess grantedAccess1 = new GrantedAccess(accessList1, targetRef1);
-        GrantedAccess grantedAccess2 = new GrantedAccess(accessList1, targetRef1);
+        GrantedAccess grantedAccess1 = new GrantedAccess();
+        grantedAccess1.setAccess(accessList1);
+        grantedAccess1.setTarget(targetRef1);
+
+        GrantedAccess grantedAccess2 = new GrantedAccess();
+        grantedAccess2.setAccess(accessList1);
+        grantedAccess2.setTarget(targetRef1);
 
         // Test equals
         assertEquals(grantedAccess1, grantedAccess2);
@@ -156,7 +164,9 @@ class TestGrantedAccessPojoMethods {
 
         // Create different object
         List<GrantedAccess.AccessEnum> accessList2 = Arrays.asList(GrantedAccess.AccessEnum.UPDATE);
-        GrantedAccess grantedAccess3 = new GrantedAccess(accessList2, targetRef1);
+        GrantedAccess grantedAccess3 = new GrantedAccess();
+        grantedAccess3.setAccess(accessList2);
+        grantedAccess3.setTarget(targetRef1);
 
         // Test not equals
         assertNotEquals(grantedAccess1, grantedAccess3);

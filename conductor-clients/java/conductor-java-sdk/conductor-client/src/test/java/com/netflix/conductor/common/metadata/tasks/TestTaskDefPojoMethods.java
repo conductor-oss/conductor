@@ -377,6 +377,9 @@ class TestTaskDefPojoMethods {
         assertEquals(name, taskDef.toString());
     }
 
+    private final SchemaDef inputSchema = new SchemaDef();
+    private final SchemaDef outputSchema = new SchemaDef();
+
     @Test
     void testEqualsAndHashCode() {
         TaskDef taskDef1 = createFullTaskDef("task1");
@@ -429,10 +432,8 @@ class TestTaskDefPojoMethods {
         taskDef.setBackoffScaleFactor(2);
         taskDef.setBaseType("baseType");
 
-        SchemaDef inputSchema = new SchemaDef();
+        // Use the shared schema instances
         taskDef.setInputSchema(inputSchema);
-
-        SchemaDef outputSchema = new SchemaDef();
         taskDef.setOutputSchema(outputSchema);
 
         taskDef.setEnforceSchema(true);
