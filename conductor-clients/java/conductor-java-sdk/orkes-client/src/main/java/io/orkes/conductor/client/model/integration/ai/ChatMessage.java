@@ -25,4 +25,9 @@ public class ChatMessage {
 
     String role;
     String message;
+
+    public ChatMessage(String role, String message) {
+        this.role = role;
+        this.message = message;
+    }
 }

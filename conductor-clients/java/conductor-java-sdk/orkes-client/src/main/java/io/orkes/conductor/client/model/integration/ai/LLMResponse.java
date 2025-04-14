@@ -21,5 +21,45 @@ public class LLMResponse {
     private String finishReason;
     private int tokenUsed;
 
+    public static LLMResponseBuilder builder() {
+        return new LLMResponseBuilder();
+    }
 
+    public static class LLMResponseBuilder {
+        private Object result;
+        private String finishReason;
+        private int tokenUsed;
+
+        private LLMResponseBuilder() {
+        }
+
+        public LLMResponseBuilder result(Object result) {
+            this.result = result;
+            return this;
+        }
+
+        public LLMResponseBuilder finishReason(String finishReason) {
+            this.finishReason = finishReason;
+            return this;
+        }
+
+        public LLMResponseBuilder tokenUsed(int tokenUsed) {
+            this.tokenUsed = tokenUsed;
+            return this;
+        }
+
+        public LLMResponse build() {
+            LLMResponse llmResponse = new LLMResponse();
+            llmResponse.result = this.result;
+            llmResponse.finishReason = this.finishReason;
+            llmResponse.tokenUsed = this.tokenUsed;
+            return llmResponse;
+        }
+
+        public String toString() {
+            return "LLMResponse.LLMResponseBuilder(result=" + this.result +
+                    ", finishReason=" + this.finishReason +
+                    ", tokenUsed=" + this.tokenUsed + ")";
+        }
+    }
 }
