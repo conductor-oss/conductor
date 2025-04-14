@@ -515,7 +515,7 @@ public final class TaskClient {
         return resp.getData();
     }
 
-    private void populateTaskPayloads(Task task) {
+    public void populateTaskPayloads(Task task) {
         if (!conductorClientConfiguration.isEnforceThresholds()) {
             return;
         }

@@ -35,6 +35,7 @@ subprojects {
         implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${versions.jackson}"
         implementation "com.fasterxml.jackson.module:jackson-module-kotlin:${versions.jackson}"
         implementation "com.fasterxml.jackson.module:jackson-module-afterburner:${versions.jackson}"
+        implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
         implementation "org.slf4j:slf4j-api:${versions.slf4j}"
         implementation "org.apache.commons:commons-lang3:${versions.commonsLang}"
