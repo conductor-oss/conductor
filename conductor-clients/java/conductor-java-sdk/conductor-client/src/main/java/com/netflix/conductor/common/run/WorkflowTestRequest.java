@@ -19,7 +19,6 @@ import java.util.Map;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
