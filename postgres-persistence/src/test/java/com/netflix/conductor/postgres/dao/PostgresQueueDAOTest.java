@@ -288,7 +288,12 @@ public class PostgresQueueDAOTest {
                     "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
             try (Query q = new Query(objectMapper, c, UNPOPPED)) {
                 long count = q.addParameter(queueName1).executeCount();
-                assertEquals("Remaining queue size mismatch", expectedSize, count);
+                assertEquals("Remaining queue 1 size mismatch", expectedSize, count);
+            }
+
+            try (Query q = new Query(objectMapper, c, UNPOPPED)) {
+                long count = q.addParameter(queueName2).executeCount();
+                assertEquals("Remaining queue 2 size mismatch", totalSize, count);
             }
         } catch (Exception ex) {
             fail(ex.getMessage());
