@@ -39,8 +39,6 @@ public class SchemaDef extends Auditable {
     // If using Orkes Schema registry, this points to the name of the schema in the registry
     private String externalRef;
 
-    private String testBuilder;
-
     public SchemaDef(String name, Type type, Map<String, Object> data, String externalRef) {
         this.name = name;
         this.type = type;
