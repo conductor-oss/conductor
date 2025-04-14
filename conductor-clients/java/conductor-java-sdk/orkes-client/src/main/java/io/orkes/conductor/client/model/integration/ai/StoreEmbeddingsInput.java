@@ -20,7 +20,6 @@ import lombok.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@AllArgsConstructor
 public class StoreEmbeddingsInput extends LLMWorkerInput {
 
     private String vectorDB;

@@ -27,7 +27,6 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkflowTestRequest extends StartWorkflowRequest {
 
     // Map of task reference name to mock output for the task

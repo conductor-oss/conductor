@@ -19,10 +19,8 @@ import lombok.*;
 
 @EqualsAndHashCode
 @ToString
-@Builder
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class TaskDetails {
 
     private Map<String, Object> output = null;

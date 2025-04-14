@@ -33,9 +33,7 @@ import lombok.NoArgsConstructor;
  * Captures workflow summary info to be indexed in Elastic Search.
  */
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkflowSummary {
 
     /**

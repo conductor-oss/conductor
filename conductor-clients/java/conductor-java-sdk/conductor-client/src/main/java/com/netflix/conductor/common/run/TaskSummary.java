@@ -19,9 +19,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class TaskSummary {
 
     private String workflowId;

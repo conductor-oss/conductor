@@ -20,9 +20,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class IndexDocInput {
 
     private String llmProvider;
@@ -40,6 +38,25 @@ public class IndexDocInput {
     private int chunkOverlap;
     private Map<String, Object> metadata;
     private Integer dimensions;
+
+    public IndexDocInput(String llmProvider, String model, String embeddingModelProvider, String embeddingModel, String vectorDB, String text, String docId, String url, String mediaType, String namespace, String index, int chunkSize, int chunkOverlap, Map<String, Object> metadata, Integer dimensions) {
+        this.llmProvider = llmProvider;
+        this.model = model;
+        this.embeddingModelProvider = embeddingModelProvider;
+        this.embeddingModel = embeddingModel;
+        this.vectorDB = vectorDB;
+        this.text = text;
+        this.docId = docId;
+        this.url = url;
+        this.mediaType = mediaType;
+        this.namespace = namespace;
+        this.index = index;
+        this.chunkSize = chunkSize;
+        this.chunkOverlap = chunkOverlap;
+        this.metadata = metadata;
+        this.dimensions = dimensions;
+    }
+
     public String getNamespace() {
         if(namespace == null) {
             return docId;

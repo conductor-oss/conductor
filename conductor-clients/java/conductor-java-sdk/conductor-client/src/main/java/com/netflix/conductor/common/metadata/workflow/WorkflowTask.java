@@ -27,9 +27,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkflowTask {
 
     public static class CacheConfig {

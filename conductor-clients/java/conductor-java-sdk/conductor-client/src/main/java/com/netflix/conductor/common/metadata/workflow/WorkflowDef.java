@@ -22,7 +22,6 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkflowDef extends Auditable {
 
     public enum TimeoutPolicy {

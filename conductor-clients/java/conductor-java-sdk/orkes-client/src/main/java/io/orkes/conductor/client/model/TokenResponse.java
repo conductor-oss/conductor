@@ -15,9 +15,7 @@ package io.orkes.conductor.client.model;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class TokenResponse {
 
     private String token;

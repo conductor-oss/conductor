@@ -17,9 +17,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class ConductorApplication {
 
     private String createdBy = null;

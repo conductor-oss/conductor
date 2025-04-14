@@ -17,9 +17,7 @@ import java.util.Map;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class SkipTaskRequest {
 
     private Map<String, Object> taskInput;

@@ -16,10 +16,8 @@ import lombok.*;
 
 @EqualsAndHashCode
 @ToString
-@Builder
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class TerminateWorkflow {
 
     private String terminationReason = null;

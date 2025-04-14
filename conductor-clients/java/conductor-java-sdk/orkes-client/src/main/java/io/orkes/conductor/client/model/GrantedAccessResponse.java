@@ -20,9 +20,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class GrantedAccessResponse {
     private List<GrantedAccess> grantedAccess = null;
 

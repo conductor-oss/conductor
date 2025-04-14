@@ -17,10 +17,8 @@ import java.util.Map;
 import lombok.*;
 
 @EqualsAndHashCode(callSuper = true)
-@Builder
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class SchemaDef extends Auditable {
 
     public enum Type {

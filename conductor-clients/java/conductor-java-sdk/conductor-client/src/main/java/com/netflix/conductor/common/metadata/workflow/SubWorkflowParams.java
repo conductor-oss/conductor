@@ -21,9 +21,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class SubWorkflowParams {
 
     private String name;

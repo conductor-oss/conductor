@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public abstract class Auditable {
 
     private String ownerApp;
@@ -30,6 +29,10 @@ public abstract class Auditable {
     private String createdBy;
 
     private String updatedBy;
+
+    public Long getCreateTime() {
+        return createTime == null ? 0 : createTime;
+    }
 
     public Long getUpdateTime() {
         return updateTime == null ? 0 : updateTime;

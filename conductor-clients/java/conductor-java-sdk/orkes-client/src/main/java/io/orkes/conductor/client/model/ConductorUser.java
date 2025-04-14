@@ -20,9 +20,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class ConductorUser {
 
     private Boolean applicationUser = null;

@@ -15,9 +15,7 @@ package io.orkes.conductor.client.model.integration.ai;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class EmbeddingRequest {
     private String llmProvider;
     private String model;

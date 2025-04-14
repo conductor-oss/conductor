@@ -19,9 +19,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkflowScheduleExecutionModel {
 
     private String executionId = null;

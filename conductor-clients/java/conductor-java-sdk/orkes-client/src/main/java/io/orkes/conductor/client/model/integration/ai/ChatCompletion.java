@@ -19,7 +19,6 @@ import lombok.*;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class ChatCompletion extends LLMWorkerInput {
     private List<ChatMessage> messages;
 

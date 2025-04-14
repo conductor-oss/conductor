@@ -20,10 +20,14 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class CorrelationIdsSearchRequest {
 
     private List<String> correlationIds;
 
     private List<String> workflowNames;
+
+    public CorrelationIdsSearchRequest(List<String> correlationIds, List<String> workflowNames) {
+        this.correlationIds = correlationIds;
+        this.workflowNames = workflowNames;
+    }
 }

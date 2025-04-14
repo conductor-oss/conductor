@@ -20,9 +20,7 @@ import io.orkes.conductor.client.model.TagObject;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class IntegrationApi {
 
     private String api;

@@ -22,9 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class TaskResult {
 
     public enum Status {

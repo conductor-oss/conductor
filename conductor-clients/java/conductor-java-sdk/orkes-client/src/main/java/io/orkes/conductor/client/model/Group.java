@@ -22,9 +22,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class Group {
     /** Gets or Sets inner */
     public enum InnerEnum {

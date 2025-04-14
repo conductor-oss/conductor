@@ -17,9 +17,7 @@ import java.util.List;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class IntegrationDef {
 
     private Category category;

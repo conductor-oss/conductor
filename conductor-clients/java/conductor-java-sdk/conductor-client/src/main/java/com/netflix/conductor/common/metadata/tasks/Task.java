@@ -24,9 +24,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class Task {
 
     public enum Status {

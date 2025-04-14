@@ -21,7 +21,6 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
 public class StartWorkflowRequest {
 
     private String name;

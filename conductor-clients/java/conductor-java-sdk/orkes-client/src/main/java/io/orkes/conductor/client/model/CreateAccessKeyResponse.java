@@ -15,9 +15,7 @@ package io.orkes.conductor.client.model;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class CreateAccessKeyResponse {
     private String id;
     private String secret;

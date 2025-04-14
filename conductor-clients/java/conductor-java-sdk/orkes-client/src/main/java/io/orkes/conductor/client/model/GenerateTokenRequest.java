@@ -19,10 +19,13 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class GenerateTokenRequest {
     private String keyId;
     private String keySecret;
+
+    public GenerateTokenRequest(String keyId, String keySecret) {
+        this.keyId = keyId;
+        this.keySecret = keySecret;
+    }
 }

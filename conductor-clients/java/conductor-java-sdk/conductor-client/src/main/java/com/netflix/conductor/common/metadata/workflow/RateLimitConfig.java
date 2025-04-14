@@ -18,9 +18,7 @@ package com.netflix.conductor.common.metadata.workflow;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class RateLimitConfig {
 
     /**

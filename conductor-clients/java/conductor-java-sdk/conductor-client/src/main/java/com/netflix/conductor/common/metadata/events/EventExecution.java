@@ -21,9 +21,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class EventExecution {
 
     public enum Status {

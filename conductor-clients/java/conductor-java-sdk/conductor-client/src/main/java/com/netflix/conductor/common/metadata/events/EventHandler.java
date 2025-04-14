@@ -25,10 +25,10 @@ import lombok.NoArgsConstructor;
 /**
  * Defines an event handler
  */
-@Builder
+
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+
 public class EventHandler {
 
     private String name;

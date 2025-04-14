@@ -19,9 +19,7 @@ import java.util.Map;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class PromptTemplateTestRequest {
 
     private String llmProvider;

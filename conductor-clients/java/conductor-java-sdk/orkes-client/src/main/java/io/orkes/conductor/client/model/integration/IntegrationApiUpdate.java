@@ -19,9 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class IntegrationApiUpdate {
 
     private Map<String, Object> configuration;
