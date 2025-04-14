@@ -64,9 +64,17 @@ public class SaveScheduleRequest {
         return this;
     }
 
+    public Boolean isPaused() {
+        return paused;
+    }
+
     public SaveScheduleRequest runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
         this.runCatchupScheduleInstances = runCatchupScheduleInstances;
         return this;
+    }
+
+    public Boolean isRunCatchupScheduleInstances() {
+        return runCatchupScheduleInstances;
     }
 
     public SaveScheduleRequest scheduleEndTime(Long scheduleEndTime) {

@@ -164,6 +164,13 @@ public class Task {
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
 
+    public void setInputData(Map<String, Object> inputData) {
+        if (inputData == null) {
+            inputData = new HashMap<>();
+        }
+        this.inputData = inputData;
+    }
+
     public long getQueueWaitTime() {
         if (this.startTime > 0 && this.scheduledTime > 0) {
             if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
@@ -194,6 +201,13 @@ public class Task {
 
     public void setReasonForIncompletion(String reasonForIncompletion) {
         this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
+    }
+
+    public void setOutputData(Map<String, Object> outputData) {
+        if (outputData == null) {
+            outputData = new HashMap<>();
+        }
+        this.outputData = outputData;
     }
 
     public Optional<TaskDef> getTaskDefinition() {

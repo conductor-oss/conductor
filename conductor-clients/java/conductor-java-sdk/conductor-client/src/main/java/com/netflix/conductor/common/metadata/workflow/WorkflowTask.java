@@ -123,6 +123,10 @@ public class WorkflowTask {
         this.type = type.name();
     }
 
+    public Boolean isAsyncComplete() {
+        return asyncComplete;
+    }
+
     public Boolean isRateLimited() {
         return rateLimited != null && rateLimited;
     }

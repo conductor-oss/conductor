@@ -82,6 +82,10 @@ public class WorkflowSchedule {
         return this;
     }
 
+    public Boolean isRunCatchupScheduleInstances() {
+        return runCatchupScheduleInstances;
+    }
+
     public WorkflowSchedule scheduleEndTime(Long scheduleEndTime) {
         this.scheduleEndTime = scheduleEndTime;
         return this;
