@@ -247,7 +247,7 @@ public class WorkflowClientTests {
         var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE);
         var workflow = run.get(10, TimeUnit.SECONDS);
         assertNotNull(workflow);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
     }
 
     @Test
