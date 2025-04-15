@@ -1,1 +1,1 @@
-{"result":{"result":{"templates":{"UpsertUserRequest":{"content":{"roles":["sample_value"],"name":"sample_name","groups":["sample_value"]},"dependencies":[]}}},"templates":{"ChatCompletion":{"content":{"instructions":"sample_instructions","jsonOutput":false,"messages":"[${ChatMessage}]"},"dependencies":["ChatMessage"]}}}}
+{"ChatCompletion":{"content":{"instructions":"sample_instructions","jsonOutput":false,"messages":"[${ChatMessage}]"},"dependencies":["ChatMessage"]}}
