@@ -1,1 +1,1 @@
-{"ChatCompletion":{"content":{"instructions":"sample_instructions","jsonOutput":false,"messages":"[${ChatMessage}]"},"dependencies":["ChatMessage"]}}
+{"ChatMessage":{"content":{},"dependencies":[]}}
