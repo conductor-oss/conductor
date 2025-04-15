@@ -1,1 +1,1 @@
-{"result":{"templates":{"ConductorUser":{"content":{"USER_DOMAIN":"${static String}","encryptedIdDisplayValue":"sample_encryptedIdDisplayValue","APP_USER_PREFIX":"${static String}","roles":"[${Role}]","encryptedId":false,"name":"sample_name","groups":"[${Group}]","id":"sample_id","uuid":"sample_uuid","APP_DOMAIN":"${static String}"},"dependencies":["static String","Role","Group"]}}}}
+{"result":{"templates":{"CorrelationIdsSearchRequest":{"content":{},"dependencies":[]}}}}
