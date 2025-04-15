@@ -1,1 +1,1 @@
-{"result":{"templates":{"CreateAccessKeyResponse":{"content":{"id":"sample_id","secret":"sample_secret"},"dependencies":[]}}}}
+{"result":{"templates":{"CreateOrUpdateApplicationRequest":{"content":{"name":"sample_name"},"dependencies":[]}}}}
