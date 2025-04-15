@@ -1,1 +1,1 @@
-{"result":{"templates":{"IndexedDoc":{"content":{"score":0,"metadata":{"key":"${Object}"},"docId":"sample_docId","text":"sample_text","parentDocId":"sample_parentDocId"},"dependencies":["Object"]}}}}
+{"result":{"templates":{"LLMResponse":{"content":{"result":"${Object}","finishReason":"sample_finishReason","tokenUsed":0},"dependencies":["Object"]}}}}
