@@ -1,1 +1,1 @@
-{"result":{"templates":{"AccessKeyResponse":{"content":{"createdAt":0,"id":"sample_id","status":"${AccessKeyStatus}"},"dependencies":["AccessKeyStatus"]}}}}
+{"result":{"error":"Error parsing class: Could not find class definition in provided code"}}
