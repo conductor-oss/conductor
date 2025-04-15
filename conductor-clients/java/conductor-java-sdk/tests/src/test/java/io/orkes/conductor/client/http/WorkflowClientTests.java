@@ -12,14 +12,7 @@
  */
 package io.orkes.conductor.client.http;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -31,12 +24,22 @@ import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.Http;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
-
+import io.orkes.conductor.client.enums.WorkflowConsistency;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.Commons;
 import io.orkes.conductor.client.util.TestUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import com.google.common.util.concurrent.Uninterruptibles;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class WorkflowClientTests {
     private static OrkesWorkflowClient workflowClient;
@@ -201,12 +204,62 @@ public class WorkflowClientTests {
         testRequest.setName("testable-flow");
         testRequest.setWorkflowDef(workflowDef);
         testRequest.setTaskRefToMockOutput(Map.of(
-            "testable-task-ref",
-            List.of(new WorkflowTestRequest.TaskMock(TaskResult.Status.COMPLETED, Map.of("result", "ok")))
+                "testable-task-ref",
+                List.of(new WorkflowTestRequest.TaskMock(TaskResult.Status.COMPLETED, Map.of("result", "ok")))
         ));
 
         Workflow workflow = workflowClient.testWorkflow(testRequest);
         Assertions.assertEquals("ok", workflow.getOutput().get("result"));
+    }
+
+    @Test
+    void testExecuteWorkflowSync() throws ExecutionException, InterruptedException, TimeoutException {
+        String wfName = "test-sdk-execute-workflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.SYNCHRONOUS);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+        assertNotNull(workflow);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    void testExecuteWorkflowSyncWithTimeOutSec() throws ExecutionException, InterruptedException, TimeoutException {
+        String wfName = "test-sdk-execute-workflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+
+        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS).get();
+        assertNotNull(workflow);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    void testExecuteWorkflowDurable() throws ExecutionException, InterruptedException, TimeoutException {
+        String wfName = "test-sdk-execute-workflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+        assertNotNull(workflow);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    void testExecuteWorkflowDurableWithWaitForSec() throws ExecutionException, InterruptedException, TimeoutException {
+        String wfName = "test-sdk-execute-workflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+
+        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE).get();
+        assertNotNull(workflow);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
     StartWorkflowRequest getStartWorkflowRequest() {
