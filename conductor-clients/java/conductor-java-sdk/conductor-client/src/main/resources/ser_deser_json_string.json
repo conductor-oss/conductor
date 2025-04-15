@@ -1,1 +1,1 @@
-{"result":{"error":"Error parsing class: Could not find class definition in provided code"}}
+{"result":{"templates":{"AuthorizationRequest":{"content":{"access":"[${Access}]","subject":"${SubjectRef}","target":"${TargetRef}"},"dependencies":["SubjectRef","TargetRef","Access"]}}}}
