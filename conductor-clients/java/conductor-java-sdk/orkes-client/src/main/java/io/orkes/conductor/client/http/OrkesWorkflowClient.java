@@ -12,22 +12,6 @@
  */
 package io.orkes.conductor.client.http;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.apache.commons.lang3.Validate;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
 import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -37,11 +21,21 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.run.WorkflowTestRequest;
-
+import io.orkes.conductor.client.enums.WorkflowConsistency;
+import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
 import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
 import io.orkes.conductor.client.model.WorkflowRun;
 import io.orkes.conductor.client.model.WorkflowStateUpdate;
 import io.orkes.conductor.client.model.WorkflowStatus;
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 public class OrkesWorkflowClient implements AutoCloseable {
 
@@ -79,9 +73,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
 
     /**
      * Synchronously executes a workflow
-     * @param request workflow execution request
-     * @param waitUntilTask waits until workflow has reached this task.
-     *                      Useful for executing it synchronously until this task and then continuing asynchronous execution
+     *
+     * @param request        workflow execution request
+     * @param waitUntilTask  waits until workflow has reached this task.
+     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
      * @param waitForSeconds maximum amount of time to wait before returning
      * @return WorkflowRun
      */
@@ -90,8 +85,48 @@ public class OrkesWorkflowClient implements AutoCloseable {
     }
 
     /**
+     * Synchronously executes a workflow with specified consistency and return strategy
+     *
+     * @param request        workflow execution request
+     * @param waitUntilTask  waits until workflow has reached this task.
+     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
+     * @param waitForSeconds maximum amount of time to wait before returning
+     * @param consistency    determines how the workflow request is persisted before execution:
+     *                       SYNCHRONOUS - kept in memory until completion (fastest, least durable)
+     *                       DURABLE - stored in persistence before execution (default, suitable for most cases)
+     *                       REGION_DURABLE - ensures replication across regions (slowest, most durable)
+     * @return CompletableFuture with WorkflowRun details
+     */
+    public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency) {
+        return executeWorkflowHttp(request, waitUntilTask, waitForSeconds, consistency);
+    }
+
+    /**
+     * Synchronously executes a workflow with specified consistency and return strategy
+     *
+     * @param request        workflow execution request
+     * @param waitUntilTask  waits until workflow has reached this task.
+     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
+     * @param waitForSeconds maximum amount of time to wait before returning
+     * @param consistency    determines how the workflow request is persisted before execution:
+     *                       SYNCHRONOUS - kept in memory until completion (fastest, least durable)
+     *                       DURABLE - stored in persistence before execution (default, suitable for most cases)
+     *                       REGION_DURABLE - ensures replication across regions (slowest, most durable)
+     * @param returnStrategy controls what data is returned after workflow execution:
+     *                       TARGET_WORKFLOW - returns state of the specified workflow (default)
+     *                       BLOCKING_WORKFLOW - returns state of the currently blocking workflow (may be a subworkflow)
+     *                       BLOCKING_TASK - returns state of the currently blocking task
+     *                       BLOCKING_TASK_INPUT - returns input of the currently blocking task
+     * @return CompletableFuture with WorkflowRun details
+     */
+    public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency, WorkflowSignalReturnStrategy returnStrategy) {
+        return executeWorkflowHttp(request, waitUntilTask, waitForSeconds, consistency, returnStrategy);
+    }
+
+    /**
      * Synchronously executes a workflow
-     * @param request workflow execution request
+     *
+     * @param request        workflow execution request
      * @param waitUntilTasks waits until workflow has reached one of these tasks.
      *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
      *                       Useful when workflow has multiple branches to wait for any of the branches to reach the task
@@ -105,10 +140,11 @@ public class OrkesWorkflowClient implements AutoCloseable {
 
     /**
      * Synchronously executes a workflow
-     * @param request workflow execution request
+     *
+     * @param request       workflow execution request
      * @param waitUntilTask waits until workflow has reached one of these tasks.
-     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
-     * @param waitTimeout maximum amount of time to wait before returning
+     *                      Useful for executing it synchronously until this task and then continuing asynchronous execution
+     * @param waitTimeout   maximum amount of time to wait before returning
      * @return WorkflowRun
      */
     public WorkflowRun executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Duration waitTimeout) throws ExecutionException, InterruptedException, TimeoutException {
@@ -256,6 +292,53 @@ public class OrkesWorkflowClient implements AutoCloseable {
                                 waitUntilTask,
                                 requestId,
                                 waitForSeconds);
+                        future.complete(response);
+                    } catch (Throwable t) {
+                        future.completeExceptionally(t);
+                    }
+                });
+
+        return future;
+    }
+
+    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency) {
+        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+        executorService.submit(
+                () -> {
+                    try {
+                        WorkflowRun response = workflowResource.executeWorkflow(
+                                startWorkflowRequest,
+                                startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion(),
+                                waitUntilTask,
+                                requestId,
+                                waitForSeconds,
+                                consistency);
+                        future.complete(response);
+                    } catch (Throwable t) {
+                        future.completeExceptionally(t);
+                    }
+                });
+
+        return future;
+    }
+
+    private CompletableFuture<WorkflowRun> executeWorkflowHttp(StartWorkflowRequest startWorkflowRequest, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency, WorkflowSignalReturnStrategy returnStrategy) {
+        CompletableFuture<WorkflowRun> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+        executorService.submit(
+                () -> {
+                    try {
+                        WorkflowRun response = workflowResource.executeWorkflow(
+                                startWorkflowRequest,
+                                startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion(),
+                                waitUntilTask,
+                                requestId,
+                                waitForSeconds,
+                                consistency,
+                                returnStrategy);
                         future.complete(response);
                     } catch (Throwable t) {
                         future.completeExceptionally(t);
