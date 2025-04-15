@@ -1,1 +1,1 @@
-{"result":{"error":"Error parsing class: Could not find class definition in provided code"}}
+{"result":{"templates":{"Integration":{"content":{"apis":"[${IntegrationApi}]","configuration":{"sample_key":"${Object}"},"name":"sample_name","description":"sample_description","modelsCount":0,"type":"sample_type","category":"${Category}","enabled":false,"tags":"[${Tag}]"},"dependencies":["Category","Object","Tag","IntegrationApi"]}}}}
