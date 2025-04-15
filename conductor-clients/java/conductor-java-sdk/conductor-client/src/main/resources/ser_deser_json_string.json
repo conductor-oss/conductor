@@ -1,1 +1,1 @@
-{"result":{"templates":{"TargetRef":{"content":{"id":"sample_id","type":"${ResourceType}"},"dependencies":["ResourceType"]}}}}
+{"result":{"templates":{"TokenResponse":{"content":{"token":"sample_token"},"dependencies":[]}}}}
