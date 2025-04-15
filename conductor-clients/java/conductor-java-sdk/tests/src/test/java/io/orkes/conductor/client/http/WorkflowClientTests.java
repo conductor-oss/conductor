@@ -13,6 +13,7 @@
 package io.orkes.conductor.client.http;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -246,12 +247,15 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE);
-        await().atMost(Duration.ofSeconds(10)).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
-            var workflow = run.get(10, TimeUnit.SECONDS);
-            assertNotNull(workflow);
-            assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-        });
+        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE).get();
+        assertNotNull(workflow);
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var wf = workflowClient.getWorkflow(workflow.getWorkflowId(), false);
+                    return wf.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 
     @Test
