@@ -1,1 +1,1 @@
-{"result":{"templates":{"TextCompletion":{"content":{},"dependencies":[]}}}}
+{"result":{"templates":{"VectorDBInput":{"content":{"embeddings":[0],"metadata":{"key":"${Object}"},"vectorDB":"sample_vectorDB","query":"sample_query","namespace":"sample_namespace","index":"sample_index","dimensions":0},"dependencies":["Object"]}}}}
