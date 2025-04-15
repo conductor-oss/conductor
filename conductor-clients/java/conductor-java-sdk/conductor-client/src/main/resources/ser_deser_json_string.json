@@ -1,1 +1,1 @@
-{"result":{"templates":{"GrantedAccess":{"content":{"access":"[${Access}]","tag":"sample_tag","target":"${TargetRef}"},"dependencies":["TargetRef","Access"]}}}}
+{"result":{"templates":{"GrantedAccessResponse":{"content":{"grantedAccess":"[${GrantedAccess}]"},"dependencies":["GrantedAccess"]}}}}
