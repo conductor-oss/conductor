@@ -12,7 +12,9 @@
  */
 package io.orkes.conductor.client.http;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
+import java.util.Map;
+
 import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.ConductorClientRequest;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
@@ -20,6 +22,7 @@ import com.netflix.conductor.client.http.ConductorClientResponse;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.UpgradeWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
+
 import io.orkes.conductor.client.enums.WorkflowConsistency;
 import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
 import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
@@ -27,8 +30,7 @@ import io.orkes.conductor.client.model.WorkflowRun;
 import io.orkes.conductor.client.model.WorkflowStateUpdate;
 import io.orkes.conductor.client.model.WorkflowStatus;
 
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 
 class WorkflowResource {
