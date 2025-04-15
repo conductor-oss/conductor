@@ -1,1 +1,1 @@
-{"result":{"templates":{"AuthorizationRequest":{"content":{"access":"[${Access}]","subject":"${SubjectRef}","target":"${TargetRef}"},"dependencies":["SubjectRef","TargetRef","Access"]}}}}
+{"result":{"templates":{"ConductorApplication":{"content":{"updatedBy":"sample_updatedBy","createdBy":"sample_createdBy","createTime":0,"name":"sample_name","updateTime":0,"id":"sample_id"},"dependencies":[]}}}}
