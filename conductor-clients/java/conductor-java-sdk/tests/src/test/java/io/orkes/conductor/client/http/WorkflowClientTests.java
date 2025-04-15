@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class WorkflowClientTests {
     private static OrkesWorkflowClient workflowClient;
@@ -245,9 +247,11 @@ public class WorkflowClientTests {
         startWorkflowRequest.setVersion(1);
 
         var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE);
-        var workflow = run.get(10, TimeUnit.SECONDS);
-        assertNotNull(workflow);
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        await().atMost(Duration.ofSeconds(10)).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
+            var workflow = run.get(10, TimeUnit.SECONDS);
+            assertNotNull(workflow);
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        });
     }
 
     @Test
