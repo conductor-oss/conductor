@@ -1,1 +1,1 @@
-{"result":{"templates":{"SubjectRef":{"content":{"id":"sample_id","type":"sample_type"},"dependencies":[]}}}}
+{"result":{"templates":{"TargetRef":{"content":{"id":"sample_id","type":"${ResourceType}"},"dependencies":["ResourceType"]}}}}
