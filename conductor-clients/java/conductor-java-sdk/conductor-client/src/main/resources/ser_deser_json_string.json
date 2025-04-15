@@ -1,1 +1,1 @@
-{"result":{"templates":{"Permission":{"maxDepth":2,"selfReference":true,"content":{"name":"sample_name","INSTANCES":{"key":"${PARENT_REF}"}},"dependencies":[]}}}}
+{"result":{"templates":{"Role":{"content":{"permissions":"[${Permission}]","name":"sample_name"},"dependencies":["Permission"]}}}}
