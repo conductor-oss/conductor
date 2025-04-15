@@ -1,1 +1,1 @@
-{"result":{"error":"Error parsing class: Could not find class definition in provided code"}}
+{"result":{"templates":{"SubjectRef":{"content":{"id":"sample_id","type":"sample_type"},"dependencies":[]}}}}
