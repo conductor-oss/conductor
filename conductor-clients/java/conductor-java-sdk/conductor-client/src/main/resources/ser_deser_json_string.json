@@ -1,1 +1,1 @@
-{"result":{"templates":{"CreateOrUpdateApplicationRequest":{"content":{"name":"sample_name"},"dependencies":[]}}}}
+{"result":{"templates":{"GenerateTokenRequest":{"content":{"keyId":"sample_keyId","keySecret":"sample_keySecret"},"dependencies":[]}}}}
