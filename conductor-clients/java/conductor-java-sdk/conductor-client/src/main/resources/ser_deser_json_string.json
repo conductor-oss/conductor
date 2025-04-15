@@ -1,1 +1,1 @@
-{"result":{"templates":{"CorrelationIdsSearchRequest":{"content":{},"dependencies":[]}}}}
+{"result":{"templates":{"CreateAccessKeyResponse":{"content":{"id":"sample_id","secret":"sample_secret"},"dependencies":[]}}}}
