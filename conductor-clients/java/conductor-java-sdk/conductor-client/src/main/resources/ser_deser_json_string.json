@@ -1,1 +1,1 @@
-{"result":{"templates":{"ChatCompletion":{"content":{"instructions":"sample_instructions","jsonOutput":false,"messages":"[${ChatMessage}]"},"dependencies":["ChatMessage"]}}}}
+{"result":{"templates":{"ChatMessage":{"content":{},"dependencies":[]}}}}
