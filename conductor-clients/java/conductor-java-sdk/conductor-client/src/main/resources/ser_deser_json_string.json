@@ -1,1 +1,1 @@
-{"result":{"templates":{"Role":{"content":{"permissions":"[${Permission}]","name":"sample_name"},"dependencies":["Permission"]}}}}
+{"result":{"templates":{"SaveScheduleRequest":{"content":{"cronExpression":"sample_cronExpression","paused":false,"updatedBy":"sample_updatedBy","startWorkflowRequest":"${StartWorkflowRequest}","createdBy":"sample_createdBy","name":"sample_name","description":"sample_description","zoneId":"sample_zoneId","runCatchupScheduleInstances":false,"scheduleStartTime":0,"scheduleEndTime":0},"dependencies":["StartWorkflowRequest"]}}}}
