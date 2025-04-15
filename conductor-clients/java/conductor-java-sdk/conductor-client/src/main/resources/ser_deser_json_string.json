@@ -1,1 +1,1 @@
-{"result":{"templates":{"LLMResponse":{"content":{"result":"${Object}","finishReason":"sample_finishReason","tokenUsed":0},"dependencies":["Object"]}}}}
+{"result":{"templates":{"LLMWorkerInput":{"content":{"stopWords":["sample_value"],"llmProvider":"sample_llmProvider","maxResults":0,"temperature":0,"maxTokens":0,"embeddingModelProvider":"sample_embeddingModelProvider","model":"sample_model","embeddingModel":"sample_embeddingModel","prompt":"sample_prompt","topP":0},"dependencies":[]}}}}
