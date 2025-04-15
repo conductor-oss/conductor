@@ -1,1 +1,127 @@
-null
+{
+  "templates" : {
+    "IndexedDoc" : {
+      "content" : {
+        "score" : 0,
+        "metadata" : {
+          "key" : "sample_object"
+        },
+        "docId" : "sample_docId",
+        "text" : "sample_text",
+        "parentDocId" : "sample_parentDocId"
+      },
+      "dependencies" : [ ]
+    },
+    "ChatCompletion" : {
+      "content" : {
+        "instructions" : "sample_instructions",
+        "jsonOutput" : false,
+        "messages" : "[${ChatMessage}]"
+      },
+      "dependencies" : [ "ChatMessage" ]
+    },
+    "TextCompletion" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "ChatMessage" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "IndexDocInput" : {
+      "content" : {
+        "metadata" : {
+          "key" : "sample_object"
+        },
+        "chunkSize" : 0,
+        "chunkOverlap" : 0,
+        "llmProvider" : "sample_llmProvider",
+        "docId" : "sample_docId",
+        "vectorDB" : "sample_vectorDB",
+        "index" : "sample_index",
+        "mediaType" : "sample_mediaType",
+        "url" : "sample_url",
+        "namespace" : "sample_namespace",
+        "embeddingModelProvider" : "sample_embeddingModelProvider",
+        "model" : "sample_model",
+        "text" : "sample_text",
+        "embeddingModel" : "sample_embeddingModel",
+        "dimensions" : 0
+      },
+      "dependencies" : [ ]
+    },
+    "LLMWorkerInput" : {
+      "content" : {
+        "stopWords" : [ "sample_value" ],
+        "llmProvider" : "sample_llmProvider",
+        "maxResults" : 0,
+        "temperature" : 0,
+        "maxTokens" : 0,
+        "embeddingModelProvider" : "sample_embeddingModelProvider",
+        "model" : "sample_model",
+        "embeddingModel" : "sample_embeddingModel",
+        "prompt" : "sample_prompt",
+        "topP" : 0
+      },
+      "dependencies" : [ ]
+    },
+    "LLMResponse" : {
+      "content" : {
+        "result" : "sample_object",
+        "finishReason" : "sample_finishReason",
+        "tokenUsed" : 0
+      },
+      "dependencies" : [ ]
+    },
+    "PromptTemplateTestRequest" : {
+      "content" : {
+        "promptVariables" : {
+          "key" : "sample_object"
+        },
+        "stopWords" : [ "sample_value" ],
+        "llmProvider" : "sample_llmProvider",
+        "temperature" : 0,
+        "model" : "sample_model",
+        "prompt" : "sample_prompt",
+        "topP" : 0
+      },
+      "dependencies" : [ ]
+    },
+    "StoreEmbeddingsInput" : {
+      "content" : {
+        "embeddings" : [ 0 ],
+        "metadata" : {
+          "key" : "sample_object"
+        },
+        "vectorDB" : "sample_vectorDB",
+        "namespace" : "sample_namespace",
+        "index" : "sample_index",
+        "id" : "sample_id"
+      },
+      "dependencies" : [ ]
+    },
+    "VectorDBInput" : {
+      "content" : {
+        "embeddings" : [ 0 ],
+        "metadata" : {
+          "key" : "sample_object"
+        },
+        "vectorDB" : "sample_vectorDB",
+        "query" : "sample_query",
+        "namespace" : "sample_namespace",
+        "index" : "sample_index",
+        "dimensions" : 0
+      },
+      "dependencies" : [ ]
+    },
+    "EmbeddingRequest" : {
+      "content" : {
+        "llmProvider" : "sample_llmProvider",
+        "model" : "sample_model",
+        "text" : "sample_text",
+        "dimensions" : 0
+      },
+      "dependencies" : [ ]
+    }
+  }
+}
