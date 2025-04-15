@@ -1,1 +1,1 @@
-{"result":{"templates":{"TokenResponse":{"content":{"token":"sample_token"},"dependencies":[]}}}}
+{"result":{"templates":{"UpsertGroupRequest":{"content":{"roles":["sample_value"],"defaultAccess":"[${Access}]","description":"sample_description"},"dependencies":["Access"]}}}}
