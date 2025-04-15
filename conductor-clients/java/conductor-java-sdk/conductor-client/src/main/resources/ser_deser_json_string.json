@@ -669,7 +669,7 @@
       "content" : {
         "embeddings" : [ 0 ],
         "metadata" : {
-          "key" : "${Object}"
+          "key" : "sample_object"
         },
         "vectorDB" : "sample_vectorDB",
         "query" : "sample_query",
@@ -677,7 +677,7 @@
         "index" : "sample_index",
         "dimensions" : 0
       },
-      "dependencies" : [ "Object" ]
+      "dependencies" : [ ]
     },
     "AccessKeyResponse" : {
       "content" : {
