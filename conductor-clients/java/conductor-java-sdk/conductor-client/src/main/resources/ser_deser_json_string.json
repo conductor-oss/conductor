@@ -1,1 +1,1 @@
-{"result":{"templates":{"GrantedAccessResponse":{"content":{"grantedAccess":"[${GrantedAccess}]"},"dependencies":["GrantedAccess"]}}}}
+{"result":{"templates":{"Group":{"content":{"roles":"[${Role}]","defaultAccess":"[${Access}]","description":"sample_description","id":"sample_id"},"dependencies":["Role","Access"]}}}}
