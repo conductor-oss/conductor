@@ -1,1 +1,1 @@
-{"result":{"templates":{"ChatMessage":{"content":{},"dependencies":[]}}}}
+{"result":{"templates":{"EmbeddingRequest":{"content":{"llmProvider":"sample_llmProvider","model":"sample_model","text":"sample_text","dimensions":0},"dependencies":[]}}}}
