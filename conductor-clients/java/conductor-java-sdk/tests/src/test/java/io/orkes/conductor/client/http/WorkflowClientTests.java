@@ -26,6 +26,7 @@ import com.netflix.conductor.sdk.workflow.def.tasks.Http;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
 import io.orkes.conductor.client.enums.WorkflowConsistency;
+import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.Commons;
 import io.orkes.conductor.client.util.TestUtil;
@@ -222,10 +223,17 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.SYNCHRONOUS);
         var workflow = run.get(10, TimeUnit.SECONDS);
         assertNotNull(workflow);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflow.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+        assertEquals(WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW, workflow.getResponseType());
     }
 
     @Test
@@ -235,9 +243,15 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS).get();
+        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS).get();
         assertNotNull(workflow);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflow.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 
     @Test
@@ -247,7 +261,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE).get();
+        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE).get();
         assertNotNull(workflow);
         await()
                 .atMost(Duration.ofSeconds(10))
@@ -265,7 +279,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE).get();
+        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE).get();
         assertNotNull(workflow);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }

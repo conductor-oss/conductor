@@ -18,8 +18,10 @@ import java.util.Map;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class TaskRun extends SignalResponse {
 
     private String taskType;

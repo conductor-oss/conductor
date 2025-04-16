@@ -25,10 +25,7 @@ import com.netflix.conductor.common.run.Workflow;
 
 import io.orkes.conductor.client.enums.WorkflowConsistency;
 import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
-import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
-import io.orkes.conductor.client.model.WorkflowRun;
-import io.orkes.conductor.client.model.WorkflowStateUpdate;
-import io.orkes.conductor.client.model.WorkflowStatus;
+import io.orkes.conductor.client.model.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -119,6 +116,33 @@ class WorkflowResource {
 
         ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
         });
+
+        return resp.getData();
+    }
+
+    public <T extends SignalResponse> T executeWorkflow(StartWorkflowRequest req,
+                                                        String name,
+                                                        Integer version,
+                                                        String waitUntilTaskRef,
+                                                        String requestId,
+                                                        Integer waitForSeconds,
+                                                        WorkflowConsistency consistency,
+                                                        WorkflowSignalReturnStrategy returnStrategy,
+                                                        TypeReference<T> responseType) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/workflow/execute/{name}/{version}")
+                .addPathParam("name", name)
+                .addPathParam("version", version)
+                .addQueryParam("requestId", requestId)
+                .addQueryParam("waitUntilTaskRef", waitUntilTaskRef)
+                .addQueryParam("waitForSeconds", waitForSeconds)
+                .addQueryParam("consistency", consistency.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
+                .body(req)
+                .build();
+
+        ConductorClientResponse<T> resp = client.execute(request, responseType);
 
         return resp.getData();
     }

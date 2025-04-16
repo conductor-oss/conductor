@@ -34,10 +34,9 @@ import com.netflix.conductor.common.run.WorkflowTestRequest;
 
 import io.orkes.conductor.client.enums.WorkflowConsistency;
 import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
-import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
-import io.orkes.conductor.client.model.WorkflowRun;
-import io.orkes.conductor.client.model.WorkflowStateUpdate;
-import io.orkes.conductor.client.model.WorkflowStatus;
+import io.orkes.conductor.client.model.*;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 public class OrkesWorkflowClient implements AutoCloseable {
 
@@ -87,42 +86,84 @@ public class OrkesWorkflowClient implements AutoCloseable {
     }
 
     /**
-     * Synchronously executes a workflow with specified consistency and return strategy
+     * Executes a workflow and returns the target workflow details.
+     * This method signals a specified workflow and waits for the target workflow.
      *
-     * @param request        workflow execution request
-     * @param waitUntilTask  waits until workflow has reached this task.
-     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
-     * @param waitForSeconds maximum amount of time to wait before returning
-     * @param consistency    determines how the workflow request is persisted before execution:
-     *                       SYNCHRONOUS - kept in memory until completion (fastest, least durable)
-     *                       DURABLE - stored in persistence before execution (default, suitable for most cases)
-     *                       REGION_DURABLE - ensures replication across regions (slowest, most durable)
-     * @return CompletableFuture with WorkflowRun details
+     * @param req The StartWorkflowRequest containing workflow execution details
+     * @param waitUntilTaskRef Reference name of the task to wait for (null to not wait for any specific task)
+     * @param waitForSeconds Maximum time to wait in seconds for the task to complete
+     * @param consistency Execution consistency mode (DURABLE or SYNC)
+     * @return A CompletableFuture containing the WorkflowRun with target workflow details
      */
-    public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency) {
-        return executeWorkflowHttp(request, waitUntilTask, waitForSeconds, consistency);
+    public CompletableFuture<WorkflowRun> executeWorkflowWithTargetWorkflow(StartWorkflowRequest req,
+                                                                            String waitUntilTaskRef,
+                                                                            Integer waitForSeconds,
+                                                                            WorkflowConsistency consistency) {
+        return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
+                consistency, WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
+                new TypeReference<WorkflowRun>() {
+                });
     }
 
     /**
-     * Synchronously executes a workflow with specified consistency and return strategy
+     * Executes a workflow and returns the blocking workflow details.
+     * This method signals a specified workflow and waits for the blocking workflow.
      *
-     * @param request        workflow execution request
-     * @param waitUntilTask  waits until workflow has reached this task.
-     *                       Useful for executing it synchronously until this task and then continuing asynchronous execution
-     * @param waitForSeconds maximum amount of time to wait before returning
-     * @param consistency    determines how the workflow request is persisted before execution:
-     *                       SYNCHRONOUS - kept in memory until completion (fastest, least durable)
-     *                       DURABLE - stored in persistence before execution (default, suitable for most cases)
-     *                       REGION_DURABLE - ensures replication across regions (slowest, most durable)
-     * @param returnStrategy controls what data is returned after workflow execution:
-     *                       TARGET_WORKFLOW - returns state of the specified workflow (default)
-     *                       BLOCKING_WORKFLOW - returns state of the currently blocking workflow (may be a subworkflow)
-     *                       BLOCKING_TASK - returns state of the currently blocking task
-     *                       BLOCKING_TASK_INPUT - returns input of the currently blocking task
-     * @return CompletableFuture with WorkflowRun details
+     * @param req The StartWorkflowRequest containing workflow execution details
+     * @param waitUntilTaskRef Reference name of the task to wait for (null to not wait for any specific task)
+     * @param waitForSeconds Maximum time to wait in seconds for the task to complete
+     * @param consistency Execution consistency mode (DURABLE or SYNC)
+     * @return A CompletableFuture containing the WorkflowRun with blocking workflow details
      */
-    public CompletableFuture<WorkflowRun> executeWorkflow(StartWorkflowRequest request, String waitUntilTask, Integer waitForSeconds, WorkflowConsistency consistency, WorkflowSignalReturnStrategy returnStrategy) {
-        return executeWorkflowHttp(request, waitUntilTask, waitForSeconds, consistency, returnStrategy);
+    public CompletableFuture<WorkflowRun> executeWorkflowWithBlockingWorkflow(StartWorkflowRequest req,
+                                                                              String waitUntilTaskRef,
+                                                                              Integer waitForSeconds,
+                                                                              WorkflowConsistency consistency) {
+        return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
+                consistency, WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW,
+                new TypeReference<WorkflowRun>() {
+                });
+    }
+
+    /**
+     * Executes a workflow and returns the blocking task details.
+     * This method signals a specified workflow and returns information about the blocking task.
+     *
+     * @param req The StartWorkflowRequest containing workflow execution details
+     * @param waitUntilTaskRef Reference name of the task to wait for (null to not wait for any specific task)
+     * @param waitForSeconds Maximum time to wait in seconds for the task to complete
+     * @param consistency Execution consistency mode (DURABLE or SYNC)
+     * @return A CompletableFuture containing the TaskRun with blocking task details
+     */
+    public CompletableFuture<TaskRun> executeWorkflowWithBlockingTask(StartWorkflowRequest req,
+                                                                      String waitUntilTaskRef,
+                                                                      Integer waitForSeconds,
+                                                                      WorkflowConsistency consistency) {
+        return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
+                consistency, WorkflowSignalReturnStrategy.BLOCKING_TASK,
+                new TypeReference<TaskRun>() {
+                });
+    }
+
+    /**
+     * Executes a workflow and returns the blocking task details with input data.
+     * This method signals a specified workflow and returns information about the blocking task,
+     * including its input data.
+     *
+     * @param req The StartWorkflowRequest containing workflow execution details
+     * @param waitUntilTaskRef Reference name of the task to wait for (null to not wait for any specific task)
+     * @param waitForSeconds Maximum time to wait in seconds for the task to complete
+     * @param consistency Execution consistency mode (DURABLE or SYNC)
+     * @return A CompletableFuture containing the TaskRun with blocking task details including input data
+     */
+    public CompletableFuture<TaskRun> executeWorkflowWithBlockingTaskInput(StartWorkflowRequest req,
+                                                                           String waitUntilTaskRef,
+                                                                           Integer waitForSeconds,
+                                                                           WorkflowConsistency consistency) {
+        return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
+                consistency, WorkflowSignalReturnStrategy.BLOCKING_TASK_INPUT,
+                new TypeReference<TaskRun>() {
+                });
     }
 
     /**
@@ -346,6 +387,39 @@ public class OrkesWorkflowClient implements AutoCloseable {
                         future.completeExceptionally(t);
                     }
                 });
+
+        return future;
+    }
+
+    private <T extends SignalResponse> CompletableFuture<T> executeWorkflowHttp(
+            StartWorkflowRequest startWorkflowRequest,
+            String waitUntilTask,
+            Integer waitForSeconds,
+            WorkflowConsistency consistency,
+            WorkflowSignalReturnStrategy returnStrategy,
+            TypeReference<T> responseType) {
+
+        CompletableFuture<T> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+
+        executorService.submit(() -> {
+            try {
+                T response = workflowResource.executeWorkflow(
+                        startWorkflowRequest,
+                        startWorkflowRequest.getName(),
+                        startWorkflowRequest.getVersion(),
+                        waitUntilTask,
+                        requestId,
+                        waitForSeconds,
+                        consistency,
+                        returnStrategy,
+                        responseType);  // Pass the TypeReference to the resource
+
+                future.complete(response);
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        });
 
         return future;
     }

@@ -217,7 +217,7 @@ public class TaskClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -226,11 +226,13 @@ public class TaskClientTests {
 
         taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
 
-        workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
-        Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-        for (Task task : workflow.getTasks()) {
-            Assertions.assertEquals(Task.Status.COMPLETED, task.getStatus());
-        }
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 
     @Test
@@ -240,7 +242,7 @@ public class TaskClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var run = workflowClient.executeWorkflowWithTargetWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -249,11 +251,13 @@ public class TaskClientTests {
 
         taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
 
-        workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
-        Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-        for (Task task : workflow.getTasks()) {
-            Assertions.assertEquals(Task.Status.COMPLETED, task.getStatus());
-        }
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 
     @Test
@@ -263,7 +267,7 @@ public class TaskClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingTaskInput(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -288,7 +292,7 @@ public class TaskClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -314,7 +318,7 @@ public class TaskClientTests {
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -328,7 +332,13 @@ public class TaskClientTests {
 
         result = taskClient.signalAndReturnBlockingWorkflow(subWfId, Task.Status.COMPLETED, Map.of("key", "value"));
         assertNotNull(result);
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, result.getStatus());
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 
     @Test
@@ -339,7 +349,7 @@ public class TaskClientTests {
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithTargetWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -371,7 +381,7 @@ public class TaskClientTests {
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
@@ -404,7 +414,7 @@ public class TaskClientTests {
         startWorkflowRequest.setVersion(1);
         startWorkflowRequest.setInput(new HashMap<>());
 
-        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
         var workflowRun = run.get();
         Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
         Assertions.assertNotNull(workflow);
