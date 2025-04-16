@@ -33,6 +33,8 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 
 import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
+import io.orkes.conductor.client.model.SignalResponse;
+import io.orkes.conductor.client.model.TaskRun;
 import io.orkes.conductor.client.model.WorkflowRun;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -80,28 +82,71 @@ public class OrkesTaskClient {
      *
      * @param workflowId Workflow Id of the workflow to be signaled
      * @param status     Signal status to be set for the workflow
-     * @param output            Output for the task
+     * @param output     Output for the task
      * @return Updated workflow with the applied signal status
      */
-    public WorkflowRun signal(String workflowId, String status, Object output) {
-        return signal(getOutputMap(output), workflowId, status);
+    public void signal(String workflowId, String status, Object output) {
+        signal(getOutputMap(output), workflowId, status);
     }
 
     /**
-     * Signals a workflow with the given status and specifies the return strategy
+     * Signals a workflow with the given status and returns the target workflow details
      *
-     * @param workflowId     Workflow Id of the workflow to be signaled
-     * @param status         Signal status to be set for the workflow
-     * @param returnStrategy Controls what data is returned after workflow signaling:
-     *                       TARGET_WORKFLOW - returns state of the specified workflow (default)
-     *                       BLOCKING_WORKFLOW - returns state of the currently blocking workflow (may be a subworkflow)
-     *                       BLOCKING_TASK - returns state of the currently blocking task
-     *                       BLOCKING_TASK_INPUT - returns input of the currently blocking task
-     * @param output            Output for the task
-     * @return Updated workflow data based on the specified return strategy
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     * @return WorkflowRun containing the target workflow details after the signal has been processed
      */
-    public Workflow signalWithStrategy(String workflowId, String status, WorkflowSignalReturnStrategy returnStrategy, Object output) {
-        return signalWithStrategy(getOutputMap(output), workflowId, status, returnStrategy.name());
+    public WorkflowRun signalAndReturnTargetWorkflow(String workflowId, Task.Status status, Object output) {
+        return signalWithStrategy(getOutputMap(output), workflowId, status,
+                WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
+                new TypeReference<WorkflowRun>() {
+                });
+    }
+
+    /**
+     * Signals a workflow with the given status and returns the blocking workflow details
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     * @return WorkflowRun containing the blocking workflow details after the signal has been processed
+     */
+    public WorkflowRun signalAndReturnBlockingWorkflow(String workflowId, Task.Status status, Object output) {
+        return signalWithStrategy(getOutputMap(output), workflowId, status,
+                WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW,
+                new TypeReference<WorkflowRun>() {
+                });
+    }
+
+    /**
+     * Signals a workflow with the given status and returns the blocking task details
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     * @return TaskRun containing the blocking task details after the signal has been processed
+     */
+    public TaskRun signalAndReturnBlockingTask(String workflowId, Task.Status status, Object output) {
+        return signalWithStrategy(getOutputMap(output), workflowId, status,
+                WorkflowSignalReturnStrategy.BLOCKING_TASK,
+                new TypeReference<TaskRun>() {
+                });
+    }
+
+    /**
+     * Signals a workflow with the given status and returns the blocking task details with input data
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     * @return TaskRun containing the blocking task details with input data after the signal has been processed
+     */
+    public TaskRun signalAndReturnBlockingTaskInput(String workflowId, Task.Status status, Object output) {
+        return signalWithStrategy(getOutputMap(output), workflowId, status,
+                WorkflowSignalReturnStrategy.BLOCKING_TASK_INPUT,
+                new TypeReference<TaskRun>() {
+                });
     }
 
     private Map<String, Object> getOutputMap(Object output) {
@@ -167,8 +212,8 @@ public class OrkesTaskClient {
     }
 
     private WorkflowRun signal(Map<String, Object> output,
-                            String workflowId,
-                            String status) {
+                               String workflowId,
+                               String status) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{status}/signal")
@@ -183,21 +228,21 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    private Workflow signalWithStrategy(Map<String, Object> output,
-                                        String workflowId,
-                                        String status,
-                                        String returnStrategy) {
+    private <T extends SignalResponse> T signalWithStrategy(Map<String, Object> output,
+                                                            String workflowId,
+                                                            Task.Status status,
+                                                            WorkflowSignalReturnStrategy returnStrategy,
+                                                            TypeReference<T> responseType) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{status}/signal/sync")
                 .addPathParam("workflowId", workflowId)
-                .addPathParam("status", status)
-                .addQueryParam("returnStrategy", returnStrategy)
+                .addPathParam("status", status.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
                 .body(output)
                 .build();
 
-        ConductorClientResponse<Workflow> resp = client.execute(request, new TypeReference<>() {
-        });
+        ConductorClientResponse<T> resp = client.execute(request, responseType);
 
         return resp.getData();
     }

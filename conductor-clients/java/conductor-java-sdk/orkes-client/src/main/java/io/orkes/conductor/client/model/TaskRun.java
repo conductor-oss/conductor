@@ -16,18 +16,25 @@ import java.util.List;
 import java.util.Map;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
 
 import lombok.Data;
 
 @Data
-public class WorkflowRun extends SignalResponse {
+public class TaskRun extends SignalResponse {
 
+    private String taskType;
+    private String taskId;
+    private String referenceTaskName;
+    private int retryCount;
+    private String taskDefName;
+    private String retriedTaskId;
+    private String workflowType;
+    private String reasonForIncompletion;
     private int priority;
     private Map<String, Object> variables;
     private List<Task> tasks;
     private String createdBy;
     private long createTime;
-    private Workflow.WorkflowStatus status;
     private long updateTime;
+    private Task.Status status;
 }
