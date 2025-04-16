@@ -15,7 +15,7 @@ package com.netflix.conductor.dao;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.model.TaskModel;
 
-/** An abstraction to enable different Rate Limiting implementations */
+/** An abstraction to enable different Rate Limiting implementations   */
 public interface RateLimitingDAO {
 
     /**
