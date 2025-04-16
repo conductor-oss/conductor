@@ -3,7 +3,7 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
@@ -14,7 +14,7 @@
       "content" : {
         "retried" : true,
         "outputData" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "referenceTaskName" : "sample_referenceTaskName",
         "workflowPriority" : 123,
@@ -35,7 +35,7 @@
         "seq" : 123,
         "startDelayInSeconds" : 123,
         "inputData" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "callbackAfterSeconds" : 123,
         "workerId" : "sample_workerId",
@@ -54,10 +54,10 @@
         "executionNameSpace" : "sample_executionNameSpace",
         "firstStartTime" : 123,
         "taskId" : "sample_taskId",
-        "status" : "${Status}",
+        "status" : "${Task.Status}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "Status", "WorkflowTask" ]
+      "dependencies" : [ "Task.Status", "WorkflowTask" ]
     },
     "TaskExecLog" : {
       "content" : {
@@ -70,7 +70,7 @@
     "EventExecution" : {
       "content" : {
         "output" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "created" : 123,
         "name" : "sample_name",
@@ -102,9 +102,7 @@
         "name" : "sample_name",
         "active" : true,
         "event" : "sample_event",
-        "actions" : [ {
-          "${EventHandler.Action}" : { }
-        } ]
+        "actions" : [ "${EventHandler.Action}" ]
       },
       "dependencies" : [ "EventHandler.Action" ]
     },
@@ -112,29 +110,29 @@
       "content" : {
         "values" : [ "SIMPLE", "DYNAMIC", "FORK_JOIN", "FORK_JOIN_DYNAMIC", "DECISION", "SWITCH", "JOIN", "DO_WHILE", "SUB_WORKFLOW", "START_WORKFLOW", "EVENT", "WAIT", "HUMAN", "USER_DEFINED", "HTTP", "LAMBDA", "INLINE", "EXCLUSIVE_JOIN", "TERMINATE", "KAFKA_PUBLISH", "JSON_JQ_TRANSFORM", "SET_VARIABLE", "NOOP" ],
         "constants" : {
-          "SUB_WORKFLOW" : "(TASK_TYPE_SUB_WORKFLOW)",
-          "DECISION" : "(TASK_TYPE_DECISION)",
-          "FORK" : "(TASK_TYPE_FORK)",
-          "NOOP" : "(TASK_TYPE_NOOP)",
-          "JOIN" : "(TASK_TYPE_JOIN)",
-          "KAFKA_PUBLISH" : "(TASK_TYPE_KAFKA_PUBLISH)",
-          "HTTP" : "(TASK_TYPE_HTTP)",
-          "FORK_JOIN" : "(TASK_TYPE_FORK_JOIN)",
-          "EVENT" : "(TASK_TYPE_EVENT)",
-          "DYNAMIC" : "(TASK_TYPE_DYNAMIC)",
-          "LAMBDA" : "(TASK_TYPE_LAMBDA)",
-          "JSON_JQ_TRANSFORM" : "(TASK_TYPE_JSON_JQ_TRANSFORM)",
-          "HUMAN" : "(TASK_TYPE_HUMAN)",
-          "TERMINATE" : "(TASK_TYPE_TERMINATE)",
-          "FORK_JOIN_DYNAMIC" : "(TASK_TYPE_FORK_JOIN_DYNAMIC)",
-          "DO_WHILE" : "(TASK_TYPE_DO_WHILE)",
-          "SIMPLE" : "(TASK_TYPE_SIMPLE)",
-          "INLINE" : "(TASK_TYPE_INLINE)",
-          "SWITCH" : "(TASK_TYPE_SWITCH)",
-          "EXCLUSIVE_JOIN" : "(TASK_TYPE_EXCLUSIVE_JOIN)",
-          "SET_VARIABLE" : "(TASK_TYPE_SET_VARIABLE)",
-          "WAIT" : "(TASK_TYPE_WAIT)",
-          "START_WORKFLOW" : "(TASK_TYPE_START_WORKFLOW)"
+          "SUB_WORKFLOW" : "(8)",
+          "DECISION" : "(4)",
+          "NOOP" : "(22)",
+          "JOIN" : "(6)",
+          "KAFKA_PUBLISH" : "(19)",
+          "HTTP" : "(14)",
+          "FORK_JOIN" : "(2)",
+          "EVENT" : "(10)",
+          "DYNAMIC" : "(1)",
+          "LAMBDA" : "(15)",
+          "JSON_JQ_TRANSFORM" : "(20)",
+          "HUMAN" : "(12)",
+          "TERMINATE" : "(18)",
+          "FORK_JOIN_DYNAMIC" : "(3)",
+          "SIMPLE" : "(0)",
+          "DO_WHILE" : "(7)",
+          "INLINE" : "(16)",
+          "SWITCH" : "(5)",
+          "EXCLUSIVE_JOIN" : "(17)",
+          "SET_VARIABLE" : "(21)",
+          "WAIT" : "(11)",
+          "START_WORKFLOW" : "(9)",
+          "USER_DEFINED" : "(13)"
         },
         "sampleValue" : "SIMPLE"
       },
@@ -150,12 +148,12 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "version" : 123
       },
@@ -178,7 +176,7 @@
     "WorkflowStateUpdate" : {
       "content" : {
         "variables" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "taskReferenceName" : "sample_taskReferenceName",
         "taskResult" : "${TaskResult}"
@@ -232,9 +230,9 @@
     },
     "UpsertUserRequest" : {
       "content" : {
-        "roles" : [ "example" ],
+        "roles" : [ "sample_roles" ],
         "name" : "sample_name",
-        "groups" : [ "example" ]
+        "groups" : [ "sample_groups" ]
       },
       "dependencies" : [ ]
     },
@@ -281,22 +279,22 @@
         "zoneId" : "sample_zoneId",
         "workflowName" : "sample_workflowName",
         "stackTrace" : "sample_stackTrace",
-        "state" : "${WorkflowScheduleExecutionModel.State}",
+        "state" : "POLLED",
         "workflowId" : "sample_workflowId",
         "orgId" : "sample_orgId"
       },
-      "dependencies" : [ "StartWorkflowRequest", "WorkflowScheduleExecutionModel.State" ]
+      "dependencies" : [ "StartWorkflowRequest" ]
     },
     "TaskDef" : {
       "content" : {
-        "timeoutPolicy" : "${TimeoutPolicy}",
-        "inputKeys" : [ "example" ],
+        "timeoutPolicy" : "${TaskDef.TimeoutPolicy}",
+        "inputKeys" : [ "sample_inputKeys" ],
         "concurrentExecLimit" : 123,
         "isolationGroupId" : "sample_isolationGroupId",
         "retryCount" : 123,
         "description" : "sample_description",
         "inputTemplate" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "ownerEmail" : "sample_ownerEmail",
         "baseType" : "sample_baseType",
@@ -304,16 +302,16 @@
         "retryDelaySeconds" : 123,
         "backoffScaleFactor" : 123,
         "rateLimitPerFrequency" : 123,
-        "retryLogic" : "${RetryLogic}",
+        "retryLogic" : "${TaskDef.RetryLogic}",
         "responseTimeoutSeconds" : 123,
         "name" : "sample_name",
         "timeoutSeconds" : 123,
         "rateLimitFrequencyInSeconds" : 123,
-        "outputKeys" : [ "example" ],
+        "outputKeys" : [ "sample_outputKeys" ],
         "executionNameSpace" : "sample_executionNameSpace",
         "pollTimeoutSeconds" : 123
       },
-      "dependencies" : [ "TimeoutPolicy", "RetryLogic" ]
+      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ]
     },
     "TaskResult" : {
       "content" : {
@@ -326,7 +324,7 @@
         "subWorkflowId" : "sample_subWorkflowId",
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "workflowInstanceId" : "sample_workflowInstanceId",
-        "logs" : [ "example" ],
+        "logs" : [ "${TaskExecLog}" ],
         "taskId" : "sample_taskId",
         "status" : "${Status}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
@@ -335,30 +333,20 @@
     },
     "EventHandler.Action" : {
       "content" : {
-        "terminate_workflow" : {
-          "${EventHandler.TerminateWorkflow}" : { }
-        },
-        "fail_task" : {
-          "${EventHandler.TaskDetails}" : { }
-        },
+        "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
+        "fail_task" : "${EventHandler.TaskDetails}",
         "expandInlineJSON" : true,
         "action" : "start_workflow",
-        "start_workflow" : {
-          "${EventHandler.StartWorkflow}" : { }
-        },
-        "complete_task" : {
-          "${EventHandler.TaskDetails}" : { }
-        },
-        "update_workflow_variables" : {
-          "${EventHandler.UpdateWorkflowVariables}" : { }
-        }
+        "start_workflow" : "${EventHandler.StartWorkflow}",
+        "complete_task" : "${EventHandler.TaskDetails}",
+        "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
       },
       "dependencies" : [ "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
@@ -381,9 +369,9 @@
     },
     "UpsertGroupRequest" : {
       "content" : {
-        "roles" : [ "example" ],
+        "roles" : [ "sample_roles" ],
         "defaultAccess" : {
-          "key" : [ "example" ]
+          "${ResourceType}" : [ "${Access}" ]
         },
         "description" : "sample_description"
       },
@@ -397,7 +385,7 @@
         "description" : "sample_description",
         "pausedReason" : "sample_pausedReason",
         "runCatchupScheduleInstances" : true,
-        "tags" : [ "example" ],
+        "tags" : [ "${Tag}" ],
         "scheduleStartTime" : 123,
         "cronExpression" : "sample_cronExpression",
         "startWorkflowRequest" : "${StartWorkflowRequest}",
