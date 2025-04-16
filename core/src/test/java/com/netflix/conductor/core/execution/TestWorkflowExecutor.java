@@ -58,6 +58,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -254,7 +255,7 @@ public class TestWorkflowExecutor {
         task1.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         task1.setWorkflowInstanceId(workflow.getWorkflowId());
         task1.setCorrelationId(workflow.getCorrelationId());
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setInputData(new HashMap<>());
         task1.setStatus(TaskModel.Status.SCHEDULED);
@@ -268,7 +269,7 @@ public class TestWorkflowExecutor {
         task2.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         task2.setWorkflowInstanceId(workflow.getWorkflowId());
         task2.setCorrelationId(workflow.getCorrelationId());
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setInputData(new HashMap<>());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -280,7 +281,7 @@ public class TestWorkflowExecutor {
         task3.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         task3.setWorkflowInstanceId(workflow.getWorkflowId());
         task3.setCorrelationId(workflow.getCorrelationId());
-        task3.setScheduledTime(System.currentTimeMillis());
+        task3.setScheduledTime(TimeService.currentTimeMillis());
         task3.setTaskId(idGenerator.generate());
         task3.setInputData(new HashMap<>());
         task3.setStatus(TaskModel.Status.SCHEDULED);
@@ -1108,7 +1109,7 @@ public class TestWorkflowExecutor {
         task.setTaskDefName("task");
         task.setReferenceTaskName("task_ref");
         task.setWorkflowInstanceId(workflowInstanceId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setRetryCount(0);
@@ -1122,7 +1123,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(workflowInstanceId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.FAILED);
         task1.setRetryCount(0);
@@ -1143,7 +1144,7 @@ public class TestWorkflowExecutor {
 
         TaskModel task2 = new TaskModel();
         task2.setWorkflowInstanceId(subWorkflow.getWorkflowId());
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setRetryCount(0);
@@ -1351,7 +1352,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(subWorkflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -1362,7 +1363,7 @@ public class TestWorkflowExecutor {
         task2.setTaskDefName("task2");
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(subWorkflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.COMPLETED);
         task2.setWorkflowTask(new WorkflowTask());
@@ -1382,7 +1383,7 @@ public class TestWorkflowExecutor {
         // parent workflow setup
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(parentWorkflowId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setOutputData(new HashMap<>());
@@ -1505,7 +1506,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(workflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -1515,7 +1516,7 @@ public class TestWorkflowExecutor {
         task2.setTaskType(TaskType.JSON_JQ_TRANSFORM.name());
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(workflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId("system-task-id");
         task2.setStatus(TaskModel.Status.FAILED);
 
@@ -1574,7 +1575,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(subWorkflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -1585,7 +1586,7 @@ public class TestWorkflowExecutor {
         task2.setTaskDefName("task2");
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(subWorkflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.COMPLETED);
         task2.setWorkflowTask(new WorkflowTask());
@@ -1605,7 +1606,7 @@ public class TestWorkflowExecutor {
         // parent workflow setup
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(parentWorkflowId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setOutputData(new HashMap<>());
@@ -1655,7 +1656,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", domains[0], "worker1", System.currentTimeMillis() - 99 * 1000);
+                        "queue1",
+                        domains[0],
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 1000);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[0]))
                 .thenReturn(pollData1);
         String activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
@@ -1664,7 +1668,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData2 =
                 new PollData(
-                        "queue2", domains[1], "worker2", System.currentTimeMillis() - 99 * 1000);
+                        "queue2",
+                        domains[1],
+                        "worker2",
+                        TimeService.currentTimeMillis() - 99 * 1000);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[1]))
                 .thenReturn(pollData2);
         activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
@@ -1701,7 +1708,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", domains[0], "worker1", System.currentTimeMillis() - 99 * 10000);
+                        "queue1",
+                        domains[0],
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 10000);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[0]))
                 .thenReturn(pollData1);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[1])).thenReturn(null);
@@ -1716,7 +1726,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", domains[0], "worker1", System.currentTimeMillis() - 99 * 10000);
+                        "queue1",
+                        domains[0],
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 10000);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[0]))
                 .thenReturn(pollData1);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[1])).thenReturn(null);
@@ -1735,7 +1748,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", "mydomain", "worker1", System.currentTimeMillis() - 99 * 100);
+                        "queue1",
+                        "mydomain",
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 100);
         when(executionDAOFacade.getTaskPollDataByDomain(anyString(), anyString()))
                 .thenReturn(pollData1);
         workflowExecutor.setTaskDomains(tasks, workflow);
@@ -1755,7 +1771,10 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", "mydomain", "worker1", System.currentTimeMillis() - 99 * 100);
+                        "queue1",
+                        "mydomain",
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 100);
         when(executionDAOFacade.getTaskPollDataByDomain(eq("task1"), anyString()))
                 .thenReturn(pollData1);
         when(executionDAOFacade.getTaskPollDataByDomain(eq("task2"), anyString())).thenReturn(null);
@@ -1779,13 +1798,16 @@ public class TestWorkflowExecutor {
 
         PollData pollData1 =
                 new PollData(
-                        "queue1", "mydomain", "worker1", System.currentTimeMillis() - 99 * 100);
+                        "queue1",
+                        "mydomain",
+                        "worker1",
+                        TimeService.currentTimeMillis() - 99 * 100);
         PollData pollData2 =
                 new PollData(
                         "queue2",
                         "someActiveDomain",
                         "worker2",
-                        System.currentTimeMillis() - 99 * 100);
+                        TimeService.currentTimeMillis() - 99 * 100);
         when(executionDAOFacade.getTaskPollDataByDomain(anyString(), eq("mydomain")))
                 .thenReturn(pollData1);
         when(executionDAOFacade.getTaskPollDataByDomain(anyString(), eq("someInactiveDomain")))
@@ -1859,7 +1881,7 @@ public class TestWorkflowExecutor {
         completedTask.setTaskType(TaskType.SIMPLE.name());
         completedTask.setReferenceTaskName("completedTask");
         completedTask.setWorkflowInstanceId(workflowId);
-        completedTask.setScheduledTime(System.currentTimeMillis());
+        completedTask.setScheduledTime(TimeService.currentTimeMillis());
         completedTask.setCallbackAfterSeconds(300);
         completedTask.setTaskId("simple-task-id");
         completedTask.setStatus(TaskModel.Status.COMPLETED);
@@ -1868,7 +1890,7 @@ public class TestWorkflowExecutor {
         systemTask.setTaskType(TaskType.WAIT.name());
         systemTask.setReferenceTaskName("waitTask");
         systemTask.setWorkflowInstanceId(workflowId);
-        systemTask.setScheduledTime(System.currentTimeMillis());
+        systemTask.setScheduledTime(TimeService.currentTimeMillis());
         systemTask.setTaskId("system-task-id");
         systemTask.setStatus(TaskModel.Status.SCHEDULED);
 
@@ -1876,7 +1898,7 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskType(TaskType.SIMPLE.name());
         simpleTask.setReferenceTaskName("simpleTask");
         simpleTask.setWorkflowInstanceId(workflowId);
-        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setScheduledTime(TimeService.currentTimeMillis());
         simpleTask.setCallbackAfterSeconds(300);
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.SCHEDULED);
@@ -1885,7 +1907,7 @@ public class TestWorkflowExecutor {
         noCallbackTask.setTaskType(TaskType.SIMPLE.name());
         noCallbackTask.setReferenceTaskName("noCallbackTask");
         noCallbackTask.setWorkflowInstanceId(workflowId);
-        noCallbackTask.setScheduledTime(System.currentTimeMillis());
+        noCallbackTask.setScheduledTime(TimeService.currentTimeMillis());
         noCallbackTask.setCallbackAfterSeconds(0);
         noCallbackTask.setTaskId("no-callback-task-id");
         noCallbackTask.setStatus(TaskModel.Status.SCHEDULED);
@@ -2112,7 +2134,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(subWorkflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -2123,7 +2145,7 @@ public class TestWorkflowExecutor {
         task2.setTaskDefName("task2");
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(subWorkflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
@@ -2143,7 +2165,7 @@ public class TestWorkflowExecutor {
         // parent workflow setup
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(parentWorkflowId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
         task.setOutputData(new HashMap<>());
@@ -2198,7 +2220,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(subWorkflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -2209,7 +2231,7 @@ public class TestWorkflowExecutor {
         task2.setTaskDefName("task2");
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(subWorkflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
@@ -2229,7 +2251,7 @@ public class TestWorkflowExecutor {
         // parent workflow setup
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(parentWorkflowId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
         task.setOutputData(new HashMap<>());
@@ -2282,7 +2304,7 @@ public class TestWorkflowExecutor {
         task1.setTaskDefName("task1");
         task1.setReferenceTaskName("task1_ref");
         task1.setWorkflowInstanceId(subWorkflowId);
-        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setScheduledTime(TimeService.currentTimeMillis());
         task1.setTaskId(idGenerator.generate());
         task1.setStatus(TaskModel.Status.COMPLETED);
         task1.setWorkflowTask(new WorkflowTask());
@@ -2293,7 +2315,7 @@ public class TestWorkflowExecutor {
         task2.setTaskDefName("task2");
         task2.setReferenceTaskName("task2_ref");
         task2.setWorkflowInstanceId(subWorkflowId);
-        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setScheduledTime(TimeService.currentTimeMillis());
         task2.setTaskId(idGenerator.generate());
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setWorkflowTask(new WorkflowTask());
@@ -2313,7 +2335,7 @@ public class TestWorkflowExecutor {
         // parent workflow setup
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(parentWorkflowId);
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setTaskId(idGenerator.generate());
         task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
         task.setOutputData(new HashMap<>());
@@ -2365,7 +2387,7 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskType(TaskType.SIMPLE.name());
         simpleTask.setReferenceTaskName("simpleTask");
         simpleTask.setWorkflowInstanceId(workflowId);
-        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setScheduledTime(TimeService.currentTimeMillis());
         simpleTask.setCallbackAfterSeconds(0);
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -2405,7 +2427,7 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskType(TaskType.SIMPLE.name());
         simpleTask.setReferenceTaskName("simpleTask");
         simpleTask.setWorkflowInstanceId(workflowId);
-        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setScheduledTime(TimeService.currentTimeMillis());
         simpleTask.setCallbackAfterSeconds(0);
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -2510,7 +2532,7 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskType(TaskType.SIMPLE.name());
         simpleTask.setReferenceTaskName("simpleTask");
         simpleTask.setWorkflowInstanceId("test-workflow-id");
-        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setScheduledTime(TimeService.currentTimeMillis());
         simpleTask.setCallbackAfterSeconds(0);
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);

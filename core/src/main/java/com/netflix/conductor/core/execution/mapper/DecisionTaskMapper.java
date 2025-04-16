@@ -32,6 +32,7 @@ import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -88,7 +89,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setTaskDefName(TaskType.TASK_TYPE_DECISION);
         decisionTask.addInput("case", caseValue);
         decisionTask.addOutput("caseOutput", Collections.singletonList(caseValue));
-        decisionTask.setStartTime(System.currentTimeMillis());
+        decisionTask.setStartTime(TimeService.currentTimeMillis());
         decisionTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(decisionTask);
 

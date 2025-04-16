@@ -167,7 +167,7 @@ public class ExecutionService {
 
                 taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
                 if (taskModel.getStartTime() == 0) {
-                    taskModel.setStartTime(System.currentTimeMillis());
+                    taskModel.setStartTime(TimeService.currentTimeMillis());
                     Monitors.recordQueueWaitTime(
                             taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
                 }
@@ -365,7 +365,7 @@ public class ExecutionService {
             callback = 0;
         }
         queueDAO.remove(QueueUtils.getQueueName(pending), pending.getTaskId());
-        long now = System.currentTimeMillis();
+        long now = TimeService.currentTimeMillis();
         callback = callback - ((now - pending.getUpdateTime()) / 1000);
         if (callback < 0) {
             callback = 0;
@@ -605,7 +605,7 @@ public class ExecutionService {
         TaskExecLog executionLog = new TaskExecLog();
         executionLog.setTaskId(taskId);
         executionLog.setLog(log);
-        executionLog.setCreatedTime(System.currentTimeMillis());
+        executionLog.setCreatedTime(TimeService.currentTimeMillis());
         executionDAOFacade.addTaskExecLog(Collections.singletonList(executionLog));
     }
 

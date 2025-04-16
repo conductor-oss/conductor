@@ -23,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -598,7 +599,7 @@ public class TaskModel {
         if (this.startTime > 0 && this.scheduledTime > 0) {
             if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
                 long waitTime =
-                        System.currentTimeMillis()
+                        TimeService.currentTimeMillis()
                                 - (this.updateTime + (getCallbackAfterSeconds() * 1000));
                 return waitTime > 0 ? waitTime : 0;
             } else {

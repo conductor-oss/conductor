@@ -28,6 +28,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -74,7 +75,7 @@ public class InlineTaskMapper implements TaskMapper {
 
         TaskModel inlineTask = taskMapperContext.createTaskModel();
         inlineTask.setTaskType(TaskType.TASK_TYPE_INLINE);
-        inlineTask.setStartTime(System.currentTimeMillis());
+        inlineTask.setStartTime(TimeService.currentTimeMillis());
         inlineTask.setInputData(taskInput);
         if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
             inlineTask.setIsolationGroupId(

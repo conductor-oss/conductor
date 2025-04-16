@@ -40,6 +40,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -289,8 +290,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         TaskModel forkDynamicTask = taskMapperContext.createTaskModel();
         forkDynamicTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkDynamicTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
-        forkDynamicTask.setStartTime(System.currentTimeMillis());
-        forkDynamicTask.setEndTime(System.currentTimeMillis());
+        forkDynamicTask.setStartTime(TimeService.currentTimeMillis());
+        forkDynamicTask.setEndTime(TimeService.currentTimeMillis());
         List<String> forkedTaskNames =
                 dynForkTasks.stream()
                         .map(WorkflowTask::getTaskReferenceName)
@@ -329,8 +330,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         joinTask.setWorkflowInstanceId(workflowModel.getWorkflowId());
         joinTask.setWorkflowType(workflowModel.getWorkflowName());
         joinTask.setCorrelationId(workflowModel.getCorrelationId());
-        joinTask.setScheduledTime(System.currentTimeMillis());
-        joinTask.setStartTime(System.currentTimeMillis());
+        joinTask.setScheduledTime(TimeService.currentTimeMillis());
+        joinTask.setStartTime(TimeService.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(idGenerator.generate());
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);

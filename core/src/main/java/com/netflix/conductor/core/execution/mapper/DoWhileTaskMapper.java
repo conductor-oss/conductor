@@ -28,6 +28,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -85,7 +86,7 @@ public class DoWhileTaskMapper implements TaskMapper {
         TaskModel doWhileTask = taskMapperContext.createTaskModel();
         doWhileTask.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
         doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        doWhileTask.setStartTime(System.currentTimeMillis());
+        doWhileTask.setStartTime(TimeService.currentTimeMillis());
         doWhileTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         doWhileTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         doWhileTask.setRetryCount(taskMapperContext.getRetryCount());
