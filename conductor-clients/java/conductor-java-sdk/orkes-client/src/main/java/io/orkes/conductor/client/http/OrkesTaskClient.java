@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.orkes.conductor.client.model.WorkflowRun;
 import org.apache.commons.lang3.Validate;
 
 import com.netflix.conductor.client.http.ConductorClient;
@@ -34,6 +33,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 
 import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
+import io.orkes.conductor.client.model.WorkflowRun;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
