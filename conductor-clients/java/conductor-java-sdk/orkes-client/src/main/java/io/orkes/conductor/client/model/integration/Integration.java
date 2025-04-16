@@ -21,6 +21,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Integration {
 
     private Category category;

@@ -21,6 +21,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class AuthorizationRequest {
     /**
      * The set of access which is granted or removed

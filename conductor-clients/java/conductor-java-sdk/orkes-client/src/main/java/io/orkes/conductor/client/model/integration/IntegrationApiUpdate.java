@@ -20,6 +20,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class IntegrationApiUpdate {
 
     private Map<String, Object> configuration;

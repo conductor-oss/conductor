@@ -20,6 +20,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class WorkflowScheduleExecutionModel {
 
     private String executionId = null;

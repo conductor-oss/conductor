@@ -21,6 +21,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class DynamicForkJoinTask {
 
     private String taskName;

@@ -18,6 +18,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
 
     private String name;

@@ -18,6 +18,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class TargetRef {
 
     private String id = null;

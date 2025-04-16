@@ -14,9 +14,15 @@ package io.orkes.conductor.client.model;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class SearchResultWorkflowScheduleExecution {
     private List<WorkflowScheduleExecutionModel> results;
     private Long totalHits;

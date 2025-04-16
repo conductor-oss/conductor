@@ -12,11 +12,15 @@
  */
 package io.orkes.conductor.client.model.integration.ai;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class ChatMessage {
 
     public enum Actor {
@@ -26,8 +30,4 @@ public class ChatMessage {
     String role;
     String message;
 
-    public ChatMessage(String role, String message) {
-        this.role = role;
-        this.message = message;
-    }
 }

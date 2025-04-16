@@ -20,6 +20,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class DynamicForkJoinTaskList {
 
     private List<DynamicForkJoinTask> dynamicTasks = new ArrayList<>();

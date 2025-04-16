@@ -18,6 +18,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class ExternalStorageLocation {
     private String path = null;
 

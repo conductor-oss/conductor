@@ -15,10 +15,13 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.List;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
+@SuperBuilder
+@AllArgsConstructor
 public class ChatCompletion extends LLMWorkerInput {
     private List<ChatMessage> messages;
 

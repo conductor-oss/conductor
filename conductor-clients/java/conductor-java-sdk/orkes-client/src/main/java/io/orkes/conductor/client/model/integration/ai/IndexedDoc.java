@@ -18,7 +18,9 @@ import java.util.Map;
 import lombok.*;
 
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class IndexedDoc {
     private String docId;
     private String parentDocId;

@@ -16,6 +16,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class TokenResponse {
 
     private String token;

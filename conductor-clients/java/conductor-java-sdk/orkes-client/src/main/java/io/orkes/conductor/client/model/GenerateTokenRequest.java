@@ -20,12 +20,10 @@ import lombok.ToString;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class GenerateTokenRequest {
     private String keyId;
     private String keySecret;
 
-    public GenerateTokenRequest(String keyId, String keySecret) {
-        this.keyId = keyId;
-        this.keySecret = keySecret;
-    }
 }

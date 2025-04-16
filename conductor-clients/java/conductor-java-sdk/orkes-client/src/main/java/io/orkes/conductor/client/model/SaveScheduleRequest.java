@@ -20,6 +20,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class SaveScheduleRequest {
 
     private String createdBy = null;

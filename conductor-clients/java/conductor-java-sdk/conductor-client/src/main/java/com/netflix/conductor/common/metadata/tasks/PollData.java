@@ -18,6 +18,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class PollData {
 
     private String queueName;
@@ -27,14 +29,6 @@ public class PollData {
     private String workerId;
 
     private long lastPollTime;
-
-    public PollData(String queueName, String domain, String workerId, long lastPollTime) {
-        super();
-        this.queueName = queueName;
-        this.domain = domain;
-        this.workerId = workerId;
-        this.lastPollTime = lastPollTime;
-    }
 
     public boolean equals(Object o) {
         if (this == o) {

@@ -12,11 +12,15 @@
  */
 package io.orkes.conductor.client.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
+@Builder
+@AllArgsConstructor
 public class TagObject {
 
     private String key = null;

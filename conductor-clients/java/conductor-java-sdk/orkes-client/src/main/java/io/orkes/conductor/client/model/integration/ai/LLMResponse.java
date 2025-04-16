@@ -16,6 +16,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class LLMResponse {
     private Object result;
     private String finishReason;

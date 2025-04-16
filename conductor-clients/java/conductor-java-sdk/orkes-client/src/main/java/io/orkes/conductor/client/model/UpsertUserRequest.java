@@ -21,6 +21,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class UpsertUserRequest {
 
     private List<String> groups = null;

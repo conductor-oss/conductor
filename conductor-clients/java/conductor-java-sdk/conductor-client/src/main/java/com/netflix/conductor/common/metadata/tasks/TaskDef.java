@@ -25,6 +25,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class TaskDef extends Auditable {
 
     public enum TimeoutPolicy {

@@ -23,6 +23,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class UpsertGroupRequest {
     /**
      * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:

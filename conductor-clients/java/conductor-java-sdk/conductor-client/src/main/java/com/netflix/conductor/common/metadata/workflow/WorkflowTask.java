@@ -28,6 +28,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class WorkflowTask {
 
     public static class CacheConfig {

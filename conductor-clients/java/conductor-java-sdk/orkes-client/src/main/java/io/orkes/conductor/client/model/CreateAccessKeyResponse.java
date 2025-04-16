@@ -16,6 +16,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class CreateAccessKeyResponse {
     private String id;
     private String secret;

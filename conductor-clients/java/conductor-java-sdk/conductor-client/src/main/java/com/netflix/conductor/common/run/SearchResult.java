@@ -18,15 +18,12 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class SearchResult<T> {
 
     private long totalHits;
 
     private List<T> results;
 
-    public SearchResult(long totalHits, List<T> results) {
-        super();
-        this.totalHits = totalHits;
-        this.results = results;
-    }
 }

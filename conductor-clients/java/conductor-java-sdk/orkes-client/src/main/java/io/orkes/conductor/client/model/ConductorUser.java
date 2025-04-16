@@ -21,6 +21,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class ConductorUser {
 
     private Boolean applicationUser = null;

@@ -21,6 +21,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class GrantedAccess {
     /**
      * Gets or Sets access

@@ -15,9 +15,12 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.List;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @NoArgsConstructor
+@SuperBuilder
+@AllArgsConstructor
 public class LLMWorkerInput {
 
     private String llmProvider;

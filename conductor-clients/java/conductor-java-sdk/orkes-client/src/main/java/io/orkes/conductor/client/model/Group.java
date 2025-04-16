@@ -23,6 +23,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Group {
     /** Gets or Sets inner */
     public enum InnerEnum {

@@ -21,6 +21,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class GrantedAccessResponse {
     private List<GrantedAccess> grantedAccess = null;
 

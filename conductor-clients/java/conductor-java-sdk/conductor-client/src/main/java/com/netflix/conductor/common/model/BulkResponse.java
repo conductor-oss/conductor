@@ -17,6 +17,8 @@ import java.util.*;
 import lombok.*;
 
 @Data
+@Builder
+@AllArgsConstructor
 public class BulkResponse<T> {
 
     /**

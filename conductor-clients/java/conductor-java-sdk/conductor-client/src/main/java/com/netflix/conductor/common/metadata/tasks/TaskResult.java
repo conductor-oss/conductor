@@ -23,6 +23,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class TaskResult {
 
     public enum Status {

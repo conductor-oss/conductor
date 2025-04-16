@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.common.run;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -28,6 +30,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class ExternalStorageLocation {
 
     private String uri;

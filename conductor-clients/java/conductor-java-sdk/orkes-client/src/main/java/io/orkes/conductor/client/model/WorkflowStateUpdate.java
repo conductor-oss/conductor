@@ -20,6 +20,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class WorkflowStateUpdate {
     private String taskReferenceName;
     private Map<String, Object> variables;

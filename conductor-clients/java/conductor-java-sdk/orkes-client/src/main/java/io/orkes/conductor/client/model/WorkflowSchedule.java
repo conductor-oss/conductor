@@ -20,6 +20,8 @@ import lombok.*;
 @ToString
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class WorkflowSchedule {
 
     private Long createTime = null;

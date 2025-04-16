@@ -22,6 +22,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class EventExecution {
 
     public enum Status {

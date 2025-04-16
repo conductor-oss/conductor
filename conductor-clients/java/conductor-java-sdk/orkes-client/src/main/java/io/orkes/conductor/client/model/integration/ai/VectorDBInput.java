@@ -16,10 +16,13 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
+@SuperBuilder
+@AllArgsConstructor
 public class VectorDBInput extends LLMWorkerInput {
 
     private String vectorDB;
