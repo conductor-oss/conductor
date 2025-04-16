@@ -12,21 +12,7 @@
  */
 package io.orkes.conductor.client.http;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -39,11 +25,27 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
-
+import io.orkes.conductor.client.enums.WorkflowConsistency;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.TestUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class TaskClientTests {
 
@@ -203,6 +205,103 @@ public class TaskClientTests {
                 () -> taskClient.searchV2(4, 20, "sort", "freeText", "query"));
         Assertions.assertEquals(404, ex.getStatus());
     }
+
+    @Test
+    public void testSignalSyncExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_wait_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        for (Task task : workflow.getTasks()) {
+            Assertions.assertEquals(Task.Status.COMPLETED, task.getStatus());
+        }
+    }
+
+    @Test
+    public void testSignalSyncDurable() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_wait_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
+        for (Task task : workflow.getTasks()) {
+            Assertions.assertEquals(Task.Status.COMPLETED, task.getStatus());
+        }
+    }
+
+    @Test
+    public void testSignalWithSubWorkflowSyncExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_signal_subworkflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void testSignalWithSubWorkflowDurableExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_signal_subworkflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
 
     private static class TaskOutput {
         private String name = "hello";

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.orkes.conductor.client.model.WorkflowRun;
 import org.apache.commons.lang3.Validate;
 
 import com.netflix.conductor.client.http.ConductorClient;
@@ -82,8 +83,8 @@ public class OrkesTaskClient {
      * @param output            Output for the task
      * @return Updated workflow with the applied signal status
      */
-    public Workflow signalWorkflow(String workflowId, String status, Object output) {
-        return signalWorkflow(getOutputMap(output), workflowId, status);
+    public WorkflowRun signal(String workflowId, String status, Object output) {
+        return signal(getOutputMap(output), workflowId, status);
     }
 
     /**
@@ -99,8 +100,8 @@ public class OrkesTaskClient {
      * @param output            Output for the task
      * @return Updated workflow data based on the specified return strategy
      */
-    public Workflow signalWorkflowWithStrategy(String workflowId, String status, WorkflowSignalReturnStrategy returnStrategy, Object output) {
-        return signalWorkflowSync(getOutputMap(output), workflowId, status, returnStrategy.name());
+    public Workflow signalWithStrategy(String workflowId, String status, WorkflowSignalReturnStrategy returnStrategy, Object output) {
+        return signalWithStrategy(getOutputMap(output), workflowId, status, returnStrategy.name());
     }
 
     private Map<String, Object> getOutputMap(Object output) {
@@ -165,9 +166,9 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    private Workflow signalWorkflow(Map<String, Object> output,
-                                    String workflowId,
-                                    String status) {
+    private WorkflowRun signal(Map<String, Object> output,
+                            String workflowId,
+                            String status) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{status}/signal")
@@ -176,13 +177,13 @@ public class OrkesTaskClient {
                 .body(output)
                 .build();
 
-        ConductorClientResponse<Workflow> resp = client.execute(request, new TypeReference<>() {
+        ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
         });
 
         return resp.getData();
     }
 
-    private Workflow signalWorkflowSync(Map<String, Object> output,
+    private Workflow signalWithStrategy(Map<String, Object> output,
                                         String workflowId,
                                         String status,
                                         String returnStrategy) {
