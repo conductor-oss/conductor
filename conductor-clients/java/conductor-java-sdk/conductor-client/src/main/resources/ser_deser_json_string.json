@@ -1,5 +1,15 @@
 {
   "templates" : {
+    "EventHandler.UpdateWorkflowVariables" : {
+      "content" : {
+        "variables" : {
+          "key" : "sample_object"
+        },
+        "appendArray" : false,
+        "workflowId" : "sample_workflowId"
+      },
+      "dependencies" : [ ]
+    },
     "Task" : {
       "content" : {
         "retried" : false,
@@ -89,15 +99,15 @@
         "variables" : {
           "key" : "sample_object"
         },
-        "fail_task" : "${TaskDetails}",
+        "fail_task" : "${EventHandler.TaskDetails}",
         "active" : false,
         "taskToDomain" : {
           "key" : "sample_value"
         },
-        "start_workflow" : "${StartWorkflow}",
-        "complete_task" : "${TaskDetails}",
+        "start_workflow" : "${EventHandler.StartWorkflow}",
+        "complete_task" : "${EventHandler.TaskDetails}",
         "version" : 0,
-        "update_workflow_variables" : "${UpdateWorkflowVariables}",
+        "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}",
         "output" : {
           "key" : "sample_object"
         },
@@ -106,7 +116,7 @@
         },
         "condition" : "sample_condition",
         "evaluatorType" : "sample_evaluatorType",
-        "terminate_workflow" : "${TerminateWorkflow}",
+        "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
         "taskRefName" : "sample_taskRefName",
         "appendArray" : false,
         "expandInlineJSON" : false,
@@ -118,7 +128,7 @@
         "taskId" : "sample_taskId",
         "terminationReason" : "sample_terminationReason"
       },
-      "dependencies" : [ "Type", "StartWorkflow", "TaskDetails", "TerminateWorkflow", "UpdateWorkflowVariables" ]
+      "dependencies" : [ "Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "UpsertUserRequest" : {
       "content" : {
@@ -192,6 +202,27 @@
       },
       "dependencies" : [ "TimeoutPolicy", "RetryLogic", "SchemaDef" ]
     },
+    "EventHandler.TerminateWorkflow" : {
+      "content" : {
+        "workflowId" : "sample_workflowId",
+        "terminationReason" : "sample_terminationReason"
+      },
+      "dependencies" : [ ]
+    },
+    "EventHandler.StartWorkflow" : {
+      "content" : {
+        "input" : {
+          "key" : "sample_object"
+        },
+        "name" : "sample_name",
+        "correlationId" : "sample_correlationId",
+        "taskToDomain" : {
+          "key" : "sample_value"
+        },
+        "version" : 0
+      },
+      "dependencies" : [ ]
+    },
     "TaskResult" : {
       "content" : {
         "outputData" : {
@@ -208,6 +239,29 @@
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
       "dependencies" : [ "Status" ]
+    },
+    "EventHandler.Action" : {
+      "content" : {
+        "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
+        "fail_task" : "${EventHandler.TaskDetails}",
+        "expandInlineJSON" : false,
+        "action" : "${Type}",
+        "start_workflow" : "${EventHandler.StartWorkflow}",
+        "complete_task" : "${EventHandler.TaskDetails}",
+        "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
+      },
+      "dependencies" : [ "Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
+    },
+    "EventHandler.TaskDetails" : {
+      "content" : {
+        "output" : {
+          "key" : "sample_object"
+        },
+        "taskRefName" : "sample_taskRefName",
+        "workflowId" : "sample_workflowId",
+        "taskId" : "sample_taskId"
+      },
+      "dependencies" : [ ]
     },
     "UpsertGroupRequest" : {
       "content" : {
