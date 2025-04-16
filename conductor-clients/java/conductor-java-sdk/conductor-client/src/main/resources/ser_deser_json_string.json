@@ -2,9 +2,13 @@
   "templates" : {
     "Access" : {
       "content" : {
-        "values" : [ "CREATE" ],
+        "values" : [ "CREATE", "READ", "EXECUTE", "UPDATE", "DELETE" ],
         "constants" : {
-          "CREATE" : "(0), READ(100), EXECUTE(200), UPDATE(300), DELETE(400)"
+          "READ" : "(100)",
+          "EXECUTE" : "(200)",
+          "DELETE" : "(400)",
+          "CREATE" : "(0)",
+          "UPDATE" : "(300)"
         },
         "sampleValue" : "CREATE"
       },
