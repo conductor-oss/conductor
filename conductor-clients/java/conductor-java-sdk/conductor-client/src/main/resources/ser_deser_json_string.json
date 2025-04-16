@@ -679,11 +679,23 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2375" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1043" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2374" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1042" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2373" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -809,7 +821,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2386" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1054" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2385" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -817,7 +837,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2384" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1052" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2383" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -825,7 +853,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2382" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1050" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2381" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2380" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -841,11 +881,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2379" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "621" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1047" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2378" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -857,11 +905,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2377" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "623" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1045" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2376" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -893,7 +949,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2397" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1065" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2396" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -901,7 +965,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2395" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1063" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2394" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -909,11 +981,27 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2393" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1061" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2392" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1060" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2391" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2390" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -937,6 +1025,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2389" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "633" : {
       "content" : { },
       "dependencies" : [ ]
@@ -945,11 +1037,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2388" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "634" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1056" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2387" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -1033,11 +1133,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2399" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "645" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1067" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2398" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2124,13 +2232,13 @@
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "key" : "${StatusPOJO}"
+          "key" : "${java.lang.Object}"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
         "taskId" : "sample_taskId"
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ ]
     },
     "1508" : {
       "content" : { },
@@ -2372,7 +2480,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2405" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1557" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2404" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2380,7 +2496,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2403" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1555" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2402" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2388,7 +2512,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2401" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1553" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2400" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2400,7 +2532,23 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2409" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2408" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2407" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1559" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2406" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2420,7 +2568,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2416" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1568" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2415" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2428,7 +2584,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2414" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1566" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2413" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2436,7 +2600,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2412" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1564" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2411" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2444,11 +2616,31 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2410" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1562" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2419" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2418" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2417" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1583" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2430" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2464,7 +2656,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2427" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1579" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2426" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2472,7 +2672,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2425" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1577" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2424" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2480,7 +2688,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2423" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1575" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2422" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2488,7 +2704,23 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2421" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1573" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2420" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2429" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2428" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2500,7 +2732,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2441" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1593" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2440" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2520,7 +2760,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2438" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1106" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2437" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2532,11 +2780,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2436" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1104" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1588" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2435" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2548,11 +2804,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2434" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1102" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1586" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2433" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2564,11 +2828,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2432" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1100" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1584" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2431" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2580,7 +2852,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2439" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1121" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2452" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2588,7 +2868,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2451" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2450" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1118" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2449" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2596,7 +2888,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2448" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1116" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2447" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2608,11 +2908,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2446" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1114" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1598" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2445" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2624,11 +2932,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2444" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1112" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1596" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2443" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2640,6 +2956,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2442" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1119" : {
       "content" : { },
       "dependencies" : [ ]
@@ -2648,11 +2968,27 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2463" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1131" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2462" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1130" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2461" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2460" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2664,7 +3000,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2459" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1127" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2458" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2672,7 +3016,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2457" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1125" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2456" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2680,7 +3032,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2455" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1123" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2454" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2689,6 +3049,10 @@
       "dependencies" : [ ]
     },
     "1122" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2453" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2732,7 +3096,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2474" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1142" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2473" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2740,7 +3112,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2472" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1140" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2471" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2470" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2752,7 +3136,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2469" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1137" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2468" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2760,7 +3152,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2467" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1135" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2466" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2772,11 +3172,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2465" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "711" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1133" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2464" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2820,6 +3228,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2485" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1153" : {
       "content" : { },
       "dependencies" : [ ]
@@ -2828,7 +3240,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2484" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1152" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2483" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2836,7 +3256,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2482" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1150" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2481" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2480" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2848,7 +3280,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2479" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1147" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2478" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2860,6 +3300,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2477" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "721" : {
       "content" : { },
       "dependencies" : [ ]
@@ -2868,11 +3312,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2476" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "722" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "1144" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2475" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2925,11 +3377,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2496" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1164" : {
       "content" : { },
       "dependencies" : [ ]
     },
     "2011" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2495" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2941,7 +3401,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2494" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1162" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2493" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2949,7 +3417,19 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2492" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1160" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2491" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2490" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -2985,6 +3465,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2489" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "731" : {
       "content" : { },
       "dependencies" : [ ]
@@ -2994,6 +3478,10 @@
       "dependencies" : [ ]
     },
     "2004" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2488" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -3009,6 +3497,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2487" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "733" : {
       "content" : { },
       "dependencies" : [ ]
@@ -3018,6 +3510,10 @@
       "dependencies" : [ ]
     },
     "2002" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2486" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -3032,16 +3528,16 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "key" : "${StatusPOJO}"
+          "key" : "${java.lang.Object}"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "key" : "sample_taskToDomain"
+          "key" : "sample_value"
         },
         "version" : 123
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ ]
     },
     "736" : {
       "content" : { },
@@ -3143,6 +3639,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2499" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "743" : {
       "content" : { },
       "dependencies" : [ ]
@@ -3155,6 +3655,10 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2498" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "744" : {
       "content" : { },
       "dependencies" : [ ]
@@ -3164,6 +3668,10 @@
       "dependencies" : [ ]
     },
     "2013" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2497" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4161,49 +4669,16 @@
         "active" : true,
         "event" : "sample_event",
         "actions" : [ {
-          "terminate_workflow" : {
-            "workflowId" : "sample_workflowId",
-            "terminationReason" : "sample_terminationReason"
-          },
-          "fail_task" : {
-            "output" : {
-              "key" : "${StatusPOJO}"
-            },
-            "taskRefName" : "sample_taskRefName",
-            "workflowId" : "sample_workflowId",
-            "taskId" : "sample_taskId"
-          },
+          "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
+          "fail_task" : "${EventHandler.TaskDetails}",
           "expandInlineJSON" : true,
-          "action" : "start_workflow",
-          "start_workflow" : {
-            "input" : {
-              "key" : "${StatusPOJO}"
-            },
-            "name" : "sample_name",
-            "correlationId" : "sample_correlationId",
-            "taskToDomain" : {
-              "key" : "sample_taskToDomain"
-            },
-            "version" : 123
-          },
-          "complete_task" : {
-            "output" : {
-              "key" : "${StatusPOJO}"
-            },
-            "taskRefName" : "sample_taskRefName",
-            "workflowId" : "sample_workflowId",
-            "taskId" : "sample_taskId"
-          },
-          "update_workflow_variables" : {
-            "variables" : {
-              "key" : "${StatusPOJO}"
-            },
-            "appendArray" : true,
-            "workflowId" : "sample_workflowId"
-          }
+          "action" : "${EventHandler.Action.Type}",
+          "start_workflow" : "${EventHandler.StartWorkflow}",
+          "complete_task" : "${EventHandler.TaskDetails}",
+          "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
         } ]
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ "EventHandler.Action", "EventHandler.TaskDetails", "EventHandler.StartWorkflow", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "370" : {
       "content" : { },
@@ -4813,7 +5288,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2504" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1656" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2503" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4821,11 +5304,23 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2502" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1654" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2501" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1653" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2500" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4841,11 +5336,31 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2509" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2508" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2507" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1659" : {
       "content" : { },
       "dependencies" : [ ]
     },
+    "2506" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1658" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2505" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4861,7 +5376,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2515" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1667" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2514" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4869,7 +5392,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2513" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1665" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2512" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4877,7 +5408,15 @@
       "content" : { },
       "dependencies" : [ ]
     },
+    "2511" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
     "1663" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2510" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -4891,50 +5430,21 @@
     },
     "EventHandler.Action" : {
       "content" : {
-        "terminate_workflow" : {
-          "workflowId" : "sample_workflowId",
-          "terminationReason" : "sample_terminationReason"
-        },
-        "fail_task" : {
-          "output" : {
-            "key" : "${StatusPOJO}"
-          },
-          "taskRefName" : "sample_taskRefName",
-          "workflowId" : "sample_workflowId",
-          "taskId" : "sample_taskId"
-        },
+        "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
+        "fail_task" : "${EventHandler.TaskDetails}",
         "expandInlineJSON" : true,
         "action" : "start_workflow",
-        "start_workflow" : {
-          "input" : {
-            "key" : "${StatusPOJO}"
-          },
-          "name" : "sample_name",
-          "correlationId" : "sample_correlationId",
-          "taskToDomain" : {
-            "key" : "sample_taskToDomain"
-          },
-          "version" : 123
-        },
-        "complete_task" : {
-          "output" : {
-            "key" : "${StatusPOJO}"
-          },
-          "taskRefName" : "sample_taskRefName",
-          "workflowId" : "sample_workflowId",
-          "taskId" : "sample_taskId"
-        },
-        "update_workflow_variables" : {
-          "variables" : {
-            "key" : "${StatusPOJO}"
-          },
-          "appendArray" : true,
-          "workflowId" : "sample_workflowId"
-        }
+        "start_workflow" : "${EventHandler.StartWorkflow}",
+        "complete_task" : "${EventHandler.TaskDetails}",
+        "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "1669" : {
+      "content" : { },
+      "dependencies" : [ ]
+    },
+    "2516" : {
       "content" : { },
       "dependencies" : [ ]
     },
@@ -6008,14 +6518,15 @@
           "HUMAN" : "(12)",
           "TERMINATE" : "(18)",
           "FORK_JOIN_DYNAMIC" : "(3)",
-          "DO_WHILE" : "(7)",
           "SIMPLE" : "(0)",
+          "DO_WHILE" : "(7)",
           "INLINE" : "(16)",
           "SWITCH" : "(5)",
           "EXCLUSIVE_JOIN" : "(17)",
           "SET_VARIABLE" : "(21)",
           "WAIT" : "(11)",
-          "START_WORKFLOW" : "(9)"
+          "START_WORKFLOW" : "(9)",
+          "USER_DEFINED" : "(13)"
         },
         "sampleValue" : "SIMPLE"
       },
@@ -6320,10 +6831,10 @@
     "WorkflowStatus" : {
       "content" : {
         "output" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "variables" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "correlationId" : "sample_correlationId",
         "workflowId" : "sample_workflowId",
@@ -9106,12 +9617,12 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "key" : "${StatusPOJO}"
+          "key" : "${java.lang.Object}"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ ]
     },
     "170" : {
       "content" : { },
