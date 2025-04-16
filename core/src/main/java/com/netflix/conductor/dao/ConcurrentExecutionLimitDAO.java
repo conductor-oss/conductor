@@ -29,7 +29,7 @@ public interface ConcurrentExecutionLimitDAO {
 
     default void removeTaskFromLimit(TaskModel task) {
         throw new UnsupportedOperationException(
-                getClass() + " does not support removeTaskFromLimit method.");
+                getClass() + " does not support removeTaskFromLimit method.,");
     }
 
     /**
