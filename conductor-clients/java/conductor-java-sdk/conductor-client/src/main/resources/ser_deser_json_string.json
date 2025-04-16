@@ -1,1 +1,14 @@
-null
+{
+  "templates" : {
+    "Access" : {
+      "content" : {
+        "values" : [ "CREATE" ],
+        "constants" : {
+          "CREATE" : "(0), READ(100), EXECUTE(200), UPDATE(300), DELETE(400)"
+        },
+        "sampleValue" : "CREATE"
+      },
+      "dependencies" : [ ]
+    }
+  }
+}
