@@ -34,7 +34,7 @@ public interface AdminService {
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
-     * Get all the configuration parameters.
+     * Get all the configuration parameters.  
      *
      * @return all the configuration parameters.
      */
