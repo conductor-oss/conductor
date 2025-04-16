@@ -3,7 +3,7 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
@@ -103,10 +103,10 @@
         "active" : true,
         "event" : "sample_event",
         "actions" : [ {
-          "@type" : "${EventHandler.Action}"
+          "${EventHandler.Action}" : { }
         } ]
       },
-      "dependencies" : [ "EventHandler.Action" ]
+      "dependencies" : [ "EventHandler.Action", "EventHandler.TaskDetails", "EventHandler.StartWorkflow", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "TaskType" : {
       "content" : {
@@ -114,6 +114,7 @@
         "constants" : {
           "SUB_WORKFLOW" : "TASK_TYPE_SUB_WORKFLOW",
           "DECISION" : "TASK_TYPE_DECISION",
+          "FORK" : "TASK_TYPE_FORK",
           "NOOP" : "TASK_TYPE_NOOP",
           "JOIN" : "TASK_TYPE_JOIN",
           "KAFKA_PUBLISH" : "TASK_TYPE_KAFKA_PUBLISH",
@@ -149,12 +150,12 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "version" : 123
       },
@@ -240,10 +241,10 @@
     "WorkflowStatus" : {
       "content" : {
         "output" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "variables" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "correlationId" : "sample_correlationId",
         "workflowId" : "sample_workflowId",
@@ -326,40 +327,40 @@
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "workflowInstanceId" : "sample_workflowInstanceId",
         "logs" : [ {
-          "log" : "sample_log"
+          "sample_field" : "sample_value"
         } ],
         "taskId" : "sample_taskId",
         "status" : "${Status}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "Status", "TaskExecLog" ]
+      "dependencies" : [ "Status" ]
     },
     "EventHandler.Action" : {
       "content" : {
         "terminate_workflow" : {
-          "@type" : "${EventHandler.TerminateWorkflow}"
+          "${EventHandler.TerminateWorkflow}" : { }
         },
         "fail_task" : {
-          "@type" : "${EventHandler.TaskDetails}"
+          "${EventHandler.TaskDetails}" : { }
         },
         "expandInlineJSON" : true,
-        "action" : "start_workflow",
+        "action" : "${EventHandler.Action.Type}",
         "start_workflow" : {
-          "@type" : "${EventHandler.StartWorkflow}"
+          "${EventHandler.StartWorkflow}" : { }
         },
         "complete_task" : {
-          "@type" : "${EventHandler.TaskDetails}"
+          "${EventHandler.TaskDetails}" : { }
         },
         "update_workflow_variables" : {
-          "@type" : "${EventHandler.UpdateWorkflowVariables}"
+          "${EventHandler.UpdateWorkflowVariables}" : { }
         }
       },
-      "dependencies" : [ "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
+      "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
@@ -384,10 +385,7 @@
       "content" : {
         "roles" : [ "sample_roles" ],
         "defaultAccess" : {
-          "sample_key" : [ {
-            "field1" : "sample_field1",
-            "field2" : "${StatusPOJO}"
-          } ]
+          "sample_key" : [ "${Access}" ]
         },
         "description" : "sample_description"
       },
