@@ -161,7 +161,7 @@
     },
     "TaskDef" : {
       "content" : {
-        "ONE_HOUR" : "${static final int}",
+        "ONE_HOUR" : 0,
         "outputSchema" : "${SchemaDef}",
         "enforceSchema" : false,
         "concurrentExecLimit" : 0,
@@ -190,7 +190,7 @@
         "executionNameSpace" : "sample_executionNameSpace",
         "pollTimeoutSeconds" : 0
       },
-      "dependencies" : [ "static final int", "TimeoutPolicy", "RetryLogic", "SchemaDef" ]
+      "dependencies" : [ "TimeoutPolicy", "RetryLogic", "SchemaDef" ]
     },
     "TaskResult" : {
       "content" : {
