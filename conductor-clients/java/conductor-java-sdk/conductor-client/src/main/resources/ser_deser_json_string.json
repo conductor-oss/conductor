@@ -67,11 +67,11 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "priority" : "${Object}",
+        "priority" : "sample_object_priority",
         "version" : 123,
         "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
+      "dependencies" : [ "IdempotencyStrategy" ]
     },
     "CorrelationIdsSearchRequest" : {
       "content" : {
@@ -582,10 +582,10 @@
         "endTime" : "sample_endTime",
         "workflowId" : "sample_workflowId",
         "taskId" : "sample_taskId",
-        "status" : "${StatusPOJO}",
+        "status" : "${Task.Status}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "StatusPOJO" ]
+      "dependencies" : [ "Task.Status" ]
     },
     "IdempotencyStrategy" : {
       "content" : {
