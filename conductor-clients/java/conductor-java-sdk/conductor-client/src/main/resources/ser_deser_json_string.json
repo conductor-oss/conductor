@@ -222,7 +222,42 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "history" : [ "${Workflow}" ],
+        "history" : [ "${Workflow1}" ],
+        "priority" : 123,
+        "failedReferenceTaskNames" : [ "sample_value" ],
+        "output" : {
+          "sample_key" : "sample_value"
+        },
+        "input" : {
+          "sample_key" : "sample_value"
+        },
+        "parentWorkflowId" : "sample_parentWorkflowId",
+        "failedTaskNames" : [ "sample_value" ],
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
+        "correlationId" : "sample_correlationId",
+        "endTime" : 123,
+        "event" : "sample_event",
+        "workflowId" : "sample_workflowId",
+        "tasks" : [ "${Task}" ],
+        "status" : "${Workflow.WorkflowStatus}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ]
+    },
+    "Workflow1" : {
+      "content" : {
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "workflowDefinition" : "${WorkflowDef}",
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "lastRetriedTime" : 123,
+        "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "history" : [ ],
         "priority" : 123,
         "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
@@ -248,7 +283,21 @@
     "IntegrationDefFormField" : {
       "content" : {
         "fieldName" : "${ConfigKey}",
-        "dependsOn" : [ "${IntegrationDefFormField}" ],
+        "dependsOn" : [ "${IntegrationDefFormField1}" ],
+        "defaultValue" : "sample_defaultValue",
+        "description" : "sample_description",
+        "optional" : true,
+        "label" : "sample_label",
+        "fieldType" : "${IntegrationDefFormField.IntegrationDefFormFieldType}",
+        "value" : "sample_value",
+        "valueOptions" : [ "${IntegrationDefFormField.Option}" ]
+      },
+      "dependencies" : [ "IntegrationDefFormField.IntegrationDefFormFieldType", "IntegrationDefFormField.Option", "ConfigKey" ]
+    },
+    "IntegrationDefFormField1" : {
+      "content" : {
+        "fieldName" : "${ConfigKey}",
+        "dependsOn" : [ ],
         "defaultValue" : "sample_defaultValue",
         "description" : "sample_description",
         "optional" : true,
@@ -355,8 +404,17 @@
     "WorkflowTestRequest" : {
       "content" : {
         "subWorkflowTestRequest" : {
-          "sample_key" : "${WorkflowTestRequest}"
+          "sample_key" : "${WorkflowTestRequest1}"
         },
+        "taskRefToMockOutput" : {
+          "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
+        }
+      },
+      "dependencies" : [ "WorkflowTestRequest.TaskMock" ]
+    },
+    "WorkflowTestRequest" : {
+      "content" : {
+        "subWorkflowTestRequest" : { },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
         }
@@ -949,9 +1007,9 @@
           "sample_key" : "sample_value"
         },
         "decisionCases" : {
-          "sample_key" : [ "${WorkflowTask}" ]
+          "sample_key" : [ "${WorkflowTask1}" ]
         },
-        "loopOver" : [ "${WorkflowTask}" ],
+        "loopOver" : [ "${WorkflowTask1}" ],
         "caseExpression" : "sample_caseExpression",
         "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
         "taskDefinition" : "${TaskDef}",
@@ -972,8 +1030,46 @@
         "startDelay" : 123,
         "permissive" : true,
         "taskReferenceName" : "sample_taskReferenceName",
-        "defaultCase" : [ "${WorkflowTask}" ],
-        "forkTasks" : [ [ "${WorkflowTask}" ] ],
+        "defaultCase" : [ "${WorkflowTask1}" ],
+        "forkTasks" : [ [ "${WorkflowTask1}" ] ],
+        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
+      },
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
+    },
+    "WorkflowTask1" : {
+      "content" : {
+        "joinOn" : [ "sample_joinOn" ],
+        "description" : "sample_description",
+        "scriptExpression" : "sample_scriptExpression",
+        "cacheConfig" : "${WorkflowTask.CacheConfig}",
+        "type" : "sample_type",
+        "inputParameters" : {
+          "sample_key" : "sample_value"
+        },
+        "decisionCases" : { },
+        "loopOver" : [ ],
+        "caseExpression" : "sample_caseExpression",
+        "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
+        "taskDefinition" : "${TaskDef}",
+        "caseValueParam" : "sample_caseValueParam",
+        "dynamicForkTasksInputParamName" : "sample_dynamicForkTasksInputParamName",
+        "expression" : "sample_expression",
+        "loopCondition" : "sample_loopCondition",
+        "asyncComplete" : true,
+        "sink" : "sample_sink",
+        "rateLimited" : true,
+        "retryCount" : 123,
+        "subWorkflowParam" : "${SubWorkflowParams}",
+        "optional" : true,
+        "joinStatus" : "sample_joinStatus",
+        "evaluatorType" : "sample_evaluatorType",
+        "dynamicTaskNameParam" : "sample_dynamicTaskNameParam",
+        "name" : "sample_name",
+        "startDelay" : 123,
+        "permissive" : true,
+        "taskReferenceName" : "sample_taskReferenceName",
+        "defaultCase" : [ ],
+        "forkTasks" : [ [ ] ],
         "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
       },
       "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
