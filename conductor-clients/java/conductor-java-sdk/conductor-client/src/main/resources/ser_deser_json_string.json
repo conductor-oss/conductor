@@ -61,7 +61,7 @@
     },
     "SubWorkflowParams" : {
       "content" : {
-        "workflowDefinition" : "${WorkflowDef}",
+        "workflowDefinition" : "sample_workflowDefinition",
         "idempotencyKey" : "sample_idempotencyKey",
         "name" : "sample_name",
         "taskToDomain" : {
