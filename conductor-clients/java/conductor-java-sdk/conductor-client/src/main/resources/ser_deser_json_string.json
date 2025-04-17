@@ -3,7 +3,7 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
@@ -14,7 +14,7 @@
       "content" : {
         "retried" : true,
         "outputData" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "referenceTaskName" : "sample_referenceTaskName",
         "workflowPriority" : 123,
@@ -35,7 +35,7 @@
         "seq" : 123,
         "startDelayInSeconds" : 123,
         "inputData" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "callbackAfterSeconds" : 123,
         "workerId" : "sample_workerId",
@@ -148,7 +148,7 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
@@ -176,7 +176,7 @@
     "WorkflowStateUpdate" : {
       "content" : {
         "variables" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "taskReferenceName" : "sample_taskReferenceName",
         "taskResult" : "${TaskResult}"
@@ -324,12 +324,12 @@
         "subWorkflowId" : "sample_subWorkflowId",
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "workflowInstanceId" : "sample_workflowInstanceId",
-        "logs" : [ "${TaskExecLog}" ],
+        "logs" : [ "${TaskExecLogPOJO}" ],
         "taskId" : "sample_taskId",
-        "status" : "${Status}",
+        "status" : "${StatusPOJO}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "Status", "TaskExecLog" ]
+      "dependencies" : [ "StatusPOJO", "TaskExecLogPOJO" ]
     },
     "EventHandler.Action" : {
       "content" : {
@@ -346,7 +346,7 @@
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
