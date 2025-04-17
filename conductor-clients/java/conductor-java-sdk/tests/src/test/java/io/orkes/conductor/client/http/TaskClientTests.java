@@ -128,10 +128,14 @@ public class TaskClientTests {
                 count++;
                 continue;
             }
+            // Converting TaskOutput class to Map to resolve Jackson's afterburner module and class loading issues
+            Map<String, Object> output = new HashMap<>();
+            output.put("name", "hello");
+            output.put("value", BigDecimal.TEN);
             for (String referenceName : runningTasks) {
                 System.out.println("Updating " + referenceName);
                 try {
-                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, new TaskOutput());
+                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, output);
                     System.out.println("Workflow: " + workflow);
                 } catch (ConductorClientException ConductorClientException) {
                     // 404 == task was updated already and there are no pending tasks
@@ -437,27 +441,5 @@ public class TaskClientTests {
                     var workflowDetails = workflowClient.getWorkflow(subWfId, true);
                     return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
                 });
-    }
-
-    private static class TaskOutput {
-        private String name = "hello";
-
-        private BigDecimal value = BigDecimal.TEN;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public BigDecimal getValue() {
-            return value;
-        }
-
-        public void setValue(BigDecimal value) {
-            this.value = value;
-        }
     }
 }
