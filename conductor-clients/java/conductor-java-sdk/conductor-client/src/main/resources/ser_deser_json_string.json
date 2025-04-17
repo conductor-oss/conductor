@@ -352,12 +352,12 @@
         "subWorkflowId" : "sample_subWorkflowId",
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "workflowInstanceId" : "sample_workflowInstanceId",
-        "logs" : [ "${TaskExecLogPOJO}" ],
+        "logs" : [ "${TaskExecLog}" ],
         "taskId" : "sample_taskId",
-        "status" : "${StatusPOJO}",
+        "status" : "${TaskResult.Status}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "StatusPOJO", "TaskExecLogPOJO" ]
+      "dependencies" : [ "TaskResult.Status", "TaskExecLog" ]
     },
     "EventHandler.TaskDetails" : {
       "content" : {
@@ -703,12 +703,12 @@
         "created" : 123,
         "name" : "sample_name",
         "messageId" : "sample_messageId",
-        "action" : "${Action.Type}",
+        "action" : "${EventHandler.Action.Type}",
         "id" : "sample_id",
         "event" : "sample_event",
-        "status" : "${Status}"
+        "status" : "${EventExecution.Status}"
       },
-      "dependencies" : [ "Status", "Action.Type" ]
+      "dependencies" : [ "EventExecution.Status", "EventHandler.Action.Type" ]
     },
     "ConductorApplication" : {
       "content" : {
