@@ -1403,6 +1403,12 @@
         "scheduleEndTime" : 123
       },
       "dependencies" : [ "Tag", "StartWorkflowRequest" ]
+    },
+    "T": {
+      "content": {
+        "value": "sample_string_value"
+      },
+      "dependencies": []
     }
   }
 }
