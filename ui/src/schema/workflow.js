@@ -75,10 +75,10 @@ const WORKFLOW_SCHEMA = {
       $id: "#/properties/name",
       default: "",
       description:
-        "Workflow Name - should be without spaces or special characters. Underscores and periods are allowed.",
+        "Workflow Name - Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #.",
       examples: ["first_sample_workflow"],
       maxLength: 100,
-      pattern: "^[\\w\\.]+$",
+      pattern: "^[A-Za-z0-9_<>{}#\\s-]+$",
       title: "Workflow Name",
       type: "string",
     },
