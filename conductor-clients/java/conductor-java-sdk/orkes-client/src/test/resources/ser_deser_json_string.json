@@ -24,7 +24,8 @@
       "dependencies" : [ ]
     },
     "Access" : {
-      "content" : {
+      "content" : "CREATE",
+      "enums" : {
         "values" : [ "CREATE", "READ", "EXECUTE", "UPDATE", "DELETE" ],
         "constants" : {
           "READ" : "(100)",
@@ -61,7 +62,7 @@
     },
     "SubWorkflowParams" : {
       "content" : {
-        "workflowDefinition" : "sample_workflowDefinition",
+        "workflowDefinition" : "${sample_workflowDefinition}",
         "idempotencyKey" : "sample_idempotencyKey",
         "name" : "sample_name",
         "taskToDomain" : {
@@ -81,7 +82,8 @@
       "dependencies" : [ ]
     },
     "SubjectType" : {
-      "content" : {
+      "content" : "USER",
+      "enums" : {
         "values" : [ "USER", "ROLE", "GROUP" ],
         "constants" : {
           "ROLE" : "(1)",
@@ -93,7 +95,8 @@
       "dependencies" : [ ]
     },
     "SchemaDef.Type" : {
-      "content" : {
+      "content" : "JSON",
+      "enums" : {
         "values" : [ "JSON", "AVRO", "PROTOBUF" ],
         "constants" : {
           "JSON" : "(0)",
@@ -386,12 +389,13 @@
     "SubjectRef" : {
       "content" : {
         "id" : "sample_id",
-        "type" : "sample_type"
+        "type" : "USER"
       },
       "dependencies" : [ ]
     },
     "TaskResult.Status" : {
-      "content" : {
+      "content" : "IN_PROGRESS",
+      "enums" : {
         "values" : [ "IN_PROGRESS", "FAILED", "FAILED_WITH_TERMINAL_ERROR", "COMPLETED" ],
         "constants" : {
           "IN_PROGRESS" : "(0)",
@@ -449,7 +453,8 @@
       "dependencies" : [ ]
     },
     "WorkflowDef.TimeoutPolicy" : {
-      "content" : {
+      "content" : "TIME_OUT_WF",
+      "enums" : {
         "values" : [ "TIME_OUT_WF", "ALERT_ONLY" ],
         "constants" : {
           "ALERT_ONLY" : "(1)",
@@ -477,7 +482,8 @@
       "dependencies" : [ ]
     },
     "Workflow.WorkflowStatus" : {
-      "content" : {
+      "content" : "RUNNING",
+      "enums" : {
         "values" : [ "RUNNING", "COMPLETED", "FAILED", "TIMED_OUT", "TERMINATED", "PAUSED" ],
         "constants" : {
           "PAUSED" : "(false, true)",
@@ -499,7 +505,8 @@
       "dependencies" : [ "T" ]
     },
     "ResourceType" : {
-      "content" : {
+      "content" : "WORKFLOW_DEF",
+      "enums" : {
         "values" : [ "WORKFLOW", "WORKFLOW_DEF", "WORKFLOW_SCHEDULE", "EVENT_HANDLER", "TASK_DEF", "TASK_REF_NAME", "TASK_ID", "APPLICATION", "USER", "SECRET_NAME", "ENV_VARIABLE", "TAG", "DOMAIN", "INTEGRATION_PROVIDER", "INTEGRATION", "PROMPT", "USER_FORM_TEMPLATE", "SCHEMA", "CLUSTER_CONFIG", "WEBHOOK" ],
         "constants" : {
           "DOMAIN" : "(12)",
@@ -534,7 +541,8 @@
       "dependencies" : [ "GrantedAccess" ]
     },
     "TaskDef.TimeoutPolicy" : {
-      "content" : {
+      "content" : "RETRY",
+      "enums" : {
         "values" : [ "RETRY", "TIME_OUT_WF", "ALERT_ONLY" ],
         "constants" : {
           "ALERT_ONLY" : "(2)",
@@ -592,7 +600,8 @@
       "dependencies" : [ "Task.Status" ]
     },
     "IdempotencyStrategy" : {
-      "content" : {
+      "content" : "FAIL",
+      "enums" : {
         "values" : [ "FAIL", "RETURN_EXISTING", "FAIL_ON_RUNNING" ],
         "constants" : {
           "FAIL_ON_RUNNING" : "(2)",
@@ -605,7 +614,7 @@
     },
     "Tag" : {
       "content" : {
-        "type" : "sample_type",
+        "type" : "RATE_LIMIT",
         "value" : "sample_value",
         "key" : "sample_key"
       },
@@ -732,7 +741,7 @@
         },
         "taskName" : "sample_taskName",
         "workflowName" : "sample_workflowName",
-        "type" : "sample_type",
+        "type" : "SIMPLE",
         "referenceName" : "sample_referenceName"
       },
       "dependencies" : [ ]
@@ -856,7 +865,7 @@
     },
     "UpsertUserRequest" : {
       "content" : {
-        "roles" : [ "sample_roles" ],
+        "roles" : [ "USER" ],
         "name" : "sample_name",
         "groups" : [ "sample_groups" ]
       },
@@ -934,7 +943,8 @@
       "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "EventExecution.Status" : {
-      "content" : {
+      "content" : "IN_PROGRESS",
+      "enums" : {
         "values" : [ "IN_PROGRESS", "COMPLETED", "FAILED", "SKIPPED" ],
         "constants" : {
           "IN_PROGRESS" : "(0)",
@@ -948,7 +958,7 @@
     },
     "UpsertGroupRequest" : {
       "content" : {
-        "roles" : [ "sample_roles" ],
+        "roles" : [ "USER" ],
         "defaultAccess" : {
           "${ResourceType}" : [ "${Access}" ]
         },
@@ -979,7 +989,8 @@
       "dependencies" : [ ]
     },
     "Category" : {
-      "content" : {
+      "content" : "API",
+      "enums" : {
         "values" : [ "API", "AI_MODEL", "VECTOR_DB", "RELATIONAL_DB", "MESSAGE_BROKER", "GIT", "EMAIL" ],
         "constants" : {
           "AI_MODEL" : "(1)",
@@ -1113,7 +1124,8 @@
       "dependencies" : [ "WorkflowDef" ]
     },
     "AccessKeyStatus" : {
-      "content" : {
+      "content" : "ACTIVE",
+      "enums" : {
         "values" : [ "ACTIVE", "INACTIVE" ],
         "constants" : {
           "ACTIVE" : "(0)",
@@ -1129,7 +1141,7 @@
           "sample_key" : "sample_value"
         },
         "name" : "sample_name",
-        "type" : "SchemaDef.Type",
+        "type" : "${SchemaDef.Type}",
         "version" : 123,
         "externalRef" : "sample_externalRef"
       },
@@ -1172,7 +1184,8 @@
       "dependencies" : [ "Category", "IntegrationDefFormField" ]
     },
     "EventHandler.Action.Type" : {
-      "content" : {
+      "content" : "start_workflow",
+      "enums" : {
         "values" : [ "start_workflow", "complete_task", "fail_task", "terminate_workflow", "update_workflow_variables" ],
         "constants" : {
           "terminate_workflow" : "(3)",
@@ -1202,7 +1215,8 @@
       "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi", "Auditable" ]
     },
     "ConfigKey" : {
-      "content" : {
+      "content" : "api_key",
+      "enums" : {
         "values" : [ "api_key", "user", "endpoint", "authUrl", "environment", "projectName", "indexName", "publisher", "password", "namespace", "batchSize", "batchWaitTime", "visibilityTimeout", "connectionType", "consumer", "stream", "batchPollConsumersCount", "consumer_type", "region", "awsAccountId", "externalId", "roleArn", "protocol", "mechanism", "port", "schemaRegistryUrl", "schemaRegistryApiKey", "schemaRegistryApiSecret", "authenticationType", "truststoreAuthenticationType", "tls", "cipherSuite", "pubSubMethod", "keyStorePassword", "keyStoreLocation", "schemaRegistryAuthType", "valueSubjectNameStrategy", "datasourceURL", "jdbcDriver", "subscription", "serviceAccountCredentials", "file", "tlsFile", "queueManager", "groupId", "channel", "dimensions", "distance_metric", "indexing_method", "inverted_list_count" ],
         "constants" : {
           "awsAccountId" : "(PASSWORD)",
