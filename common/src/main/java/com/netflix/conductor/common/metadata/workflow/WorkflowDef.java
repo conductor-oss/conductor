@@ -107,7 +107,7 @@ public class WorkflowDef extends Auditable {
     private boolean enforceSchema = true;
 
     @ProtoField(id = 22)
-    private Map<String, Object> metadata;
+    private Map<String, Object> metadata = new HashMap<>();
 
     public boolean isEnforceSchema() {
         return enforceSchema;
