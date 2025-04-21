@@ -208,7 +208,8 @@
           "sample_key" : "sample_value"
         }
       },
-      "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ]
+      "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
+      "inherits" : ["Auditable"]
     },
     "Workflow" : {
       "content" : {
@@ -243,7 +244,8 @@
         "status" : "${Workflow.WorkflowStatus}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ]
+      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
+      "inherits" : ["Auditable"]
     },
     "Workflow1" : {
       "content" : {
@@ -410,16 +412,18 @@
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
         }
       },
-      "dependencies" : [ "WorkflowTestRequest.TaskMock" ]
+      "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
+      "inherits" : ["StartWorkflowRequest"]
     },
-    "WorkflowTestRequest" : {
+    "WorkflowTestRequest1" : {
       "content" : {
         "subWorkflowTestRequest" : { },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
         }
       },
-      "dependencies" : [ "WorkflowTestRequest.TaskMock" ]
+      "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
+      "inherits" : ["StartWorkflowRequest"]
     },
     "EventHandler" : {
       "content" : {
@@ -871,7 +875,8 @@
         "jsonOutput" : true,
         "messages" : [ "${ChatMessage}" ]
       },
-      "dependencies" : [ "ChatMessage", "LLMWorkerInput" ]
+      "dependencies" : [ "ChatMessage" ],
+      "inherits" : ["LLMWorkerInput"]
     },
     "TokenResponse" : {
       "content" : {
@@ -905,7 +910,8 @@
         "executionNameSpace" : "sample_executionNameSpace",
         "pollTimeoutSeconds" : 123
       },
-      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ]
+      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
+      "inherits" : ["Auditable"]
     },
     "WorkflowDefSummary" : {
       "content" : {
@@ -1085,7 +1091,8 @@
         "index" : "sample_index",
         "id" : "sample_id"
       },
-      "dependencies" : [ "LLMWorkerInput" ]
+      "dependencies" : [  ],
+      "inherits" : ["LLMWorkerInput"]
     },
     "StartWorkflowRequest" : {
       "content" : {
@@ -1126,7 +1133,8 @@
         "version" : 123,
         "externalRef" : "sample_externalRef"
       },
-      "dependencies" : [ "SchemaDef.Type" ]
+      "dependencies" : [ "SchemaDef.Type" ],
+      "inherits" : ["Auditable"]
     },
     "WorkflowTask.CacheConfig" : {
       "content" : {
@@ -1254,7 +1262,8 @@
     },
     "TextCompletion" : {
       "content" : { },
-      "dependencies" : [ "LLMWorkerInput" ]
+      "dependencies" : [ ],
+      "inherits" : ["LLMWorkerInput"]
     },
     "PromptTemplateTestRequest" : {
       "content" : {
@@ -1292,7 +1301,8 @@
         "index" : "sample_index",
         "dimensions" : 123
       },
-      "dependencies" : [ "LLMWorkerInput" ]
+      "dependencies" : [ ],
+      "inherits" : ["LLMWorkerInput"]
     },
     "AccessKeyResponse" : {
       "content" : {

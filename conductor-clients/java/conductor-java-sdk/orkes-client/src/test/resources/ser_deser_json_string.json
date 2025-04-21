@@ -1,0 +1,1424 @@
+{
+  "templates" : {
+    "IndexedDoc" : {
+      "content" : {
+        "score" : 123.456,
+        "metadata" : {
+          "sample_key" : "sample_value"
+        },
+        "docId" : "sample_docId",
+        "text" : "sample_text",
+        "parentDocId" : "sample_parentDocId"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowTestRequest.TaskMock" : {
+      "content" : {
+        "output" : {
+          "sample_key" : "sample_value"
+        },
+        "executionTime" : 123,
+        "queueWaitTime" : 123,
+        "status" : "${TaskResult.Status}"
+      },
+      "dependencies" : [ ]
+    },
+    "Access" : {
+      "content" : {
+        "values" : [ "CREATE", "READ", "EXECUTE", "UPDATE", "DELETE" ],
+        "constants" : {
+          "READ" : "(100)",
+          "EXECUTE" : "(200)",
+          "DELETE" : "(400)",
+          "CREATE" : "(0)",
+          "UPDATE" : "(300)"
+        },
+        "sampleValue" : "CREATE"
+      },
+      "dependencies" : [ ]
+    },
+    "GenerateTokenRequest" : {
+      "content" : {
+        "keyId" : "sample_keyId",
+        "keySecret" : "sample_keySecret"
+      },
+      "dependencies" : [ ]
+    },
+    "StateChangeEvent" : {
+      "content" : {
+        "payload" : {
+          "key" : "sample_value"
+        },
+        "type" : "sample_type"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowTask.WorkflowTaskList" : {
+      "content" : {
+        "tasks" : [ "${WorkflowTask}" ]
+      },
+      "dependencies" : [ "WorkflowTask" ]
+    },
+    "SubWorkflowParams" : {
+      "content" : {
+        "workflowDefinition" : "sample_workflowDefinition",
+        "idempotencyKey" : "sample_idempotencyKey",
+        "name" : "sample_name",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "priority" : "sample_object_priority",
+        "version" : 123,
+        "idempotencyStrategy" : "${IdempotencyStrategy}"
+      },
+      "dependencies" : [ "IdempotencyStrategy" ]
+    },
+    "CorrelationIdsSearchRequest" : {
+      "content" : {
+        "workflowNames" : [ "sample_workflowNames" ],
+        "correlationIds" : [ "sample_correlationIds" ]
+      },
+      "dependencies" : [ ]
+    },
+    "SubjectType" : {
+      "content" : {
+        "values" : [ "USER", "ROLE", "GROUP" ],
+        "constants" : {
+          "ROLE" : "(1)",
+          "GROUP" : "(2)",
+          "USER" : "(0)"
+        },
+        "sampleValue" : "USER"
+      },
+      "dependencies" : [ ]
+    },
+    "SchemaDef.Type" : {
+      "content" : {
+        "values" : [ "JSON", "AVRO", "PROTOBUF" ],
+        "constants" : {
+          "JSON" : "(0)",
+          "PROTOBUF" : "(2)",
+          "AVRO" : "(1)"
+        },
+        "sampleValue" : "JSON"
+      },
+      "dependencies" : [ ]
+    },
+    "TaskType" : {
+      "content" : {
+        "values" : [ "SIMPLE", "DYNAMIC", "FORK_JOIN", "FORK_JOIN_DYNAMIC", "DECISION", "SWITCH", "JOIN", "DO_WHILE", "SUB_WORKFLOW", "START_WORKFLOW", "EVENT", "WAIT", "HUMAN", "USER_DEFINED", "HTTP", "LAMBDA", "INLINE", "EXCLUSIVE_JOIN", "TERMINATE", "KAFKA_PUBLISH", "JSON_JQ_TRANSFORM", "SET_VARIABLE", "NOOP" ],
+        "constants" : {
+          "SUB_WORKFLOW" : "(8)",
+          "DECISION" : "(4)",
+          "NOOP" : "(22)",
+          "JOIN" : "(6)",
+          "KAFKA_PUBLISH" : "(19)",
+          "HTTP" : "(14)",
+          "FORK_JOIN" : "(2)",
+          "EVENT" : "(10)",
+          "DYNAMIC" : "(1)",
+          "LAMBDA" : "(15)",
+          "JSON_JQ_TRANSFORM" : "(20)",
+          "HUMAN" : "(12)",
+          "TERMINATE" : "(18)",
+          "FORK_JOIN_DYNAMIC" : "(3)",
+          "SIMPLE" : "(0)",
+          "DO_WHILE" : "(7)",
+          "INLINE" : "(16)",
+          "SWITCH" : "(5)",
+          "EXCLUSIVE_JOIN" : "(17)",
+          "SET_VARIABLE" : "(21)",
+          "WAIT" : "(11)",
+          "START_WORKFLOW" : "(9)",
+          "USER_DEFINED" : "(13)"
+        },
+        "sampleValue" : "SIMPLE"
+      },
+      "dependencies" : [ ]
+    },
+    "Permission" : {
+      "content" : {
+        "name" : "sample_name"
+      },
+      "dependencies" : [ ]
+    },
+    "SaveScheduleRequest" : {
+      "content" : {
+        "cronExpression" : "sample_cronExpression",
+        "paused" : true,
+        "updatedBy" : "sample_updatedBy",
+        "startWorkflowRequest" : "${StartWorkflowRequest}",
+        "createdBy" : "sample_createdBy",
+        "name" : "sample_name",
+        "description" : "sample_description",
+        "zoneId" : "sample_zoneId",
+        "runCatchupScheduleInstances" : true,
+        "scheduleStartTime" : 123,
+        "scheduleEndTime" : 123
+      },
+      "dependencies" : [ "StartWorkflowRequest" ]
+    },
+    "GrantedAccess" : {
+      "content" : {
+        "access" : [ "${Access}" ],
+        "tag" : "sample_tag",
+        "target" : "${TargetRef}"
+      },
+      "dependencies" : [ "TargetRef", "Access" ]
+    },
+    "IntegrationDefFormField.IntegrationDefFormFieldType" : {
+      "content" : {
+        "values" : [ "DROPDOWN", "TEXT", "PASSWORD", "FILE" ],
+        "constants" : {
+          "DROPDOWN" : "(0)",
+          "PASSWORD" : "(2)",
+          "TEXT" : "(1)",
+          "FILE" : "(3)"
+        },
+        "sampleValue" : "DROPDOWN"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowDef" : {
+      "content" : {
+        "workflowStatusListenerSink" : "sample_workflowStatusListenerSink",
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "schemaVersion" : 123,
+        "timeoutPolicy" : "${WorkflowDef.TimeoutPolicy}",
+        "outputSchema" : "${SchemaDef}",
+        "enforceSchema" : true,
+        "restartable" : true,
+        "inputSchema" : "${SchemaDef}",
+        "description" : "sample_description",
+        "version" : 123,
+        "inputParameters" : [ "sample_inputParameters" ],
+        "inputTemplate" : {
+          "sample_key" : "sample_value"
+        },
+        "workflowStatusListenerEnabled" : true,
+        "ownerEmail" : "sample_ownerEmail",
+        "rateLimitConfig" : "${RateLimitConfig}",
+        "name" : "sample_name",
+        "timeoutSeconds" : 123,
+        "failureWorkflow" : "sample_failureWorkflow",
+        "tasks" : [ "${WorkflowTask}" ],
+        "outputParameters" : {
+          "sample_key" : "sample_value"
+        }
+      },
+      "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
+      "inherits" : ["Auditable"]
+    },
+    "Workflow" : {
+      "content" : {
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "workflowDefinition" : "${WorkflowDef}",
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "lastRetriedTime" : 123,
+        "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "history" : [ "${Workflow1}" ],
+        "priority" : 123,
+        "failedReferenceTaskNames" : [ "sample_value" ],
+        "output" : {
+          "sample_key" : "sample_value"
+        },
+        "input" : {
+          "sample_key" : "sample_value"
+        },
+        "parentWorkflowId" : "sample_parentWorkflowId",
+        "failedTaskNames" : [ "sample_value" ],
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
+        "correlationId" : "sample_correlationId",
+        "endTime" : 123,
+        "event" : "sample_event",
+        "workflowId" : "sample_workflowId",
+        "tasks" : [ "${Task}" ],
+        "status" : "${Workflow.WorkflowStatus}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
+      "inherits" : ["Auditable"]
+    },
+    "Workflow1" : {
+      "content" : {
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "workflowDefinition" : "${WorkflowDef}",
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "lastRetriedTime" : 123,
+        "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "history" : [ ],
+        "priority" : 123,
+        "failedReferenceTaskNames" : [ "sample_value" ],
+        "output" : {
+          "sample_key" : "sample_value"
+        },
+        "input" : {
+          "sample_key" : "sample_value"
+        },
+        "parentWorkflowId" : "sample_parentWorkflowId",
+        "failedTaskNames" : [ "sample_value" ],
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
+        "correlationId" : "sample_correlationId",
+        "endTime" : 123,
+        "event" : "sample_event",
+        "workflowId" : "sample_workflowId",
+        "tasks" : [ "${Task}" ],
+        "status" : "${Workflow.WorkflowStatus}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ]
+    },
+    "IntegrationDefFormField" : {
+      "content" : {
+        "fieldName" : "${ConfigKey}",
+        "dependsOn" : [ "${IntegrationDefFormField1}" ],
+        "defaultValue" : "sample_defaultValue",
+        "description" : "sample_description",
+        "optional" : true,
+        "label" : "sample_label",
+        "fieldType" : "${IntegrationDefFormField.IntegrationDefFormFieldType}",
+        "value" : "sample_value",
+        "valueOptions" : [ "${IntegrationDefFormField.Option}" ]
+      },
+      "dependencies" : [ "IntegrationDefFormField.IntegrationDefFormFieldType", "IntegrationDefFormField.Option", "ConfigKey" ]
+    },
+    "IntegrationDefFormField1" : {
+      "content" : {
+        "fieldName" : "${ConfigKey}",
+        "dependsOn" : [ ],
+        "defaultValue" : "sample_defaultValue",
+        "description" : "sample_description",
+        "optional" : true,
+        "label" : "sample_label",
+        "fieldType" : "${IntegrationDefFormField.IntegrationDefFormFieldType}",
+        "value" : "sample_value",
+        "valueOptions" : [ "${IntegrationDefFormField.Option}" ]
+      },
+      "dependencies" : [ "IntegrationDefFormField.IntegrationDefFormFieldType", "IntegrationDefFormField.Option", "ConfigKey" ]
+    },
+    "Task.Status" : {
+      "content" : {
+        "values" : [ "IN_PROGRESS", "CANCELED", "FAILED", "FAILED_WITH_TERMINAL_ERROR", "COMPLETED", "COMPLETED_WITH_ERRORS", "SCHEDULED", "TIMED_OUT", "SKIPPED" ],
+        "constants" : {
+          "IN_PROGRESS" : "(false, true, true)",
+          "FAILED_WITH_TERMINAL_ERROR" : "(true, false, false)",
+          "COMPLETED" : "(true, true, true)",
+          "FAILED" : "(true, false, true)",
+          "TIMED_OUT" : "(true, false, true)",
+          "CANCELED" : "(true, false, false)",
+          "COMPLETED_WITH_ERRORS" : "(true, true, true)",
+          "SKIPPED" : "(true, true, false)",
+          "SCHEDULED" : "(false, true, true)"
+        },
+        "sampleValue" : "IN_PROGRESS"
+      },
+      "dependencies" : [ ]
+    },
+    "LLMWorkerInput" : {
+      "content" : {
+        "stopWords" : [ "sample_stopWords" ],
+        "llmProvider" : "sample_llmProvider",
+        "maxResults" : 123,
+        "temperature" : 123.456,
+        "maxTokens" : 123,
+        "embeddingModelProvider" : "sample_embeddingModelProvider",
+        "model" : "sample_model",
+        "embeddingModel" : "sample_embeddingModel",
+        "prompt" : "sample_prompt",
+        "topP" : 123.456
+      },
+      "dependencies" : [ ]
+    },
+    "TaskResult" : {
+      "content" : {
+        "outputData" : {
+          "sample_key" : "sample_value"
+        },
+        "extendLease" : true,
+        "callbackAfterSeconds" : 123,
+        "workerId" : "sample_workerId",
+        "subWorkflowId" : "sample_subWorkflowId",
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "workflowInstanceId" : "sample_workflowInstanceId",
+        "logs" : [ "${TaskExecLog}" ],
+        "taskId" : "sample_taskId",
+        "status" : "${TaskResult.Status}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "TaskResult.Status", "TaskExecLog" ]
+    },
+    "EventHandler.TaskDetails" : {
+      "content" : {
+        "output" : {
+          "key" : "sample_value"
+        },
+        "taskRefName" : "sample_taskRefName",
+        "workflowId" : "sample_workflowId",
+        "taskId" : "sample_taskId"
+      },
+      "dependencies" : [ ]
+    },
+    "Group" : {
+      "content" : {
+        "roles" : [ "${Role}" ],
+        "defaultAccess" : {
+          "${ResourceType}" : [ "${Access}" ]
+        },
+        "description" : "sample_description",
+        "id" : "sample_id"
+      },
+      "dependencies" : [ "Role", "ResourceType", "Access" ]
+    },
+    "SubjectRef" : {
+      "content" : {
+        "id" : "sample_id",
+        "type" : "sample_type"
+      },
+      "dependencies" : [ ]
+    },
+    "TaskResult.Status" : {
+      "content" : {
+        "values" : [ "IN_PROGRESS", "FAILED", "FAILED_WITH_TERMINAL_ERROR", "COMPLETED" ],
+        "constants" : {
+          "IN_PROGRESS" : "(0)",
+          "FAILED_WITH_TERMINAL_ERROR" : "(2)",
+          "COMPLETED" : "(3)",
+          "FAILED" : "(1)"
+        },
+        "sampleValue" : "IN_PROGRESS"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowTestRequest" : {
+      "content" : {
+        "subWorkflowTestRequest" : {
+          "sample_key" : "${WorkflowTestRequest1}"
+        },
+        "taskRefToMockOutput" : {
+          "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
+        }
+      },
+      "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
+      "inherits" : ["StartWorkflowRequest"]
+    },
+    "WorkflowTestRequest1" : {
+      "content" : {
+        "subWorkflowTestRequest" : { },
+        "taskRefToMockOutput" : {
+          "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
+        }
+      },
+      "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
+      "inherits" : ["StartWorkflowRequest"]
+    },
+    "EventHandler" : {
+      "content" : {
+        "condition" : "sample_condition",
+        "evaluatorType" : "sample_evaluatorType",
+        "name" : "sample_name",
+        "active" : true,
+        "event" : "sample_event",
+        "actions" : [ "${EventHandler.Action}" ]
+      },
+      "dependencies" : [ "EventHandler.Action" ]
+    },
+    "DynamicForkJoinTaskList" : {
+      "content" : {
+        "dynamicTasks" : [ "${DynamicForkJoinTask}" ]
+      },
+      "dependencies" : [ "DynamicForkJoinTask" ]
+    },
+    "CreateOrUpdateApplicationRequest" : {
+      "content" : {
+        "name" : "sample_name"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowDef.TimeoutPolicy" : {
+      "content" : {
+        "values" : [ "TIME_OUT_WF", "ALERT_ONLY" ],
+        "constants" : {
+          "ALERT_ONLY" : "(1)",
+          "TIME_OUT_WF" : "(0)"
+        },
+        "sampleValue" : "TIME_OUT_WF"
+      },
+      "dependencies" : [ ]
+    },
+    "Auditable" : {
+      "content" : {
+        "updatedBy" : "sample_updatedBy",
+        "createTime" : 123,
+        "createdBy" : "sample_createdBy",
+        "updateTime" : 123,
+        "ownerApp" : "sample_ownerApp"
+      },
+      "dependencies" : [ ]
+    },
+    "CreateAccessKeyResponse" : {
+      "content" : {
+        "id" : "sample_id",
+        "secret" : "sample_secret"
+      },
+      "dependencies" : [ ]
+    },
+    "Workflow.WorkflowStatus" : {
+      "content" : {
+        "values" : [ "RUNNING", "COMPLETED", "FAILED", "TIMED_OUT", "TERMINATED", "PAUSED" ],
+        "constants" : {
+          "PAUSED" : "(false, true)",
+          "COMPLETED" : "(true, true)",
+          "FAILED" : "(true, false)",
+          "RUNNING" : "(false, false)",
+          "TIMED_OUT" : "(true, false)",
+          "TERMINATED" : "(true, false)"
+        },
+        "sampleValue" : "RUNNING"
+      },
+      "dependencies" : [ ]
+    },
+    "SearchResult" : {
+      "content" : {
+        "totalHits" : 123,
+        "results" : [ "${T}" ]
+      },
+      "dependencies" : [ "T" ]
+    },
+    "ResourceType" : {
+      "content" : {
+        "values" : [ "WORKFLOW", "WORKFLOW_DEF", "WORKFLOW_SCHEDULE", "EVENT_HANDLER", "TASK_DEF", "TASK_REF_NAME", "TASK_ID", "APPLICATION", "USER", "SECRET_NAME", "ENV_VARIABLE", "TAG", "DOMAIN", "INTEGRATION_PROVIDER", "INTEGRATION", "PROMPT", "USER_FORM_TEMPLATE", "SCHEMA", "CLUSTER_CONFIG", "WEBHOOK" ],
+        "constants" : {
+          "DOMAIN" : "(12)",
+          "SECRET_NAME" : "(9)",
+          "ENV_VARIABLE" : "(10)",
+          "CLUSTER_CONFIG" : "(18)",
+          "APPLICATION" : "(7)",
+          "PROMPT" : "(15)",
+          "TASK_DEF" : "(4)",
+          "USER" : "(8)",
+          "USER_FORM_TEMPLATE" : "(16)",
+          "INTEGRATION_PROVIDER" : "(13)",
+          "WORKFLOW_DEF" : "(1)",
+          "INTEGRATION" : "(14)",
+          "SCHEMA" : "(17)",
+          "WEBHOOK" : "(19)",
+          "EVENT_HANDLER" : "(3)",
+          "TASK_REF_NAME" : "(5)",
+          "TAG" : "(11)",
+          "WORKFLOW_SCHEDULE" : "(2)",
+          "WORKFLOW" : "(0)",
+          "TASK_ID" : "(6)"
+        },
+        "sampleValue" : "WORKFLOW"
+      },
+      "dependencies" : [ ]
+    },
+    "GrantedAccessResponse" : {
+      "content" : {
+        "grantedAccess" : [ "${GrantedAccess}" ]
+      },
+      "dependencies" : [ "GrantedAccess" ]
+    },
+    "TaskDef.TimeoutPolicy" : {
+      "content" : {
+        "values" : [ "RETRY", "TIME_OUT_WF", "ALERT_ONLY" ],
+        "constants" : {
+          "ALERT_ONLY" : "(2)",
+          "TIME_OUT_WF" : "(1)",
+          "RETRY" : "(0)"
+        },
+        "sampleValue" : "RETRY"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowStatus" : {
+      "content" : {
+        "output" : {
+          "key" : "sample_value"
+        },
+        "variables" : {
+          "key" : "sample_value"
+        },
+        "correlationId" : "sample_correlationId",
+        "workflowId" : "sample_workflowId",
+        "status" : "${Workflow.WorkflowStatus}"
+      },
+      "dependencies" : [ "Workflow.WorkflowStatus" ]
+    },
+    "IntegrationDefFormField.Option" : {
+      "content" : {
+        "label" : "sample_label",
+        "value" : "sample_value"
+      },
+      "dependencies" : [ ]
+    },
+    "TaskSummary" : {
+      "content" : {
+        "scheduledTime" : "sample_scheduledTime",
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "workflowPriority" : 123,
+        "updateTime" : "sample_updateTime",
+        "executionTime" : 123,
+        "output" : "sample_output",
+        "input" : "sample_input",
+        "taskType" : "sample_taskType",
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "domain" : "sample_domain",
+        "queueWaitTime" : 123,
+        "taskDefName" : "sample_taskDefName",
+        "workflowType" : "sample_workflowType",
+        "correlationId" : "sample_correlationId",
+        "startTime" : "sample_startTime",
+        "endTime" : "sample_endTime",
+        "workflowId" : "sample_workflowId",
+        "taskId" : "sample_taskId",
+        "status" : "${Task.Status}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Task.Status" ]
+    },
+    "IdempotencyStrategy" : {
+      "content" : {
+        "values" : [ "FAIL", "RETURN_EXISTING", "FAIL_ON_RUNNING" ],
+        "constants" : {
+          "FAIL_ON_RUNNING" : "(2)",
+          "RETURN_EXISTING" : "(1)",
+          "FAIL" : "(0)"
+        },
+        "sampleValue" : "FAIL"
+      },
+      "dependencies" : [ ]
+    },
+    "Tag" : {
+      "content" : {
+        "type" : "sample_type",
+        "value" : "sample_value",
+        "key" : "sample_key"
+      },
+      "dependencies" : [ ]
+    },
+    "ExternalStorageLocation" : {
+      "content" : {
+        "path" : "sample_path",
+        "uri" : "sample_uri"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowSummary" : {
+      "content" : {
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "updateTime" : "sample_updateTime",
+        "priority" : 123,
+        "version" : 123,
+        "failedReferenceTaskNames" : "sample_failedReferenceTaskNames",
+        "output" : "sample_output",
+        "executionTime" : 123,
+        "input" : "sample_input",
+        "failedTaskNames" : [ "sample_failedTaskNames" ],
+        "createdBy" : "sample_createdBy",
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "workflowType" : "sample_workflowType",
+        "correlationId" : "sample_correlationId",
+        "startTime" : "sample_startTime",
+        "endTime" : "sample_endTime",
+        "event" : "sample_event",
+        "workflowId" : "sample_workflowId",
+        "status" : "${Workflow.WorkflowStatus}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Workflow.WorkflowStatus" ]
+    },
+    "Task" : {
+      "content" : {
+        "retried" : true,
+        "outputData" : {
+          "sample_key" : "sample_value"
+        },
+        "referenceTaskName" : "sample_referenceTaskName",
+        "workflowPriority" : 123,
+        "isolationGroupId" : "sample_isolationGroupId",
+        "parentTaskId" : "sample_parentTaskId",
+        "executed" : true,
+        "subworkflowChanged" : true,
+        "taskType" : "sample_taskType",
+        "reasonForIncompletion" : "sample_reasonForIncompletion",
+        "responseTimeoutSeconds" : 123,
+        "rateLimitFrequencyInSeconds" : 123,
+        "iteration" : 123,
+        "correlationId" : "sample_correlationId",
+        "startTime" : 123,
+        "callbackFromWorker" : true,
+        "workflowType" : "sample_workflowType",
+        "workflowInstanceId" : "sample_workflowInstanceId",
+        "seq" : 123,
+        "startDelayInSeconds" : 123,
+        "inputData" : {
+          "sample_key" : "sample_value"
+        },
+        "callbackAfterSeconds" : 123,
+        "workerId" : "sample_workerId",
+        "scheduledTime" : 123,
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "retryCount" : 123,
+        "workflowTask" : "${WorkflowTask}",
+        "retriedTaskId" : "sample_retriedTaskId",
+        "updateTime" : 123,
+        "pollCount" : 123,
+        "rateLimitPerFrequency" : 123,
+        "subWorkflowId" : "sample_subWorkflowId",
+        "domain" : "sample_domain",
+        "taskDefName" : "sample_taskDefName",
+        "endTime" : 123,
+        "executionNameSpace" : "sample_executionNameSpace",
+        "firstStartTime" : 123,
+        "taskId" : "sample_taskId",
+        "status" : "${Task.Status}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+      },
+      "dependencies" : [ "Task.Status", "WorkflowTask" ]
+    },
+    "AuthorizationRequest" : {
+      "content" : {
+        "access" : [ "${Access}" ],
+        "subject" : "${SubjectRef}",
+        "target" : "${TargetRef}"
+      },
+      "dependencies" : [ "SubjectRef", "TargetRef", "Access" ]
+    },
+    "EventExecution" : {
+      "content" : {
+        "output" : {
+          "sample_key" : "sample_value"
+        },
+        "created" : 123,
+        "name" : "sample_name",
+        "messageId" : "sample_messageId",
+        "action" : "${EventHandler.Action.Type}",
+        "id" : "sample_id",
+        "event" : "sample_event",
+        "status" : "${EventExecution.Status}"
+      },
+      "dependencies" : [ "EventExecution.Status", "EventHandler.Action.Type" ]
+    },
+    "ConductorApplication" : {
+      "content" : {
+        "updatedBy" : "sample_updatedBy",
+        "createdBy" : "sample_createdBy",
+        "createTime" : 123,
+        "name" : "sample_name",
+        "updateTime" : 123,
+        "id" : "sample_id"
+      },
+      "dependencies" : [ ]
+    },
+    "DynamicForkJoinTask" : {
+      "content" : {
+        "input" : {
+          "sample_key" : "sample_value"
+        },
+        "taskName" : "sample_taskName",
+        "workflowName" : "sample_workflowName",
+        "type" : "sample_type",
+        "referenceName" : "sample_referenceName"
+      },
+      "dependencies" : [ ]
+    },
+    "EventHandler.TerminateWorkflow" : {
+      "content" : {
+        "workflowId" : "sample_workflowId",
+        "terminationReason" : "sample_terminationReason"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowStateUpdate" : {
+      "content" : {
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "taskReferenceName" : "sample_taskReferenceName",
+        "taskResult" : "${TaskResult}"
+      },
+      "dependencies" : [ "TaskResult" ]
+    },
+    "TaskDef.RetryLogic" : {
+      "content" : {
+        "values" : [ "FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF" ],
+        "constants" : {
+          "EXPONENTIAL_BACKOFF" : "(1)",
+          "FIXED" : "(0)",
+          "LINEAR_BACKOFF" : "(2)"
+        },
+        "sampleValue" : "FIXED"
+      },
+      "dependencies" : [ ]
+    },
+    "ChatMessage" : {
+      "content" : {
+        "role" : "sample_role",
+        "message" : "sample_message"
+      },
+      "dependencies" : [ ]
+    },
+    "IndexDocInput" : {
+      "content" : {
+        "metadata" : {
+          "sample_key" : "sample_value"
+        },
+        "chunkSize" : 123,
+        "chunkOverlap" : 123,
+        "llmProvider" : "sample_llmProvider",
+        "docId" : "sample_docId",
+        "vectorDB" : "sample_vectorDB",
+        "index" : "sample_index",
+        "mediaType" : "sample_mediaType",
+        "url" : "sample_url",
+        "namespace" : "sample_namespace",
+        "embeddingModelProvider" : "sample_embeddingModelProvider",
+        "model" : "sample_model",
+        "text" : "sample_text",
+        "embeddingModel" : "sample_embeddingModel",
+        "dimensions" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "SkipTaskRequest" : {
+      "content" : {
+        "taskInput" : {
+          "sample_key" : "sample_value"
+        },
+        "taskOutput" : {
+          "sample_key" : "sample_value"
+        }
+      },
+      "dependencies" : [ ]
+    },
+    "PollData" : {
+      "content" : {
+        "workerId" : "sample_workerId",
+        "lastPollTime" : 123,
+        "queueName" : "sample_queueName",
+        "domain" : "sample_domain"
+      },
+      "dependencies" : [ ]
+    },
+    "ChatMessage.Actor" : {
+      "content" : {
+        "values" : [ "user", "assistant", "system", "human", "chatbot" ],
+        "constants" : {
+          "chatbot" : "(4)",
+          "system" : "(2)",
+          "assistant" : "(1)",
+          "user" : "(0)",
+          "human" : "(3)"
+        },
+        "sampleValue" : "user"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowScheduleExecutionModel.State" : {
+      "content" : {
+        "values" : [ "POLLED", "FAILED", "EXECUTED" ],
+        "constants" : {
+          "FAILED" : "(1)",
+          "EXECUTED" : "(2)",
+          "POLLED" : "(0)"
+        },
+        "sampleValue" : "POLLED"
+      },
+      "dependencies" : [ ]
+    },
+    "IntegrationApi" : {
+      "content" : {
+        "integrationName" : "sample_integrationName",
+        "configuration" : {
+          "${ConfigKey}" : "sample_Object"
+        },
+        "description" : "sample_description",
+        "api" : "sample_api",
+        "enabled" : true,
+        "tags" : [ "${Tag}" ]
+      },
+      "dependencies" : [ "ConfigKey", "Tag" ]
+    },
+    "UpsertUserRequest" : {
+      "content" : {
+        "roles" : [ "sample_roles" ],
+        "name" : "sample_name",
+        "groups" : [ "sample_groups" ]
+      },
+      "dependencies" : [ ]
+    },
+    "Role" : {
+      "content" : {
+        "permissions" : [ "${Permission}" ],
+        "name" : "sample_name"
+      },
+      "dependencies" : [ "Permission" ]
+    },
+    "ChatCompletion" : {
+      "content" : {
+        "instructions" : "sample_instructions",
+        "jsonOutput" : true,
+        "messages" : [ "${ChatMessage}" ]
+      },
+      "dependencies" : [ "ChatMessage" ],
+      "inherits" : ["LLMWorkerInput"]
+    },
+    "TokenResponse" : {
+      "content" : {
+        "token" : "sample_token"
+      },
+      "dependencies" : [ ]
+    },
+    "TaskDef" : {
+      "content" : {
+        "timeoutPolicy" : "${TaskDef.TimeoutPolicy}",
+        "inputKeys" : [ "sample_inputKeys" ],
+        "concurrentExecLimit" : 123,
+        "isolationGroupId" : "sample_isolationGroupId",
+        "retryCount" : 123,
+        "description" : "sample_description",
+        "inputTemplate" : {
+          "sample_key" : "sample_value"
+        },
+        "ownerEmail" : "sample_ownerEmail",
+        "baseType" : "sample_baseType",
+        "totalTimeoutSeconds" : 123,
+        "retryDelaySeconds" : 123,
+        "backoffScaleFactor" : 123,
+        "rateLimitPerFrequency" : 123,
+        "retryLogic" : "${TaskDef.RetryLogic}",
+        "responseTimeoutSeconds" : 123,
+        "name" : "sample_name",
+        "timeoutSeconds" : 123,
+        "rateLimitFrequencyInSeconds" : 123,
+        "outputKeys" : [ "sample_outputKeys" ],
+        "executionNameSpace" : "sample_executionNameSpace",
+        "pollTimeoutSeconds" : 123
+      },
+      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
+      "inherits" : ["Auditable"]
+    },
+    "WorkflowDefSummary" : {
+      "content" : {
+        "createTime" : 123,
+        "name" : "sample_name",
+        "version" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "EventHandler.Action" : {
+      "content" : {
+        "terminate_workflow" : "${EventHandler.TerminateWorkflow}",
+        "fail_task" : "${EventHandler.TaskDetails}",
+        "expandInlineJSON" : true,
+        "action" : "start_workflow",
+        "start_workflow" : "${EventHandler.StartWorkflow}",
+        "complete_task" : "${EventHandler.TaskDetails}",
+        "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
+      },
+      "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
+    },
+    "EventExecution.Status" : {
+      "content" : {
+        "values" : [ "IN_PROGRESS", "COMPLETED", "FAILED", "SKIPPED" ],
+        "constants" : {
+          "IN_PROGRESS" : "(0)",
+          "COMPLETED" : "(1)",
+          "FAILED" : "(2)",
+          "SKIPPED" : "(3)"
+        },
+        "sampleValue" : "IN_PROGRESS"
+      },
+      "dependencies" : [ ]
+    },
+    "UpsertGroupRequest" : {
+      "content" : {
+        "roles" : [ "sample_roles" ],
+        "defaultAccess" : {
+          "${ResourceType}" : [ "${Access}" ]
+        },
+        "description" : "sample_description"
+      },
+      "dependencies" : [ "ResourceType", "Access" ]
+    },
+    "ConductorUser" : {
+      "content" : {
+        "encryptedIdDisplayValue" : "sample_encryptedIdDisplayValue",
+        "roles" : [ "${Role}" ],
+        "encryptedId" : true,
+        "name" : "sample_name",
+        "groups" : [ "${Group}" ],
+        "id" : "sample_id",
+        "uuid" : "sample_uuid"
+      },
+      "dependencies" : [ "Role", "Group" ]
+    },
+    "EventHandler.UpdateWorkflowVariables" : {
+      "content" : {
+        "variables" : {
+          "key" : "sample_value"
+        },
+        "appendArray" : true,
+        "workflowId" : "sample_workflowId"
+      },
+      "dependencies" : [ ]
+    },
+    "Category" : {
+      "content" : {
+        "values" : [ "API", "AI_MODEL", "VECTOR_DB", "RELATIONAL_DB", "MESSAGE_BROKER", "GIT", "EMAIL" ],
+        "constants" : {
+          "AI_MODEL" : "(1)",
+          "GIT" : "(5)",
+          "API" : "(0)",
+          "RELATIONAL_DB" : "(3)",
+          "VECTOR_DB" : "(2)",
+          "EMAIL" : "(6)",
+          "MESSAGE_BROKER" : "(4)"
+        },
+        "sampleValue" : "API"
+      },
+      "dependencies" : [ ]
+    },
+    "TaskExecLog" : {
+      "content" : {
+        "log" : "sample_log",
+        "createdTime" : 123,
+        "taskId" : "sample_taskId"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowTask" : {
+      "content" : {
+        "joinOn" : [ "sample_joinOn" ],
+        "description" : "sample_description",
+        "scriptExpression" : "sample_scriptExpression",
+        "cacheConfig" : "${WorkflowTask.CacheConfig}",
+        "type" : "sample_type",
+        "inputParameters" : {
+          "sample_key" : "sample_value"
+        },
+        "decisionCases" : {
+          "sample_key" : [ "${WorkflowTask1}" ]
+        },
+        "loopOver" : [ "${WorkflowTask1}" ],
+        "caseExpression" : "sample_caseExpression",
+        "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
+        "taskDefinition" : "${TaskDef}",
+        "caseValueParam" : "sample_caseValueParam",
+        "dynamicForkTasksInputParamName" : "sample_dynamicForkTasksInputParamName",
+        "expression" : "sample_expression",
+        "loopCondition" : "sample_loopCondition",
+        "asyncComplete" : true,
+        "sink" : "sample_sink",
+        "rateLimited" : true,
+        "retryCount" : 123,
+        "subWorkflowParam" : "${SubWorkflowParams}",
+        "optional" : true,
+        "joinStatus" : "sample_joinStatus",
+        "evaluatorType" : "sample_evaluatorType",
+        "dynamicTaskNameParam" : "sample_dynamicTaskNameParam",
+        "name" : "sample_name",
+        "startDelay" : 123,
+        "permissive" : true,
+        "taskReferenceName" : "sample_taskReferenceName",
+        "defaultCase" : [ "${WorkflowTask1}" ],
+        "forkTasks" : [ [ "${WorkflowTask1}" ] ],
+        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
+      },
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
+    },
+    "WorkflowTask1" : {
+      "content" : {
+        "joinOn" : [ "sample_joinOn" ],
+        "description" : "sample_description",
+        "scriptExpression" : "sample_scriptExpression",
+        "cacheConfig" : "${WorkflowTask.CacheConfig}",
+        "type" : "sample_type",
+        "inputParameters" : {
+          "sample_key" : "sample_value"
+        },
+        "decisionCases" : { },
+        "loopOver" : [ ],
+        "caseExpression" : "sample_caseExpression",
+        "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
+        "taskDefinition" : "${TaskDef}",
+        "caseValueParam" : "sample_caseValueParam",
+        "dynamicForkTasksInputParamName" : "sample_dynamicForkTasksInputParamName",
+        "expression" : "sample_expression",
+        "loopCondition" : "sample_loopCondition",
+        "asyncComplete" : true,
+        "sink" : "sample_sink",
+        "rateLimited" : true,
+        "retryCount" : 123,
+        "subWorkflowParam" : "${SubWorkflowParams}",
+        "optional" : true,
+        "joinStatus" : "sample_joinStatus",
+        "evaluatorType" : "sample_evaluatorType",
+        "dynamicTaskNameParam" : "sample_dynamicTaskNameParam",
+        "name" : "sample_name",
+        "startDelay" : 123,
+        "permissive" : true,
+        "taskReferenceName" : "sample_taskReferenceName",
+        "defaultCase" : [ ],
+        "forkTasks" : [ [ ] ],
+        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
+      },
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
+    },
+    "StoreEmbeddingsInput" : {
+      "content" : {
+        "embeddings" : [ 3.14 ],
+        "metadata" : {
+          "sample_key" : "sample_value"
+        },
+        "vectorDB" : "sample_vectorDB",
+        "namespace" : "sample_namespace",
+        "index" : "sample_index",
+        "id" : "sample_id"
+      },
+      "dependencies" : [  ],
+      "inherits" : ["LLMWorkerInput"]
+    },
+    "StartWorkflowRequest" : {
+      "content" : {
+        "input" : {
+          "sample_key" : "sample_value"
+        },
+        "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
+        "createdBy" : "sample_createdBy",
+        "name" : "sample_name",
+        "correlationId" : "sample_correlationId",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "priority" : 123,
+        "version" : 123,
+        "workflowDef" : "${WorkflowDef}"
+      },
+      "dependencies" : [ "WorkflowDef" ]
+    },
+    "AccessKeyStatus" : {
+      "content" : {
+        "values" : [ "ACTIVE", "INACTIVE" ],
+        "constants" : {
+          "ACTIVE" : "(0)",
+          "INACTIVE" : "(1)"
+        },
+        "sampleValue" : "ACTIVE"
+      },
+      "dependencies" : [ ]
+    },
+    "SchemaDef" : {
+      "content" : {
+        "data" : {
+          "sample_key" : "sample_value"
+        },
+        "name" : "sample_name",
+        "type" : "SchemaDef.Type",
+        "version" : 123,
+        "externalRef" : "sample_externalRef"
+      },
+      "dependencies" : [ "SchemaDef.Type" ],
+      "inherits" : ["Auditable"]
+    },
+    "WorkflowTask.CacheConfig" : {
+      "content" : {
+        "key" : "sample_key",
+        "ttlInSecond" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "EventHandler.StartWorkflow" : {
+      "content" : {
+        "input" : {
+          "key" : "sample_value"
+        },
+        "name" : "sample_name",
+        "correlationId" : "sample_correlationId",
+        "taskToDomain" : {
+          "key" : "sample_value"
+        },
+        "version" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "IntegrationDef" : {
+      "content" : {
+        "iconName" : "sample_iconName",
+        "configuration" : [ "${IntegrationDefFormField}" ],
+        "name" : "sample_name",
+        "categoryLabel" : "sample_categoryLabel",
+        "description" : "sample_description",
+        "type" : "sample_type",
+        "category" : "${Category}",
+        "enabled" : true,
+        "tags" : [ "sample_tags" ]
+      },
+      "dependencies" : [ "Category", "IntegrationDefFormField" ]
+    },
+    "EventHandler.Action.Type" : {
+      "content" : {
+        "values" : [ "start_workflow", "complete_task", "fail_task", "terminate_workflow", "update_workflow_variables" ],
+        "constants" : {
+          "terminate_workflow" : "(3)",
+          "fail_task" : "(2)",
+          "start_workflow" : "(0)",
+          "complete_task" : "(1)",
+          "update_workflow_variables" : "(4)"
+        },
+        "sampleValue" : "start_workflow"
+      },
+      "dependencies" : [ ]
+    },
+    "Integration" : {
+      "content" : {
+        "apis" : [ "${IntegrationApi}" ],
+        "configuration" : {
+          "${ConfigKey}" : "sample_Object"
+        },
+        "name" : "sample_name",
+        "description" : "sample_description",
+        "modelsCount" : 123,
+        "type" : "sample_type",
+        "category" : "${Category}",
+        "enabled" : true,
+        "tags" : [ "${Tag}" ]
+      },
+      "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi", "Auditable" ]
+    },
+    "ConfigKey" : {
+      "content" : {
+        "values" : [ "api_key", "user", "endpoint", "authUrl", "environment", "projectName", "indexName", "publisher", "password", "namespace", "batchSize", "batchWaitTime", "visibilityTimeout", "connectionType", "consumer", "stream", "batchPollConsumersCount", "consumer_type", "region", "awsAccountId", "externalId", "roleArn", "protocol", "mechanism", "port", "schemaRegistryUrl", "schemaRegistryApiKey", "schemaRegistryApiSecret", "authenticationType", "truststoreAuthenticationType", "tls", "cipherSuite", "pubSubMethod", "keyStorePassword", "keyStoreLocation", "schemaRegistryAuthType", "valueSubjectNameStrategy", "datasourceURL", "jdbcDriver", "subscription", "serviceAccountCredentials", "file", "tlsFile", "queueManager", "groupId", "channel", "dimensions", "distance_metric", "indexing_method", "inverted_list_count" ],
+        "constants" : {
+          "awsAccountId" : "(PASSWORD)",
+          "schemaRegistryAuthType" : "(TEXT)",
+          "tlsFile" : "(FILE)",
+          "pubSubMethod" : "(TEXT)",
+          "groupId" : "(TEXT)",
+          "channel" : "(TEXT)",
+          "consumer_type" : "(TEXT)",
+          "valueSubjectNameStrategy" : "(TEXT)",
+          "cipherSuite" : "(TEXT)",
+          "serviceAccountCredentials" : "(TEXT)",
+          "connectionType" : "(TEXT)",
+          "password" : "(PASSWORD)",
+          "protocol" : "(TEXT)",
+          "schemaRegistryApiSecret" : "(PASSWORD)",
+          "roleArn" : "(TEXT)",
+          "indexName" : "(TEXT)",
+          "indexing_method" : "(TEXT)",
+          "port" : "(TEXT)",
+          "publisher" : "(TEXT)",
+          "projectName" : "(TEXT)",
+          "region" : "(TEXT)",
+          "keyStoreLocation" : "(TEXT)",
+          "subscription" : "(TEXT)",
+          "visibilityTimeout" : "(TEXT)",
+          "truststoreAuthenticationType" : "(TEXT)",
+          "authUrl" : "(TEXT)",
+          "endpoint" : "(TEXT)",
+          "file" : "(FILE)",
+          "queueManager" : "(TEXT)",
+          "stream" : "(TEXT)",
+          "mechanism" : "(TEXT)",
+          "datasourceURL" : "(TEXT)",
+          "consumer" : "(TEXT)",
+          "schemaRegistryUrl" : "(TEXT)",
+          "jdbcDriver" : "(TEXT)",
+          "keyStorePassword" : "(PASSWORD)",
+          "inverted_list_count" : "(TEXT)",
+          "externalId" : "(PASSWORD)",
+          "environment" : "(TEXT)",
+          "api_key" : "(PASSWORD)",
+          "batchPollConsumersCount" : "(TEXT)",
+          "namespace" : "(TEXT)",
+          "batchWaitTime" : "(TEXT)",
+          "tls" : "(TEXT)",
+          "authenticationType" : "(TEXT)",
+          "distance_metric" : "(TEXT)",
+          "batchSize" : "(TEXT)",
+          "schemaRegistryApiKey" : "(TEXT)",
+          "user" : "(TEXT)",
+          "dimensions" : "(TEXT)"
+        },
+        "sampleValue" : "api_key"
+      },
+      "dependencies" : [ ]
+    },
+    "TextCompletion" : {
+      "content" : { },
+      "dependencies" : [ ],
+      "inherits" : ["LLMWorkerInput"]
+    },
+    "PromptTemplateTestRequest" : {
+      "content" : {
+        "promptVariables" : {
+          "key" : "sample_value"
+        },
+        "stopWords" : [ "sample_stopWords" ],
+        "llmProvider" : "sample_llmProvider",
+        "temperature" : 123.456,
+        "model" : "sample_model",
+        "prompt" : "sample_prompt",
+        "topP" : 123.456
+      },
+      "dependencies" : [ ]
+    },
+    "BulkResponse" : {
+      "content" : {
+        "bulkErrorResults" : {
+          "sample_key" : "sample_value"
+        },
+        "bulkSuccessfulResults" : [ "${T}" ],
+        "message" : "sample_message"
+      },
+      "dependencies" : [ "T" ]
+    },
+    "VectorDBInput" : {
+      "content" : {
+        "embeddings" : [ 3.14 ],
+        "metadata" : {
+          "sample_key" : "sample_value"
+        },
+        "vectorDB" : "sample_vectorDB",
+        "query" : "sample_query",
+        "namespace" : "sample_namespace",
+        "index" : "sample_index",
+        "dimensions" : 123
+      },
+      "dependencies" : [ ],
+      "inherits" : ["LLMWorkerInput"]
+    },
+    "AccessKeyResponse" : {
+      "content" : {
+        "createdAt" : 123,
+        "id" : "sample_id",
+        "status" : "${AccessKeyStatus}"
+      },
+      "dependencies" : [ "AccessKeyStatus" ]
+    },
+    "Subject" : {
+      "content" : {
+        "id" : "sample_id",
+        "type" : "${SubjectType}"
+      },
+      "dependencies" : [ "SubjectType" ]
+    },
+    "EmbeddingRequest" : {
+      "content" : {
+        "llmProvider" : "sample_llmProvider",
+        "model" : "sample_model",
+        "text" : "sample_text",
+        "dimensions" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowScheduleExecutionModel" : {
+      "content" : {
+        "scheduleName" : "sample_scheduleName",
+        "executionTime" : 123,
+        "executionId" : "sample_executionId",
+        "reason" : "sample_reason",
+        "scheduledTime" : 123,
+        "startWorkflowRequest" : "${StartWorkflowRequest}",
+        "zoneId" : "sample_zoneId",
+        "workflowName" : "sample_workflowName",
+        "stackTrace" : "sample_stackTrace",
+        "state" : "POLLED",
+        "workflowId" : "sample_workflowId",
+        "orgId" : "sample_orgId"
+      },
+      "dependencies" : [ "StartWorkflowRequest" ]
+    },
+    "LLMResponse" : {
+      "content" : {
+        "result" : "sample_result",
+        "finishReason" : "sample_finishReason",
+        "tokenUsed" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "TargetRef" : {
+      "content" : {
+        "id" : "sample_id",
+        "type" : "${ResourceType}"
+      },
+      "dependencies" : [ "ResourceType" ]
+    },
+    "UpgradeWorkflowRequest" : {
+      "content" : {
+        "workflowInput" : {
+          "sample_key" : "sample_value"
+        },
+        "name" : "sample_name",
+        "taskOutput" : {
+          "sample_key" : "sample_value"
+        },
+        "version" : 123
+      },
+      "dependencies" : [ ]
+    },
+    "RateLimitConfig" : {
+      "content" : {
+        "concurrentExecLimit" : 123,
+        "rateLimitKey" : "sample_rateLimitKey"
+      },
+      "dependencies" : [ ]
+    },
+    "RerunWorkflowRequest" : {
+      "content" : {
+        "workflowInput" : {
+          "sample_key" : "sample_value"
+        },
+        "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
+        "taskInput" : {
+          "sample_key" : "sample_value"
+        },
+        "correlationId" : "sample_correlationId",
+        "reRunFromTaskId" : "sample_reRunFromTaskId"
+      },
+      "dependencies" : [ ]
+    },
+    "WorkflowSchedule" : {
+      "content" : {
+        "updatedTime" : 123,
+        "paused" : true,
+        "updatedBy" : "sample_updatedBy",
+        "description" : "sample_description",
+        "pausedReason" : "sample_pausedReason",
+        "runCatchupScheduleInstances" : true,
+        "tags" : [ "${Tag}" ],
+        "scheduleStartTime" : 123,
+        "cronExpression" : "sample_cronExpression",
+        "startWorkflowRequest" : "${StartWorkflowRequest}",
+        "createTime" : 123,
+        "createdBy" : "sample_createdBy",
+        "name" : "sample_name",
+        "zoneId" : "sample_zoneId",
+        "scheduleEndTime" : 123
+      },
+      "dependencies" : [ "Tag", "StartWorkflowRequest" ]
+    },
+    "T": {
+      "content": {
+        "value": "sample_string_value"
+      },
+      "dependencies": []
+    }
+  }
+}
