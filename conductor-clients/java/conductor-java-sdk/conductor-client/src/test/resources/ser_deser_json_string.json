@@ -62,7 +62,7 @@
     },
     "SubWorkflowParams" : {
       "content" : {
-        "workflowDefinition" : "${sample_workflowDefinition}",
+        "workflowDefinition" : "${WorkflowDef}",
         "idempotencyKey" : "sample_idempotencyKey",
         "name" : "sample_name",
         "taskToDomain" : {
@@ -764,7 +764,8 @@
       "dependencies" : [ "TaskResult" ]
     },
     "TaskDef.RetryLogic" : {
-      "content" : {
+      "content" : "FIXED",
+      "enums" :{
         "values" : [ "FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF" ],
         "constants" : {
           "EXPONENTIAL_BACKOFF" : "(1)",
@@ -1142,7 +1143,7 @@
         },
         "name" : "sample_name",
         "type" : "${SchemaDef.Type}",
-        "version" : 123,
+        "version" : 1,
         "externalRef" : "sample_externalRef"
       },
       "dependencies" : [ "SchemaDef.Type" ],
