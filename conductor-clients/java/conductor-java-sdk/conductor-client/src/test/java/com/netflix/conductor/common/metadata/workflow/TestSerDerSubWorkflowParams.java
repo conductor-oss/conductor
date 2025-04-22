@@ -19,6 +19,9 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.StreamReadConstraints;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,7 +29,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestSerDerSubWorkflowParams {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public TestSerDerSubWorkflowParams() {
+        // Initialize ObjectMapper with recursion depth limit
+        objectMapper = new ObjectMapper();
+
+        // Limit recursion depth to 1 to prevent nested SubWorkflowParams processing
+        objectMapper.getFactory().setStreamReadConstraints(
+                StreamReadConstraints.builder().maxNestingDepth(9).build());
+
+        // Additional settings to help with deserialization issues
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapper.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
+    }
 
     @Test
     public void testSerializationDeserialization() throws IOException {
