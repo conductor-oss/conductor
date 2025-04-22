@@ -53,6 +53,10 @@ public class WorkflowTask {
 
     private String caseValueParam;
 
+    /**
+     * A javascript expression for decision cases. The result should be a scalar value that
+     *     is used to decide the case branches.
+     */
     private String caseExpression;
 
     private String scriptExpression;
@@ -84,6 +88,10 @@ public class WorkflowTask {
 
     private String sink;
 
+    /**
+     * If the task is optional. When set to true, the workflow execution continues even when
+     *     the task is in failed status.
+     */
     private boolean optional = false;
 
     private TaskDef taskDefinition;
@@ -92,6 +100,9 @@ public class WorkflowTask {
 
     private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
+    /**
+     * whether wait for an external event to complete the task, for EVENT and HTTP tasks
+     */
     private Boolean asyncComplete = false;
 
     private String loopCondition;
@@ -102,6 +113,10 @@ public class WorkflowTask {
 
     private String evaluatorType;
 
+    /**
+     * An evaluation expression for switch cases evaluated by corresponding evaluator. The
+     *     result should be a scalar value that is used to decide the case branches.
+     */
     private String expression;
 
     /*

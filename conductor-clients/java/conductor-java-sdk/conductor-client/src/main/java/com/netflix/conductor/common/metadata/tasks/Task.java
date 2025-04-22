@@ -110,12 +110,22 @@ public class Task {
 
     private String retriedTaskId;
 
+    /**
+     *  True if the task has been retried after failure
+     */
     private boolean retried;
 
+    /**
+     *  True if the task has completed its lifecycle within conductor (from start to
+     * completion to being updated in the datastore)
+     */
     private boolean executed;
 
     private boolean callbackFromWorker = true;
 
+    /**
+     * the timeout for task to send response. After this timeout, the task will be re-queued
+     */
     private long responseTimeoutSeconds;
 
     private String workflowInstanceId;
@@ -194,6 +204,10 @@ public class Task {
         return taskDefName;
     }
 
+    /**
+     * @param workflowType the name of the workflow
+     * @return the task object with the workflow type set
+     */
     public com.netflix.conductor.common.metadata.tasks.Task setWorkflowType(String workflowType) {
         this.workflowType = workflowType;
         return this;

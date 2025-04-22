@@ -63,8 +63,15 @@ public class TaskDef extends Auditable {
 
     private int retryDelaySeconds = 60;
 
+    /**
+     * the timeout for task to send response. After this timeout, the task will be re-queued
+     */
     private long responseTimeoutSeconds = ONE_HOUR;
 
+    /**
+     * concurrentExecLimit Limit of number of concurrent task that can be IN_PROGRESS at a
+     *     given time. Setting the value to 0 removes the limit.
+     */
     private Integer concurrentExecLimit;
 
     private Map<String, Object> inputTemplate = new HashMap<>();
@@ -72,6 +79,11 @@ public class TaskDef extends Auditable {
     // This field is deprecated, do not use id 13.
     //	@ProtoField(id = 13)
     //	private Integer rateLimitPerSecond;
+    /**
+     * rateLimitFrequencyInSeconds: The time window/bucket for which the rate limit needs to
+     *     be applied. This will only have affect if {@link #getRateLimitPerFrequency()} is greater
+     *     than zero
+     */
     private Integer rateLimitPerFrequency;
 
     private Integer rateLimitFrequencyInSeconds;

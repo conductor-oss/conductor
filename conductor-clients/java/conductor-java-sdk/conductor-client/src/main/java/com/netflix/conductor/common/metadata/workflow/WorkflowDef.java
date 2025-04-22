@@ -50,6 +50,10 @@ public class WorkflowDef extends Auditable {
     // By default a workflow is restartable
     private boolean restartable = true;
 
+    /**
+     * Specify if workflow listener is enabled to invoke a callback for completed or terminated
+     * workflows
+     */
     private boolean workflowStatusListenerEnabled = false;
 
     private String ownerEmail;

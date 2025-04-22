@@ -32,6 +32,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class EventHandler {
 
+    /**
+     * the name MUST be unique within a conductor instance
+     */
     private String name;
 
     private String event;
