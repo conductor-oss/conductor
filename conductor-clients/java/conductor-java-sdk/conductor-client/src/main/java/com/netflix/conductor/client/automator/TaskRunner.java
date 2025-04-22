@@ -239,7 +239,10 @@ class TaskRunner {
             LOGGER.debug("Time taken to poll {} task with a batch size of {} is {} ms", taskType, tasks.size(), elapsed);
             eventDispatcher.publish(new PollCompleted(taskType, elapsed));
         } catch (Throwable e) {
-            permits.release(pollCount - tasks.size());
+            if(pollCount - tasks.size() >= 0) {
+                // prevent exception. TODO investigate further
+                permits.release(pollCount - tasks.size());
+            }
 
             //For the first 100 errors, just print them as is...
             boolean printError = pollingErrorCount < 100 || pollingErrorCount % errorAt == 0;
