@@ -21,7 +21,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @NoArgsConstructor
 @SuperBuilder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatCompletion extends LLMWorkerInput {
     private List<ChatMessage> messages;
 

@@ -12,10 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Describes the location where the JSON payload is stored in external storage.
@@ -31,7 +28,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExternalStorageLocation {
 
     private String uri;

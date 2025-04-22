@@ -29,7 +29,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowTask {
 
     public static class CacheConfig {

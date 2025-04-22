@@ -19,7 +19,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExternalStorageLocation {
     private String path = null;
 

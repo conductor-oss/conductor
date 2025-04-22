@@ -17,7 +17,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CreateAccessKeyResponse {
     private String id;
     private String secret;

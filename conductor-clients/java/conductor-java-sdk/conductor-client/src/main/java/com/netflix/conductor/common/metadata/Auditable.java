@@ -12,13 +12,14 @@
  */
 package com.netflix.conductor.common.metadata;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class Auditable {
 
     private String ownerApp;

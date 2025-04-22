@@ -17,7 +17,7 @@ import lombok.*;
 @EqualsAndHashCode
 @ToString
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class TagObject {
 

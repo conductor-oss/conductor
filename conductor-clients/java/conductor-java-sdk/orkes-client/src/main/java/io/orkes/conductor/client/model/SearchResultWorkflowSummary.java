@@ -23,7 +23,7 @@ import lombok.*;
 @ToString
 @Data
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class SearchResultWorkflowSummary {
 

@@ -22,7 +22,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class GrantedAccess {
     /**
      * Gets or Sets access

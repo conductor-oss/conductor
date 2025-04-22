@@ -24,10 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.utils.SummaryUtil;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Captures workflow summary info to be indexed in Elastic Search.
@@ -35,7 +32,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowSummary {
 
     /**

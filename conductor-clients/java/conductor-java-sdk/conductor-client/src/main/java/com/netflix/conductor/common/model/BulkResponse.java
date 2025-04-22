@@ -18,7 +18,7 @@ import lombok.*;
 
 @Data
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BulkResponse<T> {
 
     /**

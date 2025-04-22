@@ -20,7 +20,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PromptTemplateTestRequest {
 
     private String llmProvider;

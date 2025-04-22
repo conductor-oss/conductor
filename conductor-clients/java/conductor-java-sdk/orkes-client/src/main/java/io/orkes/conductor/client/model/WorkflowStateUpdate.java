@@ -21,7 +21,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowStateUpdate {
     private String taskReferenceName;
     private Map<String, Object> variables;

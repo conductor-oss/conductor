@@ -20,7 +20,7 @@ import lombok.*;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IndexedDoc {
     private String docId;
     private String parentDocId;

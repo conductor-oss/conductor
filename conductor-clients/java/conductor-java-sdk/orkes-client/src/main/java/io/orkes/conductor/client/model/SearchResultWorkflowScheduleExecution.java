@@ -14,14 +14,11 @@ package io.orkes.conductor.client.model;
 
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class SearchResultWorkflowScheduleExecution {
     private List<WorkflowScheduleExecutionModel> results;
