@@ -12,40 +12,27 @@
  */
 package com.netflix.conductor.common.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-/**
- * Response object to return a list of succeeded entities and a map of failed ones, including error
- * message, for the bulk request.
- *
- * @param <T> the type of entities included in the successful results
- */
+import lombok.*;
+
+@Data
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BulkResponse<T> {
 
     /**
      * Key - entityId Value - error message processing this entity
      */
-    private final Map<String, String> bulkErrorResults;
+    private Map<String, String> bulkErrorResults;
 
-    private final List<T> bulkSuccessfulResults;
+    private List<T> bulkSuccessfulResults;
 
-    private final String message = "Bulk Request has been processed.";
+    private String message = "Bulk Request has been processed.";
 
     public BulkResponse() {
         this.bulkSuccessfulResults = new ArrayList<>();
         this.bulkErrorResults = new HashMap<>();
-    }
-
-    public List<T> getBulkSuccessfulResults() {
-        return bulkSuccessfulResults;
-    }
-
-    public Map<String, String> getBulkErrorResults() {
-        return bulkErrorResults;
     }
 
     public void appendSuccessResponse(T result) {

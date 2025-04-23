@@ -21,6 +21,12 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Workflow extends Auditable {
 
     public enum WorkflowStatus {
@@ -102,55 +108,6 @@ public class Workflow extends Auditable {
 
     private boolean rateLimited;
 
-    public Workflow() {
-    }
-
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
-    }
-
-    public String getRateLimitKey() {
-        return rateLimitKey;
-    }
-
-    public void setRateLimitKey(String rateLimitKey) {
-        this.rateLimitKey = rateLimitKey;
-    }
-
-    public boolean isRateLimited() {
-        return rateLimited;
-    }
-
-    public void setRateLimited(boolean rateLimited) {
-        this.rateLimited = rateLimited;
-    }
-
-    public List<Workflow> getHistory() {
-        return history;
-    }
-
-    public void setHistory(List<Workflow> history) {
-        this.history = history;
-    }
-
-    /**
-     * @return the status
-     */
-    public WorkflowStatus getStatus() {
-        return status;
-    }
-
-    /**
-     * @param status the status to set
-     */
-    public void setStatus(WorkflowStatus status) {
-        this.status = status;
-    }
-
     /**
      * @return the startTime
      */
@@ -158,53 +115,8 @@ public class Workflow extends Auditable {
         return getCreateTime();
     }
 
-    /**
-     * @param startTime the startTime to set
-     */
     public void setStartTime(long startTime) {
         this.setCreateTime(startTime);
-    }
-
-    /**
-     * @return the endTime
-     */
-    public long getEndTime() {
-        return endTime;
-    }
-
-    /**
-     * @param endTime the endTime to set
-     */
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
-    }
-
-    /**
-     * @return the workflowId
-     */
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    /**
-     * @param workflowId the workflowId to set
-     */
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
-    }
-
-    /**
-     * @return the tasks which are scheduled, in progress or completed.
-     */
-    public List<Task> getTasks() {
-        return tasks;
-    }
-
-    /**
-     * @param tasks the tasks to set
-     */
-    public void setTasks(List<Task> tasks) {
-        this.tasks = tasks;
     }
 
     /**
@@ -225,20 +137,6 @@ public class Workflow extends Auditable {
     }
 
     /**
-     * @return the task to domain map
-     */
-    public Map<String, String> getTaskToDomain() {
-        return taskToDomain;
-    }
-
-    /**
-     * @param taskToDomain the task to domain map
-     */
-    public void setTaskToDomain(Map<String, String> taskToDomain) {
-        this.taskToDomain = taskToDomain;
-    }
-
-    /**
      * @return the output
      */
     public Map<String, Object> getOutput() {
@@ -253,116 +151,6 @@ public class Workflow extends Auditable {
             output = new HashMap<>();
         }
         this.output = output;
-    }
-
-    /**
-     * @return The correlation id used when starting the workflow
-     */
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    /**
-     * @param correlationId the correlation id
-     */
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
-    public String getReRunFromWorkflowId() {
-        return reRunFromWorkflowId;
-    }
-
-    public void setReRunFromWorkflowId(String reRunFromWorkflowId) {
-        this.reRunFromWorkflowId = reRunFromWorkflowId;
-    }
-
-    public String getReasonForIncompletion() {
-        return reasonForIncompletion;
-    }
-
-    public void setReasonForIncompletion(String reasonForIncompletion) {
-        this.reasonForIncompletion = reasonForIncompletion;
-    }
-
-    /**
-     * @return the parentWorkflowId
-     */
-    public String getParentWorkflowId() {
-        return parentWorkflowId;
-    }
-
-    /**
-     * @param parentWorkflowId the parentWorkflowId to set
-     */
-    public void setParentWorkflowId(String parentWorkflowId) {
-        this.parentWorkflowId = parentWorkflowId;
-    }
-
-    /**
-     * @return the parentWorkflowTaskId
-     */
-    public String getParentWorkflowTaskId() {
-        return parentWorkflowTaskId;
-    }
-
-    /**
-     * @param parentWorkflowTaskId the parentWorkflowTaskId to set
-     */
-    public void setParentWorkflowTaskId(String parentWorkflowTaskId) {
-        this.parentWorkflowTaskId = parentWorkflowTaskId;
-    }
-
-    /**
-     * @return Name of the event that started the workflow
-     */
-    public String getEvent() {
-        return event;
-    }
-
-    /**
-     * @param event Name of the event that started the workflow
-     */
-    public void setEvent(String event) {
-        this.event = event;
-    }
-
-    public Set<String> getFailedReferenceTaskNames() {
-        return failedReferenceTaskNames;
-    }
-
-    public void setFailedReferenceTaskNames(Set<String> failedReferenceTaskNames) {
-        this.failedReferenceTaskNames = failedReferenceTaskNames;
-    }
-
-    public WorkflowDef getWorkflowDefinition() {
-        return workflowDefinition;
-    }
-
-    public void setWorkflowDefinition(WorkflowDef workflowDefinition) {
-        this.workflowDefinition = workflowDefinition;
-    }
-
-    /**
-     * @return the external storage path of the workflow input payload
-     */
-    public String getExternalInputPayloadStoragePath() {
-        return externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @param externalInputPayloadStoragePath the external storage path where the workflow input
-     *     payload is stored
-     */
-    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
-        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @return the external storage path of the workflow output payload
-     */
-    public String getExternalOutputPayloadStoragePath() {
-        return externalOutputPayloadStoragePath;
     }
 
     /**
@@ -406,54 +194,9 @@ public class Workflow extends Auditable {
         return workflowDefinition.getVersion();
     }
 
-    /**
-     * @param externalOutputPayloadStoragePath the external storage path where the workflow output
-     *     payload is stored
-     */
-    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
-        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
-    }
-
-    /**
-     * @return the global workflow variables
-     */
-    public Map<String, Object> getVariables() {
-        return variables;
-    }
-
-    /**
-     * @param variables the set of global workflow variables to set
-     */
-    public void setVariables(Map<String, Object> variables) {
-        this.variables = variables;
-    }
-
-    /**
-     * Captures the last time the workflow was retried
-     *
-     * @return the last retried time of the workflow
-     */
-    public long getLastRetriedTime() {
-        return lastRetriedTime;
-    }
-
-    /**
-     * @param lastRetriedTime time in milliseconds when the workflow is retried
-     */
-    public void setLastRetriedTime(long lastRetriedTime) {
-        this.lastRetriedTime = lastRetriedTime;
-    }
 
     public boolean hasParent() {
         return StringUtils.isNotEmpty(parentWorkflowId);
-    }
-
-    public Set<String> getFailedTaskNames() {
-        return failedTaskNames;
-    }
-
-    public void setFailedTaskNames(Set<String> failedTaskNames) {
-        this.failedTaskNames = failedTaskNames;
     }
 
     public Task getTaskByRefName(String refName) {

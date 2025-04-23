@@ -15,6 +15,12 @@ package com.netflix.conductor.common.metadata.workflow;
 /**
  * Rate limit configuration for workflows
  */
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RateLimitConfig {
 
     /**
@@ -27,20 +33,4 @@ public class RateLimitConfig {
      * Number of concurrently running workflows that are allowed per key
      */
     private int concurrentExecLimit;
-
-    public String getRateLimitKey() {
-        return rateLimitKey;
-    }
-
-    public void setRateLimitKey(String rateLimitKey) {
-        this.rateLimitKey = rateLimitKey;
-    }
-
-    public int getConcurrentExecLimit() {
-        return concurrentExecLimit;
-    }
-
-    public void setConcurrentExecLimit(int concurrentExecLimit) {
-        this.concurrentExecLimit = concurrentExecLimit;
-    }
 }

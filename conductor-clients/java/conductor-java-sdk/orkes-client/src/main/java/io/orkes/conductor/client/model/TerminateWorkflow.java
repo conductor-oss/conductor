@@ -12,11 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TerminateWorkflow {
 
     private String terminationReason = null;
@@ -28,25 +31,9 @@ public class TerminateWorkflow {
         return this;
     }
 
-    public String getTerminationReason() {
-        return terminationReason;
-    }
-
-    public void setTerminationReason(String terminationReason) {
-        this.terminationReason = terminationReason;
-    }
-
     public TerminateWorkflow workflowId(String workflowId) {
         this.workflowId = workflowId;
         return this;
-    }
-
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
     }
 
 }

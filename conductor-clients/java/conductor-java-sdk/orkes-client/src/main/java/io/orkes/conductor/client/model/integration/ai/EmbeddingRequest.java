@@ -12,9 +12,12 @@
  */
 package io.orkes.conductor.client.model.integration.ai;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class EmbeddingRequest {
     private String llmProvider;
     private String model;

@@ -14,9 +14,12 @@ package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.Objects;
 
-/**
- * Model that represents the task's execution log.
- */
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TaskExecLog {
 
     private String log;
@@ -25,54 +28,9 @@ public class TaskExecLog {
 
     private long createdTime;
 
-    public TaskExecLog() {
-    }
-
     public TaskExecLog(String log) {
         this.log = log;
         this.createdTime = System.currentTimeMillis();
-    }
-
-    /**
-     * @return Task Exec Log
-     */
-    public String getLog() {
-        return log;
-    }
-
-    /**
-     * @param log The Log
-     */
-    public void setLog(String log) {
-        this.log = log;
-    }
-
-    /**
-     * @return the taskId
-     */
-    public String getTaskId() {
-        return taskId;
-    }
-
-    /**
-     * @param taskId the taskId to set
-     */
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
-    }
-
-    /**
-     * @return the createdTime
-     */
-    public long getCreatedTime() {
-        return createdTime;
-    }
-
-    /**
-     * @param createdTime the createdTime to set
-     */
-    public void setCreatedTime(long createdTime) {
-        this.createdTime = createdTime;
     }
 
     public boolean equals(Object o) {

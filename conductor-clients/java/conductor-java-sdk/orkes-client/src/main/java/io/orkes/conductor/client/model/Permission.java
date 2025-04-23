@@ -12,11 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Permission {
 
     private String name = null;
@@ -24,13 +27,5 @@ public class Permission {
     public Permission name(String name) {
         this.name = name;
         return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

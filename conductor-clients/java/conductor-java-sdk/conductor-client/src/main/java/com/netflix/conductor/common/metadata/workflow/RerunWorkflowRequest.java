@@ -14,6 +14,12 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Map;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RerunWorkflowRequest {
 
     private String reRunFromWorkflowId;
@@ -25,44 +31,4 @@ public class RerunWorkflowRequest {
     private Map<String, Object> taskInput;
 
     private String correlationId;
-
-    public String getReRunFromWorkflowId() {
-        return reRunFromWorkflowId;
-    }
-
-    public void setReRunFromWorkflowId(String reRunFromWorkflowId) {
-        this.reRunFromWorkflowId = reRunFromWorkflowId;
-    }
-
-    public Map<String, Object> getWorkflowInput() {
-        return workflowInput;
-    }
-
-    public void setWorkflowInput(Map<String, Object> workflowInput) {
-        this.workflowInput = workflowInput;
-    }
-
-    public String getReRunFromTaskId() {
-        return reRunFromTaskId;
-    }
-
-    public void setReRunFromTaskId(String reRunFromTaskId) {
-        this.reRunFromTaskId = reRunFromTaskId;
-    }
-
-    public Map<String, Object> getTaskInput() {
-        return taskInput;
-    }
-
-    public void setTaskInput(Map<String, Object> taskInput) {
-        this.taskInput = taskInput;
-    }
-
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
 }

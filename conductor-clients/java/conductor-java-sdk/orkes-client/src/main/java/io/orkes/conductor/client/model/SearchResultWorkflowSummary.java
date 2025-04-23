@@ -17,11 +17,14 @@ import java.util.List;
 
 import com.netflix.conductor.common.run.WorkflowSummary;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class SearchResultWorkflowSummary {
 
     private List<WorkflowSummary> results = null;

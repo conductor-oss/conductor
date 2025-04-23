@@ -14,6 +14,12 @@ package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.Objects;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class PollData {
 
     private String queueName;
@@ -23,50 +29,6 @@ public class PollData {
     private String workerId;
 
     private long lastPollTime;
-
-    public PollData() {
-        super();
-    }
-
-    public PollData(String queueName, String domain, String workerId, long lastPollTime) {
-        super();
-        this.queueName = queueName;
-        this.domain = domain;
-        this.workerId = workerId;
-        this.lastPollTime = lastPollTime;
-    }
-
-    public String getQueueName() {
-        return queueName;
-    }
-
-    public void setQueueName(String queueName) {
-        this.queueName = queueName;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getWorkerId() {
-        return workerId;
-    }
-
-    public void setWorkerId(String workerId) {
-        this.workerId = workerId;
-    }
-
-    public long getLastPollTime() {
-        return lastPollTime;
-    }
-
-    public void setLastPollTime(long lastPollTime) {
-        this.lastPollTime = lastPollTime;
-    }
 
     public boolean equals(Object o) {
         if (this == o) {

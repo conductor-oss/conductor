@@ -15,10 +15,12 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.Data;
-
+import lombok.*;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IndexedDoc {
     private String docId;
     private String parentDocId;
@@ -31,8 +33,5 @@ public class IndexedDoc {
         this.parentDocId = parentDocId;
         this.text = text;
         this.score = score;
-    }
-
-    public IndexedDoc() {
     }
 }

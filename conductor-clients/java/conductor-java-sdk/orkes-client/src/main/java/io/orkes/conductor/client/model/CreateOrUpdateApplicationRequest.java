@@ -12,11 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CreateOrUpdateApplicationRequest {
     private String name = null;
 
@@ -24,18 +27,4 @@ public class CreateOrUpdateApplicationRequest {
         this.name = name;
         return this;
     }
-
-    /**
-     * Application&#x27;s name e.g.: Payment Processors
-     *
-     * @return name
-     */
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
 }

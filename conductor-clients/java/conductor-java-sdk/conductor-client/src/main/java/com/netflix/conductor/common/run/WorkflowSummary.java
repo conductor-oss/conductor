@@ -22,12 +22,17 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.SummaryUtil;
+
+import lombok.*;
 
 /**
  * Captures workflow summary info to be indexed in Elastic Search.
  */
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowSummary {
 
     /**
@@ -73,9 +78,6 @@ public class WorkflowSummary {
 
     private String createdBy;
 
-    public WorkflowSummary() {
-    }
-
     public WorkflowSummary(Workflow workflow) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(GMT);
@@ -115,226 +117,12 @@ public class WorkflowSummary {
         }
     }
 
-    /**
-     * @return the workflowType
-     */
-    public String getWorkflowType() {
-        return workflowType;
-    }
-
-    /**
-     * @return the version
-     */
-    public int getVersion() {
-        return version;
-    }
-
-    /**
-     * @return the workflowId
-     */
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    /**
-     * @return the correlationId
-     */
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    /**
-     * @return the startTime
-     */
-    public String getStartTime() {
-        return startTime;
-    }
-
-    /**
-     * @return the endTime
-     */
-    public String getEndTime() {
-        return endTime;
-    }
-
-    /**
-     * @return the status
-     */
-    public WorkflowStatus getStatus() {
-        return status;
-    }
-
-    /**
-     * @return the input
-     */
-    public String getInput() {
-        return input;
-    }
-
     public long getInputSize() {
         return input != null ? input.length() : 0;
     }
 
-    /**
-     * @return the output
-     */
-    public String getOutput() {
-        return output;
-    }
-
     public long getOutputSize() {
         return output != null ? output.length() : 0;
-    }
-
-    /**
-     * @return the reasonForIncompletion
-     */
-    public String getReasonForIncompletion() {
-        return reasonForIncompletion;
-    }
-
-    /**
-     * @return the executionTime
-     */
-    public long getExecutionTime() {
-        return executionTime;
-    }
-
-    /**
-     * @return the updateTime
-     */
-    public String getUpdateTime() {
-        return updateTime;
-    }
-
-    /**
-     * @return The event
-     */
-    public String getEvent() {
-        return event;
-    }
-
-    /**
-     * @param event The event
-     */
-    public void setEvent(String event) {
-        this.event = event;
-    }
-
-    public String getFailedReferenceTaskNames() {
-        return failedReferenceTaskNames;
-    }
-
-    public void setFailedReferenceTaskNames(String failedReferenceTaskNames) {
-        this.failedReferenceTaskNames = failedReferenceTaskNames;
-    }
-
-    public Set<String> getFailedTaskNames() {
-        return failedTaskNames;
-    }
-
-    public void setFailedTaskNames(Set<String> failedTaskNames) {
-        this.failedTaskNames = failedTaskNames;
-    }
-
-    public void setWorkflowType(String workflowType) {
-        this.workflowType = workflowType;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
-    }
-
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
-    public void setStartTime(String startTime) {
-        this.startTime = startTime;
-    }
-
-    public void setUpdateTime(String updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public void setEndTime(String endTime) {
-        this.endTime = endTime;
-    }
-
-    public void setStatus(WorkflowStatus status) {
-        this.status = status;
-    }
-
-    public void setInput(String input) {
-        this.input = input;
-    }
-
-    public void setOutput(String output) {
-        this.output = output;
-    }
-
-    public void setReasonForIncompletion(String reasonForIncompletion) {
-        this.reasonForIncompletion = reasonForIncompletion;
-    }
-
-    public void setExecutionTime(long executionTime) {
-        this.executionTime = executionTime;
-    }
-
-    /**
-     * @return the external storage path of the workflow input payload
-     */
-    public String getExternalInputPayloadStoragePath() {
-        return externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @param externalInputPayloadStoragePath the external storage path where the workflow input
-     *     payload is stored
-     */
-    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
-        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @return the external storage path of the workflow output payload
-     */
-    public String getExternalOutputPayloadStoragePath() {
-        return externalOutputPayloadStoragePath;
-    }
-
-    /**
-     * @param externalOutputPayloadStoragePath the external storage path where the workflow output
-     *     payload is stored
-     */
-    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
-        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
-    }
-
-    /**
-     * @return the priority to define on tasks
-     */
-    public int getPriority() {
-        return priority;
-    }
-
-    /**
-     * @param priority priority of tasks (between 0 and 99)
-     */
-    public void setPriority(int priority) {
-        this.priority = priority;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
     }
 
     public boolean equals(Object o) {

@@ -17,9 +17,12 @@ import java.util.Map;
 
 import io.orkes.conductor.client.model.TagObject;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationApi {
 
     private String api;

@@ -15,7 +15,12 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.*;
 
+@Data
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class SearchResultWorkflowScheduleExecutionModel {
 
     private List<WorkflowScheduleExecutionModel> results = null;

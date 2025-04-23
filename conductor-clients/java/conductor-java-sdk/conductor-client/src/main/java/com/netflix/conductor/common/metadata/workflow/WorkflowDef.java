@@ -18,6 +18,12 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowDef extends Auditable {
 
     public enum TimeoutPolicy {
@@ -44,6 +50,10 @@ public class WorkflowDef extends Auditable {
     // By default a workflow is restartable
     private boolean restartable = true;
 
+    /**
+     * Specify if workflow listener is enabled to invoke a callback for completed or terminated
+     * workflows
+     */
     private boolean workflowStatusListenerEnabled = false;
 
     private String ownerEmail;
@@ -66,264 +76,12 @@ public class WorkflowDef extends Auditable {
 
     private boolean enforceSchema = true;
 
-    public boolean isEnforceSchema() {
-        return enforceSchema;
-    }
-
-    public void setEnforceSchema(boolean enforceSchema) {
-        this.enforceSchema = enforceSchema;
-    }
-
-    /**
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    /**
-     * @return the tasks
-     */
-    public List<WorkflowTask> getTasks() {
-        return tasks;
-    }
-
-    /**
-     * @param tasks the tasks to set
-     */
-    public void setTasks(List<WorkflowTask> tasks) {
-        this.tasks = tasks;
-    }
-
-    /**
-     * @return the inputParameters
-     */
-    public List<String> getInputParameters() {
-        return inputParameters;
-    }
-
-    /**
-     * @param inputParameters the inputParameters to set
-     */
-    public void setInputParameters(List<String> inputParameters) {
-        this.inputParameters = inputParameters;
-    }
-
-    /**
-     * @return the outputParameters
-     */
-    public Map<String, Object> getOutputParameters() {
-        return outputParameters;
-    }
-
-    /**
-     * @param outputParameters the outputParameters to set
-     */
-    public void setOutputParameters(Map<String, Object> outputParameters) {
-        this.outputParameters = outputParameters;
-    }
-
-    /**
-     * @return the version
-     */
-    public int getVersion() {
-        return version;
-    }
-
-    /**
-     * @return the failureWorkflow
-     */
-    public String getFailureWorkflow() {
-        return failureWorkflow;
-    }
-
-    /**
-     * @param failureWorkflow the failureWorkflow to set
-     */
-    public void setFailureWorkflow(String failureWorkflow) {
-        this.failureWorkflow = failureWorkflow;
-    }
-
-    /**
-     * @param version the version to set
-     */
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    /**
-     * This method determines if the workflow is restartable or not
-     *
-     * @return true: if the workflow is restartable false: if the workflow is non restartable
-     */
-    public boolean isRestartable() {
-        return restartable;
-    }
-
-    /**
-     * This method is called only when the workflow definition is created
-     *
-     * @param restartable true: if the workflow is restartable false: if the workflow is non
-     *     restartable
-     */
-    public void setRestartable(boolean restartable) {
-        this.restartable = restartable;
-    }
-
-    /**
-     * @return the schemaVersion
-     */
-    public int getSchemaVersion() {
-        return schemaVersion;
-    }
-
-    /**
-     * @param schemaVersion the schemaVersion to set
-     */
-    public void setSchemaVersion(int schemaVersion) {
-        this.schemaVersion = schemaVersion;
-    }
-
-    /**
-     * @return true is workflow listener will be invoked when workflow gets into a terminal state
-     */
-    public boolean isWorkflowStatusListenerEnabled() {
-        return workflowStatusListenerEnabled;
-    }
-
-    /**
-     * Specify if workflow listener is enabled to invoke a callback for completed or terminated
-     * workflows
-     *
-     * @param workflowStatusListenerEnabled
-     */
-    public void setWorkflowStatusListenerEnabled(boolean workflowStatusListenerEnabled) {
-        this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
-    }
-
-    /**
-     * @return the email of the owner of this workflow definition
-     */
-    public String getOwnerEmail() {
-        return ownerEmail;
-    }
-
-    /**
-     * @param ownerEmail the owner email to set
-     */
-    public void setOwnerEmail(String ownerEmail) {
-        this.ownerEmail = ownerEmail;
-    }
-
-    /**
-     * @return the timeoutPolicy
-     */
-    public TimeoutPolicy getTimeoutPolicy() {
-        return timeoutPolicy;
-    }
-
-    /**
-     * @param timeoutPolicy the timeoutPolicy to set
-     */
-    public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
-        this.timeoutPolicy = timeoutPolicy;
-    }
-
-    /**
-     * @return the time after which a workflow is deemed to have timed out
-     */
-    public long getTimeoutSeconds() {
-        return timeoutSeconds;
-    }
-
-    /**
-     * @param timeoutSeconds the timeout in seconds to set
-     */
-    public void setTimeoutSeconds(long timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
-    }
-
-    /**
-     * @return the global workflow variables
-     */
-    public Map<String, Object> getVariables() {
-        return variables;
-    }
-
-    /**
-     * @param variables the set of global workflow variables to set
-     */
-    public void setVariables(Map<String, Object> variables) {
-        this.variables = variables;
-    }
-
-    public Map<String, Object> getInputTemplate() {
-        return inputTemplate;
-    }
-
-    public void setInputTemplate(Map<String, Object> inputTemplate) {
-        this.inputTemplate = inputTemplate;
-    }
-
     public String key() {
         return getKey(name, version);
     }
 
     public static String getKey(String name, int version) {
         return name + "." + version;
-    }
-
-    public String getWorkflowStatusListenerSink() {
-        return workflowStatusListenerSink;
-    }
-
-    public void setWorkflowStatusListenerSink(String workflowStatusListenerSink) {
-        this.workflowStatusListenerSink = workflowStatusListenerSink;
-    }
-
-    public RateLimitConfig getRateLimitConfig() {
-        return rateLimitConfig;
-    }
-
-    public void setRateLimitConfig(RateLimitConfig rateLimitConfig) {
-        this.rateLimitConfig = rateLimitConfig;
-    }
-
-    public SchemaDef getInputSchema() {
-        return inputSchema;
-    }
-
-    public void setInputSchema(SchemaDef inputSchema) {
-        this.inputSchema = inputSchema;
-    }
-
-    public SchemaDef getOutputSchema() {
-        return outputSchema;
-    }
-
-    public void setOutputSchema(SchemaDef outputSchema) {
-        this.outputSchema = outputSchema;
     }
 
     public boolean containsType(String taskType) {
