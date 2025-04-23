@@ -74,6 +74,20 @@
       },
       "dependencies" : [ "IdempotencyStrategy" ]
     },
+    "SubWorkflowParams1" : {
+      "content" : {
+        "workflowDefinition" : null,
+        "idempotencyKey" : "sample_idempotencyKey",
+        "name" : "sample_name",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        },
+        "priority" : "sample_object_priority",
+        "version" : 123,
+        "idempotencyStrategy" : "${IdempotencyStrategy}"
+      },
+      "dependencies" : [ "IdempotencyStrategy" ]
+    },
     "CorrelationIdsSearchRequest" : {
       "content" : {
         "workflowNames" : [ "sample_workflowNames" ],
@@ -214,6 +228,38 @@
       "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
       "inherits" : ["Auditable"]
     },
+    "WorkflowDef1" : {
+      "content" : {
+        "workflowStatusListenerSink" : "sample_workflowStatusListenerSink",
+        "variables" : {
+          "sample_key" : "sample_value"
+        },
+        "schemaVersion" : 123,
+        "timeoutPolicy" : "${WorkflowDef.TimeoutPolicy}",
+        "outputSchema" : "${SchemaDef}",
+        "enforceSchema" : true,
+        "restartable" : true,
+        "inputSchema" : "${SchemaDef}",
+        "description" : "sample_description",
+        "version" : 123,
+        "inputParameters" : [ "sample_inputParameters" ],
+        "inputTemplate" : {
+          "sample_key" : "sample_value"
+        },
+        "workflowStatusListenerEnabled" : true,
+        "ownerEmail" : "sample_ownerEmail",
+        "rateLimitConfig" : "${RateLimitConfig}",
+        "name" : "sample_name",
+        "timeoutSeconds" : 123,
+        "failureWorkflow" : "sample_failureWorkflow",
+        "tasks" : [ "${WorkflowTask}" ],
+        "outputParameters" : {
+          "sample_key" : "sample_value"
+        }
+      },
+      "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
+      "inherits" : ["Auditable"]
+    },
     "Workflow" : {
       "content" : {
         "variables" : {
@@ -227,7 +273,7 @@
           "sample_key" : "sample_value"
         },
         "history" : [ "${Workflow1}" ],
-        "priority" : 123,
+        "priority" : 1,
         "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
           "sample_key" : "sample_value"
@@ -245,7 +291,10 @@
         "workflowId" : "sample_workflowId",
         "tasks" : [ "${Task}" ],
         "status" : "${Workflow.WorkflowStatus}",
-        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath",
+        "idempotencyKey" : "sample_idempotencyKey",
+        "rateLimitKey" : "sample_rateLimitKey",
+        "rateLimited" : true
       },
       "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
       "inherits" : ["Auditable"]
@@ -255,7 +304,7 @@
         "variables" : {
           "sample_key" : "sample_value"
         },
-        "workflowDefinition" : "${WorkflowDef}",
+        "workflowDefinition" : null,
         "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
         "lastRetriedTime" : 123,
         "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
@@ -263,7 +312,7 @@
           "sample_key" : "sample_value"
         },
         "history" : [ ],
-        "priority" : 123,
+        "priority" : 1,
         "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
           "sample_key" : "sample_value"
@@ -279,7 +328,7 @@
         "endTime" : 123,
         "event" : "sample_event",
         "workflowId" : "sample_workflowId",
-        "tasks" : [ "${Task}" ],
+        "tasks" : [ ],
         "status" : "${Workflow.WorkflowStatus}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
@@ -314,7 +363,8 @@
       "dependencies" : [ "IntegrationDefFormField.IntegrationDefFormFieldType", "IntegrationDefFormField.Option", "ConfigKey" ]
     },
     "Task.Status" : {
-      "content" : {
+      "content" : "IN_PROGRESS",
+       "enums" : {
         "values" : [ "IN_PROGRESS", "CANCELED", "FAILED", "FAILED_WITH_TERMINAL_ERROR", "COMPLETED", "COMPLETED_WITH_ERRORS", "SCHEDULED", "TIMED_OUT", "SKIPPED" ],
         "constants" : {
           "IN_PROGRESS" : "(false, true, true)",
@@ -918,7 +968,10 @@
         "rateLimitFrequencyInSeconds" : 123,
         "outputKeys" : [ "sample_outputKeys" ],
         "executionNameSpace" : "sample_executionNameSpace",
-        "pollTimeoutSeconds" : 123
+        "pollTimeoutSeconds" : 123,
+        "inputSchema" : "${SchemaDef}",
+        "outputSchema" : "${SchemaDef}",
+        "enforceSchema" : true
       },
       "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
       "inherits" : ["Auditable"]
@@ -1039,7 +1092,7 @@
         "sink" : "sample_sink",
         "rateLimited" : true,
         "retryCount" : 123,
-        "subWorkflowParam" : "${SubWorkflowParams}",
+        "subWorkflowParam" : "${SubWorkflowParams1}",
         "optional" : true,
         "joinStatus" : "sample_joinStatus",
         "evaluatorType" : "sample_evaluatorType",
@@ -1050,9 +1103,13 @@
         "taskReferenceName" : "sample_taskReferenceName",
         "defaultCase" : [ "${WorkflowTask1}" ],
         "forkTasks" : [ [ "${WorkflowTask1}" ] ],
-        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
+        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam",
+        "onStateChange" : {
+          "sample_key" : [ "${StateChangeEvent}" ]
+        },
+        "dynamicForkJoinTasksParam" : "sample_dynamicForkJoinTasksParam"
       },
-      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig", "StateChangeEvent" ]
     },
     "WorkflowTask1" : {
       "content" : {
@@ -1077,7 +1134,7 @@
         "sink" : "sample_sink",
         "rateLimited" : true,
         "retryCount" : 123,
-        "subWorkflowParam" : "${SubWorkflowParams}",
+        "subWorkflowParam" : null,
         "optional" : true,
         "joinStatus" : "sample_joinStatus",
         "evaluatorType" : "sample_evaluatorType",
@@ -1088,7 +1145,11 @@
         "taskReferenceName" : "sample_taskReferenceName",
         "defaultCase" : [ ],
         "forkTasks" : [ [ ] ],
-        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam"
+        "dynamicForkTasksParam" : "sample_dynamicForkTasksParam",
+        "onStateChange" : {
+          "sample_key" : [ "${StateChangeEvent}" ]
+        },
+        "dynamicForkJoinTasksParam" : "sample_dynamicForkJoinTasksParam"
       },
       "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig" ]
     },
@@ -1120,9 +1181,11 @@
         },
         "priority" : 123,
         "version" : 123,
-        "workflowDef" : "${WorkflowDef}"
+        "workflowDef" : "${WorkflowDef}",
+        "idempotencyKey" : "sample_idempotencyKey",
+        "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "WorkflowDef" ]
+      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
     },
     "AccessKeyStatus" : {
       "content" : "ACTIVE",
