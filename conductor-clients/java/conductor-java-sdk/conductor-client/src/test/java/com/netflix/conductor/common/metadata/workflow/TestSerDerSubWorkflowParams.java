@@ -19,9 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.StreamReadConstraints;
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,25 +28,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestSerDerSubWorkflowParams {
 
-    private final ObjectMapper objectMapper;
-
-    public TestSerDerSubWorkflowParams() {
-        // Initialize ObjectMapper with recursion depth limit
-        objectMapper = new ObjectMapper();
-
-        // Limit recursion depth to 1 to prevent nested SubWorkflowParams processing
-        objectMapper.getFactory().setStreamReadConstraints(
-                StreamReadConstraints.builder().maxNestingDepth(9).build());
-
-        // Additional settings to help with deserialization issues
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        objectMapper.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
-    }
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     public void testSerializationDeserialization() throws IOException {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("SubWorkflowParams");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         SubWorkflowParams subWorkflowParams = objectMapper.readValue(SERVER_JSON, SubWorkflowParams.class);
 
         // 2. Assert that the fields are all correctly populated

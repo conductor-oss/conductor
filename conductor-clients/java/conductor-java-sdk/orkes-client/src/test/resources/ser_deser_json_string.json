@@ -304,7 +304,7 @@
         "variables" : {
           "sample_key" : "sample_value"
         },
-        "workflowDefinition" : null,
+        "workflowDefinition" : "${WorkflowDef}",
         "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
         "lastRetriedTime" : 123,
         "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
@@ -330,9 +330,13 @@
         "workflowId" : "sample_workflowId",
         "tasks" : [ ],
         "status" : "${Workflow.WorkflowStatus}",
-        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath",
+        "idempotencyKey" : "sample_idempotencyKey",
+        "rateLimitKey" : "sample_rateLimitKey",
+        "rateLimited" : true
       },
-      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ]
+      "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
+      "inherits" : ["Auditable"]
     },
     "IntegrationDefFormField" : {
       "content" : {

@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef.TimeoutPolicy;
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//todo add missing fields in Taskdef and fix circular dependency issue should pass this test
+//todo add missing fields in Taskdef - should pass this test
 class TestSerDerWorkflowDef {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -36,6 +38,8 @@ class TestSerDerWorkflowDef {
     void testSerializationDeserialization() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("WorkflowDef");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         WorkflowDef workflowDef = objectMapper.readValue(SERVER_JSON, WorkflowDef.class);
 
         // 2. Assert that the fields are all correctly populated

@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +33,8 @@ public class TestSerDerStartWorkflowRequest {
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("StartWorkflowRequest");
 
         // 2. Unmarshal SERVER_JSON to SDK POJO
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         StartWorkflowRequest startWorkflowRequest = objectMapper.readValue(SERVER_JSON, StartWorkflowRequest.class);
 
         // 3. Assert that the fields are all correctly populated

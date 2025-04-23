@@ -16,13 +16,15 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// todo circular dependency and missing fields in the dependent fields - fixing that should pass this test
+// todo  missing fields in the dependent pojos - fixing that should pass this test
 public class TestSerDerWorkflowTask {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -31,6 +33,8 @@ public class TestSerDerWorkflowTask {
     public void testSerializeDeserialize() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("WorkflowTask");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         WorkflowTask workflowTask = objectMapper.readValue(SERVER_JSON, WorkflowTask.class);
 
         // 2. Assert that the fields are all correctly populated
