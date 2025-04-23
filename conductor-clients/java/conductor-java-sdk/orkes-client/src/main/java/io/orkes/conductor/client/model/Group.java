@@ -17,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Group {
     /** Gets or Sets inner */
     public enum InnerEnum {
@@ -77,37 +80,9 @@ public class Group {
         return this;
     }
 
-    /**
-     * Get defaultAccess
-     *
-     * @return defaultAccess
-     */
-    
-    public Map<String, List<String>> getDefaultAccess() {
-        return defaultAccess;
-    }
-
-    public void setDefaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-    }
-
     public Group description(String description) {
         this.description = description;
         return this;
-    }
-
-    /**
-     * Get description
-     *
-     * @return description
-     */
-    
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public Group id(String id) {
@@ -115,44 +90,16 @@ public class Group {
         return this;
     }
 
-    /**
-     * Get id
-     *
-     * @return id
-     */
-    
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public Group roles(List<Role> roles) {
         this.roles = roles;
         return this;
     }
-
+    
     public Group addRolesItem(Role rolesItem) {
         if (this.roles == null) {
             this.roles = new ArrayList<>();
         }
         this.roles.add(rolesItem);
         return this;
-    }
-
-    /**
-     * Get roles
-     *
-     * @return roles
-     */
-    
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<Role> roles) {
-        this.roles = roles;
     }
 }

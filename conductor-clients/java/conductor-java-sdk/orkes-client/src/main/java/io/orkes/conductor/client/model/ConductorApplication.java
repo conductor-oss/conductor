@@ -12,11 +12,14 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConductorApplication {
 
     private String createdBy = null;
@@ -30,37 +33,13 @@ public class ConductorApplication {
         return this;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
     public ConductorApplication id(String id) {
         this.id = id;
         return this;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public ConductorApplication name(String name) {
         this.name = name;
         return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

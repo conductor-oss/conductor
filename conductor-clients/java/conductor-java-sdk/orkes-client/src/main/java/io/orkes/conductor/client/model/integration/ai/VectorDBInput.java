@@ -15,11 +15,14 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@SuperBuilder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class VectorDBInput extends LLMWorkerInput {
 
     private String vectorDB;

@@ -12,13 +12,12 @@
  */
 package io.orkes.conductor.client.model.integration.ai;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatMessage {
 
     public enum Actor {
@@ -27,4 +26,5 @@ public class ChatMessage {
 
     String role;
     String message;
+
 }

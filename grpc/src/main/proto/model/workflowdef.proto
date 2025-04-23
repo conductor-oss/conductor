@@ -35,4 +35,5 @@ message WorkflowDef {
     SchemaDef input_schema = 19;
     SchemaDef output_schema = 20;
     bool enforce_schema = 21;
+    map<string, google.protobuf.Value> metadata = 22;
 }

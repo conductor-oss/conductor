@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.common.run;
 
+import lombok.*;
+
 /**
  * Describes the location where the JSON payload is stored in external storage.
  *
@@ -22,27 +24,16 @@ package com.netflix.conductor.common.run;
  *   <li>path: The relative path of the file in external storage.
  * </ul>
  */
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExternalStorageLocation {
 
     private String uri;
 
     private String path;
-
-    public String getUri() {
-        return uri;
-    }
-
-    public void setUri(String uri) {
-        this.uri = uri;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
 
     public String toString() {
         return "ExternalStorageLocation{" + "uri='" + uri + '\'' + ", path='" + path + '\'' + '}';

@@ -16,6 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class DynamicForkJoinTaskList {
 
     private List<DynamicForkJoinTask> dynamicTasks = new ArrayList<>();
@@ -26,13 +32,5 @@ public class DynamicForkJoinTaskList {
 
     public void add(DynamicForkJoinTask dtask) {
         dynamicTasks.add(dtask);
-    }
-
-    public List<DynamicForkJoinTask> getDynamicTasks() {
-        return dynamicTasks;
-    }
-
-    public void setDynamicTasks(List<DynamicForkJoinTask> dynamicTasks) {
-        this.dynamicTasks = dynamicTasks;
     }
 }

@@ -14,11 +14,14 @@ package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowSchedule {
 
     private Long createTime = null;
@@ -50,25 +53,9 @@ public class WorkflowSchedule {
         return this;
     }
 
-    public Long getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Long createTime) {
-        this.createTime = createTime;
-    }
-
     public WorkflowSchedule createdBy(String createdBy) {
         this.createdBy = createdBy;
         return this;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
     }
 
     public WorkflowSchedule cronExpression(String cronExpression) {
@@ -76,25 +63,9 @@ public class WorkflowSchedule {
         return this;
     }
 
-    public String getCronExpression() {
-        return cronExpression;
-    }
-
-    public void setCronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
-    }
-
     public WorkflowSchedule name(String name) {
         this.name = name;
         return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public WorkflowSchedule paused(Boolean paused) {
@@ -106,10 +77,6 @@ public class WorkflowSchedule {
         return paused;
     }
 
-    public void setPaused(Boolean paused) {
-        this.paused = paused;
-    }
-
     public WorkflowSchedule runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
         this.runCatchupScheduleInstances = runCatchupScheduleInstances;
         return this;
@@ -119,21 +86,9 @@ public class WorkflowSchedule {
         return runCatchupScheduleInstances;
     }
 
-    public void setRunCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
-        this.runCatchupScheduleInstances = runCatchupScheduleInstances;
-    }
-
     public WorkflowSchedule scheduleEndTime(Long scheduleEndTime) {
         this.scheduleEndTime = scheduleEndTime;
         return this;
-    }
-
-    public Long getScheduleEndTime() {
-        return scheduleEndTime;
-    }
-
-    public void setScheduleEndTime(Long scheduleEndTime) {
-        this.scheduleEndTime = scheduleEndTime;
     }
 
     public WorkflowSchedule scheduleStartTime(Long scheduleStartTime) {
@@ -141,25 +96,9 @@ public class WorkflowSchedule {
         return this;
     }
 
-    public Long getScheduleStartTime() {
-        return scheduleStartTime;
-    }
-
-    public void setScheduleStartTime(Long scheduleStartTime) {
-        this.scheduleStartTime = scheduleStartTime;
-    }
-
     public WorkflowSchedule startWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
         this.startWorkflowRequest = startWorkflowRequest;
         return this;
-    }
-
-    public StartWorkflowRequest getStartWorkflowRequest() {
-        return startWorkflowRequest;
-    }
-
-    public void setStartWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
-        this.startWorkflowRequest = startWorkflowRequest;
     }
 
     public WorkflowSchedule updatedBy(String updatedBy) {
@@ -167,33 +106,9 @@ public class WorkflowSchedule {
         return this;
     }
 
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public WorkflowSchedule updatedTime(Long updatedTime) {
         this.updatedTime = updatedTime;
         return this;
-    }
-
-    public Long getUpdatedTime() {
-        return updatedTime;
-    }
-
-    public void setUpdatedTime(Long updatedTime) {
-        this.updatedTime = updatedTime;
-    }
-
-    public String getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(String zoneId) {
-        this.zoneId = zoneId;
     }
 
     public WorkflowSchedule zoneId(String zoneId) {

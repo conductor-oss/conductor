@@ -17,11 +17,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import lombok.*;
+
 /**
  * Defines an event handler
  */
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventHandler {
 
+    /**
+     * the name MUST be unique within a conductor instance
+     */
     private String name;
 
     private String event;
@@ -33,93 +43,6 @@ public class EventHandler {
     private boolean active;
 
     private String evaluatorType;
-
-    public EventHandler() {
-    }
-
-    /**
-     * @return the name MUST be unique within a conductor instance
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return the event
-     */
-    public String getEvent() {
-        return event;
-    }
-
-    /**
-     * @param event the event to set
-     */
-    public void setEvent(String event) {
-        this.event = event;
-    }
-
-    /**
-     * @return the condition
-     */
-    public String getCondition() {
-        return condition;
-    }
-
-    /**
-     * @param condition the condition to set
-     */
-    public void setCondition(String condition) {
-        this.condition = condition;
-    }
-
-    /**
-     * @return the actions
-     */
-    public List<Action> getActions() {
-        return actions;
-    }
-
-    /**
-     * @param actions the actions to set
-     */
-    public void setActions(List<Action> actions) {
-        this.actions = actions;
-    }
-
-    /**
-     * @return the active
-     */
-    public boolean isActive() {
-        return active;
-    }
-
-    /**
-     * @param active if set to false, the event handler is deactivated
-     */
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    /**
-     * @return the evaluator type
-     */
-    public String getEvaluatorType() {
-        return evaluatorType;
-    }
-
-    /**
-     * @param evaluatorType the evaluatorType to set
-     */
-    public void setEvaluatorType(String evaluatorType) {
-        this.evaluatorType = evaluatorType;
-    }
 
     public static class Action {
 

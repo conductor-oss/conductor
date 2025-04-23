@@ -15,12 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpsertUserRequest {
 
     private List<String> groups = null;
@@ -74,35 +76,9 @@ public class UpsertUserRequest {
         return this;
     }
 
-    /**
-     * Ids of the groups this user belongs to
-     *
-     * @return groups
-     */
-    public List<String> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(List<String> groups) {
-        this.groups = groups;
-    }
-
     public UpsertUserRequest name(String name) {
         this.name = name;
         return this;
-    }
-
-    /**
-     * User&#x27;s full name
-     *
-     * @return name
-     */
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public UpsertUserRequest roles(List<RolesEnum> roles) {
@@ -123,11 +99,4 @@ public class UpsertUserRequest {
      *
      * @return roles
      */
-    public List<RolesEnum> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<RolesEnum> roles) {
-        this.roles = roles;
-    }
 }

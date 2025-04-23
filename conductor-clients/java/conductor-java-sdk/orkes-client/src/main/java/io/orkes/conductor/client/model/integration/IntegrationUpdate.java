@@ -14,9 +14,12 @@ package io.orkes.conductor.client.model.integration;
 
 import java.util.Map;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationUpdate {
 
     private Category category;

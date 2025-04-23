@@ -14,11 +14,14 @@ package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowScheduleExecutionModel {
 
     private String executionId = null;
@@ -76,25 +79,9 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
-    public String getExecutionId() {
-        return executionId;
-    }
-
-    public void setExecutionId(String executionId) {
-        this.executionId = executionId;
-    }
-
     public WorkflowScheduleExecutionModel executionTime(Long executionTime) {
         this.executionTime = executionTime;
         return this;
-    }
-
-    public Long getExecutionTime() {
-        return executionTime;
-    }
-
-    public void setExecutionTime(Long executionTime) {
-        this.executionTime = executionTime;
     }
 
     public WorkflowScheduleExecutionModel reason(String reason) {
@@ -102,25 +89,9 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
-
     public WorkflowScheduleExecutionModel scheduleName(String scheduleName) {
         this.scheduleName = scheduleName;
         return this;
-    }
-
-    public String getScheduleName() {
-        return scheduleName;
-    }
-
-    public void setScheduleName(String scheduleName) {
-        this.scheduleName = scheduleName;
     }
 
     public WorkflowScheduleExecutionModel scheduledTime(Long scheduledTime) {
@@ -128,25 +99,9 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
-    public Long getScheduledTime() {
-        return scheduledTime;
-    }
-
-    public void setScheduledTime(Long scheduledTime) {
-        this.scheduledTime = scheduledTime;
-    }
-
     public WorkflowScheduleExecutionModel stackTrace(String stackTrace) {
         this.stackTrace = stackTrace;
         return this;
-    }
-
-    public String getStackTrace() {
-        return stackTrace;
-    }
-
-    public void setStackTrace(String stackTrace) {
-        this.stackTrace = stackTrace;
     }
 
     public WorkflowScheduleExecutionModel startWorkflowRequest(
@@ -155,25 +110,9 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
-    public StartWorkflowRequest getStartWorkflowRequest() {
-        return startWorkflowRequest;
-    }
-
-    public void setStartWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
-        this.startWorkflowRequest = startWorkflowRequest;
-    }
-
     public WorkflowScheduleExecutionModel state(StateEnum state) {
         this.state = state;
         return this;
-    }
-
-    public StateEnum getState() {
-        return state;
-    }
-
-    public void setState(StateEnum state) {
-        this.state = state;
     }
 
     public WorkflowScheduleExecutionModel workflowId(String workflowId) {
@@ -181,24 +120,9 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
-    }
-
     public WorkflowScheduleExecutionModel workflowName(String workflowName) {
         this.workflowName = workflowName;
         return this;
     }
 
-    public String getWorkflowName() {
-        return workflowName;
-    }
-
-    public void setWorkflowName(String workflowName) {
-        this.workflowName = workflowName;
-    }
 }

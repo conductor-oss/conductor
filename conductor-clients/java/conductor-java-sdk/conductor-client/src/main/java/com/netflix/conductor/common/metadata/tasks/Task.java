@@ -21,6 +21,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Task {
 
     public enum Status {
@@ -104,12 +110,22 @@ public class Task {
 
     private String retriedTaskId;
 
+    /**
+     *  True if the task has been retried after failure
+     */
     private boolean retried;
 
+    /**
+     *  True if the task has completed its lifecycle within conductor (from start to
+     * completion to being updated in the datastore)
+     */
     private boolean executed;
 
     private boolean callbackFromWorker = true;
 
+    /**
+     * the timeout for task to send response. After this timeout, the task will be re-queued
+     */
     private long responseTimeoutSeconds;
 
     private String workflowInstanceId;
@@ -158,39 +174,6 @@ public class Task {
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
 
-    public Task() {
-    }
-
-    /**
-     * @return Type of the task
-     * @see TaskType
-     */
-    public String getTaskType() {
-        return taskType;
-    }
-
-    public void setTaskType(String taskType) {
-        this.taskType = taskType;
-    }
-
-    /**
-     * @return Status of the task
-     */
-    public Status getStatus() {
-        return status;
-    }
-
-    /**
-     * @param status Status of the task
-     */
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public Map<String, Object> getInputData() {
-        return inputData;
-    }
-
     public void setInputData(Map<String, Object> inputData) {
         if (inputData == null) {
             inputData = new HashMap<>();
@@ -198,149 +181,6 @@ public class Task {
         this.inputData = inputData;
     }
 
-    /**
-     * @return the referenceTaskName
-     */
-    public String getReferenceTaskName() {
-        return referenceTaskName;
-    }
-
-    /**
-     * @param referenceTaskName the referenceTaskName to set
-     */
-    public void setReferenceTaskName(String referenceTaskName) {
-        this.referenceTaskName = referenceTaskName;
-    }
-
-    /**
-     * @return the correlationId
-     */
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    /**
-     * @param correlationId the correlationId to set
-     */
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
-    /**
-     * @return the retryCount
-     */
-    public int getRetryCount() {
-        return retryCount;
-    }
-
-    /**
-     * @param retryCount the retryCount to set
-     */
-    public void setRetryCount(int retryCount) {
-        this.retryCount = retryCount;
-    }
-
-    /**
-     * @return the scheduledTime
-     */
-    public long getScheduledTime() {
-        return scheduledTime;
-    }
-
-    /**
-     * @param scheduledTime the scheduledTime to set
-     */
-    public void setScheduledTime(long scheduledTime) {
-        this.scheduledTime = scheduledTime;
-    }
-
-    /**
-     * @return the startTime
-     */
-    public long getStartTime() {
-        return startTime;
-    }
-
-    /**
-     * @param startTime the startTime to set
-     */
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
-    }
-
-    /**
-     * @return the endTime
-     */
-    public long getEndTime() {
-        return endTime;
-    }
-
-    /**
-     * @param endTime the endTime to set
-     */
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
-    }
-
-    /**
-     * @return the startDelayInSeconds
-     */
-    public int getStartDelayInSeconds() {
-        return startDelayInSeconds;
-    }
-
-    /**
-     * @param startDelayInSeconds the startDelayInSeconds to set
-     */
-    public void setStartDelayInSeconds(int startDelayInSeconds) {
-        this.startDelayInSeconds = startDelayInSeconds;
-    }
-
-    /**
-     * @return the retriedTaskId
-     */
-    public String getRetriedTaskId() {
-        return retriedTaskId;
-    }
-
-    /**
-     * @param retriedTaskId the retriedTaskId to set
-     */
-    public void setRetriedTaskId(String retriedTaskId) {
-        this.retriedTaskId = retriedTaskId;
-    }
-
-    /**
-     * @return the seq
-     */
-    public int getSeq() {
-        return seq;
-    }
-
-    /**
-     * @param seq the seq to set
-     */
-    public void setSeq(int seq) {
-        this.seq = seq;
-    }
-
-    /**
-     * @return the updateTime
-     */
-    public long getUpdateTime() {
-        return updateTime;
-    }
-
-    /**
-     * @param updateTime the updateTime to set
-     */
-    public void setUpdateTime(long updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    /**
-     * @return the queueWaitTime
-     */
     public long getQueueWaitTime() {
         if (this.startTime > 0 && this.scheduledTime > 0) {
             if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
@@ -353,106 +193,15 @@ public class Task {
         return 0L;
     }
 
-    /**
-     * @return True if the task has been retried after failure
-     */
-    public boolean isRetried() {
-        return retried;
-    }
-
-    /**
-     * @param retried the retried to set
-     */
-    public void setRetried(boolean retried) {
-        this.retried = retried;
-    }
-
-    /**
-     * @return True if the task has completed its lifecycle within conductor (from start to
-     * completion to being updated in the datastore)
-     */
-    public boolean isExecuted() {
-        return executed;
-    }
-
-    /**
-     * @param executed the executed value to set
-     */
-    public void setExecuted(boolean executed) {
-        this.executed = executed;
-    }
-
-    /**
-     * @return No. of times task has been polled
-     */
-    public int getPollCount() {
-        return pollCount;
-    }
-
-    public void setPollCount(int pollCount) {
-        this.pollCount = pollCount;
-    }
-
     public void incrementPollCount() {
         ++this.pollCount;
     }
 
-    public boolean isCallbackFromWorker() {
-        return callbackFromWorker;
-    }
-
-    public void setCallbackFromWorker(boolean callbackFromWorker) {
-        this.callbackFromWorker = callbackFromWorker;
-    }
-
-    /**
-     * @return Name of the task definition
-     */
     public String getTaskDefName() {
         if (taskDefName == null || "".equals(taskDefName)) {
             taskDefName = taskType;
         }
         return taskDefName;
-    }
-
-    /**
-     * @param taskDefName Name of the task definition
-     */
-    public void setTaskDefName(String taskDefName) {
-        this.taskDefName = taskDefName;
-    }
-
-    /**
-     * @return the timeout for task to send response. After this timeout, the task will be re-queued
-     */
-    public long getResponseTimeoutSeconds() {
-        return responseTimeoutSeconds;
-    }
-
-    /**
-     * @param responseTimeoutSeconds - timeout for task to send response. After this timeout, the
-     *                               task will be re-queued
-     */
-    public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
-        this.responseTimeoutSeconds = responseTimeoutSeconds;
-    }
-
-    /**
-     * @return the workflowInstanceId
-     */
-    public String getWorkflowInstanceId() {
-        return workflowInstanceId;
-    }
-
-    /**
-     * @param workflowInstanceId the workflowInstanceId to set
-     */
-    public void setWorkflowInstanceId(String workflowInstanceId) {
-        this.workflowInstanceId = workflowInstanceId;
-    }
-
-    public String getWorkflowType() {
-        return workflowType;
     }
 
     /**
@@ -464,72 +213,10 @@ public class Task {
         return this;
     }
 
-    /**
-     * @return the taskId
-     */
-    public String getTaskId() {
-        return taskId;
-    }
-
-    /**
-     * @param taskId the taskId to set
-     */
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
-    }
-
-    /**
-     * @return the reasonForIncompletion
-     */
-    public String getReasonForIncompletion() {
-        return reasonForIncompletion;
-    }
-
-    /**
-     * @param reasonForIncompletion the reasonForIncompletion to set
-     */
     public void setReasonForIncompletion(String reasonForIncompletion) {
         this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
     }
 
-    /**
-     * @return the callbackAfterSeconds
-     */
-    public long getCallbackAfterSeconds() {
-        return callbackAfterSeconds;
-    }
-
-    /**
-     * @param callbackAfterSeconds the callbackAfterSeconds to set
-     */
-    public void setCallbackAfterSeconds(long callbackAfterSeconds) {
-        this.callbackAfterSeconds = callbackAfterSeconds;
-    }
-
-    /**
-     * @return the workerId
-     */
-    public String getWorkerId() {
-        return workerId;
-    }
-
-    /**
-     * @param workerId the workerId to set
-     */
-    public void setWorkerId(String workerId) {
-        this.workerId = workerId;
-    }
-
-    /**
-     * @return the outputData
-     */
-    public Map<String, Object> getOutputData() {
-        return outputData;
-    }
-
-    /**
-     * @param outputData the outputData to set
-     */
     public void setOutputData(Map<String, Object> outputData) {
         if (outputData == null) {
             outputData = new HashMap<>();
@@ -537,141 +224,12 @@ public class Task {
         this.outputData = outputData;
     }
 
-    /**
-     * @return Workflow Task definition
-     */
-    public WorkflowTask getWorkflowTask() {
-        return workflowTask;
-    }
-
-    /**
-     * @param workflowTask Task definition
-     */
-    public void setWorkflowTask(WorkflowTask workflowTask) {
-        this.workflowTask = workflowTask;
-    }
-
-    /**
-     * @return the domain
-     */
-    public String getDomain() {
-        return domain;
-    }
-
-    /**
-     * @param domain the Domain
-     */
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    /**
-     * @return {@link Optional} containing the task definition if available
-     */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
 
-    public int getRateLimitPerFrequency() {
-        return rateLimitPerFrequency;
-    }
-
-    public void setRateLimitPerFrequency(int rateLimitPerFrequency) {
-        this.rateLimitPerFrequency = rateLimitPerFrequency;
-    }
-
-    public int getRateLimitFrequencyInSeconds() {
-        return rateLimitFrequencyInSeconds;
-    }
-
-    public void setRateLimitFrequencyInSeconds(int rateLimitFrequencyInSeconds) {
-        this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
-    }
-
-    /**
-     * @return the external storage path for the task input payload
-     */
-    public String getExternalInputPayloadStoragePath() {
-        return externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @param externalInputPayloadStoragePath the external storage path where the task input payload
-     *                                        is stored
-     */
-    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
-        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
-    }
-
-    /**
-     * @return the external storage path for the task output payload
-     */
-    public String getExternalOutputPayloadStoragePath() {
-        return externalOutputPayloadStoragePath;
-    }
-
-    /**
-     * @param externalOutputPayloadStoragePath the external storage path where the task output
-     *                                         payload is stored
-     */
-    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
-        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
-    }
-
-    public void setIsolationGroupId(String isolationGroupId) {
-        this.isolationGroupId = isolationGroupId;
-    }
-
-    public String getIsolationGroupId() {
-        return isolationGroupId;
-    }
-
-    public String getExecutionNameSpace() {
-        return executionNameSpace;
-    }
-
-    public void setExecutionNameSpace(String executionNameSpace) {
-        this.executionNameSpace = executionNameSpace;
-    }
-
-    /**
-     * @return the iteration
-     */
-    public int getIteration() {
-        return iteration;
-    }
-
-    /**
-     * @param iteration iteration
-     */
-    public void setIteration(int iteration) {
-        this.iteration = iteration;
-    }
-
     public boolean isLoopOverTask() {
         return iteration > 0;
-    }
-
-    /**
-     * @return the priority defined on workflow
-     */
-    public int getWorkflowPriority() {
-        return workflowPriority;
-    }
-
-    /**
-     * @param workflowPriority Priority defined for workflow
-     */
-    public void setWorkflowPriority(int workflowPriority) {
-        this.workflowPriority = workflowPriority;
-    }
-
-    public boolean isSubworkflowChanged() {
-        return subworkflowChanged;
-    }
-
-    public void setSubworkflowChanged(boolean subworkflowChanged) {
-        this.subworkflowChanged = subworkflowChanged;
     }
 
     public String getSubWorkflowId() {
@@ -689,14 +247,6 @@ public class Task {
         if (this.getOutputData() != null && this.getOutputData().containsKey("subWorkflowId")) {
             this.getOutputData().put("subWorkflowId", subWorkflowId);
         }
-    }
-
-    public String getParentTaskId() {
-        return parentTaskId;
-    }
-
-    public void setParentTaskId(String parentTaskId) {
-        this.parentTaskId = parentTaskId;
     }
 
     public Task copy() {

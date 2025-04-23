@@ -15,11 +15,13 @@ package io.orkes.conductor.client.model.integration.ai;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class IndexDocInput {
 
@@ -38,6 +40,7 @@ public class IndexDocInput {
     private int chunkOverlap;
     private Map<String, Object> metadata;
     private Integer dimensions;
+
     public String getNamespace() {
         if(namespace == null) {
             return docId;

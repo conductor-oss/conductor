@@ -24,10 +24,12 @@ import java.util.Objects;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
-/**
- * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in
- * the Workflow definition are saved as part of {@link WorkflowDef#getTasks}
- */
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowTask {
 
     public static class CacheConfig {
@@ -35,22 +37,6 @@ public class WorkflowTask {
         private String key;
 
         private int ttlInSecond;
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public int getTtlInSecond() {
-            return ttlInSecond;
-        }
-
-        public void setTtlInSecond(int ttlInSecond) {
-            this.ttlInSecond = ttlInSecond;
-        }
     }
 
     private String name;
@@ -67,19 +53,15 @@ public class WorkflowTask {
 
     private String caseValueParam;
 
+    /**
+     * A javascript expression for decision cases. The result should be a scalar value that
+     *     is used to decide the case branches.
+     */
     private String caseExpression;
 
     private String scriptExpression;
 
     public static class WorkflowTaskList {
-
-        public List<WorkflowTask> getTasks() {
-            return tasks;
-        }
-
-        public void setTasks(List<WorkflowTask> tasks) {
-            this.tasks = tasks;
-        }
 
         private List<WorkflowTask> tasks;
     }
@@ -106,6 +88,10 @@ public class WorkflowTask {
 
     private String sink;
 
+    /**
+     * If the task is optional. When set to true, the workflow execution continues even when
+     *     the task is in failed status.
+     */
     private boolean optional = false;
 
     private TaskDef taskDefinition;
@@ -114,6 +100,9 @@ public class WorkflowTask {
 
     private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
+    /**
+     * whether wait for an external event to complete the task, for EVENT and HTTP tasks
+     */
     private Boolean asyncComplete = false;
 
     private String loopCondition;
@@ -124,6 +113,10 @@ public class WorkflowTask {
 
     private String evaluatorType;
 
+    /**
+     * An evaluation expression for switch cases evaluated by corresponding evaluator. The
+     *     result should be a scalar value that is used to decide the case branches.
+     */
     private String expression;
 
     /*
@@ -139,424 +132,21 @@ public class WorkflowTask {
 
     private boolean permissive;
 
-    /**
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return the taskReferenceName
-     */
-    public String getTaskReferenceName() {
-        return taskReferenceName;
-    }
-
-    /**
-     * @param taskReferenceName the taskReferenceName to set
-     */
-    public void setTaskReferenceName(String taskReferenceName) {
-        this.taskReferenceName = taskReferenceName;
-    }
-
-    /**
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    /**
-     * @return the inputParameters
-     */
-    public Map<String, Object> getInputParameters() {
-        return inputParameters;
-    }
-
-    /**
-     * @param inputParameters the inputParameters to set
-     */
-    public void setInputParameters(Map<String, Object> inputParameters) {
-        this.inputParameters = inputParameters;
-    }
-
-    /**
-     * @return the type
-     */
-    public String getType() {
-        return type;
-    }
-
+    // Adding to support Backward compatibility
+    @Deprecated
     public void setWorkflowTaskType(TaskType type) {
         this.type = type.name();
     }
 
-    /**
-     * @param type the type to set
-     */
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    /**
-     * @return the decisionCases
-     */
-    public Map<String, List<WorkflowTask>> getDecisionCases() {
-        return decisionCases;
-    }
-
-    /**
-     * @param decisionCases the decisionCases to set
-     */
-    public void setDecisionCases(Map<String, List<WorkflowTask>> decisionCases) {
-        this.decisionCases = decisionCases;
-    }
-
-    /**
-     * @return the defaultCase
-     */
-    public List<WorkflowTask> getDefaultCase() {
-        return defaultCase;
-    }
-
-    /**
-     * @param defaultCase the defaultCase to set
-     */
-    public void setDefaultCase(List<WorkflowTask> defaultCase) {
-        this.defaultCase = defaultCase;
-    }
-
-    /**
-     * @return the forkTasks
-     */
-    public List<List<WorkflowTask>> getForkTasks() {
-        return forkTasks;
-    }
-
-    /**
-     * @param forkTasks the forkTasks to set
-     */
-    public void setForkTasks(List<List<WorkflowTask>> forkTasks) {
-        this.forkTasks = forkTasks;
-    }
-
-    /**
-     * @return the startDelay in seconds
-     */
-    public int getStartDelay() {
-        return startDelay;
-    }
-
-    /**
-     * @param startDelay the startDelay to set
-     */
-    public void setStartDelay(int startDelay) {
-        this.startDelay = startDelay;
-    }
-
-    /**
-     * @return the retryCount
-     */
-    public Integer getRetryCount() {
-        return retryCount;
-    }
-
-    /**
-     * @param retryCount the retryCount to set
-     */
-    public void setRetryCount(final Integer retryCount) {
-        this.retryCount = retryCount;
-    }
-
-    /**
-     * @return the dynamicTaskNameParam
-     */
-    public String getDynamicTaskNameParam() {
-        return dynamicTaskNameParam;
-    }
-
-    /**
-     * @param dynamicTaskNameParam the dynamicTaskNameParam to set to be used by DYNAMIC tasks
-     */
-    public void setDynamicTaskNameParam(String dynamicTaskNameParam) {
-        this.dynamicTaskNameParam = dynamicTaskNameParam;
-    }
-
-    /**
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     * @return the caseValueParam
-     */
-    @Deprecated
-    public String getCaseValueParam() {
-        return caseValueParam;
-    }
-
-    @Deprecated
-    public String getDynamicForkJoinTasksParam() {
-        return dynamicForkJoinTasksParam;
-    }
-
-    @Deprecated
-    public void setDynamicForkJoinTasksParam(String dynamicForkJoinTasksParam) {
-        this.dynamicForkJoinTasksParam = dynamicForkJoinTasksParam;
-    }
-
-    public String getDynamicForkTasksParam() {
-        return dynamicForkTasksParam;
-    }
-
-    public void setDynamicForkTasksParam(String dynamicForkTasksParam) {
-        this.dynamicForkTasksParam = dynamicForkTasksParam;
-    }
-
-    public String getDynamicForkTasksInputParamName() {
-        return dynamicForkTasksInputParamName;
-    }
-
-    public void setDynamicForkTasksInputParamName(String dynamicForkTasksInputParamName) {
-        this.dynamicForkTasksInputParamName = dynamicForkTasksInputParamName;
-    }
-
-    /**
-     * @param caseValueParam the caseValueParam to set
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public void setCaseValueParam(String caseValueParam) {
-        this.caseValueParam = caseValueParam;
-    }
-
-    /**
-     * @return A javascript expression for decision cases. The result should be a scalar value that
-     *     is used to decide the case branches.
-     * @see #getDecisionCases()
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public String getCaseExpression() {
-        return caseExpression;
-    }
-
-    /**
-     * @param caseExpression A javascript expression for decision cases. The result should be a
-     *     scalar value that is used to decide the case branches.
-     * @deprecated Use {@link WorkflowTask#getEvaluatorType()} and {@link
-     *     WorkflowTask#getExpression()} combination.
-     */
-    @Deprecated
-    public void setCaseExpression(String caseExpression) {
-        this.caseExpression = caseExpression;
-    }
-
-    public String getScriptExpression() {
-        return scriptExpression;
-    }
-
-    public void setScriptExpression(String expression) {
-        this.scriptExpression = expression;
-    }
-
-    public CacheConfig getCacheConfig() {
-        return cacheConfig;
-    }
-
-    public void setCacheConfig(CacheConfig cacheConfig) {
-        this.cacheConfig = cacheConfig;
-    }
-
-    /**
-     * @return the subWorkflow
-     */
-    public SubWorkflowParams getSubWorkflowParam() {
-        return subWorkflowParam;
-    }
-
-    /**
-     * @param subWorkflow the subWorkflowParam to set
-     */
-    public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
-        this.subWorkflowParam = subWorkflow;
-    }
-
-    /**
-     * @return the joinOn
-     */
-    public List<String> getJoinOn() {
-        return joinOn;
-    }
-
-    /**
-     * @param joinOn the joinOn to set
-     */
-    public void setJoinOn(List<String> joinOn) {
-        this.joinOn = joinOn;
-    }
-
-    /**
-     * @return the loopCondition
-     */
-    public String getLoopCondition() {
-        return loopCondition;
-    }
-
-    /**
-     * @param loopCondition the expression to set
-     */
-    public void setLoopCondition(String loopCondition) {
-        this.loopCondition = loopCondition;
-    }
-
-    /**
-     * @return the loopOver
-     */
-    public List<WorkflowTask> getLoopOver() {
-        return loopOver;
-    }
-
-    /**
-     * @param loopOver the loopOver to set
-     */
-    public void setLoopOver(List<WorkflowTask> loopOver) {
-        this.loopOver = loopOver;
-    }
-
-    /**
-     * @return Sink value for the EVENT type of task
-     */
-    public String getSink() {
-        return sink;
-    }
-
-    /**
-     * @param sink Name of the sink
-     */
-    public void setSink(String sink) {
-        this.sink = sink;
-    }
-
-    /**
-     * @return whether wait for an external event to complete the task, for EVENT and HTTP tasks
-     */
     public Boolean isAsyncComplete() {
         return asyncComplete;
-    }
-
-    public void setAsyncComplete(Boolean asyncComplete) {
-        this.asyncComplete = asyncComplete;
-    }
-
-    /**
-     * @return If the task is optional. When set to true, the workflow execution continues even when
-     *     the task is in failed status.
-     */
-    public boolean isOptional() {
-        return optional;
-    }
-
-    /**
-     * @return Task definition associated to the Workflow Task
-     */
-    public TaskDef getTaskDefinition() {
-        return taskDefinition;
-    }
-
-    /**
-     * @param taskDefinition Task definition
-     */
-    public void setTaskDefinition(TaskDef taskDefinition) {
-        this.taskDefinition = taskDefinition;
-    }
-
-    /**
-     * @param optional when set to true, the task is marked as optional
-     */
-    public void setOptional(boolean optional) {
-        this.optional = optional;
-    }
-
-    public Boolean getRateLimited() {
-        return rateLimited;
-    }
-
-    public void setRateLimited(Boolean rateLimited) {
-        this.rateLimited = rateLimited;
     }
 
     public Boolean isRateLimited() {
         return rateLimited != null && rateLimited;
     }
 
-    public List<String> getDefaultExclusiveJoinTask() {
-        return defaultExclusiveJoinTask;
-    }
 
-    public void setDefaultExclusiveJoinTask(List<String> defaultExclusiveJoinTask) {
-        this.defaultExclusiveJoinTask = defaultExclusiveJoinTask;
-    }
-
-    /**
-     * @return the evaluatorType
-     */
-    public String getEvaluatorType() {
-        return evaluatorType;
-    }
-
-    /**
-     * @param evaluatorType the evaluatorType to set
-     */
-    public void setEvaluatorType(String evaluatorType) {
-        this.evaluatorType = evaluatorType;
-    }
-
-    /**
-     * @return An evaluation expression for switch cases evaluated by corresponding evaluator. The
-     *     result should be a scalar value that is used to decide the case branches.
-     * @see #getDecisionCases()
-     */
-    public String getExpression() {
-        return expression;
-    }
-
-    /**
-     * @param expression the expression to set
-     */
-    public void setExpression(String expression) {
-        this.expression = expression;
-    }
-
-    public String getJoinStatus() {
-        return joinStatus;
-    }
-
-    public void setJoinStatus(String joinStatus) {
-        this.joinStatus = joinStatus;
-    }
-
-    public boolean isPermissive() {
-        return permissive;
-    }
-
-    public void setPermissive(boolean permissive) {
-        this.permissive = permissive;
-    }
 
     private Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
@@ -698,14 +288,6 @@ public class WorkflowTask {
             }
         }
         return null;
-    }
-
-    public Map<String, List<StateChangeEvent>> getOnStateChange() {
-        return onStateChange;
-    }
-
-    public void setOnStateChange(Map<String, List<StateChangeEvent>> onStateChange) {
-        this.onStateChange = onStateChange;
     }
 
     public String toString() {

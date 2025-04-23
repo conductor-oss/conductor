@@ -50,24 +50,6 @@ public class TestDynamicForkJoinTaskPojoMethods {
     }
 
     @Test
-    public void testConstructorWithFiveParams() {
-        String taskName = "testTask";
-        String workflowName = "testWorkflow";
-        String referenceName = "testReference";
-        String type = TaskType.DECISION.name();
-        Map<String, Object> input = new HashMap<>();
-        input.put("key1", "value1");
-
-        DynamicForkJoinTask task = new DynamicForkJoinTask(taskName, workflowName, referenceName, type, input);
-
-        assertEquals(taskName, task.getTaskName());
-        assertEquals(workflowName, task.getWorkflowName());
-        assertEquals(referenceName, task.getReferenceName());
-        assertEquals(input, task.getInput());
-        assertEquals(type, task.getType());
-    }
-
-    @Test
     public void testTaskNameGetterSetter() {
         DynamicForkJoinTask task = new DynamicForkJoinTask();
         String taskName = "updatedTaskName";

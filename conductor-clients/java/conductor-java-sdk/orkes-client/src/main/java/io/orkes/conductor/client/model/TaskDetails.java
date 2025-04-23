@@ -15,11 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TaskDetails {
 
     private Map<String, Object> output = null;
@@ -43,25 +46,9 @@ public class TaskDetails {
         return this;
     }
 
-    public Map<String, Object> getOutput() {
-        return output;
-    }
-
-    public void setOutput(Map<String, Object> output) {
-        this.output = output;
-    }
-
     public TaskDetails taskId(String taskId) {
         this.taskId = taskId;
         return this;
-    }
-
-    public String getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
     }
 
     public TaskDetails taskRefName(String taskRefName) {
@@ -69,25 +56,9 @@ public class TaskDetails {
         return this;
     }
 
-    public String getTaskRefName() {
-        return taskRefName;
-    }
-
-    public void setTaskRefName(String taskRefName) {
-        this.taskRefName = taskRefName;
-    }
-
     public TaskDetails workflowId(String workflowId) {
         this.workflowId = workflowId;
         return this;
-    }
-
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
     }
 
 }

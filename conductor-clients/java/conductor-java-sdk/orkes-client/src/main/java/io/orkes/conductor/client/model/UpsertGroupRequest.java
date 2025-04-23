@@ -17,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpsertGroupRequest {
     /**
      * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
@@ -98,7 +101,6 @@ public class UpsertGroupRequest {
 
     }
 
-
     private List<RolesEnum> roles = null;
 
     public UpsertGroupRequest defaultAccess(Map<String, List<String>> defaultAccess) {
@@ -114,37 +116,9 @@ public class UpsertGroupRequest {
         return this;
     }
 
-    /**
-     * a default Map&lt;TargetType, Set&lt;Access&gt; to share permissions, allowed target types:
-     * WORKFLOW_DEF, TASK_DEF
-     *
-     * @return defaultAccess
-     */
-    public Map<String, List<String>> getDefaultAccess() {
-        return defaultAccess;
-    }
-
-    public void setDefaultAccess(Map<String, List<String>> defaultAccess) {
-        this.defaultAccess = defaultAccess;
-    }
-
     public UpsertGroupRequest description(String description) {
         this.description = description;
         return this;
-    }
-
-    /**
-     * A general description of the group
-     *
-     * @return description
-     */
-    
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public UpsertGroupRequest roles(List<RolesEnum> roles) {
@@ -158,20 +132,6 @@ public class UpsertGroupRequest {
         }
         this.roles.add(rolesItem);
         return this;
-    }
-
-    /**
-     * Get roles
-     *
-     * @return roles
-     */
-    
-    public List<RolesEnum> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<RolesEnum> roles) {
-        this.roles = roles;
     }
 
 }

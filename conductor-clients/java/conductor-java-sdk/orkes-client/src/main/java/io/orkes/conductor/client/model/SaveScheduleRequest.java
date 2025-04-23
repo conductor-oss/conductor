@@ -14,11 +14,14 @@ package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SaveScheduleRequest {
 
     private String createdBy = null;
@@ -46,37 +49,9 @@ public class SaveScheduleRequest {
         return this;
     }
 
-    /**
-     * Get createdBy
-     *
-     * @return createdBy
-     */
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
     public SaveScheduleRequest cronExpression(String cronExpression) {
         this.cronExpression = cronExpression;
         return this;
-    }
-
-    /**
-     * Get cronExpression
-     *
-     * @return cronExpression
-     */
-
-    public String getCronExpression() {
-        return cronExpression;
-    }
-
-    public void setCronExpression(String cronExpression) {
-        this.cronExpression = cronExpression;
     }
 
     public SaveScheduleRequest name(String name) {
@@ -84,37 +59,13 @@ public class SaveScheduleRequest {
         return this;
     }
 
-    /**
-     * Get name
-     *
-     * @return name
-     */
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public SaveScheduleRequest paused(Boolean paused) {
         this.paused = paused;
         return this;
     }
 
-    /**
-     * Get paused
-     *
-     * @return paused
-     */
-
     public Boolean isPaused() {
         return paused;
-    }
-
-    public void setPaused(Boolean paused) {
-        this.paused = paused;
     }
 
     public SaveScheduleRequest runCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
@@ -122,18 +73,8 @@ public class SaveScheduleRequest {
         return this;
     }
 
-    /**
-     * Get runCatchupScheduleInstances
-     *
-     * @return runCatchupScheduleInstances
-     */
-
     public Boolean isRunCatchupScheduleInstances() {
         return runCatchupScheduleInstances;
-    }
-
-    public void setRunCatchupScheduleInstances(Boolean runCatchupScheduleInstances) {
-        this.runCatchupScheduleInstances = runCatchupScheduleInstances;
     }
 
     public SaveScheduleRequest scheduleEndTime(Long scheduleEndTime) {
@@ -141,37 +82,9 @@ public class SaveScheduleRequest {
         return this;
     }
 
-    /**
-     * Get scheduleEndTime
-     *
-     * @return scheduleEndTime
-     */
-
-    public Long getScheduleEndTime() {
-        return scheduleEndTime;
-    }
-
-    public void setScheduleEndTime(Long scheduleEndTime) {
-        this.scheduleEndTime = scheduleEndTime;
-    }
-
     public SaveScheduleRequest scheduleStartTime(Long scheduleStartTime) {
         this.scheduleStartTime = scheduleStartTime;
         return this;
-    }
-
-    /**
-     * Get scheduleStartTime
-     *
-     * @return scheduleStartTime
-     */
-
-    public Long getScheduleStartTime() {
-        return scheduleStartTime;
-    }
-
-    public void setScheduleStartTime(Long scheduleStartTime) {
-        this.scheduleStartTime = scheduleStartTime;
     }
 
     public SaveScheduleRequest startWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
@@ -179,43 +92,14 @@ public class SaveScheduleRequest {
         return this;
     }
 
-    /**
-     * Get startWorkflowRequest
-     *
-     * @return startWorkflowRequest
-     */
-
-    public StartWorkflowRequest getStartWorkflowRequest() {
-        return startWorkflowRequest;
-    }
-
-    public void setStartWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
-        this.startWorkflowRequest = startWorkflowRequest;
-    }
-
     public SaveScheduleRequest updatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
         return this;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public String getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(String zoneId) {
-        this.zoneId = zoneId;
     }
 
     public SaveScheduleRequest zoneId(String zoneId) {
         this.zoneId = zoneId;
         return this;
     }
+
 }

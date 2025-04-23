@@ -15,15 +15,18 @@ package io.orkes.conductor.client.model;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class CorrelationIdsSearchRequest {
 
     private List<String> correlationIds;
 
     private List<String> workflowNames;
+
 }

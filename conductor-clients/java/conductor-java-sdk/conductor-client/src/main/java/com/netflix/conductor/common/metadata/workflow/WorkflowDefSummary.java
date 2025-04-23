@@ -14,6 +14,12 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Objects;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
 
     private String name;
@@ -21,27 +27,6 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
     private int version = 1;
 
     private Long createTime;
-
-    /**
-     * @return the version
-     */
-    public int getVersion() {
-        return version;
-    }
-
-    /**
-     * @return the workflow name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @return the createTime
-     */
-    public Long getCreateTime() {
-        return createTime;
-    }
 
     public boolean equals(Object o) {
         if (this == o) {
@@ -52,18 +37,6 @@ public class WorkflowDefSummary implements Comparable<WorkflowDefSummary> {
         }
         WorkflowDefSummary that = (WorkflowDefSummary) o;
         return getVersion() == that.getVersion() && Objects.equals(getName(), that.getName());
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public void setCreateTime(Long createTime) {
-        this.createTime = createTime;
     }
 
     public int hashCode() {
