@@ -86,7 +86,7 @@ public class TaskClientTests {
             workflow.getTasks().stream().filter(t -> !t.getStatus().isTerminal() && t.getWorkflowTask().getType().equals("SIMPLE")).forEach(running -> {
                 String referenceName = running.getReferenceTaskName();
                 System.out.println("Updating " + referenceName + ", and its status is " + running.getStatus());
-                Workflow logWorkflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, Map.of("k", "value"));
+                taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, Map.of("k", "value"));
             });
             count++;
             Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);

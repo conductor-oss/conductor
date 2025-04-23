@@ -16,6 +16,7 @@ import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
