@@ -87,6 +87,9 @@ public class OrkesWorkflowClient implements AutoCloseable {
 
     /**
      * Executes a workflow and returns the target workflow details.
+     *
+     * @enterprise This feature requires Orkes Conductor Enterprise license.
+     * @since 5.0.0
      * This method signals a specified workflow and waits for the target workflow.
      *
      * @param req The StartWorkflowRequest containing workflow execution details
@@ -95,10 +98,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
      * @param consistency Execution consistency mode (DURABLE or SYNC)
      * @return A CompletableFuture containing the WorkflowRun with target workflow details
      */
-    public CompletableFuture<WorkflowRun> executeWorkflowWithTargetWorkflow(StartWorkflowRequest req,
-                                                                            String waitUntilTaskRef,
-                                                                            Integer waitForSeconds,
-                                                                            WorkflowConsistency consistency) {
+    public CompletableFuture<WorkflowRun> executeAndGetTarget(StartWorkflowRequest req,
+                                                              String waitUntilTaskRef,
+                                                              Integer waitForSeconds,
+                                                              WorkflowConsistency consistency) {
         return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
                 consistency, WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
                 new TypeReference<WorkflowRun>() {
@@ -115,10 +118,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
      * @param consistency Execution consistency mode (DURABLE or SYNC)
      * @return A CompletableFuture containing the WorkflowRun with blocking workflow details
      */
-    public CompletableFuture<WorkflowRun> executeWorkflowWithBlockingWorkflow(StartWorkflowRequest req,
-                                                                              String waitUntilTaskRef,
-                                                                              Integer waitForSeconds,
-                                                                              WorkflowConsistency consistency) {
+    public CompletableFuture<WorkflowRun> executeAndGetBlockingWorkflow(StartWorkflowRequest req,
+                                                                        String waitUntilTaskRef,
+                                                                        Integer waitForSeconds,
+                                                                        WorkflowConsistency consistency) {
         return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
                 consistency, WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW,
                 new TypeReference<WorkflowRun>() {
@@ -135,10 +138,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
      * @param consistency Execution consistency mode (DURABLE or SYNC)
      * @return A CompletableFuture containing the TaskRun with blocking task details
      */
-    public CompletableFuture<TaskRun> executeWorkflowWithBlockingTask(StartWorkflowRequest req,
-                                                                      String waitUntilTaskRef,
-                                                                      Integer waitForSeconds,
-                                                                      WorkflowConsistency consistency) {
+    public CompletableFuture<TaskRun> executeAndGetBlockingTask(StartWorkflowRequest req,
+                                                                String waitUntilTaskRef,
+                                                                Integer waitForSeconds,
+                                                                WorkflowConsistency consistency) {
         return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
                 consistency, WorkflowSignalReturnStrategy.BLOCKING_TASK,
                 new TypeReference<TaskRun>() {
@@ -156,10 +159,10 @@ public class OrkesWorkflowClient implements AutoCloseable {
      * @param consistency Execution consistency mode (DURABLE or SYNC)
      * @return A CompletableFuture containing the TaskRun with blocking task details including input data
      */
-    public CompletableFuture<TaskRun> executeWorkflowWithBlockingTaskInput(StartWorkflowRequest req,
-                                                                           String waitUntilTaskRef,
-                                                                           Integer waitForSeconds,
-                                                                           WorkflowConsistency consistency) {
+    public CompletableFuture<TaskRun> executeAndGetBlockingTaskInput(StartWorkflowRequest req,
+                                                                     String waitUntilTaskRef,
+                                                                     Integer waitForSeconds,
+                                                                     WorkflowConsistency consistency) {
         return executeWorkflowHttp(req, waitUntilTaskRef, waitForSeconds,
                 consistency, WorkflowSignalReturnStrategy.BLOCKING_TASK_INPUT,
                 new TypeReference<TaskRun>() {

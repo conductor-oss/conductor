@@ -97,7 +97,7 @@ public class OrkesTaskClient {
      * @param output     Output for the task
      * @return WorkflowRun containing the target workflow details after the signal has been processed
      */
-    public WorkflowRun signalAndReturnTargetWorkflow(String workflowId, Task.Status status, Object output) {
+    public WorkflowRun signalAndGetTargetWorkflow(String workflowId, Task.Status status, Object output) {
         return signalWithReturnStrategy(getOutputMap(output), workflowId, status,
                 WorkflowSignalReturnStrategy.TARGET_WORKFLOW,
                 new TypeReference<WorkflowRun>() {
@@ -112,7 +112,7 @@ public class OrkesTaskClient {
      * @param output     Output for the task
      * @return WorkflowRun containing the blocking workflow details after the signal has been processed
      */
-    public WorkflowRun signalAndReturnBlockingWorkflow(String workflowId, Task.Status status, Object output) {
+    public WorkflowRun signalAndGetBlockingWorkflow(String workflowId, Task.Status status, Object output) {
         return signalWithReturnStrategy(getOutputMap(output), workflowId, status,
                 WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW,
                 new TypeReference<WorkflowRun>() {
@@ -127,7 +127,7 @@ public class OrkesTaskClient {
      * @param output     Output for the task
      * @return TaskRun containing the blocking task details after the signal has been processed
      */
-    public TaskRun signalAndReturnBlockingTask(String workflowId, Task.Status status, Object output) {
+    public TaskRun signalAndGetBlockingTask(String workflowId, Task.Status status, Object output) {
         return signalWithReturnStrategy(getOutputMap(output), workflowId, status,
                 WorkflowSignalReturnStrategy.BLOCKING_TASK,
                 new TypeReference<TaskRun>() {
@@ -142,7 +142,7 @@ public class OrkesTaskClient {
      * @param output     Output for the task
      * @return TaskRun containing the blocking task details with input data after the signal has been processed
      */
-    public TaskRun signalAndReturnBlockingTaskInput(String workflowId, Task.Status status, Object output) {
+    public TaskRun signalAndGetBlockingTaskInput(String workflowId, Task.Status status, Object output) {
         return signalWithReturnStrategy(getOutputMap(output), workflowId, status,
                 WorkflowSignalReturnStrategy.BLOCKING_TASK_INPUT,
                 new TypeReference<TaskRun>() {

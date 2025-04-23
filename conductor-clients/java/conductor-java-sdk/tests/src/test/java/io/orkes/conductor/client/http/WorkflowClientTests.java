@@ -13,7 +13,6 @@
 package io.orkes.conductor.client.http;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -223,7 +222,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var run = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.SYNCHRONOUS);
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.SYNCHRONOUS);
         var workflow = run.get(10, TimeUnit.SECONDS);
         assertNotNull(workflow);
         await()
@@ -243,7 +242,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS).get();
+        var workflow = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS).get();
         assertNotNull(workflow);
         await()
                 .atMost(Duration.ofSeconds(10))
@@ -261,7 +260,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE).get();
+        var workflow = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 0, WorkflowConsistency.DURABLE).get();
         assertNotNull(workflow);
         await()
                 .atMost(Duration.ofSeconds(10))
@@ -279,7 +278,7 @@ public class WorkflowClientTests {
         startWorkflowRequest.setName(wfName);
         startWorkflowRequest.setVersion(1);
 
-        var workflow = workflowClient.executeWorkflowWithBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE).get();
+        var workflow = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE).get();
         assertNotNull(workflow);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }
