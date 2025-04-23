@@ -42,33 +42,33 @@ class TaskDefSerDerTest {
         assertNotNull(taskDef);
         assertEquals("sample_name", taskDef.getName());
         assertEquals("sample_description", taskDef.getDescription());
-        assertEquals(3, taskDef.getRetryCount());
+        assertEquals(123, taskDef.getRetryCount());
         assertEquals(123L, taskDef.getTimeoutSeconds());
 
         // Verify lists
         List<String> inputKeys = taskDef.getInputKeys();
         assertNotNull(inputKeys);
         assertEquals(1, inputKeys.size());
-        assertTrue(inputKeys.contains("sample_value") || inputKeys.contains("${fieldTypePojo}"));
+        assertTrue(inputKeys.contains("sample_inputKeys") );
 
         List<String> outputKeys = taskDef.getOutputKeys();
         assertNotNull(outputKeys);
         assertEquals(1, outputKeys.size());
-        assertTrue(outputKeys.contains("sample_value") || outputKeys.contains("${fieldTypePojo}"));
+        assertTrue(outputKeys.contains("sample_outputKeys") );
 
         // Verify enums
-        assertEquals(TimeoutPolicy.TIME_OUT_WF, taskDef.getTimeoutPolicy());
+        assertEquals(TimeoutPolicy.RETRY, taskDef.getTimeoutPolicy());
         assertEquals(RetryLogic.FIXED, taskDef.getRetryLogic());
 
         // Verify maps
         Map<String, Object> inputTemplate = taskDef.getInputTemplate();
         assertNotNull(inputTemplate);
         assertEquals(1, inputTemplate.size());
-        assertTrue(inputTemplate.containsKey("key"));
+        assertTrue(inputTemplate.containsKey("sample_key"));
 
         // Verify other fields
-        assertEquals(60, taskDef.getRetryDelaySeconds());
-        assertEquals(TaskDef.ONE_HOUR, taskDef.getResponseTimeoutSeconds());
+        assertEquals(123, taskDef.getRetryDelaySeconds());
+        assertEquals(123, taskDef.getResponseTimeoutSeconds());
         assertNotNull(taskDef.getConcurrentExecLimit());
         assertNotNull(taskDef.getRateLimitPerFrequency());
         assertNotNull(taskDef.getRateLimitFrequencyInSeconds());
@@ -76,13 +76,16 @@ class TaskDefSerDerTest {
         assertEquals("sample_executionNameSpace", taskDef.getExecutionNameSpace());
         assertEquals("sample_ownerEmail", taskDef.getOwnerEmail());
         assertNotNull(taskDef.getPollTimeoutSeconds());
-        assertEquals(1, taskDef.getBackoffScaleFactor());
+        assertEquals(123, taskDef.getBackoffScaleFactor());
         assertEquals("sample_baseType", taskDef.getBaseType());
 
         // 3. Marshall this POJO to JSON again
         String serializedJson = objectMapper.writeValueAsString(taskDef);
 
         // 4. Compare the JSONs - nothing should be lost
-        assertEquals(objectMapper.readTree(SERVER_JSON), objectMapper.readTree(serializedJson));
+        assertEquals(
+                objectMapper.readTree(SERVER_JSON),
+                objectMapper.readTree(serializedJson)
+        );
     }
 }

@@ -54,7 +54,7 @@ public class TestSerDerWorkflowTestRequest {
 
         WorkflowTestRequest.TaskMock taskMock = taskMocks.get(0);
         assertNotNull(taskMock);
-        assertEquals(TaskResult.Status.COMPLETED, taskMock.getStatus());
+        assertEquals(TaskResult.Status.IN_PROGRESS, taskMock.getStatus());
         assertNotNull(taskMock.getOutput());
 
         // Check executionTime and queueWaitTime

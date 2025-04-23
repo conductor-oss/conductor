@@ -92,7 +92,7 @@ public class TestSerDerWorkflow {
         assertEquals("sample_event", workflow.getEvent());
         assertEquals("sample_externalInputPayloadStoragePath", workflow.getExternalInputPayloadStoragePath());
         assertEquals("sample_externalOutputPayloadStoragePath", workflow.getExternalOutputPayloadStoragePath());
-        assertEquals(123, workflow.getPriority());
+        assertEquals(1, workflow.getPriority());
         assertEquals(123L, workflow.getLastRetriedTime());
         assertEquals("sample_idempotencyKey", workflow.getIdempotencyKey());
         assertEquals("sample_rateLimitKey", workflow.getRateLimitKey());

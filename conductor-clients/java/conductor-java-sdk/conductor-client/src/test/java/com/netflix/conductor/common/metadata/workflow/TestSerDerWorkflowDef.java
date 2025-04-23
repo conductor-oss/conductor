@@ -50,7 +50,7 @@ class TestSerDerWorkflowDef {
         assertTrue(workflowDef.isRestartable());
         assertTrue(workflowDef.isWorkflowStatusListenerEnabled());
         assertEquals("sample_ownerEmail", workflowDef.getOwnerEmail());
-        assertEquals(TimeoutPolicy.ALERT_ONLY, workflowDef.getTimeoutPolicy());
+        assertEquals(TimeoutPolicy.TIME_OUT_WF, workflowDef.getTimeoutPolicy());
         assertEquals(123L, workflowDef.getTimeoutSeconds());
         assertEquals("sample_workflowStatusListenerSink", workflowDef.getWorkflowStatusListenerSink());
         assertTrue(workflowDef.isEnforceSchema());
@@ -63,13 +63,13 @@ class TestSerDerWorkflowDef {
         List<String> inputParameters = workflowDef.getInputParameters();
         assertNotNull(inputParameters);
         assertFalse(inputParameters.isEmpty());
-        assertEquals("sample_value", inputParameters.get(0));
+        assertEquals("sample_inputParameters", inputParameters.get(0));
 
         // Check maps
         Map<String, Object> outputParameters = workflowDef.getOutputParameters();
         assertNotNull(outputParameters);
         assertFalse(outputParameters.isEmpty());
-        assertTrue(outputParameters.containsKey("key"));
+        assertTrue(outputParameters.containsKey("sample_key"));
 
         Map<String, Object> variables = workflowDef.getVariables();
         assertNotNull(variables);

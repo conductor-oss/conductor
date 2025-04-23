@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-//todo add fields in the sdk pojo TaskDef - it will pass this test
+//todo add fields in the sdk pojo TaskDef and fix circular dependency of WorkflowDef - it will pass this test
 public class TestSerDerTask {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -77,11 +77,11 @@ public class TestSerDerTask {
         // Assert Map fields
         assertNotNull(task.getInputData());
         assertEquals(1, task.getInputData().size());
-        assertEquals("sample_value", task.getInputData().get("key"));
+        assertEquals("sample_value", task.getInputData().get("sample_key"));
 
         assertNotNull(task.getOutputData());
         assertEquals(1, task.getOutputData().size());
-        assertEquals("sample_value", task.getOutputData().get("key"));
+        assertEquals("sample_value", task.getOutputData().get("sample_key"));
 
         // Assert WorkflowTask field
         assertNotNull(task.getWorkflowTask());
