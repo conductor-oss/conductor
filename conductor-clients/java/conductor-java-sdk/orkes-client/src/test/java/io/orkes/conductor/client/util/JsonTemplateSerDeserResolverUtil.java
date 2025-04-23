@@ -106,8 +106,13 @@ public class JsonTemplateSerDeserResolverUtil {
             throw new IllegalArgumentException("Template '" + templateName + "' does not contain 'content' node");
         }
 
+        // If content is not an object (e.g., it's a string, number, boolean, etc.), return it directly
+        if (!contentNode.isObject()) {
+            return contentNode.deepCopy();
+        }
+
         // Create a deep copy of the content node
-        ObjectNode resultNode = objectMapper.readTree(contentNode.toString()).deepCopy();
+        ObjectNode resultNode = contentNode.deepCopy();
 
         // Process inheritance if present
         JsonNode inheritsNode = template.get("inherits");
@@ -118,8 +123,10 @@ public class JsonTemplateSerDeserResolverUtil {
                 // Resolve parent template
                 JsonNode parentNode = resolveTemplateWithInheritance(parentName, new HashSet<>(processedTemplates));
 
-                // Merge parent fields into result (parent fields will be overridden by child fields)
-                mergeNodes(resultNode, parentNode);
+                // Only merge if parent is an object
+                if (parentNode.isObject()) {
+                    mergeNodes(resultNode, parentNode);
+                }
             }
         }
 
@@ -194,22 +201,12 @@ public class JsonTemplateSerDeserResolverUtil {
 
                     fieldDependencies.add(referenceName);
 
-                    JsonNode referencedTemplate = templatesRoot.get(referenceName);
-                    if (referencedTemplate != null) {
-                        JsonNode referencedContent = referencedTemplate.get("content");
-                        if (referencedContent != null) {
-                            try {
-                                JsonNode resolvedReference = objectMapper.readTree(referencedContent.toString());
-                                // Resolve references with the updated dependencies
-                                resolveReferences(resolvedReference, fieldDependencies);
-                                objectNode.set(fieldName, resolvedReference);
-                            } catch (IOException e) {
-                                System.out.println("Warning: Failed to resolve reference " + referenceName + ": " + e.getMessage());
-                            }
-                        }
-                    } else {
-                        System.out.println("Warning: Referenced template not found: " + referenceName);
-                    }
+                    // FIXED: Resolve the template WITH inheritance, not just getting the content
+                    JsonNode resolvedReference = resolveTemplateWithInheritance(referenceName, new HashSet<>());
+
+                    // Resolve any references in the resolved template
+                    resolveReferences(resolvedReference, fieldDependencies);
+                    objectNode.set(fieldName, resolvedReference);
                 }
             } else if (fieldValue.isObject() || fieldValue.isArray()) {
                 // Use a clone of processed dependencies for nested structures
@@ -241,22 +238,12 @@ public class JsonTemplateSerDeserResolverUtil {
 
                     elementDependencies.add(referenceName);
 
-                    JsonNode referencedTemplate = templatesRoot.get(referenceName);
-                    if (referencedTemplate != null) {
-                        JsonNode referencedContent = referencedTemplate.get("content");
-                        if (referencedContent != null) {
-                            try {
-                                JsonNode resolvedReference = objectMapper.readTree(referencedContent.toString());
-                                // Resolve any references in the referenced template
-                                resolveReferences(resolvedReference, elementDependencies);
-                                arrayNode.set(i, resolvedReference);
-                            } catch (IOException e) {
-                                System.out.println("Warning: Failed to resolve reference " + referenceName + ": " + e.getMessage());
-                            }
-                        }
-                    } else {
-                        System.out.println("Warning: Referenced template not found: " + referenceName);
-                    }
+                    // FIXED: Resolve the template WITH inheritance, not just getting the content
+                    JsonNode resolvedReference = resolveTemplateWithInheritance(referenceName, new HashSet<>());
+
+                    // Resolve any references in the resolved template
+                    resolveReferences(resolvedReference, elementDependencies);
+                    arrayNode.set(i, resolvedReference);
                 }
             } else if (element.isObject() || element.isArray()) {
                 // Recursively process nested objects and arrays

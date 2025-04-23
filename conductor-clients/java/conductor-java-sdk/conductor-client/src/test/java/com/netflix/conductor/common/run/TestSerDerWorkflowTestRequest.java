@@ -20,13 +20,15 @@ import org.junit.jupiter.api.Test;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
-// todo fix circular dependency and missing fields in dependent sdk pojos - should pass this test
+// todo fix missing fields in dependent sdk pojos - should pass this test
 public class TestSerDerWorkflowTestRequest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,6 +37,9 @@ public class TestSerDerWorkflowTestRequest {
     public void testSerializationDeserialization() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("WorkflowTestRequest");
+        // Configure ObjectMapper to ignore deprecated fields
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         WorkflowTestRequest workflowTestRequest = objectMapper.readValue(SERVER_JSON, WorkflowTestRequest.class);
 
         // 2. Assert that the fields are all correctly populated
