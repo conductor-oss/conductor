@@ -29,12 +29,12 @@ public class IntegrationApi extends Auditable {
 
     private String api;
     private Map<String, Object> configuration;
+    @Deprecated
+    private Long createdOn;
     private String description;
     private Boolean enabled;
     private String integrationName;
     private List<TagObject> tags;
-    @Deprecated
-    private String updatedBy;
     @Deprecated
     private Long updatedOn;
 
