@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -51,12 +51,14 @@ public class WorkflowTask {
 
     private String dynamicTaskNameParam;
 
+    @Deprecated
     private String caseValueParam;
 
     /**
      * A javascript expression for decision cases. The result should be a scalar value that
      *     is used to decide the case branches.
      */
+    @Deprecated
     private String caseExpression;
 
     private String scriptExpression;
@@ -69,6 +71,7 @@ public class WorkflowTask {
     // Populates for the tasks of the decision type
     private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
+    @Deprecated
     private String dynamicForkJoinTasksParam;
 
     private String dynamicForkTasksParam;
