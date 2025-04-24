@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -25,6 +25,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConductorUser {
 
+    @Deprecated
     private Boolean applicationUser = null;
 
     private List<Group> groups = null;
@@ -37,11 +38,16 @@ public class ConductorUser {
 
     private String uuid = null;
 
+    private Boolean encryptedId;
+
+    private String encryptedIdDisplayValue;
+
     public ConductorUser applicationUser(Boolean applicationUser) {
         this.applicationUser = applicationUser;
         return this;
     }
 
+    @Deprecated
     public Boolean isApplicationUser() {
         return applicationUser;
     }
