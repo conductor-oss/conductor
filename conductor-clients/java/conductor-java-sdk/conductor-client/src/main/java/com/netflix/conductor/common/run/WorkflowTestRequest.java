@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2023 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -92,4 +92,19 @@ public class WorkflowTestRequest extends StartWorkflowRequest {
         }
     }
 
+    public Map<String, List<TaskMock>> getTaskRefToMockOutput() {
+        return taskRefToMockOutput;
+    }
+
+    public void setTaskRefToMockOutput(Map<String, List<TaskMock>> taskRefToMockOutput) {
+        this.taskRefToMockOutput = taskRefToMockOutput;
+    }
+
+    public Map<String, WorkflowTestRequest> getSubWorkflowTestRequest() {
+        return subWorkflowTestRequest;
+    }
+
+    public void setSubWorkflowTestRequest(Map<String, WorkflowTestRequest> subWorkflowTestRequest) {
+        this.subWorkflowTestRequest = subWorkflowTestRequest;
+    }
 }
