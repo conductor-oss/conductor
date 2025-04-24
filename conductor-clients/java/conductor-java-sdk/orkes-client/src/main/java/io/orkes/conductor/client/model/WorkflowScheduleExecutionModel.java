@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -73,6 +73,11 @@ public class WorkflowScheduleExecutionModel {
     private String workflowId = null;
 
     private String workflowName = null;
+
+    @Deprecated
+    private String zoneId = "UTC";
+
+    private String orgId;
 
     public WorkflowScheduleExecutionModel executionId(String executionId) {
         this.executionId = executionId;
