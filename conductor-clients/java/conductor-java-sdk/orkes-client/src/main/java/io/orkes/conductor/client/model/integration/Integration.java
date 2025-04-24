@@ -33,15 +33,9 @@ public class Integration {
     private String name;
     private List<TagObject> tags;
     private String type;
-
-    @Deprecated
-    private String createdBy;
-    @Deprecated
-    private Long createdOn;
     @Deprecated
     private String updatedBy;
     @Deprecated
     private Long updatedOn;
-    
     private List<IntegrationApi> apis;
 }

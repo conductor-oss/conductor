@@ -31,11 +31,6 @@ public class IntegrationApi {
     private Boolean enabled;
     private String integrationName;
     private List<TagObject> tags;
-
-    @Deprecated
-    private String createdBy;
-    @Deprecated
-    private Long createdOn;
     @Deprecated
     private String updatedBy;
     @Deprecated

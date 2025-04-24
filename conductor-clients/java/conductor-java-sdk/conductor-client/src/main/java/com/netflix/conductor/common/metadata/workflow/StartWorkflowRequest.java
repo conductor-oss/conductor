@@ -42,10 +42,8 @@ public class StartWorkflowRequest {
 
     private String createdBy;
 
-    @Deprecated
     private String idempotencyKey;
 
-    @Deprecated
     private IdempotencyStrategy idempotencyStrategy;
 
     public StartWorkflowRequest withName(String name) {

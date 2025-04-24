@@ -12,8 +12,8 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-/** 
- * Rate limit configuration for workflows 
+/**
+ * Rate limit configuration for workflows
  */
 import lombok.*;
 
@@ -23,14 +23,14 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class RateLimitConfig {
 
-    /** 
-     * Key that defines the rate limit. Rate limit key is a combination of workflow payload such as 
-     * name, or correlationId etc. 
+    /**
+     * Key that defines the rate limit. Rate limit key is a combination of workflow payload such as
+     * name, or correlationId etc.
      */
     private String rateLimitKey;
 
-    /** 
-     * Number of concurrently running workflows that are allowed per key 
+    /**
+     * Number of concurrently running workflows that are allowed per key
      */
     private int concurrentExecLimit;
 }

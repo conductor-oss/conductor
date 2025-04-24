@@ -63,7 +63,6 @@ public class UpsertGroupRequest {
 
     }
 
-    @Deprecated
     private Map<String, List<String>> defaultAccess = null;
 
     private String description = null;

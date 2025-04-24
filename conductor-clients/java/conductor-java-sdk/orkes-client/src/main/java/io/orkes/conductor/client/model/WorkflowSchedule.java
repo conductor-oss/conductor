@@ -16,8 +16,6 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
-import io.orkes.conductor.common.metadata.tags.Tag;
-
 import lombok.*;
 
 @EqualsAndHashCode
@@ -52,7 +50,7 @@ public class WorkflowSchedule {
 
     private String zoneId;
 
-    private List<Tag> tags;
+    private List<TagString> tags;
 
     private String pausedReason;
 

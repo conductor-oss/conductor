@@ -74,7 +74,6 @@ public class WorkflowScheduleExecutionModel {
 
     private String workflowName = null;
 
-    @Deprecated
     private String zoneId = "UTC";
 
     private String orgId;

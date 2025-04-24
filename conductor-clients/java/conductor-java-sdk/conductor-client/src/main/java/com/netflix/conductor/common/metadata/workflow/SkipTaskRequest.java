@@ -26,9 +26,4 @@ public class SkipTaskRequest {
 
     private Map<String, Object> taskOutput;
 
-    @Deprecated
-    private Any taskInputMessage;
-
-    @Deprecated
-    private Any taskOutputMessage;
 }

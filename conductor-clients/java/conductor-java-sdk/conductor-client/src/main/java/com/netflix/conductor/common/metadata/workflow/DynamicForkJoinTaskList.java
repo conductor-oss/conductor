@@ -33,12 +33,4 @@ public class DynamicForkJoinTaskList {
     public void add(DynamicForkJoinTask dtask) {
         dynamicTasks.add(dtask);
     }
-    
-    public List<DynamicForkJoinTask> getDynamicTasks() {
-        return dynamicTasks;
-    }
-
-    public void setDynamicTasks(List<DynamicForkJoinTask> dynamicTasks) {
-        this.dynamicTasks = dynamicTasks;
-    }
 }

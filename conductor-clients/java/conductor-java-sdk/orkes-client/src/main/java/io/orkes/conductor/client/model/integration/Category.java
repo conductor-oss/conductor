@@ -24,10 +24,6 @@ public enum Category {
 
     MESSAGE_BROKER,
 
-    @Deprecated
     GIT,
-
-    @Deprecated
-    EMAIL
 
 }
