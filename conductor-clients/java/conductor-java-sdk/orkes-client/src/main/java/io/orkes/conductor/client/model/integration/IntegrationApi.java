@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -27,13 +27,18 @@ public class IntegrationApi {
 
     private String api;
     private Map<String, Object> configuration;
-    private String createdBy;
-    private Long createdOn;
     private String description;
     private Boolean enabled;
     private String integrationName;
     private List<TagObject> tags;
+
+    @Deprecated
+    private String createdBy;
+    @Deprecated
+    private Long createdOn;
+    @Deprecated
     private String updatedBy;
+    @Deprecated
     private Long updatedOn;
 
 }
