@@ -15,6 +15,8 @@ package io.orkes.conductor.client.model.integration;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.Auditable;
+
 import io.orkes.conductor.client.model.TagObject;
 
 import lombok.*;
@@ -23,7 +25,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Integration {
+public class Integration extends Auditable {
 
     private Category category;
     private Map<String, Object> configuration;
