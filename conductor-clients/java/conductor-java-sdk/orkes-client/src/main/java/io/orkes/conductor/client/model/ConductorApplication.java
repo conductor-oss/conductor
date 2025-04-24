@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -27,6 +27,10 @@ public class ConductorApplication {
     private String id = null;
 
     private String name = null;
+
+    private Long createTime = null;
+
+    private Long updateTime = null;
 
     public ConductorApplication createdBy(String createdBy) {
         this.createdBy = createdBy;
