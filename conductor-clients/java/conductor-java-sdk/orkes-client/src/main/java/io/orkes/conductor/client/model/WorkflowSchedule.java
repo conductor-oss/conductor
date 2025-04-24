@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -13,8 +13,11 @@
 package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import io.orkes.conductor.common.metadata.tags.Tag;
 
 import lombok.*;
+
+import java.util.List;
 
 @EqualsAndHashCode
 @ToString
@@ -47,6 +50,12 @@ public class WorkflowSchedule {
     private Long updatedTime = null;
 
     private String zoneId;
+
+    private List<Tag> tags;
+
+    private String pausedReason;
+
+    private String description;
 
     public WorkflowSchedule createTime(Long createTime) {
         this.createTime = createTime;
