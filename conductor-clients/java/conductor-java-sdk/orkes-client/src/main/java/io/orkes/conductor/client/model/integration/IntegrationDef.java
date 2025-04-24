@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -13,6 +13,7 @@
 package io.orkes.conductor.client.model.integration;
 
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -28,6 +29,9 @@ public class IntegrationDef {
     private Boolean enabled;
     private String iconName;
     private String name;
+    @Deprecated
     private List<String> tags;
     private String type;
+    private List<IntegrationDefFormField> configuration;
+    private Set<String> tags;
 }
