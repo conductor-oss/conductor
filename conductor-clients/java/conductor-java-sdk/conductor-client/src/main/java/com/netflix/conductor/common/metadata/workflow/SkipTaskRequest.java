@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -26,4 +26,9 @@ public class SkipTaskRequest {
 
     private Map<String, Object> taskOutput;
 
+    @Deprecated
+    private Any taskInputMessage;
+
+    @Deprecated
+    private Any taskOutputMessage;
 }
