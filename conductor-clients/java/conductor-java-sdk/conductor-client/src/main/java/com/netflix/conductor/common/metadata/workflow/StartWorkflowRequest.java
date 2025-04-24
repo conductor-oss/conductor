@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -42,8 +42,10 @@ public class StartWorkflowRequest {
 
     private String createdBy;
 
+    @Deprecated
     private String idempotencyKey;
 
+    @Deprecated
     private IdempotencyStrategy idempotencyStrategy;
 
     public StartWorkflowRequest withName(String name) {
