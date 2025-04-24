@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -22,6 +22,12 @@ public enum Category {
 
     RELATIONAL_DB,
 
-    MESSAGE_BROKER
+    MESSAGE_BROKER,
+
+    @Deprecated
+    GIT,
+
+    @Deprecated
+    EMAIL
 
 }
