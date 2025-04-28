@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,14 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.orkes.conductor.client.model.integration;
-
-import java.util.List;
-import java.util.Map;
-
-import com.netflix.conductor.common.metadata.Auditable;
-
-import io.orkes.conductor.client.model.Tag;
+package io.orkes.conductor.client.model;
 
 import lombok.*;
 
@@ -25,17 +18,8 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class IntegrationApi extends Auditable {
+public class Tag {
 
-    private String api;
-    private Map<String, Object> configuration;
-    @Deprecated
-    private Long createdOn;
-    private String description;
-    private Boolean enabled;
-    private String integrationName;
-    private List<Tag> tags;
-    @Deprecated
-    private Long updatedOn;
-
+    private String key;
+    private String value;
 }
