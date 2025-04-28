@@ -17,7 +17,7 @@ import java.util.Map;
 
 import com.netflix.conductor.common.metadata.Auditable;
 
-import io.orkes.conductor.client.model.Tag;
+import io.orkes.conductor.client.model.TagObject;
 
 import lombok.*;
 
@@ -34,7 +34,7 @@ public class IntegrationApi extends Auditable {
     private String description;
     private Boolean enabled;
     private String integrationName;
-    private List<Tag> tags;
+    private List<TagObject> tags;
     @Deprecated
     private Long updatedOn;
 

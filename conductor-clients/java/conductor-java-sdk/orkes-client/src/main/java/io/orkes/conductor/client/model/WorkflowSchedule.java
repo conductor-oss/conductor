@@ -50,7 +50,7 @@ public class WorkflowSchedule {
 
     private String zoneId;
 
-    private List<TagString> tags;
+    private List<Tag> tags;
 
     private String pausedReason;
 
