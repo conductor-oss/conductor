@@ -115,6 +115,7 @@ public class WorkflowSummary {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             this.externalOutputPayloadStoragePath = workflow.getExternalOutputPayloadStoragePath();
         }
+        this.createdBy = workflow.getCreatedBy();
     }
 
     public long getInputSize() {

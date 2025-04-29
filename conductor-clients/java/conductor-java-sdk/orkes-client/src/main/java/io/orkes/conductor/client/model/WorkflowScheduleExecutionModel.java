@@ -74,6 +74,10 @@ public class WorkflowScheduleExecutionModel {
 
     private String workflowName = null;
 
+    private String zoneId = "UTC";
+
+    private String orgId;
+
     public WorkflowScheduleExecutionModel executionId(String executionId) {
         this.executionId = executionId;
         return this;

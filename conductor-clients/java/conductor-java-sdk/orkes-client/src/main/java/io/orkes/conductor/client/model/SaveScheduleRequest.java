@@ -44,6 +44,8 @@ public class SaveScheduleRequest {
 
     private String zoneId;
 
+    private String description;
+
     public SaveScheduleRequest createdBy(String createdBy) {
         this.createdBy = createdBy;
         return this;

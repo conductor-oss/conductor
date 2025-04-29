@@ -53,6 +53,7 @@ public class TagString {
         }
     }
 
+    @Deprecated
     private TypeEnum type = null;
 
     private String value = null;

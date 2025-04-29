@@ -25,6 +25,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConductorUser {
 
+    @Deprecated
     private Boolean applicationUser = null;
 
     private List<Group> groups = null;
@@ -37,11 +38,16 @@ public class ConductorUser {
 
     private String uuid = null;
 
+    private Boolean encryptedId;
+
+    private String encryptedIdDisplayValue;
+
     public ConductorUser applicationUser(Boolean applicationUser) {
         this.applicationUser = applicationUser;
         return this;
     }
 
+    @Deprecated
     public Boolean isApplicationUser() {
         return applicationUser;
     }

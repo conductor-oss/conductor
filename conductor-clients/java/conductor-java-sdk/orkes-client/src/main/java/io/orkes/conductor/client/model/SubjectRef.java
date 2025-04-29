@@ -31,6 +31,7 @@ public class SubjectRef {
         USER("USER"),
         ROLE("ROLE"),
         GROUP("GROUP"),
+        @Deprecated
         TAG("TAG");
 
         private final String value;

@@ -194,7 +194,6 @@ public class Workflow extends Auditable {
         return workflowDefinition.getVersion();
     }
 
-
     public boolean hasParent() {
         return StringUtils.isNotEmpty(parentWorkflowId);
     }

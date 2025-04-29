@@ -66,4 +66,5 @@ public class TaskSummary {
     
     private int workflowPriority;
 
+    private String domain;
 }

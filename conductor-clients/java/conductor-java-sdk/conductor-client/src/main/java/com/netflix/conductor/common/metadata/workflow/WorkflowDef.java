@@ -76,6 +76,8 @@ public class WorkflowDef extends Auditable {
 
     private boolean enforceSchema = true;
 
+    private Map<String, Object> metadata = new HashMap<>();
+
     public String key() {
         return getKey(name, version);
     }
@@ -145,6 +147,6 @@ public class WorkflowDef extends Auditable {
     }
 
     public String toString() {
-        return "WorkflowDef{" + "name='" + name + '\'' + ", description='" + description + '\'' + ", version=" + version + ", tasks=" + tasks + ", inputParameters=" + inputParameters + ", outputParameters=" + outputParameters + ", failureWorkflow='" + failureWorkflow + '\'' + ", schemaVersion=" + schemaVersion + ", restartable=" + restartable + ", workflowStatusListenerEnabled=" + workflowStatusListenerEnabled + ", ownerEmail='" + ownerEmail + '\'' + ", timeoutPolicy=" + timeoutPolicy + ", timeoutSeconds=" + timeoutSeconds + ", variables=" + variables + ", inputTemplate=" + inputTemplate + ", workflowStatusListenerSink='" + workflowStatusListenerSink + '\'' + ", rateLimitConfig=" + rateLimitConfig + ", inputSchema=" + inputSchema + ", outputSchema=" + outputSchema + ", enforceSchema=" + enforceSchema + '}';
+        return "WorkflowDef{" + "name='" + name + '\'' + ", description='" + description + '\'' + ", version=" + version + ", tasks=" + tasks + ", inputParameters=" + inputParameters + ", outputParameters=" + outputParameters + ", failureWorkflow='" + failureWorkflow + '\'' + ", schemaVersion=" + schemaVersion + ", restartable=" + restartable + ", workflowStatusListenerEnabled=" + workflowStatusListenerEnabled + ", ownerEmail='" + ownerEmail + '\'' + ", timeoutPolicy=" + timeoutPolicy + ", timeoutSeconds=" + timeoutSeconds + ", variables=" + variables + ", inputTemplate=" + inputTemplate + ", workflowStatusListenerSink='" + workflowStatusListenerSink + '\'' + ", rateLimitConfig=" + rateLimitConfig + ", inputSchema=" + inputSchema + ", outputSchema=" + outputSchema + ", enforceSchema=" + enforceSchema + ", metadata=" + metadata + '}';
     }
 }

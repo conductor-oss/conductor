@@ -30,4 +30,5 @@ public class IntegrationDef {
     private String name;
     private List<String> tags;
     private String type;
+    private List<IntegrationDefFormField> configuration;
 }

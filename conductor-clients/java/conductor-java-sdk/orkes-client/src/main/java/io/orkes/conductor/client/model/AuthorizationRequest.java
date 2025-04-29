@@ -65,7 +65,6 @@ public class AuthorizationRequest {
 
     private TargetRef target = null;
 
-
     public AuthorizationRequest access(List<AccessEnum> access) {
         this.access = access;
         return this;
