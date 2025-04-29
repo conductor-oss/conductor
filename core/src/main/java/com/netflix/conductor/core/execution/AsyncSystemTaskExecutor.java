@@ -25,6 +25,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 @Component
 public class AsyncSystemTaskExecutor {
@@ -35,6 +36,7 @@ public class AsyncSystemTaskExecutor {
     private final long queueTaskMessagePostponeSecs;
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
+    private final ExecutionLockService executionLockService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
@@ -43,7 +45,8 @@ public class AsyncSystemTaskExecutor {
             QueueDAO queueDAO,
             MetadataDAO metadataDAO,
             ConductorProperties conductorProperties,
-            WorkflowExecutor workflowExecutor) {
+            WorkflowExecutor workflowExecutor,
+            ExecutionLockService executionLockService) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
@@ -52,6 +55,7 @@ public class AsyncSystemTaskExecutor {
                 conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs =
                 conductorProperties.getTaskExecutionPostponeDuration().getSeconds();
+        this.executionLockService = executionLockService;
     }
 
     /**
@@ -112,6 +116,12 @@ public class AsyncSystemTaskExecutor {
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
         String workflowId = task.getWorkflowInstanceId();
+        ExecutionLockService.LockInstance workflowLock =
+                executionLockService.acquireLock(workflowId);
+        if (workflowLock == null) {
+            postponeQuietly(queueName, task);
+            return;
+        }
         // if we are here the Task object is updated and needs to be persisted regardless of an
         // exception
         try {

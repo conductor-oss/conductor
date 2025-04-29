@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,15 +29,34 @@ import com.netflix.conductor.metrics.Monitors;
 @Trace
 public class ExecutionLockService {
 
+    public class LockInstance implements AutoCloseable {
+        private final String lockId;
+        private final long lockLeaseEndTime;
+
+        public LockInstance(String lockId, long lockLeaseEndTime) {
+            this.lockId = lockId;
+            this.lockLeaseEndTime = lockLeaseEndTime;
+        }
+
+        public void close() {
+            releaseLock(lockId, lockLeaseEndTime);
+            deleteLock(lockId);
+        }
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);
     private final ConductorProperties properties;
-    private final Lock lock;
+    private final Lock distributedLock;
     private final long lockLeaseTime;
     private final long lockTimeToTry;
 
-    public ExecutionLockService(ConductorProperties properties, Lock lock) {
+    // The conductor code can acquire the same lock multiple times in the same thread.
+    // Each lockId has an associated ReentrantLock instance.
+    private final Map<String, ReentrantLock> reentrantLocks = new HashMap<>();
+
+    public ExecutionLockService(ConductorProperties properties, Lock distributedLock) {
         this.properties = properties;
-        this.lock = lock;
+        this.distributedLock = distributedLock;
         this.lockLeaseTime = properties.getLockLeaseTime().toMillis();
         this.lockTimeToTry = properties.getLockTimeToTry().toMillis();
     }
@@ -49,61 +70,98 @@ public class ExecutionLockService {
      * @param lockId
      * @return
      */
-    public boolean acquireLock(String lockId) {
+    public LockInstance acquireLock(String lockId) {
         return acquireLock(lockId, lockTimeToTry, lockLeaseTime);
     }
 
-    public boolean acquireLock(String lockId, long timeToTryMs) {
+    public LockInstance acquireLock(String lockId, long timeToTryMs) {
         return acquireLock(lockId, timeToTryMs, lockLeaseTime);
     }
 
-    public boolean acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
-        if (properties.isWorkflowExecutionLockEnabled()) {
-            if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
-                LOGGER.debug(
-                        "Thread {} failed to acquire lock to lockId {}.",
-                        Thread.currentThread().getId(),
-                        lockId);
-                Monitors.recordAcquireLockUnsuccessful();
-                return false;
+    public LockInstance acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
+        if (!properties.isWorkflowExecutionLockEnabled()) {
+            return new LockInstance(lockId, System.currentTimeMillis() + leaseTimeMs);
+        }
+
+        boolean acquireDistributedLock;
+
+        // synchronized block must be non-blocking and run fast
+        synchronized (reentrantLocks) {
+            var reentrantLock = reentrantLocks.get(lockId);
+            acquireDistributedLock =
+                    reentrantLock == null || !reentrantLock.isHeldByCurrentThread();
+        }
+
+        // We only try to acquire the distributed lock
+        // if the in-process lock is not already acquired by the current thread.
+        // This is a remote db call so should be done outside the critical section
+        if (acquireDistributedLock
+                && !distributedLock.acquireLock(
+                        lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
+            LOGGER.info(
+                    "Thread {} failed to acquire lock {}.", Thread.currentThread().getId(), lockId);
+            Monitors.recordAcquireLockUnsuccessful();
+            return null;
+        }
+
+        // synchronized block must be non-blocking and run fast
+        synchronized (reentrantLocks) {
+            var reentrantLock = reentrantLocks.computeIfAbsent(lockId, k -> new ReentrantLock());
+            if (!reentrantLock.tryLock()) {
+                // we hold the distributed lock
+                // but failed to acquire the reentrant lock
+                // this should never happen in practice
+                throw new IllegalStateException("Failed to acquire the lock");
             }
-            LOGGER.debug(
-                    "Thread {} acquired lock to lockId {}.",
+            LOGGER.info(
+                    "Thread {} acquired lock {} with count {}.",
                     Thread.currentThread().getId(),
-                    lockId);
+                    lockId,
+                    reentrantLock.getHoldCount());
         }
-        return true;
+
+        return new LockInstance(lockId, System.currentTimeMillis() + leaseTimeMs);
     }
 
-    /**
-     * Blocks until it gets the lock for workflowId
-     *
-     * @param lockId
-     */
-    public void waitForLock(String lockId) {
-        if (properties.isWorkflowExecutionLockEnabled()) {
-            lock.acquireLock(lockId);
-            LOGGER.debug(
-                    "Thread {} acquired lock to lockId {}.",
-                    Thread.currentThread().getId(),
-                    lockId);
+    // made private to encourage use of the try-with-resources pattern
+    private void releaseLock(String lockId, long lockLeaseEndTime) {
+        if (!properties.isWorkflowExecutionLockEnabled()) {
+            return;
+        }
+
+        var releaseDistributedLock = false;
+
+        // synchronized block must be non-blocking and run fast
+        synchronized (reentrantLocks) {
+            var reentrantLock = reentrantLocks.get(lockId);
+            if (reentrantLock == null || !reentrantLock.isHeldByCurrentThread()) {
+                var message =
+                        String.format(
+                                "Thread %d tried to release lock to lockId %s which was not acquired by the thread.",
+                                Thread.currentThread().getId(), lockId);
+                LOGGER.warn(message, Thread.currentThread().getId(), lockId);
+                throw new IllegalStateException(message);
+            }
+            if (reentrantLock.getHoldCount() == 1) {
+                // If we are here, we can release the distributed lock, provided the lease time
+                // has not expired.
+                releaseDistributedLock = lockLeaseEndTime > System.currentTimeMillis();
+                reentrantLocks.remove(lockId);
+            }
+            reentrantLock.unlock();
+            LOGGER.info("Thread {} released lock {}.", Thread.currentThread().getId(), lockId);
+        }
+
+        if (releaseDistributedLock) {
+            // This is a remote db call so should be done outside the critical section.
+            distributedLock.releaseLock(lockId);
         }
     }
 
-    public void releaseLock(String lockId) {
+    private void deleteLock(String lockId) {
         if (properties.isWorkflowExecutionLockEnabled()) {
-            lock.releaseLock(lockId);
-            LOGGER.debug(
-                    "Thread {} released lock to lockId {}.",
-                    Thread.currentThread().getId(),
-                    lockId);
-        }
-    }
-
-    public void deleteLock(String lockId) {
-        if (properties.isWorkflowExecutionLockEnabled()) {
-            lock.deleteLock(lockId);
-            LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
+            distributedLock.deleteLock(lockId);
+            LOGGER.info("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }
 }
