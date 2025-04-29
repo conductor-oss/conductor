@@ -940,7 +940,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
-            decide(workflowId);
+                decide(workflowId);
             }
             return task;
         }
