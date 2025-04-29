@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.core.exception.NotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,6 +43,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.*;
@@ -687,6 +689,8 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("testRetryNonTerminalWorkflow");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
@@ -944,662 +948,6 @@ public class TestWorkflowExecutor {
         assertEquals(8, workflow.getTasks().size());
     }
 
-    private WorkflowModel createWorkflowModel(String workflowId, WorkflowModel.Status status) {
-        WorkflowModel model = new WorkflowModel();
-        model.setWorkflowId(workflowId);
-        WorkflowDef def = new WorkflowDef();
-        def.setName(workflowId);
-        def.setVersion(1);
-        model.setWorkflowDefinition(def);
-        model.setOwnerApp("junit_" + workflowId);
-        model.setCreateTime(10L);
-        model.setEndTime(100L);
-        model.setStatus(status);
-        return model;
-    }
-
-    private TaskModel createTaskModel(String refName, TaskType type, TaskModel.Status status) {
-        TaskModel task = new TaskModel();
-        task.setTaskId(UUID.randomUUID().toString());
-        task.setRetryCount(0);
-        task.setTaskType(type.toString());
-        task.setStatus(status);
-        task.setTaskDefName(refName);
-        task.setReferenceTaskName(refName);
-        task.setWorkflowTask(new WorkflowTask());
-        return task;
-    }
-
-    private TaskModel createTaskModelJoin(TaskModel... joinedTasks) {
-        TaskModel task = createTaskModel("taskJoin", TaskType.JOIN, TaskModel.Status.CANCELED);
-        Map<String, Object> inputData = new HashMap<>();
-        inputData.put(
-                "joinOn",
-                Arrays.stream(joinedTasks)
-                        .map(TaskModel::getReferenceTaskName)
-                        .collect(Collectors.toList()));
-        task.setInputData(inputData);
-        return task;
-    }
-
-    private void verifyTaskRetried(WorkflowModel workflow, TaskModel task) {
-        workflow.getTasks().stream()
-                .filter(
-                        t ->
-                                t.getReferenceTaskName().equals(task.getReferenceTaskName())
-                                        && t.getRetryCount() == 1
-                                        && t.getStatus() == TaskModel.Status.SCHEDULED
-                                        && t.getRetriedTaskId().equals(task.getTaskId()))
-                .findFirst()
-                .orElseThrow(AssertionError::new);
-    }
-
-    @Test
-    public void testRetryWorkflowSimple() {
-        // simple test with 2 tasks in a fork
-        // one was cancelled, one failed. Both should be retried.
-        // setup: workflow with fork into the two tasks ending with a join
-        WorkflowModel workflow = createWorkflowModel("simple", WorkflowModel.Status.FAILED);
-        TaskModel forkJoinTask =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskCancelled =
-                createTaskModel("taskCancelled", TaskType.SIMPLE, TaskModel.Status.CANCELED);
-        TaskModel taskFailed =
-                createTaskModel("taskFailed", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        TaskModel taskJoin = createTaskModelJoin(taskCancelled, taskFailed);
-        workflow.setTasks(
-                new ArrayList<>(Arrays.asList(forkJoinTask, taskCancelled, taskFailed, taskJoin)));
-        // end of setup
-
-        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(workflow.getWorkflowId(), false);
-
-        // then: failed and cancelled task should be retried
-        assertEquals(6, workflow.getTasks().size());
-        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-
-        verifyTaskRetried(workflow, taskCancelled);
-        verifyTaskRetried(workflow, taskFailed);
-        assertEquals(TaskModel.Status.IN_PROGRESS, taskJoin.getStatus());
-    }
-
-    @Test
-    public void testRetriesWorkflowWithFailedPermissiveTask() {
-        // simple test with 2 tasks in a fork
-        // one was completed, one failed which was permissive. The latter should be retried.
-
-        // setup: workflow with fork into the two tasks ending with a join
-        WorkflowModel workflow = createWorkflowModel("simple", WorkflowModel.Status.FAILED);
-        TaskModel forkJoinTask =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskCompleted =
-                createTaskModel("taskCompleted", TaskType.SIMPLE, TaskModel.Status.COMPLETED);
-        TaskModel taskFailed =
-                createTaskModel("taskFailed", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailed.getWorkflowTask().setPermissive(true);
-        TaskModel taskJoin = createTaskModelJoin(taskCompleted, taskFailed);
-        workflow.setTasks(
-                new ArrayList<>(Arrays.asList(forkJoinTask, taskCompleted, taskFailed, taskJoin)));
-        // end of setup
-
-        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(workflow.getWorkflowId(), false);
-
-        // then: failed task should be retried
-        assertEquals(5, workflow.getTasks().size());
-        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-
-        verifyTaskRetried(workflow, taskFailed);
-        assertEquals(TaskModel.Status.IN_PROGRESS, taskJoin.getStatus());
-    }
-
-    @Test
-    public void testRetryWorkflowDoesNotRetryOptional() {
-        // simple test with 2 tasks in a fork
-        // one COMPLETED_WITH_ERRORS (optional), one succeeded. Nothing should be done.
-
-        // setup: workflow with fork into the two tasks ending with a join
-        WorkflowModel workflow = createWorkflowModel("simple", WorkflowModel.Status.COMPLETED);
-        TaskModel forkJoinTask =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskCompletedWithErrors =
-                createTaskModel(
-                        "taskCompletedWithErrors",
-                        TaskType.SIMPLE,
-                        TaskModel.Status.COMPLETED_WITH_ERRORS);
-        taskCompletedWithErrors.getWorkflowTask().setOptional(true);
-        TaskModel taskSucceeded =
-                createTaskModel("taskSucceeded", TaskType.SIMPLE, TaskModel.Status.COMPLETED);
-        TaskModel taskJoin = createTaskModelJoin(taskCompletedWithErrors, taskSucceeded);
-        workflow.setTasks(
-                new ArrayList<>(
-                        Arrays.asList(
-                                forkJoinTask, taskCompletedWithErrors, taskSucceeded, taskJoin)));
-        // end of setup
-
-        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-
-        // Conflict exception should be thrown as there are no retryable tasks
-        assertThrows(
-                ConflictException.class,
-                () -> workflowExecutor.retry(workflow.getWorkflowId(), false));
-    }
-
-    @Test
-    public void testRetryWorkflowWithOptionalFailureAndAnotherFailureOnlyRetriesNonOptional() {
-        // simple test with 2 tasks in a fork
-        // one COMPLETED_WITH_ERRORS (optional), and one failure (non-optional). Only the
-        // non-optional failure should be retried
-
-        // setup: workflow with fork into the two tasks ending with a join
-        WorkflowModel workflow = createWorkflowModel("simple", WorkflowModel.Status.FAILED);
-        TaskModel forkJoinTask =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskCompletedWithErrors =
-                createTaskModel(
-                        "taskCompletedWithErrors",
-                        TaskType.SIMPLE,
-                        TaskModel.Status.COMPLETED_WITH_ERRORS);
-        taskCompletedWithErrors.getWorkflowTask().setOptional(true);
-        TaskModel taskFailed =
-                createTaskModel("taskFailed", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        TaskModel taskJoin = createTaskModelJoin(taskCompletedWithErrors, taskFailed);
-        taskJoin.setStatus(TaskModel.Status.FAILED);
-        workflow.setTasks(
-                new ArrayList<>(
-                        Arrays.asList(
-                                forkJoinTask, taskCompletedWithErrors, taskFailed, taskJoin)));
-        // end of setup
-
-        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(workflow.getWorkflowId(), false);
-
-        // then: failed task should be retried, optional task should not be retried
-        assertEquals(6, workflow.getTasks().size());
-        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-
-        verifyTaskRetried(workflow, taskFailed);
-        verifyTaskRetried(workflow, taskJoin);
-
-        // optional task should not be retried
-        assertEquals(
-                1,
-                workflow.getTasks().stream()
-                        .filter(
-                                t ->
-                                        t.getReferenceTaskName()
-                                                .equals(
-                                                        taskCompletedWithErrors
-                                                                .getReferenceTaskName()))
-                        .count());
-    }
-
-    @Test
-    public void testRetryWorkflowSimpleWithMultipleFailures() {
-        // simple test with 2 tasks in a fork
-        // two failures, both should be retried
-
-        // setup: workflow with fork into the two tasks ending with a join
-        WorkflowModel workflow = createWorkflowModel("simple", WorkflowModel.Status.FAILED);
-        TaskModel forkJoinTask =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskFailedOne =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        TaskModel taskFailedTwo =
-                createTaskModel("taskFailedTwo", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        TaskModel taskJoin = createTaskModelJoin(taskFailedOne, taskFailedTwo);
-        taskJoin.setStatus(TaskModel.Status.FAILED);
-
-        workflow.setTasks(
-                new ArrayList<>(
-                        Arrays.asList(forkJoinTask, taskFailedOne, taskFailedTwo, taskJoin)));
-        // end of setup
-
-        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(workflow.getWorkflowId(), false);
-
-        // then: failed task should be retried, optional task should not be retried
-        assertEquals(7, workflow.getTasks().size());
-        assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-
-        verifyTaskRetried(workflow, taskFailedOne);
-        verifyTaskRetried(workflow, taskFailedTwo);
-        assertEquals(TaskModel.Status.FAILED, taskJoin.getStatus());
-        verifyTaskRetried(workflow, taskJoin);
-    }
-
-    @Test
-    public void testRetrySubworkflowResumeSimple() {
-        // Simple test with single subworkflow task that was failed and should be retried.
-        var subworkflowId = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.FAILED);
-        parentWorkflow.setWorkflowId(parentWorkflowId);
-
-        TaskModel taskFailedWithinSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedWithinSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        WorkflowModel subWorkflow = createWorkflowModel(subworkflowId, WorkflowModel.Status.FAILED);
-        subWorkflow.setWorkflowId(subworkflowId);
-        subWorkflow.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subWorkflow.setParentWorkflowTaskId(subworkflowTaskId);
-        subWorkflow.setTasks(new ArrayList<>(List.of(taskFailedWithinSubworkflow)));
-
-        TaskModel subworkflowTask =
-                createTaskModel("subworkflow", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask.setSubWorkflowId(subworkflowId);
-        subworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-
-        parentWorkflow.setTasks(new ArrayList<>(List.of(subworkflowTask)));
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId, true)).thenReturn(subWorkflow);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId)).thenReturn(subworkflowTask);
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(parentWorkflow.getWorkflowId(), true);
-
-        assertEquals(WorkflowModel.Status.RUNNING, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.FAILED, parentWorkflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.FAILED, subWorkflow.getPreviousStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
-
-        assertEquals(1, parentWorkflow.getTasks().size());
-        assertEquals(2, subWorkflow.getTasks().size());
-
-        verifyTaskRetried(subWorkflow, taskFailedWithinSubworkflow);
-    }
-
-    @Test
-    public void testRetryOptionalSubworkflowResume() {
-        // Simple test with an optional subworkflow with a single task that was failed.
-        // The subworkflow should not be retried, but the parent workflow should still be completed.
-        var subworkflowId = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.COMPLETED);
-        parentWorkflow.setWorkflowId(parentWorkflowId);
-
-        TaskModel taskFailed =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailed.setWorkflowInstanceId(subworkflowId);
-
-        WorkflowModel subWorkflow = createWorkflowModel(subworkflowId, WorkflowModel.Status.FAILED);
-        subWorkflow.setWorkflowId(subworkflowId);
-        subWorkflow.setTasks(new ArrayList<>(List.of(taskFailed)));
-        subWorkflow.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subWorkflow.setParentWorkflowTaskId(subworkflowTaskId);
-
-        TaskModel subworkflowTask =
-                createTaskModel("subworkflow", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask.setSubWorkflowId(subworkflowId);
-        subworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-        subworkflowTask.getWorkflowTask().setOptional(true);
-
-        parentWorkflow.setTasks(new ArrayList<>(List.of(subworkflowTask)));
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId, true)).thenReturn(subWorkflow);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId)).thenReturn(subworkflowTask);
-
-        assertThrows(ConflictException.class, () -> workflowExecutor.retry(subworkflowId, true));
-        assertEquals(WorkflowModel.Status.COMPLETED, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.FAILED, subWorkflow.getStatus());
-        assertEquals(1, parentWorkflow.getTasks().size());
-        assertEquals(1, subWorkflow.getTasks().size());
-    }
-
-    @Test
-    public void testRetrySubworkflowResumeFork() {
-        // Simple test with a subworkflow with a single failed task and another failed task within
-        // the parent workflow.
-        // Both the task within the subworkflow, and the task outside of the subworkflow should be
-        // restarted
-        var subworkflowId = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.FAILED);
-        parentWorkflow.setWorkflowId(parentWorkflowId);
-
-        TaskModel forkJoin =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-
-        TaskModel taskFailedWithinSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedWithinSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        TaskModel taskFailedOutsideSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedOutsideSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        WorkflowModel subWorkflow = createWorkflowModel(subworkflowId, WorkflowModel.Status.FAILED);
-        subWorkflow.setWorkflowId(subworkflowId);
-        subWorkflow.setTasks(new ArrayList<>(List.of(taskFailedWithinSubworkflow)));
-        subWorkflow.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subWorkflow.setParentWorkflowTaskId(subworkflowTaskId);
-
-        TaskModel subworkflowTask =
-                createTaskModel("subworkflow", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask.setSubWorkflowId(subworkflowId);
-        subworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-
-        TaskModel joinTask = createTaskModelJoin(subworkflowTask, taskFailedOutsideSubworkflow);
-        parentWorkflow.setTasks(
-                new ArrayList<>(
-                        List.of(
-                                forkJoin,
-                                subworkflowTask,
-                                taskFailedOutsideSubworkflow,
-                                joinTask)));
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId, true)).thenReturn(subWorkflow);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId)).thenReturn(subworkflowTask);
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(parentWorkflow.getWorkflowId(), true);
-
-        // Everything should be set back to be in progress
-        assertEquals(WorkflowModel.Status.RUNNING, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
-        assertEquals(TaskModel.Status.IN_PROGRESS, subworkflowTask.getStatus());
-
-        assertEquals(5, parentWorkflow.getTasks().size());
-        assertEquals(2, subWorkflow.getTasks().size());
-
-        verifyTaskRetried(subWorkflow, taskFailedWithinSubworkflow);
-        verifyTaskRetried(parentWorkflow, taskFailedOutsideSubworkflow);
-    }
-
-    @Test
-    public void testRetryOptionalSubworkflowResumeFork() {
-        // Simple test with an optional subworkflow with a single task that was failed.
-        // The subworkflow should not be retried, but the parent workflow should still be completed.
-        var subworkflowId = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.FAILED);
-        TaskModel forkJoin =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskFailedWithinSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedWithinSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        TaskModel taskFailedOutsideSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedOutsideSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        WorkflowModel subWorkflow = createWorkflowModel(subworkflowId, WorkflowModel.Status.FAILED);
-        subWorkflow.setWorkflowId(subworkflowId);
-        subWorkflow.setTasks(new ArrayList<>(List.of(taskFailedWithinSubworkflow)));
-        subWorkflow.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subWorkflow.setParentWorkflowTaskId(subworkflowTaskId);
-
-        TaskModel subworkflowTask =
-                createTaskModel(
-                        "subworkflow",
-                        TaskType.SUB_WORKFLOW,
-                        TaskModel.Status.COMPLETED_WITH_ERRORS);
-        subworkflowTask.setSubWorkflowId(subworkflowId);
-        subworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-        subworkflowTask.getWorkflowTask().setOptional(true);
-
-        TaskModel joinTask = createTaskModelJoin(subworkflowTask, taskFailedOutsideSubworkflow);
-
-        parentWorkflow.setTasks(
-                new ArrayList<>(
-                        List.of(
-                                forkJoin,
-                                subworkflowTask,
-                                taskFailedOutsideSubworkflow,
-                                joinTask)));
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId, true)).thenReturn(subWorkflow);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId)).thenReturn(subworkflowTask);
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(parentWorkflow.getWorkflowId(), true);
-
-        // Parent workflow should still be completed, subworkflow should not be retried as it is
-        // optional
-        assertEquals(WorkflowModel.Status.RUNNING, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.FAILED, subWorkflow.getStatus());
-        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, subworkflowTask.getStatus());
-
-        assertEquals(5, parentWorkflow.getTasks().size());
-        assertEquals(1, subWorkflow.getTasks().size());
-
-        verifyTaskRetried(parentWorkflow, taskFailedOutsideSubworkflow);
-    }
-
-    @Test
-    public void testRetryWithTwoSubworkflows() {
-        // Test with two subworkflows that have failed
-        // The tasks within the subworkflows should be retried, but the subworkflows should not be
-        // restarted
-        var subworkflowId1 = UUID.randomUUID().toString();
-        var subworkflowId2 = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId1 = UUID.randomUUID().toString();
-        var subworkflowTaskId2 = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.FAILED);
-
-        TaskModel forkJoin =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-
-        TaskModel taskFailedWithinSubworkflow1 =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedWithinSubworkflow1.setWorkflowInstanceId(subworkflowId1);
-
-        TaskModel taskFailedWithinSubworkflow2 =
-                createTaskModel("taskFailedTwo", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskFailedWithinSubworkflow2.setWorkflowInstanceId(subworkflowId2);
-
-        WorkflowModel subworkflow1 =
-                createWorkflowModel(subworkflowId1, WorkflowModel.Status.FAILED);
-        subworkflow1.setWorkflowId(subworkflowId1);
-        subworkflow1.setTasks(new ArrayList<>(List.of(taskFailedWithinSubworkflow1)));
-        subworkflow1.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subworkflow1.setParentWorkflowTaskId(subworkflowTaskId1);
-
-        WorkflowModel subworkflow2 =
-                createWorkflowModel(subworkflowId2, WorkflowModel.Status.FAILED);
-        subworkflow2.setWorkflowId(subworkflowId2);
-        subworkflow2.setTasks(new ArrayList<>(List.of(taskFailedWithinSubworkflow2)));
-        subworkflow2.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subworkflow2.setParentWorkflowTaskId(subworkflowTaskId2);
-
-        TaskModel subworkflowTask1 =
-                createTaskModel("subworkflow1", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask1.setSubWorkflowId(subworkflowId1);
-        subworkflowTask1.setWorkflowInstanceId(parentWorkflowId);
-
-        TaskModel subworkflowTask2 =
-                createTaskModel("subworkflow2", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask2.setSubWorkflowId(subworkflowId2);
-        subworkflowTask2.setWorkflowInstanceId(parentWorkflowId);
-
-        TaskModel joinTask = createTaskModelJoin(subworkflowTask1, subworkflowTask2);
-
-        parentWorkflow.setTasks(
-                new ArrayList<>(List.of(forkJoin, subworkflowTask1, subworkflowTask2, joinTask)));
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId1, true)).thenReturn(subworkflow1);
-        when(executionDAOFacade.getWorkflowModel(subworkflowId2, true)).thenReturn(subworkflow2);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId1)).thenReturn(subworkflowTask1);
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId2)).thenReturn(subworkflowTask2);
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(parentWorkflow.getWorkflowId(), true);
-
-        // both subworkflow resumed
-        assertEquals(WorkflowModel.Status.RUNNING, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, subworkflow1.getStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, subworkflow2.getStatus());
-
-        assertEquals(4, parentWorkflow.getTasks().size());
-        assertEquals(2, subworkflow1.getTasks().size());
-        assertEquals(2, subworkflow2.getTasks().size());
-
-        verifyTaskRetried(subworkflow1, taskFailedWithinSubworkflow1);
-        verifyTaskRetried(subworkflow2, taskFailedWithinSubworkflow2);
-    }
-
-    @Test
-    public void testRetryNestedSubworkflows() {
-        // Test with a nested subworkflow, and another failed task in the parent workflow
-        var subworkflowId = UUID.randomUUID().toString();
-        var nestedSubworkflowId = UUID.randomUUID().toString();
-        var parentWorkflowId = UUID.randomUUID().toString();
-        var subworkflowTaskId = UUID.randomUUID().toString();
-        var nestedSubworkflowTaskId = UUID.randomUUID().toString();
-
-        WorkflowModel parentWorkflow =
-                createWorkflowModel(parentWorkflowId, WorkflowModel.Status.FAILED);
-        TaskModel forkJoin =
-                createTaskModel("taskFork", TaskType.FORK_JOIN, TaskModel.Status.COMPLETED);
-        TaskModel taskWithinFirstSubworkflow =
-                createTaskModel("taskFailedOne", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskWithinFirstSubworkflow.setWorkflowInstanceId(subworkflowId);
-
-        TaskModel taskWithinNestedSubworkflow =
-                createTaskModel("taskFailedTwo", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        taskWithinNestedSubworkflow.setWorkflowInstanceId(nestedSubworkflowId);
-
-        WorkflowModel subworkflow = createWorkflowModel(subworkflowId, WorkflowModel.Status.FAILED);
-        subworkflow.setWorkflowId(subworkflowId);
-        subworkflow.setParentWorkflowId(parentWorkflow.getWorkflowId());
-        subworkflow.setParentWorkflowTaskId(subworkflowTaskId);
-
-        WorkflowModel nestedSubworkflow =
-                createWorkflowModel(nestedSubworkflowId, WorkflowModel.Status.FAILED);
-        nestedSubworkflow.setWorkflowId(nestedSubworkflowId);
-        nestedSubworkflow.setParentWorkflowId(subworkflow.getWorkflowId());
-        nestedSubworkflow.setParentWorkflowTaskId(nestedSubworkflowTaskId);
-        nestedSubworkflow.setTasks(new ArrayList<>(List.of(taskWithinNestedSubworkflow)));
-
-        TaskModel subworkflowTask =
-                createTaskModel("subworkflow1", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        subworkflowTask.setSubWorkflowId(subworkflowId);
-        subworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-
-        TaskModel nestedSubworkflowTask =
-                createTaskModel("subworkflow2", TaskType.SUB_WORKFLOW, TaskModel.Status.FAILED);
-        nestedSubworkflowTask.setSubWorkflowId(nestedSubworkflowId);
-        nestedSubworkflowTask.setWorkflowInstanceId(parentWorkflowId);
-        nestedSubworkflowTask.setTaskId(nestedSubworkflowTaskId);
-
-        TaskModel parentFailedTask =
-                createTaskModel("taskFailedThree", TaskType.SIMPLE, TaskModel.Status.FAILED);
-        parentFailedTask.setWorkflowInstanceId(parentWorkflowId);
-
-        TaskModel joinTask = createTaskModelJoin(subworkflowTask, parentFailedTask);
-        parentWorkflow.setTasks(
-                new ArrayList<>(List.of(forkJoin, subworkflowTask, parentFailedTask, joinTask)));
-        subworkflow.setTasks(
-                new ArrayList<>(List.of(taskWithinFirstSubworkflow, nestedSubworkflowTask)));
-
-        // set up input data
-        Map<String, Object> originalInputMap = new HashMap<>();
-        originalInputMap.put("key1", "value1");
-        originalInputMap.put("key2", "value2");
-
-        parentWorkflow.setInput(originalInputMap);
-        subworkflow.setInput(originalInputMap);
-        nestedSubworkflow.setInput(originalInputMap);
-
-        when(executionDAOFacade.getWorkflowModel(subworkflowId, true)).thenReturn(subworkflow);
-        when(executionDAOFacade.getWorkflowModel(nestedSubworkflowId, true))
-                .thenReturn(nestedSubworkflow);
-        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
-                .thenReturn(parentWorkflow);
-        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
-                .thenReturn(Optional.of(new WorkflowDef()));
-        when(executionDAOFacade.getTaskModel(subworkflowTaskId)).thenReturn(subworkflowTask);
-        when(executionDAOFacade.getTaskModel(nestedSubworkflowTaskId))
-                .thenReturn(nestedSubworkflowTask);
-        when(executionLockService.acquireLock(anyString(), anyLong()))
-                .thenReturn(mock(ExecutionLockService.LockInstance.class));
-
-        workflowExecutor.retry(parentWorkflow.getWorkflowId(), true);
-
-        // both subworkflow resumed
-        assertEquals(WorkflowModel.Status.RUNNING, parentWorkflow.getStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, subworkflow.getStatus());
-        assertEquals(WorkflowModel.Status.RUNNING, nestedSubworkflow.getStatus());
-
-        assertEquals(originalInputMap, parentWorkflow.getInput());
-        assertEquals(originalInputMap, subworkflow.getInput());
-        assertEquals(originalInputMap, nestedSubworkflow.getInput());
-
-        assertEquals(5, parentWorkflow.getTasks().size());
-        assertEquals(3, subworkflow.getTasks().size());
-        assertEquals(2, nestedSubworkflow.getTasks().size());
-
-        verifyTaskRetried(parentWorkflow, parentFailedTask);
-        verifyTaskRetried(subworkflow, taskWithinFirstSubworkflow);
-        verifyTaskRetried(nestedSubworkflow, taskWithinNestedSubworkflow);
-    }
-
     @Test
     public void testRetryWorkflowMultipleRetries() {
         // setup
@@ -1670,6 +1018,7 @@ public class TestWorkflowExecutor {
 
         assertEquals(5, workflow.getTasks().size());
 
+        // Reset Last Workflow Task to FAILED.
         // Reset Last Workflow Task to FAILED.
         TaskModel lastTask2 =
                 workflow.getTasks().stream()
@@ -1755,6 +1104,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -1814,7 +1165,6 @@ public class TestWorkflowExecutor {
         task2.setStatus(TaskModel.Status.FAILED);
         task2.setRetryCount(0);
         task2.setOutputData(new HashMap<>());
-        task2.setWorkflowTask(new WorkflowTask());
         task2.setSubWorkflowId(id);
         task2.setTaskType(TaskType.SUB_WORKFLOW.name());
 
@@ -1849,16 +1199,6 @@ public class TestWorkflowExecutor {
         assertEquals(workflow.getStatus(), WorkflowModel.Status.RUNNING);
         assertEquals(subWorkflow.getPreviousStatus(), WorkflowModel.Status.FAILED);
         assertEquals(subWorkflow.getStatus(), WorkflowModel.Status.RUNNING);
-
-        subWorkflow.getTasks().stream()
-                .filter(
-                        t ->
-                                t.getReferenceTaskName().equals(task1.getReferenceTaskName())
-                                        && t.getRetryCount() == 1
-                                        && t.getStatus() == TaskModel.Status.SCHEDULED
-                                        && t.getRetriedTaskId().equals(task1.getTaskId()))
-                .findFirst()
-                .orElseThrow();
     }
 
     @Test
@@ -3027,9 +2367,14 @@ public class TestWorkflowExecutor {
                 .thenReturn(task);
         when(executionDAOFacade.getWorkflowModel(subWorkflow.getParentWorkflowId(), false))
                 .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
-        assertThrows(ConflictException.class, () -> workflowExecutor.retry(subWorkflowId, false));
-        assertEquals(WorkflowModel.Status.FAILED, subWorkflow.getStatus());
+        workflowExecutor.retry(subWorkflowId, true);
+
+        // then: parent workflow remains the same
+        assertEquals(WorkflowModel.Status.FAILED, subWorkflow.getPreviousStatus());
+        assertEquals(WorkflowModel.Status.RUNNING, subWorkflow.getStatus());
         assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, task.getStatus());
         assertEquals(WorkflowModel.Status.COMPLETED, workflow.getStatus());
     }
