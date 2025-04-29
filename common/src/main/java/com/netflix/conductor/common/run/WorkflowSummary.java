@@ -14,7 +14,9 @@ package com.netflix.conductor.common.run;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
@@ -91,6 +93,9 @@ public class WorkflowSummary {
     @ProtoField(id = 19)
     private String createdBy;
 
+    @ProtoField(id = 20)
+    private Map<String, String> taskToDomain = new HashMap<>();
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -132,6 +137,9 @@ public class WorkflowSummary {
         }
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             this.externalOutputPayloadStoragePath = workflow.getExternalOutputPayloadStoragePath();
+        }
+        if (workflow.getTaskToDomain() != null) {
+            this.taskToDomain = workflow.getTaskToDomain();
         }
         this.createdBy = workflow.getCreatedBy();
     }
@@ -358,6 +366,14 @@ public class WorkflowSummary {
         this.createdBy = createdBy;
     }
 
+    public Map<String, String> getTaskToDomain() {
+        return taskToDomain;
+    }
+
+    public void setTaskToDomain(Map<String, String> taskToDomain) {
+        this.taskToDomain = taskToDomain;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -379,7 +395,8 @@ public class WorkflowSummary {
                 && getStatus() == that.getStatus()
                 && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion())
                 && Objects.equals(getEvent(), that.getEvent())
-                && Objects.equals(getCreatedBy(), that.getCreatedBy());
+                && Objects.equals(getCreatedBy(), that.getCreatedBy())
+                && Objects.equals(getTaskToDomain(), that.getTaskToDomain());
     }
 
     @Override
@@ -397,6 +414,7 @@ public class WorkflowSummary {
                 getExecutionTime(),
                 getEvent(),
                 getPriority(),
-                getCreatedBy());
+                getCreatedBy(),
+                getTaskToDomain());
     }
 }

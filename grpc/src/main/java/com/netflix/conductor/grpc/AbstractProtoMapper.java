@@ -1484,6 +1484,7 @@ public abstract class AbstractProtoMapper {
         if (from.getCreatedBy() != null) {
             to.setCreatedBy( from.getCreatedBy() );
         }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
         return to.build();
     }
 
@@ -1508,6 +1509,7 @@ public abstract class AbstractProtoMapper {
         to.setPriority( from.getPriority() );
         to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
         to.setCreatedBy( from.getCreatedBy() );
+        to.setTaskToDomain( from.getTaskToDomainMap() );
         return to;
     }
 
