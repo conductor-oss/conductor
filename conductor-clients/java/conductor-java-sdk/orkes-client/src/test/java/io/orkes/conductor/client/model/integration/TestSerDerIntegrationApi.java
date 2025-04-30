@@ -39,8 +39,8 @@ public class TestSerDerIntegrationApi {
 
         // Check Map
         assertNotNull(integrationApi.getConfiguration());
-        assertTrue(integrationApi.getConfiguration().containsKey("${ConfigKey}"));
-        assertEquals("sample_Object", integrationApi.getConfiguration().get("${ConfigKey}"));
+        assertTrue(integrationApi.getConfiguration().containsKey("api_key"));
+        assertEquals("sample_Object", integrationApi.getConfiguration().get("api_key"));
 
         assertEquals("sample_description", integrationApi.getDescription());
         assertEquals(true, integrationApi.getEnabled());

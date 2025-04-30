@@ -47,7 +47,7 @@ public class TestSerDerIntegration {
         Map<String, Object> configuration = integration.getConfiguration();
         assertNotNull(configuration);
         assertTrue(configuration.size() > 0);
-        assertTrue(configuration.containsKey("${ConfigKey}"));
+        assertTrue(configuration.containsKey("api_key"));
 
         // Check String fields
         assertEquals("sample_description", integration.getDescription());

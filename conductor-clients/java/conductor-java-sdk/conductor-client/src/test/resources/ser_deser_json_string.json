@@ -184,7 +184,8 @@
       "dependencies" : [ "TargetRef", "Access" ]
     },
     "IntegrationDefFormField.IntegrationDefFormFieldType" : {
-      "content" : {
+      "content" : "DROPDOWN",
+      "enums" : {
         "values" : [ "DROPDOWN", "TEXT", "PASSWORD", "FILE" ],
         "constants" : {
           "DROPDOWN" : "(0)",
@@ -222,6 +223,9 @@
         "failureWorkflow" : "sample_failureWorkflow",
         "tasks" : [ "${WorkflowTask}" ],
         "outputParameters" : {
+          "sample_key" : "sample_value"
+        },
+        "metadata" : {
           "sample_key" : "sample_value"
         }
       },
@@ -368,7 +372,7 @@
     },
     "Task.Status" : {
       "content" : "IN_PROGRESS",
-       "enums" : {
+      "enums" : {
         "values" : [ "IN_PROGRESS", "CANCELED", "FAILED", "FAILED_WITH_TERMINAL_ERROR", "COMPLETED", "COMPLETED_WITH_ERRORS", "SCHEDULED", "TIMED_OUT", "SKIPPED" ],
         "constants" : {
           "IN_PROGRESS" : "(false, true, true)",
@@ -668,7 +672,6 @@
     },
     "Tag" : {
       "content" : {
-        "type" : "RATE_LIMIT",
         "value" : "sample_value",
         "key" : "sample_key"
       },
@@ -1499,6 +1502,44 @@
     "T": {
       "content": {
         "value": "sample_string_value"
+      },
+      "dependencies": []
+    },
+    "IntegrationUpdate": {
+      "content": {
+        "type": "sample_type",
+        "category": "${Category}",
+        "description": "sample_description",
+        "configuration": {
+          "${ConfigKey}": "sample_Object"
+        },
+        "enabled": true
+      },
+      "dependencies": ["Category", "ConfigKey"]
+    },
+    "IntegrationApiUpdate": {
+      "content": {
+        "description": "sample_description",
+        "configuration": {
+          "${ConfigKey}": "sample_Object"
+        },
+        "enabled": true,
+        "maxTokens": 123,
+        "frequency": "${IntegrationApiUpdate.Frequency}"
+      },
+      "dependencies": ["ConfigKey", "IntegrationApiUpdate.Frequency"]
+    },
+
+    "IntegrationApiUpdate.Frequency": {
+      "content": "DAILY",
+      "enums": {
+        "values": ["DAILY", "WEEKLY", "MONTHLY"],
+        "constants": {
+          "DAILY": "(daily)",
+          "WEEKLY": "(weekly)",
+          "MONTHLY": "(monthly)"
+        },
+        "sampleValue": "DAILY"
       },
       "dependencies": []
     }

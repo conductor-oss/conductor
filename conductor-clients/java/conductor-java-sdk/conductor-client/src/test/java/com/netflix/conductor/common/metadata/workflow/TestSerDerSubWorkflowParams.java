@@ -36,6 +36,7 @@ public class TestSerDerSubWorkflowParams {
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("SubWorkflowParams");
         objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
         objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        objectMapper.setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
         SubWorkflowParams subWorkflowParams = objectMapper.readValue(SERVER_JSON, SubWorkflowParams.class);
 
         // 2. Assert that the fields are all correctly populated

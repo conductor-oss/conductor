@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import io.orkes.conductor.client.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -31,6 +33,9 @@ public class TestSerDerWorkflowSchedule {
     public void testSerializationDeserialization() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("WorkflowSchedule");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        objectMapper.setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
         WorkflowSchedule workflowSchedule = objectMapper.readValue(SERVER_JSON, WorkflowSchedule.class);
 
         // 2. Assert that the fields are all correctly populated

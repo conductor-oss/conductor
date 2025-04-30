@@ -14,10 +14,10 @@ package io.orkes.conductor.client.model;
 
 import org.junit.jupiter.api.Test;
 
-import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
-
 import io.orkes.conductor.client.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +33,9 @@ class TestSerDerSaveScheduleRequest {
     void testSerializeDeserialize() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("SaveScheduleRequest");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        objectMapper.setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
         SaveScheduleRequest saveScheduleRequest = objectMapper.readValue(SERVER_JSON, SaveScheduleRequest.class);
 
         // 2. Assert that the fields are all correctly populated
@@ -45,7 +48,6 @@ class TestSerDerSaveScheduleRequest {
         assertEquals(123L, saveScheduleRequest.getScheduleEndTime());
         assertEquals(123L, saveScheduleRequest.getScheduleStartTime());
         assertNotNull(saveScheduleRequest.getStartWorkflowRequest());
-        verifyStartWorkflowRequest(saveScheduleRequest.getStartWorkflowRequest());
         assertEquals("sample_updatedBy", saveScheduleRequest.getUpdatedBy());
         assertEquals("sample_zoneId", saveScheduleRequest.getZoneId());
 
@@ -56,21 +58,4 @@ class TestSerDerSaveScheduleRequest {
         assertEquals(objectMapper.readTree(SERVER_JSON), objectMapper.readTree(serializedJson));
     }
 
-    private void verifyStartWorkflowRequest(StartWorkflowRequest startWorkflowRequest) {
-        // Verify StartWorkflowRequest fields based on expected template values
-        // Note: This is a simplified verification - adjust according to the actual StartWorkflowRequest structure
-        assertNotNull(startWorkflowRequest);
-
-        // You would add assertions for StartWorkflowRequest fields here
-        // For example:
-        // assertEquals("sample_name", startWorkflowRequest.getName());
-        // assertEquals("sample_version", startWorkflowRequest.getVersion());
-        // etc.
-
-        // If StartWorkflowRequest has collections (List, Map, etc.), verify those as well
-        // For example:
-        // assertNotNull(startWorkflowRequest.getInput());
-        // assertFalse(startWorkflowRequest.getInput().isEmpty());
-        // etc.
-    }
 }

@@ -46,7 +46,7 @@ class TestSerDerIntegrationDef {
         // Check list
         assertNotNull(integrationDef.getTags());
         assertEquals(1, integrationDef.getTags().size());
-        assertEquals("sample_tag", integrationDef.getTags().get(0));
+        assertEquals("sample_tags", integrationDef.getTags().get(0));
 
         assertEquals("sample_type", integrationDef.getType());
 

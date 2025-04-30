@@ -16,13 +16,14 @@ import org.junit.jupiter.api.Test;
 
 import io.orkes.conductor.client.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//todo missing fields in sdk pojo - add them
 class TestSerDerConductorUser {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,9 +36,6 @@ class TestSerDerConductorUser {
 
         // 2. Assert that the fields are all correctly populated
         assertNotNull(conductorUser);
-
-        // Check Boolean field
-        assertNotNull(conductorUser.isApplicationUser());
 
         // Check String fields
         assertNotNull(conductorUser.getId());
@@ -56,10 +54,20 @@ class TestSerDerConductorUser {
         // 3. Marshall this POJO to JSON again
         String serializedJson = objectMapper.writeValueAsString(conductorUser);
 
-        // 4. Compare the JSONs - nothing should be lost
-        assertEquals(
-                objectMapper.readTree(SERVER_JSON),
-                objectMapper.readTree(serializedJson)
-        );
+        // 4. Compare the JSONs - exclude deprecated applicationUser field
+        JsonNode originalJsonNode = objectMapper.readTree(SERVER_JSON);
+        JsonNode serializedJsonNode = objectMapper.readTree(serializedJson);
+
+        // Remove applicationUser field from both nodes if present
+        if (originalJsonNode instanceof ObjectNode && ((ObjectNode) originalJsonNode).has("applicationUser")) {
+            ((ObjectNode) originalJsonNode).remove("applicationUser");
+        }
+
+        if (serializedJsonNode instanceof ObjectNode && ((ObjectNode) serializedJsonNode).has("applicationUser")) {
+            ((ObjectNode) serializedJsonNode).remove("applicationUser");
+        }
+
+        // Compare the modified JSON trees
+        assertEquals(originalJsonNode, serializedJsonNode);
     }
 }

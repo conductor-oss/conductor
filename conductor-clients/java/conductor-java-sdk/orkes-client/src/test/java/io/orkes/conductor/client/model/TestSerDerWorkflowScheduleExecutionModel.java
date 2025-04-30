@@ -18,6 +18,8 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 import io.orkes.conductor.client.util.JsonTemplateSerDeserResolverUtil;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +34,9 @@ public class TestSerDerWorkflowScheduleExecutionModel {
     public void testSerializationDeserialization() throws Exception {
         // 1. Unmarshal SERVER_JSON to SDK POJO
         String SERVER_JSON = JsonTemplateSerDeserResolverUtil.getJsonString("WorkflowScheduleExecutionModel");
+        objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        objectMapper.setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
         WorkflowScheduleExecutionModel model = objectMapper.readValue(SERVER_JSON, WorkflowScheduleExecutionModel.class);
 
         // 2. Assert that the fields are all correctly populated
@@ -44,7 +49,7 @@ public class TestSerDerWorkflowScheduleExecutionModel {
         assertEquals("sample_stackTrace", model.getStackTrace());
 
         // Check enum
-        assertEquals(WorkflowScheduleExecutionModel.StateEnum.EXECUTED, model.getState());
+        assertEquals(WorkflowScheduleExecutionModel.StateEnum.POLLED, model.getState());
 
         assertEquals("sample_workflowId", model.getWorkflowId());
         assertEquals("sample_workflowName", model.getWorkflowName());

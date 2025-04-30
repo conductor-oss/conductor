@@ -40,8 +40,8 @@ public class TestSerDerIntegrationApiUpdate {
         // Check Map configuration
         assertNotNull(integrationApiUpdate.getConfiguration());
         assertEquals(1, integrationApiUpdate.getConfiguration().size());
-        assertTrue(integrationApiUpdate.getConfiguration().containsKey("key"));
-        assertNotNull(integrationApiUpdate.getConfiguration().get("key"));
+        assertTrue(integrationApiUpdate.getConfiguration().containsKey("api_key"));
+        assertNotNull(integrationApiUpdate.getConfiguration().get("api_key"));
 
         // Check String description
         assertNotNull(integrationApiUpdate.getDescription());

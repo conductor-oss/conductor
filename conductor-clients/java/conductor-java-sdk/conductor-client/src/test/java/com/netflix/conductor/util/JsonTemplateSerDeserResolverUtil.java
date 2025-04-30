@@ -184,6 +184,38 @@ public class JsonTemplateSerDeserResolverUtil {
         for (String fieldName : fieldsToProcess) {
             JsonNode fieldValue = objectNode.get(fieldName);
 
+            // Check if the field name is a reference that needs to be resolved
+            if (isReference(fieldName)) {
+                String referenceName = extractReferenceName(fieldName);
+
+                // Use a clone of the processed dependencies for each field name
+                Set<String> fieldDependencies = new HashSet<>(processedDependencies);
+
+                if (fieldDependencies.contains(referenceName)) {
+                    // Circular reference detected
+                    System.out.println("Warning: Circular reference detected for " + referenceName);
+                    continue;
+                }
+
+                fieldDependencies.add(referenceName);
+
+                // Resolve the template to get the actual key name
+                JsonNode resolvedReference = resolveTemplateWithInheritance(referenceName, new HashSet<>());
+
+                // Only apply if the resolved reference is a simple value (string, number, etc.)
+                if (!resolvedReference.isContainerNode()) {
+                    String resolvedKey = resolvedReference.asText();
+
+                    // Remove the original reference key and add the resolved key with the same value
+                    JsonNode originalValue = objectNode.remove(fieldName);
+                    objectNode.set(resolvedKey, originalValue);
+
+                    // Update the field name for further processing
+                    fieldName = resolvedKey;
+                    fieldValue = originalValue;
+                }
+            }
+
             // Check if the field value is a string reference
             if (fieldValue.isTextual()) {
                 String textValue = fieldValue.asText();
@@ -201,7 +233,7 @@ public class JsonTemplateSerDeserResolverUtil {
 
                     fieldDependencies.add(referenceName);
 
-                    // FIXED: Resolve the template WITH inheritance, not just getting the content
+                    // Resolve the template WITH inheritance
                     JsonNode resolvedReference = resolveTemplateWithInheritance(referenceName, new HashSet<>());
 
                     // Resolve any references in the resolved template
