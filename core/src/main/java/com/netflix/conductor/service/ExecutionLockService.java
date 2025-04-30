@@ -98,7 +98,7 @@ public class ExecutionLockService {
         if (acquireDistributedLock
                 && !distributedLock.acquireLock(
                         lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
-            LOGGER.info(
+            LOGGER.debug(
                     "Thread {} failed to acquire lock {}.", Thread.currentThread().getId(), lockId);
             Monitors.recordAcquireLockUnsuccessful();
             return null;
@@ -113,7 +113,7 @@ public class ExecutionLockService {
                 // this should never happen in practice
                 throw new IllegalStateException("Failed to acquire the lock");
             }
-            LOGGER.info(
+            LOGGER.debug(
                     "Thread {} acquired lock {} with count {}.",
                     Thread.currentThread().getId(),
                     lockId,
@@ -149,7 +149,7 @@ public class ExecutionLockService {
                 reentrantLocks.remove(lockId);
             }
             reentrantLock.unlock();
-            LOGGER.info("Thread {} released lock {}.", Thread.currentThread().getId(), lockId);
+            LOGGER.debug("Thread {} released lock {}.", Thread.currentThread().getId(), lockId);
         }
 
         if (releaseDistributedLock) {
@@ -161,7 +161,7 @@ public class ExecutionLockService {
     private void deleteLock(String lockId) {
         if (properties.isWorkflowExecutionLockEnabled()) {
             distributedLock.deleteLock(lockId);
-            LOGGER.info("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
+            LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }
 }
