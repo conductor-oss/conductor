@@ -1367,7 +1367,7 @@
       "dependencies" : [ "T" ]
     },
     "VectorDBInput" : {
-      "content" : {
+      "Content" : {
         "embeddings" : [ 3.14 ],
         "metadata" : {
           "sample_key" : "sample_value"
@@ -1378,8 +1378,7 @@
         "index" : "sample_index",
         "dimensions" : 123
       },
-      "dependencies" : [ ],
-      "inherits" : [ "LLMWorkerInput" ]
+      "dependencies" : [ ]
     },
     "AccessKeyResponse" : {
       "content" : {
