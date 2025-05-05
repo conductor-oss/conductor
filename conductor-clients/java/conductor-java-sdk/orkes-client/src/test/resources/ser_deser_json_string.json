@@ -390,7 +390,7 @@
       "dependencies" : [ ]
     },
     "LLMWorkerInput" : {
-      "content" : {
+      "Content" : {
         "stopWords" : [ "sample_stopWords" ],
         "llmProvider" : "sample_llmProvider",
         "maxResults" : 123,
