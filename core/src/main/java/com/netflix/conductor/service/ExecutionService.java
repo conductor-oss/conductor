@@ -168,6 +168,14 @@ public class ExecutionService {
                 taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
                 if (taskModel.getStartTime() == 0) {
                     taskModel.setStartTime(System.currentTimeMillis());
+
+                    // Use previous task's start time for retries, otherwise use current time
+                    if (taskModel.getRetryCount() != 0) {
+                        taskModel.setFirstStartTime(taskModel.getFirstStartTime());
+                    } else {
+                        taskModel.setFirstStartTime(System.currentTimeMillis());
+                    }
+
                     Monitors.recordQueueWaitTime(
                             taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
                 }
