@@ -32,6 +32,8 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowTask {
 
+    @Getter
+    @Setter
     public static class CacheConfig {
 
         private String key;

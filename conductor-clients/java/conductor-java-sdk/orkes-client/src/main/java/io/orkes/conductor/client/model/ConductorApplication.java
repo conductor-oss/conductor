@@ -32,6 +32,8 @@ public class ConductorApplication {
 
     private Long updateTime = null;
 
+    private String updatedBy = null;
+
     public ConductorApplication createdBy(String createdBy) {
         this.createdBy = createdBy;
         return this;
