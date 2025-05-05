@@ -1399,7 +1399,7 @@
       "dependencies" : [ "SubjectType" ]
     },
     "EmbeddingRequest" : {
-      "content" : {
+      "Content" : {
         "llmProvider" : "sample_llmProvider",
         "model" : "sample_model",
         "text" : "sample_text",
