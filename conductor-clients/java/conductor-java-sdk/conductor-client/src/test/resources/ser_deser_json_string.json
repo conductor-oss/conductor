@@ -843,7 +843,8 @@
     "IndexDocInput" : {
       "content" : {
         "metadata" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "chunkSize" : 123,
         "chunkOverlap" : 123,
