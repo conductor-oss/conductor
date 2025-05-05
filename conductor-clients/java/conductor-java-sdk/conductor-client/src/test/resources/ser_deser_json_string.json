@@ -1,7 +1,7 @@
 {
   "templates" : {
     "IndexedDoc" : {
-      "content" : {
+      "Content" : {
         "score" : 123.456,
         "metadata" : {
           "sample_key" : "sample_value"
