@@ -1345,7 +1345,7 @@
       "inherits" : [ "LLMWorkerInput" ]
     },
     "PromptTemplateTestRequest" : {
-      "content" : {
+      "Content" : {
         "promptVariables" : {
           "key" : "sample_value"
         },
