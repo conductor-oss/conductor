@@ -883,7 +883,9 @@
       "dependencies" : [ ]
     },
     "ChatMessage.Actor" : {
-      "content" : {
+      "content" : "user",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "user", "assistant", "system", "human", "chatbot" ],
         "constants" : {
           "chatbot" : "(4)",
@@ -893,8 +895,7 @@
           "human" : "(3)"
         },
         "sampleValue" : "user"
-      },
-      "dependencies" : [ ]
+      }
     },
     "WorkflowScheduleExecutionModel.State" : {
       "content" : {
