@@ -1425,7 +1425,7 @@
       "dependencies" : [ "StartWorkflowRequest" ]
     },
     "LLMResponse" : {
-      "content" : {
+      "Content" : {
         "result" : "sample_result",
         "finishReason" : "sample_finishReason",
         "tokenUsed" : 123
