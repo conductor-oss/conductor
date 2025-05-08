@@ -20,7 +20,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
