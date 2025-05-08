@@ -52,6 +52,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
@@ -87,7 +88,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
                     pollData.getLastPollTime()
-                            > System.currentTimeMillis() - activeWorkerLastPollMs;
+                            > TimeService.currentTimeMillis() - activeWorkerLastPollMs;
 
     public WorkflowExecutorOps(
             DeciderService deciderService,
@@ -227,7 +228,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.getTasks().clear();
         workflow.setReasonForIncompletion(null);
         workflow.setFailedTaskId(null);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         workflow.setEndTime(0);
         workflow.setLastRetriedTime(0);
         // Change the status to running
@@ -320,7 +321,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             WorkflowModel parentWorkflow =
                     executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
             parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
-            parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
+            parentWorkflow.setLastRetriedTime(TimeService.currentTimeMillis());
             executionDAOFacade.updateWorkflow(parentWorkflow);
 
             try {
@@ -394,7 +395,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // Update Workflow with new status.
         // This should load Workflow from archive, if archived.
         workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setLastRetriedTime(System.currentTimeMillis());
+        workflow.setLastRetriedTime(TimeService.currentTimeMillis());
         String lastReasonForIncompletion = workflow.getReasonForIncompletion();
         workflow.setReasonForIncompletion(null);
         // Add to decider queue
@@ -816,7 +817,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         if (task.getStatus().isTerminal()) {
-            task.setEndTime(System.currentTimeMillis());
+            task.setEndTime(TimeService.currentTimeMillis());
         }
 
         // Update message in Task queue based on Task status
@@ -1327,7 +1328,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             + workflow.getStatus().name());
         }
         workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setLastRetriedTime(System.currentTimeMillis());
+        workflow.setLastRetriedTime(TimeService.currentTimeMillis());
         // Add to decider queue
         queueDAO.push(
                 DECIDER_QUEUE,
@@ -1392,7 +1393,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeSkipped.setWorkflowInstanceId(workflowId);
         taskToBeSkipped.setWorkflowPriority(workflow.getPriority());
         taskToBeSkipped.setStatus(SKIPPED);
-        taskToBeSkipped.setEndTime(System.currentTimeMillis());
+        taskToBeSkipped.setEndTime(TimeService.currentTimeMillis());
         taskToBeSkipped.setTaskType(workflowTask.getName());
         taskToBeSkipped.setCorrelationId(workflow.getCorrelationId());
         if (skipTaskRequest != null) {
@@ -1552,7 +1553,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (task.getStatus() != null
                         && !task.getStatus().isTerminal()
                         && task.getStartTime() == 0) {
-                    task.setStartTime(System.currentTimeMillis());
+                    task.setStartTime(TimeService.currentTimeMillis());
                 }
                 if (!workflowSystemTask.isAsync()) {
                     try {
@@ -1754,7 +1755,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             workflow.setTasks(filteredTasks);
             // reset fields before restarting the task
-            rerunFromTask.setScheduledTime(System.currentTimeMillis());
+            rerunFromTask.setScheduledTime(TimeService.currentTimeMillis());
             rerunFromTask.setStartTime(0);
             rerunFromTask.setUpdateTime(0);
             rerunFromTask.setEndTime(0);
@@ -1764,7 +1765,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             if (rerunFromTask.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
                 // if task is sub workflow set task as IN_PROGRESS and reset start time
                 rerunFromTask.setStatus(IN_PROGRESS);
-                rerunFromTask.setStartTime(System.currentTimeMillis());
+                rerunFromTask.setStartTime(TimeService.currentTimeMillis());
             } else {
                 if (taskInput != null) {
                     rerunFromTask.setInputData(taskInput);
@@ -1902,7 +1903,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setParentWorkflowId(input.getParentWorkflowId());
         workflow.setParentWorkflowTaskId(input.getParentWorkflowTaskId());
         workflow.setOwnerApp(WorkflowContext.get().getClientApp());
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         workflow.setUpdatedBy(null);
         workflow.setUpdatedTime(null);
         workflow.setEvent(input.getEvent());

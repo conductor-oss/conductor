@@ -25,6 +25,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 @Component
 public class AsyncSystemTaskExecutor {
@@ -147,7 +148,7 @@ public class AsyncSystemTaskExecutor {
             }
 
             if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                task.setStartTime(System.currentTimeMillis());
+                task.setStartTime(TimeService.currentTimeMillis());
                 Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
                 systemTask.start(workflow, task, workflowExecutor);
             } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
@@ -160,7 +161,7 @@ public class AsyncSystemTaskExecutor {
                 shouldRemoveTaskFromQueue = true;
                 hasTaskExecutionCompleted = true;
             } else if (task.getStatus().isTerminal()) {
-                task.setEndTime(System.currentTimeMillis());
+                task.setEndTime(TimeService.currentTimeMillis());
                 shouldRemoveTaskFromQueue = true;
                 hasTaskExecutionCompleted = true;
             } else {

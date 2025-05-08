@@ -27,6 +27,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * @author x-ultra
@@ -74,7 +75,7 @@ public class LambdaTaskMapper implements TaskMapper {
 
         TaskModel lambdaTask = taskMapperContext.createTaskModel();
         lambdaTask.setTaskType(TaskType.TASK_TYPE_LAMBDA);
-        lambdaTask.setStartTime(System.currentTimeMillis());
+        lambdaTask.setStartTime(TimeService.currentTimeMillis());
         lambdaTask.setInputData(taskInput);
         lambdaTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

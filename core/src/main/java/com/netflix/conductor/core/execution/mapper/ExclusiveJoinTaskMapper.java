@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.service.TimeService;
 
 @Component
 public class ExclusiveJoinTaskMapper implements TaskMapper {
@@ -51,7 +52,7 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
         TaskModel joinTask = taskMapperContext.createTaskModel();
         joinTask.setTaskType(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
         joinTask.setTaskDefName(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
-        joinTask.setStartTime(System.currentTimeMillis());
+        joinTask.setStartTime(TimeService.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

@@ -47,6 +47,7 @@ import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -285,9 +286,9 @@ public class ExecutionDAOFacade {
      * @return the id of the updated workflow
      */
     public String updateWorkflow(WorkflowModel workflowModel) {
-        workflowModel.setUpdatedTime(System.currentTimeMillis());
+        workflowModel.setUpdatedTime(TimeService.currentTimeMillis());
         if (workflowModel.getStatus().isTerminal()) {
-            workflowModel.setEndTime(System.currentTimeMillis());
+            workflowModel.setEndTime(TimeService.currentTimeMillis());
         }
         externalizeWorkflowData(workflowModel);
         executionDAO.updateWorkflow(workflowModel);
@@ -498,10 +499,10 @@ public class ExecutionDAOFacade {
         if (taskModel.getStatus() != null) {
             if (!taskModel.getStatus().isTerminal()
                     || (taskModel.getStatus().isTerminal() && taskModel.getUpdateTime() == 0)) {
-                taskModel.setUpdateTime(System.currentTimeMillis());
+                taskModel.setUpdateTime(TimeService.currentTimeMillis());
             }
             if (taskModel.getStatus().isTerminal() && taskModel.getEndTime() == 0) {
-                taskModel.setEndTime(System.currentTimeMillis());
+                taskModel.setEndTime(TimeService.currentTimeMillis());
             }
         }
         externalizeTaskData(taskModel);
@@ -561,7 +562,7 @@ public class ExecutionDAOFacade {
     }
 
     public void extendLease(TaskModel taskModel) {
-        taskModel.setUpdateTime(System.currentTimeMillis());
+        taskModel.setUpdateTime(TimeService.currentTimeMillis());
         executionDAO.updateTask(taskModel);
     }
 

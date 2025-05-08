@@ -67,6 +67,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -263,7 +264,7 @@ public class TestDeciderOutcomes {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
         workflow.getInput().put("requestId", 123);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertNotNull(outcome);
 
@@ -330,7 +331,7 @@ public class TestDeciderOutcomes {
         workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
         workflow.getInput().put("requestId", 123);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
 
         workflow.getInput().put("forks", forks);
         workflow.getInput().put("forkedInputs", forkedInputs);
@@ -349,7 +350,7 @@ public class TestDeciderOutcomes {
 
         outcome.tasksToBeScheduled.get(1).setStatus(TaskModel.Status.FAILED);
         for (TaskModel taskToBeScheduled : outcome.tasksToBeScheduled) {
-            taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+            taskToBeScheduled.setUpdateTime(TimeService.currentTimeMillis());
         }
         workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
@@ -396,7 +397,7 @@ public class TestDeciderOutcomes {
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertNotNull(outcome);
         assertEquals(1, outcome.tasksToBeScheduled.size());
@@ -470,7 +471,7 @@ public class TestDeciderOutcomes {
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertNotNull(outcome);
         assertEquals(1, outcome.tasksToBeScheduled.size());
@@ -562,7 +563,7 @@ public class TestDeciderOutcomes {
         workflow.getInput().put("forks", forks);
         workflow.getInput().put("forkedInputs", forkedInputs);
 
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertNotNull(outcome);
         assertEquals(5, outcome.tasksToBeScheduled.size());
@@ -580,7 +581,7 @@ public class TestDeciderOutcomes {
                     taskToBeScheduled.setStatus(TaskModel.Status.FAILED);
                 }
 
-                taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+                taskToBeScheduled.setUpdateTime(TimeService.currentTimeMillis());
             }
             workflow.getTasks().addAll(outcome.tasksToBeScheduled);
             outcome = deciderService.decide(workflow);
@@ -641,7 +642,7 @@ public class TestDeciderOutcomes {
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
-        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setCreateTime(TimeService.currentTimeMillis());
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertNotNull(outcome);
         assertEquals(2, outcome.tasksToBeScheduled.size());

@@ -28,6 +28,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 @Component
 public class JsonJQTransformTaskMapper implements TaskMapper {
@@ -64,7 +65,7 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
                         workflowTask.getInputParameters(), workflowModel, taskId, taskDefinition);
 
         TaskModel jsonJQTransformTask = taskMapperContext.createTaskModel();
-        jsonJQTransformTask.setStartTime(System.currentTimeMillis());
+        jsonJQTransformTask.setStartTime(TimeService.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
         if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
             jsonJQTransformTask.setIsolationGroupId(

@@ -123,11 +123,11 @@ public class WorkflowTestService {
                             if (task.getExecutionTime() > 0 || task.getQueueWaitTime() > 0) {
                                 TaskModel existing = executionDAO.getTask(running.getTaskId());
                                 existing.setScheduledTime(
-                                        System.currentTimeMillis()
+                                        TimeService.currentTimeMillis()
                                                 - (task.getExecutionTime()
                                                         + task.getQueueWaitTime()));
                                 existing.setStartTime(
-                                        System.currentTimeMillis() - task.getExecutionTime());
+                                        TimeService.currentTimeMillis() - task.getExecutionTime());
                                 existing.setStatus(
                                         TaskModel.Status.valueOf(task.getStatus().name()));
                                 existing.getOutputData().putAll(task.getOutput());
