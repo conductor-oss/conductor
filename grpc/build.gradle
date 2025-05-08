@@ -44,13 +44,13 @@ dependencies {
 def artifactName = 'com.google.protobuf:protoc:3.14.0:osx-x86_64'
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.LINUX:
-        artifactName = "com.google.protobuf:protoc:3.21.12"
+        artifactName = "com.google.protobuf:protoc:4.27.3"
         break;
     case org.gradle.internal.os.OperatingSystem.MAC_OS:
         artifactName = "com.google.protobuf:protoc:3.14.0:osx-x86_64"
         break;
     case org.gradle.internal.os.OperatingSystem.WINDOWS:
-        artifactName = "com.google.protobuf:protoc:3.21.12"
+        artifactName = "com.google.protobuf:protoc:4.27.3"
         break;
 }
 
