@@ -127,10 +127,6 @@ public class TaskDef extends Auditable {
     @ProtoField(id = 21)
     private String baseType;
 
-    @ProtoField(id = 22)
-    @NotNull
-    private long totalTimeoutSeconds;
-
     private SchemaDef inputSchema;
     private SchemaDef outputSchema;
     private boolean enforceSchema;
@@ -468,14 +464,6 @@ public class TaskDef extends Auditable {
         this.enforceSchema = enforceSchema;
     }
 
-    public long getTotalTimeoutSeconds() {
-        return totalTimeoutSeconds;
-    }
-
-    public void setTotalTimeoutSeconds(long totalTimeoutSeconds) {
-        this.totalTimeoutSeconds = totalTimeoutSeconds;
-    }
-
     @Override
     public String toString() {
         return name;
@@ -509,8 +497,7 @@ public class TaskDef extends Auditable {
                 && Objects.equals(getOwnerEmail(), taskDef.getOwnerEmail())
                 && Objects.equals(getBaseType(), taskDef.getBaseType())
                 && Objects.equals(getInputSchema(), taskDef.getInputSchema())
-                && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
-                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds());
+                && Objects.equals(getOutputSchema(), taskDef.getOutputSchema());
     }
 
     @Override
@@ -536,7 +523,6 @@ public class TaskDef extends Auditable {
                 getOwnerEmail(),
                 getBaseType(),
                 getInputSchema(),
-                getOutputSchema(),
-                getTotalTimeoutSeconds());
+                getOutputSchema());
     }
 }
