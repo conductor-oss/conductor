@@ -769,17 +769,18 @@
     "EventExecution" : {
       "content" : {
         "output" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "created" : 123,
         "name" : "sample_name",
         "messageId" : "sample_messageId",
-        "action" : "${EventHandler.Action.Type}",
+        "action" : "${Action.Type}",
         "id" : "sample_id",
         "event" : "sample_event",
         "status" : "${EventExecution.Status}"
       },
-      "dependencies" : [ "EventExecution.Status", "EventHandler.Action.Type" ]
+      "dependencies" : [ "EventExecution.Status", "Action.Type" ]
     },
     "ConductorApplication" : {
       "content" : {
