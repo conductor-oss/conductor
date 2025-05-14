@@ -713,7 +713,8 @@
       "content" : {
         "retried" : true,
         "outputData" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "referenceTaskName" : "sample_referenceTaskName",
         "workflowPriority" : 123,
@@ -734,7 +735,8 @@
         "seq" : 123,
         "startDelayInSeconds" : 123,
         "inputData" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "callbackAfterSeconds" : 123,
         "workerId" : "sample_workerId",
