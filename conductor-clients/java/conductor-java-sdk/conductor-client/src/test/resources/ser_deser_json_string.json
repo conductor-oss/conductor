@@ -58,7 +58,9 @@
     },
     "WorkflowTask.WorkflowTaskList" : {
       "content" : {
-        "tasks" : [ "${WorkflowTask}" ]
+        "tasks" : [ {
+          "${WorkflowTask}" : { }
+        } ]
       },
       "dependencies" : [ "WorkflowTask" ]
     },
@@ -1098,21 +1100,31 @@
     },
     "WorkflowTask" : {
       "content" : {
-        "joinOn" : [ "sample_joinOn" ],
+        "joinOn" : [ "sample_value" ],
         "description" : "sample_description",
         "scriptExpression" : "sample_scriptExpression",
-        "cacheConfig" : "${WorkflowTask.CacheConfig}",
+        "cacheConfig" : {
+          "${WorkflowTask.CacheConfig}" : { }
+        },
         "type" : "sample_type",
         "inputParameters" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "decisionCases" : {
-          "sample_key" : [ "${WorkflowTask1}" ]
+          "sample_key" : [ "${WorkflowTask1}" ],
+          "key" : [ {
+            "${WorkflowTask}" : { }
+          } ]
         },
-        "loopOver" : [ "${WorkflowTask1}" ],
+        "loopOver" : [ {
+          "${WorkflowTask}" : { }
+        } ],
         "caseExpression" : "sample_caseExpression",
-        "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
-        "taskDefinition" : "${TaskDef}",
+        "defaultExclusiveJoinTask" : [ "sample_value" ],
+        "taskDefinition" : {
+          "${TaskDef}" : { }
+        },
         "caseValueParam" : "sample_caseValueParam",
         "dynamicForkTasksInputParamName" : "sample_dynamicForkTasksInputParamName",
         "expression" : "sample_expression",
@@ -1121,7 +1133,9 @@
         "sink" : "sample_sink",
         "rateLimited" : true,
         "retryCount" : 123,
-        "subWorkflowParam" : "${SubWorkflowParams1}",
+        "subWorkflowParam" : {
+          "${SubWorkflowParams}" : { }
+        },
         "optional" : true,
         "joinStatus" : "sample_joinStatus",
         "evaluatorType" : "sample_evaluatorType",
@@ -1130,15 +1144,22 @@
         "startDelay" : 123,
         "permissive" : true,
         "taskReferenceName" : "sample_taskReferenceName",
-        "defaultCase" : [ "${WorkflowTask1}" ],
-        "forkTasks" : [ [ "${WorkflowTask1}" ] ],
+        "defaultCase" : [ {
+          "${WorkflowTask}" : { }
+        } ],
+        "forkTasks" : [ [ {
+          "${WorkflowTask}" : { }
+        } ] ],
         "dynamicForkTasksParam" : "sample_dynamicForkTasksParam",
         "onStateChange" : {
-          "sample_key" : [ "${StateChangeEvent}" ]
+          "sample_key" : [ "${StateChangeEvent}" ],
+          "key" : [ {
+            "${StateChangeEvent}" : { }
+          } ]
         },
         "dynamicForkJoinTasksParam" : "sample_dynamicForkJoinTasksParam"
       },
-      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig", "StateChangeEvent" ]
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "StateChangeEvent", "WorkflowTask.CacheConfig" ]
     },
     "WorkflowTask1" : {
       "content" : {
