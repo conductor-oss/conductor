@@ -443,7 +443,7 @@
         "description" : "sample_description",
         "id" : "sample_id"
       },
-      "dependencies" : [ "Role", "ResourceType", "Access" ]
+      "dependencies" : [ "Role", "ResourceType", "Access", "Subject", "SubjectType" ]
     },
     "SubjectRef" : {
       "content" : {
