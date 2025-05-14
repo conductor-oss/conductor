@@ -242,6 +242,7 @@ public class EventHandler {
 
         private Map<String, Object> input = new HashMap<>();
 
+        @Deprecated
         private Map<String, String> taskToDomain;
 
         /**
