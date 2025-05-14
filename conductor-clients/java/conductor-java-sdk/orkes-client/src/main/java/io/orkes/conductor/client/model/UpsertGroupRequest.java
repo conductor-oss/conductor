@@ -16,7 +16,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import io.orkes.conductor.security.ResourceType;
+import io.orkes.conductor.security.model.Access;
 import lombok.*;
 
 @EqualsAndHashCode
@@ -63,6 +66,7 @@ public class UpsertGroupRequest {
 
     }
 
+    @Deprecated
     private Map<String, List<String>> defaultAccess = null;
 
     private String description = null;
@@ -101,7 +105,12 @@ public class UpsertGroupRequest {
 
     }
 
+    @Deprecated
     private List<RolesEnum> roles = null;
+    
+    private Set<String> roles;
+    
+    private Map<ResourceType, Set<Access>> defaultAccess;
 
     public UpsertGroupRequest defaultAccess(Map<String, List<String>> defaultAccess) {
         this.defaultAccess = defaultAccess;
