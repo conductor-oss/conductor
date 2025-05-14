@@ -69,6 +69,7 @@ public class TaskResult {
 
     private Map<String, Object> outputData = new HashMap<>();
 
+    @Deprecated
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
     private String externalOutputPayloadStoragePath;
