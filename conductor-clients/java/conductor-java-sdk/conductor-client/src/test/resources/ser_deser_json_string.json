@@ -1040,7 +1040,7 @@
         "id" : "sample_id",
         "uuid" : "sample_uuid"
       },
-      "dependencies" : [ "Role", "Group" ]
+      "dependencies" : [ "Role", "Group", "Subject", "SubjectType", "Permission" ]
     },
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
