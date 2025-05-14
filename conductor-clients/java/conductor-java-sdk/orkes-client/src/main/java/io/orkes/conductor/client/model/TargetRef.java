@@ -24,6 +24,7 @@ public class TargetRef {
 
     private String id = null;
 
+    @Deprecated
     public enum TypeEnum {
         WORKFLOW_DEF("WORKFLOW_DEF"),
         TASK_DEF("TASK_DEF"),
@@ -58,7 +59,10 @@ public class TargetRef {
         }
     }
 
+    @Deprecated
     private TypeEnum type = null;
+    
+    private io.orkes.conductor.security.ResourceType resourceType;
 
     public TargetRef id(String id) {
         this.id = id;
@@ -67,6 +71,11 @@ public class TargetRef {
 
     public TargetRef type(TypeEnum type) {
         this.type = type;
+        return this;
+    }
+    
+    public TargetRef resourceType(io.orkes.conductor.security.ResourceType resourceType) {
+        this.resourceType = resourceType;
         return this;
     }
 
