@@ -49,11 +49,12 @@
     "StateChangeEvent" : {
       "content" : {
         "payload" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "${Object}"
         },
         "type" : "sample_type"
       },
-      "dependencies" : [ ]
+      "dependencies" : [ "Object" ]
     },
     "WorkflowTask.WorkflowTaskList" : {
       "content" : {
