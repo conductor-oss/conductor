@@ -230,7 +230,7 @@
         }
       },
       "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "WorkflowDef1" : {
       "content" : {
@@ -262,7 +262,7 @@
         }
       },
       "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "Workflow" : {
       "content" : {
@@ -301,7 +301,7 @@
         "rateLimited" : true
       },
       "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "Workflow1" : {
       "content" : {
@@ -340,7 +340,7 @@
         "rateLimited" : true
       },
       "dependencies" : [ "Workflow.WorkflowStatus", "Task", "WorkflowDef" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "IntegrationDefFormField" : {
       "content" : {
@@ -475,7 +475,7 @@
         }
       },
       "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
-      "inherits" : ["StartWorkflowRequest"]
+      "inherits" : [ "StartWorkflowRequest" ]
     },
     "WorkflowTestRequest1" : {
       "content" : {
@@ -485,7 +485,7 @@
         }
       },
       "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
-      "inherits" : ["StartWorkflowRequest"]
+      "inherits" : [ "StartWorkflowRequest" ]
     },
     "EventHandler" : {
       "content" : {
@@ -822,7 +822,7 @@
     },
     "TaskDef.RetryLogic" : {
       "content" : "FIXED",
-      "enums" :{
+      "enums" : {
         "values" : [ "FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF" ],
         "constants" : {
           "EXPONENTIAL_BACKOFF" : "(1)",
@@ -942,8 +942,8 @@
         "jsonOutput" : true,
         "messages" : [ "${ChatMessage}" ]
       },
-      "dependencies" : [ "ChatMessage" ],
-      "inherits" : ["LLMWorkerInput"]
+      "dependencies" : [ "ChatMessage", "LLMWorkerInput" ],
+      "inherits" : [ "LLMWorkerInput" ]
     },
     "TokenResponse" : {
       "content" : {
@@ -981,7 +981,7 @@
         "enforceSchema" : true
       },
       "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "WorkflowDefSummary" : {
       "content" : {
@@ -1171,8 +1171,8 @@
         "index" : "sample_index",
         "id" : "sample_id"
       },
-      "dependencies" : [  ],
-      "inherits" : ["LLMWorkerInput"]
+      "dependencies" : [ ],
+      "inherits" : [ "LLMWorkerInput" ]
     },
     "StartWorkflowRequest" : {
       "content" : {
@@ -1217,7 +1217,7 @@
         "externalRef" : "sample_externalRef"
       },
       "dependencies" : [ "SchemaDef.Type" ],
-      "inherits" : ["Auditable"]
+      "inherits" : [ "Auditable" ]
     },
     "WorkflowTask.CacheConfig" : {
       "content" : {
@@ -1348,7 +1348,7 @@
     "TextCompletion" : {
       "content" : { },
       "dependencies" : [ ],
-      "inherits" : ["LLMWorkerInput"]
+      "inherits" : [ "LLMWorkerInput" ]
     },
     "PromptTemplateTestRequest" : {
       "content" : {
@@ -1387,7 +1387,7 @@
         "dimensions" : 123
       },
       "dependencies" : [ ],
-      "inherits" : ["LLMWorkerInput"]
+      "inherits" : [ "LLMWorkerInput" ]
     },
     "AccessKeyResponse" : {
       "content" : {
@@ -1499,49 +1499,48 @@
       },
       "dependencies" : [ "Tag", "StartWorkflowRequest" ]
     },
-    "T": {
-      "content": {
-        "value": "sample_string_value"
+    "T" : {
+      "content" : {
+        "value" : "sample_string_value"
       },
-      "dependencies": []
+      "dependencies" : [ ]
     },
-    "IntegrationUpdate": {
-      "content": {
-        "type": "sample_type",
-        "category": "${Category}",
-        "description": "sample_description",
-        "configuration": {
-          "${ConfigKey}": "sample_Object"
+    "IntegrationUpdate" : {
+      "content" : {
+        "type" : "sample_type",
+        "category" : "${Category}",
+        "description" : "sample_description",
+        "configuration" : {
+          "${ConfigKey}" : "sample_Object"
         },
-        "enabled": true
+        "enabled" : true
       },
-      "dependencies": ["Category", "ConfigKey"]
+      "dependencies" : [ "Category", "ConfigKey" ]
     },
-    "IntegrationApiUpdate": {
-      "content": {
-        "description": "sample_description",
-        "configuration": {
-          "${ConfigKey}": "sample_Object"
+    "IntegrationApiUpdate" : {
+      "content" : {
+        "description" : "sample_description",
+        "configuration" : {
+          "${ConfigKey}" : "sample_Object"
         },
-        "enabled": true,
-        "maxTokens": 123,
-        "frequency": "${IntegrationApiUpdate.Frequency}"
+        "enabled" : true,
+        "maxTokens" : 123,
+        "frequency" : "${IntegrationApiUpdate.Frequency}"
       },
-      "dependencies": ["ConfigKey", "IntegrationApiUpdate.Frequency"]
+      "dependencies" : [ "ConfigKey", "IntegrationApiUpdate.Frequency" ]
     },
-
-    "IntegrationApiUpdate.Frequency": {
-      "content": "DAILY",
-      "enums": {
-        "values": ["DAILY", "WEEKLY", "MONTHLY"],
-        "constants": {
-          "DAILY": "(daily)",
-          "WEEKLY": "(weekly)",
-          "MONTHLY": "(monthly)"
+    "IntegrationApiUpdate.Frequency" : {
+      "content" : "DAILY",
+      "enums" : {
+        "values" : [ "DAILY", "WEEKLY", "MONTHLY" ],
+        "constants" : {
+          "DAILY" : "(daily)",
+          "WEEKLY" : "(weekly)",
+          "MONTHLY" : "(monthly)"
         },
-        "sampleValue": "DAILY"
+        "sampleValue" : "DAILY"
       },
-      "dependencies": []
+      "dependencies" : [ ]
     }
   }
 }
