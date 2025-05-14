@@ -12,11 +12,12 @@
  */
 package io.orkes.conductor.client.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TokenResponse {
 
     private String token;

@@ -16,9 +16,12 @@ import java.util.List;
 
 import io.orkes.conductor.client.model.TagObject;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PromptTemplate {
 
     private String createdBy;

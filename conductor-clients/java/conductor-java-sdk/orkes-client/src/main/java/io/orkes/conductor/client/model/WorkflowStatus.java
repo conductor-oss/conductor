@@ -15,12 +15,14 @@ package io.orkes.conductor.client.model;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class WorkflowStatus {
 
     private String correlationId = null;
@@ -71,20 +73,6 @@ public class WorkflowStatus {
         return this;
     }
 
-    /**
-     * Get correlationId
-     *
-     * @return correlationId
-     */
-
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
     public WorkflowStatus output(Map<String, Object> output) {
         this.output = output;
         return this;
@@ -98,25 +86,9 @@ public class WorkflowStatus {
         return this;
     }
 
-    public Map<String, Object> getOutput() {
-        return output;
-    }
-
-    public void setOutput(Map<String, Object> output) {
-        this.output = output;
-    }
-
     public WorkflowStatus status(StatusEnum status) {
         this.status = status;
         return this;
-    }
-
-    public StatusEnum getStatus() {
-        return status;
-    }
-
-    public void setStatus(StatusEnum status) {
-        this.status = status;
     }
 
     public WorkflowStatus variables(Map<String, Object> variables) {
@@ -132,25 +104,8 @@ public class WorkflowStatus {
         return this;
     }
 
-    public Map<String, Object> getVariables() {
-        return variables;
-    }
-
-    public void setVariables(Map<String, Object> variables) {
-        this.variables = variables;
-    }
-
     public WorkflowStatus workflowId(String workflowId) {
         this.workflowId = workflowId;
         return this;
     }
-
-    public String getWorkflowId() {
-        return workflowId;
-    }
-
-    public void setWorkflowId(String workflowId) {
-        this.workflowId = workflowId;
-    }
-
 }

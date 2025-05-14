@@ -12,15 +12,14 @@
  */
 package io.orkes.conductor.client.model.integration.ai;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
 @Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class LLMResponse {
     private Object result;
     private String finishReason;
     private int tokenUsed;
-
-
 }

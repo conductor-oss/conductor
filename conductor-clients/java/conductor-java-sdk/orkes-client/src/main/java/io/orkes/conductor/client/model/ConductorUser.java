@@ -15,13 +15,17 @@ package io.orkes.conductor.client.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @EqualsAndHashCode
 @ToString
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConductorUser {
 
+    @Deprecated
     private Boolean applicationUser = null;
 
     private List<Group> groups = null;
@@ -34,17 +38,18 @@ public class ConductorUser {
 
     private String uuid = null;
 
+    private Boolean encryptedId;
+
+    private String encryptedIdDisplayValue;
+
     public ConductorUser applicationUser(Boolean applicationUser) {
         this.applicationUser = applicationUser;
         return this;
     }
 
+    @Deprecated
     public Boolean isApplicationUser() {
         return applicationUser;
-    }
-
-    public void setApplicationUser(Boolean applicationUser) {
-        this.applicationUser = applicationUser;
     }
 
     public ConductorUser groups(List<Group> groups) {
@@ -60,38 +65,14 @@ public class ConductorUser {
         return this;
     }
 
-    public List<Group> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(List<Group> groups) {
-        this.groups = groups;
-    }
-
     public ConductorUser id(String id) {
         this.id = id;
         return this;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public ConductorUser name(String name) {
         this.name = name;
         return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public ConductorUser roles(List<Role> roles) {
@@ -107,24 +88,8 @@ public class ConductorUser {
         return this;
     }
 
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<Role> roles) {
-        this.roles = roles;
-    }
-
     public ConductorUser uuid(String uuid) {
         this.uuid = uuid;
         return this;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
     }
 }

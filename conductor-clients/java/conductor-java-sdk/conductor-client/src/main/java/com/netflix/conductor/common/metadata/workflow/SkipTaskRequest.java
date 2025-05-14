@@ -14,26 +14,16 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Map;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SkipTaskRequest {
 
     private Map<String, Object> taskInput;
 
     private Map<String, Object> taskOutput;
-
-    public Map<String, Object> getTaskInput() {
-        return taskInput;
-    }
-
-    public void setTaskInput(Map<String, Object> taskInput) {
-        this.taskInput = taskInput;
-    }
-
-    public Map<String, Object> getTaskOutput() {
-        return taskOutput;
-    }
-
-    public void setTaskOutput(Map<String, Object> taskOutput) {
-        this.taskOutput = taskOutput;
-    }
 
 }

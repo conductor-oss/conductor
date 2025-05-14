@@ -12,13 +12,14 @@
  */
 package io.orkes.conductor.client.model.integration.ai;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @ToString
 @EqualsAndHashCode(callSuper = true)
+@SuperBuilder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TextCompletion extends LLMWorkerInput {
 
 }

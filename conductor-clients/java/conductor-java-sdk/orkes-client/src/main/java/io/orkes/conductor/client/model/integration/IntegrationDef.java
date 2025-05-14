@@ -14,9 +14,12 @@ package io.orkes.conductor.client.model.integration;
 
 import java.util.List;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationDef {
 
     private Category category;
@@ -27,4 +30,5 @@ public class IntegrationDef {
     private String name;
     private List<String> tags;
     private String type;
+    private List<IntegrationDefFormField> configuration;
 }

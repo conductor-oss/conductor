@@ -15,22 +15,27 @@ package io.orkes.conductor.client.model.integration;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.Auditable;
+
 import io.orkes.conductor.client.model.TagObject;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
-public class IntegrationApi {
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class IntegrationApi extends Auditable {
 
     private String api;
     private Map<String, Object> configuration;
-    private String createdBy;
+    @Deprecated
     private Long createdOn;
     private String description;
     private Boolean enabled;
     private String integrationName;
     private List<TagObject> tags;
-    private String updatedBy;
+    @Deprecated
     private Long updatedOn;
 
 }

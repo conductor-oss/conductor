@@ -14,23 +14,13 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import java.util.Map;
 
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeWorkflowRequest {
-
-    public Map<String, Object> getTaskOutput() {
-        return taskOutput;
-    }
-
-    public void setTaskOutput(Map<String, Object> taskOutput) {
-        this.taskOutput = taskOutput;
-    }
-
-    public Map<String, Object> getWorkflowInput() {
-        return workflowInput;
-    }
-
-    public void setWorkflowInput(Map<String, Object> workflowInput) {
-        this.workflowInput = workflowInput;
-    }
 
     private Map<String, Object> taskOutput;
 
@@ -39,20 +29,4 @@ public class UpgradeWorkflowRequest {
     private Integer version;
 
     private String name;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
 }

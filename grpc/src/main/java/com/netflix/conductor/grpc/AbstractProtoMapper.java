@@ -1339,6 +1339,9 @@ public abstract class AbstractProtoMapper {
             to.setOutputSchema( toProto( from.getOutputSchema() ) );
         }
         to.setEnforceSchema( from.isEnforceSchema() );
+        for (Map.Entry<String, Object> pair : from.getMetadata().entrySet()) {
+            to.putMetadata( pair.getKey(), toProto( pair.getValue() ) );
+        }
         return to.build();
     }
 
@@ -1382,6 +1385,11 @@ public abstract class AbstractProtoMapper {
             to.setOutputSchema( fromProto( from.getOutputSchema() ) );
         }
         to.setEnforceSchema( from.getEnforceSchema() );
+        Map<String, Object> metadataMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getMetadataMap().entrySet()) {
+            metadataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setMetadata(metadataMap);
         return to;
     }
 
@@ -1476,6 +1484,7 @@ public abstract class AbstractProtoMapper {
         if (from.getCreatedBy() != null) {
             to.setCreatedBy( from.getCreatedBy() );
         }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
         return to.build();
     }
 
@@ -1500,6 +1509,7 @@ public abstract class AbstractProtoMapper {
         to.setPriority( from.getPriority() );
         to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
         to.setCreatedBy( from.getCreatedBy() );
+        to.setTaskToDomain( from.getTaskToDomainMap() );
         return to;
     }
 
