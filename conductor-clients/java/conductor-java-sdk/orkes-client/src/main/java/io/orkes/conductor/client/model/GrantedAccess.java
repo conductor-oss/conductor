@@ -14,7 +14,9 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import io.orkes.conductor.security.model.Access;
 import lombok.*;
 
 @EqualsAndHashCode
@@ -59,11 +61,14 @@ public class GrantedAccess {
         }
     }
 
+    @Deprecated
     private List<AccessEnum> access = null;
 
     private TargetRef target = null;
 
     private String tag;
+    
+    private Set<Access> access;
 
     public GrantedAccess access(List<AccessEnum> access) {
         this.access = access;
