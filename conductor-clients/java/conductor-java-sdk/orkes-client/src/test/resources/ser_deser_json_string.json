@@ -1382,7 +1382,8 @@
       "content" : {
         "embeddings" : [ 3.14 ],
         "metadata" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "vectorDB" : "sample_vectorDB",
         "query" : "sample_query",
@@ -1390,7 +1391,7 @@
         "index" : "sample_index",
         "dimensions" : 123
       },
-      "dependencies" : [ ],
+      "dependencies" : [ "LLMWorkerInput" ],
       "inherits" : [ "LLMWorkerInput" ]
     },
     "AccessKeyResponse" : {
