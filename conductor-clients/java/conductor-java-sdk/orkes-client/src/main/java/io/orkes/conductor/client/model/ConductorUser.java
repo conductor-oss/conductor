@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -28,13 +29,13 @@ public class ConductorUser {
     @Deprecated
     private Boolean applicationUser = null;
 
-    private List<Group> groups = null;
+    private Set<Group> groups = null;
 
     private String id = null;
 
     private String name = null;
 
-    private List<Role> roles = null;
+    private Set<Role> roles = null;
 
     private String uuid = null;
 
