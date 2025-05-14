@@ -16,13 +16,13 @@
     "WorkflowTestRequest.TaskMock" : {
       "content" : {
         "output" : {
-          "sample_key" : "sample_value"
+          "sample_key" : { }
         },
         "executionTime" : 123,
         "queueWaitTime" : 123,
         "status" : "${TaskResult.Status}"
       },
-      "dependencies" : [ ]
+      "dependencies" : [ "TaskResult.Status" ]
     },
     "Access" : {
       "content" : "CREATE",
@@ -481,13 +481,13 @@
     "WorkflowTestRequest" : {
       "content" : {
         "subWorkflowTestRequest" : {
-          "sample_key" : "${WorkflowTestRequest1}"
+          "sample_key" : "${WorkflowTestRequest}"
         },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
         }
       },
-      "dependencies" : [ "WorkflowTestRequest.TaskMock" ],
+      "dependencies" : [ "WorkflowTestRequest.TaskMock", "StartWorkflowRequest" ],
       "inherits" : [ "StartWorkflowRequest" ]
     },
     "WorkflowTestRequest1" : {
