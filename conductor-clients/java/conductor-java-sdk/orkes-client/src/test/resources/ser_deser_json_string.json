@@ -952,7 +952,7 @@
       "content" : {
         "token" : "sample_token"
       },
-      "dependencies" : [ ]
+      "dependencies" : [ "Response" ]
     },
     "TaskDef" : {
       "content" : {
