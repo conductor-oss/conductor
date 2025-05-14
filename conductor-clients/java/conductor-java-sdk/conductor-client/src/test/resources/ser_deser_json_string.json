@@ -126,36 +126,37 @@
       "dependencies" : [ ]
     },
     "TaskType" : {
-      "content" : {
+      "content" : "SIMPLE",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "SIMPLE", "DYNAMIC", "FORK_JOIN", "FORK_JOIN_DYNAMIC", "DECISION", "SWITCH", "JOIN", "DO_WHILE", "SUB_WORKFLOW", "START_WORKFLOW", "EVENT", "WAIT", "HUMAN", "USER_DEFINED", "HTTP", "LAMBDA", "INLINE", "EXCLUSIVE_JOIN", "TERMINATE", "KAFKA_PUBLISH", "JSON_JQ_TRANSFORM", "SET_VARIABLE", "NOOP" ],
         "constants" : {
-          "SUB_WORKFLOW" : "(8)",
-          "DECISION" : "(4)",
-          "NOOP" : "(22)",
-          "JOIN" : "(6)",
-          "KAFKA_PUBLISH" : "(19)",
-          "HTTP" : "(14)",
-          "FORK_JOIN" : "(2)",
-          "EVENT" : "(10)",
-          "DYNAMIC" : "(1)",
-          "LAMBDA" : "(15)",
-          "JSON_JQ_TRANSFORM" : "(20)",
-          "HUMAN" : "(12)",
-          "TERMINATE" : "(18)",
-          "FORK_JOIN_DYNAMIC" : "(3)",
-          "SIMPLE" : "(0)",
-          "DO_WHILE" : "(7)",
-          "INLINE" : "(16)",
-          "SWITCH" : "(5)",
-          "EXCLUSIVE_JOIN" : "(17)",
-          "SET_VARIABLE" : "(21)",
-          "WAIT" : "(11)",
-          "START_WORKFLOW" : "(9)",
-          "USER_DEFINED" : "(13)"
+          "SUB_WORKFLOW" : "",
+          "DECISION" : "",
+          "NOOP" : "",
+          "JOIN" : "",
+          "KAFKA_PUBLISH" : "",
+          "HTTP" : "",
+          "FORK_JOIN" : "",
+          "EVENT" : "",
+          "DYNAMIC" : "",
+          "LAMBDA" : "",
+          "JSON_JQ_TRANSFORM" : "",
+          "HUMAN" : "",
+          "TERMINATE" : "",
+          "FORK_JOIN_DYNAMIC" : "",
+          "SIMPLE" : "",
+          "DO_WHILE" : "",
+          "INLINE" : "",
+          "SWITCH" : "",
+          "EXCLUSIVE_JOIN" : "",
+          "SET_VARIABLE" : "",
+          "WAIT" : "",
+          "START_WORKFLOW" : "",
+          "USER_DEFINED" : ""
         },
         "sampleValue" : "SIMPLE"
-      },
-      "dependencies" : [ ]
+      }
     },
     "Permission" : {
       "content" : {
