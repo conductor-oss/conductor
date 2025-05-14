@@ -70,11 +70,11 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "priority" : "sample_object_priority",
+        "priority" : "${Object}",
         "version" : 123,
         "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "IdempotencyStrategy" ]
+      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
     },
     "SubWorkflowParams1" : {
       "content" : {
