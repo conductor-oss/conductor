@@ -1563,6 +1563,14 @@
       },
       "content" : "API",
       "dependencies" : [ ]
+    },
+    "GrantedAccessResponse.GrantedAccess" : {
+      "content" : {
+        "access" : [ "${Access}" ],
+        "subject" : "sample_subject",
+        "target" : "${TargetRef}"
+      },
+      "dependencies" : [ "Access", "TargetRef" ]
     }
   }
 }
