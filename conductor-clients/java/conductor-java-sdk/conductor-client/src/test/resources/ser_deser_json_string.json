@@ -1546,6 +1546,23 @@
         "sampleValue" : "DAILY"
       },
       "dependencies" : [ ]
+    },
+    "io.orkes.conductor.common.integration.Category" : {
+      "enums" : {
+        "values" : [ "API", "AI_MODEL", "VECTOR_DB", "RELATIONAL_DB", "MESSAGE_BROKER", "GIT", "EMAIL" ],
+        "constants" : {
+          "AI_MODEL" : "(1)",
+          "GIT" : "(5)",
+          "API" : "(0)",
+          "RELATIONAL_DB" : "(3)",
+          "VECTOR_DB" : "(2)",
+          "EMAIL" : "(6)",
+          "MESSAGE_BROKER" : "(4)"
+        },
+        "sampleValue" : "API"
+      },
+      "content" : "API",
+      "dependencies" : [ ]
     }
   }
 }
