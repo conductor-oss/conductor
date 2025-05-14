@@ -18,7 +18,6 @@ import java.util.Map;
 import com.netflix.conductor.common.metadata.Auditable;
 
 import io.orkes.conductor.client.model.TagObject;
-import io.orkes.conductor.client.model.integration.ConfigKey;
 
 import lombok.*;
 
