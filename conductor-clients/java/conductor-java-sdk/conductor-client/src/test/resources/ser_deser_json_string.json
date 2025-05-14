@@ -1191,14 +1191,16 @@
     "StartWorkflowRequest" : {
       "content" : {
         "input" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
         "createdBy" : "sample_createdBy",
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "priority" : 123,
         "version" : 123,
