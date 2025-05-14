@@ -720,10 +720,13 @@
         "endTime" : "sample_endTime",
         "event" : "sample_event",
         "workflowId" : "sample_workflowId",
-        "status" : "${Workflow.WorkflowStatus}",
-        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
+        "status" : "${WorkflowStatus}",
+        "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath",
+        "taskToDomain" : {
+          "sample_key" : "sample_value"
+        }
       },
-      "dependencies" : [ "Workflow.WorkflowStatus" ]
+      "dependencies" : [ "WorkflowStatus" ]
     },
     "Task" : {
       "content" : {
