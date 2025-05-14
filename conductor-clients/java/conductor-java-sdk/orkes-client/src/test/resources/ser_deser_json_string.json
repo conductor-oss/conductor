@@ -1262,12 +1262,17 @@
     "SchemaDef" : {
       "content" : {
         "data" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "name" : "sample_name",
         "type" : "${SchemaDef.Type}",
-        "version" : 1,
-        "externalRef" : "sample_externalRef"
+        "version" : 123,
+        "externalRef" : "sample_externalRef",
+        "updatedBy" : "sample_updatedBy",
+        "createdBy" : "sample_createdBy",
+        "createTime" : 123,
+        "updateTime" : 123
       },
       "dependencies" : [ "SchemaDef.Type" ],
       "inherits" : [ "Auditable" ]
