@@ -408,7 +408,8 @@
     "TaskResult" : {
       "content" : {
         "outputData" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "extendLease" : true,
         "callbackAfterSeconds" : 123,
