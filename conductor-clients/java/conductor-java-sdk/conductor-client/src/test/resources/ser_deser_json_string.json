@@ -1571,6 +1571,12 @@
         "target" : "${TargetRef}"
       },
       "dependencies" : [ "Access", "TargetRef" ]
+    },
+    "io.orkes.conductor.security.model.Permission" : {
+      "content" : {
+        "name" : "sample_name"
+      },
+      "dependencies" : [ ]
     }
   }
 }
