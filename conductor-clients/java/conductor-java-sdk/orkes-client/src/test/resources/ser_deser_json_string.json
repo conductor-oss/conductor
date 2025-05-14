@@ -1351,7 +1351,7 @@
     },
     "TextCompletion" : {
       "content" : { },
-      "dependencies" : [ ],
+      "dependencies" : [ "LLMWorkerInput" ],
       "inherits" : [ "LLMWorkerInput" ]
     },
     "PromptTemplateTestRequest" : {
