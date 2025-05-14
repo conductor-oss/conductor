@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -59,11 +60,14 @@ public class AuthorizationRequest {
         }
     }
 
+    @Deprecated
     private List<AccessEnum> access = new ArrayList<>();
 
     private SubjectRef subject = null;
 
     private TargetRef target = null;
+    
+    private Set<Access> access;
 
     public AuthorizationRequest access(List<AccessEnum> access) {
         this.access = access;
