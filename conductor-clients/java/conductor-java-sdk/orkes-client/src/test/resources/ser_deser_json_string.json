@@ -799,11 +799,12 @@
     "DynamicForkJoinTask" : {
       "content" : {
         "input" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "taskName" : "sample_taskName",
         "workflowName" : "sample_workflowName",
-        "type" : "SIMPLE",
+        "type" : "sample_type",
         "referenceName" : "sample_referenceName"
       },
       "dependencies" : [ ]
