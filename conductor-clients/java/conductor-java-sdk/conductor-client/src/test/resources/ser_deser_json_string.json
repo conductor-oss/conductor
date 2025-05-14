@@ -937,7 +937,7 @@
         "permissions" : [ "${Permission}" ],
         "name" : "sample_name"
       },
-      "dependencies" : [ "Permission" ]
+      "dependencies" : [ "Permission", "Subject", "SubjectType" ]
     },
     "ChatCompletion" : {
       "content" : {
