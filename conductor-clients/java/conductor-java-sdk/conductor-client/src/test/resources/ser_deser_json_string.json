@@ -814,7 +814,8 @@
     "WorkflowStateUpdate" : {
       "content" : {
         "variables" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "taskReferenceName" : "sample_taskReferenceName",
         "taskResult" : "${TaskResult}"
