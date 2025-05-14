@@ -1466,11 +1466,13 @@
     "UpgradeWorkflowRequest" : {
       "content" : {
         "workflowInput" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "name" : "sample_name",
         "taskOutput" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "version" : 123
       },
