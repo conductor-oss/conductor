@@ -279,23 +279,27 @@
     "Workflow" : {
       "content" : {
         "variables" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "workflowDefinition" : "${WorkflowDef}",
         "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
         "lastRetriedTime" : 123,
         "parentWorkflowTaskId" : "sample_parentWorkflowTaskId",
         "taskToDomain" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
-        "history" : [ "${Workflow1}" ],
-        "priority" : 1,
+        "history" : [ "${Workflow}" ],
+        "priority" : 123,
         "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "input" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "parentWorkflowId" : "sample_parentWorkflowId",
         "failedTaskNames" : [ "sample_value" ],
