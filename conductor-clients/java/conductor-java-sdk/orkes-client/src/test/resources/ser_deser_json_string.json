@@ -1413,12 +1413,13 @@
     "BulkResponse" : {
       "content" : {
         "bulkErrorResults" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_bulkErrorResults"
         },
-        "bulkSuccessfulResults" : [ "${T}" ],
+        "bulkSuccessfulResults" : [ "sample_bulkSuccessfulResults" ],
         "message" : "sample_message"
       },
-      "dependencies" : [ "T" ]
+      "dependencies" : [ ]
     },
     "VectorDBInput" : {
       "content" : {
