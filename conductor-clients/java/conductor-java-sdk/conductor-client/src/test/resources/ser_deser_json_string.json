@@ -1167,14 +1167,15 @@
       "content" : {
         "embeddings" : [ 3.14 ],
         "metadata" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "vectorDB" : "sample_vectorDB",
         "namespace" : "sample_namespace",
         "index" : "sample_index",
         "id" : "sample_id"
       },
-      "dependencies" : [ ],
+      "dependencies" : [ "LLMWorkerInput" ],
       "inherits" : [ "LLMWorkerInput" ]
     },
     "StartWorkflowRequest" : {
