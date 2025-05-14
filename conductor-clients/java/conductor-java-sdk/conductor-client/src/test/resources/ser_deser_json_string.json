@@ -203,7 +203,8 @@
       "content" : {
         "workflowStatusListenerSink" : "sample_workflowStatusListenerSink",
         "variables" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "schemaVersion" : 123,
         "timeoutPolicy" : "${WorkflowDef.TimeoutPolicy}",
@@ -215,7 +216,8 @@
         "version" : 123,
         "inputParameters" : [ "sample_inputParameters" ],
         "inputTemplate" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "workflowStatusListenerEnabled" : true,
         "ownerEmail" : "sample_ownerEmail",
@@ -225,11 +227,17 @@
         "failureWorkflow" : "sample_failureWorkflow",
         "tasks" : [ "${WorkflowTask}" ],
         "outputParameters" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "metadata" : {
-          "sample_key" : "sample_value"
-        }
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
+        },
+        "updatedBy" : "sample_updatedBy",
+        "updateTime" : 123,
+        "createdBy" : "sample_createdBy",
+        "createTime" : 123
       },
       "dependencies" : [ "WorkflowTask", "RateLimitConfig", "SchemaDef" ],
       "inherits" : [ "Auditable" ]
