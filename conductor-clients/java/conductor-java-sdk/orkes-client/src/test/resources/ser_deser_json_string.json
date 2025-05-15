@@ -1472,11 +1472,13 @@
     "RerunWorkflowRequest" : {
       "content" : {
         "workflowInput" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
         "taskInput" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "correlationId" : "sample_correlationId",
         "reRunFromTaskId" : "sample_reRunFromTaskId"
