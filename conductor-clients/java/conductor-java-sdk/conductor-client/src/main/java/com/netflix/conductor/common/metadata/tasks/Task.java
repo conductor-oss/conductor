@@ -304,7 +304,6 @@ public class Task {
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
         deepCopy.setParentTaskId(parentTaskId);
-        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 

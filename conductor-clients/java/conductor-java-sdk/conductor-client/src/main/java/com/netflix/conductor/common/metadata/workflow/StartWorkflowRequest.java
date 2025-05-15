@@ -90,14 +90,4 @@ public class StartWorkflowRequest {
         this.createdBy = createdBy;
         return this;
     }
-
-    public StartWorkflowRequest withIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
-        return this;
-    }
-
-    public StartWorkflowRequest withIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
-        this.idempotencyStrategy = idempotencyStrategy;
-        return this;
-    }
 }
