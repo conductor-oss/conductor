@@ -28,11 +28,11 @@ import lombok.*;
 public class IntegrationApi extends Auditable {
 
     private String api;
-    private Map<ConfigKey, Object> configuration;
+    private Map<String, Object> configuration;
     @Deprecated
     private Long createdOn;
     private String description;
-    private boolean enabled;
+    private Boolean enabled;
     private String integrationName;
     private List<TagObject> tags;
     @Deprecated

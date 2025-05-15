@@ -28,7 +28,7 @@ import lombok.*;
 public class Integration extends Auditable {
 
     private Category category;
-    private Map<ConfigKey, Object> configuration;
+    private Map<String, Object> configuration;
     private String description;
     private Boolean enabled;
     private long modelsCount;
