@@ -314,8 +314,8 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "history" : [ "${Workflow1}" ],
-        "priority" : 1,
+        "history" : [ "${Workflow}" ],
+        "priority" : 123,
         "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
           "sample_key" : "sample_value"
