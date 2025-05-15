@@ -13,7 +13,6 @@
 package io.orkes.conductor.client.model.integration;
 
 import java.util.List;
-import java.util.Set;
 
 import lombok.*;
 
