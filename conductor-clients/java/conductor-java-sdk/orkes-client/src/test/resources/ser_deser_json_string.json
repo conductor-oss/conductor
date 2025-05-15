@@ -712,7 +712,8 @@
       "content" : {
         "retried" : true,
         "outputData" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "referenceTaskName" : "sample_referenceTaskName",
         "workflowPriority" : 123,
@@ -733,14 +734,15 @@
         "seq" : 123,
         "startDelayInSeconds" : 123,
         "inputData" : {
-          "sample_key" : "sample_value"
+          "sample_key" : "sample_value",
+          "key" : "sample_value"
         },
         "callbackAfterSeconds" : 123,
         "workerId" : "sample_workerId",
         "scheduledTime" : 123,
         "externalInputPayloadStoragePath" : "sample_externalInputPayloadStoragePath",
         "retryCount" : 123,
-        "workflowTask" : "${WorkflowTask}",
+        "workflowTask" : "${WorkflowTaskPOJO}",
         "retriedTaskId" : "sample_retriedTaskId",
         "updateTime" : 123,
         "pollCount" : 123,
@@ -752,10 +754,10 @@
         "executionNameSpace" : "sample_executionNameSpace",
         "firstStartTime" : 123,
         "taskId" : "sample_taskId",
-        "status" : "${Task.Status}",
+        "status" : "${StatusPOJO}",
         "externalOutputPayloadStoragePath" : "sample_externalOutputPayloadStoragePath"
       },
-      "dependencies" : [ "Task.Status", "WorkflowTask" ]
+      "dependencies" : [ "StatusPOJO", "WorkflowTaskPOJO" ]
     },
     "AuthorizationRequest" : {
       "content" : {
