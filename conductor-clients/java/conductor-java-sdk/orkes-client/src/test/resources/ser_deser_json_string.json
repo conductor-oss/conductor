@@ -126,36 +126,37 @@
       "dependencies" : [ ]
     },
     "TaskType" : {
-      "content" : {
+      "content" : "SIMPLE",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "SIMPLE", "DYNAMIC", "FORK_JOIN", "FORK_JOIN_DYNAMIC", "DECISION", "SWITCH", "JOIN", "DO_WHILE", "SUB_WORKFLOW", "START_WORKFLOW", "EVENT", "WAIT", "HUMAN", "USER_DEFINED", "HTTP", "LAMBDA", "INLINE", "EXCLUSIVE_JOIN", "TERMINATE", "KAFKA_PUBLISH", "JSON_JQ_TRANSFORM", "SET_VARIABLE", "NOOP" ],
         "constants" : {
-          "SUB_WORKFLOW" : "(8)",
-          "DECISION" : "(4)",
-          "NOOP" : "(22)",
-          "JOIN" : "(6)",
-          "KAFKA_PUBLISH" : "(19)",
-          "HTTP" : "(14)",
-          "FORK_JOIN" : "(2)",
-          "EVENT" : "(10)",
-          "DYNAMIC" : "(1)",
-          "LAMBDA" : "(15)",
-          "JSON_JQ_TRANSFORM" : "(20)",
-          "HUMAN" : "(12)",
-          "TERMINATE" : "(18)",
-          "FORK_JOIN_DYNAMIC" : "(3)",
-          "SIMPLE" : "(0)",
-          "DO_WHILE" : "(7)",
-          "INLINE" : "(16)",
-          "SWITCH" : "(5)",
-          "EXCLUSIVE_JOIN" : "(17)",
-          "SET_VARIABLE" : "(21)",
-          "WAIT" : "(11)",
-          "START_WORKFLOW" : "(9)",
-          "USER_DEFINED" : "(13)"
+          "SUB_WORKFLOW" : "SUB_WORKFLOW",
+          "DECISION" : "DECISION",
+          "FORK" : "FORK",
+          "NOOP" : "NOOP",
+          "JOIN" : "JOIN",
+          "KAFKA_PUBLISH" : "KAFKA_PUBLISH",
+          "HTTP" : "HTTP",
+          "FORK_JOIN" : "FORK_JOIN",
+          "EVENT" : "EVENT",
+          "DYNAMIC" : "DYNAMIC",
+          "LAMBDA" : "LAMBDA",
+          "JSON_JQ_TRANSFORM" : "JSON_JQ_TRANSFORM",
+          "HUMAN" : "HUMAN",
+          "TERMINATE" : "TERMINATE",
+          "FORK_JOIN_DYNAMIC" : "FORK_JOIN_DYNAMIC",
+          "DO_WHILE" : "DO_WHILE",
+          "SIMPLE" : "SIMPLE",
+          "INLINE" : "INLINE",
+          "SWITCH" : "SWITCH",
+          "EXCLUSIVE_JOIN" : "EXCLUSIVE_JOIN",
+          "SET_VARIABLE" : "SET_VARIABLE",
+          "WAIT" : "WAIT",
+          "START_WORKFLOW" : "START_WORKFLOW"
         },
         "sampleValue" : "SIMPLE"
-      },
-      "dependencies" : [ ]
+      }
     },
     "Permission" : {
       "content" : {
