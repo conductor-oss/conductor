@@ -1266,19 +1266,20 @@
     },
     "Integration" : {
       "content" : {
-        "apis" : [ "${IntegrationApi}" ],
+        "apis" : [ "${IntegrationApiPojo}" ],
         "configuration" : {
-          "${ConfigKey}" : "sample_Object"
+          "${ConfigKey}" : "sample_Object",
+          "${ConfigKeyPojo}" : "sample_value"
         },
         "name" : "sample_name",
         "description" : "sample_description",
         "modelsCount" : 123,
         "type" : "sample_type",
-        "category" : "${Category}",
+        "category" : "${CategoryPojo}",
         "enabled" : true,
-        "tags" : [ "${Tag}" ]
+        "tags" : [ "${TagPojo}" ]
       },
-      "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi", "Auditable" ]
+      "dependencies" : [ "CategoryPojo", "ConfigKeyPojo", "TagPojo", "IntegrationApiPojo" ]
     },
     "ConfigKey" : {
       "content" : "api_key",
