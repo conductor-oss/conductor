@@ -92,4 +92,14 @@ public class ConductorUser {
         this.uuid = uuid;
         return this;
     }
+
+    public ConductorUser encryptedId(Boolean encryptedId) {
+        this.encryptedId = encryptedId;
+        return this;
+    }
+
+    public ConductorUser encryptedIdDisplayValue(String encryptedIdDisplayValue) {
+        this.encryptedIdDisplayValue = encryptedIdDisplayValue;
+        return this;
+    }
 }
