@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -25,7 +26,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpsertUserRequest {
 
-    private List<String> groups = null;
+    private Set<String> groups = null;
 
     private String name = null;
 
@@ -61,18 +62,21 @@ public class UpsertUserRequest {
         }
     }
 
-    private List<RolesEnum> roles = null;
+    private Set<RolesEnum> roles = null;
 
+    @Deprecated
     public UpsertUserRequest groups(List<String> groups) {
-        this.groups = groups;
+        this.groups = Set.copyOf(groups);
         return this;
     }
 
+    @Deprecated
     public UpsertUserRequest addGroupsItem(String groupsItem) {
         if (this.groups == null) {
-            this.groups = new ArrayList<>();
+            this.groups = Set.of(groupsItem);
+        } else {
+            Set.of(groupsItem);
         }
-        this.groups.add(groupsItem);
         return this;
     }
 
@@ -81,16 +85,19 @@ public class UpsertUserRequest {
         return this;
     }
 
+    @Deprecated
     public UpsertUserRequest roles(List<RolesEnum> roles) {
-        this.roles = roles;
+        this.roles = Set.copyOf(roles);
         return this;
     }
 
+    @Deprecated
     public UpsertUserRequest addRolesItem(RolesEnum rolesItem) {
         if (this.roles == null) {
-            this.roles = new ArrayList<>();
+            this.roles = Set.of(rolesItem);
+        } else {
+            Set.of(rolesItem);
         }
-        this.roles.add(rolesItem);
         return this;
     }
 
