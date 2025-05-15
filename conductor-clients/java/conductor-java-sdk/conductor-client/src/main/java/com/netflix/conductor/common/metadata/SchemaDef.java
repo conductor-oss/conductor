@@ -30,7 +30,8 @@ public class SchemaDef extends Auditable {
 
     private String name;
 
-    private final int version = 1;
+    @Builder.Default
+    private int version = 1;
 
     private Type type;
 
