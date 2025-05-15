@@ -1284,7 +1284,7 @@
         "enabled" : true,
         "tags" : [ "${Tag}" ]
       },
-      "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi", "Auditable" ]
+      "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi" ]
     },
     "ConfigKey" : {
       "content" : "api_key",
