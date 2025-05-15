@@ -280,9 +280,9 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "history" : [ "${Workflow1}" ],
-        "priority" : 1,
-        "failedReferenceTaskNames" : [ "sample_value" ],
+        "history" : [ "${Workflow}" ],
+        "priority" : 123,
+        "failedReferenceTaskNames" : [ "sample_failedReferenceTaskNames" ],
         "output" : {
           "sample_key" : "sample_value"
         },
@@ -290,7 +290,7 @@
           "sample_key" : "sample_value"
         },
         "parentWorkflowId" : "sample_parentWorkflowId",
-        "failedTaskNames" : [ "sample_value" ],
+        "failedTaskNames" : [ "sample_failedTaskNames" ],
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
         "correlationId" : "sample_correlationId",
