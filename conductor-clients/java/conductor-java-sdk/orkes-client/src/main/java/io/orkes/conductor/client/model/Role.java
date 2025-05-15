@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -27,7 +28,10 @@ public class Role {
 
     private String name = null;
 
+    @Deprecated
     private List<Permission> permissions = null;
+
+    private Set<Permission> permissions;
 
     public Role name(String name) {
         this.name = name;
