@@ -146,9 +146,11 @@ public class Task {
 
     private String domain;
 
+    @Deprecated
     // id 31 is reserved
     private int rateLimitPerFrequency;
 
+    @Deprecated
     private int rateLimitFrequencyInSeconds;
 
     private String externalInputPayloadStoragePath;
@@ -304,6 +306,7 @@ public class Task {
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
         deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 
