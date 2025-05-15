@@ -13,8 +13,11 @@
 package io.orkes.conductor.client.model;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import io.orkes.conductor.common.context.OrkesRequestContext;
 
 import lombok.*;
+
+import static io.orkes.conductor.common.context.OrkesRequestContext.DEFAULT_ORG_ID;
 
 @EqualsAndHashCode
 @ToString
@@ -78,6 +81,14 @@ public class WorkflowScheduleExecutionModel {
 
     private String orgId;
 
+    public String getOrgId() {
+        return orgId == null ? DEFAULT_ORG_ID : orgId;
+    }
+
+    public String getQueueMsgId() {
+        return OrkesRequestContext.isDefaultOrg(orgId) ? executionId : orgId + ":" + executionId;
+    }
+
     public WorkflowScheduleExecutionModel executionId(String executionId) {
         this.executionId = executionId;
         return this;
@@ -126,6 +137,16 @@ public class WorkflowScheduleExecutionModel {
 
     public WorkflowScheduleExecutionModel workflowName(String workflowName) {
         this.workflowName = workflowName;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel zoneId(String zoneId) {
+        this.zoneId = zoneId;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel orgId(String orgId) {
+        this.orgId = orgId;
         return this;
     }
 
