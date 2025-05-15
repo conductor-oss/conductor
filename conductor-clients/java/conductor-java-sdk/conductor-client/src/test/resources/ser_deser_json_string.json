@@ -429,7 +429,8 @@
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "sample_value"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
@@ -1004,7 +1005,7 @@
         "complete_task" : "${EventHandler.TaskDetails}",
         "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
       },
-      "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
+      "dependencies" : [ "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "EventExecution.Status" : {
       "content" : "IN_PROGRESS",
@@ -1045,7 +1046,8 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "sample_value"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
@@ -1247,12 +1249,14 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "sample_value"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "sample_value"
         },
         "version" : 123
       },
