@@ -898,7 +898,9 @@
       }
     },
     "WorkflowScheduleExecutionModel.State" : {
-      "content" : {
+      "content" : "POLLED",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "POLLED", "FAILED", "EXECUTED" ],
         "constants" : {
           "FAILED" : "(1)",
@@ -906,8 +908,7 @@
           "POLLED" : "(0)"
         },
         "sampleValue" : "POLLED"
-      },
-      "dependencies" : [ ]
+      }
     },
     "IntegrationApi" : {
       "content" : {
@@ -1425,11 +1426,11 @@
         "zoneId" : "sample_zoneId",
         "workflowName" : "sample_workflowName",
         "stackTrace" : "sample_stackTrace",
-        "state" : "POLLED",
+        "state" : "${WorkflowScheduleExecutionModel.State}",
         "workflowId" : "sample_workflowId",
         "orgId" : "sample_orgId"
       },
-      "dependencies" : [ "StartWorkflowRequest" ]
+      "dependencies" : [ "StartWorkflowRequest", "WorkflowScheduleExecutionModel.State" ]
     },
     "LLMResponse" : {
       "content" : {
