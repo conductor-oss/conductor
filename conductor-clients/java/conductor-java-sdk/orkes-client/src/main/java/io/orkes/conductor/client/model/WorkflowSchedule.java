@@ -123,4 +123,19 @@ public class WorkflowSchedule {
         this.zoneId = zoneId;
         return this;
     }
+    
+    public WorkflowSchedule pausedReason(String pausedReason) {
+        this.pausedReason = pausedReason;
+        return this;
+    }
+    
+    public WorkflowSchedule description(String description) {
+        this.description = description;
+        return this;
+    }
+    
+    public WorkflowSchedule tags(List<Tag> tags) {
+        this.tags = tags;
+        return this;
+    }
 }
