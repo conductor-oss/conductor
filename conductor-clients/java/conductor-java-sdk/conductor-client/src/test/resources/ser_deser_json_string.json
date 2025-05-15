@@ -21,7 +21,7 @@
         "queueWaitTime" : 123,
         "status" : "${TaskResult.Status}"
       },
-      "dependencies" : [ ]
+      "dependencies" : [ "TaskResult.Status" ]
     },
     "Access" : {
       "content" : "CREATE",
@@ -472,7 +472,7 @@
     "WorkflowTestRequest" : {
       "content" : {
         "subWorkflowTestRequest" : {
-          "sample_key" : "${WorkflowTestRequest1}"
+          "sample_key" : "${WorkflowTestRequest}"
         },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
