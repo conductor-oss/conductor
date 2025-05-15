@@ -42,4 +42,18 @@ public class DynamicForkJoinTask {
         this.referenceName = referenceName;
         this.input = input;
     }
+
+    public DynamicForkJoinTask(
+            String taskName,
+            String workflowName,
+            String referenceName,
+            String type,
+            Map<String, Object> input) {
+        super();
+        this.taskName = taskName;
+        this.workflowName = workflowName;
+        this.referenceName = referenceName;
+        this.input = input;
+        this.type = type;
+    }
 }
