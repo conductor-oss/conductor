@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.*;
 
@@ -59,6 +60,7 @@ public class Group {
         }
     }
 
+    @Deprecated
     private Map<String, List<String>> defaultAccess = null;
 
     private String description = null;
@@ -66,6 +68,8 @@ public class Group {
     private String id = null;
 
     private List<Role> roles = null;
+
+    private Map<ResourceType, Set<Access>> defaultAccess2 = null;
 
     public Group defaultAccess(Map<String, List<String>> defaultAccess) {
         this.defaultAccess = defaultAccess;
