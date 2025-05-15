@@ -14,6 +14,7 @@ package io.orkes.conductor.client.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -28,13 +29,13 @@ public class ConductorUser {
     @Deprecated
     private Boolean applicationUser = null;
 
-    private List<Group> groups = null;
+    private Set<Group> groups = null;
 
     private String id = null;
 
     private String name = null;
 
-    private List<Role> roles = null;
+    private Set<Role> roles = null;
 
     private String uuid = null;
 
@@ -53,15 +54,18 @@ public class ConductorUser {
     }
 
     public ConductorUser groups(List<Group> groups) {
-        this.groups = groups;
+        this.groups = Set.copyOf(groups);
         return this;
     }
 
     public ConductorUser addGroupsItem(Group groupsItem) {
         if (this.groups == null) {
-            this.groups = new ArrayList<>();
+            this.groups = Set.of(groupsItem);
+        } else {
+            Set<Group> newGroups = new java.util.HashSet<>(this.groups);
+            newGroups.add(groupsItem);
+            this.groups = Set.copyOf(newGroups);
         }
-        this.groups.add(groupsItem);
         return this;
     }
 
@@ -76,15 +80,18 @@ public class ConductorUser {
     }
 
     public ConductorUser roles(List<Role> roles) {
-        this.roles = roles;
+        this.roles = Set.copyOf(roles);
         return this;
     }
 
     public ConductorUser addRolesItem(Role rolesItem) {
         if (this.roles == null) {
-            this.roles = new ArrayList<>();
+            this.roles = Set.of(rolesItem);
+        } else {
+            Set<Role> newRoles = new java.util.HashSet<>(this.roles);
+            newRoles.add(rolesItem);
+            this.roles = Set.copyOf(newRoles);
         }
-        this.roles.add(rolesItem);
         return this;
     }
 
