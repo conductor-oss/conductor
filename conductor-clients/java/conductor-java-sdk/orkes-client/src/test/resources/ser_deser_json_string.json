@@ -678,7 +678,8 @@
     "Tag" : {
       "content" : {
         "value" : "sample_value",
-        "key" : "sample_key"
+        "key" : "sample_key",
+        "type" : "sample_type"
       },
       "dependencies" : [ ]
     },
