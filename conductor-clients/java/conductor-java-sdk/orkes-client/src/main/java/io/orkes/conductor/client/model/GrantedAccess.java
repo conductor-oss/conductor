@@ -82,4 +82,9 @@ public class GrantedAccess {
         this.target = target;
         return this;
     }
+    
+    public GrantedAccess tag(String tag) {
+        this.tag = tag;
+        return this;
+    }
 }
