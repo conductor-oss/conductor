@@ -957,7 +957,7 @@
     },
     "TaskDef" : {
       "content" : {
-        "timeoutPolicy" : "${TaskDef.TimeoutPolicy}",
+        "timeoutPolicy" : "${TimeoutPolicy}",
         "inputKeys" : [ "sample_inputKeys" ],
         "concurrentExecLimit" : 123,
         "isolationGroupId" : "sample_isolationGroupId",
@@ -972,7 +972,7 @@
         "retryDelaySeconds" : 123,
         "backoffScaleFactor" : 123,
         "rateLimitPerFrequency" : 123,
-        "retryLogic" : "${TaskDef.RetryLogic}",
+        "retryLogic" : "${RetryLogic}",
         "responseTimeoutSeconds" : 123,
         "name" : "sample_name",
         "timeoutSeconds" : 123,
@@ -984,7 +984,7 @@
         "outputSchema" : "${SchemaDef}",
         "enforceSchema" : true
       },
-      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
+      "dependencies" : [ "TimeoutPolicy", "RetryLogic" ],
       "inherits" : [ "Auditable" ]
     },
     "WorkflowDefSummary" : {
