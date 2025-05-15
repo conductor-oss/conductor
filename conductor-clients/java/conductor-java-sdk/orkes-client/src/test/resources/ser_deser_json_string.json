@@ -1347,8 +1347,11 @@
       "dependencies" : [ ]
     },
     "TextCompletion" : {
-      "content" : { },
-      "dependencies" : [ ],
+      "content" : {
+        "field1" : "sample_field1",
+        "field2" : "${StatusPOJO}"
+      },
+      "dependencies" : [ "StatusPOJO" ],
       "inherits" : [ "LLMWorkerInput" ]
     },
     "PromptTemplateTestRequest" : {
