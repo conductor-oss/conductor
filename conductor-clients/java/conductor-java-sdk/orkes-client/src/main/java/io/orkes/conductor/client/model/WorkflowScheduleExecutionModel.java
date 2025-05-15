@@ -129,4 +129,14 @@ public class WorkflowScheduleExecutionModel {
         return this;
     }
 
+    public WorkflowScheduleExecutionModel zoneId(String zoneId) {
+        this.zoneId = zoneId;
+        return this;
+    }
+
+    public WorkflowScheduleExecutionModel orgId(String orgId) {
+        this.orgId = orgId;
+        return this;
+    }
+
 }
