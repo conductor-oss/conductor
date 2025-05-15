@@ -898,7 +898,9 @@
       }
     },
     "WorkflowScheduleExecutionModel.State" : {
-      "content" : {
+      "content" : "POLLED",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "POLLED", "FAILED", "EXECUTED" ],
         "constants" : {
           "FAILED" : "(1)",
@@ -906,8 +908,7 @@
           "POLLED" : "(0)"
         },
         "sampleValue" : "POLLED"
-      },
-      "dependencies" : [ ]
+      }
     },
     "IntegrationApi" : {
       "content" : {
