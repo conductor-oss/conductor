@@ -48,7 +48,8 @@
     "StateChangeEvent" : {
       "content" : {
         "payload" : {
-          "key" : "sample_value"
+          "key" : "sample_value",
+          "sample_key" : "sample_value"
         },
         "type" : "sample_type"
       },
