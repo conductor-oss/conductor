@@ -1194,7 +1194,7 @@
         "idempotencyKey" : "sample_idempotencyKey",
         "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
+      "dependencies" : [ "WorkflowDef" ]
     },
     "AccessKeyStatus" : {
       "content" : "ACTIVE",
