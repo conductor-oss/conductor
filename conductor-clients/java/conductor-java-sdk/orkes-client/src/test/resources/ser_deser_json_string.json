@@ -160,36 +160,36 @@
       "dependencies" : [ ]
     },
     "TaskType" : {
-      "content" : {
+      "content" : "SIMPLE",
+      "dependencies" : [ ],
+      "enums" : {
         "values" : [ "SIMPLE", "DYNAMIC", "FORK_JOIN", "FORK_JOIN_DYNAMIC", "DECISION", "SWITCH", "JOIN", "DO_WHILE", "SUB_WORKFLOW", "START_WORKFLOW", "EVENT", "WAIT", "HUMAN", "USER_DEFINED", "HTTP", "LAMBDA", "INLINE", "EXCLUSIVE_JOIN", "TERMINATE", "KAFKA_PUBLISH", "JSON_JQ_TRANSFORM", "SET_VARIABLE", "NOOP" ],
         "constants" : {
-          "SUB_WORKFLOW" : "(8)",
-          "DECISION" : "(4)",
-          "NOOP" : "(22)",
-          "JOIN" : "(6)",
-          "KAFKA_PUBLISH" : "(19)",
-          "HTTP" : "(14)",
-          "FORK_JOIN" : "(2)",
-          "EVENT" : "(10)",
-          "DYNAMIC" : "(1)",
-          "LAMBDA" : "(15)",
-          "JSON_JQ_TRANSFORM" : "(20)",
-          "HUMAN" : "(12)",
-          "TERMINATE" : "(18)",
-          "FORK_JOIN_DYNAMIC" : "(3)",
-          "SIMPLE" : "(0)",
-          "DO_WHILE" : "(7)",
-          "INLINE" : "(16)",
-          "SWITCH" : "(5)",
-          "EXCLUSIVE_JOIN" : "(17)",
-          "SET_VARIABLE" : "(21)",
-          "WAIT" : "(11)",
-          "START_WORKFLOW" : "(9)",
-          "USER_DEFINED" : "(13)"
+          "SUB_WORKFLOW" : "(9)",
+          "DECISION" : "(0)",
+          "NOOP" : "(21)",
+          "JOIN" : "(3)",
+          "KAFKA_PUBLISH" : "(18)",
+          "HTTP" : "(13)",
+          "FORK_JOIN" : "(11)",
+          "EVENT" : "(6)",
+          "DYNAMIC" : "(2)",
+          "LAMBDA" : "(14)",
+          "JSON_JQ_TRANSFORM" : "(19)",
+          "HUMAN" : "(8)",
+          "TERMINATE" : "(17)",
+          "FORK_JOIN_DYNAMIC" : "(5)",
+          "DO_WHILE" : "(4)",
+          "SIMPLE" : "(12)",
+          "INLINE" : "(15)",
+          "SWITCH" : "(1)",
+          "EXCLUSIVE_JOIN" : "(16)",
+          "SET_VARIABLE" : "(20)",
+          "WAIT" : "(7)",
+          "START_WORKFLOW" : "(10)"
         },
         "sampleValue" : "SIMPLE"
-      },
-      "dependencies" : [ ]
+      }
     },
     "Permission" : {
       "content" : {
