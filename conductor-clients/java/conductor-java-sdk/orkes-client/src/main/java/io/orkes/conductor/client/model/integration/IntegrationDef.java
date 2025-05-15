@@ -13,6 +13,7 @@
 package io.orkes.conductor.client.model.integration;
 
 import java.util.List;
+import java.util.Set;
 
 import lombok.*;
 
@@ -21,6 +22,8 @@ import lombok.*;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationDef {
+
+    public static final String TYPE_CUSTOM_AI_MODEL = "TYPE_CUSTOM_AI_MODEL";
 
     private Category category;
     private String categoryLabel;
