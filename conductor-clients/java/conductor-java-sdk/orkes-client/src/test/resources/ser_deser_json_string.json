@@ -506,7 +506,7 @@
     "WorkflowTestRequest" : {
       "content" : {
         "subWorkflowTestRequest" : {
-          "sample_key" : "${WorkflowTestRequest1}"
+          "sample_key" : "${WorkflowTestRequest}"
         },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
