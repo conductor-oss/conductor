@@ -14,7 +14,9 @@ package com.netflix.conductor.common.run;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
@@ -77,6 +79,8 @@ public class WorkflowSummary {
     private Set<String> failedTaskNames = new HashSet<>();
 
     private String createdBy;
+    
+    private Map<String, String> taskToDomain = new HashMap<>();
 
     public WorkflowSummary(Workflow workflow) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -115,6 +119,9 @@ public class WorkflowSummary {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
             this.externalOutputPayloadStoragePath = workflow.getExternalOutputPayloadStoragePath();
         }
+        if (workflow.getTaskToDomain() != null) {
+            this.taskToDomain = workflow.getTaskToDomain();
+        }
         this.createdBy = workflow.getCreatedBy();
     }
 
@@ -134,10 +141,10 @@ public class WorkflowSummary {
             return false;
         }
         WorkflowSummary that = (WorkflowSummary) o;
-        return getVersion() == that.getVersion() && getExecutionTime() == that.getExecutionTime() && getPriority() == that.getPriority() && getWorkflowType().equals(that.getWorkflowType()) && getWorkflowId().equals(that.getWorkflowId()) && Objects.equals(getCorrelationId(), that.getCorrelationId()) && StringUtils.equals(getStartTime(), that.getStartTime()) && StringUtils.equals(getUpdateTime(), that.getUpdateTime()) && StringUtils.equals(getEndTime(), that.getEndTime()) && getStatus() == that.getStatus() && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion()) && Objects.equals(getEvent(), that.getEvent()) && Objects.equals(getCreatedBy(), that.getCreatedBy());
+        return getVersion() == that.getVersion() && getExecutionTime() == that.getExecutionTime() && getPriority() == that.getPriority() && getWorkflowType().equals(that.getWorkflowType()) && getWorkflowId().equals(that.getWorkflowId()) && Objects.equals(getCorrelationId(), that.getCorrelationId()) && StringUtils.equals(getStartTime(), that.getStartTime()) && StringUtils.equals(getUpdateTime(), that.getUpdateTime()) && StringUtils.equals(getEndTime(), that.getEndTime()) && getStatus() == that.getStatus() && Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion()) && Objects.equals(getEvent(), that.getEvent()) && Objects.equals(getCreatedBy(), that.getCreatedBy()) && Objects.equals(getTaskToDomain(), that.getTaskToDomain());
     }
 
     public int hashCode() {
-        return Objects.hash(getWorkflowType(), getVersion(), getWorkflowId(), getCorrelationId(), getStartTime(), getUpdateTime(), getEndTime(), getStatus(), getReasonForIncompletion(), getExecutionTime(), getEvent(), getPriority(), getCreatedBy());
+        return Objects.hash(getWorkflowType(), getVersion(), getWorkflowId(), getCorrelationId(), getStartTime(), getUpdateTime(), getEndTime(), getStatus(), getReasonForIncompletion(), getExecutionTime(), getEvent(), getPriority(), getCreatedBy(), getTaskToDomain());
     }
 }
