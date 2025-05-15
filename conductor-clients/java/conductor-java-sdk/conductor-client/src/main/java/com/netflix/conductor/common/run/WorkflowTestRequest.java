@@ -92,4 +92,19 @@ public class WorkflowTestRequest extends StartWorkflowRequest {
         }
     }
 
+    public Map<String, List<TaskMock>> getTaskRefToMockOutput() {
+        return taskRefToMockOutput;
+    }
+
+    public void setTaskRefToMockOutput(Map<String, List<TaskMock>> taskRefToMockOutput) {
+        this.taskRefToMockOutput = taskRefToMockOutput;
+    }
+
+    public Map<String, WorkflowTestRequest> getSubWorkflowTestRequest() {
+        return subWorkflowTestRequest;
+    }
+
+    public void setSubWorkflowTestRequest(Map<String, WorkflowTestRequest> subWorkflowTestRequest) {
+        this.subWorkflowTestRequest = subWorkflowTestRequest;
+    }
 }
