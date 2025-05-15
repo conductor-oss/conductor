@@ -28,7 +28,7 @@ public class BulkResponse<T> {
 
     private List<T> bulkSuccessfulResults;
 
-    private String message = "Bulk Request has been processed.";
+    private final String message = "Bulk Request has been processed.";
 
     public BulkResponse() {
         this.bulkSuccessfulResults = new ArrayList<>();
