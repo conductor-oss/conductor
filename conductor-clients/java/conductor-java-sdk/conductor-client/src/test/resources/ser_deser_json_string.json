@@ -1166,7 +1166,7 @@
         "index" : "sample_index",
         "id" : "sample_id"
       },
-      "dependencies" : [ ],
+      "dependencies" : [ "LLMWorkerInput" ],
       "inherits" : [ "LLMWorkerInput" ]
     },
     "StartWorkflowRequest" : {
