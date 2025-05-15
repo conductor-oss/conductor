@@ -25,7 +25,7 @@ public class IntegrationDef {
     private Category category;
     private String categoryLabel;
     private String description;
-    private Boolean enabled;
+    private boolean enabled;
     private String iconName;
     private String name;
     private List<String> tags;
