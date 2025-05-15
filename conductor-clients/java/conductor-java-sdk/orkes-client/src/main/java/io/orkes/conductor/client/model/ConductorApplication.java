@@ -48,4 +48,19 @@ public class ConductorApplication {
         this.name = name;
         return this;
     }
+
+    public ConductorApplication createTime(Long createTime) {
+        this.createTime = createTime;
+        return this;
+    }
+
+    public ConductorApplication updateTime(Long updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
+
+    public ConductorApplication updatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+        return this;
+    }
 }
