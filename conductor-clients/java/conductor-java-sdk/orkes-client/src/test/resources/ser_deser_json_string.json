@@ -976,7 +976,7 @@
         "outputSchema" : "${SchemaDef}",
         "enforceSchema" : true
       },
-      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
+      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic" ],
       "inherits" : [ "Auditable" ]
     },
     "WorkflowDefSummary" : {
