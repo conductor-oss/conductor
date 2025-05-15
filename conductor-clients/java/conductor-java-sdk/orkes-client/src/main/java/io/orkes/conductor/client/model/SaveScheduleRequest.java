@@ -104,4 +104,9 @@ public class SaveScheduleRequest {
         return this;
     }
 
+    public SaveScheduleRequest description(String description) {
+        this.description = description;
+        return this;
+    }
+
 }
