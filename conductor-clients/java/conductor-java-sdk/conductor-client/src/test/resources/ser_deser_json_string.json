@@ -48,8 +48,7 @@
     "StateChangeEvent" : {
       "content" : {
         "payload" : {
-          "key" : "sample_value",
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "type" : "sample_type"
       },
@@ -57,12 +56,9 @@
     },
     "WorkflowTask.WorkflowTaskList" : {
       "content" : {
-        "tasks" : [ {
-          "name" : "sample_name",
-          "taskReferenceName" : "sample_taskReferenceName"
-        } ]
+        "tasks" : [ "${WorkflowTask}" ]
       },
-      "dependencies" : [ ]
+      "dependencies" : [ "WorkflowTask" ]
     },
     "SubWorkflowParams" : {
       "content" : {
@@ -72,11 +68,11 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "priority" : "${java.lang.Object}",
+        "priority" : "sample_object_priority",
         "version" : 123,
         "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
+      "dependencies" : [ "IdempotencyStrategy" ]
     },
     "SubWorkflowParams1" : {
       "content" : {
@@ -281,9 +277,9 @@
         "taskToDomain" : {
           "sample_key" : "sample_value"
         },
-        "history" : [ "${Workflow}" ],
-        "priority" : 123,
-        "failedReferenceTaskNames" : [ "sample_failedReferenceTaskNames" ],
+        "history" : [ "${Workflow1}" ],
+        "priority" : 1,
+        "failedReferenceTaskNames" : [ "sample_value" ],
         "output" : {
           "sample_key" : "sample_value"
         },
@@ -291,7 +287,7 @@
           "sample_key" : "sample_value"
         },
         "parentWorkflowId" : "sample_parentWorkflowId",
-        "failedTaskNames" : [ "sample_failedTaskNames" ],
+        "failedTaskNames" : [ "sample_value" ],
         "reasonForIncompletion" : "sample_reasonForIncompletion",
         "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
         "correlationId" : "sample_correlationId",
@@ -430,8 +426,7 @@
     "EventHandler.TaskDetails" : {
       "content" : {
         "output" : {
-          "key" : "sample_value",
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "taskRefName" : "sample_taskRefName",
         "workflowId" : "sample_workflowId",
@@ -474,7 +469,7 @@
     "WorkflowTestRequest" : {
       "content" : {
         "subWorkflowTestRequest" : {
-          "sample_key" : "${WorkflowTestRequest}"
+          "sample_key" : "${WorkflowTestRequest1}"
         },
         "taskRefToMockOutput" : {
           "sample_key" : [ "${WorkflowTestRequest.TaskMock}" ]
@@ -985,7 +980,7 @@
         "outputSchema" : "${SchemaDef}",
         "enforceSchema" : true
       },
-      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic" ],
+      "dependencies" : [ "TaskDef.TimeoutPolicy", "TaskDef.RetryLogic", "SchemaDef" ],
       "inherits" : [ "Auditable" ]
     },
     "WorkflowDefSummary" : {
@@ -1006,7 +1001,7 @@
         "complete_task" : "${EventHandler.TaskDetails}",
         "update_workflow_variables" : "${EventHandler.UpdateWorkflowVariables}"
       },
-      "dependencies" : [ "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
+      "dependencies" : [ "EventHandler.Action.Type", "EventHandler.StartWorkflow", "EventHandler.TaskDetails", "EventHandler.TerminateWorkflow", "EventHandler.UpdateWorkflowVariables" ]
     },
     "EventExecution.Status" : {
       "content" : "IN_PROGRESS",
@@ -1047,8 +1042,7 @@
     "EventHandler.UpdateWorkflowVariables" : {
       "content" : {
         "variables" : {
-          "key" : "sample_value",
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "appendArray" : true,
         "workflowId" : "sample_workflowId"
@@ -1085,24 +1079,15 @@
         "joinOn" : [ "sample_joinOn" ],
         "description" : "sample_description",
         "scriptExpression" : "sample_scriptExpression",
-        "cacheConfig" : {
-          "key" : "sample_key",
-          "ttlInSecond" : 123
-        },
+        "cacheConfig" : "${WorkflowTask.CacheConfig}",
         "type" : "sample_type",
         "inputParameters" : {
           "sample_key" : "sample_value"
         },
         "decisionCases" : {
-          "sample_key" : [ {
-            "name" : "sample_name",
-            "taskReferenceName" : "sample_taskReferenceName"
-          } ]
+          "sample_key" : [ "${WorkflowTask1}" ]
         },
-        "loopOver" : [ {
-          "name" : "sample_name",
-          "taskReferenceName" : "sample_taskReferenceName"
-        } ],
+        "loopOver" : [ "${WorkflowTask1}" ],
         "caseExpression" : "sample_caseExpression",
         "defaultExclusiveJoinTask" : [ "sample_defaultExclusiveJoinTask" ],
         "taskDefinition" : "${TaskDef}",
@@ -1114,7 +1099,7 @@
         "sink" : "sample_sink",
         "rateLimited" : true,
         "retryCount" : 123,
-        "subWorkflowParam" : "${SubWorkflowParams}",
+        "subWorkflowParam" : "${SubWorkflowParams1}",
         "optional" : true,
         "joinStatus" : "sample_joinStatus",
         "evaluatorType" : "sample_evaluatorType",
@@ -1123,21 +1108,15 @@
         "startDelay" : 123,
         "permissive" : true,
         "taskReferenceName" : "sample_taskReferenceName",
-        "defaultCase" : [ {
-          "name" : "sample_name",
-          "taskReferenceName" : "sample_taskReferenceName"
-        } ],
-        "forkTasks" : [ [ {
-          "name" : "sample_name",
-          "taskReferenceName" : "sample_taskReferenceName"
-        } ] ],
+        "defaultCase" : [ "${WorkflowTask1}" ],
+        "forkTasks" : [ [ "${WorkflowTask1}" ] ],
         "dynamicForkTasksParam" : "sample_dynamicForkTasksParam",
         "onStateChange" : {
           "sample_key" : [ "${StateChangeEvent}" ]
         },
         "dynamicForkJoinTasksParam" : "sample_dynamicForkJoinTasksParam"
       },
-      "dependencies" : [ "SubWorkflowParams", "TaskDef" ]
+      "dependencies" : [ "SubWorkflowParams", "TaskDef", "WorkflowTask.CacheConfig", "StateChangeEvent" ]
     },
     "WorkflowTask1" : {
       "content" : {
@@ -1213,7 +1192,7 @@
         "idempotencyKey" : "sample_idempotencyKey",
         "idempotencyStrategy" : "${IdempotencyStrategy}"
       },
-      "dependencies" : [ "WorkflowDef" ]
+      "dependencies" : [ "WorkflowDef", "IdempotencyStrategy" ]
     },
     "AccessKeyStatus" : {
       "content" : "ACTIVE",
@@ -1233,11 +1212,11 @@
           "sample_key" : "sample_value"
         },
         "name" : "sample_name",
-        "type" : "JSON",
-        "version" : 123,
+        "type" : "${SchemaDef.Type}",
+        "version" : 1,
         "externalRef" : "sample_externalRef"
       },
-      "dependencies" : [ ],
+      "dependencies" : [ "SchemaDef.Type" ],
       "inherits" : [ "Auditable" ]
     },
     "WorkflowTask.CacheConfig" : {
@@ -1250,14 +1229,12 @@
     "EventHandler.StartWorkflow" : {
       "content" : {
         "input" : {
-          "key" : "sample_value",
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "name" : "sample_name",
         "correlationId" : "sample_correlationId",
         "taskToDomain" : {
-          "key" : "sample_value",
-          "sample_key" : "sample_value"
+          "key" : "sample_value"
         },
         "version" : 123
       },
@@ -1294,90 +1271,84 @@
     },
     "Integration" : {
       "content" : {
-        "apis" : [ "${IntegrationApiPojo}" ],
+        "apis" : [ "${IntegrationApi}" ],
         "configuration" : {
-          "${ConfigKey}" : "sample_Object",
-          "${ConfigKeyPojo}" : "sample_value"
+          "${ConfigKey}" : "sample_Object"
         },
         "name" : "sample_name",
         "description" : "sample_description",
         "modelsCount" : 123,
         "type" : "sample_type",
-        "category" : "${CategoryPojo}",
+        "category" : "${Category}",
         "enabled" : true,
-        "tags" : [ "${TagPojo}" ]
+        "tags" : [ "${Tag}" ]
       },
-      "dependencies" : [ "CategoryPojo", "ConfigKeyPojo", "TagPojo", "IntegrationApiPojo" ]
+      "dependencies" : [ "Category", "ConfigKey", "Tag", "IntegrationApi", "Auditable" ]
     },
     "ConfigKey" : {
-      "content" : "CREATE",
+      "content" : "api_key",
       "enums" : {
-        "values" : [ "CREATE", "READ" ],
+        "values" : [ "api_key", "user", "endpoint", "authUrl", "environment", "projectName", "indexName", "publisher", "password", "namespace", "batchSize", "batchWaitTime", "visibilityTimeout", "connectionType", "consumer", "stream", "batchPollConsumersCount", "consumer_type", "region", "awsAccountId", "externalId", "roleArn", "protocol", "mechanism", "port", "schemaRegistryUrl", "schemaRegistryApiKey", "schemaRegistryApiSecret", "authenticationType", "truststoreAuthenticationType", "tls", "cipherSuite", "pubSubMethod", "keyStorePassword", "keyStoreLocation", "schemaRegistryAuthType", "valueSubjectNameStrategy", "datasourceURL", "jdbcDriver", "subscription", "serviceAccountCredentials", "file", "tlsFile", "queueManager", "groupId", "channel", "dimensions", "distance_metric", "indexing_method", "inverted_list_count" ],
         "constants" : {
-          "awsAccountId" : "PASSWORD",
-          "schemaRegistryAuthType" : "TEXT",
-          "tlsFile" : "FILE",
-          "pubSubMethod" : "TEXT",
-          "groupId" : "TEXT",
-          "channel" : "TEXT",
-          "consumer_type" : "TEXT",
-          "valueSubjectNameStrategy" : "TEXT",
-          "cipherSuite" : "TEXT",
-          "serviceAccountCredentials" : "TEXT",
-          "connectionType" : "TEXT",
-          "password" : "PASSWORD",
-          "protocol" : "TEXT",
-          "schemaRegistryApiSecret" : "PASSWORD",
-          "roleArn" : "TEXT",
-          "indexName" : "TEXT",
-          "indexing_method" : "TEXT",
-          "port" : "TEXT",
-          "publisher" : "TEXT",
-          "projectName" : "TEXT",
-          "region" : "TEXT",
-          "keyStoreLocation" : "TEXT",
-          "subscription" : "TEXT",
-          "visibilityTimeout" : "TEXT",
-          "truststoreAuthenticationType" : "TEXT",
-          "authUrl" : "TEXT",
-          "endpoint" : "TEXT",
-          "file" : "FILE",
-          "queueManager" : "TEXT",
-          "stream" : "TEXT",
-          "mechanism" : "TEXT",
-          "datasourceURL" : "TEXT",
-          "consumer" : "TEXT",
-          "schemaRegistryUrl" : "TEXT",
-          "jdbcDriver" : "TEXT",
-          "keyStorePassword" : "PASSWORD",
-          "inverted_list_count" : "TEXT",
-          "externalId" : "PASSWORD",
-          "environment" : "TEXT",
-          "api_key" : "PASSWORD",
-          "batchPollConsumersCount" : "TEXT",
-          "namespace" : "TEXT",
-          "batchWaitTime" : "TEXT",
-          "tls" : "TEXT",
-          "authenticationType" : "TEXT",
-          "distance_metric" : "TEXT",
-          "batchSize" : "TEXT",
-          "schemaRegistryApiKey" : "TEXT",
-          "user" : "TEXT",
-          "dimensions" : "TEXT",
-          "pullBatchWaitMillis" : "TEXT",
-          "pullPeriod" : "TEXT"
+          "awsAccountId" : "(PASSWORD)",
+          "schemaRegistryAuthType" : "(TEXT)",
+          "tlsFile" : "(FILE)",
+          "pubSubMethod" : "(TEXT)",
+          "groupId" : "(TEXT)",
+          "channel" : "(TEXT)",
+          "consumer_type" : "(TEXT)",
+          "valueSubjectNameStrategy" : "(TEXT)",
+          "cipherSuite" : "(TEXT)",
+          "serviceAccountCredentials" : "(TEXT)",
+          "connectionType" : "(TEXT)",
+          "password" : "(PASSWORD)",
+          "protocol" : "(TEXT)",
+          "schemaRegistryApiSecret" : "(PASSWORD)",
+          "roleArn" : "(TEXT)",
+          "indexName" : "(TEXT)",
+          "indexing_method" : "(TEXT)",
+          "port" : "(TEXT)",
+          "publisher" : "(TEXT)",
+          "projectName" : "(TEXT)",
+          "region" : "(TEXT)",
+          "keyStoreLocation" : "(TEXT)",
+          "subscription" : "(TEXT)",
+          "visibilityTimeout" : "(TEXT)",
+          "truststoreAuthenticationType" : "(TEXT)",
+          "authUrl" : "(TEXT)",
+          "endpoint" : "(TEXT)",
+          "file" : "(FILE)",
+          "queueManager" : "(TEXT)",
+          "stream" : "(TEXT)",
+          "mechanism" : "(TEXT)",
+          "datasourceURL" : "(TEXT)",
+          "consumer" : "(TEXT)",
+          "schemaRegistryUrl" : "(TEXT)",
+          "jdbcDriver" : "(TEXT)",
+          "keyStorePassword" : "(PASSWORD)",
+          "inverted_list_count" : "(TEXT)",
+          "externalId" : "(PASSWORD)",
+          "environment" : "(TEXT)",
+          "api_key" : "(PASSWORD)",
+          "batchPollConsumersCount" : "(TEXT)",
+          "namespace" : "(TEXT)",
+          "batchWaitTime" : "(TEXT)",
+          "tls" : "(TEXT)",
+          "authenticationType" : "(TEXT)",
+          "distance_metric" : "(TEXT)",
+          "batchSize" : "(TEXT)",
+          "schemaRegistryApiKey" : "(TEXT)",
+          "user" : "(TEXT)",
+          "dimensions" : "(TEXT)"
         },
-        "sampleValue" : "CREATE"
+        "sampleValue" : "api_key"
       },
       "dependencies" : [ ]
     },
     "TextCompletion" : {
-      "content" : {
-        "field1" : "sample_field1",
-        "field2" : "${StatusPOJO}"
-      },
-      "dependencies" : [ "StatusPOJO" ],
-      "inherits" : [ "LLMWorkerInput" ]
+      "content" : { },
+      "dependencies" : [ ],
+      "inherits" : ["LLMWorkerInput"]
     },
     "PromptTemplateTestRequest" : {
       "content" : {
@@ -1497,13 +1468,11 @@
     "RerunWorkflowRequest" : {
       "content" : {
         "workflowInput" : {
-          "sample_key" : "sample_value",
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "reRunFromWorkflowId" : "sample_reRunFromWorkflowId",
         "taskInput" : {
-          "sample_key" : "sample_value",
-          "key" : "sample_value"
+          "sample_key" : "sample_value"
         },
         "correlationId" : "sample_correlationId",
         "reRunFromTaskId" : "sample_reRunFromTaskId"
