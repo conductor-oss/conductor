@@ -18,7 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class TokenResponse {
+public class TokenResponse extends Response {
 
     private String token;
 
