@@ -6,12 +6,14 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ApiClientTest {
@@ -60,6 +62,12 @@ public class ApiClientTest {
 
         System.out.println("Started workflow " + workflowId);
 
+        var workflow = workflowClient.getWorkflow(workflowId, true);
+
         assertNotNull(workflowId);
+        assertEquals(workflowName, workflow.getWorkflowName());
+        assertEquals(1, workflow.getWorkflowVersion());
+        assertEquals(workflowId, workflow.getWorkflowId());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 }
