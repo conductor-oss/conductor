@@ -7,14 +7,18 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class ApiClientTest {
     private static final String workflowName = "test_api_client_wf";
@@ -33,6 +37,12 @@ public class ApiClientTest {
         registerWorkflowDef();
     }
 
+    @AfterAll
+    public static void cleanUp() {
+        // Clean up resources
+        metadataClient.unregisterWorkflowDef(workflowName, 1);
+    }
+
     static void registerWorkflowDef() {
         WorkflowTask httpTask = new WorkflowTask();
         httpTask.setDescription("HTTP Task");
@@ -40,7 +50,7 @@ public class ApiClientTest {
         httpTask.setTaskReferenceName(taskName);
         httpTask.setName(taskName);
         httpTask.setInputParameters(Map.of(
-                "uri", "http://httpbin-server:8081/api/hello?name=apiClientTest",
+                "uri", "http://httpBin:8081/api/hello?name=apiClientTest",
                 "method", "GET"
         ));
 
@@ -61,7 +71,10 @@ public class ApiClientTest {
                 .withVersion(1));
 
         System.out.println("Started workflow " + workflowId);
-
+        await().atMost(30, SECONDS).pollInterval(1, SECONDS).until(() -> {
+            var wf = workflowClient.getWorkflow(workflowId, true);
+            return wf.getStatus().isTerminal();
+        });
         var workflow = workflowClient.getWorkflow(workflowId, true);
 
         assertNotNull(workflowId);
