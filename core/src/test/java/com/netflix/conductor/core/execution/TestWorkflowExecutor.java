@@ -478,6 +478,8 @@ public class TestWorkflowExecutor {
                         })
                 .when(queueDAO)
                 .remove(anyString(), anyString());
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.terminateWorkflow("workflowId", "reason");
         assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
@@ -541,6 +543,8 @@ public class TestWorkflowExecutor {
         doThrow(new RuntimeException("any exception"))
                 .when(externalPayloadStorageUtils)
                 .verifyAndUpload(workflow, ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.terminateWorkflow(workflow.getWorkflowId(), "reason");
         assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
@@ -586,6 +590,8 @@ public class TestWorkflowExecutor {
                 .updateTasks(any());
 
         doThrow(new RuntimeException()).when(queueDAO).remove(anyString(), anyString());
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.terminateWorkflow("workflowId", "reason");
         assertEquals(WorkflowModel.Status.TERMINATED, workflow.getStatus());
@@ -682,6 +688,8 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("testRetryNonTerminalWorkflow");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
     }
@@ -845,6 +853,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -929,6 +939,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -978,6 +990,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -1089,6 +1103,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -1170,6 +1186,8 @@ public class TestWorkflowExecutor {
                 .thenReturn(task1);
         when(executionDAOFacade.getWorkflowModel(subWorkflow.getParentWorkflowId(), false))
                 .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), true);
 
@@ -1244,6 +1262,8 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
                 .thenReturn(Optional.of(new WorkflowDef()));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
@@ -1992,8 +2012,8 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testPauseWorkflow() {
-        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
-        doNothing().when(executionLockService).releaseLock(anyString());
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         String workflowId = "testPauseWorkflowId";
         WorkflowModel workflow = new WorkflowModel();
@@ -2089,7 +2109,10 @@ public class TestWorkflowExecutor {
 
         when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
                 .thenReturn(workflow);
-        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionLockService.acquireLock(anyString()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.decide(workflow.getWorkflowId());
 
@@ -2343,6 +2366,8 @@ public class TestWorkflowExecutor {
                 .thenReturn(task);
         when(executionDAOFacade.getWorkflowModel(subWorkflow.getParentWorkflowId(), false))
                 .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         workflowExecutor.retry(subWorkflowId, true);
 
@@ -2373,6 +2398,8 @@ public class TestWorkflowExecutor {
         workflow.getTasks().add(simpleTask);
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(workflowId);
@@ -2413,6 +2440,8 @@ public class TestWorkflowExecutor {
         workflow.getTasks().add(simpleTask);
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(workflowId);
@@ -2515,6 +2544,8 @@ public class TestWorkflowExecutor {
         simpleTask.setTaskId("simple-task-id");
         simpleTask.setStatus(TaskModel.Status.IN_PROGRESS);
         when(executionDAOFacade.getTaskModel(simpleTask.getTaskId())).thenReturn(simpleTask);
+        when(executionLockService.acquireLock(anyString(), anyLong()))
+                .thenReturn(mock(ExecutionLockService.LockInstance.class));
 
         TaskResult taskResult = new TaskResult();
         taskResult.setWorkflowInstanceId(simpleTask.getWorkflowInstanceId());

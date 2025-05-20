@@ -54,6 +54,7 @@ public class ExecutionService {
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
+    private final ExecutionLockService executionLockService;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -68,7 +69,8 @@ public class ExecutionService {
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry,
-            TaskStatusListener taskStatusListener) {
+            TaskStatusListener taskStatusListener,
+            ExecutionLockService executionLockService) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -78,6 +80,7 @@ public class ExecutionService {
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
+        this.executionLockService = executionLockService;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -122,61 +125,76 @@ public class ExecutionService {
         }
 
         for (String taskId : taskIds) {
+            String workflowId = null;
             try {
+                // only fetching the task to have access to the workflow id
                 TaskModel taskModel = executionDAOFacade.getTaskModel(taskId);
-                if (taskModel == null || taskModel.getStatus().isTerminal()) {
-                    // Remove taskId(s) without a valid Task/terminal state task from the queue
-                    queueDAO.remove(queueName, taskId);
-                    LOGGER.debug("Removed task: {} from the queue: {}", taskId, queueName);
+                workflowId = taskModel.getWorkflowInstanceId();
+                ExecutionLockService.LockInstance workflowLock =
+                        executionLockService.acquireLock(workflowId);
+                if (workflowLock == null) {
                     continue;
                 }
+                try (workflowLock) {
+                    // we need to re-fetch the task after having acquired the lock
+                    // since it might have been updated concurrently
+                    taskModel = executionDAOFacade.getTaskModel(taskId);
+                    if (taskModel == null || taskModel.getStatus().isTerminal()) {
+                        // Remove taskId(s) without a valid Task/terminal state task from the queue
+                        queueDAO.remove(queueName, taskId);
+                        LOGGER.debug("Removed task: {} from the queue: {}", taskId, queueName);
+                        continue;
+                    }
 
-                if (executionDAOFacade.exceedsInProgressLimit(taskModel)) {
-                    // Postpone this message, so that it would be available for poll again.
-                    queueDAO.postpone(
-                            queueName,
-                            taskId,
-                            taskModel.getWorkflowPriority(),
-                            queueTaskMessagePostponeSecs);
-                    LOGGER.debug(
-                            "Postponed task: {} in queue: {} by {} seconds",
-                            taskId,
-                            queueName,
-                            queueTaskMessagePostponeSecs);
-                    continue;
-                }
-                TaskDef taskDef =
-                        taskModel.getTaskDefinition().isPresent()
-                                ? taskModel.getTaskDefinition().get()
-                                : null;
-                if (taskModel.getRateLimitPerFrequency() > 0
-                        && executionDAOFacade.exceedsRateLimitPerFrequency(taskModel, taskDef)) {
-                    // Postpone this message, so that it would be available for poll again.
-                    queueDAO.postpone(
-                            queueName,
-                            taskId,
-                            taskModel.getWorkflowPriority(),
-                            queueTaskMessagePostponeSecs);
-                    LOGGER.debug(
-                            "RateLimit Execution limited for {}:{}, limit:{}",
-                            taskId,
-                            taskModel.getTaskDefName(),
-                            taskModel.getRateLimitPerFrequency());
-                    continue;
-                }
+                    if (executionDAOFacade.exceedsInProgressLimit(taskModel)) {
+                        // Postpone this message, so that it would be available for poll again.
+                        queueDAO.postpone(
+                                queueName,
+                                taskId,
+                                taskModel.getWorkflowPriority(),
+                                queueTaskMessagePostponeSecs);
+                        LOGGER.debug(
+                                "Postponed task: {} in queue: {} by {} seconds",
+                                taskId,
+                                queueName,
+                                queueTaskMessagePostponeSecs);
+                        continue;
+                    }
+                    TaskDef taskDef =
+                            taskModel.getTaskDefinition().isPresent()
+                                    ? taskModel.getTaskDefinition().get()
+                                    : null;
+                    if (taskModel.getRateLimitPerFrequency() > 0
+                            && executionDAOFacade.exceedsRateLimitPerFrequency(
+                                    taskModel, taskDef)) {
+                        // Postpone this message, so that it would be available for poll again.
+                        queueDAO.postpone(
+                                queueName,
+                                taskId,
+                                taskModel.getWorkflowPriority(),
+                                queueTaskMessagePostponeSecs);
+                        LOGGER.debug(
+                                "RateLimit Execution limited for {}:{}, limit:{}",
+                                taskId,
+                                taskModel.getTaskDefName(),
+                                taskModel.getRateLimitPerFrequency());
+                        continue;
+                    }
 
-                taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
-                if (taskModel.getStartTime() == 0) {
-                    taskModel.setStartTime(System.currentTimeMillis());
-                    Monitors.recordQueueWaitTime(
-                            taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
+                    taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
+                    if (taskModel.getStartTime() == 0) {
+                        taskModel.setStartTime(System.currentTimeMillis());
+                        Monitors.recordQueueWaitTime(
+                                taskModel.getTaskDefName(), taskModel.getQueueWaitTime());
+                    }
+                    taskModel.setCallbackAfterSeconds(
+                            0); // reset callbackAfterSeconds when giving the task to the worker
+                    taskModel.setWorkerId(workerId);
+                    taskModel.incrementPollCount();
+                    LOGGER.info("poll task: {} from worker: {}", taskModel.getTaskId(), workerId);
+                    executionDAOFacade.updateTask(taskModel);
+                    tasks.add(taskModel.toTask());
                 }
-                taskModel.setCallbackAfterSeconds(
-                        0); // reset callbackAfterSeconds when giving the task to the worker
-                taskModel.setWorkerId(workerId);
-                taskModel.incrementPollCount();
-                executionDAOFacade.updateTask(taskModel);
-                tasks.add(taskModel.toTask());
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn(
