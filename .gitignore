@@ -38,3 +38,7 @@ build/
 
 
 .qodo
+conductorosstest.db
+conductorosstest.db
+/server-lite/src/main/resources/static
+yarn.lock
