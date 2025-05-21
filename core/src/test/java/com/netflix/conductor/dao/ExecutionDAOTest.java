@@ -32,6 +32,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import static org.junit.Assert.*;
 
@@ -340,8 +341,8 @@ public abstract class ExecutionDAOTest {
                 getExecutionDAO()
                         .getWorkflowsByType(
                                 workflow.getWorkflowName(),
-                                System.currentTimeMillis(),
-                                System.currentTimeMillis() + 100);
+                                TimeService.currentTimeMillis(),
+                                TimeService.currentTimeMillis() + 100);
         assertNotNull(bytime);
         assertTrue(bytime.isEmpty());
 

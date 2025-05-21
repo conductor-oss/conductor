@@ -23,6 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_TERMINATE;
 
@@ -58,7 +59,7 @@ public class TerminateTaskMapper implements TaskMapper {
 
         TaskModel task = taskMapperContext.createTaskModel();
         task.setTaskType(TASK_TYPE_TERMINATE);
-        task.setStartTime(System.currentTimeMillis());
+        task.setStartTime(TimeService.currentTimeMillis());
         task.setInputData(taskInput);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         return List.of(task);

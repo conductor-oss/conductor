@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.service.TimeService;
 
 @Component
 public class SetVariableTaskMapper implements TaskMapper {
@@ -38,7 +39,7 @@ public class SetVariableTaskMapper implements TaskMapper {
         LOGGER.debug("TaskMapperContext {} in SetVariableMapper", taskMapperContext);
 
         TaskModel varTask = taskMapperContext.createTaskModel();
-        varTask.setStartTime(System.currentTimeMillis());
+        varTask.setStartTime(TimeService.currentTimeMillis());
         varTask.setInputData(taskMapperContext.getTaskInput());
         varTask.setStatus(TaskModel.Status.IN_PROGRESS);
 

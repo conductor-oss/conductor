@@ -44,6 +44,7 @@ import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.TimeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.futures.CompletableFutures;
@@ -181,7 +182,7 @@ public class DefaultEventProcessor {
             if (!success) {
                 String id = msg.getId() + "_" + 0;
                 EventExecution eventExecution = new EventExecution(id, msg.getId());
-                eventExecution.setCreated(System.currentTimeMillis());
+                eventExecution.setCreated(TimeService.currentTimeMillis());
                 eventExecution.setEvent(eventHandler.getEvent());
                 eventExecution.setName(eventHandler.getName());
                 eventExecution.setStatus(Status.SKIPPED);
@@ -240,7 +241,7 @@ public class DefaultEventProcessor {
         for (Action action : eventHandler.getActions()) {
             String id = msg.getId() + "_" + i++;
             EventExecution eventExecution = new EventExecution(id, msg.getId());
-            eventExecution.setCreated(System.currentTimeMillis());
+            eventExecution.setCreated(TimeService.currentTimeMillis());
             eventExecution.setEvent(eventHandler.getEvent());
             eventExecution.setName(eventHandler.getName());
             eventExecution.setAction(action.getAction());

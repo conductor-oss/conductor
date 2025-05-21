@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /** Business Object class used for interaction between the DeciderService and Different Mappers */
 public class TaskMapperContext {
@@ -103,7 +104,7 @@ public class TaskMapperContext {
         taskModel.setWorkflowInstanceId(workflowModel.getWorkflowId());
         taskModel.setWorkflowType(workflowModel.getWorkflowName());
         taskModel.setCorrelationId(workflowModel.getCorrelationId());
-        taskModel.setScheduledTime(System.currentTimeMillis());
+        taskModel.setScheduledTime(TimeService.currentTimeMillis());
 
         taskModel.setTaskId(taskId);
         taskModel.setWorkflowTask(workflowTask);

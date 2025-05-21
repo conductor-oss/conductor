@@ -25,6 +25,7 @@ import com.netflix.conductor.dao.MetadataDAO
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
+import com.netflix.conductor.service.TimeService
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
@@ -73,7 +74,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task1.setTaskType(SUB_WORKFLOW.name())
         task1.setReferenceTaskName("waitTask")
         task1.setWorkflowInstanceId(workflowId)
-        task1.setScheduledTime(System.currentTimeMillis())
+        task1.setScheduledTime(TimeService.currentTimeMillis())
         task1.setTaskId(task1Id)
         task1.getInputData().put("asyncComplete", true)
         task1.getInputData().put("subWorkflowName", "junit1")

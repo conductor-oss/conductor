@@ -25,6 +25,7 @@ import com.netflix.conductor.core.execution.tasks.Human;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUMAN;
 
@@ -66,7 +67,7 @@ public class HumanTaskMapper implements TaskMapper {
         TaskModel humanTask = taskMapperContext.createTaskModel();
         humanTask.setTaskType(TASK_TYPE_HUMAN);
         humanTask.setInputData(humanTaskInput);
-        humanTask.setStartTime(System.currentTimeMillis());
+        humanTask.setStartTime(TimeService.currentTimeMillis());
         humanTask.setStatus(TaskModel.Status.IN_PROGRESS);
         return List.of(humanTask);
     }
