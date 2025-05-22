@@ -24,6 +24,8 @@ public enum Category {
 
     MESSAGE_BROKER,
 
-    GIT
+    GIT,
+
+    EMAIL
 
 }
