@@ -21,7 +21,7 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.3.5'
+    id 'org.springframework.boot' version '3.4.3'
 }
 
 // Establish version and status
