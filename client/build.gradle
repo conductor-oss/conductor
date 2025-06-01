@@ -16,7 +16,7 @@ configurations.all {
 }
 
 dependencies {
-    compileOnly 'org.jetbrains:annotations:23.0.0'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
 
     implementation project(':conductor-common')
     implementation "org.glassfish.jersey.core:jersey-client:${revJersey}"
