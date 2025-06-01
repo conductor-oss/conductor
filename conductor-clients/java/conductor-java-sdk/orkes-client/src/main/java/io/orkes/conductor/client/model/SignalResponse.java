@@ -12,24 +12,22 @@
  */
 package io.orkes.conductor.client.model;
 
-import java.util.List;
 import java.util.Map;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
+import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class WorkflowRun extends SignalResponse {
+public abstract class SignalResponse {
 
-    private int priority;
-    private Map<String, Object> variables;
-    private List<Task> tasks;
-    private String createdBy;
-    private long createTime;
-    private Workflow.WorkflowStatus status;
-    private long updateTime;
+    private WorkflowSignalReturnStrategy responseType;
+    private String targetWorkflowId;
+    private String targetWorkflowStatus;
+
+    private String requestId;
+    private String workflowId;
+    private String correlationId;
+    private Map<String, Object> input;
+    private Map<String, Object> output;
 }

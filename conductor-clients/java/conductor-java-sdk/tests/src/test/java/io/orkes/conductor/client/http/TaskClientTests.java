@@ -12,21 +12,7 @@
  */
 package io.orkes.conductor.client.http;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -39,11 +25,31 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
-
+import io.orkes.conductor.client.enums.WorkflowConsistency;
+import io.orkes.conductor.client.enums.WorkflowSignalReturnStrategy;
+import io.orkes.conductor.client.model.TaskRun;
+import io.orkes.conductor.client.model.WorkflowRun;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.TestUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class TaskClientTests {
 
@@ -122,10 +128,14 @@ public class TaskClientTests {
                 count++;
                 continue;
             }
+            // Converting TaskOutput class to Map to resolve Jackson's afterburner module and class loading issues
+            Map<String, Object> output = new HashMap<>();
+            output.put("name", "hello");
+            output.put("value", BigDecimal.TEN);
             for (String referenceName : runningTasks) {
                 System.out.println("Updating " + referenceName);
                 try {
-                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, new TaskOutput());
+                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, output);
                     System.out.println("Workflow: " + workflow);
                 } catch (ConductorClientException ConductorClientException) {
                     // 404 == task was updated already and there are no pending tasks
@@ -204,25 +214,232 @@ public class TaskClientTests {
         Assertions.assertEquals(404, ex.getStatus());
     }
 
-    private static class TaskOutput {
-        private String name = "hello";
+    @Test
+    public void testSignalSyncExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_wait_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
 
-        private BigDecimal value = BigDecimal.TEN;
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
 
-        public String getName() {
-            return name;
-        }
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
 
-        public void setName(String name) {
-            this.name = name;
-        }
+    @Test
+    public void testSignalSyncDurable() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_wait_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeAndGetTarget(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
 
-        public BigDecimal getValue() {
-            return value;
-        }
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
 
-        public void setValue(BigDecimal value) {
-            this.value = value;
-        }
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void testSignalWithSubWorkflowSyncExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_signal_subworkflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeAndGetBlockingTaskInput(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void testSignalWithSubWorkflowDurableExecution() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_signal_subworkflow";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.DURABLE);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+        Assertions.assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        Assertions.assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
+
+        taskClient.signal(workflowRun.getWorkflowId(), Task.Status.COMPLETED.name(), Map.of("key", "value"));
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void signalAndReturnBlockingWorkflow() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_complex_wf_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+
+        // Signal with BLOCKING_WORKFLOW return strategy
+        WorkflowRun result = taskClient.signalAndGetBlockingWorkflow(workflowRun.getWorkflowId(), Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+        assertEquals(WorkflowSignalReturnStrategy.BLOCKING_WORKFLOW, result.getResponseType());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, result.getStatus());
+        var subWfId = result.getWorkflowId();
+
+        result = taskClient.signalAndGetBlockingWorkflow(subWfId, Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void signalAndReturnTargetWorkflow() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_complex_wf_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+
+        var run = workflowClient.executeAndGetTarget(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+
+        // Signal with TARGET_WORKFLOW return strategy
+        WorkflowRun result = taskClient.signalAndGetTargetWorkflow(workflowRun.getWorkflowId(), Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+        assertEquals(Workflow.WorkflowStatus.RUNNING, result.getStatus());
+        var subWfId = result.getWorkflowId();
+        assertEquals(WorkflowSignalReturnStrategy.TARGET_WORKFLOW, result.getResponseType());
+
+        result = taskClient.signalAndGetTargetWorkflow(subWfId, Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(subWfId, true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void signalAndReturnBlockingTask() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_complex_wf_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+
+        // Signal with BLOCKING_TASK return strategy
+        TaskRun result = taskClient.signalAndGetBlockingTask(workflowRun.getWorkflowId(), Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+        assertEquals(Task.Status.IN_PROGRESS, result.getStatus());
+        assertNotNull(result.getTaskId());
+        assertEquals(WorkflowSignalReturnStrategy.BLOCKING_TASK, result.getResponseType());
+
+        var subWfId = result.getWorkflowId();
+        result = taskClient.signalAndGetBlockingTask(subWfId, Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNull(result);
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(subWfId, true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
+    }
+
+    @Test
+    public void signalAndReturnBlockingTaskInput() throws ExecutionException, InterruptedException {
+        String wfName = "test_sdk_complex_wf_signal_test";
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(wfName);
+        startWorkflowRequest.setVersion(1);
+        startWorkflowRequest.setInput(new HashMap<>());
+
+        var run = workflowClient.executeAndGetBlockingWorkflow(startWorkflowRequest, null, 10, WorkflowConsistency.SYNCHRONOUS);
+        var workflowRun = run.get();
+        Workflow workflow = workflowClient.getWorkflow(workflowRun.getWorkflowId(), true);
+        Assertions.assertNotNull(workflow);
+
+        // Signal with BLOCKING_TASK_INPUT return strategy
+        TaskRun result = taskClient.signalAndGetBlockingTaskInput(workflowRun.getWorkflowId(), Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNotNull(result);
+        assertEquals(Task.Status.IN_PROGRESS, result.getStatus());
+        assertNotNull(result.getTaskId());
+        assertEquals(WorkflowSignalReturnStrategy.BLOCKING_TASK_INPUT, result.getResponseType());
+
+        var subWfId = result.getWorkflowId();
+        result = taskClient.signalAndGetBlockingTask(subWfId, Task.Status.COMPLETED, Map.of("key", "value"));
+        assertNull(result);
+
+        await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    var workflowDetails = workflowClient.getWorkflow(subWfId, true);
+                    return workflowDetails.getStatus() == Workflow.WorkflowStatus.COMPLETED;
+                });
     }
 }

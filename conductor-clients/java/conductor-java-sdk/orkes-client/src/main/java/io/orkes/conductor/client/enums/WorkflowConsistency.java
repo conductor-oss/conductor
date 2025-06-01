@@ -10,26 +10,10 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.orkes.conductor.client.model;
+package io.orkes.conductor.client.enums;
 
-import java.util.List;
-import java.util.Map;
-
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class WorkflowRun extends SignalResponse {
-
-    private int priority;
-    private Map<String, Object> variables;
-    private List<Task> tasks;
-    private String createdBy;
-    private long createTime;
-    private Workflow.WorkflowStatus status;
-    private long updateTime;
+public enum WorkflowConsistency {
+    SYNCHRONOUS,
+    DURABLE,  // Default
+    REGION_DURABLE
 }
