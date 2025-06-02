@@ -1045,7 +1045,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         when: "a workflow is started with this definition"
         def input = new HashMap()
         def correlationId = 'empty_workflow'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: emptyWorkflowDef, workflowInput: input, correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: emptyWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1100,7 +1100,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_template'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: templateWorkflowDef, workflowInput: input, correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: templateWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1138,7 +1138,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_not_registered'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: testWorkflowDef, workflowInput: [:], correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: testWorkflowDef, workflowInput: [:], correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

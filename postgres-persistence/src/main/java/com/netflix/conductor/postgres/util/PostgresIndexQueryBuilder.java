@@ -174,10 +174,29 @@ public class PostgresIndexQueryBuilder {
                 + " LIMIT ? OFFSET ?";
     }
 
+    public String getCountQuery() {
+        String queryString = "";
+        List<Condition> validConditions =
+                conditions.stream().filter(c -> c.isValid()).collect(Collectors.toList());
+        if (validConditions.size() > 0) {
+            queryString =
+                    " WHERE "
+                            + String.join(
+                                    " AND ",
+                                    validConditions.stream()
+                                            .map(c -> c.getQueryFragment())
+                                            .collect(Collectors.toList()));
+        }
+        return "SELECT COUNT(json_data) FROM " + table + queryString;
+    }
+
     public void addParameters(Query q) throws SQLException {
         for (Condition condition : conditions) {
             condition.addParameter(q);
         }
+    }
+
+    public void addPagingParameters(Query q) throws SQLException {
         q.addParameter(count);
         q.addParameter(start);
     }

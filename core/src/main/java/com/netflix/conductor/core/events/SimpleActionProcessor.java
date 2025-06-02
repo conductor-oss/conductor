@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
@@ -27,7 +28,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.metrics.Monitors;
@@ -46,17 +46,14 @@ public class SimpleActionProcessor implements ActionProcessor {
     private final WorkflowExecutor workflowExecutor;
     private final ParametersUtils parametersUtils;
     private final JsonUtils jsonUtils;
-    private final StartWorkflowOperation startWorkflowOperation;
 
     public SimpleActionProcessor(
             WorkflowExecutor workflowExecutor,
             ParametersUtils parametersUtils,
-            JsonUtils jsonUtils,
-            StartWorkflowOperation startWorkflowOperation) {
+            JsonUtils jsonUtils) {
         this.workflowExecutor = workflowExecutor;
         this.parametersUtils = parametersUtils;
         this.jsonUtils = jsonUtils;
-        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     public Map<String, Object> execute(
@@ -200,9 +197,19 @@ public class SimpleActionProcessor implements ActionProcessor {
             Map<String, Object> workflowInput = parametersUtils.replace(inputParams, payload);
 
             Map<String, Object> paramsMap = new HashMap<>();
+            // extracting taskToDomain map from the event payload
+            paramsMap.put("taskToDomain", "${taskToDomain}");
             Optional.ofNullable(params.getCorrelationId())
                     .ifPresent(value -> paramsMap.put("correlationId", value));
             Map<String, Object> replaced = parametersUtils.replace(paramsMap, payload);
+
+            // if taskToDomain is absent from event handler definition, and taskDomain Map is passed
+            // as a part of payload
+            // then assign payload taskToDomain map to the new workflow instance
+            final Map<String, String> taskToDomain =
+                    params.getTaskToDomain() != null
+                            ? params.getTaskToDomain()
+                            : (Map<String, String>) replaced.get("taskToDomain");
 
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
@@ -216,9 +223,11 @@ public class SimpleActionProcessor implements ActionProcessor {
                             .orElse(params.getCorrelationId()));
             startWorkflowInput.setWorkflowInput(workflowInput);
             startWorkflowInput.setEvent(event);
-            startWorkflowInput.setTaskToDomain(params.getTaskToDomain());
+            if (!CollectionUtils.isEmpty(taskToDomain)) {
+                startWorkflowInput.setTaskToDomain(taskToDomain);
+            }
 
-            String workflowId = startWorkflowOperation.execute(startWorkflowInput);
+            String workflowId = workflowExecutor.startWorkflow(startWorkflowInput);
 
             output.put("workflowId", workflowId);
             LOGGER.debug(

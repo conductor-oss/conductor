@@ -8,19 +8,20 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.2.1'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.5'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
 
 plugins {
-    id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+    id 'io.spring.dependency-management' version '1.1.3'
     id 'java'
     id 'application'
     id 'maven-publish'
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
+    id 'org.springframework.boot' version '3.3.5'
 }
 
 // Establish version and status
@@ -44,17 +45,25 @@ allprojects {
             languageVersion = JavaLanguageVersion.of(17)
         }
     }
-    
+
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 
     group = 'org.conductoross'
 
-    configurations.all {
-        exclude group: 'ch.qos.logback', module: 'logback-classic'
-        exclude group: 'ch.qos.logback', module: 'logback-core'
-        exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    configurations {
+        all {
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+            exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+
+            resolutionStrategy.eachDependency { details ->
+                if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
+                    details.useVersion "2.18.0"
+                }
+            }
+        }
     }
 
     repositories {
@@ -73,15 +82,27 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-api')
         implementation('org.apache.logging.log4j:log4j-slf4j-impl')
         implementation('org.apache.logging.log4j:log4j-jul')
-        implementation('org.apache.logging.log4j:log4j-web') 
+        implementation('org.apache.logging.log4j:log4j-web')
+        implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+        compileOnly 'org.projectlombok:lombok:1.18.34'
+
+        annotationProcessor 'org.projectlombok:lombok:1.18.34'
         annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
-    }
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
+        //Locks for the dependecies
+        implementation('org.codehaus.jettison:jettison') {
+            version {
+                strictly '1.5.4'
+            }
+        }
+        implementation('org.apache.tomcat.embed:tomcat-embed-core')
+    }
     // processes additional configuration metadata json file as described here
     // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
     compileJava.inputs.files(processResources)
@@ -94,6 +115,9 @@ allprojects {
             displayGranularity = 1
             showStandardStreams = false
         }
+    }
+    bootJar {
+        enabled = false
     }
 }
 

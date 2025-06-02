@@ -82,6 +82,7 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
         wfs.setCorrelationId("correlation-id");
         wfs.setWorkflowType("workflow-type");
         wfs.setStartTime("2023-02-07T08:42:45Z");
+        wfs.setUpdateTime("2023-02-07T08:43:45Z");
         wfs.setStatus(Workflow.WorkflowStatus.RUNNING);
         return wfs;
     }
@@ -142,6 +143,7 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
 
         // Change the record, but not the status, and re-index
         wfs.setCorrelationId("new-correlation-id");
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
         indexDAO.indexWorkflow(wfs);
 
         // retrieve the record, make sure it hasn't changed
@@ -149,6 +151,7 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
 
         // Change the status and re-index
         wfs.setStatus(Workflow.WorkflowStatus.FAILED);
+        wfs.setUpdateTime("2023-02-07T08:45:45Z");
         indexDAO.indexWorkflow(wfs);
 
         // retrieve the record, make sure it has changed
@@ -172,9 +175,10 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
 
         // Change the status and re-index
         ts.setStatus(Task.Status.FAILED);
+        ts.setUpdateTime("2023-02-07T10:43:45Z");
         indexDAO.indexTask(ts);
 
         // retrieve the record, make sure it has changed
-        checkTask("task-id", "FAILED", "2023-02-07 10:42:45.0");
+        checkTask("task-id", "FAILED", "2023-02-07 10:43:45.0");
     }
 }

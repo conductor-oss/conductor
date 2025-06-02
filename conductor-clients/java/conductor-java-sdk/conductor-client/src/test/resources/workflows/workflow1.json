@@ -1,0 +1,43 @@
+{
+  "createTime": 1674453020104,
+  "updateTime": 1674453020105,
+  "name": "test_http",
+  "description": "v1",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "get_random_fact",
+      "taskReferenceName": "get_random_fact",
+      "inputParameters": {
+        "http_request": {
+          "uri": "https://catfact.ninja/fact",
+          "method": "GET",
+          "connectionTimeOut": 3000,
+          "readTimeOut": 3000
+        }
+      },
+      "type": "HTTP",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "data": "${get_random_fact.output.response.body.fact}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "user@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

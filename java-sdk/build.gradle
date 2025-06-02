@@ -6,10 +6,11 @@ dependencies {
     implementation project(':conductor-client')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:${revFasterXml}"
     implementation "com.google.guava:guava:${revGuava}"
     implementation "cglib:cglib:3.3.0"
-    implementation "com.sun.jersey:jersey-client:${revJersey}"
-    implementation "javax.ws.rs:javax.ws.rs-api:${revJAXRS}"
+    implementation "org.glassfish.jersey.core:jersey-client:${revJersey}"
+    implementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
     implementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
     implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
@@ -30,4 +31,3 @@ test {
     }
 }
 sourceSets.main.java.srcDirs += ['example/java', 'example/resources']
-

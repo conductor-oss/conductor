@@ -436,7 +436,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
             tasks[1].taskType == 'FORK'
             tasks[1].status == Task.Status.COMPLETED
             tasks[2].taskType == 'SUB_WORKFLOW'
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[3].taskType == 'integration_task_10'
             tasks[3].status == Task.Status.SCHEDULED
             tasks[4].taskType == 'JOIN'
@@ -446,9 +446,6 @@ class DynamicForkJoinSpec extends AbstractSpecification {
 
         when: "the subworkflow is started by issuing a system task call"
         def joinTaskId = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).getTaskByRefName("dynamicfanouttask_join").taskId
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        String subworkflowTaskId = polledTaskIds.get(0)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, subworkflowTaskId)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -869,7 +866,7 @@ class DynamicForkJoinSpec extends AbstractSpecification {
         workflowDef.ownerEmail = 'test@harness.com'
 
         def startWorkflowInput = new StartWorkflowInput(name: workflowDef.name, version: workflowDef.version, workflowInput: workflowInput, workflowDefinition: workflowDef)
-        def workflowInstanceId = startWorkflowOperation.execute(startWorkflowInput)
+        def workflowInstanceId = workflowExecutor.startWorkflow(startWorkflowInput)
 
         then: "verify that workflow failed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

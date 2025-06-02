@@ -42,7 +42,7 @@ public abstract class Auditable {
      * @return the createTime
      */
     public Long getCreateTime() {
-        return createTime;
+        return createTime == null ? 0 : createTime;
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class Auditable {
      * @return the updateTime
      */
     public Long getUpdateTime() {
-        return updateTime;
+        return updateTime == null ? 0 : updateTime;
     }
 
     /**

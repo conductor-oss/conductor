@@ -11,8 +11,9 @@ It has only been tested with **v12.2.0**.
 
 ### Usage
 
-Cf. Documentation [External Payload Storage](https://netflix.github.io/conductor/externalpayloadstorage/#azure-blob-storage)
+Documentation [External Payload Storage]([https://netflix.github.io/conductor/externalpayloadstorage/#azure-blob-storage](https://docs.conductor-oss.org/documentation/advanced/externalpayloadstorage.html))
 
+See [https://docs.conductor-oss.org/documentation/advanced/externalpayloadstorage.html]() for more details
 ### Example
 
 ```properties

@@ -36,6 +36,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel;
 
 @Audit
 @Trace
@@ -124,19 +125,14 @@ public class TaskServiceImpl implements TaskService {
      * Updates a task.
      *
      * @param taskResult Instance of {@link TaskResult}
-     * @return task Id of the updated task.
+     * @return the updated task.
      */
-    public String updateTask(TaskResult taskResult) {
+    public TaskModel updateTask(TaskResult taskResult) {
         LOGGER.debug(
                 "Update Task: {} with callback time: {}",
                 taskResult,
                 taskResult.getCallbackAfterSeconds());
-        executionService.updateTask(taskResult);
-        LOGGER.debug(
-                "Task: {} updated successfully with callback time: {}",
-                taskResult,
-                taskResult.getCallbackAfterSeconds());
-        return taskResult.getTaskId();
+        return executionService.updateTask(taskResult);
     }
 
     @Override
@@ -157,7 +153,11 @@ public class TaskServiceImpl implements TaskService {
         if (StringUtils.isNotBlank(workerId)) {
             taskResult.setWorkerId(workerId);
         }
-        return updateTask(taskResult);
+        TaskModel updatedTask = updateTask(taskResult);
+        if (updatedTask != null) {
+            return updatedTask.getTaskId();
+        }
+        return null;
     }
 
     /**

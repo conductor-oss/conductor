@@ -19,7 +19,8 @@ popular JQ processing tool’s query expression language.
 "type" : "JSON_JQ_TRANSFORM_TASK"
 ```
 Check the [JQ Manual](https://stedolan.github.io/jq/manual/v1.5/), and the
-[JQ Playground](https://jqplay.org/) for more information on JQ
+[JQ Playground](https://jqplay.org/) for more information on JQ, and also
+[AI JQ Playground](https://jq.getport.io/) for building JQ with AI.
 
 ### Use Cases
 

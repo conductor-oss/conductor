@@ -82,14 +82,19 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, status, json_data)"
-                        + "VALUES (?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, json_data)"
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
                         + "DO UPDATE SET correlation_id = EXCLUDED.correlation_id, workflow_type = EXCLUDED.workflow_type, "
-                        + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data";
+                        + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data, "
+                        + "update_time = EXCLUDED.update_time "
+                        + "WHERE EXCLUDED.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
-            INSERT_WORKFLOW_INDEX_SQL += " WHERE workflow_index.status != EXCLUDED.status";
+            INSERT_WORKFLOW_INDEX_SQL += " AND workflow_index.status != EXCLUDED.status";
         }
+
+        TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(workflow.getUpdateTime());
+        Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
 
         TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(workflow.getStartTime());
         Timestamp startTime = Timestamp.from(Instant.from(ta));
@@ -102,6 +107,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                         .addParameter(workflow.getCorrelationId())
                                         .addParameter(workflow.getWorkflowType())
                                         .addParameter(startTime)
+                                        .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
@@ -120,12 +126,19 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         queryBuilder.getQuery(),
                         q -> {
                             queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
                             return q.executeAndFetch(WorkflowSummary.class);
                         });
 
-        // To avoid making a second potentially expensive query to postgres say we've
-        // got enough results for another page so the pagination works
-        int totalHits = results.size() == count ? start + count + 1 : start + results.size();
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
         return new SearchResult<>(totalHits, results);
     }
 
@@ -135,10 +148,11 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                 "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, update_time, workflow_type, json_data)"
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = EXCLUDED.task_type, task_def_name = EXCLUDED.task_def_name, "
-                        + "status = EXCLUDED.status, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data";
+                        + "status = EXCLUDED.status, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data "
+                        + "WHERE EXCLUDED.update_time >= task_index.update_time";
 
         if (onlyIndexOnStatusChange) {
-            INSERT_TASK_INDEX_SQL += " WHERE task_index.status != EXCLUDED.status";
+            INSERT_TASK_INDEX_SQL += " AND task_index.status != EXCLUDED.status";
         }
 
         TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(task.getUpdateTime());
@@ -175,12 +189,19 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         queryBuilder.getQuery(),
                         q -> {
                             queryBuilder.addParameters(q);
+                            queryBuilder.addPagingParameters(q);
                             return q.executeAndFetch(TaskSummary.class);
                         });
 
-        // To avoid making a second potentially expensive query to postgres say we've
-        // got enough results for another page so the pagination works
-        int totalHits = results.size() == count ? start + count + 1 : start + results.size();
+        List<String> totalHitResults =
+                queryWithTransaction(
+                        queryBuilder.getCountQuery(),
+                        q -> {
+                            queryBuilder.addParameters(q);
+                            return q.executeAndFetch(String.class);
+                        });
+
+        int totalHits = Integer.valueOf(totalHitResults.get(0));
         return new SearchResult<>(totalHits, results);
     }
 
@@ -213,7 +234,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                                 log.setLog(rs.getString("log"));
                                                 log.setTaskId(rs.getString("task_id"));
                                                 log.setCreatedTime(
-                                                        rs.getDate("created_time").getTime());
+                                                        rs.getTimestamp("created_time").getTime());
                                                 result.add(log);
                                             }
                                             return result;

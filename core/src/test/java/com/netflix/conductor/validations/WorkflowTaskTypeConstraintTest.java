@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -399,25 +398,6 @@ public class WorkflowTaskTypeConstraintTest {
         assertTrue(
                 validationErrors.contains(
                         "subWorkflowParam field is required for taskType: SUB_WORKFLOW taskName: encode"));
-    }
-
-    @Test
-    public void testWorkflowTaskTypeSubworkflow() {
-        WorkflowTask workflowTask = createSampleWorkflowTask();
-        workflowTask.setType("SUB_WORKFLOW");
-
-        SubWorkflowParams subWorkflowTask = new SubWorkflowParams();
-        workflowTask.setSubWorkflowParam(subWorkflowTask);
-
-        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
-        assertEquals(2, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be null"));
-        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be empty"));
     }
 
     @Test

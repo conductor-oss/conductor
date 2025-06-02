@@ -14,10 +14,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -79,6 +76,10 @@ public class WaitTaskMapper implements TaskMapper {
         waitTask.setInputData(waitTaskInput);
         waitTask.setStartTime(System.currentTimeMillis());
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
+            waitTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
+        }
         setCallbackAfter(waitTask);
         return List.of(waitTask);
     }

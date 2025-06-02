@@ -23,6 +23,7 @@ import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
@@ -198,31 +199,20 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
             tasks[1].retried
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[2].retriedTaskId == tasks[1].taskId
         }
-
-        when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-        def newMidLevelWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def newMidLevelWorkflowId = workflowExecutionService.getExecutionStatus(rootWorkflowId, true).getTasks().get(2).subWorkflowId
 
         then: "verify that a new mid level workflow is created and is in RUNNING state"
         newMidLevelWorkflowId != midLevelWorkflowId
         with(workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 1
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.SCHEDULED
+            tasks.size() == 2
+            tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
+            tasks[1].status == Task.Status.IN_PROGRESS
         }
-
-        when: "poll and complete the integration_task_1 task in the mid-level workflow"
-        workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
-
-        and: "poll and execute the sub workflow task"
-        polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-        def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(newMidLevelWorkflowId, true).getTasks().get(1).subWorkflowId
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId
@@ -407,7 +397,7 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.FAILED
             tasks[1].retried
             tasks[2].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].status == Task.Status.IN_PROGRESS
             tasks[2].retriedTaskId == tasks[1].taskId
         }
 
@@ -419,11 +409,7 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
             tasks[1].status == Task.Status.IN_PROGRESS
             tasks[1].subworkflowChanged
         }
-
-        when: "the SUB_WORKFLOW task in mid level workflow is started by issuing a system task call"
-        def polledTaskIds = queueDAO.pop(TASK_TYPE_SUB_WORKFLOW, 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
-        def newLeafWorkflowId = workflowExecutionService.getTask(polledTaskIds[0]).subWorkflowId
+        def newLeafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(2).subWorkflowId
 
         then: "verify that a new leaf workflow is created and is in RUNNING state"
         newLeafWorkflowId != leafWorkflowId

@@ -24,7 +24,6 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
 
@@ -202,6 +201,12 @@ public class Task {
      */
     @ProtoField(id = 42)
     private boolean subworkflowChanged;
+
+    @ProtoField(id = 43)
+    private long firstStartTime;
+
+    // If the task is an event associated with a parent task, the id of the parent task
+    private String parentTaskId;
 
     public Task() {}
 
@@ -630,7 +635,6 @@ public class Task {
     /**
      * @return {@link Optional} containing the task definition if available
      */
-    @JsonIgnore
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
@@ -715,7 +719,9 @@ public class Task {
         return iteration > 0;
     }
 
-    /** * @return the priority defined on workflow */
+    /**
+     * @return the priority defined on workflow
+     */
     public int getWorkflowPriority() {
         return workflowPriority;
     }
@@ -756,6 +762,22 @@ public class Task {
         }
     }
 
+    public String getParentTaskId() {
+        return parentTaskId;
+    }
+
+    public void setParentTaskId(String parentTaskId) {
+        this.parentTaskId = parentTaskId;
+    }
+
+    public long getFirstStartTime() {
+        return firstStartTime;
+    }
+
+    public void setFirstStartTime(long firstStartTime) {
+        this.firstStartTime = firstStartTime;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -788,7 +810,8 @@ public class Task {
         copy.setIsolationGroupId(isolationGroupId);
         copy.setSubWorkflowId(getSubWorkflowId());
         copy.setSubworkflowChanged(subworkflowChanged);
-
+        copy.setParentTaskId(parentTaskId);
+        copy.setFirstStartTime(firstStartTime);
         return copy;
     }
 
@@ -809,7 +832,8 @@ public class Task {
         deepCopy.setWorkerId(workerId);
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
-
+        deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 
@@ -910,6 +934,9 @@ public class Task {
                 + ", subworkflowChanged='"
                 + subworkflowChanged
                 + '\''
+                + ", firstStartTime='"
+                + firstStartTime
+                + '\''
                 + '}';
     }
 
@@ -963,7 +990,9 @@ public class Task {
                         getExternalOutputPayloadStoragePath(),
                         task.getExternalOutputPayloadStoragePath())
                 && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId())
-                && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace());
+                && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace())
+                && Objects.equals(getParentTaskId(), task.getParentTaskId())
+                && Objects.equals(getFirstStartTime(), task.getFirstStartTime());
     }
 
     @Override
@@ -1005,6 +1034,8 @@ public class Task {
                 getExternalInputPayloadStoragePath(),
                 getExternalOutputPayloadStoragePath(),
                 getIsolationGroupId(),
-                getExecutionNameSpace());
+                getExecutionNameSpace(),
+                getParentTaskId(),
+                getFirstStartTime());
     }
 }

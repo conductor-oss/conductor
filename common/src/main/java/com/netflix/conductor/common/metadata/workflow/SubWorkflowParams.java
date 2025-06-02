@@ -12,23 +12,22 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
+import com.netflix.conductor.common.utils.TaskUtils;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 
 @ProtoMessage
 public class SubWorkflowParams {
 
     @ProtoField(id = 1)
-    @NotNull(message = "SubWorkflowParams name cannot be null")
-    @NotEmpty(message = "SubWorkflowParams name cannot be empty")
     private String name;
 
     @ProtoField(id = 2)
@@ -42,15 +41,47 @@ public class SubWorkflowParams {
     @ProtoField(id = 4)
     private Object workflowDefinition;
 
+    private String idempotencyKey;
+
+    private IdempotencyStrategy idempotencyStrategy;
+
+    // Priority of the sub workflow, not set inherits from the parent
+    private Object priority;
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public IdempotencyStrategy getIdempotencyStrategy() {
+        return idempotencyStrategy;
+    }
+
+    public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
+        this.idempotencyStrategy = idempotencyStrategy;
+    }
+
+    public Object getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Object priority) {
+        this.priority = priority;
+    }
+
     /**
      * @return the name
      */
     public String getName() {
         if (workflowDefinition != null) {
-            return getWorkflowDef().getName();
-        } else {
-            return name;
+            if (workflowDefinition instanceof WorkflowDef) {
+                return ((WorkflowDef) workflowDefinition).getName();
+            }
         }
+        return name;
     }
 
     /**
@@ -65,10 +96,11 @@ public class SubWorkflowParams {
      */
     public Integer getVersion() {
         if (workflowDefinition != null) {
-            return getWorkflowDef().getVersion();
-        } else {
-            return version;
+            if (workflowDefinition instanceof WorkflowDef) {
+                return ((WorkflowDef) workflowDefinition).getVersion();
+            }
         }
+        return version;
     }
 
     /**
@@ -95,14 +127,19 @@ public class SubWorkflowParams {
     /**
      * @return the workflowDefinition as an Object
      */
+    @JsonGetter("workflowDefinition")
     public Object getWorkflowDefinition() {
         return workflowDefinition;
     }
 
-    /**
-     * @return the workflowDefinition as a WorkflowDef
-     */
-    @JsonGetter("workflowDefinition")
+    @Deprecated
+    @JsonIgnore
+    public void setWorkflowDef(WorkflowDef workflowDef) {
+        this.setWorkflowDefinition(workflowDef);
+    }
+
+    @Deprecated
+    @JsonIgnore
     public WorkflowDef getWorkflowDef() {
         return (WorkflowDef) workflowDefinition;
     }
@@ -110,20 +147,26 @@ public class SubWorkflowParams {
     /**
      * @param workflowDef the workflowDefinition to set
      */
-    public void setWorkflowDefinition(Object workflowDef) {
-        if (!(workflowDef == null || workflowDef instanceof WorkflowDef)) {
-            throw new IllegalArgumentException(
-                    "workflowDefinition must be either null or WorkflowDef");
-        }
-        this.workflowDefinition = workflowDef;
-    }
-
-    /**
-     * @param workflowDef the workflowDefinition to set
-     */
     @JsonSetter("workflowDefinition")
-    public void setWorkflowDef(WorkflowDef workflowDef) {
-        this.workflowDefinition = workflowDef;
+    public void setWorkflowDefinition(Object workflowDef) {
+        if (workflowDef == null) {
+            this.workflowDefinition = workflowDef;
+        } else if (workflowDef instanceof WorkflowDef) {
+            this.workflowDefinition = workflowDef;
+        } else if (workflowDef instanceof String) {
+            if (!(((String) workflowDef).startsWith("${"))
+                    || !(((String) workflowDef).endsWith("}"))) {
+                throw new IllegalArgumentException(
+                        "workflowDefinition is a string, but not a valid DSL string");
+            } else {
+                this.workflowDefinition = workflowDef;
+            }
+        } else if (workflowDef instanceof LinkedHashMap) {
+            this.workflowDefinition = TaskUtils.convertToWorkflowDef(workflowDef);
+        } else {
+            throw new IllegalArgumentException(
+                    "workflowDefinition must be either null, or WorkflowDef, or a valid DSL string");
+        }
     }
 
     @Override

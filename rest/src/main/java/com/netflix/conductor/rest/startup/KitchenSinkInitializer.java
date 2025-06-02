@@ -100,10 +100,10 @@ public class KitchenSinkInitializer {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
         headers.add(CONTENT_TYPE, APPLICATION_JSON_VALUE);
         HttpEntity<String> request = new HttpEntity<>(readToString(kitchenSink), headers);
-        restTemplate.postForEntity(url("/api/metadata/workflow/"), request, Map.class);
+        restTemplate.postForEntity(url("/api/metadata/workflow"), request, Map.class);
 
         request = new HttpEntity<>(readToString(subFlow), headers);
-        restTemplate.postForEntity(url("/api/metadata/workflow/"), request, Map.class);
+        restTemplate.postForEntity(url("/api/metadata/workflow"), request, Map.class);
 
         restTemplate.postForEntity(
                 url("/api/workflow/kitchensink"),
@@ -115,14 +115,14 @@ public class KitchenSinkInitializer {
          * Kitchensink example with ephemeral workflow and stored tasks
          */
         request = new HttpEntity<>(readToString(ephemeralWorkflowWithStoredTasks), headers);
-        restTemplate.postForEntity(url("/api/workflow/"), request, String.class);
+        restTemplate.postForEntity(url("/api/workflow"), request, String.class);
         LOGGER.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
 
         /*
          * Kitchensink example with ephemeral workflow and ephemeral tasks
          */
         request = new HttpEntity<>(readToString(ephemeralWorkflowWithEphemeralTasks), headers);
-        restTemplate.postForEntity(url("/api/workflow/"), request, String.class);
+        restTemplate.postForEntity(url("/api/workflow"), request, String.class);
         LOGGER.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
     }
 

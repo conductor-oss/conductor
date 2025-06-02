@@ -94,25 +94,11 @@ public class PostgresPollDataDAOCacheTest {
 
     private void waitForCacheFlush() throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        long lastDiff =
-                System.currentTimeMillis() - ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime();
+        long lastFlushTime = ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime();
 
-        if (lastDiff == 0) {
-            return;
-        }
-
-        while (true) {
-            long currentDiff =
-                    System.currentTimeMillis()
-                            - ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime();
-
-            if (currentDiff < lastDiff || System.currentTimeMillis() - startTime > 1000) {
-                return;
-            }
-
-            lastDiff = currentDiff;
-
-            Thread.sleep(1);
+        while (System.currentTimeMillis() - startTime < 1000
+                && lastFlushTime <= ((PostgresPollDataDAO) pollDataDAO).getLastFlushTime()) {
+            Thread.sleep(10);
         }
     }
 

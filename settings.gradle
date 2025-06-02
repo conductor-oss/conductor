@@ -33,6 +33,7 @@ include 'annotations'
 include 'annotations-processor'
 
 include 'server'
+include 'server-lite'
 include 'common'
 include 'core'
 include 'client'
@@ -68,15 +69,18 @@ include 'kafka'
 include 'common-persistence'
 include 'mysql-persistence'
 include 'postgres-persistence'
+include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'os-persistence'
 include 'azureblob-storage'
 include 'postgres-external-storage'
 include 'amqp'
 include 'nats'
 include 'nats-streaming'
+include 'kafka-event-queue'
 
 include 'test-harness'
 
-
 rootProject.children.each {it.name="conductor-${it.name}"}
+

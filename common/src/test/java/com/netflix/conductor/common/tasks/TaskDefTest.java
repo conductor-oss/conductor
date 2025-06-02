@@ -75,21 +75,25 @@ public class TaskDefTest {
     }
 
     @Test
-    public void testTaskDefNameAndOwnerNotSet() {
+    public void testTaskDefTotalTimeOutSeconds() {
         TaskDef taskDef = new TaskDef();
-        taskDef.setRetryCount(-1);
+        taskDef.setName("test-task");
+        taskDef.setRetryCount(1);
         taskDef.setTimeoutSeconds(1000);
+        taskDef.setTotalTimeoutSeconds(900);
         taskDef.setResponseTimeoutSeconds(1);
+        taskDef.setOwnerEmail("blah@gmail.com");
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
-        assertEquals(3, result.size());
+        assertEquals(1, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
-        assertTrue(validationErrors.contains("TaskDef name cannot be null or empty"));
-        assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
+        assertTrue(
+                validationErrors.toString(),
+                validationErrors.contains(
+                        "TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 900"));
     }
 
     @Test
@@ -99,7 +103,6 @@ public class TaskDefTest {
         taskDef.setRetryCount(1);
         taskDef.setTimeoutSeconds(1000);
         taskDef.setResponseTimeoutSeconds(1);
-        taskDef.setOwnerEmail("owner");
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
         assertEquals(1, result.size());
@@ -107,7 +110,9 @@ public class TaskDefTest {
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("ownerEmail should be valid email address"));
+        assertTrue(
+                validationErrors.toString(),
+                validationErrors.contains("ownerEmail cannot be empty"));
     }
 
     @Test

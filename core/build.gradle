@@ -43,6 +43,11 @@ dependencies {
 
     implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
+    //gralVm dependencies for executing python
+    implementation("org.graalvm.polyglot:polyglot:24.1.0")
+    implementation("org.graalvm.polyglot:python:24.1.0")
+    implementation "org.graalvm.sdk:graal-sdk:24.1.0"
+
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"

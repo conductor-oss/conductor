@@ -9,7 +9,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+    compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
     implementation "org.apache.commons:commons-lang3"
 
@@ -21,8 +21,10 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
     // https://github.com/FasterXML/jackson-modules-base/tree/master/afterburner
     implementation "com.fasterxml.jackson.module:jackson-module-afterburner:${revFasterXml}"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:${revFasterXml}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
+    testImplementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 }
 
 /*
@@ -52,4 +54,3 @@ task protogen(dependsOn: jar, type: JavaExec) {
             "com.netflix.conductor.common",
     )
 }
-

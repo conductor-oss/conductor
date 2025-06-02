@@ -62,6 +62,7 @@ public class Event extends WorkflowSystemTask {
         payload.put("workflowType", workflow.getWorkflowName());
         payload.put("workflowVersion", workflow.getWorkflowVersion());
         payload.put("correlationId", workflow.getCorrelationId());
+        payload.put("taskToDomain", workflow.getTaskToDomain());
 
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.addOutput(payload);

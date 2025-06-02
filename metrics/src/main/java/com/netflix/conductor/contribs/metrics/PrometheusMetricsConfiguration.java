@@ -21,7 +21,6 @@ import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.micrometer.MicrometerRegistry;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusRenameFilter;
 
 /**
  * Metrics prometheus module, sending all metrics to a Prometheus server.
@@ -40,7 +39,6 @@ public class PrometheusMetricsConfiguration {
     public PrometheusMetricsConfiguration(MeterRegistry meterRegistry) {
         LOGGER.info("Prometheus metrics module initialized");
         final MicrometerRegistry metricsRegistry = new MicrometerRegistry(meterRegistry);
-        meterRegistry.config().meterFilter(new PrometheusRenameFilter());
         Spectator.globalRegistry().add(metricsRegistry);
     }
 }

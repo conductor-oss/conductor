@@ -7,7 +7,9 @@ dependencies {
 
     implementation "org.postgresql:postgresql:${revPostgres}"
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    implementation 'org.flywaydb:flyway-core'
+    implementation "org.flywaydb:flyway-core:${revFlyway}"
+    implementation "org.flywaydb:flyway-database-postgresql:${revFlyway}"
+
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
     implementation "commons-codec:commons-codec:${revCodec}"
 

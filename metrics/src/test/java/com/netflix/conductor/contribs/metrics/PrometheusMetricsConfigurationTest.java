@@ -31,8 +31,7 @@ import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.micrometer.MicrometerRegistry;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static org.junit.Assert.assertTrue;
 
@@ -72,7 +71,7 @@ public class PrometheusMetricsConfigurationTest {
         @Bean
         @Primary
         public MeterRegistry meterRegistry() {
-            return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+            return new SimpleMeterRegistry();
         }
     }
 }

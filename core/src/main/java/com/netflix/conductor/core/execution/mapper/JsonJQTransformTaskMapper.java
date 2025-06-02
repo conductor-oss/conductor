@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -65,6 +66,10 @@ public class JsonJQTransformTaskMapper implements TaskMapper {
         TaskModel jsonJQTransformTask = taskMapperContext.createTaskModel();
         jsonJQTransformTask.setStartTime(System.currentTimeMillis());
         jsonJQTransformTask.setInputData(taskInput);
+        if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
+            jsonJQTransformTask.setIsolationGroupId(
+                    taskMapperContext.getTaskDefinition().getIsolationGroupId());
+        }
         jsonJQTransformTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
         return List.of(jsonJQTransformTask);

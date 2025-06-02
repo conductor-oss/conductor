@@ -128,7 +128,7 @@ public class TestDeciderOutcomes {
 
         @Bean(TASK_TYPE_JOIN)
         public Join join() {
-            return new Join();
+            return new Join(new ConductorProperties());
         }
 
         @Bean
@@ -595,7 +595,8 @@ public class TestDeciderOutcomes {
 
         assertEquals(TaskModel.Status.SCHEDULED, outcome.tasksToBeScheduled.get(0).getStatus());
         System.out.println(outcome.tasksToBeScheduled.get(0));
-        new Join().execute(workflow, outcome.tasksToBeScheduled.get(0), null);
+        new Join(new ConductorProperties())
+                .execute(workflow, outcome.tasksToBeScheduled.get(0), null);
         assertEquals(TaskModel.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
     }
 

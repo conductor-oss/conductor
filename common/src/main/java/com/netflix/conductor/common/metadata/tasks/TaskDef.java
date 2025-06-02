@@ -23,10 +23,10 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
-import com.netflix.conductor.common.metadata.BaseDef;
+import com.netflix.conductor.common.metadata.Auditable;
+import com.netflix.conductor.common.metadata.SchemaDef;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ import jakarta.validation.constraints.NotNull;
 @ProtoMessage
 @TaskTimeoutConstraint
 @Valid
-public class TaskDef extends BaseDef {
+public class TaskDef extends Auditable {
 
     @ProtoEnum
     public enum TimeoutPolicy {
@@ -114,7 +114,6 @@ public class TaskDef extends BaseDef {
 
     @ProtoField(id = 18)
     @OwnerEmailMandatoryConstraint
-    @Email(message = "ownerEmail should be valid email address")
     private String ownerEmail;
 
     @ProtoField(id = 19)
@@ -124,6 +123,17 @@ public class TaskDef extends BaseDef {
     @ProtoField(id = 20)
     @Min(value = 1, message = "Backoff scale factor. Applicable for LINEAR_BACKOFF")
     private Integer backoffScaleFactor = 1;
+
+    @ProtoField(id = 21)
+    private String baseType;
+
+    @ProtoField(id = 22)
+    @NotNull
+    private long totalTimeoutSeconds;
+
+    private SchemaDef inputSchema;
+    private SchemaDef outputSchema;
+    private boolean enforceSchema;
 
     public TaskDef() {}
 
@@ -426,6 +436,46 @@ public class TaskDef extends BaseDef {
         return backoffScaleFactor;
     }
 
+    public String getBaseType() {
+        return baseType;
+    }
+
+    public void setBaseType(String baseType) {
+        this.baseType = baseType;
+    }
+
+    public SchemaDef getInputSchema() {
+        return inputSchema;
+    }
+
+    public void setInputSchema(SchemaDef inputSchema) {
+        this.inputSchema = inputSchema;
+    }
+
+    public SchemaDef getOutputSchema() {
+        return outputSchema;
+    }
+
+    public void setOutputSchema(SchemaDef outputSchema) {
+        this.outputSchema = outputSchema;
+    }
+
+    public boolean isEnforceSchema() {
+        return enforceSchema;
+    }
+
+    public void setEnforceSchema(boolean enforceSchema) {
+        this.enforceSchema = enforceSchema;
+    }
+
+    public long getTotalTimeoutSeconds() {
+        return totalTimeoutSeconds;
+    }
+
+    public void setTotalTimeoutSeconds(long totalTimeoutSeconds) {
+        this.totalTimeoutSeconds = totalTimeoutSeconds;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -456,7 +506,11 @@ public class TaskDef extends BaseDef {
                 && Objects.equals(getInputTemplate(), taskDef.getInputTemplate())
                 && Objects.equals(getIsolationGroupId(), taskDef.getIsolationGroupId())
                 && Objects.equals(getExecutionNameSpace(), taskDef.getExecutionNameSpace())
-                && Objects.equals(getOwnerEmail(), taskDef.getOwnerEmail());
+                && Objects.equals(getOwnerEmail(), taskDef.getOwnerEmail())
+                && Objects.equals(getBaseType(), taskDef.getBaseType())
+                && Objects.equals(getInputSchema(), taskDef.getInputSchema())
+                && Objects.equals(getOutputSchema(), taskDef.getOutputSchema())
+                && Objects.equals(getTotalTimeoutSeconds(), taskDef.getTotalTimeoutSeconds());
     }
 
     @Override
@@ -479,6 +533,10 @@ public class TaskDef extends BaseDef {
                 getInputTemplate(),
                 getIsolationGroupId(),
                 getExecutionNameSpace(),
-                getOwnerEmail());
+                getOwnerEmail(),
+                getBaseType(),
+                getInputSchema(),
+                getOutputSchema(),
+                getTotalTimeoutSeconds());
     }
 }

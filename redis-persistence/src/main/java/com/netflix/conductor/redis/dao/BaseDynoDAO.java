@@ -28,7 +28,6 @@ public class BaseDynoDAO {
 
     private static final String NAMESPACE_SEP = ".";
     private static final String DAO_NAME = "redis";
-    private final String domain;
     private final RedisProperties properties;
     private final ConductorProperties conductorProperties;
     protected JedisProxy jedisProxy;
@@ -43,7 +42,6 @@ public class BaseDynoDAO {
         this.objectMapper = objectMapper;
         this.conductorProperties = conductorProperties;
         this.properties = properties;
-        this.domain = properties.getKeyspaceDomain();
     }
 
     String nsKey(String... nsValues) {
@@ -56,6 +54,7 @@ public class BaseDynoDAO {
         if (StringUtils.isNotBlank(stack)) {
             namespacedKey.append(stack).append(NAMESPACE_SEP);
         }
+        String domain = properties.getKeyspaceDomain();
         if (StringUtils.isNotBlank(domain)) {
             namespacedKey.append(domain).append(NAMESPACE_SEP);
         }

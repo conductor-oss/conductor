@@ -29,6 +29,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
@@ -45,8 +46,10 @@ public class TestWorkflowSweeper {
     private QueueDAO queueDAO;
     private ExecutionDAOFacade executionDAOFacade;
     private WorkflowSweeper workflowSweeper;
+    private ExecutionLockService executionLockService;
 
     private int defaultPostPoneOffSetSeconds = 1800;
+    private int defaulMmaxPostponeDurationSeconds = 2000000;
 
     @Before
     public void setUp() {
@@ -55,13 +58,15 @@ public class TestWorkflowSweeper {
         queueDAO = mock(QueueDAO.class);
         workflowRepairService = mock(WorkflowRepairService.class);
         executionDAOFacade = mock(ExecutionDAOFacade.class);
+        executionLockService = mock(ExecutionLockService.class);
         workflowSweeper =
                 new WorkflowSweeper(
                         workflowExecutor,
                         Optional.of(workflowRepairService),
                         properties,
                         queueDAO,
-                        executionDAOFacade);
+                        executionDAOFacade,
+                        executionLockService);
     }
 
     @Test
@@ -75,6 +80,8 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
@@ -94,6 +101,8 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
@@ -115,6 +124,8 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
@@ -170,6 +181,8 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
@@ -191,10 +204,36 @@ public class TestWorkflowSweeper {
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE, workflowModel.getWorkflowId(), (responseTimeout + 1) * 1000);
+    }
+
+    @Test
+    public void
+            testPostponeDurationForTaskInProgressWithResponseTimeoutSetLongerThanMaxPostponeDuration() {
+        long responseTimeout = defaulMmaxPostponeDurationSeconds + 1;
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("task1");
+        taskModel.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        taskModel.setStatus(Status.IN_PROGRESS);
+        taskModel.setResponseTimeoutSeconds(responseTimeout);
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.getWorkflowOffsetTimeout())
+                .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
+        when(properties.getMaxPostponeDurationSeconds())
+                .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+        verify(queueDAO)
+                .setUnackTimeout(
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        defaulMmaxPostponeDurationSeconds * 1000L);
     }
 
     @Test

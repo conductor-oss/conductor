@@ -25,6 +25,7 @@ dependencies {
     implementation project(':conductor-nats')
     implementation project(':conductor-nats-streaming')
     implementation project(':conductor-awssqs-event-queue')
+    implementation project(':conductor-kafka-event-queue')
 
     //External Payload Storage
     implementation project(':conductor-azureblob-storage')
@@ -37,8 +38,10 @@ dependencies {
     implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-mysql-persistence')
+    implementation project(':conductor-sqlite-persistence')
 
     //Indexing (note: Elasticsearch 6 is deprecated)
+    implementation project(':conductor-os-persistence')
     implementation project(':conductor-es7-persistence')
 
 
@@ -66,6 +69,7 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-web'
     implementation "redis.clients:jedis:${revJedis}"
     implementation "org.postgresql:postgresql:${revPostgres}"
+    implementation "org.apache.lucene:lucene-core:${revApacheLucene}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
@@ -92,6 +96,14 @@ jar {
 bootJar {
     mainClass = 'com.netflix.conductor.Conductor'
     archiveClassifier = 'boot'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact bootJar
+        }
+    }
 }
 
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
