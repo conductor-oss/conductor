@@ -51,7 +51,7 @@ ext {
     revProtogenAnnotations = '1.0.0'
     revProtogenCodegen = '1.4.0'
     revRarefiedRedis = '0.0.17'
-    revRedisson = '3.45.0'
+    revRedisson = '3.48.0'
     revRxJava = '1.2.2'
     revSpectator = '0.122.0'
     revSpock = '2.4-M1-groovy-4.0'

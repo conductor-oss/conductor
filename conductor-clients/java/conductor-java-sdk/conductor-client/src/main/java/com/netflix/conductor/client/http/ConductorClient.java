@@ -569,7 +569,7 @@ public class ConductorClient {
         protected void applyEnvVariables() {
             String conductorServerUrl = System.getenv("CONDUCTOR_SERVER_URL");
             if (conductorServerUrl != null) {
-                this.basePath(conductorServerUrl);
+                this.basePath(conductorServerUrl.trim());
             } else {
                 throw new RuntimeException("env variable CONDUCTOR_SERVER_URL is not set");
             }
