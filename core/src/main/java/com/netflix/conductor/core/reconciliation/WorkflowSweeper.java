@@ -80,10 +80,13 @@ public class WorkflowSweeper {
         WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
         WorkflowContext.set(workflowContext);
         WorkflowModel workflow = null;
-        try {
-            if (!executionLockService.acquireLock(workflowId)) {
-                return;
-            }
+        ExecutionLockService.LockInstance workflowLock =
+                executionLockService.acquireLock(workflowId);
+        if (workflowLock == null) {
+            LOGGER.info("Could not acquire lock for sweeping workflow {}", workflowId);
+            return;
+        }
+        try (workflowLock) {
             workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
             LOGGER.debug("Running sweeper for workflow {}", workflowId);
             if (workflowRepairService != null) {
@@ -105,8 +108,6 @@ public class WorkflowSweeper {
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "sweep");
             LOGGER.error("Error running sweep for " + workflowId, e);
-        } finally {
-            executionLockService.releaseLock(workflowId);
         }
         long workflowOffsetTimeout =
                 workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
