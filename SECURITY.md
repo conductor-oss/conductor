@@ -10,4 +10,4 @@
 
 ## Reporting a Vulnerability
 
-Please email oss@orkes.com to report vulnerabilities.
+Please email oss@orkes.io to report vulnerabilities.
