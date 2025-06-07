@@ -456,7 +456,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                         + "    WHERE queue_name = ? "
                         + "      AND popped = false "
                         + "      AND deliver_on <= (current_timestamp + (1000 || ' microseconds')::interval) "
-                        + "    ORDER BY priority DESC, deliver_on, created_on "
+                        + "    ORDER BY deliver_on, priority DESC, created_on "
                         + "    LIMIT ? "
                         + "    FOR UPDATE SKIP LOCKED "
                         + ") "
