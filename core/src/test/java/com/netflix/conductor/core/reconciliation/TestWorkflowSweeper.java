@@ -30,6 +30,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
@@ -120,7 +121,7 @@ public class TestWorkflowSweeper {
         taskModel.setTaskId("task1");
         taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
         taskModel.setStatus(Status.IN_PROGRESS);
-        taskModel.setWaitTimeout(System.currentTimeMillis() + waitTimeout);
+        taskModel.setWaitTimeout(TimeService.currentTimeMillis() + waitTimeout);
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
@@ -141,7 +142,7 @@ public class TestWorkflowSweeper {
         taskModel.setTaskId("task1");
         taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
         taskModel.setStatus(Status.IN_PROGRESS);
-        taskModel.setWaitTimeout(System.currentTimeMillis() + waitTimeout);
+        taskModel.setWaitTimeout(TimeService.currentTimeMillis() + waitTimeout);
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
@@ -160,7 +161,7 @@ public class TestWorkflowSweeper {
         taskModel.setTaskId("task1");
         taskModel.setTaskType(TaskType.TASK_TYPE_WAIT);
         taskModel.setStatus(Status.IN_PROGRESS);
-        taskModel.setWaitTimeout(System.currentTimeMillis() + waitTimeout);
+        taskModel.setWaitTimeout(TimeService.currentTimeMillis() + waitTimeout);
         workflowModel.setTasks(List.of(taskModel));
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));

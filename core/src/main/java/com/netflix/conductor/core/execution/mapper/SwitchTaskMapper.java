@@ -27,6 +27,7 @@ import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -93,7 +94,7 @@ public class SwitchTaskMapper implements TaskMapper {
             switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
             switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
             switchTask.getInputData().putAll(taskInput);
-            switchTask.setStartTime(System.currentTimeMillis());
+            switchTask.setStartTime(TimeService.currentTimeMillis());
             switchTask.setStatus(TaskModel.Status.FAILED);
             switchTask.setReasonForIncompletion(exception.getMessage());
             tasksToBeScheduled.add(switchTask);
@@ -109,7 +110,7 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.getInputData().put("case", evalResult);
         switchTask.addOutput("evaluationResult", List.of(evalResult));
         switchTask.addOutput("selectedCase", evalResult);
-        switchTask.setStartTime(System.currentTimeMillis());
+        switchTask.setStartTime(TimeService.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
 

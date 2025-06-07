@@ -36,6 +36,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -90,9 +91,9 @@ public class WorkflowSweeper {
                 // Verify and repair tasks in the workflow.
                 workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
-            long decideStartTime = System.currentTimeMillis();
+            long decideStartTime = TimeService.currentTimeMillis();
             workflow = workflowExecutor.decide(workflow.getWorkflowId());
-            Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
+            Monitors.recordWorkflowDecisionTime(TimeService.currentTimeMillis() - decideStartTime);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
@@ -133,7 +134,8 @@ public class WorkflowSweeper {
                         postponeDurationSeconds = workflowOffsetTimeout;
                     } else {
                         long deltaInSeconds =
-                                (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
+                                (taskModel.getWaitTimeout() - TimeService.currentTimeMillis())
+                                        / 1000;
                         postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {

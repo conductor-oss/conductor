@@ -27,6 +27,7 @@ import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 import static com.netflix.conductor.core.execution.tasks.Wait.DURATION_INPUT;
@@ -74,7 +75,7 @@ public class WaitTaskMapper implements TaskMapper {
         TaskModel waitTask = taskMapperContext.createTaskModel();
         waitTask.setTaskType(TASK_TYPE_WAIT);
         waitTask.setInputData(waitTaskInput);
-        waitTask.setStartTime(System.currentTimeMillis());
+        waitTask.setStartTime(TimeService.currentTimeMillis());
         waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
         if (Objects.nonNull(taskMapperContext.getTaskDefinition())) {
             waitTask.setIsolationGroupId(
@@ -100,7 +101,7 @@ public class WaitTaskMapper implements TaskMapper {
         if (StringUtils.isNotBlank(duration)) {
 
             Duration timeDuration = parseDuration(duration);
-            long waitTimeout = System.currentTimeMillis() + (timeDuration.getSeconds() * 1000);
+            long waitTimeout = TimeService.currentTimeMillis() + (timeDuration.getSeconds() * 1000);
             task.setWaitTimeout(waitTimeout);
             long seconds = timeDuration.getSeconds();
             task.setCallbackAfterSeconds(seconds);
@@ -110,7 +111,7 @@ public class WaitTaskMapper implements TaskMapper {
 
                 Date expiryDate = parseDate(until);
                 long timeInMS = expiryDate.getTime();
-                long now = System.currentTimeMillis();
+                long now = TimeService.currentTimeMillis();
                 long seconds = ((timeInMS - now) / 1000);
                 if (seconds < 0) {
                     seconds = 0;

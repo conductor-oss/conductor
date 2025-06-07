@@ -59,7 +59,7 @@ public class MetadataServiceImpl implements MetadataService {
     public void registerTaskDef(List<TaskDef> taskDefinitions) {
         for (TaskDef taskDefinition : taskDefinitions) {
             taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
-            taskDefinition.setCreateTime(System.currentTimeMillis());
+            taskDefinition.setCreateTime(TimeService.currentTimeMillis());
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
 
@@ -81,7 +81,7 @@ public class MetadataServiceImpl implements MetadataService {
             throw new NotFoundException("No such task by name %s", taskDefinition.getName());
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
-        taskDefinition.setUpdateTime(System.currentTimeMillis());
+        taskDefinition.setUpdateTime(TimeService.currentTimeMillis());
         taskDefinition.setCreateTime(existing.getCreateTime());
         taskDefinition.setCreatedBy(existing.getCreatedBy());
         metadataDAO.updateTaskDef(taskDefinition);
@@ -117,7 +117,7 @@ public class MetadataServiceImpl implements MetadataService {
      * @param workflowDef Workflow definition to be updated
      */
     public void updateWorkflowDef(WorkflowDef workflowDef) {
-        workflowDef.setUpdateTime(System.currentTimeMillis());
+        workflowDef.setUpdateTime(TimeService.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
     }
 
@@ -170,7 +170,7 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        workflowDef.setCreateTime(System.currentTimeMillis());
+        workflowDef.setCreateTime(TimeService.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
     }
 

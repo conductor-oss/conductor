@@ -57,6 +57,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
@@ -501,7 +502,7 @@ public class TestDeciderService {
 
         TaskModel task = new TaskModel();
         task.setTaskType(taskType.getName());
-        task.setStartTime(System.currentTimeMillis() - 2_000); // 2 seconds ago!
+        task.setStartTime(TimeService.currentTimeMillis() - 2_000); // 2 seconds ago!
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         deciderService.checkTaskTimeout(taskType, task);
 
@@ -558,7 +559,7 @@ public class TestDeciderService {
 
         TaskModel task = new TaskModel();
         task.setTaskType(taskType.getName());
-        task.setScheduledTime(System.currentTimeMillis() - 2_000);
+        task.setScheduledTime(TimeService.currentTimeMillis() - 2_000);
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
 
@@ -566,7 +567,7 @@ public class TestDeciderService {
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
 
-        task.setScheduledTime(System.currentTimeMillis());
+        task.setScheduledTime(TimeService.currentTimeMillis());
         task.setReasonForIncompletion(null);
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
@@ -994,7 +995,7 @@ public class TestDeciderService {
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setTaskId("aa");
         task.setTaskType(TaskType.TASK_TYPE_SIMPLE);
-        task.setUpdateTime(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(11));
+        task.setUpdateTime(TimeService.currentTimeMillis() - TimeUnit.SECONDS.toMillis(11));
 
         assertTrue(deciderService.isResponseTimedOut(taskDef, task));
 
@@ -1155,7 +1156,7 @@ public class TestDeciderService {
         workflowDef.setName("test");
         WorkflowModel workflow = new WorkflowModel();
         workflow.setOwnerApp("junit");
-        workflow.setCreateTime(System.currentTimeMillis() - 10_000);
+        workflow.setCreateTime(TimeService.currentTimeMillis() - 10_000);
         workflow.setWorkflowId("workflow_id");
 
         // no-op
@@ -1183,7 +1184,7 @@ public class TestDeciderService {
         }
 
         // for a retried workflow
-        workflow.setLastRetriedTime(System.currentTimeMillis() - 5_000);
+        workflow.setLastRetriedTime(TimeService.currentTimeMillis() - 5_000);
         try {
             deciderService.checkWorkflowTimeout(workflow);
         } catch (TerminateWorkflowException twe) {

@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.TimeService;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -74,7 +75,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
         TaskModel forkTask = taskMapperContext.createTaskModel();
         forkTask.setTaskType(TaskType.TASK_TYPE_FORK);
         forkTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
-        long epochMillis = System.currentTimeMillis();
+        long epochMillis = TimeService.currentTimeMillis();
         forkTask.setStartTime(epochMillis);
         forkTask.setEndTime(epochMillis);
         forkTask.setInputData(taskInput);
