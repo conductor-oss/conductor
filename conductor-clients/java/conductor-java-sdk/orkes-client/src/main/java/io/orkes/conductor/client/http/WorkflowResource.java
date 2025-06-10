@@ -223,18 +223,24 @@ class WorkflowResource {
     SignalResponse executeWorkflowWithReturnStrategy(StartWorkflowRequest req,
                                                      String name,
                                                      Integer version,
-                                                     String waitUntilTaskRef,
+                                                     List<String> waitUntilTaskRef,
                                                      String requestId,
                                                      Integer waitForSeconds,
                                                      Consistency consistency,
                                                      ReturnStrategy returnStrategy) {
+
+        String waitUntilTaskRefStr = null;
+        if (waitUntilTaskRef != null && !waitUntilTaskRef.isEmpty()) {
+            waitUntilTaskRefStr = String.join(",", waitUntilTaskRef);
+        }
+
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/execute/{name}/{version}")
                 .addPathParam("name", name)
                 .addPathParam("version", version)
                 .addQueryParam("requestId", requestId)
-                .addQueryParam("waitUntilTaskRef", waitUntilTaskRef)
+                .addQueryParam("waitUntilTaskRef", waitUntilTaskRefStr)
                 .addQueryParam("waitForSeconds", waitForSeconds)
                 .addQueryParam("consistency", consistency.name())
                 .addQueryParam("returnStrategy", returnStrategy.name())

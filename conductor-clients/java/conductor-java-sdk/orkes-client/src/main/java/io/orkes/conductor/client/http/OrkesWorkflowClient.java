@@ -297,7 +297,7 @@ public class OrkesWorkflowClient implements AutoCloseable {
      */
     public CompletableFuture<SignalResponse> executeWorkflowWithReturnStrategy(
             StartWorkflowRequest request,
-            String waitUntilTaskRef,
+            List<String> waitUntilTaskRef,
             Integer waitForSeconds,
             Consistency consistency,
             ReturnStrategy returnStrategy) {

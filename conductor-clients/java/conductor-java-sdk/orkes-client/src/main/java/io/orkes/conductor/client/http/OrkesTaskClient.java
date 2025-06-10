@@ -34,7 +34,6 @@ import com.netflix.conductor.common.run.Workflow;
 
 import io.orkes.conductor.client.enums.ReturnStrategy;
 import io.orkes.conductor.client.model.SignalResponse;
-import io.orkes.conductor.client.model.WorkflowRun;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,18 +73,6 @@ public class OrkesTaskClient {
      */
     public Workflow updateTaskSync(String workflowId, String taskReferenceName, TaskResult.Status status, Object output) {
         return updateTaskSync(getOutputMap(output), workflowId, taskReferenceName, status.toString(), getWorkerId());
-    }
-
-    /**
-     * Signals a workflow with the given status without providing any output
-     *
-     * @param workflowId Workflow Id of the workflow to be signaled
-     * @param status     Signal status to be set for the workflow
-     * @param output     Output for the task
-     * @return Updated workflow with the applied signal status
-     */
-    public WorkflowRun signal(String workflowId, String status, Object output) {
-        return signal(getOutputMap(output), workflowId, status);
     }
 
     private Map<String, Object> getOutputMap(Object output) {
@@ -181,43 +168,24 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    private WorkflowRun signal(Map<String, Object> output,
-                               String workflowId,
-                               String status) {
+    /**
+     * Signals a task in a workflow asynchronously.
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     */
+    public void signalAsync(String workflowId, Task.Status status, Map<String, Object> output) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{status}/signal")
                 .addPathParam("workflowId", workflowId)
-                .addPathParam("status", status)
-                .body(output)
-                .build();
-
-        ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
-        });
-
-        return resp.getData();
-    }
-
-    private <T extends SignalResponse> T signalWithReturnStrategy(Map<String, Object> output,
-                                                                  String workflowId,
-                                                                  Task.Status status,
-                                                                  ReturnStrategy returnStrategy,
-                                                                  TypeReference<T> responseType) {
-        ConductorClientRequest request = ConductorClientRequest.builder()
-                .method(ConductorClientRequest.Method.POST)
-                .path("/tasks/{workflowId}/{status}/signal/sync")
-                .addPathParam("workflowId", workflowId)
                 .addPathParam("status", status.name())
-                .addQueryParam("returnStrategy", returnStrategy.name())
                 .body(output)
                 .build();
 
-        ConductorClientResponse<T> resp = client.execute(request, responseType);
-
-        return resp.getData();
+        client.execute(request);
     }
-
-    // Delegate only methods which are supported
 
     public Task pollTask(String taskType, String workerId, String domain) {
         return taskClient.pollTask(taskType, workerId, domain);

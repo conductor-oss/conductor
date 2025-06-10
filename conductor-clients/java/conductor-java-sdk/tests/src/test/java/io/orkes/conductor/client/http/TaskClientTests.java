@@ -53,6 +53,8 @@ public class TaskClientTests {
     private static final String COMPLEX_WF_NAME = "complex_wf_signal_test";
     private static final String SUB_WF_1_NAME = "complex_wf_signal_test_subworkflow_1";
     private static final String SUB_WF_2_NAME = "complex_wf_signal_test_subworkflow_2";
+    private static final String WAIT_SIGNAL_TEST = "wait_signal_test";
+
     private static OrkesTaskClient taskClient;
     private static OrkesWorkflowClient workflowClient;
     private static OrkesMetadataClient metadataClient;
@@ -79,6 +81,7 @@ public class TaskClientTests {
         metadataClient.unregisterWorkflowDef(COMPLEX_WF_NAME, 1);
         metadataClient.unregisterWorkflowDef(SUB_WF_1_NAME, 1);
         metadataClient.unregisterWorkflowDef(SUB_WF_2_NAME, 1);
+        metadataClient.unregisterWorkflowDef(WAIT_SIGNAL_TEST, 1);
     }
 
     private static void registerWorkflows() {
@@ -86,6 +89,7 @@ public class TaskClientTests {
             registerWorkflow(COMPLEX_WF_NAME);
             registerWorkflow(SUB_WF_1_NAME);
             registerWorkflow(SUB_WF_2_NAME);
+            registerWorkflow(WAIT_SIGNAL_TEST);
         } catch (Exception e) {
             throw new RuntimeException("Failed to register workflows", e);
         }
@@ -243,7 +247,7 @@ public class TaskClientTests {
         request.setName(COMPLEX_WF_NAME);
         request.setVersion(1);
 
-        var run = workflowClient.executeWorkflowWithReturnStrategy(request, null, 10, consistency, returnStrategy);
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, consistency, returnStrategy);
         var workflow = run.get(10, TimeUnit.SECONDS);
 
         assertNotNull(workflow);
@@ -315,8 +319,6 @@ public class TaskClientTests {
                 Workflow.WorkflowStatus.COMPLETED, 50000, 100);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
     }
-
-// Now all tests become very simple:
 
     @Test
     void testSyncTargetWorkflow() throws Exception {
@@ -443,5 +445,77 @@ public class TaskClientTests {
         validateHelperMethods(response, ReturnStrategy.TARGET_WORKFLOW);
 
         completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testWfExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflow(request, List.of(), 10);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
+    }
+
+    @Test
+    void testWfSyncExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, Consistency.SYNCHRONOUS, ReturnStrategy.TARGET_WORKFLOW);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getTargetWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
+    }
+
+    @Test
+    void testWfDurableExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, Consistency.DURABLE, ReturnStrategy.TARGET_WORKFLOW);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getTargetWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
     }
 }
