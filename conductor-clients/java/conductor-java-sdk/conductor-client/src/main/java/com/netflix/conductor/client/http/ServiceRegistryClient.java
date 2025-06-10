@@ -12,7 +12,10 @@
  */
 package com.netflix.conductor.client.http;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
+
+import org.apache.commons.lang3.Validate;
+
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
@@ -20,10 +23,9 @@ import com.netflix.conductor.common.model.CircuitBreakerTransitionResponse;
 import com.netflix.conductor.common.model.ProtoRegistryEntry;
 import com.netflix.conductor.common.model.ServiceMethod;
 import com.netflix.conductor.common.model.ServiceRegistry;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Validate;
 
-import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Client for the Service Registry API
