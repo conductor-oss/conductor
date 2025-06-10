@@ -16,7 +16,7 @@ import lombok.Data;
 
 @Data
 public class OrkesCircuitBreakerConfig {
-    private Float failureRateThreshold; // Using Float instead of float
+    private Float failureRateThreshold;
     private Integer slidingWindowSize;
     private Integer minimumNumberOfCalls;
     private Long waitDurationInOpenState;
