@@ -201,8 +201,8 @@ public class WorkflowClientTests {
         testRequest.setName("testable-flow");
         testRequest.setWorkflowDef(workflowDef);
         testRequest.setTaskRefToMockOutput(Map.of(
-            "testable-task-ref",
-            List.of(new WorkflowTestRequest.TaskMock(TaskResult.Status.COMPLETED, Map.of("result", "ok")))
+                "testable-task-ref",
+                List.of(new WorkflowTestRequest.TaskMock(TaskResult.Status.COMPLETED, Map.of("result", "ok")))
         ));
 
         Workflow workflow = workflowClient.testWorkflow(testRequest);

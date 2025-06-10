@@ -32,6 +32,10 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 
+import io.orkes.conductor.client.enums.ReturnStrategy;
+import io.orkes.conductor.client.model.SignalResponse;
+import io.orkes.conductor.client.model.WorkflowRun;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -72,6 +76,18 @@ public class OrkesTaskClient {
         return updateTaskSync(getOutputMap(output), workflowId, taskReferenceName, status.toString(), getWorkerId());
     }
 
+    /**
+     * Signals a workflow with the given status without providing any output
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     * @return Updated workflow with the applied signal status
+     */
+    public WorkflowRun signal(String workflowId, String status, Object output) {
+        return signal(getOutputMap(output), workflowId, status);
+    }
+
     private Map<String, Object> getOutputMap(Object output) {
         try {
             return objectMapper.convertValue(output, new TypeReference<>() {
@@ -93,10 +109,10 @@ public class OrkesTaskClient {
     }
 
     private String updateTaskByRefName(Map<String, Object> output,
-                               String workflowId,
-                               String taskRefName,
-                               String status,
-                               String workerId) {
+                                       String workflowId,
+                                       String taskRefName,
+                                       String status,
+                                       String workerId) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{taskRefName}/{status}")
@@ -113,11 +129,11 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    private  Workflow updateTaskSync(Map<String, Object> output,
-                            String workflowId,
-                            String taskRefName,
-                            String status,
-                            String workerId) {
+    private Workflow updateTaskSync(Map<String, Object> output,
+                                    String workflowId,
+                                    String taskRefName,
+                                    String status,
+                                    String workerId) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{taskRefName}/{status}/sync")
@@ -130,6 +146,73 @@ public class OrkesTaskClient {
 
         ConductorClientResponse<Workflow> resp = client.execute(request, new TypeReference<>() {
         });
+
+        return resp.getData();
+    }
+
+    /**
+     * Signals a task with default return strategy (TARGET_WORKFLOW)
+     */
+    public SignalResponse signal(String workflowId, Task.Status status, Map<String, Object> output) {
+        return signal(workflowId, status, output, ReturnStrategy.TARGET_WORKFLOW);
+    }
+
+    /**
+     * Signals a task in a workflow synchronously and returns data based on the specified return strategy.
+     *
+     * @param workflowId     Workflow Id of the workflow to be signaled
+     * @param status         Signal status to be set for the workflow
+     * @param output         Output for the task
+     * @param returnStrategy Strategy for what data to return
+     * @return SignalResponse with data based on the return strategy
+     */
+    public SignalResponse signal(String workflowId, Task.Status status, Map<String, Object> output, ReturnStrategy returnStrategy) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(ConductorClientRequest.Method.POST)
+                .path("/tasks/{workflowId}/{status}/signal/sync")
+                .addPathParam("workflowId", workflowId)
+                .addPathParam("status", status.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
+                .body(output)
+                .build();
+
+        ConductorClientResponse<SignalResponse> resp = client.execute(request, new TypeReference<SignalResponse>() {
+        });
+        return resp.getData();
+    }
+
+    private WorkflowRun signal(Map<String, Object> output,
+                               String workflowId,
+                               String status) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(ConductorClientRequest.Method.POST)
+                .path("/tasks/{workflowId}/{status}/signal")
+                .addPathParam("workflowId", workflowId)
+                .addPathParam("status", status)
+                .body(output)
+                .build();
+
+        ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
+    }
+
+    private <T extends SignalResponse> T signalWithReturnStrategy(Map<String, Object> output,
+                                                                  String workflowId,
+                                                                  Task.Status status,
+                                                                  ReturnStrategy returnStrategy,
+                                                                  TypeReference<T> responseType) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(ConductorClientRequest.Method.POST)
+                .path("/tasks/{workflowId}/{status}/signal/sync")
+                .addPathParam("workflowId", workflowId)
+                .addPathParam("status", status.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
+                .body(output)
+                .build();
+
+        ConductorClientResponse<T> resp = client.execute(request, responseType);
 
         return resp.getData();
     }

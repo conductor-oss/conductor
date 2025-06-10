@@ -38,10 +38,9 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.run.WorkflowTestRequest;
 
-import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
-import io.orkes.conductor.client.model.WorkflowRun;
-import io.orkes.conductor.client.model.WorkflowStateUpdate;
-import io.orkes.conductor.client.model.WorkflowStatus;
+import io.orkes.conductor.client.enums.Consistency;
+import io.orkes.conductor.client.enums.ReturnStrategy;
+import io.orkes.conductor.client.model.*;
 
 public class OrkesWorkflowClient implements AutoCloseable {
 
@@ -261,6 +260,67 @@ public class OrkesWorkflowClient implements AutoCloseable {
                         future.completeExceptionally(t);
                     }
                 });
+
+        return future;
+    }
+
+    /**
+     * Executes a workflow with return strategy - new unified API
+     *
+     * @param request workflow execution request
+     * @return SignalResponse with target workflow details (default strategy)
+     */
+    public CompletableFuture<SignalResponse> executeWorkflowWithReturnStrategy(StartWorkflowRequest request) {
+        return executeWorkflowWithReturnStrategy(request, null, 10, Consistency.SYNCHRONOUS, ReturnStrategy.TARGET_WORKFLOW);
+    }
+
+    /**
+     * Executes a workflow with specified return strategy
+     *
+     * @param request workflow execution request
+     * @param returnStrategy strategy for what data to return
+     * @return SignalResponse based on the return strategy
+     */
+    public CompletableFuture<SignalResponse> executeWorkflowWithReturnStrategy(StartWorkflowRequest request, ReturnStrategy returnStrategy) {
+        return executeWorkflowWithReturnStrategy(request, null, 10, Consistency.SYNCHRONOUS, returnStrategy);
+    }
+
+    /**
+     * Executes a workflow with full control over execution parameters
+     *
+     * @param request workflow execution request
+     * @param waitUntilTaskRef reference name of the task to wait for
+     * @param waitForSeconds maximum time to wait in seconds
+     * @param consistency execution consistency mode
+     * @param returnStrategy strategy for what data to return
+     * @return SignalResponse based on the return strategy
+     */
+    public CompletableFuture<SignalResponse> executeWorkflowWithReturnStrategy(
+            StartWorkflowRequest request,
+            String waitUntilTaskRef,
+            Integer waitForSeconds,
+            Consistency consistency,
+            ReturnStrategy returnStrategy) {
+
+        CompletableFuture<SignalResponse> future = new CompletableFuture<>();
+        String requestId = UUID.randomUUID().toString();
+
+        executorService.submit(() -> {
+            try {
+                SignalResponse response = workflowResource.executeWorkflowWithReturnStrategy(
+                        request,
+                        request.getName(),
+                        request.getVersion(),
+                        waitUntilTaskRef,
+                        requestId,
+                        waitForSeconds,
+                        consistency,
+                        returnStrategy);
+                future.complete(response);
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        });
 
         return future;
     }

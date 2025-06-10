@@ -12,8 +12,21 @@
  */
 package io.orkes.conductor.client.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
+import io.orkes.conductor.client.http.OrkesWorkflowClient;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.concurrent.TimeoutException;
+
 public class TestUtil {
     private static int RETRY_ATTEMPT_LIMIT = 4;
+    protected static ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     public static void retryMethodCall(VoidRunnableWithException function)
             throws Exception {
@@ -62,5 +75,54 @@ public class TestUtil {
     @FunctionalInterface
     public interface VoidRunnableWithException {
         void run() throws Exception;
+    }
+
+    public static WorkflowDef getWorkflowDef(String path) throws IOException {
+        InputStream inputStream = TestUtil.class.getResourceAsStream(path);
+        if (inputStream == null) {
+            throw new IOException("No file found at " + path);
+        }
+        return objectMapper.readValue(new InputStreamReader(inputStream), WorkflowDef.class);
+    }
+
+    /**
+     * Waits for a workflow to reach the expected status with polling
+     *
+     * @param workflowId the workflow ID to monitor
+     * @param expectedStatus the expected workflow status
+     * @param maxWaitTimeMs maximum time to wait in milliseconds
+     * @param pollIntervalMs polling interval in milliseconds
+     * @return the final workflow details
+     * @throws TimeoutException if the workflow doesn't reach expected status within maxWaitTime
+     */
+    public static Workflow waitForWorkflowStatus(OrkesWorkflowClient workflowClient,
+                                                 String workflowId,
+                                                 Workflow.WorkflowStatus expectedStatus,
+                                                 long maxWaitTimeMs,
+                                                 long pollIntervalMs) throws Exception {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + maxWaitTimeMs;
+
+        while (System.currentTimeMillis() < endTime) {
+            Workflow workflowDetails = workflowClient.getWorkflow(workflowId, true);
+
+            if (expectedStatus.equals(workflowDetails.getStatus())) {
+                return workflowDetails; // Success!
+            }
+
+            // Check if workflow failed or terminated
+            if (workflowDetails.getStatus() == Workflow.WorkflowStatus.FAILED ||
+                    workflowDetails.getStatus() == Workflow.WorkflowStatus.TERMINATED) {
+                throw new RuntimeException("Workflow ended in unexpected state: " + workflowDetails.getStatus());
+            }
+
+            Thread.sleep(pollIntervalMs);
+        }
+
+        // Timeout
+        Workflow finalState = workflowClient.getWorkflow(workflowId, true);
+        throw new TimeoutException(
+                String.format("Workflow did not reach status %s within %dms. Current status: %s",
+                        expectedStatus, maxWaitTimeMs, finalState.getStatus()));
     }
 }
