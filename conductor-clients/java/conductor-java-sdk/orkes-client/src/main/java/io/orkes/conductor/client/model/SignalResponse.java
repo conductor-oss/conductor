@@ -20,9 +20,14 @@ import com.netflix.conductor.common.run.Workflow;
 
 import io.orkes.conductor.client.enums.ReturnStrategy;
 
-import lombok.Data;
+import lombok.*;
 
+@EqualsAndHashCode
+@ToString
 @Data
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SignalResponse {
 
     // Common fields in all responses

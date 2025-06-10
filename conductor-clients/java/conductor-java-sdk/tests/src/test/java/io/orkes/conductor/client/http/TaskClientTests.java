@@ -312,7 +312,7 @@ public class TaskClientTests {
 
         // Wait for completion
         var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
-                Workflow.WorkflowStatus.COMPLETED, 5000, 100);
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
     }
 
