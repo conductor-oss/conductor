@@ -24,7 +24,7 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
-    testImplementation project(':conductor-client')
+    implementation "org.conductoross:conductor-client:${revConductorClient}"
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 

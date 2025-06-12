@@ -9,10 +9,11 @@ dependencies {
     testImplementation project(':conductor-cassandra-persistence')
     testImplementation project(':conductor-es7-persistence')
     testImplementation project(':conductor-grpc-server')
-    testImplementation project(':conductor-client')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-json-jq-task')
     testImplementation project(':conductor-http-task')
+
+    implementation "org.conductoross:conductor-client:${revConductorClient}"
 
     testImplementation "org.springframework.retry:spring-retry"
 
