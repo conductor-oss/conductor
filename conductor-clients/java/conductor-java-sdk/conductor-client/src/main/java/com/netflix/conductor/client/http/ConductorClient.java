@@ -254,6 +254,9 @@ public class ConductorClient {
 
     @SneakyThrows
     private RequestBody serialize(String contentType, @NotNull Object body) {
+        if (contentType.equals("application/octet-stream") && body instanceof byte[]) {
+            return RequestBody.create((byte[]) body, MediaType.parse(contentType));
+        }
         //FIXME review this, what if we want to send something other than a JSON in the request
         if (!isJsonMime(contentType)) {
             throw new ConductorClientException("Content type \"" + contentType + "\" is not supported");
