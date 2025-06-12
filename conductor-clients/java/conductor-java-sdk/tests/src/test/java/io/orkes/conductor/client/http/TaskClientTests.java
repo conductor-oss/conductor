@@ -12,21 +12,7 @@
  */
 package io.orkes.conductor.client.http;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -39,19 +25,40 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.sdk.workflow.def.ConductorWorkflow;
 import com.netflix.conductor.sdk.workflow.def.tasks.SimpleTask;
 import com.netflix.conductor.sdk.workflow.executor.WorkflowExecutor;
-
+import io.orkes.conductor.client.enums.Consistency;
+import io.orkes.conductor.client.enums.ReturnStrategy;
+import io.orkes.conductor.client.model.SignalResponse;
 import io.orkes.conductor.client.util.ClientTestUtil;
 import io.orkes.conductor.client.util.TestUtil;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.google.common.util.concurrent.Uninterruptibles;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TaskClientTests {
+
+    private static final String COMPLEX_WF_NAME = "complex_wf_signal_test";
+    private static final String SUB_WF_1_NAME = "complex_wf_signal_test_subworkflow_1";
+    private static final String SUB_WF_2_NAME = "complex_wf_signal_test_subworkflow_2";
+    private static final String WAIT_SIGNAL_TEST = "wait_signal_test";
 
     private static OrkesTaskClient taskClient;
     private static OrkesWorkflowClient workflowClient;
     private static OrkesMetadataClient metadataClient;
     private static WorkflowExecutor workflowExecutor;
-
     private static String workflowName = "";
 
     @BeforeAll
@@ -65,6 +72,32 @@ public class TaskClientTests {
         metadataClient.registerWorkflowDef(workflowDef, true);
         workflowName = workflowDef.getName();
         workflowExecutor = new WorkflowExecutor(ClientTestUtil.getClient(), 10);
+        registerWorkflows();
+    }
+
+    @AfterAll
+    public static void cleanUp() {
+        // Clean up resources
+        metadataClient.unregisterWorkflowDef(COMPLEX_WF_NAME, 1);
+        metadataClient.unregisterWorkflowDef(SUB_WF_1_NAME, 1);
+        metadataClient.unregisterWorkflowDef(SUB_WF_2_NAME, 1);
+        metadataClient.unregisterWorkflowDef(WAIT_SIGNAL_TEST, 1);
+    }
+
+    private static void registerWorkflows() {
+        try {
+            registerWorkflow(COMPLEX_WF_NAME);
+            registerWorkflow(SUB_WF_1_NAME);
+            registerWorkflow(SUB_WF_2_NAME);
+            registerWorkflow(WAIT_SIGNAL_TEST);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to register workflows", e);
+        }
+    }
+
+    public static void registerWorkflow(String workflowName) throws Exception {
+        WorkflowDef workflowDef = TestUtil.getWorkflowDef("/metadata/" + workflowName + ".json");
+        metadataClient.registerWorkflowDef(workflowDef);
     }
 
     @Test
@@ -122,10 +155,14 @@ public class TaskClientTests {
                 count++;
                 continue;
             }
+            // Converting TaskOutput class to Map to resolve Jackson's afterburner module and class loading issues
+            Map<String, Object> output = new HashMap<>();
+            output.put("name", "hello");
+            output.put("value", BigDecimal.TEN);
             for (String referenceName : runningTasks) {
                 System.out.println("Updating " + referenceName);
                 try {
-                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, new TaskOutput());
+                    workflow = taskClient.updateTaskSync(workflowId, referenceName, TaskResult.Status.COMPLETED, output);
                     System.out.println("Workflow: " + workflow);
                 } catch (ConductorClientException ConductorClientException) {
                     // 404 == task was updated already and there are no pending tasks
@@ -204,25 +241,281 @@ public class TaskClientTests {
         Assertions.assertEquals(404, ex.getStatus());
     }
 
-    private static class TaskOutput {
-        private String name = "hello";
+    // Simple helper to start workflow and return workflowId
+    private String startComplexWorkflow(Consistency consistency, ReturnStrategy returnStrategy) throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(COMPLEX_WF_NAME);
+        request.setVersion(1);
 
-        private BigDecimal value = BigDecimal.TEN;
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, consistency, returnStrategy);
+        var workflow = run.get(10, TimeUnit.SECONDS);
 
-        public String getName() {
-            return name;
+        assertNotNull(workflow);
+        String workflowId = workflow.getTargetWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+        return workflowId;
+    }
+
+    // Simple helper to validate any signal response
+    private void validateSignalResponse(SignalResponse response, ReturnStrategy expectedStrategy) {
+        assertNotNull(response);
+        assertEquals(expectedStrategy, response.getResponseType());
+        assertNotNull(response.getWorkflowId());
+        assertNotNull(response.getTargetWorkflowId());
+    }
+
+    // Helper method to test all helper methods for a given response
+    private void validateHelperMethods(SignalResponse response, ReturnStrategy strategy) {
+        switch (strategy) {
+            case TARGET_WORKFLOW:
+            case BLOCKING_WORKFLOW:
+                // Should work for workflow responses
+                assertDoesNotThrow(() -> response.getWorkflow(), "getWorkflow() should work for " + strategy);
+                assertNotNull(response.getWorkflow(), "getWorkflow() should return non-null workflow");
+
+                // Should throw for task methods
+                assertThrows(IllegalStateException.class, () -> response.getBlockingTask(),
+                        "getBlockingTask() should throw for " + strategy);
+                assertThrows(IllegalStateException.class, () -> response.getTaskInput(),
+                        "getTaskInput() should throw for " + strategy);
+                break;
+
+            case BLOCKING_TASK:
+                // Should work for task responses
+                assertDoesNotThrow(() -> response.getBlockingTask(), "getBlockingTask() should work for " + strategy);
+                assertNotNull(response.getBlockingTask(), "getBlockingTask() should return non-null task");
+
+                // Should throw for workflow and task input methods
+                assertThrows(IllegalStateException.class, () -> response.getWorkflow(),
+                        "getWorkflow() should throw for " + strategy);
+                assertThrows(IllegalStateException.class, () -> response.getTaskInput(),
+                        "getTaskInput() should throw for " + strategy);
+                break;
+
+            case BLOCKING_TASK_INPUT:
+                // Should work for both task and task input methods
+                assertDoesNotThrow(() -> response.getBlockingTask(), "getBlockingTask() should work for " + strategy);
+                assertDoesNotThrow(() -> response.getTaskInput(), "getTaskInput() should work for " + strategy);
+                assertNotNull(response.getBlockingTask(), "getBlockingTask() should return non-null task");
+                assertNotNull(response.getTaskInput(), "getTaskInput() should return non-null input");
+
+                // Should throw for workflow method
+                assertThrows(IllegalStateException.class, () -> response.getWorkflow(),
+                        "getWorkflow() should throw for " + strategy);
+                break;
         }
+    }
 
-        public void setName(String name) {
-            this.name = name;
-        }
+    // Simple helper to complete workflow
+    private void completeWorkflow(String workflowId) throws Exception {
+        // Signal twice to complete
+        taskClient.signal(workflowId, Task.Status.COMPLETED, Map.of("result", "signal1"));
+        taskClient.signal(workflowId, Task.Status.COMPLETED, Map.of("result", "signal2"));
 
-        public BigDecimal getValue() {
-            return value;
-        }
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
+    }
 
-        public void setValue(BigDecimal value) {
-            this.value = value;
-        }
+    @Test
+    void testSyncTargetWorkflow() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.SYNCHRONOUS, ReturnStrategy.TARGET_WORKFLOW);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.TARGET_WORKFLOW);
+
+        validateSignalResponse(response, ReturnStrategy.TARGET_WORKFLOW);
+        assertTrue(response.isTargetWorkflow());
+        validateHelperMethods(response, ReturnStrategy.TARGET_WORKFLOW);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testSyncBlockingWorkflow() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.SYNCHRONOUS, ReturnStrategy.BLOCKING_WORKFLOW);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_WORKFLOW);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_WORKFLOW);
+        assertTrue(response.isBlockingWorkflow());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_WORKFLOW);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testSyncBlockingTask() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.SYNCHRONOUS, ReturnStrategy.BLOCKING_TASK);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_TASK);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_TASK);
+        assertTrue(response.isBlockingTask());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_TASK);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testSyncBlockingTaskInput() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.SYNCHRONOUS, ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_TASK_INPUT);
+        assertTrue(response.isBlockingTaskInput());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        completeWorkflow(workflowId);
+    }
+
+    // Durable tests - just copy the above and change Consistency
+    @Test
+    void testDurableTargetWorkflow() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.REGION_DURABLE, ReturnStrategy.TARGET_WORKFLOW);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.TARGET_WORKFLOW);
+
+        validateSignalResponse(response, ReturnStrategy.TARGET_WORKFLOW);
+        assertTrue(response.isTargetWorkflow());
+        validateHelperMethods(response, ReturnStrategy.TARGET_WORKFLOW);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testDurableBlockingWorkflow() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.REGION_DURABLE, ReturnStrategy.BLOCKING_WORKFLOW);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_WORKFLOW);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_WORKFLOW);
+        assertTrue(response.isBlockingWorkflow());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_WORKFLOW);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testDurableBlockingTask() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.REGION_DURABLE, ReturnStrategy.BLOCKING_TASK);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_TASK);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_TASK);
+        assertTrue(response.isBlockingTask());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_TASK);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testDurableBlockingTaskInput() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.REGION_DURABLE, ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED,
+                Map.of("result", "test"), ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        validateSignalResponse(response, ReturnStrategy.BLOCKING_TASK_INPUT);
+        assertTrue(response.isBlockingTaskInput());
+        validateHelperMethods(response, ReturnStrategy.BLOCKING_TASK_INPUT);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testDefaultReturnStrategy() throws Exception {
+        String workflowId = startComplexWorkflow(Consistency.SYNCHRONOUS, ReturnStrategy.TARGET_WORKFLOW);
+
+        // Don't specify return strategy - should default to TARGET_WORKFLOW
+        var response = taskClient.signal(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        validateSignalResponse(response, ReturnStrategy.TARGET_WORKFLOW);
+        assertTrue(response.isTargetWorkflow());
+        validateHelperMethods(response, ReturnStrategy.TARGET_WORKFLOW);
+
+        completeWorkflow(workflowId);
+    }
+
+    @Test
+    void testWfExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflow(request, List.of(), 10);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
+    }
+
+    @Test
+    void testWfSyncExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, Consistency.SYNCHRONOUS, ReturnStrategy.TARGET_WORKFLOW);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getTargetWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
+    }
+
+    @Test
+    void testWfDurableExecutionSignalAsync() throws Exception {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(WAIT_SIGNAL_TEST);
+        request.setVersion(1);
+
+        var run = workflowClient.executeWorkflowWithReturnStrategy(request, List.of(), 10, Consistency.DURABLE, ReturnStrategy.TARGET_WORKFLOW);
+        var workflow = run.get(10, TimeUnit.SECONDS);
+
+        assertNotNull(workflow);
+        String workflowId = workflow.getTargetWorkflowId();
+
+        // Wait for initial execution
+        Thread.sleep(20);
+
+        // Signal with async execution
+        taskClient.signalAsync(workflowId, Task.Status.COMPLETED, Map.of("result", "test"));
+
+        // Wait for completion
+        var finalWorkflow = TestUtil.waitForWorkflowStatus(workflowClient, workflowId,
+                Workflow.WorkflowStatus.COMPLETED, 50000, 100);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, finalWorkflow.getStatus());
     }
 }

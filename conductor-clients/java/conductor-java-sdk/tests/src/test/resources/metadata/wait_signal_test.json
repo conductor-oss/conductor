@@ -1,0 +1,71 @@
+{
+  "createTime": 1744183953775,
+  "updateTime": 0,
+  "name": "wait_signal_test",
+  "description": "wait_signal_test",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "wait",
+      "taskReferenceName": "wait_ref",
+      "inputParameters": {},
+      "type": "WAIT",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "json_transform",
+      "taskReferenceName": "json_transform_ref",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "persons": [
+          {
+            "name": "some",
+            "last": "name",
+            "email": "mail@mail.com",
+            "id": 1
+          },
+          {
+            "name": "some2",
+            "last": "name2",
+            "email": "mail2@mail.com",
+            "id": 2
+          }
+        ],
+        "queryExpression": ".persons | map({user:{email,id}})"
+      }
+    },
+    {
+      "name": "inline",
+      "taskReferenceName": "inline_ref",
+      "type": "INLINE",
+      "inputParameters": {
+        "expression": "(function () {\n  return $.value1 + $.value2;\n})();",
+        "evaluatorType": "graaljs",
+        "value1": 1,
+        "value2": 2
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "failureWorkflow": "",
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test.user@orkes.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true
+}

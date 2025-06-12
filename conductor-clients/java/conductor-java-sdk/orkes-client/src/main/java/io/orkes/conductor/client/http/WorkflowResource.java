@@ -23,10 +23,9 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.UpgradeWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
 
-import io.orkes.conductor.client.model.CorrelationIdsSearchRequest;
-import io.orkes.conductor.client.model.WorkflowRun;
-import io.orkes.conductor.client.model.WorkflowStateUpdate;
-import io.orkes.conductor.client.model.WorkflowStatus;
+import io.orkes.conductor.client.enums.Consistency;
+import io.orkes.conductor.client.enums.ReturnStrategy;
+import io.orkes.conductor.client.model.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -39,19 +38,19 @@ class WorkflowResource {
     }
 
     WorkflowRun executeWorkflow(StartWorkflowRequest req,
-                                       String name,
-                                       Integer version,
-                                       String waitUntilTaskRef,
-                                       String requestId) {
+                                String name,
+                                Integer version,
+                                String waitUntilTaskRef,
+                                String requestId) {
         return executeWorkflow(req, name, version, waitUntilTaskRef, requestId, null);
     }
 
     WorkflowRun executeWorkflow(StartWorkflowRequest req,
-                                       String name,
-                                       Integer version,
-                                       String waitUntilTaskRef,
-                                       String requestId,
-                                       Integer waitForSeconds) {
+                                String name,
+                                Integer version,
+                                String waitUntilTaskRef,
+                                String requestId,
+                                Integer waitForSeconds) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/execute/{name}/{version}")
@@ -60,6 +59,58 @@ class WorkflowResource {
                 .addQueryParam("requestId", requestId)
                 .addQueryParam("waitUntilTaskRef", waitUntilTaskRef)
                 .addQueryParam("waitForSeconds", waitForSeconds)
+                .body(req)
+                .build();
+
+        ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
+    }
+
+    WorkflowRun executeWorkflow(StartWorkflowRequest req,
+                                String name,
+                                Integer version,
+                                String waitUntilTaskRef,
+                                String requestId,
+                                Integer waitForSeconds,
+                                Consistency consistency) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/workflow/execute/{name}/{version}")
+                .addPathParam("name", name)
+                .addPathParam("version", version)
+                .addQueryParam("requestId", requestId)
+                .addQueryParam("waitUntilTaskRef", waitUntilTaskRef)
+                .addQueryParam("waitForSeconds", waitForSeconds)
+                .addQueryParam("consistency", consistency.name())
+                .body(req)
+                .build();
+
+        ConductorClientResponse<WorkflowRun> resp = client.execute(request, new TypeReference<>() {
+        });
+
+        return resp.getData();
+    }
+
+    WorkflowRun executeWorkflow(StartWorkflowRequest req,
+                                String name,
+                                Integer version,
+                                String waitUntilTaskRef,
+                                String requestId,
+                                Integer waitForSeconds,
+                                Consistency consistency,
+                                ReturnStrategy returnStrategy) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/workflow/execute/{name}/{version}")
+                .addPathParam("name", name)
+                .addPathParam("version", version)
+                .addQueryParam("requestId", requestId)
+                .addQueryParam("waitUntilTaskRef", waitUntilTaskRef)
+                .addQueryParam("waitForSeconds", waitForSeconds)
+                .addQueryParam("consistency", consistency.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
                 .body(req)
                 .build();
 
@@ -85,8 +136,8 @@ class WorkflowResource {
     }
 
     Map<String, List<Workflow>> getWorkflowsByNamesAndCorrelationIds(CorrelationIdsSearchRequest searchRequest,
-                                                                            Boolean includeClosed,
-                                                                            Boolean includeTasks) {
+                                                                     Boolean includeClosed,
+                                                                     Boolean includeTasks) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/correlated/batch")
@@ -137,10 +188,10 @@ class WorkflowResource {
     }
 
     WorkflowRun updateWorkflowState(WorkflowStateUpdate updateRequest,
-                                           String requestId,
-                                           String workflowId,
-                                           String waitUntilTaskRef,
-                                           Integer waitForSeconds) {
+                                    String requestId,
+                                    String workflowId,
+                                    String waitUntilTaskRef,
+                                    Integer waitForSeconds) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(Method.POST)
                 .path("/workflow/{workflowId}/state")
@@ -167,5 +218,38 @@ class WorkflowResource {
                 .build();
 
         client.execute(request);
+    }
+
+    SignalResponse executeWorkflowWithReturnStrategy(StartWorkflowRequest req,
+                                                     String name,
+                                                     Integer version,
+                                                     List<String> waitUntilTaskRef,
+                                                     String requestId,
+                                                     Integer waitForSeconds,
+                                                     Consistency consistency,
+                                                     ReturnStrategy returnStrategy) {
+
+        String waitUntilTaskRefStr = null;
+        if (waitUntilTaskRef != null && !waitUntilTaskRef.isEmpty()) {
+            waitUntilTaskRefStr = String.join(",", waitUntilTaskRef);
+        }
+
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(Method.POST)
+                .path("/workflow/execute/{name}/{version}")
+                .addPathParam("name", name)
+                .addPathParam("version", version)
+                .addQueryParam("requestId", requestId)
+                .addQueryParam("waitUntilTaskRef", waitUntilTaskRefStr)
+                .addQueryParam("waitForSeconds", waitForSeconds)
+                .addQueryParam("consistency", consistency.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
+                .body(req)
+                .build();
+
+        ConductorClientResponse<SignalResponse> resp = client.execute(request, new TypeReference<SignalResponse>() {
+        });
+
+        return resp.getData();
     }
 }

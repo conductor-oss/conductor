@@ -32,6 +32,9 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 
+import io.orkes.conductor.client.enums.ReturnStrategy;
+import io.orkes.conductor.client.model.SignalResponse;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -93,10 +96,10 @@ public class OrkesTaskClient {
     }
 
     private String updateTaskByRefName(Map<String, Object> output,
-                               String workflowId,
-                               String taskRefName,
-                               String status,
-                               String workerId) {
+                                       String workflowId,
+                                       String taskRefName,
+                                       String status,
+                                       String workerId) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{taskRefName}/{status}")
@@ -113,11 +116,11 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    private  Workflow updateTaskSync(Map<String, Object> output,
-                            String workflowId,
-                            String taskRefName,
-                            String status,
-                            String workerId) {
+    private Workflow updateTaskSync(Map<String, Object> output,
+                                    String workflowId,
+                                    String taskRefName,
+                                    String status,
+                                    String workerId) {
         ConductorClientRequest request = ConductorClientRequest.builder()
                 .method(ConductorClientRequest.Method.POST)
                 .path("/tasks/{workflowId}/{taskRefName}/{status}/sync")
@@ -134,7 +137,55 @@ public class OrkesTaskClient {
         return resp.getData();
     }
 
-    // Delegate only methods which are supported
+    /**
+     * Signals a task with default return strategy (TARGET_WORKFLOW)
+     */
+    public SignalResponse signal(String workflowId, Task.Status status, Map<String, Object> output) {
+        return signal(workflowId, status, output, ReturnStrategy.TARGET_WORKFLOW);
+    }
+
+    /**
+     * Signals a task in a workflow synchronously and returns data based on the specified return strategy.
+     *
+     * @param workflowId     Workflow Id of the workflow to be signaled
+     * @param status         Signal status to be set for the workflow
+     * @param output         Output for the task
+     * @param returnStrategy Strategy for what data to return
+     * @return SignalResponse with data based on the return strategy
+     */
+    public SignalResponse signal(String workflowId, Task.Status status, Map<String, Object> output, ReturnStrategy returnStrategy) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(ConductorClientRequest.Method.POST)
+                .path("/tasks/{workflowId}/{status}/signal/sync")
+                .addPathParam("workflowId", workflowId)
+                .addPathParam("status", status.name())
+                .addQueryParam("returnStrategy", returnStrategy.name())
+                .body(output)
+                .build();
+
+        ConductorClientResponse<SignalResponse> resp = client.execute(request, new TypeReference<SignalResponse>() {
+        });
+        return resp.getData();
+    }
+
+    /**
+     * Signals a task in a workflow asynchronously.
+     *
+     * @param workflowId Workflow Id of the workflow to be signaled
+     * @param status     Signal status to be set for the workflow
+     * @param output     Output for the task
+     */
+    public void signalAsync(String workflowId, Task.Status status, Map<String, Object> output) {
+        ConductorClientRequest request = ConductorClientRequest.builder()
+                .method(ConductorClientRequest.Method.POST)
+                .path("/tasks/{workflowId}/{status}/signal")
+                .addPathParam("workflowId", workflowId)
+                .addPathParam("status", status.name())
+                .body(output)
+                .build();
+
+        client.execute(request);
+    }
 
     public Task pollTask(String taskType, String workerId, String domain) {
         return taskClient.pollTask(taskType, workerId, domain);
