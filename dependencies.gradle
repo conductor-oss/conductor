@@ -69,5 +69,5 @@ ext {
     revStan = '2.2.3'
     revFlyway = '10.15.2'
     revApacheLucene = '10.2.1'
-    revConductorClient = '4.0.9'
+    revConductorClient = '4.0.10'
 }
