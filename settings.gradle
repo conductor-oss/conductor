@@ -36,8 +36,6 @@ include 'server'
 include 'server-lite'
 include 'common'
 include 'core'
-include 'client'
-include 'client-spring'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
@@ -58,8 +56,6 @@ include 'rest'
 include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
-
-include 'java-sdk'
 
 // community modules
 include 'workflow-event-listener'

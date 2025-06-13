@@ -498,7 +498,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ConductorClientException.class)
     public void testGetTaskDefNotExisting() {
         metadataClient.getTaskDef("");
     }
