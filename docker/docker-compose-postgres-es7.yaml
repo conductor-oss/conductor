@@ -10,6 +10,7 @@ services:
       context: ../
       dockerfile: docker/server/Dockerfile
       args:
+        SEARCH_ENGINE: "ES"
         YARN_OPTS: ${YARN_OPTS}
     networks:
       - internal
