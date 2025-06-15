@@ -12,8 +12,9 @@
  */
 package com.netflix.conductor.metrics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,9 @@ import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.ImmutableTag;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,7 +53,7 @@ public class Monitors {
     public static Counter getCounter(String name, String... tags) {
         String key = name + Arrays.toString(tags);
         return counters.computeIfAbsent(
-                key, s -> Counter.builder(name).tags(tags).register(registry));
+                key, s -> Counter.builder(name).tags(toTags(tags)).register(registry));
     }
 
     public static Timer getTimer(String name, String... tags) {
@@ -59,7 +62,7 @@ public class Monitors {
                 key,
                 s ->
                         Timer.builder(name)
-                                .tags(tags)
+                                .tags(toTags(tags))
                                 .publishPercentiles(percentiles)
                                 .register(registry));
     }
@@ -70,7 +73,7 @@ public class Monitors {
                 key,
                 s ->
                         DistributionSummary.builder(name)
-                                .tags(tags)
+                                .tags(toTags(tags))
                                 .publishPercentileHistogram()
                                 .register(registry));
     }
@@ -82,9 +85,23 @@ public class Monitors {
                 key,
                 s -> {
                     AtomicDouble value = new AtomicDouble(0);
-                    Gauge.builder(name, () -> value).tags(tags).register(registry);
+                    Gauge.builder(name, () -> value).tags(toTags(tags)).register(registry);
                     return value;
                 });
+    }
+
+    private static Iterable<Tag> toTags(String... kv) {
+        List<Tag> tags = new ArrayList<>();
+        for (int i = 0; i < kv.length - 1; i += 2) {
+            String key = kv[i];
+            String value = kv[i + 1];
+            if (key == null || value == null) {
+                continue;
+            }
+            Tag tag = new ImmutableTag(key, value);
+            tags.add(tag);
+        }
+        return tags;
     }
 
     /**
@@ -110,19 +127,6 @@ public class Monitors {
      */
     private static void gauge(String name, long measurement, String... additionalTags) {
         gauge(name, additionalTags).set(measurement);
-    }
-
-    private static Map<String, String> toMap(String... additionalTags) {
-        Map<String, String> tags = new HashMap<>();
-        for (int j = 0; j < additionalTags.length - 1; j++) {
-            String tk = additionalTags[j];
-            String tv = "" + additionalTags[j + 1];
-            if (!tv.isEmpty()) {
-                tags.put(tk, tv);
-            }
-            j++;
-        }
-        return tags;
     }
 
     /**
