@@ -19,33 +19,33 @@ import org.springframework.context.annotation.Configuration;
 
 import io.micrometer.azuremonitor.AzureMonitorConfig;
 import io.micrometer.azuremonitor.AzureMonitorMeterRegistry;
-import io.micrometer.cloudwatch2.CloudWatchConfig;
-import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 
-@ConditionalOnProperty(value = "management.azuremonitor.metrics.export.enabled", havingValue = "true")
+@ConditionalOnProperty(
+        value = "management.azuremonitor.metrics.export.enabled",
+        havingValue = "true")
 @Configuration
 @Slf4j
 public class AzureMonitorMetricsConfiguration {
 
     @Bean
     public MeterRegistry getAzureMonitorMeterRegistry(
-        @Value("${management.cloudwatch.metrics.export.instrumentationKey:null}") String instrumentationKey
-    ) {
-        AzureMonitorConfig cloudWatchConfig = new AzureMonitorConfig() {
-            @Override
-            public String instrumentationKey() {
-                return instrumentationKey;
-            }
+            @Value("${management.cloudwatch.metrics.export.instrumentationKey:null}")
+                    String instrumentationKey) {
+        AzureMonitorConfig cloudWatchConfig =
+                new AzureMonitorConfig() {
+                    @Override
+                    public String instrumentationKey() {
+                        return instrumentationKey;
+                    }
 
-            @Override
-            public String get(String key) {
-                return null;
-            }
-        };
+                    @Override
+                    public String get(String key) {
+                        return null;
+                    }
+                };
         return new AzureMonitorMeterRegistry(cloudWatchConfig, Clock.SYSTEM);
     }
 }

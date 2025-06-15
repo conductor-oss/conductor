@@ -21,7 +21,6 @@ import io.micrometer.cloudwatch2.CloudWatchConfig;
 import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 
@@ -31,19 +30,23 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 public class CloudWatchMetricsConfiguration {
 
     @Bean
-    public MeterRegistry getCloudWatchMetrics(@Value("${management.cloudwatch.metrics.export.namesapce:conductor}") String namespace) {
-        CloudWatchConfig cloudWatchConfig = new CloudWatchConfig() {
-            @Override
-            public String get(String s) {
-                return null;
-            }
+    public MeterRegistry getCloudWatchMetrics(
+            @Value("${management.cloudwatch.metrics.export.namesapce:conductor}")
+                    String namespace) {
+        CloudWatchConfig cloudWatchConfig =
+                new CloudWatchConfig() {
+                    @Override
+                    public String get(String s) {
+                        return null;
+                    }
 
-            @Override
-            public String namespace() {
-                return namespace;
-            }
-        };
+                    @Override
+                    public String namespace() {
+                        return namespace;
+                    }
+                };
         log.info("Using namespace '{}' for cloudwatch metrics", namespace);
-        return new CloudWatchMeterRegistry(cloudWatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create());
+        return new CloudWatchMeterRegistry(
+                cloudWatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create());
     }
 }

@@ -32,7 +32,8 @@ public class MetricsCollector {
         for (MeterRegistry registry : registries) {
             log.info("Metrics registry: {}", registry);
         }
-        log.info("check https://docs.micrometer.io/micrometer/reference/ for configuration options");
+        log.info(
+                "check https://docs.micrometer.io/micrometer/reference/ for configuration options");
         log.info("=========");
         compositeRegistry.add(simpleRegistry);
         for (MeterRegistry meterRegistry : registries) {
