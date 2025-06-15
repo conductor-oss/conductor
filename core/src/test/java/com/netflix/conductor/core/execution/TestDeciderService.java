@@ -57,12 +57,11 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.spectator.api.Counter;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.Registry;
-import com.netflix.spectator.api.Spectator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 
@@ -124,7 +123,7 @@ public class TestDeciderService {
     private DeciderService deciderService;
 
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
-    private static Registry registry;
+    private static MeterRegistry registry;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -142,8 +141,7 @@ public class TestDeciderService {
 
     @BeforeClass
     public static void init() {
-        registry = new DefaultRegistry();
-        Spectator.globalRegistry().add(registry);
+        registry = new SimpleMeterRegistry();
     }
 
     @Before
@@ -492,7 +490,7 @@ public class TestDeciderService {
     public void testTaskTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -549,7 +547,7 @@ public class TestDeciderService {
     public void testCheckTaskPollTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -1148,7 +1146,7 @@ public class TestDeciderService {
                         "TIMED_OUT",
                         "ownerApp",
                         "junit");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
         assertEquals(0, counter.count());
 
         WorkflowDef workflowDef = new WorkflowDef();

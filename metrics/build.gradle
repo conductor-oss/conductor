@@ -1,7 +1,7 @@
 dependencies {
 
     implementation project(':conductor-common')
-    implementation project(':conductor-core')
+    //implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
@@ -21,6 +21,14 @@ dependencies {
     implementation "io.micrometer:micrometer-registry-datadog:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-jmx:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-otlp:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-dynatrace:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-elastic:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-new-relic:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-stackdriver:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-statsd:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-influx:${revMicrometer}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"

@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LoggingMetricsConfiguration {
 
     @Bean
-    public MeterRegistry getLoggingMeterRegistry(MeterRegistry meterRegistry) {
+    public MeterRegistry getLoggingMeterRegistry() {
         return new LoggingMeterRegistry(log::info);
     }
 }
