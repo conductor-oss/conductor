@@ -1,7 +1,6 @@
 dependencies {
 
     implementation project(':conductor-common')
-    //implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
