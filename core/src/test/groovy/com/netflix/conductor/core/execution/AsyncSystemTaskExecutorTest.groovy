@@ -25,7 +25,6 @@ import com.netflix.conductor.dao.MetadataDAO
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
-import com.netflix.conductor.service.ExecutionLockService
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
@@ -39,7 +38,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
-    ExecutionLockService executionLockService
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -52,7 +50,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
-        executionLockService = Mock(ExecutionLockService.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class) {
             isTaskRetrievalRequired() >> true
@@ -61,7 +58,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
 
-        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, executionLockService)
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor)
     }
 
     // this is not strictly a unit test, but its essential to test AsyncSystemTaskExecutor with SubWorkflow
@@ -95,7 +92,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
         1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
         1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue
         1 * queueDAO.remove(queueName, task1Id)
@@ -116,27 +112,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> null
         0 * workflowSystemTask.start(*_)
         0 * executionDAOFacade.updateTask(_)
-    }
-
-    def "Execute when lock is already acquired"() {
-        given:
-        String workflowId = "workflowId"
-        String taskId = "taskId"
-        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId)
-        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.COMPLETED)
-        String queueName = QueueUtils.getQueueName(task)
-
-        when:
-        executor.execute(workflowSystemTask, taskId)
-
-        then:
-        1 * executionDAOFacade.getTaskModel(taskId) >> task
-        1 * executionLockService.acquireLock(workflowId) >> null
-        0 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        0 * queueDAO.remove(queueName, taskId)
-
-        task.status == TaskModel.Status.SCHEDULED
-        task.startTime == 0
     }
 
     def "Execute with a task id that fails to load"() {
@@ -182,7 +157,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * queueDAO.remove(queueName, taskId)
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.CANCELED
         task.startTime == 0
@@ -261,7 +235,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
-        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty()
+        workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty();
+
 
         when:
         executor.execute(workflowSystemTask, taskId)
@@ -272,7 +247,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.updateTask(task)
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
+
         0 * workflowExecutor.decide(workflowId) // verify that workflow is NOT decided
 
         task.status == TaskModel.Status.IN_PROGRESS
@@ -298,10 +273,10 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
+
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
         1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.COMPLETED
         task.startTime != 0 // verify that startTime is set
@@ -333,7 +308,6 @@ class AsyncSystemTaskExecutorTest extends Specification {
         }
 
         0 * workflowExecutor.decide(workflowId) // verify that workflow is NOT decided
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set
@@ -357,11 +331,12 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
+
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
         1 * queueDAO.remove(queueName, taskId)
+
         1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.startTime != 0 // verify that startTime is set
@@ -384,9 +359,9 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
+
         0 * workflowSystemTask.start(workflow, task, workflowExecutor)
         1 * workflowSystemTask.execute(workflow, task, workflowExecutor)
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.endTime == 0 // verify that endTime is not set
@@ -408,10 +383,10 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task) // only one call since pollCount is not incremented
+
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         0 * workflowSystemTask.start(workflow, task, workflowExecutor)
         1 * workflowSystemTask.execute(workflow, task, workflowExecutor)
-        1 * executionLockService.acquireLock(workflowId) >> Mock(ExecutionLockService.LockInstance.class)
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.endTime == 0 // verify that endTime is not set
