@@ -42,8 +42,7 @@ dependencies {
 
     //Indexing (note: Elasticsearch 6 is deprecated)
     implementation project(':conductor-es7-persistence')
-    // To use Opensearch, uncomment below & change the lucene version in
-    // dependencies.gradle to 9.12.0; update and rebuild conductor
+    // To use Opensearch, comment out above Elasticsearch, uncomment below Opensearch, and rebuild conductor
     // implementation project(':conductor-os-persistence')
 
     implementation project(':conductor-redis-lock')
@@ -70,7 +69,6 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-web'
     implementation "redis.clients:jedis:${revJedis}"
     implementation "org.postgresql:postgresql:${revPostgres}"
-    implementation "org.apache.lucene:lucene-core:${revApacheLucene}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {

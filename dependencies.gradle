@@ -68,6 +68,5 @@ ext {
     revNats = '2.16.14'
     revStan = '2.2.3'
     revFlyway = '10.15.2'
-    revApacheLucene = '8.11.1'  // Change this to 9.12.0 for Opensearch support
     revConductorClient = '4.0.10'
 }
