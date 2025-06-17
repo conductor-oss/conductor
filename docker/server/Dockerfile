@@ -12,10 +12,6 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 COPY . /conductor
 WORKDIR /conductor
 
-# Inject search engine build flag into the env
-ARG SEARCH_ENGINE
-ENV SEARCH_ENGINE=${SEARCH_ENGINE}
-
 # Build the server on run
 RUN ./gradlew build -x test
 WORKDIR /server/build/libs

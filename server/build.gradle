@@ -41,9 +41,10 @@ dependencies {
     implementation project(':conductor-sqlite-persistence')
 
     //Indexing (note: Elasticsearch 6 is deprecated)
-    implementation project(':conductor-os-persistence')
     implementation project(':conductor-es7-persistence')
-
+    // To use Opensearch, uncomment below & change the lucene version in
+    // dependencies.gradle to 9.12.0; update and rebuild conductor
+    // implementation project(':conductor-os-persistence')
 
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
