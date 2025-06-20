@@ -50,7 +50,6 @@ public class ExecutionServiceTest {
     @Mock private ExternalPayloadStorage externalPayloadStorage;
     @Mock private SystemTaskRegistry systemTaskRegistry;
     @Mock private TaskStatusListener taskStatusListener;
-    @Mock private ExecutionLockService executionLockService;
 
     private ExecutionService executionService;
 
@@ -72,8 +71,7 @@ public class ExecutionServiceTest {
                         conductorProperties,
                         externalPayloadStorage,
                         systemTaskRegistry,
-                        taskStatusListener,
-                        executionLockService);
+                        taskStatusListener);
         WorkflowDef workflowDef = new WorkflowDef();
         workflow1 = new Workflow();
         workflow1.setWorkflowId("wf1");
