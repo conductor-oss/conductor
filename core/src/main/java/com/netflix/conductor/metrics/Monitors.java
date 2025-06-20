@@ -12,57 +12,108 @@
  */
 package com.netflix.conductor.metrics;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.contribs.metrics.MetricsCollector;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.spectator.api.Counter;
-import com.netflix.spectator.api.DistributionSummary;
-import com.netflix.spectator.api.Gauge;
-import com.netflix.spectator.api.Id;
-import com.netflix.spectator.api.Registry;
-import com.netflix.spectator.api.Spectator;
-import com.netflix.spectator.api.Timer;
-import com.netflix.spectator.api.histogram.PercentileTimer;
 
+import com.google.common.util.concurrent.AtomicDouble;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.ImmutableTag;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Monitors {
-
-    private static final Registry registry = Spectator.globalRegistry();
-
     public static final String NO_DOMAIN = "NO_DOMAIN";
 
-    private static final Map<String, Map<Map<String, String>, Counter>> counters =
+    private static final MeterRegistry registry = MetricsCollector.getMeterRegistry();
+
+    private static final double[] percentiles = new double[] {0.5, 0.75, 0.90, 0.95, 0.99};
+    private static final Map<String, AtomicDouble> gauges = new ConcurrentHashMap<>();
+    private static final Map<String, Counter> counters = new ConcurrentHashMap<>();
+    private static final Map<String, Timer> timers = new ConcurrentHashMap<>();
+    private static final Map<String, DistributionSummary> distributionSummaries =
             new ConcurrentHashMap<>();
-
-    private static final Map<String, Map<Map<String, String>, PercentileTimer>> timers =
-            new ConcurrentHashMap<>();
-
-    private static final Map<String, Map<Map<String, String>, Gauge>> gauges =
-            new ConcurrentHashMap<>();
-
-    private static final Map<String, Map<Map<String, String>, DistributionSummary>>
-            distributionSummaries = new ConcurrentHashMap<>();
-
-    public static final String classQualifier = "WorkflowMonitor";
 
     private Monitors() {}
+
+    public static Counter getCounter(String name, String... tags) {
+        String key = name + Arrays.toString(tags);
+        return counters.computeIfAbsent(
+                key, s -> Counter.builder(name).tags(toTags(tags)).register(registry));
+    }
+
+    public static Timer getTimer(String name, String... tags) {
+        String key = name + Arrays.toString(tags);
+        return timers.computeIfAbsent(
+                key,
+                s ->
+                        Timer.builder(name)
+                                .tags(toTags(tags))
+                                .publishPercentiles(percentiles)
+                                .register(registry));
+    }
+
+    public static DistributionSummary distributionSummary(String name, String... tags) {
+        String key = name + Arrays.toString(tags);
+        return distributionSummaries.computeIfAbsent(
+                key,
+                s ->
+                        DistributionSummary.builder(name)
+                                .tags(toTags(tags))
+                                .publishPercentileHistogram()
+                                .register(registry));
+    }
+
+    public static AtomicDouble gauge(String name, String... tags) {
+        String key = name + Arrays.toString(tags);
+
+        return gauges.computeIfAbsent(
+                key,
+                s -> {
+                    AtomicDouble value = new AtomicDouble(0);
+                    Gauge.builder(name, () -> value).tags(toTags(tags)).register(registry);
+                    return value;
+                });
+    }
+
+    private static Iterable<Tag> toTags(String... kv) {
+        List<Tag> tags = new ArrayList<>();
+        for (int i = 0; i < kv.length - 1; i += 2) {
+            String key = kv[i];
+            String value = kv[i + 1];
+            if (key == null || value == null) {
+                continue;
+            }
+            Tag tag = new ImmutableTag(key, value);
+            tags.add(tag);
+        }
+        return tags;
+    }
 
     /**
      * Increment a counter that is used to measure the rate at which some event is occurring.
      * Consider a simple queue, counters would be used to measure things like the rate at which
      * items are being inserted and removed.
      *
-     * @param className
      * @param name
      * @param additionalTags
      */
-    private static void counter(String className, String name, String... additionalTags) {
-        getCounter(className, name, additionalTags).increment();
+    private static void counter(String name, String... additionalTags) {
+        getCounter(name, additionalTags).increment();
     }
 
     /**
@@ -70,90 +121,12 @@ public class Monitors {
      * size of a queue or number of threads in the running state. Since gauges are sampled, there is
      * no information about what might have occurred between samples.
      *
-     * @param className
      * @param name
      * @param measurement
      * @param additionalTags
      */
-    private static void gauge(
-            String className, String name, long measurement, String... additionalTags) {
-        getGauge(className, name, additionalTags).set(measurement);
-    }
-
-    /**
-     * Records a value for an event as a distribution summary. Unlike a gauge, this is sampled
-     * multiple times during a minute or everytime a new value is recorded.
-     *
-     * @param className
-     * @param name
-     * @param additionalTags
-     */
-    private static void distributionSummary(
-            String className, String name, long value, String... additionalTags) {
-        getDistributionSummary(className, name, additionalTags).record(value);
-    }
-
-    private static Timer getTimer(String className, String name, String... additionalTags) {
-        Map<String, String> tags = toMap(className, additionalTags);
-        return timers.computeIfAbsent(name, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(
-                        tags,
-                        t -> {
-                            Id id = registry.createId(name, tags);
-                            return PercentileTimer.get(registry, id);
-                        });
-    }
-
-    private static Counter getCounter(String className, String name, String... additionalTags) {
-        Map<String, String> tags = toMap(className, additionalTags);
-
-        return counters.computeIfAbsent(name, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(
-                        tags,
-                        t -> {
-                            Id id = registry.createId(name, tags);
-                            return registry.counter(id);
-                        });
-    }
-
-    private static Gauge getGauge(String className, String name, String... additionalTags) {
-        Map<String, String> tags = toMap(className, additionalTags);
-
-        return gauges.computeIfAbsent(name, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(
-                        tags,
-                        t -> {
-                            Id id = registry.createId(name, tags);
-                            return registry.gauge(id);
-                        });
-    }
-
-    private static DistributionSummary getDistributionSummary(
-            String className, String name, String... additionalTags) {
-        Map<String, String> tags = toMap(className, additionalTags);
-
-        return distributionSummaries
-                .computeIfAbsent(name, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(
-                        tags,
-                        t -> {
-                            Id id = registry.createId(name, tags);
-                            return registry.distributionSummary(id);
-                        });
-    }
-
-    private static Map<String, String> toMap(String className, String... additionalTags) {
-        Map<String, String> tags = new HashMap<>();
-        tags.put("class", className);
-        for (int j = 0; j < additionalTags.length - 1; j++) {
-            String tk = additionalTags[j];
-            String tv = "" + additionalTags[j + 1];
-            if (!tv.isEmpty()) {
-                tags.put(tk, tv);
-            }
-            j++;
-        }
-        return tags;
+    private static void gauge(String name, long measurement, String... additionalTags) {
+        gauge(name, additionalTags).set(measurement);
     }
 
     /**
@@ -161,26 +134,22 @@ public class Monitors {
      * @param methodName Method name
      */
     public static void error(String className, String methodName) {
-        getCounter(className, "workflow_server_error", "methodName", methodName).increment();
+        getCounter("workflow_server_error", "class", className, "methodName", methodName)
+                .increment();
     }
 
     public static void recordGauge(String name, long count) {
-        gauge(classQualifier, name, count);
-    }
-
-    public static void recordCounter(String name, long count, String... additionalTags) {
-        getCounter(classQualifier, name, additionalTags).increment(count);
+        gauge(name, count);
     }
 
     public static void recordQueueWaitTime(String taskType, long queueWaitTime) {
-        getTimer(classQualifier, "task_queue_wait", "taskType", taskType)
+        getTimer("task_queue_wait", "taskType", taskType)
                 .record(queueWaitTime, TimeUnit.MILLISECONDS);
     }
 
     public static void recordTaskExecutionTime(
             String taskType, long duration, boolean includesRetries, TaskModel.Status status) {
         getTimer(
-                        classQualifier,
                         "task_execution",
                         "taskType",
                         taskType,
@@ -192,7 +161,7 @@ public class Monitors {
     }
 
     public static void recordWorkflowDecisionTime(long duration) {
-        getTimer(classQualifier, "workflow_decision").record(duration, TimeUnit.MILLISECONDS);
+        getTimer("workflow_decision").record(duration, TimeUnit.MILLISECONDS);
     }
 
     public static void recordTaskPollError(String taskType, String exception) {
@@ -200,19 +169,11 @@ public class Monitors {
     }
 
     public static void recordTaskPollError(String taskType, String domain, String exception) {
-        counter(
-                classQualifier,
-                "task_poll_error",
-                "taskType",
-                taskType,
-                "domain",
-                domain,
-                "exception",
-                exception);
+        counter("task_poll_error", "taskType", taskType, "domain", domain, "exception", exception);
     }
 
     public static void recordTaskPoll(String taskType) {
-        counter(classQualifier, "task_poll", "taskType", taskType);
+        counter("task_poll", "taskType", taskType);
     }
 
     public static void recordTaskPollCount(String taskType, int count) {
@@ -220,13 +181,11 @@ public class Monitors {
     }
 
     public static void recordTaskPollCount(String taskType, String domain, int count) {
-        getCounter(classQualifier, "task_poll_count", "taskType", taskType, "domain", domain)
-                .increment(count);
+        getCounter("task_poll_count", "taskType", taskType, "domain", "" + domain).increment(count);
     }
 
     public static void recordQueueDepth(String taskType, long size, String ownerApp) {
         gauge(
-                classQualifier,
                 "task_queue_depth",
                 size,
                 "taskType",
@@ -236,12 +195,11 @@ public class Monitors {
     }
 
     public static void recordEventQueueDepth(String queueType, long size) {
-        gauge(classQualifier, "event_queue_depth", size, "queueType", queueType);
+        gauge("event_queue_depth", size, "queueType", queueType);
     }
 
     public static void recordTaskInProgress(String taskType, long size, String ownerApp) {
         gauge(
-                classQualifier,
                 "task_in_progress",
                 size,
                 "taskType",
@@ -252,7 +210,6 @@ public class Monitors {
 
     public static void recordRunningWorkflows(long count, String name, String ownerApp) {
         gauge(
-                classQualifier,
                 "workflow_running",
                 count,
                 "workflowName",
@@ -262,39 +219,25 @@ public class Monitors {
     }
 
     public static void recordNumTasksInWorkflow(long count, String name, String version) {
-        distributionSummary(
-                classQualifier,
-                "tasks_in_workflow",
-                count,
-                "workflowName",
-                name,
-                "version",
-                version);
+        distributionSummary("tasks_in_workflow", "workflowName", name, "version", version)
+                .record(count);
     }
 
     public static void recordTaskTimeout(String taskType) {
-        counter(classQualifier, "task_timeout", "taskType", taskType);
+        counter("task_timeout", "taskType", taskType);
     }
 
     public static void recordTaskResponseTimeout(String taskType) {
-        counter(classQualifier, "task_response_timeout", "taskType", taskType);
+        counter("task_response_timeout", "taskType", taskType);
     }
 
     public static void recordTaskPendingTime(String taskType, String workflowType, long duration) {
-        gauge(
-                classQualifier,
-                "task_pending_time",
-                duration,
-                "workflowName",
-                workflowType,
-                "taskType",
-                taskType);
+        gauge("task_pending_time", duration, "workflowName", workflowType, "taskType", taskType);
     }
 
     public static void recordWorkflowTermination(
             String workflowType, WorkflowModel.Status status, String ownerApp) {
         counter(
-                classQualifier,
                 "workflow_failure",
                 "workflowName",
                 workflowType,
@@ -307,7 +250,6 @@ public class Monitors {
     public static void recordWorkflowStartSuccess(
             String workflowType, String version, String ownerApp) {
         counter(
-                classQualifier,
                 "workflow_start_success",
                 "workflowName",
                 workflowType,
@@ -319,7 +261,6 @@ public class Monitors {
 
     public static void recordWorkflowStartError(String workflowType, String ownerApp) {
         counter(
-                classQualifier,
                 "workflow_start_error",
                 "workflowName",
                 workflowType,
@@ -330,7 +271,6 @@ public class Monitors {
     public static void recordUpdateConflict(
             String taskType, String workflowType, WorkflowModel.Status status) {
         counter(
-                classQualifier,
                 "task_update_conflict",
                 "workflowName",
                 workflowType,
@@ -343,7 +283,6 @@ public class Monitors {
     public static void recordUpdateConflict(
             String taskType, String workflowType, TaskModel.Status status) {
         counter(
-                classQualifier,
                 "task_update_conflict",
                 "workflowName",
                 workflowType,
@@ -354,39 +293,20 @@ public class Monitors {
     }
 
     public static void recordTaskUpdateError(String taskType, String workflowType) {
-        counter(
-                classQualifier,
-                "task_update_error",
-                "workflowName",
-                workflowType,
-                "taskType",
-                taskType);
+        counter("task_update_error", "workflowName", workflowType, "taskType", taskType);
     }
 
     public static void recordTaskExtendLeaseError(String taskType, String workflowType) {
-        counter(
-                classQualifier,
-                "task_extendLease_error",
-                "workflowName",
-                workflowType,
-                "taskType",
-                taskType);
+        counter("task_extendLease_error", "workflowName", workflowType, "taskType", taskType);
     }
 
     public static void recordTaskQueueOpError(String taskType, String workflowType) {
-        counter(
-                classQualifier,
-                "task_queue_op_error",
-                "workflowName",
-                workflowType,
-                "taskType",
-                taskType);
+        counter("task_queue_op_error", "workflowName", workflowType, "taskType", taskType);
     }
 
     public static void recordWorkflowCompletion(
             String workflowType, long duration, String ownerApp) {
         getTimer(
-                        classQualifier,
                         "workflow_execution",
                         "workflowName",
                         workflowType,
@@ -396,70 +316,43 @@ public class Monitors {
     }
 
     public static void recordUnackTime(String workflowType, long duration) {
-        getTimer(classQualifier, "workflow_unack", "workflowName", workflowType)
+        getTimer("workflow_unack", "workflowName", workflowType)
                 .record(duration, TimeUnit.MILLISECONDS);
     }
 
     public static void recordTaskRateLimited(String taskDefName, int limit) {
-        gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
+        gauge("task_rate_limited", limit, "taskType", taskDefName);
     }
 
     public static void recordTaskConcurrentExecutionLimited(String taskDefName, int limit) {
-        gauge(classQualifier, "task_concurrent_execution_limited", limit, "taskType", taskDefName);
+        gauge("task_concurrent_execution_limited", limit, "taskType", taskDefName);
     }
 
     public static void recordEventQueueMessagesProcessed(
             String queueType, String queueName, int count) {
-        getCounter(
-                        classQualifier,
-                        "event_queue_messages_processed",
-                        "queueType",
-                        queueType,
-                        "queueName",
-                        queueName)
+        getCounter("event_queue_messages_processed", "queueType", queueType, "queueName", queueName)
                 .increment(count);
     }
 
     public static void recordObservableQMessageReceivedErrors(String queueType) {
-        counter(classQualifier, "observable_queue_error", "queueType", queueType);
+        counter("observable_queue_error", "queueType", queueType);
     }
 
     public static void recordEventQueueMessagesHandled(String queueType, String queueName) {
-        counter(
-                classQualifier,
-                "event_queue_messages_handled",
-                "queueType",
-                queueType,
-                "queueName",
-                queueName);
+        counter("event_queue_messages_handled", "queueType", queueType, "queueName", queueName);
     }
 
     public static void recordEventQueueMessagesError(String queueType, String queueName) {
-        counter(
-                classQualifier,
-                "event_queue_messages_error",
-                "queueType",
-                queueType,
-                "queueName",
-                queueName);
+        counter("event_queue_messages_error", "queueType", queueType, "queueName", queueName);
     }
 
     public static void recordEventExecutionSuccess(String event, String handler, String action) {
-        counter(
-                classQualifier,
-                "event_execution_success",
-                "event",
-                event,
-                "handler",
-                handler,
-                "action",
-                action);
+        counter("event_execution_success", "event", event, "handler", handler, "action", action);
     }
 
     public static void recordEventExecutionError(
             String event, String handler, String action, String exceptionClazz) {
         counter(
-                classQualifier,
                 "event_execution_error",
                 "event",
                 event,
@@ -472,21 +365,12 @@ public class Monitors {
     }
 
     public static void recordEventActionError(String action, String entityName, String event) {
-        counter(
-                classQualifier,
-                "event_action_error",
-                "action",
-                action,
-                "entityName",
-                entityName,
-                "event",
-                event);
+        counter("event_action_error", "action", action, "entityName", entityName, "event", event);
     }
 
     public static void recordDaoRequests(
             String dao, String action, String taskType, String workflowType) {
         counter(
-                classQualifier,
                 "dao_requests",
                 "dao",
                 dao,
@@ -499,13 +383,12 @@ public class Monitors {
     }
 
     public static void recordDaoEventRequests(String dao, String action, String event) {
-        counter(classQualifier, "dao_event_requests", "dao", dao, "action", action, "event", event);
+        counter("dao_event_requests", "dao", dao, "action", action, "event", event);
     }
 
     public static void recordDaoPayloadSize(
             String dao, String action, String taskType, String workflowType, int size) {
         gauge(
-                classQualifier,
                 "dao_payload_size",
                 size,
                 "dao",
@@ -521,7 +404,6 @@ public class Monitors {
     public static void recordExternalPayloadStorageUsage(
             String name, String operation, String payloadType) {
         counter(
-                classQualifier,
                 "external_payload_storage_usage",
                 "name",
                 name,
@@ -532,65 +414,58 @@ public class Monitors {
     }
 
     public static void recordDaoError(String dao, String action) {
-        counter(classQualifier, "dao_errors", "dao", dao, "action", action);
+        counter("dao_errors", "dao", dao, "action", action);
     }
 
     public static void recordAckTaskError(String taskType) {
-        counter(classQualifier, "task_ack_error", "taskType", taskType);
+        counter("task_ack_error", "taskType", taskType);
     }
 
     public static void recordESIndexTime(String action, String docType, long val) {
-        getTimer(Monitors.classQualifier, action, "docType", docType)
-                .record(val, TimeUnit.MILLISECONDS);
+        getTimer(action, "docType", docType).record(val, TimeUnit.MILLISECONDS);
     }
 
     public static void recordWorkerQueueSize(String queueType, int val) {
-        gauge(Monitors.classQualifier, "indexing_worker_queue", val, "queueType", queueType);
+        gauge("indexing_worker_queue", val, "queueType", queueType);
     }
 
     public static void recordDiscardedIndexingCount(String queueType) {
-        counter(Monitors.classQualifier, "discarded_index_count", "queueType", queueType);
+        counter("discarded_index_count", "queueType", queueType);
     }
 
     public static void recordAcquireLockUnsuccessful() {
-        counter(classQualifier, "acquire_lock_unsuccessful");
+        counter("acquire_lock_unsuccessful");
     }
 
     public static void recordAcquireLockFailure(String exceptionClassName) {
-        counter(classQualifier, "acquire_lock_failure", "exceptionType", exceptionClassName);
+        counter("acquire_lock_failure", "exceptionType", exceptionClassName);
     }
 
     public static void recordWorkflowArchived(String workflowType, WorkflowModel.Status status) {
-        counter(
-                classQualifier,
-                "workflow_archived",
-                "workflowName",
-                workflowType,
-                "workflowStatus",
-                status.name());
+        counter("workflow_archived", "workflowName", workflowType, "workflowStatus", status.name());
     }
 
     public static void recordArchivalDelayQueueSize(int val) {
-        gauge(classQualifier, "workflow_archival_delay_queue_size", val);
+        gauge("workflow_archival_delay_queue_size", val);
     }
 
     public static void recordDiscardedArchivalCount() {
-        counter(classQualifier, "discarded_archival_count");
+        counter("discarded_archival_count");
     }
 
     public static void recordSystemTaskWorkerPollingLimited(String queueName) {
-        counter(classQualifier, "system_task_worker_polling_limited", "queueName", queueName);
+        counter("system_task_worker_polling_limited", "queueName", queueName);
     }
 
     public static void recordEventQueuePollSize(String queueType, int val) {
-        gauge(Monitors.classQualifier, "event_queue_poll", val, "queueType", queueType);
+        gauge("event_queue_poll", val, "queueType", queueType);
     }
 
     public static void recordQueueMessageRepushFromRepairService(String queueName) {
-        counter(classQualifier, "queue_message_repushed", "queueName", queueName);
+        counter("queue_message_repushed", "queueName", queueName);
     }
 
     public static void recordTaskExecLogSize(int val) {
-        gauge(classQualifier, "task_exec_log_size", val);
+        gauge("task_exec_log_size", val);
     }
 }
