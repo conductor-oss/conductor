@@ -31,7 +31,7 @@ public class CloudWatchMetricsConfiguration {
 
     @Bean
     public MeterRegistry getCloudWatchMetrics(
-            @Value("${management.cloudwatch.metrics.export.namesapce:conductor}")
+            @Value("${management.cloudwatch.metrics.export.namespace:conductor}")
                     String namespace) {
         CloudWatchConfig cloudWatchConfig =
                 new CloudWatchConfig() {
