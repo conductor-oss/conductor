@@ -26,7 +26,7 @@ dependencies {
 
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.core:jackson-core"
-    
+
     implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch7}"
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
 
