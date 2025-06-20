@@ -32,7 +32,7 @@ public class AzureMonitorMetricsConfiguration {
 
     @Bean
     public MeterRegistry getAzureMonitorMeterRegistry(
-            @Value("${management.cloudwatch.metrics.export.instrumentationKey:null}")
+            @Value("${management.azuremonitor.metrics.export.instrumentationKey:null}")
                     String instrumentationKey) {
         AzureMonitorConfig cloudWatchConfig =
                 new AzureMonitorConfig() {
