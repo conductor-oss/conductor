@@ -12,7 +12,7 @@ dependencies {
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
     implementation "org.apache.commons:commons-lang3:"
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.14'
-    implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
+    implementation "software.amazon.awssdk:s3:${revAwsSdk}"
     implementation "org.apache.kafka:kafka-clients:${revKafka}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind"

@@ -12,25 +12,26 @@
  */
 package com.netflix.conductor.s3.storage;
 
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.util.Date;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.s3.config.S3Properties;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.*;
+import java.io.InputStream;
+import java.time.Duration;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} using AWS S3 for storing large JSON payload
@@ -39,7 +40,7 @@ import com.amazonaws.services.s3.model.*;
  * <p><em>NOTE: The S3 client assumes that access to S3 is configured on the instance.</em>
  *
  * @see <a
- *     href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/index.html?com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html">DefaultAWSCredentialsProviderChain</a>
+ * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html">AWS SDK for Java v2 Credentials</a>
  */
 public class S3PayloadStorage implements ExternalPayloadStorage {
 
@@ -47,22 +48,24 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     private static final String CONTENT_TYPE = "application/json";
 
     private final IDGenerator idGenerator;
-    private final AmazonS3 s3Client;
+    private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
     private final String bucketName;
     private final long expirationSec;
 
-    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties, AmazonS3 s3Client) {
+    public S3PayloadStorage(IDGenerator idGenerator, S3Properties properties, S3Client s3Client, S3Presigner s3Presigner) {
         this.idGenerator = idGenerator;
         this.s3Client = s3Client;
-        bucketName = properties.getBucketName();
-        expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
+        this.s3Presigner = s3Presigner;
+        this.bucketName = properties.getBucketName();
+        this.expirationSec = properties.getSignedUrlExpirationDuration().getSeconds();
     }
 
     /**
-     * @param operation the type of {@link Operation} to be performed
+     * @param operation   the type of {@link Operation} to be performed
      * @param payloadType the {@link PayloadType} that is being accessed
      * @return a {@link ExternalStorageLocation} object which contains the pre-signed URL and the s3
-     *     object key for the json payload
+     * object key for the json payload
      */
     @Override
     public ExternalStorageLocation getLocation(
@@ -70,14 +73,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
         try {
             ExternalStorageLocation externalStorageLocation = new ExternalStorageLocation();
 
-            Date expiration = new Date();
-            long expTimeMillis = expiration.getTime() + 1000 * expirationSec;
-            expiration.setTime(expTimeMillis);
-
-            HttpMethod httpMethod = HttpMethod.GET;
-            if (operation == Operation.WRITE) {
-                httpMethod = HttpMethod.PUT;
-            }
+            Duration signatureDuration = Duration.ofSeconds(expirationSec);
 
             String objectKey;
             if (StringUtils.isNotBlank(path)) {
@@ -87,25 +83,47 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
             }
             externalStorageLocation.setPath(objectKey);
 
-            GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                    new GeneratePresignedUrlRequest(bucketName, objectKey)
-                            .withMethod(httpMethod)
-                            .withExpiration(expiration);
+            String presignedUrl;
 
-            externalStorageLocation.setUri(
-                    s3Client.generatePresignedUrl(generatePresignedUrlRequest)
-                            .toURI()
-                            .toASCIIString());
+            if (operation == Operation.WRITE) {
+                // For PUT operations
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(objectKey)
+                        .contentType(CONTENT_TYPE)
+                        .build();
+
+                PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                        .signatureDuration(signatureDuration)
+                        .putObjectRequest(putObjectRequest)
+                        .build();
+
+                presignedUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
+            } else {
+                // For GET operations
+                GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(objectKey)
+                        .build();
+
+                GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                        .signatureDuration(signatureDuration)
+                        .getObjectRequest(getObjectRequest)
+                        .build();
+
+                presignedUrl = s3Presigner.presignGetObject(presignRequest).url().toString();
+            }
+
+            externalStorageLocation.setUri(presignedUrl);
             return externalStorageLocation;
-        } catch (SdkClientException e) {
-            String msg =
-                    String.format(
-                            "Error communicating with S3 - operation:%s, payloadType: %s, path: %s",
-                            operation, payloadType, path);
+        } catch (SdkException e) {
+            String msg = String.format(
+                    "Error communicating with S3 - operation:%s, payloadType: %s, path: %s",
+                    operation, payloadType, path);
             LOGGER.error(msg, e);
             throw new TransientException(msg, e);
-        } catch (URISyntaxException e) {
-            String msg = "Invalid URI Syntax";
+        } catch (Exception e) {
+            String msg = "Error generating presigned URL";
             LOGGER.error(msg, e);
             throw new NonTransientException(msg, e);
         }
@@ -116,23 +134,24 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
      * object key using {@link #getLocation(Operation, PayloadType, String)} before making this
      * call.
      *
-     * @param path the s3 key of the object to be uploaded
-     * @param payload an {@link InputStream} containing the json payload which is to be uploaded
+     * @param path        the s3 key of the object to be uploaded
+     * @param payload     an {@link InputStream} containing the json payload which is to be uploaded
      * @param payloadSize the size of the json payload in bytes
      */
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
         try {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentType(CONTENT_TYPE);
-            objectMetadata.setContentLength(payloadSize);
-            PutObjectRequest request =
-                    new PutObjectRequest(bucketName, path, payload, objectMetadata);
-            s3Client.putObject(request);
-        } catch (SdkClientException e) {
-            String msg =
-                    String.format(
-                            "Error uploading to S3 - path:%s, payloadSize: %d", path, payloadSize);
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(path)
+                    .contentType(CONTENT_TYPE)
+                    .contentLength(payloadSize)
+                    .build();
+
+            s3Client.putObject(request, RequestBody.fromInputStream(payload, payloadSize));
+        } catch (SdkException e) {
+            String msg = String.format(
+                    "Error uploading to S3 - path:%s, payloadSize: %d", path, payloadSize);
             LOGGER.error(msg, e);
             throw new TransientException(msg, e);
         }
@@ -143,14 +162,18 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
      *
      * @param path the S3 key of the object
      * @return an input stream containing the contents of the object Caller is expected to close the
-     *     input stream.
+     * input stream.
      */
     @Override
     public InputStream download(String path) {
         try {
-            S3Object s3Object = s3Client.getObject(new GetObjectRequest(bucketName, path));
-            return s3Object.getObjectContent();
-        } catch (SdkClientException e) {
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(path)
+                    .build();
+
+            return s3Client.getObject(request);
+        } catch (SdkException e) {
             String msg = String.format("Error downloading from S3 - path:%s", path);
             LOGGER.error(msg, e);
             throw new TransientException(msg, e);

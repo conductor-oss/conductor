@@ -18,7 +18,7 @@ ext {
     revActivation = '2.0.1'
     revApacheHttpComponentsClient5 = '5.2.1'
     revAwaitility = '3.1.6'
-    revAwsSdk = '1.12.756'
+    revAwsSdk = '2.31.68'
     revBval = '2.0.5'
     revCassandra = '3.10.2'
     revCassandraUnit = '3.11.2.0'
