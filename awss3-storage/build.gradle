@@ -17,6 +17,6 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "software.amazon.awssdk:s3:${revAwsSdk}"
-    implementation "com.amazonaws:aws-java-sdk-sts:${revAwsSdk}"
+    implementation "software.amazon.awssdk:sts:${revAwsSdk}"
     implementation "org.apache.commons:commons-lang3"
 }

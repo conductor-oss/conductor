@@ -12,15 +12,17 @@
  */
 package com.netflix.conductor.sqs.config;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.lang.NonNull;
+
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue;
-import org.springframework.lang.NonNull;
+
 import rx.Scheduler;
 import software.amazon.awssdk.services.sqs.SqsClient;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SQSEventQueueProvider implements EventQueueProvider {
 
