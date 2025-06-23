@@ -4,6 +4,8 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  * <p>
+ * http://www.apache.License. You may obtain a copy of the License at
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
@@ -12,9 +14,11 @@
  */
 package com.netflix.conductor.sqs.config;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.model.TaskModel.Status;
+import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue.Builder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,51 +28,57 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.model.TaskModel.Status;
-import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue.Builder;
-
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import rx.Scheduler;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.SqsClientBuilder;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableConfigurationProperties(SQSEventQueueProperties.class)
 @ConditionalOnProperty(name = "conductor.event-queues.sqs.enabled", havingValue = "true")
 public class SQSEventQueueConfiguration {
 
-    @Autowired private SQSEventQueueProperties sqsProperties;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(SQSEventQueueConfiguration.class);
+    @Autowired
+    private SQSEventQueueProperties sqsProperties;
 
     @Bean
-    AWSCredentialsProvider createAWSCredentialsProvider() {
-        return new DefaultAWSCredentialsProviderChain();
+    AwsCredentialsProvider createAWSCredentialsProvider() {
+        return DefaultCredentialsProvider.create();
     }
 
     @ConditionalOnMissingBean
     @Bean
-    public AmazonSQS getSQSClient(AWSCredentialsProvider credentialsProvider) {
-        AmazonSQSClientBuilder builder =
-                AmazonSQSClientBuilder.standard().withCredentials(credentialsProvider);
+    public SqsClient getSQSClient(AwsCredentialsProvider credentialsProvider) {
+        SqsClientBuilder builder = SqsClient.builder()
+                .credentialsProvider(credentialsProvider);
+
+        // Set region - try to get from environment or properties
+        String region = System.getenv("AWS_REGION");
+        if (region != null && !region.isEmpty()) {
+            builder.region(Region.of(region));
+        } else {
+            // Fallback to default region if not specified
+            builder.region(Region.US_EAST_1);
+        }
+
         if (!sqsProperties.getEndpoint().isEmpty()) {
             LOGGER.info("Setting custom SQS endpoint to {}", sqsProperties.getEndpoint());
-            builder.withEndpointConfiguration(
-                    new AwsClientBuilder.EndpointConfiguration(
-                            sqsProperties.getEndpoint(), System.getenv("AWS_REGION")));
+            builder.endpointOverride(URI.create(sqsProperties.getEndpoint()));
         }
+
         return builder.build();
     }
 
     @Bean
     public EventQueueProvider sqsEventQueueProvider(
-            AmazonSQS sqsClient, SQSEventQueueProperties properties, Scheduler scheduler) {
+            SqsClient sqsClient, SQSEventQueueProperties properties, Scheduler scheduler) {
         return new SQSEventQueueProvider(sqsClient, properties, scheduler);
     }
 
@@ -80,12 +90,12 @@ public class SQSEventQueueConfiguration {
     public Map<Status, ObservableQueue> getQueues(
             ConductorProperties conductorProperties,
             SQSEventQueueProperties properties,
-            AmazonSQS sqsClient) {
+            SqsClient sqsClient) {
         String stack = "";
         if (conductorProperties.getStack() != null && conductorProperties.getStack().length() > 0) {
             stack = conductorProperties.getStack() + "_";
         }
-        Status[] statuses = new Status[] {Status.COMPLETED, Status.FAILED};
+        Status[] statuses = new Status[]{Status.COMPLETED, Status.FAILED};
         Map<Status, ObservableQueue> queues = new HashMap<>();
         for (Status status : statuses) {
             String queuePrefix =
