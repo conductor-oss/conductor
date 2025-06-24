@@ -37,6 +37,32 @@ public class WorkflowDef extends Auditable {
         ALERT_ONLY
     }
 
+    @ProtoMessage
+    public static class CacheConfig {
+
+        @ProtoField(id = 1)
+        private String key;
+
+        @ProtoField(id = 2)
+        private int ttlInSecond;
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public int getTtlInSecond() {
+            return ttlInSecond;
+        }
+
+        public void setTtlInSecond(int ttlInSecond) {
+            this.ttlInSecond = ttlInSecond;
+        }
+    }
+
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
     @ValidNameConstraint
@@ -108,6 +134,9 @@ public class WorkflowDef extends Auditable {
 
     @ProtoField(id = 22)
     private Map<String, Object> metadata = new HashMap<>();
+
+    @ProtoField(id = 23)
+    private CacheConfig cacheConfig;
 
     public boolean isEnforceSchema() {
         return enforceSchema;
@@ -375,6 +404,14 @@ public class WorkflowDef extends Auditable {
 
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
+    }
+
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(final CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
     }
 
     public boolean containsType(String taskType) {
