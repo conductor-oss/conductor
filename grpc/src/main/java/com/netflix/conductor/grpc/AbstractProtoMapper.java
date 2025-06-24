@@ -10,6 +10,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.workflow.CacheConfig;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTask;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.RateLimitConfig;
@@ -25,6 +26,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.proto.CacheConfigPb;
 import com.netflix.conductor.proto.DynamicForkJoinTaskListPb;
 import com.netflix.conductor.proto.DynamicForkJoinTaskPb;
 import com.netflix.conductor.proto.EventExecutionPb;
@@ -61,6 +63,22 @@ import java.util.stream.Collectors;
 
 @Generated("com.netflix.conductor.annotationsprocessor.protogen")
 public abstract class AbstractProtoMapper {
+    public CacheConfigPb.CacheConfig toProto(CacheConfig from) {
+        CacheConfigPb.CacheConfig.Builder to = CacheConfigPb.CacheConfig.newBuilder();
+        if (from.getKey() != null) {
+            to.setKey( from.getKey() );
+        }
+        to.setTtlInSecond( from.getTtlInSecond() );
+        return to.build();
+    }
+
+    public CacheConfig fromProto(CacheConfigPb.CacheConfig from) {
+        CacheConfig to = new CacheConfig();
+        to.setKey( from.getKey() );
+        to.setTtlInSecond( from.getTtlInSecond() );
+        return to;
+    }
+
     public DynamicForkJoinTaskPb.DynamicForkJoinTask toProto(DynamicForkJoinTask from) {
         DynamicForkJoinTaskPb.DynamicForkJoinTask.Builder to = DynamicForkJoinTaskPb.DynamicForkJoinTask.newBuilder();
         if (from.getTaskName() != null) {
@@ -1342,6 +1360,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getMetadata().entrySet()) {
             to.putMetadata( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getCacheConfig() != null) {
+            to.setCacheConfig( toProto( from.getCacheConfig() ) );
+        }
         return to.build();
     }
 
@@ -1390,6 +1411,9 @@ public abstract class AbstractProtoMapper {
             metadataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setMetadata(metadataMap);
+        if (from.hasCacheConfig()) {
+            to.setCacheConfig( fromProto( from.getCacheConfig() ) );
+        }
         return to;
     }
 
@@ -1648,22 +1672,6 @@ public abstract class AbstractProtoMapper {
             to.setCacheConfig( fromProto( from.getCacheConfig() ) );
         }
         to.setPermissive( from.getPermissive() );
-        return to;
-    }
-
-    public WorkflowTaskPb.WorkflowTask.CacheConfig toProto(WorkflowTask.CacheConfig from) {
-        WorkflowTaskPb.WorkflowTask.CacheConfig.Builder to = WorkflowTaskPb.WorkflowTask.CacheConfig.newBuilder();
-        if (from.getKey() != null) {
-            to.setKey( from.getKey() );
-        }
-        to.setTtlInSecond( from.getTtlInSecond() );
-        return to.build();
-    }
-
-    public WorkflowTask.CacheConfig fromProto(WorkflowTaskPb.WorkflowTask.CacheConfig from) {
-        WorkflowTask.CacheConfig to = new WorkflowTask.CacheConfig();
-        to.setKey( from.getKey() );
-        to.setTtlInSecond( from.getTtlInSecond() );
         return to;
     }
 

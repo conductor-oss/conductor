@@ -5,6 +5,7 @@ import "model/ratelimitconfig.proto";
 import "model/workflowtask.proto";
 import "google/protobuf/struct.proto";
 import "model/schemadef.proto";
+import "model/cacheconfig.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "WorkflowDefPb";
@@ -14,10 +15,6 @@ message WorkflowDef {
     enum TimeoutPolicy {
         TIME_OUT_WF = 0;
         ALERT_ONLY = 1;
-    }
-    message CacheConfig {
-        string key = 1;
-        int32 ttl_in_second = 2;
     }
     string name = 1;
     string description = 2;
@@ -40,5 +37,5 @@ message WorkflowDef {
     SchemaDef output_schema = 20;
     bool enforce_schema = 21;
     map<string, google.protobuf.Value> metadata = 22;
-    WorkflowDef.CacheConfig cache_config = 23;
+    CacheConfig cache_config = 23;
 }
