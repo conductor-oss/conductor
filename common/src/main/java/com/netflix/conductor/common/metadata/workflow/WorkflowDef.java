@@ -109,6 +109,9 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 22)
     private Map<String, Object> metadata = new HashMap<>();
 
+    @ProtoField(id = 23)
+    private CacheConfig cacheConfig;
+
     public boolean isEnforceSchema() {
         return enforceSchema;
     }
@@ -375,6 +378,14 @@ public class WorkflowDef extends Auditable {
 
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
+    }
+
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(final CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
     }
 
     public boolean containsType(String taskType) {
