@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -284,26 +286,31 @@ public class SQSObservableQueue implements ObservableQueue {
     }
 
     private String getPolicy(List<String> accountIds) {
-        // Note: You'll need to implement policy creation for SDK v2
-        // This is a simplified version - you may want to use IAM Policy SDK or build JSON manually
-        StringBuilder policy = new StringBuilder();
-        policy.append("{");
-        policy.append("\"Version\": \"2012-10-17\",");
-        policy.append("\"Statement\": [{");
-        policy.append("\"Effect\": \"Allow\",");
-        policy.append("\"Principal\": {\"AWS\": [");
-
-        for (int i = 0; i < accountIds.size(); i++) {
-            if (i > 0) policy.append(",");
-            policy.append("\"").append(accountIds.get(i)).append("\"");
+        if (accountIds == null || accountIds.isEmpty()) {
+            return null;
         }
 
-        policy.append("]},");
-        policy.append("\"Action\": \"sqs:SendMessage\",");
-        policy.append("\"Resource\": \"").append(getQueueARN()).append("\"");
-        policy.append("}]}");
+        try {
+            SqsPolicy policy = new SqsPolicy();
+            policy.setVersion("2012-10-17");
 
-        return policy.toString();
+            SqsStatement statement = new SqsStatement();
+            statement.setEffect("Allow");
+            statement.setAction("sqs:SendMessage");
+            statement.setResource(getQueueARN());
+
+            SqsPrincipal principal = new SqsPrincipal();
+            principal.setAws(new ArrayList<>(accountIds));
+            statement.setPrincipal(principal);
+
+            policy.setStatement(List.of(statement));
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(policy);
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Failed to generate SQS policy for accounts: {}", accountIds, e);
+            throw new RuntimeException("Failed to generate SQS policy", e);
+        }
     }
 
     private List<String> listQueues(String queueName) {
@@ -407,5 +414,42 @@ public class SQSObservableQueue implements ObservableQueue {
                         .collect(Collectors.toList());
         LOGGER.debug("Failed to delete messages from queue: {}: {}", queueName, failures);
         return failures;
+    }
+
+    private static class SqsPolicy {
+        private String version;
+        private List<SqsStatement> statement;
+
+        public String getVersion() { return version; }
+        public void setVersion(String version) { this.version = version; }
+
+        public List<SqsStatement> getStatement() { return statement; }
+        public void setStatement(List<SqsStatement> statement) { this.statement = statement; }
+    }
+
+    private static class SqsStatement {
+        private String effect;
+        private SqsPrincipal principal;
+        private String action;
+        private String resource;
+
+        public String getEffect() { return effect; }
+        public void setEffect(String effect) { this.effect = effect; }
+
+        public SqsPrincipal getPrincipal() { return principal; }
+        public void setPrincipal(SqsPrincipal principal) { this.principal = principal; }
+
+        public String getAction() { return action; }
+        public void setAction(String action) { this.action = action; }
+
+        public String getResource() { return resource; }
+        public void setResource(String resource) { this.resource = resource; }
+    }
+
+    private static class SqsPrincipal {
+        private List<String> aws;
+
+        public List<String> getAws() { return aws; }
+        public void setAws(List<String> aws) { this.aws = aws; }
     }
 }
