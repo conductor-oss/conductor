@@ -21,8 +21,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +28,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -420,11 +420,21 @@ public class SQSObservableQueue implements ObservableQueue {
         private String version;
         private List<SqsStatement> statement;
 
-        public String getVersion() { return version; }
-        public void setVersion(String version) { this.version = version; }
+        public String getVersion() {
+            return version;
+        }
 
-        public List<SqsStatement> getStatement() { return statement; }
-        public void setStatement(List<SqsStatement> statement) { this.statement = statement; }
+        public void setVersion(String version) {
+            this.version = version;
+        }
+
+        public List<SqsStatement> getStatement() {
+            return statement;
+        }
+
+        public void setStatement(List<SqsStatement> statement) {
+            this.statement = statement;
+        }
     }
 
     private static class SqsStatement {
@@ -433,23 +443,48 @@ public class SQSObservableQueue implements ObservableQueue {
         private String action;
         private String resource;
 
-        public String getEffect() { return effect; }
-        public void setEffect(String effect) { this.effect = effect; }
+        public String getEffect() {
+            return effect;
+        }
 
-        public SqsPrincipal getPrincipal() { return principal; }
-        public void setPrincipal(SqsPrincipal principal) { this.principal = principal; }
+        public void setEffect(String effect) {
+            this.effect = effect;
+        }
 
-        public String getAction() { return action; }
-        public void setAction(String action) { this.action = action; }
+        public SqsPrincipal getPrincipal() {
+            return principal;
+        }
 
-        public String getResource() { return resource; }
-        public void setResource(String resource) { this.resource = resource; }
+        public void setPrincipal(SqsPrincipal principal) {
+            this.principal = principal;
+        }
+
+        public String getAction() {
+            return action;
+        }
+
+        public void setAction(String action) {
+            this.action = action;
+        }
+
+        public String getResource() {
+            return resource;
+        }
+
+        public void setResource(String resource) {
+            this.resource = resource;
+        }
     }
 
     private static class SqsPrincipal {
         private List<String> aws;
 
-        public List<String> getAws() { return aws; }
-        public void setAws(List<String> aws) { this.aws = aws; }
+        public List<String> getAws() {
+            return aws;
+        }
+
+        public void setAws(List<String> aws) {
+            this.aws = aws;
+        }
     }
 }
