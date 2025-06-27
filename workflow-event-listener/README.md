@@ -68,30 +68,31 @@ Example of a default configuration:
 ```properties
 conductor.workflow-status-listener.type=kafka
 
-# Kafka Producer Configurations
-conductor.workflow-status-listener.kafka.producer.bootstrap.servers=kafka:29092
+# Kafka Producer Configurations 
+conductor.workflow-status-listener.kafka.producer[bootstrap.servers]=kafka:29092
 
-# Kafka Producer Configuration
-conductor.workflow-status-listener.kafka.producer.key.serializer=org.apache.kafka.common.serialization.StringSerializer
-conductor.workflow-status-listener.kafka.producer.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+# Serializers
+conductor.workflow-status-listener.kafka.producer[key.serializer]=org.apache.kafka.common.serialization.StringSerializer
+conductor.workflow-status-listener.kafka.producer[value.serializer]=org.apache.kafka.common.serialization.StringSerializer
 
 # Reliability Settings
-conductor.workflow-status-listener.kafka.producer.acks=all
-conductor.workflow-status-listener.kafka.producer.enable.idempotence=true
+conductor.workflow-status-listener.kafka.producer[acks]=all
+conductor.workflow-status-listener.kafka.producer[enable.idempotence]=true
 
 # Retry sending messages if failure
-conductor.workflow-status-listener.kafka.producer.retries=5
-conductor.workflow-status-listener.kafka.producer.retry.backoff.ms=100
+conductor.workflow-status-listener.kafka.producer[retries]=5
+conductor.workflow-status-listener.kafka.producer[retry.backoff.ms]=100
 
 # Allow batching (default 0)
-conductor.workflow-status-listener.kafka.producer.linger.ms=10
-conductor.workflow-status-listener.kafka.producer.batch.size=65536
-conductor.workflow-status-listener.kafka.producer.buffer.memory=67108864
+conductor.workflow-status-listener.kafka.producer[linger.ms]=10
+conductor.workflow-status-listener.kafka.producer[batch.size]=65536
+conductor.workflow-status-listener.kafka.producer[buffer.memory]=67108864
+
 # Reduce network load
-conductor.workflow-status-listener.kafka.producer.compression.type=zstd
+conductor.workflow-status-listener.kafka.producer[compression.type]=zstd
 
 # Allow multiple in-flight messages (better throughput)
-conductor.workflow-status-listener.kafka.producer.max.in.flight.requests.per.connection=1
+conductor.workflow-status-listener.kafka.producer[max.in.flight.requests.per.connection]=1
 
 # Default Topic for All Workflow Status Events
 conductor.workflow-status-listener.kafka.default-topic=workflow-status-events
