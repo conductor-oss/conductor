@@ -112,8 +112,6 @@ class S3ExternalPayloadStorageE2ESpec extends AbstractSpecification {
         and: "Verify S3 object content matches original input"
         def storedContent = getS3ObjectContent(workflow.externalInputPayloadStoragePath)
         storedContent != null
-        // We can't easily verify exact content match due to JSON serialization differences
-        // but we can verify the object exists and is readable
     }
 
     def "Test task with large output payload stored in S3"() {
@@ -131,7 +129,7 @@ class S3ExternalPayloadStorageE2ESpec extends AbstractSpecification {
             tasks.size() == 2
             tasks[0].taskType == 'integration_task_1'
             tasks[0].status == Task.Status.COMPLETED
-            tasks[0].outputData.isEmpty() // Output should be externalized
+            tasks[0].outputData.isEmpty()
             tasks[0].externalOutputPayloadStoragePath != null
             tasks[0].externalOutputPayloadStoragePath.startsWith("task/output/")
         }
@@ -159,14 +157,12 @@ class S3ExternalPayloadStorageE2ESpec extends AbstractSpecification {
             
             // Task outputs should be externalized due to their large size
             tasks.size() == 2
-            tasks[0].outputData.isEmpty() // Task output should be externalized
-            tasks[1].outputData.isEmpty() // Task output should be externalized
+            tasks[0].outputData.isEmpty()
+            tasks[1].outputData.isEmpty()
             tasks[0].externalOutputPayloadStoragePath != null
             tasks[1].externalOutputPayloadStoragePath != null
-            
-            // Workflow output will be small because task outputs are externalized
-            // so the workflow only gets references, not the actual large data
-            !output.isEmpty() // Workflow output contains references, not large data
+
+            !output.isEmpty()
         }
 
         and: "Verify S3 objects exist for task outputs"
@@ -244,7 +240,7 @@ class S3ExternalPayloadStorageE2ESpec extends AbstractSpecification {
             tasks[1].externalOutputPayloadStoragePath != null
             
             // Workflow output will be small because it only contains references to externalized task outputs
-            !output.isEmpty() // Contains references/small values, not the large externalized data
+            !output.isEmpty()
         }
 
         and: "All S3 objects exist for input and task outputs"
