@@ -123,10 +123,11 @@ Build from source and deploy Conductor as a standalone Java application. Configu
 ## Available SDKs
 Conductor provides several SDKs for interacting with the API and creating custom clients:
 
-* [**Java SDK:**](https://github.com/conductor-sdk/conductor-javascript) Fully featured for building and executing workflows in Java.
-* [**Python SDK:**](https://github.com/conductor-sdk/conductor-python) Python library for creating and managing workflows.
-* [**Go SDK:**](https://github.com/conductor-sdk/conductor-go) For integrating Conductor workflows with Go-based services.
-* [**C# SDK:**](https://github.com/conductor-sdk/conductor-csharp)The conductor-csharp repository provides the client SDKs to build task workers in C#
+* [**Java SDK:**](https://github.com/conductor-oss/java-sdk) Fully featured for building and executing workflows in Java.
+* [**Python SDK:**](https://github.com/conductor-oss/python-sdk) Python library for creating and managing workflows.
+* [**Javascript SDK:**](https://github.com/conductor-oss/javascript-sdk) For integrating Conductor workflows with Javascript/Typescript-based services.
+* [**Go SDK:**](https://github.com/conductor-oss/go-sdk) For integrating Conductor workflows with Go-based services.
+* [**C# SDK:**](https://github.com/conductor-oss/csharp-sdk)The conductor-csharp repository provides the client SDKs to build task workers in C#
 
 Each SDK is maintained as part of the Conductor project, providing examples and comprehensive API documentation.
 - - - 
