@@ -54,6 +54,7 @@ import static org.mockito.Mockito.mock;
 @SuppressWarnings("unchecked")
 public class HttpTaskTest {
 
+    private static final String NOT_FOUND_ERROR_RESPONSE = "{\"message\":\"Not found!\"}";
     private static final String ERROR_RESPONSE = "Something went wrong!";
     private static final String TEXT_RESPONSE = "Text Response";
     private static final double NUM_RESPONSE = 42.42d;
@@ -78,7 +79,8 @@ public class HttpTaskTest {
         map.put("SomeKey", null);
         JSON_RESPONSE = objectMapper.writeValueAsString(map);
 
-        final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<>() {};
+        final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<>() {
+        };
         MockServerClient client =
                 new MockServerClient(mockServer.getHost(), mockServer.getServerPort());
         client.when(HttpRequest.request().withPath("/post").withMethod("POST"))
@@ -95,6 +97,12 @@ public class HttpTaskTest {
                         });
         client.when(HttpRequest.request().withPath("/post2").withMethod("POST"))
                 .respond(HttpResponse.response().withStatusCode(204));
+        client.when(HttpRequest.request().withPath("/four-oh-four").withMethod("GET"))
+                .respond(
+                        HttpResponse.response()
+                                .withStatusCode(404)
+                                .withContentType(MediaType.TEXT_PLAIN)
+                                .withBody(NOT_FOUND_ERROR_RESPONSE));
         client.when(HttpRequest.request().withPath("/failure").withMethod("GET"))
                 .respond(
                         HttpResponse.response()
@@ -193,6 +201,26 @@ public class HttpTaskTest {
     }
 
     @Test
+    public void testFailure404() {
+        TaskModel task = new TaskModel();
+        HttpTask.Input input = new HttpTask.Input();
+        input.setUri(
+                "http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/four-oh-four");
+        input.setMethod("GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(
+                "Task output: " + task.getOutputData(), TaskModel.Status.FAILED, task.getStatus());
+        assertTrue(task.getReasonForIncompletion().contains(NOT_FOUND_ERROR_RESPONSE));
+
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
+        httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(TaskModel.Status.FAILED, task.getStatus());
+    }
+
+    @Test
     public void testPostAsyncComplete() {
 
         TaskModel task = new TaskModel();
@@ -268,6 +296,25 @@ public class HttpTaskTest {
         assertTrue(response instanceof Map);
         Map<String, Object> map = (Map<String, Object>) response;
         assertEquals(JSON_RESPONSE, objectMapper.writeValueAsString(map));
+    }
+
+    @Test
+    public void testGET404NoError() throws JsonProcessingException {
+
+        TaskModel task = new TaskModel();
+        HttpTask.Input input = new HttpTask.Input();
+        input.setAccept4xxValues(Collections.singletonList(404));
+        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/four-oh-four");
+        input.setMethod("GET");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+        httpTask.start(workflow, task, workflowExecutor);
+        Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+        Object response = hr.get("body");
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertTrue(response instanceof Map);
+        Map<String, Object> map = (Map<String, Object>) response;
+        assertEquals(NOT_FOUND_ERROR_RESPONSE, objectMapper.writeValueAsString(map));
     }
 
     @Test
