@@ -79,8 +79,7 @@ public class HttpTaskTest {
         map.put("SomeKey", null);
         JSON_RESPONSE = objectMapper.writeValueAsString(map);
 
-        final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<>() {
-        };
+        final TypeReference<Map<String, Object>> mapOfObj = new TypeReference<>() {};
         MockServerClient client =
                 new MockServerClient(mockServer.getHost(), mockServer.getServerPort());
         client.when(HttpRequest.request().withPath("/post").withMethod("POST"))
@@ -205,7 +204,11 @@ public class HttpTaskTest {
         TaskModel task = new TaskModel();
         HttpTask.Input input = new HttpTask.Input();
         input.setUri(
-                "http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/four-oh-four");
+                "http://"
+                        + mockServer.getHost()
+                        + ":"
+                        + mockServer.getServerPort()
+                        + "/four-oh-four");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
@@ -304,7 +307,12 @@ public class HttpTaskTest {
         TaskModel task = new TaskModel();
         HttpTask.Input input = new HttpTask.Input();
         input.setAccept4xxValues(Collections.singletonList(404));
-        input.setUri("http://" + mockServer.getHost() + ":" + mockServer.getServerPort() + "/four-oh-four");
+        input.setUri(
+                "http://"
+                        + mockServer.getHost()
+                        + ":"
+                        + mockServer.getServerPort()
+                        + "/four-oh-four");
         input.setMethod("GET");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 

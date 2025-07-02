@@ -42,9 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HTTP;
 
-/**
- * Task that enables calling another HTTP endpoint as part of its execution
- */
+/** Task that enables calling another HTTP endpoint as part of its execution */
 @Component(TASK_TYPE_HTTP)
 public class HttpTask extends WorkflowSystemTask {
 
@@ -111,7 +109,8 @@ public class HttpTask extends WorkflowSystemTask {
                     response.statusCode,
                     response.body,
                     task.getTaskId());
-            if (input.accept4xxValues.contains(response.statusCode) || response.statusCode > 199 && response.statusCode < 300) {
+            if (input.accept4xxValues.contains(response.statusCode)
+                    || response.statusCode > 199 && response.statusCode < 300) {
                 if (isAsyncComplete(task)) {
                     task.setStatus(TaskModel.Status.IN_PROGRESS);
                 } else {
@@ -191,7 +190,7 @@ public class HttpTask extends WorkflowSystemTask {
                 throw handleExceptionAsError(input, ex);
             }
             String body = ex.getResponseBodyAsString();
-            if(!body.isEmpty()){
+            if (!body.isEmpty()) {
                 response.body = extractBody(ex.getResponseBodyAsString());
             }
             response.statusCode = ex.getStatusCode().value();
