@@ -1,0 +1,11 @@
+{
+  "name": "@orkes/eslint-config",
+  "version": "1.0.0",
+  "main": "index.js",
+  "peerDependencies": {
+    "eslint": "^9.30.0",
+    "react": "^19.1.0",
+    "@typescript-eslint/parser": "^8.35.1",
+    "@typescript-eslint/eslint-plugin": "^8.35.1"
+  }
+}

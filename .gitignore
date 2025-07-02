@@ -3,7 +3,7 @@
 .classpath
 dump.rdb
 out
-bin
+bin/*
 target
 buildscan.log
 /docs/site
@@ -42,3 +42,6 @@ conductorosstest.db
 conductorosstest.db
 /server-lite/src/main/resources/static
 yarn.lock
+
+# React base package
+!/packages/react-base/bin/cli.js

@@ -1,0 +1,21 @@
+{
+  "name": "@orkes/vite-preset",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "vite-tsconfig-paths": "^5.1.4",
+    "vite": "^7.0.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vite": "^7.0.0",
+    "@vitejs/plugin-react": "^4.6.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  }
+}

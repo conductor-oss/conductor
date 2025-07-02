@@ -1,0 +1,21 @@
+{
+  "name": "@orkes/react-base",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "eslint-config",
+    "vite-preset"
+  ],
+  "devDependencies": {
+    "@mui/material": "^7.2.0",
+    "eslint": "^9.30.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  },
+  "bin": {
+    "react-base": "./bin/cli.js"
+  }
+}
