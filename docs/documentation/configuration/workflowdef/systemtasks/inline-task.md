@@ -13,8 +13,8 @@ The `INLINE` task is configured by specifying the following keys inside `inputPa
 ### inputParameters
 | Name          | Type   | Description                                                                                                                                                                         | Notes              |
 | ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| evaluatorType | String | Type of the evaluator. Supported evaluators: `value-param`, `javascript` which evaluates javascript expression.                                                                     | Must be non-empty. |
-| expression    | String | Expression associated with the type of evaluator. For `javascript` evaluator, Javascript evaluation engine is used to evaluate expression defined as a string. Must return a value. | Must be non-empty. |
+| evaluatorType | String | Type of the evaluator. Supported evaluators: `value-param`, `javascript`, `python` which evaluates javascript expression and python script.                                                                     | Must be non-empty. |
+| expression    | String | Expression associated with the type of evaluator. For `javascript` evaluator, Javascript evaluation engine is used to evaluate expression defined as a string. For `python` evaluator, a python is used to evaluate expression defined as a string. Must return a value. | Must be non-empty. |
 
 Besides `expression`, any value is accessible as `$.value` for the `expression` to evaluate.
 
@@ -62,6 +62,22 @@ Perhaps a weather API sometimes returns Celcius, and sometimes returns Farenheit
       "evaluatorType": "javascript",
       "expression": "function SIvaluesOnly(){if ($.scale === "F"){ centigrade = ($.temperature -32)*5/9; return {temperature: centigrade} } else { return 
       {temperature: $.temperature} }} SIvaluesOnly();"
+  }
+}
+```
+
+### Example 3 - Python
+This example illustrates a python based INLINE task which takes two parameters, `value1` and `value2`, and returns the result of adding them together.
+```
+{
+  "name": "INLINE_TASK",
+  "taskReferenceName": "inline_test",
+  "type": "INLINE",
+  "inputParameters": {
+    "expression": "def add(x, y):\n    return x+y\n\nresult = add(value1, value2)\nreturn result",
+    "evaluatorType": "python",
+    "value1": 1,
+    "value2": 2
   }
 }
 ```
