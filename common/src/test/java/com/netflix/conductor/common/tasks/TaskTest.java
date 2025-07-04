@@ -154,12 +154,12 @@ public class TaskTest {
 
         // Verify execution metadata is copied
         assertNotNull(copy.getExecutionMetadata());
-        assertEquals(Long.valueOf(1000L), copy.getExecutionMetadata().getServerSendTime());
-        assertEquals(Long.valueOf(2000L), copy.getExecutionMetadata().getClientReceiveTime());
-        assertEquals(Long.valueOf(3000L), copy.getExecutionMetadata().getExecutionStartTime());
-        assertEquals(Long.valueOf(4000L), copy.getExecutionMetadata().getExecutionEndTime());
-        assertEquals(Long.valueOf(5000L), copy.getExecutionMetadata().getClientSendTime());
-        assertEquals(Long.valueOf(6000L), copy.getExecutionMetadata().getPollNetworkLatency());
-        assertEquals(Long.valueOf(7000L), copy.getExecutionMetadata().getUpdateNetworkLatency());
+        assertEquals(Long.valueOf(1000L), copy.getOrCreateExecutionMetadata().getServerSendTime());
+        assertEquals(Long.valueOf(2000L), copy.getOrCreateExecutionMetadata().getClientReceiveTime());
+        assertEquals(Long.valueOf(3000L), copy.getOrCreateExecutionMetadata().getExecutionStartTime());
+        assertEquals(Long.valueOf(4000L), copy.getOrCreateExecutionMetadata().getExecutionEndTime());
+        assertEquals(Long.valueOf(5000L), copy.getOrCreateExecutionMetadata().getClientSendTime());
+        assertEquals(Long.valueOf(6000L), copy.getOrCreateExecutionMetadata().getPollNetworkLatency());
+        assertEquals(Long.valueOf(7000L), copy.getOrCreateExecutionMetadata().getUpdateNetworkLatency());
     }
 }

@@ -193,6 +193,27 @@ public class ExecutionMetadata {
         this.additionalContext = additionalContext != null ? additionalContext : new HashMap<>();
     }
 
+    /**
+     * Checks if this ExecutionMetadata has any meaningful data
+     */
+    public boolean hasData() {
+        return serverSendTime != null
+                || clientReceiveTime != null
+                || executionStartTime != null
+                || executionEndTime != null
+                || clientSendTime != null
+                || pollNetworkLatency != null
+                || updateNetworkLatency != null
+                || (additionalContext != null && !additionalContext.isEmpty());
+    }
+
+    /**
+     * Checks if this ExecutionMetadata is completely empty (used by protobuf serialization)
+     */
+    public boolean isEmpty() {
+        return !hasData();
+    }
+
     @Override
     public String toString() {
         return "ExecutionMetadata{"
