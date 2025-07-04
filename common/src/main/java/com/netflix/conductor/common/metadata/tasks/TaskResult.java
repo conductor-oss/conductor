@@ -66,6 +66,9 @@ public class TaskResult {
     @Hidden
     private Any outputMessage;
 
+    @ProtoField(id = 9)
+    private ExecutionMetadata executionMetadata;
+
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
     private String externalOutputPayloadStoragePath;
@@ -81,6 +84,10 @@ public class TaskResult {
         this.callbackAfterSeconds = task.getCallbackAfterSeconds();
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
+        // Only copy ExecutionMetadata if the task actually has one (to avoid creating empty ones)
+        if (task.hasExecutionMetadata()) {
+            this.executionMetadata = task.getExecutionMetadata();
+        }
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
         this.subWorkflowId = task.getSubWorkflowId();
         switch (task.getStatus()) {
@@ -263,6 +270,35 @@ public class TaskResult {
         this.extendLease = extendLease;
     }
 
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data.
+     *     Returns null if no execution metadata has been explicitly set or used.
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        // Only return ExecutionMetadata if it exists and has data
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
+     */
+    public ExecutionMetadata getOrCreateExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
+        return executionMetadata;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata;
+    }
+
     @Override
     public String toString() {
         return "TaskResult{"
@@ -288,6 +324,8 @@ public class TaskResult {
                 + outputMessage
                 + ", logs="
                 + logs
+                + ", executionMetadata="
+                + executionMetadata
                 + ", externalOutputPayloadStoragePath='"
                 + externalOutputPayloadStoragePath
                 + '\''
