@@ -17,9 +17,9 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -151,7 +151,7 @@ public class TaskTest {
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);
-        
+
         // Verify execution metadata is copied
         assertNotNull(copy.getExecutionMetadata());
         assertEquals(Long.valueOf(1000L), copy.getExecutionMetadata().getServerSendTime());
