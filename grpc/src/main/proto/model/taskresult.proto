@@ -24,5 +24,5 @@ message TaskResult {
     TaskResult.Status status = 6;
     map<string, google.protobuf.Value> output_data = 7;
     google.protobuf.Any output_message = 8;
-    map<string, google.protobuf.Value> execution_metadata = 9;
+    ExecutionMetadata execution_metadata = 9;
 }

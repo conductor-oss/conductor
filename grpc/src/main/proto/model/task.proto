@@ -63,5 +63,5 @@ message Task {
     string sub_workflow_id = 41;
     bool subworkflow_changed = 42;
     int64 first_start_time = 43;
-    map<string, google.protobuf.Value> execution_metadata = 44;
+    ExecutionMetadata execution_metadata = 44;
 }

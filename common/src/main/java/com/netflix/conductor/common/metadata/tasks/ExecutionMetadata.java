@@ -145,9 +145,9 @@ public class ExecutionMetadata {
         return additionalContext.get(key);
     }
 
-    /** Gets all additional context data */
-    public Map<String, Object> getAllAdditionalContext() {
-        return new HashMap<>(additionalContext);
+    /** Gets the additional context map (for protogen compatibility) */
+    public Map<String, Object> getAdditionalContext() {
+        return additionalContext;
     }
 
     // ============ GETTERS AND SETTERS ============
@@ -185,6 +185,11 @@ public class ExecutionMetadata {
     }
 
     public void setAdditionalContextMap(Map<String, Object> additionalContext) {
+        this.additionalContext = additionalContext != null ? additionalContext : new HashMap<>();
+    }
+
+    /** Sets the additional context map (for protogen compatibility) */
+    public void setAdditionalContext(Map<String, Object> additionalContext) {
         this.additionalContext = additionalContext != null ? additionalContext : new HashMap<>();
     }
 
