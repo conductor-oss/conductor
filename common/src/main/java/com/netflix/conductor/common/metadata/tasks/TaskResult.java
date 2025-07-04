@@ -84,8 +84,10 @@ public class TaskResult {
         this.callbackAfterSeconds = task.getCallbackAfterSeconds();
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
-        this.executionMetadata = task.getExecutionMetadata() != null ? 
-            task.getExecutionMetadata() : new ExecutionMetadata();
+        this.executionMetadata =
+                task.getExecutionMetadata() != null
+                        ? task.getExecutionMetadata()
+                        : new ExecutionMetadata();
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
         this.subWorkflowId = task.getSubWorkflowId();
         switch (task.getStatus()) {
@@ -279,7 +281,8 @@ public class TaskResult {
      * @param executionMetadata the execution metadata to set
      */
     public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
-        this.executionMetadata = executionMetadata != null ? executionMetadata : new ExecutionMetadata();
+        this.executionMetadata =
+                executionMetadata != null ? executionMetadata : new ExecutionMetadata();
     }
 
     @Override

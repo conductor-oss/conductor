@@ -792,7 +792,8 @@ public class Task {
      * @param executionMetadata the execution metadata to set
      */
     public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
-        this.executionMetadata = executionMetadata != null ? executionMetadata : new ExecutionMetadata();
+        this.executionMetadata =
+                executionMetadata != null ? executionMetadata : new ExecutionMetadata();
     }
 
     public Task copy() {
