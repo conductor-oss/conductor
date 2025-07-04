@@ -5,7 +5,6 @@ import com.google.protobuf.Value;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -32,7 +31,6 @@ import com.netflix.conductor.proto.DynamicForkJoinTaskListPb;
 import com.netflix.conductor.proto.DynamicForkJoinTaskPb;
 import com.netflix.conductor.proto.EventExecutionPb;
 import com.netflix.conductor.proto.EventHandlerPb;
-import com.netflix.conductor.proto.ExecutionMetadataPb;
 import com.netflix.conductor.proto.PollDataPb;
 import com.netflix.conductor.proto.RateLimitConfigPb;
 import com.netflix.conductor.proto.RerunWorkflowRequestPb;
@@ -465,52 +463,6 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
-    public ExecutionMetadataPb.ExecutionMetadata toProto(ExecutionMetadata from) {
-        ExecutionMetadataPb.ExecutionMetadata.Builder to = ExecutionMetadataPb.ExecutionMetadata.newBuilder();
-        if (from.getServerSendTime() != null) {
-            to.setServerSendTime(from.getServerSendTime());
-        }
-        if (from.getClientReceiveTime() != null) {
-            to.setClientReceiveTime(from.getClientReceiveTime());
-        }
-        if (from.getExecutionStartTime() != null) {
-            to.setExecutionStartTime(from.getExecutionStartTime());
-        }
-        if (from.getExecutionEndTime() != null) {
-            to.setExecutionEndTime(from.getExecutionEndTime());
-        }
-        if (from.getClientSendTime() != null) {
-            to.setClientSendTime(from.getClientSendTime());
-        }
-        if (from.getPollNetworkLatency() != null) {
-            to.setPollNetworkLatency(from.getPollNetworkLatency());
-        }
-        if (from.getUpdateNetworkLatency() != null) {
-            to.setUpdateNetworkLatency(from.getUpdateNetworkLatency());
-        }
-        for (Map.Entry<String, Object> pair : from.getAdditionalContextMap().entrySet()) {
-            to.putAdditionalContext(pair.getKey(), toProto(pair.getValue()));
-        }
-        return to.build();
-    }
-
-    public ExecutionMetadata fromProto(ExecutionMetadataPb.ExecutionMetadata from) {
-        ExecutionMetadata to = new ExecutionMetadata();
-        to.setServerSendTime(from.getServerSendTime());
-        to.setClientReceiveTime(from.getClientReceiveTime());
-        to.setExecutionStartTime(from.getExecutionStartTime());
-        to.setExecutionEndTime(from.getExecutionEndTime());
-        to.setClientSendTime(from.getClientSendTime());
-        to.setPollNetworkLatency(from.getPollNetworkLatency());
-        to.setUpdateNetworkLatency(from.getUpdateNetworkLatency());
-        Map<String, Object> additionalContextMap = new HashMap<String, Object>();
-        for (Map.Entry<String, Value> pair : from.getAdditionalContextMap().entrySet()) {
-            additionalContextMap.put(pair.getKey(), fromProto(pair.getValue()));
-        }
-        to.setAdditionalContextMap(additionalContextMap);
-        return to;
-    }
-
     public PollDataPb.PollData toProto(PollData from) {
         PollDataPb.PollData.Builder to = PollDataPb.PollData.newBuilder();
         if (from.getQueueName() != null) {
@@ -851,9 +803,6 @@ public abstract class AbstractProtoMapper {
         }
         to.setSubworkflowChanged(from.isSubworkflowChanged());
         to.setFirstStartTime(from.getFirstStartTime());
-        if (from.getExecutionMetadata() != null) {
-            to.setExecutionMetadata(toProto(from.getExecutionMetadata()));
-        }
         return to.build();
     }
 
@@ -914,9 +863,6 @@ public abstract class AbstractProtoMapper {
         to.setSubWorkflowId(from.getSubWorkflowId());
         to.setSubworkflowChanged(from.getSubworkflowChanged());
         to.setFirstStartTime(from.getFirstStartTime());
-        if (from.hasExecutionMetadata()) {
-            to.setExecutionMetadata(fromProto(from.getExecutionMetadata()));
-        }
         return to;
     }
 
@@ -1192,9 +1138,6 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputMessage() != null) {
             to.setOutputMessage(toProto(from.getOutputMessage()));
         }
-        if (from.getExecutionMetadata() != null) {
-            to.setExecutionMetadata(toProto(from.getExecutionMetadata()));
-        }
         return to.build();
     }
 
@@ -1213,9 +1156,6 @@ public abstract class AbstractProtoMapper {
         to.setOutputData(outputDataMap);
         if (from.hasOutputMessage()) {
             to.setOutputMessage(fromProto(from.getOutputMessage()));
-        }
-        if (from.hasExecutionMetadata()) {
-            to.setExecutionMetadata(fromProto(from.getExecutionMetadata()));
         }
         return to;
     }
