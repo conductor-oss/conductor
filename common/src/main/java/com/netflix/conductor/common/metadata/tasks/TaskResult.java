@@ -66,6 +66,9 @@ public class TaskResult {
     @Hidden
     private Any outputMessage;
 
+    @ProtoField(id = 9)
+    private ExecutionMetadata executionMetadata = new ExecutionMetadata();
+
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
     private String externalOutputPayloadStoragePath;
@@ -81,6 +84,8 @@ public class TaskResult {
         this.callbackAfterSeconds = task.getCallbackAfterSeconds();
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
+        this.executionMetadata = task.getExecutionMetadata() != null ? 
+            task.getExecutionMetadata() : new ExecutionMetadata();
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
         this.subWorkflowId = task.getSubWorkflowId();
         switch (task.getStatus()) {
@@ -263,6 +268,20 @@ public class TaskResult {
         this.extendLease = extendLease;
     }
 
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        return executionMetadata;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata != null ? executionMetadata : new ExecutionMetadata();
+    }
+
     @Override
     public String toString() {
         return "TaskResult{"
@@ -288,6 +307,8 @@ public class TaskResult {
                 + outputMessage
                 + ", logs="
                 + logs
+                + ", executionMetadata="
+                + executionMetadata
                 + ", externalOutputPayloadStoragePath='"
                 + externalOutputPayloadStoragePath
                 + '\''

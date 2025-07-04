@@ -205,6 +205,9 @@ public class Task {
     @ProtoField(id = 43)
     private long firstStartTime;
 
+    @ProtoField(id = 44)
+    private ExecutionMetadata executionMetadata = new ExecutionMetadata();
+
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
 
@@ -778,6 +781,20 @@ public class Task {
         this.firstStartTime = firstStartTime;
     }
 
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        return executionMetadata;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata != null ? executionMetadata : new ExecutionMetadata();
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -812,6 +829,7 @@ public class Task {
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
         copy.setFirstStartTime(firstStartTime);
+        copy.setExecutionMetadata(executionMetadata);
         return copy;
     }
 
