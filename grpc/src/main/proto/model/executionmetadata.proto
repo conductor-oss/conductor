@@ -10,206 +10,26 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.common.metadata.tasks;
 
-import org.junit.Test;
+syntax = "proto3";
 
-import static org.junit.Assert.*;
+package conductor.proto.model;
+option java_package = "com.netflix.conductor.grpc.model";
 
-public class ExecutionMetadataTest {
+import "google/protobuf/any.proto";
 
-    @Test
-    public void testTimingDataFlow() {
-        Task task = new Task();
-        task.setTaskId("test-task-1");
-        
-        TaskResult result = new TaskResult();
-        result.setTaskId("test-task-1");
-        
-        long currentTime = System.currentTimeMillis();
-        
-        // Simulate the timing flow using new API
-        // Server-side timing (on Task)
-        task.getExecutionMetadata().setServerSendTime(currentTime);
-        task.getExecutionMetadata().setClientReceiveTime(currentTime + 10);
-        task.getExecutionMetadata().setExecutionStartTime(currentTime + 20);
-        
-        // Worker-side timing (on TaskResult)
-        result.getExecutionMetadata().setExecutionStartTime(currentTime + 20);
-        result.getExecutionMetadata().setExecutionEndTime(currentTime + 1000);
-        result.getExecutionMetadata().setClientSendTime(currentTime + 1010);
-        
-        // Verify timing data on Task
-        assertEquals(Long.valueOf(currentTime), task.getExecutionMetadata().getServerSendTime());
-        assertEquals(Long.valueOf(currentTime + 10), task.getExecutionMetadata().getClientReceiveTime());
-        assertEquals(Long.valueOf(currentTime + 20), task.getExecutionMetadata().getExecutionStartTime());
-        
-        // Verify timing data on TaskResult
-        assertEquals(Long.valueOf(currentTime + 20), result.getExecutionMetadata().getExecutionStartTime());
-        assertEquals(Long.valueOf(currentTime + 1000), result.getExecutionMetadata().getExecutionEndTime());
-        assertEquals(Long.valueOf(currentTime + 1010), result.getExecutionMetadata().getClientSendTime());
-        assertEquals(Long.valueOf(980), result.getExecutionMetadata().getExecutionDuration());
-        
-        // Verify network latency calculation
-        task.getExecutionMetadata().setPollNetworkLatency(10L);
-        assertEquals(Long.valueOf(10), task.getExecutionMetadata().getPollNetworkLatency());
-        
-        // Verify all timing data retrieval
-        var allTimingDataTask = task.getExecutionMetadata().getAllTimingData();
-        assertNotNull(allTimingDataTask);
-        assertTrue(allTimingDataTask.containsKey(ExecutionMetadata.SERVER_SEND_TIME));
-        assertTrue(allTimingDataTask.containsKey(ExecutionMetadata.CLIENT_RECEIVE_TIME));
-        
-        var allTimingDataResult = result.getExecutionMetadata().getAllTimingData();
-        assertNotNull(allTimingDataResult);
-        assertTrue(allTimingDataResult.containsKey(ExecutionMetadata.EXECUTION_START_TIME));
-        assertTrue(allTimingDataResult.containsKey(ExecutionMetadata.EXECUTION_END_TIME));
-    }
+message ExecutionMetadata {
+    // Timing data fields
+    optional int64 server_send_time = 1;
+    optional int64 client_receive_time = 2;
+    optional int64 execution_start_time = 3;
+    optional int64 execution_end_time = 4;
+    optional int64 client_send_time = 5;
     
-    @Test
-    public void testExecutionMetadataStructure() {
-        Task task = new Task();
-        TaskResult result = new TaskResult();
-        
-        // Set various metadata
-        task.getExecutionMetadata().setServerSendTime(1000L);
-        result.getExecutionMetadata().setAdditionalContext("environment", "production");
-        
-        // Verify the structure
-        assertNotNull(task.getExecutionMetadata());
-        assertNotNull(task.getExecutionMetadata().getAllTimingData());
-        
-        assertNotNull(result.getExecutionMetadata());
-        assertNotNull(result.getExecutionMetadata().getAllAdditionalContext());
-        assertEquals("production", result.getExecutionMetadata().getAdditionalContext("environment"));
-    }
+    // Network latency fields
+    optional int64 poll_network_latency = 6;
+    optional int64 update_network_latency = 7;
     
-    @Test
-    public void testAdditionalContext() {
-        Task task = new Task();
-        TaskResult result = new TaskResult();
-        
-        // Test setting additional context on task
-        task.getExecutionMetadata().setAdditionalContext("customField1", "value1");
-        task.getExecutionMetadata().setAdditionalContext("customField2", 12345);
-        task.getExecutionMetadata().setAdditionalContext("environment", "production");
-        
-        // Test setting additional context on result
-        result.getExecutionMetadata().setAdditionalContext("resultCustomField", "resultValue");
-        result.getExecutionMetadata().setAdditionalContext("outputSize", 2048L);
-        
-        // Verify retrieval from task
-        assertEquals("value1", task.getExecutionMetadata().getAdditionalContext("customField1"));
-        assertEquals(12345, task.getExecutionMetadata().getAdditionalContext("customField2"));
-        assertEquals("production", task.getExecutionMetadata().getAdditionalContext("environment"));
-        
-        // Verify retrieval from result
-        assertEquals("resultValue", result.getExecutionMetadata().getAdditionalContext("resultCustomField"));
-        assertEquals(2048L, result.getExecutionMetadata().getAdditionalContext("outputSize"));
-        
-        // Test getting all additional context
-        var taskAdditionalContext = task.getExecutionMetadata().getAllAdditionalContext();
-        assertNotNull(taskAdditionalContext);
-        assertEquals(3, taskAdditionalContext.size());
-        assertTrue(taskAdditionalContext.containsKey("customField1"));
-        assertTrue(taskAdditionalContext.containsKey("customField2"));
-        assertTrue(taskAdditionalContext.containsKey("environment"));
-        
-        var resultAdditionalContext = result.getExecutionMetadata().getAllAdditionalContext();
-        assertNotNull(resultAdditionalContext);
-        assertEquals(2, resultAdditionalContext.size());
-        assertTrue(resultAdditionalContext.containsKey("resultCustomField"));
-        assertTrue(resultAdditionalContext.containsKey("outputSize"));
-        
-        // Test null retrieval
-        assertNull(task.getExecutionMetadata().getAdditionalContext("nonExistentKey"));
-        assertNull(result.getExecutionMetadata().getAdditionalContext("nonExistentKey"));
-    }
-    
-    @Test
-    public void testTypeSafeAPI() {
-        Task task = new Task();
-        TaskResult result = new TaskResult();
-        
-        // Test that the same methods work for both Task and TaskResult
-        long timestamp = System.currentTimeMillis();
-        
-        // Task methods
-        task.getExecutionMetadata().setServerSendTime(timestamp);
-        task.getExecutionMetadata().setAdditionalContext("testKey", "taskValue");
-        
-        // TaskResult methods
-        result.getExecutionMetadata().setServerSendTime(timestamp + 100);
-        result.getExecutionMetadata().setAdditionalContext("testKey", "resultValue");
-        
-        // Verify separate values
-        assertEquals(Long.valueOf(timestamp), task.getExecutionMetadata().getServerSendTime());
-        assertEquals(Long.valueOf(timestamp + 100), result.getExecutionMetadata().getServerSendTime());
-        
-        assertEquals("taskValue", task.getExecutionMetadata().getAdditionalContext("testKey"));
-        assertEquals("resultValue", result.getExecutionMetadata().getAdditionalContext("testKey"));
-    }
-    
-    @Test
-    public void testTaskResultInheritsFromTask() {
-        Task task = new Task();
-        task.setTaskId("test-task-123");
-        task.setWorkflowInstanceId("test-workflow-456");
-        
-        // Set some execution metadata on task
-        task.getExecutionMetadata().setServerSendTime(1000L);
-        task.getExecutionMetadata().setAdditionalContext("serverVersion", "2.0");
-        
-        // Create TaskResult from Task (this copies executionMetadata)
-        TaskResult result = new TaskResult(task);
-        
-        // Verify that TaskResult inherited the execution metadata from Task
-        assertEquals(Long.valueOf(1000L), result.getExecutionMetadata().getServerSendTime());
-        assertEquals("2.0", result.getExecutionMetadata().getAdditionalContext("serverVersion"));
-        
-        // Add additional metadata to result
-        result.getExecutionMetadata().setExecutionEndTime(2000L);
-        result.getExecutionMetadata().setAdditionalContext("workerId", "worker-123");
-        
-        // Verify both inherited and new metadata exist on result
-        assertEquals(Long.valueOf(1000L), result.getExecutionMetadata().getServerSendTime());
-        assertEquals("2.0", result.getExecutionMetadata().getAdditionalContext("serverVersion"));
-        assertEquals(Long.valueOf(2000L), result.getExecutionMetadata().getExecutionEndTime());
-        assertEquals("worker-123", result.getExecutionMetadata().getAdditionalContext("workerId"));
-        
-        // Verify original task is unchanged
-        assertNull(task.getExecutionMetadata().getExecutionEndTime());
-        assertNull(task.getExecutionMetadata().getAdditionalContext("workerId"));
-    }
-    
-    @Test
-    public void testExecutionMetadataInstance() {
-        ExecutionMetadata metadata = new ExecutionMetadata();
-        
-        // Test direct usage of ExecutionMetadata
-        metadata.setServerSendTime(5000L);
-        metadata.setAdditionalContext("test", "value");
-        
-        assertEquals(Long.valueOf(5000L), metadata.getServerSendTime());
-        assertEquals("value", metadata.getAdditionalContext("test"));
-        
-        // Test duration calculation
-        metadata.setExecutionStartTime(1000L);
-        metadata.setExecutionEndTime(1500L);
-        assertEquals(Long.valueOf(500L), metadata.getExecutionDuration());
-    }
-    
-    @Test
-    public void testNetworkLatencyMethods() {
-        Task task = new Task();
-        TaskResult result = new TaskResult();
-        
-        // Test poll network latency
-        task.getExecutionMetadata().setPollNetworkLatency(15L);
-        assertEquals(Long.valueOf(15L), task.getExecutionMetadata().getPollNetworkLatency());
-        
-        // Test update network latency
-        result.getExecutionMetadata().setUpdateNetworkLatency(8L);
-        assertEquals(Long.valueOf(8L), result.getExecutionMetadata().getUpdateNetworkLatency());
-    }
+    // Additional context for custom metadata
+    map<string, google.protobuf.Any> additional_context = 8;
 }
