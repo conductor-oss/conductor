@@ -193,9 +193,7 @@ public class ExecutionMetadata {
         this.additionalContext = additionalContext != null ? additionalContext : new HashMap<>();
     }
 
-    /**
-     * Checks if this ExecutionMetadata has any meaningful data
-     */
+    /** Checks if this ExecutionMetadata has any meaningful data */
     public boolean hasData() {
         return serverSendTime != null
                 || clientReceiveTime != null
@@ -207,9 +205,7 @@ public class ExecutionMetadata {
                 || (additionalContext != null && !additionalContext.isEmpty());
     }
 
-    /**
-     * Checks if this ExecutionMetadata is completely empty (used by protobuf serialization)
-     */
+    /** Checks if this ExecutionMetadata is completely empty (used by protobuf serialization) */
     public boolean isEmpty() {
         return !hasData();
     }

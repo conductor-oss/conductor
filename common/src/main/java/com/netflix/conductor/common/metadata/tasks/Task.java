@@ -783,7 +783,7 @@ public class Task {
 
     /**
      * @return the execution metadata containing timing, worker context, and other operational data.
-     * Returns null if no execution metadata has been explicitly set or used.
+     *     Returns null if no execution metadata has been explicitly set or used.
      */
     public ExecutionMetadata getExecutionMetadata() {
         // Only return ExecutionMetadata if it exists and has data
@@ -804,7 +804,8 @@ public class Task {
     }
 
     /**
-     * @return the execution metadata only if it has data, null otherwise (for protobuf serialization)
+     * @return the execution metadata only if it has data, null otherwise (for protobuf
+     *     serialization)
      */
     public ExecutionMetadata getExecutionMetadataIfHasData() {
         if (executionMetadata != null && executionMetadata.hasData()) {

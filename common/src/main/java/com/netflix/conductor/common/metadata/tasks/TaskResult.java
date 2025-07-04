@@ -272,7 +272,7 @@ public class TaskResult {
 
     /**
      * @return the execution metadata containing timing, worker context, and other operational data.
-     * Returns null if no execution metadata has been explicitly set or used.
+     *     Returns null if no execution metadata has been explicitly set or used.
      */
     public ExecutionMetadata getExecutionMetadata() {
         // Only return ExecutionMetadata if it exists and has data
