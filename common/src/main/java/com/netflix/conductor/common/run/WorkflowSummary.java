@@ -96,6 +96,9 @@ public class WorkflowSummary {
     @ProtoField(id = 20)
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    @ProtoField(id = 21)
+    private String idempotencyKey;
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -108,6 +111,7 @@ public class WorkflowSummary {
         this.workflowId = workflow.getWorkflowId();
         this.priority = workflow.getPriority();
         this.correlationId = workflow.getCorrelationId();
+        this.idempotencyKey = workflow.getIdempotencyKey();
         if (workflow.getCreateTime() != null) {
             this.startTime = sdf.format(new Date(workflow.getCreateTime()));
         }
@@ -374,6 +378,14 @@ public class WorkflowSummary {
         this.taskToDomain = taskToDomain;
     }
 
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -389,6 +401,7 @@ public class WorkflowSummary {
                 && getWorkflowType().equals(that.getWorkflowType())
                 && getWorkflowId().equals(that.getWorkflowId())
                 && Objects.equals(getCorrelationId(), that.getCorrelationId())
+                && Objects.equals(getIdempotencyKey(), that.getIdempotencyKey())
                 && StringUtils.equals(getStartTime(), that.getStartTime())
                 && StringUtils.equals(getUpdateTime(), that.getUpdateTime())
                 && StringUtils.equals(getEndTime(), that.getEndTime())
@@ -406,6 +419,7 @@ public class WorkflowSummary {
                 getVersion(),
                 getWorkflowId(),
                 getCorrelationId(),
+                getIdempotencyKey(),
                 getStartTime(),
                 getUpdateTime(),
                 getEndTime(),
