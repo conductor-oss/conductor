@@ -4,12 +4,14 @@
 
 Further, all of the (non-Java) SDKs have a new GitHub home: the Conductor SDK repository is your new source for Conductor SDKs:
 
-* [Golang](https://github.com/conductor-sdk/conductor-go)
-* [Python](https://github.com/conductor-sdk/conductor-python)
-* [C#](https://github.com/conductor-sdk/conductor-csharp)
-* [Clojure](https://github.com/conductor-sdk/conductor-clojure)
+* [Java](https://github.com/conductor-oss/java-sdk)
+* [JavaScript](https://github.com/conductor-oss/javascript-sdk)
+* [Go](https://github.com/conductor-oss/go-sdk)
+* [Python](https://github.com/conductor-oss/python-sdk)
+* [C#](https://github.com/conductor-oss/csharp-sdk)
+* [Clojure](https://github.com/conductor-oss/clojure-sdk)
 
-All contributions on the above client sdks can be made on [Conductor SDK](https://github.com/conductor-sdk) repository.
+All contributions on the above client SDKs can be made on [Conductor OSS](https://github.com/conductor-oss) repository.
 
 ## Microservices operations
 
@@ -31,9 +33,8 @@ All contributions on the above client sdks can be made on [Conductor SDK](https:
 * https://github.com/mohelsaka/conductor-prometheus-metrics - Conductor plugin for exposing Prometheus metrics over path '/metrics'
 
 ## OAuth2.0 Security Configuration
-Forked Repository - [Conductor (Secure)](https://github.com/maheshyaddanapudi/conductor/tree/oauth2)
 
-[OAuth2.0 Role Based Security!](https://github.com/maheshyaddanapudi/conductor/blob/oauth2/SECURITY.md) - Spring Security with easy configuration to secure the Conductor server APIs.
+[OAuth2.0 Role Based Security!](https://github.com/maheshyaddanapudi/conductor-boot) - Spring Security with easy configuration to secure the Conductor server APIs.
 
 Docker image published to [Docker Hub](https://hub.docker.com/repository/docker/conductorboot/server)
 
