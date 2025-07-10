@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 
 /**
  * A Factory class for creating a customized {@link ObjectMapper}. This is only used by the
@@ -58,6 +59,7 @@ public class ObjectMapperProvider {
         objectMapper.registerModule(new JsonProtoModule());
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.registerModule(new AfterburnerModule());
+        objectMapper.registerModule(new KotlinModule.Builder().build());
         return objectMapper;
     }
 }

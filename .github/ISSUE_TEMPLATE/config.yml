@@ -1,1 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
+contact_links:
+ - name: Questions
+   url: https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email
+   about: Ask questions and discuss with other Conductor community members

@@ -85,7 +85,8 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                 "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, json_data)"
                         + "VALUES (?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
                         + "DO UPDATE SET correlation_id = EXCLUDED.correlation_id, workflow_type = EXCLUDED.workflow_type, "
-                        + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data "
+                        + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data, "
+                        + "update_time = EXCLUDED.update_time "
                         + "WHERE EXCLUDED.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {

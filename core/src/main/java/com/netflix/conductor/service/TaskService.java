@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.model.TaskModel;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -91,9 +92,9 @@ public interface TaskService {
      * Updates a task.
      *
      * @param taskResult Instance of {@link TaskResult}
-     * @return task Id of the updated task.
+     * @return the updated task.
      */
-    String updateTask(
+    TaskModel updateTask(
             @NotNull(message = "TaskResult cannot be null or empty.") @Valid TaskResult taskResult);
 
     /**

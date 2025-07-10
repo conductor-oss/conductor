@@ -21,9 +21,10 @@ import com.google.rpc.DebugInfo;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusException;
-import io.grpc.protobuf.lite.ProtoLiteUtils;
 import io.grpc.stub.StreamObserver;
 import jakarta.annotation.Nonnull;
+
+import static io.grpc.protobuf.ProtoUtils.metadataMarshaller;
 
 public class GRPCHelper {
 
@@ -31,8 +32,7 @@ public class GRPCHelper {
 
     private static final Metadata.Key<DebugInfo> STATUS_DETAILS_KEY =
             Metadata.Key.of(
-                    "grpc-status-details-bin",
-                    ProtoLiteUtils.metadataMarshaller(DebugInfo.getDefaultInstance()));
+                    "grpc-status-details-bin", metadataMarshaller(DebugInfo.getDefaultInstance()));
 
     public GRPCHelper(Logger log) {
         this.logger = log;

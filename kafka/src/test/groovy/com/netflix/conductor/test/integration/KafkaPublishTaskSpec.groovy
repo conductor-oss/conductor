@@ -16,15 +16,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.tasks.TaskType
-import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.test.base.AbstractSpecification
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.TestPropertySource
 import spock.lang.Shared
 
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 class KafkaPublishTaskSpec extends AbstractSpecification {
 
     @Autowired

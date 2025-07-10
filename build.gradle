@@ -8,24 +8,26 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.1.4'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.5'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
 
 plugins {
-    id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+    id 'io.spring.dependency-management' version '1.1.3'
     id 'java'
     id 'application'
     id 'maven-publish'
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.3.0'
+    id 'org.springframework.boot' version '3.3.5'
 }
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
+
+ext["tomcat.version"] = "10.1.41"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
@@ -45,7 +47,7 @@ allprojects {
             languageVersion = JavaLanguageVersion.of(17)
         }
     }
-    
+
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 
@@ -60,7 +62,7 @@ allprojects {
 
             resolutionStrategy.eachDependency { details ->
                 if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
-                    details.useVersion "2.15.2"
+                    details.useVersion "2.18.0"
                 }
             }
         }
@@ -101,11 +103,7 @@ allprojects {
                 strictly '1.5.4'
             }
         }
-        implementation('org.apache.tomcat.embed:tomcat-embed-core') {
-            version {
-                strictly '10.1.25'
-            }
-        }
+        implementation('org.apache.tomcat.embed:tomcat-embed-core')
     }
     // processes additional configuration metadata json file as described here
     // https://docs.spring.io/spring-boot/docs/2.3.1.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-additional-metadata
@@ -126,7 +124,7 @@ allprojects {
 }
 
 // all client and their related modules are published with Java 17 compatibility
-["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
+["annotations", "common", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
             options.release = 17
@@ -151,7 +149,7 @@ configure(allprojects - project(':conductor-grpc')) {
     }
 }
 
-['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness', 'client'].each {
+['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness'].each {
     configure(project(":conductor-$it")) {
         spotless {
             groovy {

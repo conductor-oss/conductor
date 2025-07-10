@@ -33,6 +33,7 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "io.grpc:grpc-protobuf:${revGrpc}"
     implementation "io.grpc:grpc-stub:${revGrpc}"
+    implementation "io.grpc:grpc-xds:${revGrpc}"
     implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
     implementation "javax.annotation:javax.annotation-api:1.3.2" //Needs to be added as a workaround for the generated tags
     implementation "com.fasterxml.jackson.core:jackson-databind"

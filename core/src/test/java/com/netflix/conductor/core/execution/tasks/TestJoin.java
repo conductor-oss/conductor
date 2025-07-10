@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -27,6 +28,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 public class TestJoin {
+
+    private final ConductorProperties properties = new ConductorProperties();
+
     private final WorkflowExecutor executor = mock(WorkflowExecutor.class);
 
     private TaskModel createTask(
@@ -65,7 +69,7 @@ public class TestJoin {
         // task2 is not scheduled yet, so the join is not completed
         var wfJoinPair = createJoinWorkflow(List.of(task1), "task2");
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertFalse(result);
     }
@@ -77,7 +81,7 @@ public class TestJoin {
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertTrue("Join task should execute successfully when all tasks succeed", result);
         assertEquals(
@@ -93,7 +97,7 @@ public class TestJoin {
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertFalse("Join task should wait when any task is not in terminal state", result);
     }
@@ -107,7 +111,7 @@ public class TestJoin {
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertTrue("Join task should be executed when a mandatory task fails", result);
         assertEquals(
@@ -125,7 +129,7 @@ public class TestJoin {
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertTrue("Join task should be executed when only optional tasks fail", result);
         assertEquals(
@@ -143,7 +147,7 @@ public class TestJoin {
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
-        var join = new Join();
+        var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertTrue("Join task should be executed when tasks fail", result);
         assertEquals(
@@ -174,7 +178,7 @@ public class TestJoin {
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
 
         // First execution: Task 2 is not yet terminal.
-        var join = new Join();
+        var join = new Join(properties);
         boolean result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertFalse("Join task should wait as not all tasks are terminal", result);
 
@@ -188,5 +192,34 @@ public class TestJoin {
                 "Join task should be marked as FAILED due to permissive task failure",
                 TaskModel.Status.FAILED,
                 wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testEvaluationOffsetWhenPollCountIsBelowThreshold() {
+        var join = new Join(properties);
+        var taskModel = createTask("join1", TaskModel.Status.COMPLETED, false, false);
+        taskModel.setPollCount(properties.getSystemTaskPostponeThreshold() - 1);
+        var opt = join.getEvaluationOffset(taskModel, 30L);
+        assertEquals(0L, (long) opt.orElseThrow());
+    }
+
+    @Test
+    public void testEvaluationOffsetWhenPollCountIsAboveThreshold() {
+        final var maxOffset = 30L;
+        var join = new Join(properties);
+        var taskModel = createTask("join1", TaskModel.Status.COMPLETED, false, false);
+
+        taskModel.setPollCount(properties.getSystemTaskPostponeThreshold() + 1);
+        var opt = join.getEvaluationOffset(taskModel, maxOffset);
+        assertEquals(1L, (long) opt.orElseThrow());
+
+        taskModel.setPollCount(properties.getSystemTaskPostponeThreshold() + 10);
+        opt = join.getEvaluationOffset(taskModel, maxOffset);
+        long expected = (long) Math.pow(Join.EVALUATION_OFFSET_BASE, 10);
+        assertEquals(expected, (long) opt.orElseThrow());
+
+        taskModel.setPollCount(properties.getSystemTaskPostponeThreshold() + 40);
+        opt = join.getEvaluationOffset(taskModel, maxOffset);
+        assertEquals(maxOffset, (long) opt.orElseThrow());
     }
 }

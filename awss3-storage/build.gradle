@@ -16,6 +16,7 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
-    implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
+    implementation "software.amazon.awssdk:s3:${revAwsSdk}"
+    implementation "software.amazon.awssdk:sts:${revAwsSdk}"
     implementation "org.apache.commons:commons-lang3"
 }

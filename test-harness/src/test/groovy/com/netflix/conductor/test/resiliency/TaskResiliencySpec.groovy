@@ -13,6 +13,7 @@
 package com.netflix.conductor.test.resiliency
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
@@ -22,7 +23,7 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
 import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
-
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 class TaskResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired

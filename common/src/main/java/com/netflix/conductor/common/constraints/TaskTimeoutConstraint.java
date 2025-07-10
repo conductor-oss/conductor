@@ -66,6 +66,20 @@ public @interface TaskTimeoutConstraint {
                 }
             }
 
+            // Check if timeoutSeconds is greater than totalTimeoutSeconds
+            if (taskDef.getTimeoutSeconds() > 0
+                    && taskDef.getTotalTimeoutSeconds() > 0
+                    && taskDef.getTimeoutSeconds() > taskDef.getTotalTimeoutSeconds()) {
+                valid = false;
+                String message =
+                        String.format(
+                                "TaskDef: %s timeoutSeconds: %d must be less than or equal to totalTimeoutSeconds: %d",
+                                taskDef.getName(),
+                                taskDef.getTimeoutSeconds(),
+                                taskDef.getTotalTimeoutSeconds());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+            }
+
             return valid;
         }
     }
