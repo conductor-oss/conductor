@@ -43,7 +43,7 @@ Once up and running, you will see the following in your Docker dashboard:
 You can access the UI & Server on your browser to verify that they are running correctly:
 
 #### Conductor Server URL
-[{{ server_host }}]({{ server_host }})
+{{ server_host }}
 
 ![swagger](swagger.png)
 
