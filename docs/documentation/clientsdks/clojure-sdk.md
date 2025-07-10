@@ -2,7 +2,7 @@
 
 Software Development Kit for Conductor, written on and providing support for Clojure.
 
-The code for the Clojure SDk is available on [Github](https://github.com/conductor-sdk/conductor-clojure). Please feel free to file PRs, issues, etc. there.
+The code for the Clojure SDk is available on [Github](https://github.com/conductor-oss/clojure-sdk). Please feel free to file PRs, issues, etc. there.
 
 ## Get the SDK
 https://clojars.org/io.orkes/conductor-clojure
