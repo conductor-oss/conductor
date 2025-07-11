@@ -25,6 +25,8 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+    implementation "com.jayway.jsonpath:json-path:${revJsonPath}"
 }
 
 /*
