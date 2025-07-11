@@ -26,7 +26,6 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
-
 }
 
 /*
