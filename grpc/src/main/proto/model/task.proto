@@ -2,6 +2,7 @@ syntax = "proto3";
 package conductor.proto;
 
 import "model/workflowtask.proto";
+import "model/executionmetadata.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/any.proto";
 
@@ -62,4 +63,5 @@ message Task {
     string sub_workflow_id = 41;
     bool subworkflow_changed = 42;
     int64 first_start_time = 43;
+    ExecutionMetadata execution_metadata = 44;
 }

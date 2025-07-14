@@ -205,6 +205,9 @@ public class Task {
     @ProtoField(id = 43)
     private long firstStartTime;
 
+    @ProtoField(id = 44)
+    private ExecutionMetadata executionMetadata;
+
     // If the task is an event associated with a parent task, the id of the parent task
     private String parentTaskId;
 
@@ -778,6 +781,53 @@ public class Task {
         this.firstStartTime = firstStartTime;
     }
 
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data.
+     *     Returns null if no execution metadata has been explicitly set or used.
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        // Only return ExecutionMetadata if it exists and has data
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
+     */
+    public ExecutionMetadata getOrCreateExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
+        return executionMetadata;
+    }
+
+    /**
+     * @return the execution metadata only if it has data, null otherwise (for protobuf
+     *     serialization)
+     */
+    public ExecutionMetadata getExecutionMetadataIfHasData() {
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return true if the task has execution metadata (without creating it)
+     */
+    public boolean hasExecutionMetadata() {
+        return executionMetadata != null;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -812,6 +862,7 @@ public class Task {
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
         copy.setFirstStartTime(firstStartTime);
+        copy.setExecutionMetadata(executionMetadata);
         return copy;
     }
 
