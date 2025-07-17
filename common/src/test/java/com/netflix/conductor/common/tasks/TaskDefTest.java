@@ -75,6 +75,28 @@ public class TaskDefTest {
     }
 
     @Test
+    public void testTaskDefTotalTimeOutSeconds() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test-task");
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setTotalTimeoutSeconds(900);
+        taskDef.setResponseTimeoutSeconds(1);
+        taskDef.setOwnerEmail("blah@gmail.com");
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(
+                validationErrors.toString(),
+                validationErrors.contains(
+                        "TaskDef: test-task timeoutSeconds: 1000 must be less than or equal to totalTimeoutSeconds: 900"));
+    }
+
+    @Test
     public void testTaskDefInvalidEmail() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test-task");

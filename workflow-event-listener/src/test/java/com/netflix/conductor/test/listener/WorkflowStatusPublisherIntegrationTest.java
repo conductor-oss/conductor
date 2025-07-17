@@ -58,7 +58,8 @@ import static org.junit.Assert.assertEquals;
             "conductor.workflow-status-listener.type=queue_publisher",
             "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
             "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy",
-            "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final"
+            "conductor.workflow-status-listener.queue-publisher.finalizeQueue=final",
+            "conductor.app.workflow.name-validation.enabled=true"
         })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class WorkflowStatusPublisherIntegrationTest {

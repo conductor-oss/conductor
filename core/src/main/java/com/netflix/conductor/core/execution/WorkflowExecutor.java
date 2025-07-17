@@ -68,7 +68,7 @@ public interface WorkflowExecutor {
      * @throws IllegalArgumentException if the {@link TaskResult} is null.
      * @throws NotFoundException if the Task is not found.
      */
-    void updateTask(TaskResult taskResult);
+    TaskModel updateTask(TaskResult taskResult);
 
     /**
      * @param taskId id of the task

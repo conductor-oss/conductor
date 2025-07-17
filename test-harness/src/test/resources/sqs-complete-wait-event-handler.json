@@ -1,0 +1,22 @@
+{
+  "name": "sqs_complete_wait_task_handler",
+  "event": "sqs:conductor-test-sqs-COMPLETED",
+  "condition": "true",
+  "evaluatorType": "javascript",
+  "actions": [
+    {
+      "action": "complete_task",
+      "complete_task": {
+        "workflowId": "${workflowInstanceId}",
+        "taskRefName": "wait_for_sqs_event_ref",
+        "output": {
+          "eventReceived": true,
+          "completedBy": "event_handler",
+          "completedAt": "${$.currentTimeMillis()}"
+        }
+      },
+      "expandInlineJSON": true
+    }
+  ],
+  "active": true
+}

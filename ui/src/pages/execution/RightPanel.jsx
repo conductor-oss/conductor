@@ -8,6 +8,10 @@ import TaskLogs from "./TaskLogs";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
 import TaskPollData from "./TaskPollData";
+import {
+  pendingTaskSelection,
+  taskWithLatestIteration,
+} from "../../utils/helpers";
 
 const useStyles = makeStyles({
   banner: {
@@ -24,7 +28,13 @@ const useStyles = makeStyles({
   },
 });
 
-export default function RightPanel({ selectedTask, dag, onTaskChange }) {
+export default function RightPanel({
+  selectedTask,
+  dag,
+  execution,
+  onTaskChange,
+  selectedNode,
+}) {
   const [tabIndex, setTabIndex] = useState("summary");
 
   const classes = useStyles();
@@ -33,10 +43,11 @@ export default function RightPanel({ selectedTask, dag, onTaskChange }) {
     setTabIndex("summary"); // Reset to Status Tab on ref change
   }, [selectedTask]);
 
-  const taskResult = useMemo(
-    () => dag && dag.resolveTaskResult(selectedTask),
-    [dag, selectedTask]
-  );
+  const taskResult =
+    selectedNode?.data?.task?.executionData?.status === "PENDING"
+      ? pendingTaskSelection(selectedNode?.data?.task)
+      : taskWithLatestIteration(execution?.tasks, selectedTask);
+
   const dfOptions = useMemo(
     () => dag && dag.getSiblings(selectedTask),
     [dag, selectedTask]

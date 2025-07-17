@@ -17,9 +17,9 @@ import java.util.*;
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
-import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
+import com.netflix.conductor.common.constraints.ValidNameConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -39,8 +39,7 @@ public class WorkflowDef extends Auditable {
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
-    @NoSemiColonConstraint(
-            message = "Workflow name cannot contain the following set of characters: ':'")
+    @ValidNameConstraint
     private String name;
 
     @ProtoField(id = 2)
@@ -106,6 +105,12 @@ public class WorkflowDef extends Auditable {
 
     @ProtoField(id = 21)
     private boolean enforceSchema = true;
+
+    @ProtoField(id = 22)
+    private Map<String, Object> metadata = new HashMap<>();
+
+    @ProtoField(id = 23)
+    private CacheConfig cacheConfig;
 
     public boolean isEnforceSchema() {
         return enforceSchema;
@@ -365,6 +370,22 @@ public class WorkflowDef extends Auditable {
 
     public void setOutputSchema(SchemaDef outputSchema) {
         this.outputSchema = outputSchema;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
+    public CacheConfig getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(final CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
     }
 
     public boolean containsType(String taskType) {

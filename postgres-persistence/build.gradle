@@ -20,11 +20,11 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
-    testImplementation project(':conductor-client')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    implementation "org.conductoross:conductor-client:${revConductorClient}"
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
 
     testImplementation project(':conductor-test-util').sourceSets.test.output

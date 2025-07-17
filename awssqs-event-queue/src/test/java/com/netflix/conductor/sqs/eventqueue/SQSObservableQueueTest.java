@@ -22,13 +22,13 @@ import org.mockito.stubbing.Answer;
 
 import com.netflix.conductor.core.events.queue.Message;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.ListQueuesRequest;
-import com.amazonaws.services.sqs.model.ListQueuesResult;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.google.common.util.concurrent.Uninterruptibles;
 import rx.Observable;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.ListQueuesRequest;
+import software.amazon.awssdk.services.sqs.model.ListQueuesResponse;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -67,19 +67,23 @@ public class SQSObservableQueueTest {
 
     @Test
     public void testException() {
-        com.amazonaws.services.sqs.model.Message message =
-                new com.amazonaws.services.sqs.model.Message()
-                        .withMessageId("test")
-                        .withBody("")
-                        .withReceiptHandle("receiptHandle");
-        Answer<?> answer = (Answer<ReceiveMessageResult>) invocation -> new ReceiveMessageResult();
+        software.amazon.awssdk.services.sqs.model.Message message =
+                software.amazon.awssdk.services.sqs.model.Message.builder()
+                        .messageId("test")
+                        .body("")
+                        .receiptHandle("receiptHandle")
+                        .build();
 
-        AmazonSQS client = mock(AmazonSQS.class);
+        Answer<?> answer =
+                (Answer<ReceiveMessageResponse>)
+                        invocation -> ReceiveMessageResponse.builder().build();
+
+        SqsClient client = mock(SqsClient.class);
         when(client.listQueues(any(ListQueuesRequest.class)))
-                .thenReturn(new ListQueuesResult().withQueueUrls("junit_queue_url"));
+                .thenReturn(ListQueuesResponse.builder().queueUrls("junit_queue_url").build());
         when(client.receiveMessage(any(ReceiveMessageRequest.class)))
                 .thenThrow(new RuntimeException("Error in SQS communication"))
-                .thenReturn(new ReceiveMessageResult().withMessages(message))
+                .thenReturn(ReceiveMessageResponse.builder().messages(message).build())
                 .thenAnswer(answer);
 
         SQSObservableQueue queue =

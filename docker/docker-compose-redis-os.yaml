@@ -1,0 +1,81 @@
+version: '2.3'
+
+services:
+  conductor-server:
+    environment:
+      - CONFIG_PROP=config-redis-os.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+    image: conductor:server
+    container_name: conductor-server
+    build:
+      context: ../
+      dockerfile: docker/server/Dockerfile
+      args:
+        YARN_OPTS: ${YARN_OPTS}
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+      - 8127:5000
+    healthcheck:
+      test: ["CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 12
+    links:
+      - conductor-opensearch:os
+      - conductor-redis:rs
+    depends_on:
+      conductor-opensearch:
+        condition: service_healthy
+      conductor-redis:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ../server/config/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+
+  conductor-opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    environment:
+      - plugins.security.disabled=true
+      - cluster.name=opensearch-cluster # Name the cluster
+      - node.name=conductor-opensearch # Name the node that will run in this container
+      - discovery.seed_hosts=conductor-opensearch # Nodes to look for when discovering the cluster
+      - cluster.initial_cluster_manager_nodes=conductor-opensearch # Nodes eligible to serve as cluster manager
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=P4zzW)rd>>123_
+    volumes:
+      - osdata-conductor:/usr/share/opensearch/data
+    networks:
+      - internal
+    ports:
+      - 9201:9200
+    healthcheck:
+      test: curl http://localhost:9200/_cluster/health -o /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+volumes:
+  osdata-conductor:
+    driver: local
+
+networks:
+  internal:

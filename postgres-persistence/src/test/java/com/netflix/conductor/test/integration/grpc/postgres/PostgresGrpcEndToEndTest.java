@@ -39,7 +39,8 @@ import com.netflix.conductor.test.integration.grpc.AbstractGrpcEndToEndTest;
             "spring.datasource.password=postgres",
             "spring.datasource.hikari.maximum-pool-size=8",
             "spring.datasource.hikari.minimum-idle=300000",
-            "spring.flyway.clean-disabled=true"
+            "spring.flyway.clean-disabled=true",
+            "conductor.app.workflow.name-validation.enabled=true"
         })
 public class PostgresGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 

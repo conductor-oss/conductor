@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -29,8 +31,13 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_JOI
 @Component(TASK_TYPE_JOIN)
 public class Join extends WorkflowSystemTask {
 
-    public Join() {
+    @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
+
+    private final ConductorProperties properties;
+
+    public Join(ConductorProperties properties) {
         super(TASK_TYPE_JOIN);
+        this.properties = properties;
     }
 
     @Override
@@ -117,12 +124,17 @@ public class Join extends WorkflowSystemTask {
     }
 
     @Override
-    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long defaultOffset) {
-        int index = taskModel.getPollCount() > 0 ? taskModel.getPollCount() - 1 : 0;
-        if (index == 0) {
+    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+        int pollCount = taskModel.getPollCount();
+        // Assuming pollInterval = 50ms and evaluationOffsetThreshold = 200 this will cause
+        // a JOIN task to be evaluated continuously during the first 10 seconds and the FORK/JOIN
+        // will end with minimal delay.
+        if (pollCount <= properties.getSystemTaskPostponeThreshold()) {
             return Optional.of(0L);
         }
-        return Optional.of(Math.min((long) Math.pow(2, index), defaultOffset));
+
+        double exp = pollCount - properties.getSystemTaskPostponeThreshold();
+        return Optional.of(Math.min((long) Math.pow(EVALUATION_OFFSET_BASE, exp), maxOffset));
     }
 
     public boolean isAsync() {

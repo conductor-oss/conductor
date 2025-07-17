@@ -48,7 +48,7 @@ public abstract class ElasticSearchTest {
     protected static final ElasticsearchContainer container =
             new ElasticsearchContainer(
                     DockerImageName.parse("elasticsearch")
-                            .withTag("7.17.16")); // this should match the client version
+                            .withTag("7.17.11")); // this should match the client version
 
     @Autowired protected ObjectMapper objectMapper;
 

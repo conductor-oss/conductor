@@ -82,6 +82,8 @@ public class MetadataServiceImpl implements MetadataService {
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
+        taskDefinition.setCreateTime(existing.getCreateTime());
+        taskDefinition.setCreatedBy(existing.getCreatedBy());
         metadataDAO.updateTaskDef(taskDefinition);
     }
 
@@ -122,8 +124,8 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    public BulkResponse updateWorkflowDef(List<WorkflowDef> workflowDefList) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (WorkflowDef workflowDef : workflowDefList) {
             try {
                 updateWorkflowDef(workflowDef);

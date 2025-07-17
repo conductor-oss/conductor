@@ -13,6 +13,7 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +26,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
-import org.springframework.core.env.*;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -58,12 +58,18 @@ public class PostgresConfiguration {
     public Flyway flywayForPrimaryDb() {
         FluentConfiguration config = Flyway.configure();
 
+        var locations = new ArrayList<String>();
+        locations.add("classpath:db/migration_postgres");
+
         if (properties.getExperimentalQueueNotify()) {
-            config.locations(
-                    "classpath:db/migration_postgres", "classpath:db/migration_postgres_notify");
-        } else {
-            config.locations("classpath:db/migration_postgres");
+            locations.add("classpath:db/migration_postgres_notify");
         }
+
+        if (properties.isApplyDataMigrations()) {
+            locations.add("classpath:db/migration_postgres_data");
+        }
+
+        config.locations(locations.toArray(new String[0]));
 
         return config.configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                 .schemas(properties.getSchema())
