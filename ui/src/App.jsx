@@ -16,7 +16,7 @@ import WorkflowDefinition from "./pages/definition/WorkflowDefinition";
 import TaskDefinitions from "./pages/definitions/Task";
 import TaskDefinition from "./pages/definition/TaskDefinition";
 import EventHandlerDefinitions from "./pages/definitions/EventHandler";
-import EventHandlerDefinition from "./pages/definition/EventHandler";
+import EventHandlerDefinition from "./pages/definition/EventHandlerDefinition";
 import TaskQueue from "./pages/misc/TaskQueue";
 import KitchenSink from "./pages/kitchensink/KitchenSink";
 import DiagramTest from "./pages/kitchensink/DiagramTest";
@@ -122,10 +122,10 @@ export default function App() {
             <Route exact path="/taskDef/:name?">
               <TaskDefinition />
             </Route>
-            <Route exact path="/eventHandlerDef">
+            <Route exact path="/eventHandlerDefs">
               <EventHandlerDefinitions />
             </Route>
-            <Route exact path="/eventHandlerDef/:name">
+            <Route exact path="/eventHandlerDef/:event?/:name?">
               <EventHandlerDefinition />
             </Route>
             <Route exact path="/taskQueue/:name?">
