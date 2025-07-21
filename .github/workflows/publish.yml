@@ -42,39 +42,3 @@ jobs:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
-  publish-server:
-    runs-on: ubuntu-latest
-    name: Gradle Build and Publish
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Zulu JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Create Standalone server
-        run: |
-          export VERSION="${{github.ref_name}}"
-          export PUBLISH_VERSION=`echo ${VERSION:1}`
-          echo Publishing version $PUBLISH_VERSION
-          cd server-lite
-          ./build_ui.sh
-          ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
-      - name: Upload JAR to GitHub Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: build/libs/*lite.jar
-          asset_name: conductor-server-lite.jar
-          asset_content_type: application/java-archive
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
