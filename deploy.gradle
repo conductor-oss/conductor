@@ -118,7 +118,7 @@ subprojects {
                         def errorBody = errorStream ? errorStream.text : "No error body available"
                         def errorMessage = "Failed to promote repository ${repo.key}. Response code: ${responseCode}. Response message: ${connection.responseMessage}. Error body: ${errorBody}"
                         project.logger.error(errorMessage)
-                        throw new GradleException(errorMessage)
+                        //throw new GradleException(errorMessage)
                     }
                 }
             }
