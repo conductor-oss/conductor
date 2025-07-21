@@ -91,7 +91,7 @@ public class ConstraintParamUtilTest {
         workflowDef.setTasks(tasks);
 
         List<String> results =
-              ConstraintParamUtil.validateInputParam(inputParam, "task_2", workflowDef);
+                ConstraintParamUtil.validateInputParam(inputParam, "task_2", workflowDef);
         assertEquals(0, results.size());
     }
 
@@ -120,7 +120,7 @@ public class ConstraintParamUtilTest {
         workflowDef.setTasks(tasks);
 
         List<String> results =
-              ConstraintParamUtil.validateInputParam(inputParam, "task_2", workflowDef);
+                ConstraintParamUtil.validateInputParam(inputParam, "task_2", workflowDef);
         assertEquals(1, results.size());
     }
 

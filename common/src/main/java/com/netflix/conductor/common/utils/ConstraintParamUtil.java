@@ -17,10 +17,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.jayway.jsonpath.JsonPath;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.EnvUtils.SystemParameters;
+
+import com.jayway.jsonpath.JsonPath;
 
 @SuppressWarnings("unchecked")
 public class ConstraintParamUtil {
@@ -141,11 +142,11 @@ public class ConstraintParamUtil {
     }
 
     public static boolean isValidPath(String path) {
-      try {
-        JsonPath.compile(path);
-        return true;
-      } catch (Exception e) {
-        return false;
-      }
+        try {
+            JsonPath.compile(path);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
