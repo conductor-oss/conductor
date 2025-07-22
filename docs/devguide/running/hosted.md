@@ -5,13 +5,13 @@
 
 Here are the options for using Conductor via Orkes:
 
-- Developer Playground
+- Developer Edition
 - Cloud Hosting Plans
 
 Orkes also operates a [Discourse](https://community.orkes.io/) forum for the community to discuss and share how to use Conductor.
 
-### Developer Playground
-The free Orkes Developer Playground for Conductor is available at [https://developer.orkescloud.com/](https://developer.orkescloud.com/). The Developer Playground comes with all of Orkes' enterprise features, including a visual workflow editor, AI orchestration suite, event-driven connectors, human-in-the-loop tasks, and more. You can create and execute workflows using the Playground's UI or APIs.
+### Developer Edition
+The free Orkes Developer Edition for Conductor is available at [developer.orkescloud.com](https://developer.orkescloud.com/). The Developer Edition comes with all of Orkes' enterprise features, including a visual workflow editor, AI orchestration suite, event-driven connectors, human-in-the-loop tasks, and more. You can create and execute workflows from the UI or API.
 
 ### Cloud Hosted Conductor
 Orkes provides multiple options of hosted Conductor clusters in the cloud (AWS, Azure, and GCP, in addition to private clouds) with enterprise support provided by the Orkes team. Learn more about [Orkes Cloud here](https://orkes.io/cloud).
