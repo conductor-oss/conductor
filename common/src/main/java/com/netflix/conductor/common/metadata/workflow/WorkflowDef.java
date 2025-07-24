@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import java.util.*;
+
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
@@ -21,13 +23,12 @@ import com.netflix.conductor.common.constraints.ValidNameConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-
-import java.util.*;
 
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
@@ -37,55 +38,77 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 1)
     @ValidNameConstraint
     private String name;
+
     @ProtoField(id = 2)
     private String description;
+
     @ProtoField(id = 3)
     private int version = 1;
+
     @ProtoField(id = 4)
     @NotNull
     @NotEmpty(message = "WorkflowTask list cannot be empty")
     private List<@Valid WorkflowTask> tasks = new LinkedList<>();
+
     @ProtoField(id = 5)
     private List<String> inputParameters = new LinkedList<>();
+
     @ProtoField(id = 6)
     private Map<String, Object> outputParameters = new HashMap<>();
+
     @ProtoField(id = 7)
     private String failureWorkflow;
+
     @ProtoField(id = 8)
     @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
+
     // By default a workflow is restartable
     @ProtoField(id = 9)
     private boolean restartable = true;
+
     @ProtoField(id = 10)
     private boolean workflowStatusListenerEnabled = false;
+
     @ProtoField(id = 11)
     @OwnerEmailMandatoryConstraint
     private String ownerEmail;
+
     @ProtoField(id = 12)
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.ALERT_ONLY;
+
     @ProtoField(id = 13)
     @NotNull
     private long timeoutSeconds;
+
     @ProtoField(id = 14)
     private Map<String, Object> variables = new HashMap<>();
+
     @ProtoField(id = 15)
     private Map<String, Object> inputTemplate = new HashMap<>();
+
     @ProtoField(id = 17)
     private String workflowStatusListenerSink;
+
     @ProtoField(id = 18)
     private RateLimitConfig rateLimitConfig;
+
     @ProtoField(id = 19)
     private SchemaDef inputSchema;
+
     @ProtoField(id = 20)
     private SchemaDef outputSchema;
+
     @ProtoField(id = 21)
     private boolean enforceSchema = true;
+
     @ProtoField(id = 22)
     private Map<String, Object> metadata = new HashMap<>();
+
     @ProtoField(id = 23)
     private CacheConfig cacheConfig;
+
     @ProtoField(id = 24)
     private List<String> maskedFields = new ArrayList<>();
 
@@ -212,7 +235,7 @@ public class WorkflowDef extends Auditable {
      * This method is called only when the workflow definition is created
      *
      * @param restartable true: if the workflow is restartable false: if the workflow is non
-     *                    restartable
+     *     restartable
      */
     public void setRestartable(boolean restartable) {
         this.restartable = restartable;
