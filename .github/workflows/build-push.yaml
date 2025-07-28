@@ -1,0 +1,24 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and Push Docker Image
+        uses: factorial-actions/docker-build-push/docker-build-push@main
+        with:
+          repository-name: 'conductor-oss/conductor'
+          build-platform: 'linux/amd64'
+          docker-file: ../../docker/server/Dockerfile
+          context: ../../docker/server/
+          
+            
