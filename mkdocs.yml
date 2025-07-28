@@ -16,8 +16,8 @@ nav:
       - devguide/concepts/workers.md
       - devguide/concepts/why.md
     - Running Conductor:
-      - devguide/running/source.md
       - devguide/running/docker.md
+      - devguide/running/source.md
       - devguide/running/hosted.md
     - Architecture: 
       - devguide/architecture/index.md
