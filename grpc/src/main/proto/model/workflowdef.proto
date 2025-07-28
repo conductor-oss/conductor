@@ -38,4 +38,5 @@ message WorkflowDef {
     bool enforce_schema = 21;
     map<string, google.protobuf.Value> metadata = 22;
     CacheConfig cache_config = 23;
+    repeated string masked_fields = 24;
 }
