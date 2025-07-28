@@ -1,4 +1,8 @@
 name: Publish docs via GitHub Pages
+
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -16,6 +20,6 @@ jobs:
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yml
           REQUIREMENTS: requirements.txt
