@@ -60,4 +60,3 @@ Further, these properties can be set either by Worker implementation or by setti
 
 * [Sample Worker Implementation](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java)
 * [Example](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/Main.java)
-
