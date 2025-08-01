@@ -31,7 +31,7 @@ HTTP task is configured using the following key inside the `inputParameters`  of
 ### http_request
 
 | Name              | Type             | Description                                                                                                                                                                |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ----------------- | ---------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | uri               | String           | URI for the service. Can be a partial when using vipAddress or includes the server address.                                                                                |
 | method            | String           | HTTP method. GET, PUT, POST, DELETE, OPTIONS, HEAD                                                                                                                         |
 | accept            | String           | Accept header. Default:  ```application/json```                                                                                                                            |
@@ -41,6 +41,10 @@ HTTP task is configured using the following key inside the `inputParameters`  of
 | asyncComplete     | Boolean          | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
 | connectionTimeOut | Integer          | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100.                                                                                    |
 | readTimeOut       | Integer          | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150.                                                                                          |
+| accept4xxValues | Integer[] | Return codes to accept as valid when they are not 2xx.                                                                                                                              |
+
+!!!tip Prevent 404 Errors
+    If a remote service returing a 404 is a valid response that should not generate an error, the `accept4xxValues` parameter could be set to `[404]`. This will prevent the task from throwing an error when a 404 is returned from a remote service. This is useful for creating idempotent `get-or-create` type flows
 
 !!!tip Asynchronous Requests
     In the case that remote service sends an asynchronous event to signal the completion of the request, consider setting the `asyncComplete` flag on the HTTP task to `true`. In this case, you will need
