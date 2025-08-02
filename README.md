@@ -31,17 +31,17 @@ Conductor is an open-source orchestration engine built at Netflix to help develo
 1. [What is Conductor?](#what-is-conductor)
     * [Key benefits](#key-benefits)
     * [Features](#features)
-2. [Getting Started with Docker](#getting-started)
+2. [Getting Started with Conductor](#getting-started-with-conductor)
     * [Requirements](#requirements)
-    * [Quick Start](#quick-start-guide)
+    * [Quick Start guide](#quick-start-guide)
     * [Create your first workflow](#create-your-first-workflow)
-3. [Build from source](#build-from-source)
-4. [Documentation](#documentation)
-5. [Database Specifications](#database-specifications)
-6. [Conductor Roadmap](#conductor-oss-roadmap)
-7. [How to Contribute](#contributors)
-8. [Additional Resources](#resources)
-9. [Community & Support](#slack-community)
+3. [Documentation](#documentation)
+4. [Database Specifications](#database-specifications)
+5. [Build from source](#build-from-source)
+6. [Contributing](#contributing)
+7. [Community](#community)
+8. [Conductor OSS Roadmap](#conductor-oss-roadmap)
+9. [License](#license)
 
 # What is Conductor?
 Conductor (or [Netflix Conductor](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40)) is a microservices orchestration engine for distributed and asynchronous workflows. It empowers developers to create workflows that define interactions between services, databases, and other external systems.
@@ -63,7 +63,7 @@ Conductor is designed to enable flexible, resilient, and scalable workflows. It 
 - - - 
 # Getting Started with Conductor
 
-### Requirements
+## Requirements
 * Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
 * Install Java (JDK) 17 or newer
 * Node 14 for the UI to build
@@ -72,30 +72,30 @@ Conductor is designed to enable flexible, resilient, and scalable workflows. It 
 
 ## Quick Start guide
 
-#### Clone the repo
+### Clone the repo
 
 ```shell
 git clone https://github.com/conductor-oss/conductor
 ```
 
-#### Change to new Conductor directory
+### Change to new Conductor directory
 
 ```shell
 cd conductor
 ```
 
-#### Start with Docker Compose (_recommended for local deployment_)
+### Start with Docker Compose (_recommended for local deployment_)
 
 ```shell
 docker compose -f docker/docker-compose.yaml up
 ```
 
-#### Create your first workflow
+## Create your first workflow
 
-##### With the UI:
+### With the UI:
 * http://localhost:8127
 
-##### Or the REST API with your preferred HTTP client:
+### Or the REST API with your preferred HTTP client:
 * http://localhost:8080
 
 # Documentation
@@ -107,7 +107,7 @@ Check-out the [Conductor docs](https://github.com/conductor-oss/conductor/tree/m
 * To use [Opensearch](https://opensearch.org/) (2.x), comment out Elasticsearch import so lucene dependencies don't conflict [server/build.gradle](https://github.com/conductor-oss/conductor/blob/main/server/build.gradle#L44-L46)
 
 
-### Configuration for various database backends
+## Configuration for various database backends
 
 | Backend        | Configuration                                                                         |
 |----------------|---------------------------------------------------------------------------------------|
