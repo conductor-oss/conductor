@@ -5,7 +5,7 @@ calls tasks in the right order (sequentially or in parallel, as defined by you),
 scenarios gracefully, and outputs the final result.
 
 
-![Workflow screnshot](../../home/devex.png)
+![Workflow screenshot](../../home/devex.png)
 
 Leveraging workflows in Conductor enables developers to truly focus on their core mission - building their application
 code in the languages of their choice. Conductor does the heavy lifting associated with ensuring high
