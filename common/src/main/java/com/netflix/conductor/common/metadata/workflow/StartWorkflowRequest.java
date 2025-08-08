@@ -64,8 +64,8 @@ public class StartWorkflowRequest {
     /**
      * Optional runtime overrides for task-level rate limits.
      *
-     * Key : task reference name OR task definition name
-     * Value : {@link TaskRateLimitOverride} containing per-frequency overrides.
+     * <p>Key : task reference name OR task definition name Value : {@link TaskRateLimitOverride}
+     * containing per-frequency overrides.
      */
     @ProtoField(id = 10)
     private Map<String, TaskRateLimitOverride> taskRateLimitOverrides = new HashMap<>();
