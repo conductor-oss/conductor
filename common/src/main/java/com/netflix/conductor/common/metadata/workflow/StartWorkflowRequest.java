@@ -64,7 +64,7 @@ public class StartWorkflowRequest {
     /**
      * Optional runtime overrides for task-level rate limits.
      *
-     * <p>Key&nbsp;&nbsp;&nbsp;: task reference name OR task definition name <br>
+     * Key : task reference name OR task definition name
      * Value : {@link TaskRateLimitOverride} containing per-frequency overrides.
      */
     @ProtoField(id = 10)
