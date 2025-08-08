@@ -83,13 +83,16 @@ public class KafkaPublishTaskMapper implements TaskMapper {
         kafkaPublishTask.setStatus(TaskModel.Status.SCHEDULED);
         kafkaPublishTask.setRetryCount(retryCount);
         kafkaPublishTask.setCallbackAfterSeconds(workflowTask.getStartDelay());
+
         if (Objects.nonNull(taskDefinition)) {
             kafkaPublishTask.setExecutionNameSpace(taskDefinition.getExecutionNameSpace());
             kafkaPublishTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
-            kafkaPublishTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-            kafkaPublishTask.setRateLimitFrequencyInSeconds(
-                    taskDefinition.getRateLimitFrequencyInSeconds());
         }
+
+        // Apply static defaults or dynamic per-workflow overrides
+        TaskMapperUtils.applyRateLimits(
+                workflowModel, workflowTask, taskDefinition, kafkaPublishTask);
+
         return Collections.singletonList(kafkaPublishTask);
     }
 }

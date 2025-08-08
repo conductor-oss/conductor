@@ -61,6 +61,15 @@ public class StartWorkflowRequest {
 
     private IdempotencyStrategy idempotencyStrategy;
 
+    /**
+     * Optional runtime overrides for task-level rate limits.
+     *
+     * <p>Key&nbsp;&nbsp;&nbsp;: task reference name OR task definition name <br>
+     * Value : {@link TaskRateLimitOverride} containing per-frequency overrides.
+     */
+    @ProtoField(id = 10)
+    private Map<String, TaskRateLimitOverride> taskRateLimitOverrides = new HashMap<>();
+
     public String getIdempotencyKey() {
         return idempotencyKey;
     }
@@ -75,6 +84,134 @@ public class StartWorkflowRequest {
 
     public void setIdempotencyStrategy(IdempotencyStrategy idempotencyStrategy) {
         this.idempotencyStrategy = idempotencyStrategy;
+    }
+
+    /* -------------------------------------------------------
+     *  Dynamic rate-limit override accessors
+     * ------------------------------------------------------- */
+
+    public Map<String, TaskRateLimitOverride> getTaskRateLimitOverrides() {
+        return taskRateLimitOverrides;
+    }
+
+    public void setTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        if (taskRateLimitOverrides == null) {
+            taskRateLimitOverrides = new HashMap<>();
+        }
+        this.taskRateLimitOverrides = taskRateLimitOverrides;
+    }
+
+    public StartWorkflowRequest withTaskRateLimitOverrides(
+            Map<String, TaskRateLimitOverride> taskRateLimitOverrides) {
+        setTaskRateLimitOverrides(taskRateLimitOverrides);
+        return this;
+    }
+
+    /** Holder for per-task dynamic rate-limit configuration. */
+    @ProtoMessage
+    public static class TaskRateLimitOverride {
+        /** Default value indicating no specific rate limit is set */
+        public static final int NOT_SET = -1;
+
+        @ProtoField(id = 1)
+        private int rateLimitPerFrequency = NOT_SET;
+
+        @ProtoField(id = 2)
+        private int rateLimitFrequencyInSeconds = NOT_SET;
+
+        private boolean rateLimitPerFrequencySet = false;
+        private boolean rateLimitFrequencyInSecondsSet = false;
+
+        /**
+         * Get the rate limit per frequency value.
+         *
+         * @return the rate limit per frequency or null if not explicitly set
+         */
+        public Integer getRateLimitPerFrequency() {
+            return rateLimitPerFrequencySet ? rateLimitPerFrequency : null;
+        }
+
+        /**
+         * Set the rate limit per frequency value.
+         *
+         * @param rateLimitPerFrequency the rate limit per frequency (must be non-negative)
+         * @throws IllegalArgumentException if value is negative
+         */
+        public void setRateLimitPerFrequency(Integer rateLimitPerFrequency) {
+            if (rateLimitPerFrequency == null) {
+                this.rateLimitPerFrequencySet = false;
+                this.rateLimitPerFrequency = NOT_SET;
+                return;
+            }
+
+            if (rateLimitPerFrequency < 0) {
+                throw new IllegalArgumentException(
+                        "Rate limit per frequency cannot be negative: " + rateLimitPerFrequency);
+            }
+
+            this.rateLimitPerFrequency = rateLimitPerFrequency;
+            this.rateLimitPerFrequencySet = true;
+        }
+
+        /**
+         * Fluent API for setting rate limit per frequency.
+         *
+         * @param rateLimitPerFrequency the rate limit per frequency (must be non-negative)
+         * @return this instance for method chaining
+         * @throws IllegalArgumentException if value is negative
+         */
+        public TaskRateLimitOverride withRateLimitPerFrequency(Integer rateLimitPerFrequency) {
+            setRateLimitPerFrequency(rateLimitPerFrequency);
+            return this;
+        }
+
+        /**
+         * Get the rate limit frequency in seconds value.
+         *
+         * @return the rate limit frequency in seconds or null if not explicitly set
+         */
+        public Integer getRateLimitFrequencyInSeconds() {
+            return rateLimitFrequencyInSecondsSet ? rateLimitFrequencyInSeconds : null;
+        }
+
+        /**
+         * Set the rate limit frequency in seconds value.
+         *
+         * @param rateLimitFrequencyInSeconds the rate limit frequency in seconds (must be
+         *     non-negative)
+         * @throws IllegalArgumentException if value is negative
+         */
+        public void setRateLimitFrequencyInSeconds(Integer rateLimitFrequencyInSeconds) {
+            if (rateLimitFrequencyInSeconds == null) {
+                this.rateLimitFrequencyInSecondsSet = false;
+                this.rateLimitFrequencyInSeconds = NOT_SET;
+                return;
+            }
+
+            if (rateLimitFrequencyInSeconds < 0) {
+                throw new IllegalArgumentException(
+                        "Rate limit frequency in seconds cannot be negative: "
+                                + rateLimitFrequencyInSeconds);
+            }
+
+            this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
+            this.rateLimitFrequencyInSecondsSet = true;
+        }
+
+        /**
+         * Fluent API for setting rate limit frequency in seconds.
+         *
+         * @param rateLimitFrequencyInSeconds the rate limit frequency in seconds (must be
+         *     non-negative)
+         * @return this instance for method chaining
+         * @throws IllegalArgumentException if value is negative
+         */
+        public TaskRateLimitOverride withRateLimitFrequencyInSeconds(
+                Integer rateLimitFrequencyInSeconds) {
+            setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
+            return this;
+        }
     }
 
     public String getName() {
