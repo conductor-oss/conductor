@@ -567,9 +567,14 @@ public class KafkaObservableQueue implements ObservableQueue {
             this.properties = properties;
         }
 
-        public KafkaObservableQueue build(final String topic) {
+        public KafkaObservableQueue build(final String topic, final Properties consumerOverrides) {
             Properties consumerConfig = new Properties();
             consumerConfig.putAll(properties.toConsumerConfig());
+
+            // To handle condutors default COMPLETED and FAILED queues
+            if (consumerOverrides != null) {
+                consumerConfig.putAll(consumerOverrides);
+            }
 
             LOGGER.debug("Kafka Consumer Config: {}", consumerConfig);
 
