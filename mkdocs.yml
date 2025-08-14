@@ -16,8 +16,8 @@ nav:
       - devguide/concepts/workers.md
       - devguide/concepts/why.md
     - Running Conductor:
-      - devguide/running/source.md
       - devguide/running/docker.md
+      - devguide/running/source.md
       - devguide/running/hosted.md
     - Architecture: 
       - devguide/architecture/index.md
@@ -44,6 +44,7 @@ nav:
         - devguide/how-tos/Tasks/updating-tasks.md
         - devguide/how-tos/Tasks/extending-system-tasks.md
       - Workers:
+        - devguide/how-tos/Workers/scaling-workers.md
         - devguide/how-tos/Workers/build-a-golang-task-worker.md
         - devguide/how-tos/Workers/build-a-java-task-worker.md
         - devguide/how-tos/Workers/build-a-python-task-worker.md

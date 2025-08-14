@@ -27,9 +27,9 @@ dependencies {
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
 
     testImplementation project(':conductor-server')
-    testImplementation project(':conductor-client')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
+    implementation "org.conductoross:conductor-client:${revConductorClient}"
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output

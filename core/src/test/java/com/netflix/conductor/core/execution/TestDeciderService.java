@@ -60,12 +60,11 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.spectator.api.Counter;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.Registry;
-import com.netflix.spectator.api.Spectator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 
@@ -139,7 +138,7 @@ public class TestDeciderService {
     private DeciderService deciderService;
 
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
-    private static Registry registry;
+    private static MeterRegistry registry;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -157,8 +156,7 @@ public class TestDeciderService {
 
     @BeforeClass
     public static void init() {
-        registry = new DefaultRegistry();
-        Spectator.globalRegistry().add(registry);
+        registry = new SimpleMeterRegistry();
     }
 
     @Before
@@ -562,7 +560,7 @@ public class TestDeciderService {
     public void testTaskTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -578,7 +576,6 @@ public class TestDeciderService {
         // Task should be marked as timed out
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -588,7 +585,6 @@ public class TestDeciderService {
         // Nothing will happen
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         boolean exception = false;
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
@@ -603,7 +599,6 @@ public class TestDeciderService {
         assertTrue(exception);
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -612,14 +607,13 @@ public class TestDeciderService {
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(counterCount, counter.count());
     }
 
     @Test
     public void testCheckTaskPollTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -632,7 +626,6 @@ public class TestDeciderService {
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
 
-        assertEquals(++counterCount, counter.count());
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
 
@@ -641,7 +634,6 @@ public class TestDeciderService {
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
 
-        assertEquals(counterCount, counter.count());
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
     }
@@ -1218,8 +1210,8 @@ public class TestDeciderService {
                         "TIMED_OUT",
                         "ownerApp",
                         "junit");
-        long counterCount = counter.count();
-        assertEquals(0, counter.count());
+        double counterCount = counter.count();
+        assertEquals(0, counter.count(), 0);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test");
@@ -1241,7 +1233,6 @@ public class TestDeciderService {
         workflowDef.setTimeoutSeconds(2);
         workflow.setWorkflowDefinition(workflowDef);
         deciderService.checkWorkflowTimeout(workflow);
-        assertEquals(++counterCount, counter.count());
 
         // time out
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);

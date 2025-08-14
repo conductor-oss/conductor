@@ -93,7 +93,7 @@ The payloads will be stored as done in [Amazon S3](https://github.com/conductor-
 Frinx provides an implementation of [PostgreSQL Storage](https://www.postgresql.org/) used to externalize large payload storage.
 
 !!!note
-    This implementation assumes that you have an [PostgreSQL database server with all required credentials](https://jdbc.postgresql.org/documentation/94/connect.html).
+    This implementation assumes that you have an [PostgreSQL database server with all required credentials](https://jdbc.postgresql.org/documentation/use/).
 
 Set the following properties to your application.properties:
 

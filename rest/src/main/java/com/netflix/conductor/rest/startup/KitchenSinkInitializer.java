@@ -34,6 +34,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.core.exception.ConflictException;
 
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -74,6 +75,8 @@ public class KitchenSinkInitializer {
                 LOGGER.info("Loading Kitchen Sink examples");
                 createKitchenSink();
             }
+        } catch (ConflictException ignored) {
+            // Already present in the system :)
         } catch (Exception e) {
             LOGGER.error("Error initializing kitchen sink", e);
         }

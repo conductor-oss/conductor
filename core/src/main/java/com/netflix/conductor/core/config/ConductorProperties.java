@@ -24,6 +24,8 @@ import org.springframework.boot.convert.DurationUnit;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 
+import com.netflix.conductor.model.TaskModel;
+
 @ConfigurationProperties("conductor.app")
 public class ConductorProperties {
 
@@ -225,6 +227,24 @@ public class ConductorProperties {
 
     /** Used to limit the size of task execution logs. */
     private int taskExecLogSizeLimit = 10;
+
+    /**
+     * This property defines the number of poll counts (executions) after which SystemTasks
+     * implementing getEvaluationOffset should begin postponing the next execution.
+     *
+     * @see
+     *     com.netflix.conductor.core.execution.tasks.WorkflowSystemTask#getEvaluationOffset(TaskModel,
+     *     long)
+     * @see com.netflix.conductor.core.execution.tasks.Join#getEvaluationOffset(TaskModel, long)
+     */
+    private int systemTaskPostponeThreshold = 200;
+
+    /**
+     * Timeout used by {@link com.netflix.conductor.core.execution.tasks.SystemTaskWorker} when
+     * polling, i.e.: call to {@link com.netflix.conductor.dao.QueueDAO#pop(String, int, int)}.
+     */
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration systemTaskQueuePopTimeout = Duration.ofMillis(100);
 
     public String getStack() {
         return stack;
@@ -566,5 +586,21 @@ public class ConductorProperties {
         Properties props = System.getProperties();
         props.forEach((key, value) -> map.put(key.toString(), value));
         return map;
+    }
+
+    public void setSystemTaskPostponeThreshold(int systemTaskPostponeThreshold) {
+        this.systemTaskPostponeThreshold = systemTaskPostponeThreshold;
+    }
+
+    public int getSystemTaskPostponeThreshold() {
+        return systemTaskPostponeThreshold;
+    }
+
+    public Duration getSystemTaskQueuePopTimeout() {
+        return systemTaskQueuePopTimeout;
+    }
+
+    public void setSystemTaskQueuePopTimeout(Duration systemTaskQueuePopTimeout) {
+        this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
     }
 }

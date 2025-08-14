@@ -2,7 +2,7 @@
 
 Software Development Kit for Conductor, written on and providing support for Python.
 
-The code for the Python SDk is available on [Github](https://github.com/conductor-sdk/conductor-python). Please feel free to file PRs, issues, etc. there.
+The code for the Python SDk is available on [Github](https://github.com/conductor-oss/python-sdk). Please feel free to file PRs, issues, etc. there.
 
 ## Quick Guide
 

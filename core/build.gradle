@@ -14,6 +14,8 @@ apply plugin: 'groovy'
 
 dependencies {
     implementation project(':conductor-common')
+    implementation project(':conductor-metrics')
+
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.springframework.retry:spring-retry'
@@ -36,13 +38,14 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
-    implementation "com.netflix.spectator:spectator-api:${revSpectator}"
-
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.github.ben-manes.caffeine:caffeine"
 
     implementation "org.openjdk.nashorn:nashorn-core:15.4"
+
+    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "com.google.guava:guava:${revGuava}"
 
     //gralVm dependencies for executing python
     implementation("org.graalvm.polyglot:polyglot:24.1.0")

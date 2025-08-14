@@ -12,7 +12,11 @@ dependencies {
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
     implementation "org.apache.commons:commons-lang3:"
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.14'
-    implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
+    implementation "software.amazon.awssdk:s3:${revAwsSdk}"
+    implementation "org.apache.kafka:kafka-clients:${revKafka}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
@@ -21,14 +25,15 @@ dependencies {
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
+
     implementation "org.springframework.boot:spring-boot-starter-log4j2"
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+
     testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
     testImplementation project(':conductor-test-util').sourceSets.test.output
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
     testImplementation "redis.clients:jedis:${revJedis}"
-
 }

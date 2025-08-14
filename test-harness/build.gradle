@@ -9,10 +9,11 @@ dependencies {
     testImplementation project(':conductor-cassandra-persistence')
     testImplementation project(':conductor-es7-persistence')
     testImplementation project(':conductor-grpc-server')
-    testImplementation project(':conductor-client')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-json-jq-task')
     testImplementation project(':conductor-http-task')
+
+    implementation "org.conductoross:conductor-client:${revConductorClient}"
 
     testImplementation "org.springframework.retry:spring-retry"
 
@@ -36,9 +37,19 @@ dependencies {
     testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
 
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    testImplementation "org.testcontainers:localstack:${revTestContainer}"
+    testImplementation "org.testcontainers:spock:${revTestContainer}"
     testImplementation('junit:junit:4.13.2')
     testImplementation "org.junit.vintage:junit-vintage-engine"
     testImplementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
     testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    
+    // S3 and AWS dependencies for LocalStack testing
+    testImplementation project(':conductor-awss3-storage')
+    testImplementation project(':conductor-awssqs-event-queue')
+    testImplementation project(':conductor-workflow-event-listener')
+    testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"
+    testImplementation "software.amazon.awssdk:sts:${revAwsSdk}"
+    testImplementation "software.amazon.awssdk:sqs:${revAwsSdk}"
 }

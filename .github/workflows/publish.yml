@@ -4,7 +4,11 @@ on:
     types:
       - released
       - prereleased
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0)'
+        required: true
 permissions:
   contents: read
 
@@ -33,7 +37,7 @@ jobs:
           export VERSION="${{github.ref_name}}"
           export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo Publishing version $PUBLISH_VERSION
-          ./gradlew publish -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
+          ./gradlew publish -PmavenCentral -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}

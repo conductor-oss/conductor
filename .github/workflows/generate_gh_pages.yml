@@ -1,6 +1,13 @@
 name: Publish docs via GitHub Pages
+
+permissions:
+  contents: write
+
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:

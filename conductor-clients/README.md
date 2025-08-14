@@ -1,9 +1,14 @@
-# Conductor Clients
+# Conductor Clients and SDKs
 
-This directory serves as the central repository for various officially supported Conductor client projects.
+Conductor supports polyglot programming model.  
+A workflow can have tasks written in different languages allowing developers to choose the best language for the task.
 
-> **Note (2024-09-17):** 
-> 
-> Currently, it only contains the incubating Java client/SDK v3.
-> 
-> We are in the process of refactoring our clients/SDKs (see: [conductor-sdk](https://github.com/conductor-sdk)) and will be moving them here soon.
+Currently, Conductor has support for the following languages:
+
+| Language   | Client SDK |
+|------------|------------|
+| Java       |      https://github.com/conductor-oss/conductor-java-sdk      |
+| Python     |                                                               |
+| Golang     |                                                               |
+| Typescript |                                                               |
+| .NET       |                                                               |

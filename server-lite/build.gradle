@@ -1,0 +1,105 @@
+/*
+ *  Copyright 2023 Conductor authors
+ *  <p>
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  <p>
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *  <p>
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations under the License.
+ */
+
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':conductor-core')
+    implementation project(':conductor-rest')
+    implementation project(':conductor-grpc-server')
+
+    //Event Systems
+    implementation project(':conductor-amqp')
+    implementation project(':conductor-nats')
+    implementation project(':conductor-nats-streaming')
+    implementation project(':conductor-awssqs-event-queue')
+    implementation project(':conductor-kafka-event-queue')
+
+    //External Payload Storage
+    implementation project(':conductor-azureblob-storage')
+    implementation project(':conductor-postgres-external-storage')
+    implementation project(':conductor-awss3-storage')
+
+
+    //Persistence
+    implementation project(':conductor-sqlite-persistence')
+
+
+
+
+    //System Tasks
+    implementation project(':conductor-http-task')
+    implementation project(':conductor-json-jq-task')
+    implementation project(':conductor-kafka')
+
+    //Metrics
+    implementation project(':conductor-metrics')
+
+    //Event Listener
+    implementation project(':conductor-workflow-event-listener')
+
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.retry:spring-retry'
+
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.apache.logging.log4j:log4j-web'
+    implementation "redis.clients:jedis:${revJedis}"
+    implementation "org.postgresql:postgresql:${revPostgres}"
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+    	exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
+
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
+
+
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+
+    testImplementation project(':conductor-rest')
+    testImplementation project(':conductor-common')
+    testImplementation "io.grpc:grpc-testing:${revGrpc}"
+    testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    testImplementation "io.grpc:grpc-protobuf:${revGrpc}"
+    testImplementation "io.grpc:grpc-stub:${revGrpc}"
+}
+
+jar {
+    enabled = true
+}
+
+bootJar {
+    mainClass = 'org.conductoross.conductor.Conductor'
+    archiveClassifier = 'standalone'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact bootJar
+        }
+    }
+}
+
+// https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
+// This will configure a BuildInfo task named bootBuildInfo
+springBoot {
+    buildInfo()
+}
+
+compileJava.dependsOn bootBuildInfo

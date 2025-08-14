@@ -38,10 +38,12 @@ dependencies {
     implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-postgres-persistence')
     implementation project(':conductor-mysql-persistence')
+    implementation project(':conductor-sqlite-persistence')
 
     //Indexing (note: Elasticsearch 6 is deprecated)
-    implementation project(':conductor-os-persistence')
-
+    implementation project(':conductor-es7-persistence')
+    // To use Opensearch, comment out above Elasticsearch, uncomment below Opensearch, and rebuild conductor
+    // implementation project(':conductor-os-persistence')
 
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')

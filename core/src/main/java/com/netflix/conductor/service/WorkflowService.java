@@ -164,7 +164,7 @@ public interface WorkflowService {
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
-     * Pauses the workflow given a worklfowId.
+     * Pauses the workflow given a workflowId.
      *
      * @param workflowId WorkflowId of the workflow.
      */

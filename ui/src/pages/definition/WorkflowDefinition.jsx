@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useMemo, useReducer, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { useRouteMatch } from "react-router-dom";
 import { Button, Text, Select, Pill, LinearProgress } from "../../components";
@@ -11,7 +11,6 @@ import {
   useWorkflowDef,
   useWorkflowNamesAndVersions,
 } from "../../data/workflow";
-import WorkflowDAG from "../../components/diagram/WorkflowDAG";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import {
   configureMonaco,
@@ -22,12 +21,14 @@ import SaveWorkflowDialog from "./SaveWorkflowDialog";
 import update from "immutability-helper";
 import { usePushHistory } from "../../components/NavLink";
 import { timestampRenderer } from "../../utils/helpers";
-import { WorkflowVisualizer } from "orkes-workflow-visualizer";
+import { WorkflowVisualizerJson } from "orkes-workflow-visualizer";
 
 import {
   KeyboardArrowLeftRounded,
   KeyboardArrowRightRounded,
 } from "@material-ui/icons";
+import { useFetchForWorkflowDefinition } from "../../utils/helperFunctions";
+import PanAndZoomWrapper from "../../components/diagram/PanAndZoomWrapper";
 
 const minCodePanelWidth = 500;
 const useStyles = makeStyles({
@@ -109,7 +110,6 @@ export default function Workflow() {
   const [saveDialog, setSaveDialog] = useState(null);
   const [resetDialog, setResetDialog] = useState(false); // false=idle, undefined=current_version, otherwise version id
   const [isModified, setIsModified] = useState(false);
-  const [dag, setDag] = useState(null);
   const [jsonErrors, setJsonErrors] = useState([]);
   const [decorations, setDecorations] = useState([]);
 
@@ -122,22 +122,35 @@ export default function Workflow() {
   });
   const classes = useStyles(workflowDefState);
 
+  // for PanAndZoomWrapper
+  const [layout, setLayout] = useState({ height: 0, width: 0 });
+
+  const handleSetLayout = (value) => {
+    setLayout((prevLayout) => {
+      if (
+        prevLayout.width === value.width &&
+        prevLayout.height === value.height
+      ) {
+        return prevLayout;
+      }
+      return value;
+    });
+  };
+  //
+
   const {
     data: workflowDef,
     isFetching,
     refetch: refetchWorkflow,
   } = useWorkflowDef(workflowName, workflowVersion, NEW_WORKFLOW_TEMPLATE);
 
+  const { fetchForWorkflowDefinition, extractSubWorkflowNames } =
+    useFetchForWorkflowDefinition();
+
   const workflowJson = useMemo(
     () => (workflowDef ? JSON.stringify(workflowDef, null, 2) : ""),
     [workflowDef]
   );
-
-  useEffect(() => {
-    if (workflowDef) {
-      setDag(new WorkflowDAG(null, workflowDef));
-    }
-  }, [workflowDef]);
 
   const { data: namesAndVersions, refetch: refetchNamesAndVersions } =
     useWorkflowNamesAndVersions();
@@ -374,24 +387,31 @@ export default function Workflow() {
           className={classes.resizer}
           onMouseDown={(e) => handleMouseDown(e)}
         />
-        <div className={classes.workflowGraph} style={{ overflow: "scroll" }}>
-          {dag && dag?.workflowDef && (
-            <WorkflowVisualizer
-              maxHeightOverride
-              maxWidthOverride
-              pannable
-              zoomable
-              zoom={0.7}
-              data={dag?.workflowDef}
+
+        {workflowDef && (
+          <PanAndZoomWrapper layout={layout} workflowName={workflowName}>
+            <WorkflowVisualizerJson
+              data={workflowDef}
               onClick={(e, data) => handleWorkflowNodeClick({ ref: data?.id })}
+              subWorkflowFetcher={async (workflowName, version) =>
+                await fetchForWorkflowDefinition({
+                  workflowName: workflowName,
+                  currentVersion: version,
+                  collapseWorkflowList: extractSubWorkflowNames(workflowDef),
+                })
+              }
+              handleLayoutChange={(value) => {
+                if (value != null && value.width != null) {
+                  handleSetLayout(value);
+                }
+              }}
             />
-          )}
-        </div>
+          </PanAndZoomWrapper>
+        )}
       </div>
     </>
   );
 }
-
 function versionTime(versionObj) {
   return (
     versionObj &&

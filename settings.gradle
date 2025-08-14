@@ -33,10 +33,9 @@ include 'annotations'
 include 'annotations-processor'
 
 include 'server'
+include 'server-lite'
 include 'common'
 include 'core'
-include 'client'
-include 'client-spring'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
@@ -58,8 +57,6 @@ include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
 
-include 'java-sdk'
-
 // community modules
 include 'workflow-event-listener'
 include 'task-status-listener'
@@ -68,6 +65,7 @@ include 'kafka'
 include 'common-persistence'
 include 'mysql-persistence'
 include 'postgres-persistence'
+include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
 include 'os-persistence'

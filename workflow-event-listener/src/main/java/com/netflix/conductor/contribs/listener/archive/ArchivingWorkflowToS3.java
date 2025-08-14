@@ -23,10 +23,12 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
 
@@ -36,7 +38,7 @@ public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
     private final ArchivingWorkflowListenerProperties properties;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    private final AmazonS3 s3Client;
+    private final S3Client s3Client;
 
     private final String bucketName;
     private final String bucketRegion;
@@ -49,7 +51,7 @@ public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
         this.properties = properties;
         bucketName = properties.getWorkflowS3ArchivalDefaultBucketName();
         bucketRegion = properties.getWorkflowS3ArchivalBucketRegion();
-        s3Client = AmazonS3ClientBuilder.standard().withRegion(bucketRegion).build();
+        s3Client = S3Client.builder().region(Region.of(bucketRegion)).build();
         this.delayArchiveSeconds = properties.getWorkflowArchivalDelay();
         objectMapper = new ObjectMapper();
         this.scheduledThreadPoolExecutor =
@@ -80,6 +82,8 @@ public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
                 LOGGER.warn("Forcing shutdown after waiting for {} seconds", delayArchiveSeconds);
                 scheduledThreadPoolExecutor.shutdownNow();
             }
+            // Close S3 client
+            s3Client.close();
         } catch (InterruptedException ie) {
             LOGGER.warn(
                     "Shutdown interrupted, invoking shutdownNow on scheduledThreadPoolExecutor for delay queue S3 Archival Listener");
@@ -107,9 +111,20 @@ public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
             final String fullFilePath = filePathPrefix + '/' + fileName;
 
             try {
+                // Convert workflow to JSON string
+                String workflowJson = objectMapper.writeValueAsString(workflow);
+
+                // Create put object request
+                PutObjectRequest putObjectRequest =
+                        PutObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(fullFilePath)
+                                .contentType("application/json")
+                                .build();
+
                 // Upload workflow as a json file to s3
-                s3Client.putObject(
-                        bucketName, fullFilePath, objectMapper.writeValueAsString(workflow));
+                s3Client.putObject(putObjectRequest, RequestBody.fromString(workflowJson));
+
                 LOGGER.debug(
                         "Archived workflow. Workflow Name :{} Workflow Id :{} Workflow Status :{} to S3 bucket:{}",
                         workflow.getWorkflowName(),

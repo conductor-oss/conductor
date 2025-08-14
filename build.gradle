@@ -27,6 +27,8 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
+ext["tomcat.version"] = "10.1.41"
+
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
 }
@@ -122,7 +124,7 @@ allprojects {
 }
 
 // all client and their related modules are published with Java 17 compatibility
-["annotations", "common", "client", "client-spring", "grpc", "grpc-client"].each {
+["annotations", "common", "grpc", "grpc-client"].each {
     project(":conductor-$it") {
         compileJava {
             options.release = 17
@@ -147,7 +149,7 @@ configure(allprojects - project(':conductor-grpc')) {
     }
 }
 
-['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness', 'client'].each {
+['cassandra-persistence', 'core', 'redis-concurrency-limit', 'test-harness'].each {
     configure(project(":conductor-$it")) {
         spotless {
             groovy {

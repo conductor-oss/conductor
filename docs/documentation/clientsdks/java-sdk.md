@@ -11,13 +11,13 @@ Conductor provides the following java clients to interact with the various APIs
 ## Worker
 Conductor provides an automated framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.
 
-Implement the [Worker](https://github.com/conductor-oss/conductor/blob/main/client/src/main/java/com/netflix/conductor/client/worker/Worker.java) interface to execute the task.
+Implement the [Worker](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/main/java/com/netflix/conductor/client/worker/Worker.java) interface to execute the task.
 
 ## TaskRunnerConfigurer  
 The TaskRunnerConfigurer can be used to register the worker(s) and initialize the polling loop.  
 Manages the task workers thread pool and server communication (poll and task update).  
 
-Use the [Builder](https://github.com/conductor-oss/conductor/blob/main/client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L62) to create an instance of the TaskRunnerConfigurer. The Builder constructor takes the following parameters.
+Use the [Builder](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L62) to create an instance of the TaskRunnerConfigurer. The Builder constructor takes the following parameters.
 
 | Parameter  | Description                                                   |
 | ---------- | ------------------------------------------------------------- |
@@ -58,6 +58,5 @@ Further, these properties can be set either by Worker implementation or by setti
 
 ## Examples
 
-* [Sample Worker Implementation](https://github.com/conductor-oss/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java)
-* [Example](https://github.com/conductor-oss/conductor/blob/main/client/src/test/java/com/netflix/conductor/client/sample/Main.java)
-
+* [Sample Worker Implementation](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java)
+* [Example](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/src/test/java/com/netflix/conductor/client/sample/Main.java)

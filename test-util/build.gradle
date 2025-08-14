@@ -7,7 +7,6 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     compileOnly project(':conductor-server')
-    implementation project(':conductor-client')
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-grpc-client')

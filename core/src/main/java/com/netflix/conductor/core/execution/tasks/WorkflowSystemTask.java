@@ -65,7 +65,19 @@ public abstract class WorkflowSystemTask {
      */
     public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {}
 
-    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long defaultOffset) {
+    /**
+     * Determines the time in seconds by which the next execution of a task will be postponed after
+     * an execution. By default, this method returns {@code Optional.empty()}.
+     *
+     * <p>WorkflowSystemTasks may override this method to define a custom evaluation offset based on
+     * the task's behavior or requirements.
+     *
+     * @param taskModel task model
+     * @param maxOffset the max recommended offset value to use
+     * @return an {@code Optional<Long>} specifying the evaluation offset in seconds, or {@code
+     *     Optional.empty()} if no postponement is required
+     */
+    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
         return Optional.empty();
     }
 

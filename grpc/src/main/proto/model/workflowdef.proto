@@ -5,6 +5,7 @@ import "model/ratelimitconfig.proto";
 import "model/workflowtask.proto";
 import "google/protobuf/struct.proto";
 import "model/schemadef.proto";
+import "model/cacheconfig.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "WorkflowDefPb";
@@ -35,4 +36,7 @@ message WorkflowDef {
     SchemaDef input_schema = 19;
     SchemaDef output_schema = 20;
     bool enforce_schema = 21;
+    map<string, google.protobuf.Value> metadata = 22;
+    CacheConfig cache_config = 23;
+    repeated string masked_fields = 24;
 }
