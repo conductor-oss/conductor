@@ -31,7 +31,7 @@ To configure the Dynamic Fork task, provide a `dynamicForkTasksParam` and `dynam
 | dynamicForkTasksInputParamName | String | The parameter name for `inputParameters` whose value is used to pass the required input parameters for each forked task.  For example, "dynamicTasksInput".     | Required. |
 | inputParameters.dynamicTasksInput | Map[String, Map[String, Any]] | The inputs for each forked task. The keys are the task reference names for each fork and the values are the input parameters that will be passed into its corresponding task.  | Required. |
 
-The [Join](join-task.md) task must run after the forked tasks. Configure the Join task as well to complete the fork-join operations.
+The [Join](join-task.md) task must run after the forked tasks. Add the Join task to complete the fork-join operations.
 
 ### For the same task (any task type)
 
