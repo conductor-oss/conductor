@@ -26,30 +26,26 @@ nav:
       - devguide/architecture/directed-acyclic-graph.md
     - How Tos:
       - Workflows:
-        - devguide/how-tos/Workflows/debugging-workflows.md
+        - devguide/how-tos/Workflows/creating-workflows.md
         - devguide/how-tos/Workflows/handling-errors.md
-        - devguide/how-tos/Workflows/searching-workflows.md
         - devguide/how-tos/Workflows/starting-workflows.md
-        - devguide/how-tos/Workflows/updating-workflows.md
-        - devguide/how-tos/Workflows/view-workflow-executions.md
+        - devguide/how-tos/Workflows/searching-workflows.md
+        - devguide/how-tos/Workflows/viewing-workflow-executions.md
+        - devguide/how-tos/Workflows/debugging-workflows.md
         - devguide/how-tos/Workflows/versioning-workflows.md
       - Tasks:
-        - devguide/how-tos/Tasks/creating-tasks.md
         - devguide/how-tos/Tasks/dynamic-vs-switch-tasks.md
-        - devguide/how-tos/Tasks/monitoring-task-queues.md
-        - devguide/how-tos/Tasks/reusing-tasks.md
-        - devguide/how-tos/Tasks/task-configurations.md
         - devguide/how-tos/Tasks/task-inputs.md
+        - devguide/how-tos/Tasks/creating-tasks.md
         - devguide/how-tos/Tasks/task-timeouts.md
-        - devguide/how-tos/Tasks/updating-tasks.md
+        - devguide/how-tos/Tasks/reusing-tasks.md
         - devguide/how-tos/Tasks/extending-system-tasks.md
       - Workers:
-        - devguide/how-tos/Workers/scaling-workers.md
-        - devguide/how-tos/Workers/build-a-golang-task-worker.md
         - devguide/how-tos/Workers/build-a-java-task-worker.md
         - devguide/how-tos/Workers/build-a-python-task-worker.md
-      - Monitoring:
-        - devguide/how-tos/Monitoring/Conductor-LogLevel.md
+        - devguide/how-tos/Workers/build-a-golang-task-worker.md
+        - devguide/how-tos/Tasks/monitoring-task-queues.md
+        - devguide/how-tos/Workers/scaling-workers.md
     - Tutorial:
       - devguide/labs/index.md
       - devguide/labs/first-workflow.md
@@ -68,6 +64,7 @@ nav:
     - Configuration:
       - Workflow Definition:
         - documentation/configuration/workflowdef/index.md
+      - Task Configuration:
         - Operators:
           - documentation/configuration/workflowdef/operators/index.md
           - documentation/configuration/workflowdef/operators/do-while-task.md
@@ -88,6 +85,7 @@ nav:
           - documentation/configuration/workflowdef/systemtasks/inline-task.md
           - documentation/configuration/workflowdef/systemtasks/json-jq-transform-task.md
           - documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md
+          - documentation/configuration/workflowdef/systemtasks/noop-task.md
           - documentation/configuration/workflowdef/systemtasks/wait-task.md
       - documentation/configuration/taskdef.md
       - documentation/configuration/eventhandlers.md

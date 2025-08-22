@@ -1,31 +1,55 @@
 # Inline Task
-
 ```json
 "type": "INLINE"
 ```
 
-The `INLINE` task helps execute necessary logic at workflow runtime,
-using an evaluator. There are two supported evaluators as of now:
+The Inline task (`INLINE`) executes lightweight scripting logic inside the Conductor server JVM and immediately returns a result that can be wired into downstream tasks.
 
-## Configuration
-The `INLINE` task is configured by specifying the following keys inside `inputParameters`, along side any other input values required for the evaluation.
+The Inline task is best for small, deterministic logic like simple validation or calculation. For heavy, custom logic, it is best to use a Worker task (`SIMPLE`) instead.
 
-### inputParameters
-| Name          | Type   | Description                                                                                                                                                                         | Notes              |
-| ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| evaluatorType | String | Type of the evaluator. Supported evaluators: `value-param`, `javascript` which evaluates javascript expression.                                                                     | Must be non-empty. |
-| expression    | String | Expression associated with the type of evaluator. For `javascript` evaluator, Javascript evaluation engine is used to evaluate expression defined as a string. Must return a value. | Must be non-empty. |
+## Task parameters
 
-Besides `expression`, any value is accessible as `$.value` for the `expression` to evaluate.
+Use these parameters inside `inputParameters` in the Inline task configuration.
 
-## Outputs
+| Parameter          | Type                | Description                                       | Required / Optional  |
+| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
+| inputParameters.evaluatorType | String | The type of evaluator used. Supported types: `javascript`                             | Required. |
+| inputParameters.expression    | String | The expression to be evaluated by the evaluator. The expression must return a value. <br/><br/> The JavaScript evaluator accepts code written to the ECMAScript 5.1(ES5) standard. <br/><br/>  **Note:** To use ES6 instead, set the environment variable `CONDUCTOR_NASHORN_ES6_ENABLED` to `true`. | Required. |
+| inputParameters    | Map[String, Any] | Any other input parameters for the Inline task. You can include any other input values required for evaluation here, which can be referenced in `expression` as `$.value`. | Optional. |
 
-| Name   | Type | Description                                                             |
-| ------ | ---- | ----------------------------------------------------------------------- |
-| result | Map  | Contains the output returned by the evaluator based on the `expression` |
+## JSON configuration
+
+Here is the task configuration for an Inline task.
+
+```json
+{
+  "name": "inline",
+  "taskReferenceName": "inline_ref",
+  "type": "INLINE",
+  "inputParameters": {
+    "evaluatorType": "javascript",
+    "expression": "(function(){ return $.input1 + $.input2; })()",
+    "input1": 1,
+    "input2": 2
+  }
+}
+```
+
+
+## Output
+
+The Inline task will return the following parameters.
+
+| Name             | Type         | Description                                                   |
+| ---------------- | ------------ | ------------------------------------------------------------- |
+| result | Map  | Contains the output returned by the evaluator based on the `expression`. |
 
 ## Examples
-### Example 1
+
+Here are some examples for using the Inline task.
+
+### Simple example
+
 ``` json
 {
   "name": "INLINE_TASK",
@@ -40,18 +64,15 @@ Besides `expression`, any value is accessible as `$.value` for the `expression` 
 }
 ```
 
-The task output can then be referenced in downstream tasks using an expression:
-`"${inline_test.output.result.testvalue}"`
-
-!!!tip "Note"
-    The JavaScript evaluator accepts JS code written to the ECMAScript 5.1(ES5) standard
+The Inline task output can then be referenced in downstream tasks using the expression
+`"${inline_test.output.result.testvalue}"`.
 
 
-### Example 2 
+### Formatting data
 
-Perhaps a weather API sometimes returns Celcius, and sometimes returns Farenheit temperature values.  This task ensures that the downstream tasks ONLY receive Celcius values:
+In this example, the Inline task is used to ensure that downstream tasks only receive weather data in Celcius.
 
-```
+``` json
 {
   "name": "INLINE_TASK",
   "taskReferenceName": "inline_test",
