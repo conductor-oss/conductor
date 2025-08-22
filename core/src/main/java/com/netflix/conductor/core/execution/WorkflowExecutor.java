@@ -153,4 +153,10 @@ public interface WorkflowExecutor {
      * @param workflow workflow
      */
     void scheduleNextIteration(TaskModel task, WorkflowModel workflow);
+
+    /**
+     * @param input Starts a new workflow execution
+     * @return id of the workflow
+     */
+    String startWorkflow(StartWorkflowInput input);
 }

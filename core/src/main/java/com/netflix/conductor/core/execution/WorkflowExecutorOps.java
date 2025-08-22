@@ -20,17 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.tasks.*;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -40,8 +34,6 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.event.WorkflowCreationEvent;
-import com.netflix.conductor.core.event.WorkflowEvaluationEvent;
 import com.netflix.conductor.core.exception.*;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.Terminate;
@@ -89,7 +81,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final WorkflowStatusListener workflowStatusListener;
     private final TaskStatusListener taskStatusListener;
     private final SystemTaskRegistry systemTaskRegistry;
-    private final ApplicationEventPublisher eventPublisher;
     private long activeWorkerLastPollMs;
     private final ExecutionLockService executionLockService;
 
@@ -110,8 +101,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             ExecutionLockService executionLockService,
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
-            IDGenerator idGenerator,
-            ApplicationEventPublisher eventPublisher) {
+            IDGenerator idGenerator) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -125,7 +115,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.parametersUtils = parametersUtils;
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
-        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -160,8 +149,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     @Override
-    @PreAuthorize(
-            "hasPermission(#request, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public String rerun(RerunWorkflowRequest request) {
         Utils.checkNotNull(request.getReRunFromWorkflowId(), "reRunFromWorkflowId is missing");
         if (!rerunWF(
@@ -185,8 +172,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      *     non-restartable as per workflow definition.
      */
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void restart(String workflowId, boolean useLatestDefinitions) {
         final WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
 
@@ -276,8 +261,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @param workflowId the id of the workflow to be retried
      */
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void retry(String workflowId, boolean resumeSubworkflowTasks) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
@@ -610,8 +593,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void terminateWorkflow(String workflowId, String reason) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         if (WorkflowModel.Status.COMPLETED.equals(workflow.getStatus())) {
@@ -720,7 +701,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     startWorkflowInput.setWorkflowId(failureWFId);
                     startWorkflowInput.setTriggeringWorkflowId(workflowId);
 
-                    eventPublisher.publishEvent(new WorkflowCreationEvent(startWorkflowInput));
+                    startWorkflow(startWorkflowInput);
 
                     workflow.addOutput("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {
@@ -1066,11 +1047,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return executionDAOFacade.getRunningWorkflowIds(workflowName, version);
     }
 
-    @EventListener(WorkflowEvaluationEvent.class)
-    public void handleWorkflowEvaluationEvent(WorkflowEvaluationEvent wee) {
-        decide(wee.getWorkflowModel());
-    }
-
     /** Records a metric for the "decide" process. */
     @Override
     public WorkflowModel decide(String workflowId) {
@@ -1101,7 +1077,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      *     method does not acquire the lock on the workflow and should ony be called / overridden if
      *     No locking is required or lock is acquired externally
      */
-    public WorkflowModel decide(WorkflowModel workflow) {
+    private WorkflowModel decide(WorkflowModel workflow) {
         if (workflow.getStatus().isTerminal()) {
             if (!workflow.getStatus().isSuccessful()) {
                 cancelNonTerminalTasks(workflow);
@@ -1309,8 +1285,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @throws ConflictException if the workflow is in terminal state.
      */
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void pauseWorkflow(String workflowId) {
         try {
             executionLockService.acquireLock(workflowId, 60000);
@@ -1350,8 +1324,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @throws IllegalStateException if the workflow is not in PAUSED state
      */
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void resumeWorkflow(String workflowId) {
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
         if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
@@ -1383,8 +1355,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @throws IllegalStateException
      */
     @Override
-    @PreAuthorize(
-            "hasPermission(#workflowId, T(com.netflix.conductor.common.metadata.acl.Permission).OPERATOR)")
     public void skipTaskFromWorkflow(
             String workflowId, String taskReferenceName, SkipTaskRequest skipTaskRequest) {
 
@@ -1847,6 +1817,24 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 });
         scheduleTask(workflow, scheduledLoopOverTasks);
         workflow.getTasks().addAll(scheduledLoopOverTasks);
+    }
+
+    private TaskDef getTaskDefinition(TaskModel task) {
+        return task.getTaskDefinition()
+                .orElseGet(
+                        () ->
+                                Optional.ofNullable(
+                                                metadataDAO.getTaskDef(
+                                                        task.getWorkflowTask().getName()))
+                                        .orElseThrow(
+                                                () -> {
+                                                    String reason =
+                                                            String.format(
+                                                                    "Invalid task specified. Cannot find task by name %s in the task definitions",
+                                                                    task.getWorkflowTask()
+                                                                            .getName());
+                                                    return new TerminateWorkflowException(reason);
+                                                }));
     }
 
     @VisibleForTesting

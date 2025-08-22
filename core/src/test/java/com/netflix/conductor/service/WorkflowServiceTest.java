@@ -30,7 +30,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -54,11 +53,6 @@ public class WorkflowServiceTest {
         }
 
         @Bean
-        public StartWorkflowOperation startWorkflowOperation() {
-            return mock(StartWorkflowOperation.class);
-        }
-
-        @Bean
         public ExecutionService executionService() {
             return mock(ExecutionService.class);
         }
@@ -72,10 +66,8 @@ public class WorkflowServiceTest {
         public WorkflowService workflowService(
                 WorkflowExecutor workflowExecutor,
                 ExecutionService executionService,
-                MetadataService metadataService,
-                StartWorkflowOperation startWorkflowOperation) {
-            return new WorkflowServiceImpl(
-                    workflowExecutor, executionService, metadataService, startWorkflowOperation);
+                MetadataService metadataService) {
+            return new WorkflowServiceImpl(workflowExecutor, executionService, metadataService);
         }
     }
 

@@ -44,7 +44,6 @@ import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -74,7 +73,6 @@ public class TestDefaultEventProcessor {
     private MetadataService metadataService;
     private ExecutionService executionService;
     private WorkflowExecutor workflowExecutor;
-    private StartWorkflowOperation startWorkflowOperation;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private SimpleActionProcessor actionProcessor;
     private ParametersUtils parametersUtils;
@@ -101,7 +99,6 @@ public class TestDefaultEventProcessor {
         metadataService = mock(MetadataService.class);
         executionService = mock(ExecutionService.class);
         workflowExecutor = mock(WorkflowExecutor.class);
-        startWorkflowOperation = mock(StartWorkflowOperation.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         actionProcessor = mock(SimpleActionProcessor.class);
         parametersUtils = new ParametersUtils(objectMapper);
@@ -171,8 +168,8 @@ public class TestDefaultEventProcessor {
                                     started.set(true);
                                     return id;
                                 })
-                .when(startWorkflowOperation)
-                .execute(
+                .when(workflowExecutor)
+                .startWorkflow(
                         argThat(
                                 argument ->
                                         startWorkflowAction
@@ -205,8 +202,7 @@ public class TestDefaultEventProcessor {
         doNothing().when(externalPayloadStorageUtils).verifyAndUpload(any(), any());
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, parametersUtils, jsonUtils, startWorkflowOperation);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -263,8 +259,8 @@ public class TestDefaultEventProcessor {
                                     started.set(true);
                                     return id;
                                 })
-                .when(startWorkflowOperation)
-                .execute(
+                .when(workflowExecutor)
+                .startWorkflow(
                         argThat(
                                 argument ->
                                         startWorkflowAction
@@ -278,8 +274,7 @@ public class TestDefaultEventProcessor {
                                                 && event.equals(argument.getEvent())));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, parametersUtils, jsonUtils, startWorkflowOperation);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
@@ -333,8 +328,8 @@ public class TestDefaultEventProcessor {
                                     started.set(true);
                                     return id;
                                 })
-                .when(startWorkflowOperation)
-                .execute(
+                .when(workflowExecutor)
+                .startWorkflow(
                         argThat(
                                 argument ->
                                         startWorkflowAction
@@ -348,8 +343,7 @@ public class TestDefaultEventProcessor {
                                                 && event.equals(argument.getEvent())));
 
         SimpleActionProcessor actionProcessor =
-                new SimpleActionProcessor(
-                        workflowExecutor, parametersUtils, jsonUtils, startWorkflowOperation);
+                new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
         DefaultEventProcessor eventProcessor =
                 new DefaultEventProcessor(
