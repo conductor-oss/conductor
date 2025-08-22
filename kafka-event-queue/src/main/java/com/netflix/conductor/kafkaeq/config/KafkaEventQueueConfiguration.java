@@ -15,8 +15,10 @@ package com.netflix.conductor.kafkaeq.config;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,8 +89,13 @@ public class KafkaEventQueueConfiguration {
                 String topicName = queuePrefix + status.name();
 
                 LOGGER.debug("topicName: {}", topicName);
+                // Create unique overrides
+                Properties consumerOverrides = new Properties();
+                consumerOverrides.put(ConsumerConfig.CLIENT_ID_CONFIG, topicName + "-consumer");
+                consumerOverrides.put(ConsumerConfig.GROUP_ID_CONFIG, topicName + "-group");
 
-                final ObservableQueue queue = new Builder(properties).build(topicName);
+                final ObservableQueue queue =
+                        new Builder(properties).build(topicName, consumerOverrides);
                 queues.put(status, queue);
             }
 
