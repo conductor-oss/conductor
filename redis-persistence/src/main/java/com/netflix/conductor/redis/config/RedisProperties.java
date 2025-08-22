@@ -112,6 +112,10 @@ public class RedisProperties {
 
     private String username = null;
 
+    private boolean ssl = false;
+
+    private String clientName = null;
+
     public int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
     }
@@ -302,5 +306,21 @@ public class RedisProperties {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }
