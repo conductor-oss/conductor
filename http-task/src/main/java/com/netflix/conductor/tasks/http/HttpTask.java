@@ -13,6 +13,7 @@
 package com.netflix.conductor.tasks.http;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -107,7 +109,8 @@ public class HttpTask extends WorkflowSystemTask {
                     response.statusCode,
                     response.body,
                     task.getTaskId());
-            if (response.statusCode > 199 && response.statusCode < 300) {
+            if (input.accept4xxValues.contains(response.statusCode)
+                    || response.statusCode > 199 && response.statusCode < 300) {
                 if (isAsyncComplete(task)) {
                     task.setStatus(TaskModel.Status.IN_PROGRESS);
                 } else {
@@ -176,21 +179,40 @@ public class HttpTask extends WorkflowSystemTask {
                 response.body = extractBody(responseEntity.getBody());
             }
 
-            response.statusCode = responseEntity.getStatusCodeValue();
+            response.statusCode = responseEntity.getStatusCode().value();
             response.reasonPhrase =
                     HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
             response.headers = responseEntity.getHeaders();
             return response;
+
+        } catch (HttpClientErrorException ex) {
+            if (!input.accept4xxValues.contains(ex.getStatusCode().value())) {
+                throw handleExceptionAsError(input, ex);
+            }
+            String body = ex.getResponseBodyAsString();
+            if (!body.isEmpty()) {
+                response.body = extractBody(ex.getResponseBodyAsString());
+            }
+            response.statusCode = ex.getStatusCode().value();
+            response.reasonPhrase =
+                    HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
+            response.headers = ex.getResponseHeaders();
+            return response;
+
         } catch (RestClientException ex) {
-            LOGGER.error(
-                    String.format(
-                            "Got unexpected http response - uri: %s, vipAddress: %s",
-                            input.getUri(), input.getVipAddress()),
-                    ex);
-            String reason = ex.getLocalizedMessage();
-            LOGGER.error(reason, ex);
-            throw new Exception(reason);
+            throw handleExceptionAsError(input, ex);
         }
+    }
+
+    private Exception handleExceptionAsError(Input input, RestClientException ex) {
+        LOGGER.error(
+                String.format(
+                        "Got unexpected http response - uri: %s, vipAddress: %s",
+                        input.getUri(), input.getVipAddress()),
+                ex);
+        String reason = ex.getLocalizedMessage();
+        LOGGER.error(reason, ex);
+        return new Exception(reason);
     }
 
     private Object extractBody(String responseBody) {
@@ -268,6 +290,7 @@ public class HttpTask extends WorkflowSystemTask {
         private String contentType = MediaType.APPLICATION_JSON_VALUE;
         private Integer connectionTimeOut;
         private Integer readTimeOut;
+        private List<Integer> accept4xxValues = new ArrayList<>();
 
         /**
          * @return the method
@@ -395,6 +418,14 @@ public class HttpTask extends WorkflowSystemTask {
 
         public void setReadTimeOut(Integer readTimeOut) {
             this.readTimeOut = readTimeOut;
+        }
+
+        public List<Integer> getAccept4xxValues() {
+            return accept4xxValues;
+        }
+
+        public void setAccept4xxValues(List<Integer> accept4xxValues) {
+            this.accept4xxValues = accept4xxValues;
         }
     }
 }
