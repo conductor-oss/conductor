@@ -19,6 +19,7 @@ steps:
         docker build \
           -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA" \
           -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:latest" \
+          --build-arg HOMEPAGE=${_HOMEPAGE} \
           -f ./docker/server/Dockerfile \
           .
 
