@@ -28,6 +28,7 @@ import useWorkflowErrorGroups, {
 } from "./hooks/useWorkflowErrorGroups";
 import Notification from "./components/Notification";
 import { getBasename } from "../../utils/helpers";
+import { cleanDuplicateSlash } from "../../plugins/fetch";
 
 const ErrorsInspector = () => {
   const [data, setData] = useState(null);
