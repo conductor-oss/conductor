@@ -1,5 +1,5 @@
 substitutions:
-  _IMAGE_NAME: gaxl-conductor-server
+  _IMAGE_NAME: gaxl-conductor
 
 steps:
   # Step 1: Build Docker image (tagged with SHORT_SHA and latest)
