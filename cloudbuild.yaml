@@ -1,0 +1,49 @@
+substitutions:
+  _IMAGE_NAME: gaxl-conductor-ui
+
+steps:
+  # Step 1: Build Docker image (tagged with SHORT_SHA and latest)
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Build Docker Image"
+    env:
+      - _REGION=${_REGION}
+      - _PROJECT_ID=${_PROJECT_ID}
+      - _REPO=${_REPO}
+      - _IMAGE_NAME=${_IMAGE_NAME}
+      - _SHORT_SHA=${SHORT_SHA}
+      - _HOMEPAGE=${_HOMEPAGE}
+    entrypoint: "bash"
+    args:
+      - -c
+      - |
+        docker build \
+          -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA" \
+          -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:latest" \
+          --build-arg HOMEPAGE=$$_HOMEPAGE \
+          -f ./docker/ui/Dockerfile \
+          .
+
+  # Step 2: Push both tags
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Push Docker Image (SHA Tag)"
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Push Docker Image (Latest Tag)"
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:latest",
+      ]
+
+timeout: 1800s
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA"
+  - "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO}/${_IMAGE_NAME}:latest"
