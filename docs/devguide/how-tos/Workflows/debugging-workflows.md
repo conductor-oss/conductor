@@ -1,50 +1,52 @@
 # Debugging Workflows
 
-Conductor UI is a tool that we can leverage for debugging issues. Refer to the following articles to search and view
-your workflow execution.
+The [workflow execution views](viewing-workflow-executions.md) in the Conductor UI are useful for debugging workflow issues. Learn how to debug failed executions and rerun them. 
 
-1. [Searching Workflows](searching-workflows.md)
-2. [View Workflow Executions](view-workflow-executions.md)
+## Debug procedure
 
+When you view the workflow execution details, the cause of the workflow failure will be stated at the top. Go to the **Tasks > Diagram** tab to quickly identify the failed task, which is marked in red. You can select the failed task to investigate the details of the failure.
 
-## Debugging Executions
+The following tab views or fields in the task details are useful for debugging:
 
-Open the **Tasks > Diagram** tab to see the diagram of the overall workflow execution
-
-If there is a failure, you will them on the view marked as red. In most cases it should be clear what went wrong from
-the view itself. To see details of the failure, you can click on the failed task.
-
-The following fields are useful in debugging
-
-| Field Name                                      | Description                                                                                                                   |
+| Field or Tab Name                                      | Description                                                                                                                   |
 |-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| Task Detail > Summary > Reason for Incompletion | If an exception was thrown by the worker, it will be captured and displayed here                                              |
-| Task Detail > Summary > Worker                  | The worker instance id where this failure last occurred. Useful to dig for detailed logs if not already captured by Conductor |
-| Task Detail > Input                             | Verify if the task inputs were computed and provided correctly to the task                                                    |
-| Task Detail > Output                            | If output of a previous task is used as an input to your next task, refer here for what was produced                          |
-| Task Detail > Logs                              | If your task is supplying logs, we can look at that here                                                                      |
-| Task Detail > Retried Task - Select an instance | If your task was retried, we can see all the attempts and correponding details here                                           |
+| _Reason for Incompletion_ in **Task Detail** > **Summary**  | Contains the exception message thrown by the task worker.                    |
+| _Worker_ in **Task Detail** > **Summary**                   | Contains the worker instance ID where the failure occurred. Useful for digging up detailed logs, if it has not already captured by Conductor.                    |
+| **Task Detail** > **Input**                           | Useful for verifying if the task inputs were correctly computed and provided to the task.                       |
+| **Task Detail** > **Output**                        | Useful for verifying what the task produced as output.                         |
+| **Task Detail** > **Logs**                         | Contains the task logs, if supplied by the task worker.                                                        |
+| **Task Detail** > **Retried Task - Select an instance** | (If the task has been retried multiple times) Contains all retry attempts in a dropdown list. Each list item contains the task details for a particular attempt.                                 |
 
-Note: We can also access the task list from **Tasks > Task List** tab.
 
-Here is a screen grab of the fields referred above.
+![Debugging Workflow Execution](workflow_debugging.png)
 
-![Debugging Wowkflow Execution](workflow_debugging.png)
+## Recovering from failure
 
-## Recovering From Failures
+Once you have resolved the underlying issue for the execution failure, you can manually restart or retry the failed workflow execution using the Conductor UI or APIs.
 
-Once we have resolved the underlying issue of workflow execution failure, we might want to replay or retry failed
-workflows. The UI has functions that would allow us to do this:
+Here are the recovery options:
 
-The **Actions** button provides the following options:
+| Recovery Action     | Description                |
+|---------------------|----------------------------|
+| Restart with Current Definitions | Restart the workflow from the beginning using the same workflow definition that was used in the original execution. This option is useful if the workflow definition has changed and you want to run the execution instance using the original definition.            |
+| Restart with Latest Definitions | Restart the workflow from the beginning using the latest workflow definition. This option is useful if changes were made to the workflow definition and you want to run the execution instance with the latest definition. | 
+| Retry - From failed task | Retry the workflow from the failed task.           | 
 
-|Action Name|Description|
-|---|---|
-| Restart with Current Definitions | Restart this workflow from the beginning using the same version of the workflow definition that originally ran this workflow execution. This is useful if the workflow definition has changed and we want to retain this instance to the original version|
-| Restart with Latest Definitions | Restart this workflow from the beginning using the latest definition of the workflow. If we made changes to definition, we can use this option to re-run this flow with the latest version| 
-| Retry - From failed task | Retry this workflow from the failed task| 
+!!! Note
+    You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../../documentation/configuration/taskdef.md) for more information.
 
-<br/>
+### Using Conductor UI
 
-> **Note:** Conductor configurations allow your tasks to be retried automatically for transient failures.
-> Refer to the task configuration options on how to leverage this.  
+**To recover from failure**:
+
+1. In the workflow execution details page, select **Actions** in the top right corner.
+2. Select one of the following options:
+    - Restart with Current Definitions
+    - Restart with Latest Definitions
+    - Retry - From failed task
+
+### Using APIs
+
+You can restart workflow executions using the Restart Workflow API (`POST api/workflow/{workflowId}/restart`) or the Bulk Restart Workflow API (`POST api/workflow/bulk/restart`).
+
+Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`)
