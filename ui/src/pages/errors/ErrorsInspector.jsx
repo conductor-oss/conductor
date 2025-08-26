@@ -1,19 +1,33 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 
-import _ from 'lodash';
-import { useWorkflowSearch } from '../../data/workflow';
-import { useWorkflowDefs } from '../../data/workflow';
-import ResultsTable from '../executions/ResultsTable';
-import SummaryCard from './components/SummaryCard';
-import WorkflowTypeChart from './components/WorkflowTypeChart';
-import StatusChart from './components/StatusChart';
-import FailureReasonChart from './components/FailureReasonChart';
-import TimeSeriesChart from './components/TimeSeriesChart';
-import TimeRangeDropdown from './components/TimeRangeDropdown';
-import LiveTailButton from './components/LiveTailButton';
-import { colors, TIME_RANGE_OPTIONS, styles, cssStyles } from './errorsInspectorStyles';
-import useWorkflowErrorGroups, { filterWorkflowsByReason } from './hooks/useWorkflowErrorGroups';
-import Notification from './components/Notification';
+import _ from "lodash";
+import { useWorkflowSearch } from "../../data/workflow";
+import { useWorkflowDefs } from "../../data/workflow";
+import ResultsTable from "../executions/ResultsTable";
+import SummaryCard from "./components/SummaryCard";
+import WorkflowTypeChart from "./components/WorkflowTypeChart";
+import StatusChart from "./components/StatusChart";
+import FailureReasonChart from "./components/FailureReasonChart";
+import TimeSeriesChart from "./components/TimeSeriesChart";
+import TimeRangeDropdown from "./components/TimeRangeDropdown";
+import LiveTailButton from "./components/LiveTailButton";
+import {
+  colors,
+  TIME_RANGE_OPTIONS,
+  styles,
+  cssStyles,
+} from "./errorsInspectorStyles";
+import useWorkflowErrorGroups, {
+  filterWorkflowsByReason,
+} from "./hooks/useWorkflowErrorGroups";
+import Notification from "./components/Notification";
+import { getBasename } from "../../utils/helpers";
 
 const ErrorsInspector = () => {
   const [data, setData] = useState(null);
@@ -34,15 +48,16 @@ const ErrorsInspector = () => {
   const [timeUntilRefresh, setTimeUntilRefresh] = useState(60);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [notification, setNotification] = useState(null);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('24h'); // Default to 24 hours
-  const [selectedReasonForIncompletion, setSelectedReasonForIncompletion] = useState(null);
+  const [selectedTimeRange, setSelectedTimeRange] = useState("24h"); // Default to 24 hours
+  const [selectedReasonForIncompletion, setSelectedReasonForIncompletion] =
+    useState(null);
   const [reasonFilterFromChart, setReasonFilterFromChart] = useState(false);
-  
+
   // Reference to store the interval ID for cleanup
   const refreshIntervalRef = useRef(null);
 
   const { defs: workflowDefs, error: workflowDefsError } = useWorkflowDefs();
-  
+
   // Fallback for workflow definitions if the hook isn't working
   const [fallbackDefs, setFallbackDefs] = useState([]);
 
@@ -64,7 +79,7 @@ const ErrorsInspector = () => {
         terminatedWorkflows: 0,
         timedOutWorkflows: 0,
         reasonsForIncompletion: {},
-        avgExecutionTime: 0
+        avgExecutionTime: 0,
       };
     }
 
@@ -82,18 +97,18 @@ const ErrorsInspector = () => {
       pausedWorkflows: 0,
       terminatedWorkflows: 0,
       timedOutWorkflows: 0,
-      avgExecutionTime: 0
+      avgExecutionTime: 0,
     };
-    
-    workflows.forEach(workflow => {
+
+    workflows.forEach((workflow) => {
       // Count by workflow type
-      metrics.workflowTypes[workflow.workflowType] = 
+      metrics.workflowTypes[workflow.workflowType] =
         (metrics.workflowTypes[workflow.workflowType] || 0) + 1;
-      
+
       // Count by status
-      metrics.statusCounts[workflow.status] = 
+      metrics.statusCounts[workflow.status] =
         (metrics.statusCounts[workflow.status] || 0) + 1;
-      
+
       // Track completed vs failed vs running vs terminated vs timed out
       if (workflow.status === "COMPLETED") {
         metrics.completedWorkflows++;
@@ -102,19 +117,20 @@ const ErrorsInspector = () => {
       } else if (workflow.status === "RUNNING") {
         metrics.runningWorkflows++;
       } else if (workflow.status === "PAUSED") {
-        metrics.pausedWorkflows++;  
+        metrics.pausedWorkflows++;
       } else if (workflow.status === "TERMINATED") {
         metrics.terminatedWorkflows++;
       } else if (workflow.status === "TIMED_OUT") {
         metrics.timedOutWorkflows++;
       }
-      
+
       // Track reasons for incompletion
       if (workflow.reasonForIncompletion) {
-        metrics.reasonsForIncompletion[workflow.reasonForIncompletion] = 
-          (metrics.reasonsForIncompletion[workflow.reasonForIncompletion] || 0) + 1;
+        metrics.reasonsForIncompletion[workflow.reasonForIncompletion] =
+          (metrics.reasonsForIncompletion[workflow.reasonForIncompletion] ||
+            0) + 1;
       }
-      
+
       // Sum execution times by type
       if (!metrics.executionTimeByType[workflow.workflowType]) {
         metrics.executionTimeByType[workflow.workflowType] = {
@@ -122,30 +138,31 @@ const ErrorsInspector = () => {
           totalTime: 0,
           avgTime: 0,
           minTime: Infinity,
-          maxTime: 0
+          maxTime: 0,
         };
       }
-      
+
       const typeStats = metrics.executionTimeByType[workflow.workflowType];
       typeStats.count++;
       typeStats.totalTime += workflow.executionTime;
       typeStats.minTime = Math.min(typeStats.minTime, workflow.executionTime);
       typeStats.maxTime = Math.max(typeStats.maxTime, workflow.executionTime);
       typeStats.avgTime = typeStats.totalTime / typeStats.count;
-      
+
       // Track total execution time
       metrics.totalExecutionTime += workflow.executionTime;
-      
+
       // Count by correlation ID
       if (workflow.correlationId) {
-        metrics.correlationIds[workflow.correlationId] = 
+        metrics.correlationIds[workflow.correlationId] =
           (metrics.correlationIds[workflow.correlationId] || 0) + 1;
       }
     });
-    
+
     // Calculate average execution time
-    metrics.avgExecutionTime = metrics.totalExecutionTime / metrics.totalWorkflows;
-    
+    metrics.avgExecutionTime =
+      metrics.totalExecutionTime / metrics.totalWorkflows;
+
     return metrics;
   }, []);
 
@@ -153,30 +170,33 @@ const ErrorsInspector = () => {
     // If workflowDefs is not an array or is empty, try to fetch directly
     if (!Array.isArray(workflowDefs) || workflowDefs.length === 0) {
       console.log("Fetching workflow definitions directly as fallback");
-      
-      fetch('/api/metadata/workflow')
-        .then(response => {
+      const basename = getBasename();
+      const newPath = basename + "/api/metadata/workflow";
+      const cleanPath = cleanDuplicateSlash(newPath);
+      fetch(cleanPath)
+        .then((response) => {
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
           return response.json();
         })
-        .then(data => {
+        .then((data) => {
           console.log("Fallback workflow definitions:", data);
           if (Array.isArray(data)) {
             setFallbackDefs(data);
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error fetching fallback workflow definitions:", error);
         });
     }
   }, [workflowDefs]);
-  
+
   // Use fallback definitions if the hook didn't provide valid data
-  const effectiveWorkflowDefs = Array.isArray(workflowDefs) && workflowDefs.length > 0 
-    ? workflowDefs 
-    : fallbackDefs;
+  const effectiveWorkflowDefs =
+    Array.isArray(workflowDefs) && workflowDefs.length > 0
+      ? workflowDefs
+      : fallbackDefs;
 
   // Debug workflow definitions
   useEffect(() => {
@@ -186,18 +206,18 @@ const ErrorsInspector = () => {
   // Create a unique list of workflow definition names from effectiveWorkflowDefs
   const uniqueWorkflowDefs = useMemo(() => {
     if (!Array.isArray(effectiveWorkflowDefs)) return [];
-    
+
     // Use a Set to get unique workflow names
     const uniqueNames = new Set();
     const uniqueDefs = [];
-    
-    effectiveWorkflowDefs.forEach(def => {
+
+    effectiveWorkflowDefs.forEach((def) => {
       if (!uniqueNames.has(def.name)) {
         uniqueNames.add(def.name);
         uniqueDefs.push(def);
       }
     });
-    
+
     return uniqueDefs;
   }, [effectiveWorkflowDefs]);
 
@@ -205,25 +225,26 @@ const ErrorsInspector = () => {
   useEffect(() => {
     if (uniqueWorkflowDefs.length > 0 && selectedWorkflowDefs.length === 0) {
       console.log("Setting initial workflow defs:", uniqueWorkflowDefs);
-      setSelectedWorkflowDefs(uniqueWorkflowDefs.map(def => def.name));
+      setSelectedWorkflowDefs(uniqueWorkflowDefs.map((def) => def.name));
     }
   }, [uniqueWorkflowDefs, selectedWorkflowDefs.length]);
 
   // Handle workflow definitions fetch error
   useEffect(() => {
     if (workflowDefsError) {
-      console.error('Error fetching workflow definitions:', workflowDefsError);
+      console.error("Error fetching workflow definitions:", workflowDefsError);
       setNotification({
-        message: "Failed to load workflow definitions. Some filtering options may be unavailable.",
+        message:
+          "Failed to load workflow definitions. Some filtering options may be unavailable.",
         type: "error",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
-      
+
       // Clear notification after 5 seconds
       const timer = setTimeout(() => {
         setNotification(null);
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [workflowDefsError]);
@@ -231,50 +252,70 @@ const ErrorsInspector = () => {
   // Function to build the query string based on selected time range and workflow types
   const buildQueryString = useCallback(() => {
     let queryParts = [];
-    
+
     // Always add time range filter since 'all' option is removed
-    const selectedOption = TIME_RANGE_OPTIONS.find(option => option.value === selectedTimeRange);
+    const selectedOption = TIME_RANGE_OPTIONS.find(
+      (option) => option.value === selectedTimeRange
+    );
     if (selectedOption && selectedOption.milliseconds) {
-      const cutoffTime = new Date(Date.now() - selectedOption.milliseconds).getTime();
+      const cutoffTime = new Date(
+        Date.now() - selectedOption.milliseconds
+      ).getTime();
       queryParts.push(`startTime>${cutoffTime}`);
     }
-    
+
     // Add workflow type filter if not all workflow types are selected
-    if (uniqueWorkflowDefs.length > 0 && selectedWorkflowDefs.length > 0 && 
-        selectedWorkflowDefs.length !== uniqueWorkflowDefs.length) {
-      
+    if (
+      uniqueWorkflowDefs.length > 0 &&
+      selectedWorkflowDefs.length > 0 &&
+      selectedWorkflowDefs.length !== uniqueWorkflowDefs.length
+    ) {
       // For multiple workflow types, use the IN operator
       if (selectedWorkflowDefs.length === 1) {
         // For a single workflow type, use a simple condition
         queryParts.push(`workflowType="${selectedWorkflowDefs[0]}"`);
       } else {
         // For multiple workflow types, use the IN operator with comma-separated values
-        queryParts.push(`workflowType IN (${selectedWorkflowDefs.join(',')})`);
+        queryParts.push(`workflowType IN (${selectedWorkflowDefs.join(",")})`);
       }
     }
-    
+
     // Add status filter for errored workflows (FAILED, TERMINATED, TIMED_OUT)
     queryParts.push(`status IN (FAILED,TERMINATED,TIMED_OUT,PAUSED)`);
-    
+
     // Log the query for debugging
-    const finalQuery = queryParts.join(' AND ');
+    const finalQuery = queryParts.join(" AND ");
     console.log("Query string:", finalQuery);
-    
+
     return finalQuery;
   }, [selectedTimeRange, selectedWorkflowDefs, uniqueWorkflowDefs]);
 
   // Create a search object with the time range query
-  const searchObj = useMemo(() => ({
-    rowsPerPage,
-    page: currentPage,
-    sort: `${sortField}:${sortDirection.toUpperCase()}`,
-    freeText: "",
-    query: buildQueryString(),
-    refreshTrigger
-  }), [rowsPerPage, currentPage, sortField, sortDirection, buildQueryString, refreshTrigger]);
-  
+  const searchObj = useMemo(
+    () => ({
+      rowsPerPage,
+      page: currentPage,
+      sort: `${sortField}:${sortDirection.toUpperCase()}`,
+      freeText: "",
+      query: buildQueryString(),
+      refreshTrigger,
+    }),
+    [
+      rowsPerPage,
+      currentPage,
+      sortField,
+      sortDirection,
+      buildQueryString,
+      refreshTrigger,
+    ]
+  );
+
   // Call the workflow search hook and get loading state
-  const { data: workflowData, error: searchError, isLoading: isSearching } = useWorkflowSearch(searchObj);
+  const {
+    data: workflowData,
+    error: searchError,
+    isLoading: isSearching,
+  } = useWorkflowSearch(searchObj);
 
   // Process API data
   useEffect(() => {
@@ -283,11 +324,10 @@ const ErrorsInspector = () => {
       setData(workflowData);
       setFilteredData(workflowData.results || []);
       setIsLoading(false);
-      
+
       // Calculate metrics immediately when data is received
       if (workflowData.results && workflowData.results.length > 0) {
         setMetrics(calculateMetrics(workflowData.results));
-        
       } else {
         // No results found
         console.log(`No data found with time range: ${selectedTimeRange}`);
@@ -295,121 +335,132 @@ const ErrorsInspector = () => {
         setMetrics(calculateMetrics([]));
       }
     } else if (searchError) {
-      console.error('Error fetching workflow data:', searchError);
+      console.error("Error fetching workflow data:", searchError);
       setData({ results: [], totalHits: 0 });
       setFilteredData([]);
       setIsLoading(false);
       setMetrics(calculateMetrics([]));
     }
   }, [workflowData, searchError, selectedTimeRange, calculateMetrics]);
-  
 
   useEffect(() => {
     if (!data || !data.results) return;
 
     // Apply filters
     let results = [...data.results];
-    
+
     if (workflowTypeFilter !== "all") {
-      results = results.filter(workflow => workflow.workflowType === workflowTypeFilter);
+      results = results.filter(
+        (workflow) => workflow.workflowType === workflowTypeFilter
+      );
     }
-    
+
     if (statusFilter !== "all") {
-      results = results.filter(workflow => workflow.status === statusFilter);
+      results = results.filter((workflow) => workflow.status === statusFilter);
     }
-    
+
     // Apply selected workflow type filter from chart click
     if (selectedWorkflowType) {
-      results = results.filter(workflow => workflow.workflowType === selectedWorkflowType);
+      results = results.filter(
+        (workflow) => workflow.workflowType === selectedWorkflowType
+      );
     }
-    
+
     // Apply selected time period filter from chart click
     if (selectedTimePeriod) {
       const selectedTime = new Date(selectedTimePeriod);
       const startTime = new Date(selectedTime);
       const endTime = new Date(selectedTime);
-      
+
       // Set the start time to the beginning of the hour
       startTime.setMinutes(0);
       startTime.setSeconds(0);
       startTime.setMilliseconds(0);
-      
+
       // Set the end time to the end of the hour
       endTime.setMinutes(59);
       endTime.setSeconds(59);
       endTime.setMilliseconds(999);
-      
-      results = results.filter(workflow => {
+
+      results = results.filter((workflow) => {
         const workflowTime = new Date(workflow.startTime);
         return workflowTime >= startTime && workflowTime <= endTime;
       });
-      
+
       // If no results found with exact hour, expand the range to ±1 hour
       if (results.length === 0 && selectedTimePeriod) {
         startTime.setHours(startTime.getHours() - 1);
         endTime.setHours(endTime.getHours() + 1);
-        
-        results = data.results.filter(workflow => {
+
+        results = data.results.filter((workflow) => {
           const workflowTime = new Date(workflow.startTime);
           return workflowTime >= startTime && workflowTime <= endTime;
         });
       }
     }
-    
+
     // Apply selected reason for incompletion filter
     if (selectedReasonForIncompletion) {
       // Get all workflows that match the selected reason group
-      const matchingWorkflows = filterWorkflowsByReason(data.results, selectedReasonForIncompletion);
-      
+      const matchingWorkflows = filterWorkflowsByReason(
+        data.results,
+        selectedReasonForIncompletion
+      );
+
       // Update results with all matching workflows
-      results = results.filter(workflow => 
-        matchingWorkflows.some(match => match.workflowId === workflow.workflowId)
+      results = results.filter((workflow) =>
+        matchingWorkflows.some(
+          (match) => match.workflowId === workflow.workflowId
+        )
       );
     }
-    
+
     setFilteredData(results);
-    
+
     // Calculate metrics based on filtered data
     setMetrics(calculateMetrics(results));
   }, [
-    data, 
-    workflowTypeFilter, 
-    statusFilter, 
-    selectedWorkflowType, 
-    selectedTimePeriod, 
-    selectedReasonForIncompletion, 
-    uniqueWorkflowDefs, 
-    calculateMetrics
+    data,
+    workflowTypeFilter,
+    statusFilter,
+    selectedWorkflowType,
+    selectedTimePeriod,
+    selectedReasonForIncompletion,
+    uniqueWorkflowDefs,
+    calculateMetrics,
   ]);
 
   const getWorkflowTypeData = useCallback(() => {
     if (!filteredData || filteredData.length === 0) return [];
-    
+
     // Group by workflow type
-    const groupedByType = _.groupBy(filteredData, 'workflowType');
-    
+    const groupedByType = _.groupBy(filteredData, "workflowType");
+
     return Object.entries(groupedByType).map(([type, workflows]) => {
-      const totalTime = workflows.reduce((sum, w) => sum + (w.executionTime || 0), 0);
+      const totalTime = workflows.reduce(
+        (sum, w) => sum + (w.executionTime || 0),
+        0
+      );
       const avgTime = workflows.length > 0 ? totalTime / workflows.length : 0;
-      
+
       return {
-      name: type,
+        name: type,
         count: workflows.length,
         avgTime: avgTime,
-        totalTime: totalTime
+        totalTime: totalTime,
       };
     });
   }, [filteredData]);
 
   const getStatusData = useCallback(() => {
     if (!filteredData || filteredData.length === 0) return [];
-    
+
     // Group by status
-    const groupedByStatus = _.groupBy(filteredData, 'status');
-    
+    const groupedByStatus = _.groupBy(filteredData, "status");
+
     return Object.entries(groupedByStatus).map(([status, workflows]) => ({
       name: status,
-      value: workflows.length
+      value: workflows.length,
     }));
   }, [filteredData]);
 
@@ -418,26 +469,37 @@ const ErrorsInspector = () => {
 
   const getTimeseriesData = useCallback(() => {
     if (!filteredData || filteredData.length === 0) return [];
-    
+
     // Group by hour
-    const grouped = _.groupBy(filteredData, workflow => {
+    const grouped = _.groupBy(filteredData, (workflow) => {
       const date = new Date(workflow.startTime);
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        date.getHours()
+      ).toISOString();
     });
-    
+
     // Convert to array and sort by time
     return Object.entries(grouped)
       .map(([timeKey, workflows]) => ({
         time: new Date(timeKey).getTime(),
-        count: workflows.length
+        count: workflows.length,
       }))
       .sort((a, b) => a.time - b.time);
   }, [filteredData]);
 
   // Memoize chart data calculations to prevent unnecessary recalculations
-  const workflowTypeData = useMemo(() => getWorkflowTypeData(), [getWorkflowTypeData]);
+  const workflowTypeData = useMemo(
+    () => getWorkflowTypeData(),
+    [getWorkflowTypeData]
+  );
   const statusData = useMemo(() => getStatusData(), [getStatusData]);
-  const timeseriesData = useMemo(() => getTimeseriesData(), [getTimeseriesData]);
+  const timeseriesData = useMemo(
+    () => getTimeseriesData(),
+    [getTimeseriesData]
+  );
 
   // Handle workflow type bar click
   const handleWorkflowTypeClick = (data) => {
@@ -479,22 +541,20 @@ const ErrorsInspector = () => {
     setSelectedTimePeriod(null);
   };
 
-  
-
   // Function to refresh data
   const refreshData = useCallback(() => {
     // Increment the refresh trigger to force a re-fetch
-    setRefreshTrigger(prev => prev + 1);
-    
+    setRefreshTrigger((prev) => prev + 1);
+
     // Reset the countdown timer
     setTimeUntilRefresh(60);
-    
+
     // Show loading indicator briefly
     setIsLoading(true);
-    
+
     // Hide loading indicator after a short delay if it's still showing
     setTimeout(() => {
-      setIsLoading(prevLoading => {
+      setIsLoading((prevLoading) => {
         if (prevLoading) {
           return false;
         }
@@ -502,19 +562,19 @@ const ErrorsInspector = () => {
       });
     }, 500);
   }, []);
-  
+
   // Set up auto-refresh interval
   useEffect(() => {
     // Clear any existing interval
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
     }
-    
+
     // Only set up the interval if auto-refresh is enabled
     if (autoRefreshEnabled) {
       // Set up countdown timer that updates every second
       refreshIntervalRef.current = setInterval(() => {
-        setTimeUntilRefresh(prevTime => {
+        setTimeUntilRefresh((prevTime) => {
           if (prevTime <= 1) {
             // Time to refresh
             refreshData();
@@ -524,7 +584,7 @@ const ErrorsInspector = () => {
         });
       }, 1000);
     }
-    
+
     // Clean up interval on component unmount or when autoRefreshEnabled changes
     return () => {
       if (refreshIntervalRef.current) {
@@ -540,33 +600,36 @@ const ErrorsInspector = () => {
       setIsLoading(false);
     }
   }, [workflowData, isLoading]);
-  
+
   // Effect to handle search errors
   useEffect(() => {
     if (searchError) {
       // Show error notification
       setNotification({
-        message: "Failed to refresh data. Will try again during next live tail update.",
+        message:
+          "Failed to refresh data. Will try again during next live tail update.",
         type: "error",
-        timestamp: new Date()
+        timestamp: new Date(),
       });
-      
+
       // Clear notification after 5 seconds
       const timer = setTimeout(() => {
         setNotification(null);
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [searchError]);
 
   // Reset auto-expansion state on component mount
   useEffect(() => {
-    console.log("Initializing errored workflows dashboard with time range: 24h");
-    
+    console.log(
+      "Initializing errored workflows dashboard with time range: 24h"
+    );
+
     // Start with 24 hours time range
-    setSelectedTimeRange('24h');
-    
+    setSelectedTimeRange("24h");
+
     // Return cleanup function
     return () => {
       console.log("Dashboard component unmounting");
@@ -604,9 +667,28 @@ const ErrorsInspector = () => {
   // Show loading spinner when searching
   if (isSearching) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "64px" }}>
-        <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid #ccc", borderTop: "4px solid #1f83db", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
-        <p style={{ fontSize: "18px", marginLeft: "10px" }}>Loading errored workflow data...</p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "64px",
+        }}
+      >
+        <div
+          className="spinner"
+          style={{
+            width: "40px",
+            height: "40px",
+            border: "4px solid #ccc",
+            borderTop: "4px solid #1f83db",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        ></div>
+        <p style={{ fontSize: "18px", marginLeft: "10px" }}>
+          Loading errored workflow data...
+        </p>
       </div>
     );
   }
@@ -614,10 +696,8 @@ const ErrorsInspector = () => {
   return (
     <div style={styles.main}>
       {/* Add style for notifications and animations */}
-      <style>
-        {cssStyles}
-      </style>
-      
+      <style>{cssStyles}</style>
+
       {/* Notification component */}
       {notification && (
         <Notification
@@ -627,11 +707,9 @@ const ErrorsInspector = () => {
           onClose={() => setNotification(null)}
         />
       )}
-      
+
       <div style={styles.headerContainer}>
-        <h1 style={styles.title}>
-          Errored Workflows Dashboard
-        </h1>
+        <h1 style={styles.title}>Errored Workflows Dashboard</h1>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           {/* Time Range Dropdown */}
           <TimeRangeDropdown
@@ -641,18 +719,23 @@ const ErrorsInspector = () => {
             onFilterChange={(newTimeRange) => {
               // Reset to first page when changing time range
               setCurrentPage(1);
-              
+
               // Show notification if filters are active
-              const hasActiveFilters = selectedWorkflowType || selectedTimePeriod || statusFilter !== "all";
+              const hasActiveFilters =
+                selectedWorkflowType ||
+                selectedTimePeriod ||
+                statusFilter !== "all";
               if (hasActiveFilters) {
                 // Get the new time range label
-                const timeRangeOption = TIME_RANGE_OPTIONS.find(option => option.value === newTimeRange);
+                const timeRangeOption = TIME_RANGE_OPTIONS.find(
+                  (option) => option.value === newTimeRange
+                );
                 setNotification({
                   message: `Time range changed to Since ${timeRangeOption.label} while maintaining existing filters`,
                   type: "success",
-                  timestamp: new Date()
+                  timestamp: new Date(),
                 });
-                
+
                 // Clear notification after 3 seconds
                 setTimeout(() => {
                   setNotification(null);
@@ -660,7 +743,7 @@ const ErrorsInspector = () => {
               }
             }}
           />
-          
+
           {/* Live Tail button */}
           <LiveTailButton
             isEnabled={autoRefreshEnabled}
@@ -669,7 +752,7 @@ const ErrorsInspector = () => {
             onToggle={() => {
               const newState = !autoRefreshEnabled;
               setAutoRefreshEnabled(newState);
-              
+
               // If enabling, refresh immediately and reset the timer
               if (newState) {
                 refreshData();
@@ -690,42 +773,62 @@ const ErrorsInspector = () => {
             noDataMessage="No errored workflow data found in the selected time range"
             style={styles.summaryCard(filteredData)}
           />
-          
+
           <SummaryCard
             title="Failed"
             value={metrics.failedWorkflows}
             color={colors.red}
-            percentage={filteredData && filteredData.length > 0 ? 
-              `${((metrics.failedWorkflows / filteredData.length) * 100).toFixed(1)}%` : 
-              undefined}
+            percentage={
+              filteredData && filteredData.length > 0
+                ? `${(
+                    (metrics.failedWorkflows / filteredData.length) *
+                    100
+                  ).toFixed(1)}%`
+                : undefined
+            }
           />
-          
+
           <SummaryCard
             title="Terminated"
             value={metrics.terminatedWorkflows}
             color={colors.purple}
-            percentage={filteredData && filteredData.length > 0 ? 
-              `${((metrics.terminatedWorkflows / filteredData.length) * 100).toFixed(1)}%` : 
-              undefined}
+            percentage={
+              filteredData && filteredData.length > 0
+                ? `${(
+                    (metrics.terminatedWorkflows / filteredData.length) *
+                    100
+                  ).toFixed(1)}%`
+                : undefined
+            }
           />
-          
+
           <SummaryCard
             title="Timed Out"
             value={metrics.timedOutWorkflows}
             color={colors.yellow}
-            percentage={filteredData && filteredData.length > 0 ? 
-              `${((metrics.timedOutWorkflows / filteredData.length) * 100).toFixed(1)}%` : 
-              undefined}
+            percentage={
+              filteredData && filteredData.length > 0
+                ? `${(
+                    (metrics.timedOutWorkflows / filteredData.length) *
+                    100
+                  ).toFixed(1)}%`
+                : undefined
+            }
           />
 
           <SummaryCard
             title="Paused"
             value={metrics.pausedWorkflows}
             color={colors.blue}
-            percentage={filteredData && filteredData.length > 0 ? 
-              `${((metrics.pausedWorkflows / filteredData.length) * 100).toFixed(1)}%` : 
-              undefined}
-          />  
+            percentage={
+              filteredData && filteredData.length > 0
+                ? `${(
+                    (metrics.pausedWorkflows / filteredData.length) *
+                    100
+                  ).toFixed(1)}%`
+                : undefined
+            }
+          />
         </div>
       )}
 
@@ -776,14 +879,14 @@ const ErrorsInspector = () => {
       </div>
 
       {/* Results Table using imported component */}
-      <div style={{...styles.card, marginTop: "20px"}}>
+      <div style={{ ...styles.card, marginTop: "20px" }}>
         <h2 style={styles.subtitle}>Errored Workflow Details</h2>
-        
-          {filteredData && filteredData.length > 0 ? (
-          <ResultsTable 
-            resultObj={{ 
+
+        {filteredData && filteredData.length > 0 ? (
+          <ResultsTable
+            resultObj={{
               results: filteredData,
-              totalHits: data?.totalHits || filteredData.length 
+              totalHits: data?.totalHits || filteredData.length,
             }}
             error={null}
             busy={isLoading}
@@ -794,18 +897,18 @@ const ErrorsInspector = () => {
             setRowsPerPage={setRowsPerPage}
             setSort={(field, direction) => {
               setSortField(field);
-              setSortDirection(direction === 'ASC' ? 'asc' : 'desc');
+              setSortDirection(direction === "ASC" ? "asc" : "desc");
               setCurrentPage(1); // Reset to first page when sorting changes
             }}
             showMore={false}
           />
-          ) : (
-            <div style={styles.noResultsContainer}>
-              No errored workflow data available
-            </div>
-          )}
-        </div>
+        ) : (
+          <div style={styles.noResultsContainer}>
+            No errored workflow data available
+          </div>
+        )}
       </div>
+    </div>
   );
 };
 
