@@ -21,6 +21,7 @@ RUN yarn install && mkdir -p public && cp -r node_modules/monaco-editor public/
 # Copies everything else over to Docker environment
 # node_modules excluded in .dockerignore.
 COPY ./ui .
+run yarn dlx json -I -f package.json -e 'this.homepage="/conductor-ui/"'
 
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false

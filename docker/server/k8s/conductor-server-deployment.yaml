@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conductor-server
+  labels:
+    app: conductor-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: conductor-server
+  template:
+    metadata:
+      labels:
+        app: conductor-server
+    spec:
+      containers:
+        - name: conductor-server
+          image: us-central1-docker.pkg.dev/polaris-dev-462009/polaris-dev-gcr/conductor-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config/config-postgres.properties
+              subPath: config-postgres.properties
+      volumes:
+        - name: config-volume
+          configMap:
+            name: conductor-config
+            items:
+              - key: config-postgres.properties
+                path: config-postgres.properties
+

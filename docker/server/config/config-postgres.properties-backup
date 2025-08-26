@@ -1,12 +1,13 @@
-# Database persistence type
+# Database persistence type.
 conductor.db.type=postgres
 conductor.queue.type=postgres
 conductor.external-payload-storage.type=postgres
 
 # Database connectivity
-spring.datasource.url=jdbc:postgresql://10.117.0.3:5432/postgres
+spring.datasource.url=jdbc:postgresql://postgresdb:5432/postgres
 spring.datasource.username=conductor
 spring.datasource.password=conductor
+
 
 # Indexing Properties
 conductor.indexing.enabled=true
@@ -20,4 +21,3 @@ management.endpoints.web.exposure.include=prometheus
 
 # Load sample kitchen-sink workflow
 loadSample=true
-

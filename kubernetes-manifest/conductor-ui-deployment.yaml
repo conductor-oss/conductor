@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conductor-ui
+  labels:
+    app: conductor-ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: conductor-ui
+  template:
+    metadata:
+      labels:
+        app: conductor-ui
+    spec:
+      containers:
+        - name: conductor-ui
+          image: us-central1-docker.pkg.dev/platform-caxl/platform-caxl-dev-gcr/conductor:ui
+          ports:
+            - containerPort: 5000
+          env:
+            - name: WF_SERVER
+              value: "http://conductor-server:8080" # Change this URL based on your actual backend conductor server endpoint
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+

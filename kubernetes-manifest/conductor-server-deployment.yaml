@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conductor-server
+  labels:
+    app: conductor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conductor
+  template:
+    metadata:
+      labels:
+        app: conductor
+    spec:
+      containers:
+        - name: conductor-server
+          image: us-central1-docker.pkg.dev/platform-caxl/platform-caxl-dev-gcr/conductor-server:latest  # <-- Replace with your built image
+          ports:
+            - containerPort: 8080
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
