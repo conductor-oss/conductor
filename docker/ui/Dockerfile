@@ -18,7 +18,7 @@ WORKDIR /usr/src/app
 
 # Copies package.json to Docker environment in a separate layer as a performance optimization
 COPY ./ui/package.json ./
-RUN npm pkg set homepage=${HOMEPAGE}
+
 
 # Installs all node packages. Cached unless package.json changes
 RUN yarn install && mkdir -p public && cp -r node_modules/monaco-editor public/
@@ -27,6 +27,7 @@ RUN yarn install && mkdir -p public && cp -r node_modules/monaco-editor public/
 # node_modules excluded in .dockerignore.
 COPY ./ui .
 
+RUN npm pkg set homepage=${HOMEPAGE}
 
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
