@@ -790,11 +790,9 @@ public class DeciderService {
     @VisibleForTesting
     void checkTaskPublishTimeout(TaskDef taskDef, TaskModel task) {
         // this method is to check whether tasks in SCHEDULED state are updated with in a specific
-        // period of time
-        // if the status is not in SCHEDULED state then there is no need to verify timeout in this
-        // method
-        // also if its not scheduled earlier and scheduledTime is zero, we dont need to verify the
-        // timeout
+        // period of time if the status is not in SCHEDULED state then there is no need to verify
+        // timeout in this method also if its not scheduled earlier and scheduledTime is zero, we
+        // dont need to verify the timeout
         if (!task.getStatus().equals(SCHEDULED) || task.getScheduledTime() == 0) {
             return;
         }
@@ -822,8 +820,8 @@ public class DeciderService {
                 long terminationTime = 181 * 24 * 3600 * 1000L; // 181 days
                 long timeSinceScheduled = currentTime - task.getScheduledTime();
                 // we need to timeout old tasks as well. hence checking for scheduledtime instead of
-                // lastpublishtime. Existing tasks which are
-                // scheduled long back needs to be timedout
+                // lastpublishtime. Existing tasks which are scheduled long back needs to be
+                // timedout
                 if (timeSinceScheduled > terminationTime) {
                     String reason =
                             String.format(
