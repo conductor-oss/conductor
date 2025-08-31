@@ -1528,6 +1528,7 @@ public abstract class AbstractProtoMapper {
         if (from.getCacheConfig() != null) {
             to.setCacheConfig(toProto(from.getCacheConfig()));
         }
+        to.addAllMaskedFields( from.getMaskedFields() );
         return to.build();
     }
 
@@ -1579,6 +1580,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasCacheConfig()) {
             to.setCacheConfig(fromProto(from.getCacheConfig()));
         }
+        to.setMaskedFields( from.getMaskedFieldsList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         return to;
     }
 
@@ -1683,32 +1685,36 @@ public abstract class AbstractProtoMapper {
         if (from.getCreatedBy() != null) {
             to.setCreatedBy(from.getCreatedBy());
         }
-        to.putAllTaskToDomain(from.getTaskToDomain());
+        to.putAllTaskToDomain( from.getTaskToDomain() );
+        if (from.getIdempotencyKey() != null) {
+            to.setIdempotencyKey( from.getIdempotencyKey() );
+        }
         return to.build();
     }
 
     public WorkflowSummary fromProto(WorkflowSummaryPb.WorkflowSummary from) {
         WorkflowSummary to = new WorkflowSummary();
-        to.setWorkflowType(from.getWorkflowType());
-        to.setVersion(from.getVersion());
-        to.setWorkflowId(from.getWorkflowId());
-        to.setCorrelationId(from.getCorrelationId());
-        to.setStartTime(from.getStartTime());
-        to.setUpdateTime(from.getUpdateTime());
-        to.setEndTime(from.getEndTime());
-        to.setStatus(fromProto(from.getStatus()));
-        to.setInput(from.getInput());
-        to.setOutput(from.getOutput());
-        to.setReasonForIncompletion(from.getReasonForIncompletion());
-        to.setExecutionTime(from.getExecutionTime());
-        to.setEvent(from.getEvent());
-        to.setFailedReferenceTaskNames(from.getFailedReferenceTaskNames());
-        to.setExternalInputPayloadStoragePath(from.getExternalInputPayloadStoragePath());
-        to.setExternalOutputPayloadStoragePath(from.getExternalOutputPayloadStoragePath());
-        to.setPriority(from.getPriority());
-        to.setFailedTaskNames(from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)));
-        to.setCreatedBy(from.getCreatedBy());
-        to.setTaskToDomain(from.getTaskToDomainMap());
+        to.setWorkflowType( from.getWorkflowType() );
+        to.setVersion( from.getVersion() );
+        to.setWorkflowId( from.getWorkflowId() );
+        to.setCorrelationId( from.getCorrelationId() );
+        to.setStartTime( from.getStartTime() );
+        to.setUpdateTime( from.getUpdateTime() );
+        to.setEndTime( from.getEndTime() );
+        to.setStatus( fromProto( from.getStatus() ) );
+        to.setInput( from.getInput() );
+        to.setOutput( from.getOutput() );
+        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        to.setExecutionTime( from.getExecutionTime() );
+        to.setEvent( from.getEvent() );
+        to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        to.setPriority( from.getPriority() );
+        to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
+        to.setCreatedBy( from.getCreatedBy() );
+        to.setTaskToDomain( from.getTaskToDomainMap() );
+        to.setIdempotencyKey( from.getIdempotencyKey() );
         return to;
     }
 

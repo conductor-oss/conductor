@@ -45,7 +45,7 @@ public class MetadataClient extends ClientBase {
      * @param workflowDef the workflow definition
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
+        Preconditions.checkNotNull(workflowDef, "Workflow definition cannot be null");
         stub.createWorkflow(
                 MetadataServicePb.CreateWorkflowRequest.newBuilder()
                         .setWorkflow(protoMapper.toProto(workflowDef))
