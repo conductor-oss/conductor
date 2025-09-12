@@ -9,16 +9,16 @@ use_directory_urls: false
 nav:
   - index.md
   - Developer's Guide:
+    - devguide/concepts/why.md 
+    - Running Conductor:
+      - devguide/running/docker.md
+      - devguide/running/source.md
+      - devguide/running/hosted.md
     - Concepts: 
       - devguide/concepts/index.md
       - devguide/concepts/workflows.md
       - devguide/concepts/tasks.md
       - devguide/concepts/workers.md
-      - devguide/concepts/why.md
-    - Running Conductor:
-      - devguide/running/docker.md
-      - devguide/running/source.md
-      - devguide/running/hosted.md
     - Architecture: 
       - devguide/architecture/index.md
       - devguide/architecture/tasklifecycle.md

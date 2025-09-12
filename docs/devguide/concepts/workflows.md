@@ -1,13 +1,26 @@
-# Workflows 
-We will talk about two distinct topics, *defining* a workflow and *executing* a workflow.
+# Workflows
 
-### Workflow Definition
-The Workflow Definition is the Conductor primitive that encompasses the flow of your business logic. It contains all the information necessary to describe the behavior of a workflow.
+A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
 
-A Workflow Definition contains a collection of **Task Configurations**. This is the blueprint which specifies the order of execution of
-tasks within a workflow. This blueprint also specifies how data/state is passed from one task to another (using task input/output parameters).
+- Classifying documents
+- Ordering from a self-checkout service
+- Upgrading cloud infrastructure
+- Transcoding videos
+- Approving expenses
 
-Additionally, the Workflow Definition contains metadata regulating the runtime behavior workflow, such what input and output parameters are expected for the entire workflow, and the workflow's the timeout and retry settings.
+In Conductor, workflows can be defined and then executed. Learn more about the two distinct but related concepts, **workflow definition** and **workflow execution**, below.
 
-### Workflow Execution
-If Workflow Definitions are like OOP classes, then Workflows Executions are like object instances. Each time a Workflow Definition is invoked with a given input, a new *Workflow Execution* with a unique ID is created. Definitions to Executions have a 1:N relationship.
+
+## Workflow definition
+
+The workflow definition describes the flow and behavior of your business logic. Think of it as a blueprint specifying how it should execute at runtime until it reaches a terminal state. The workflow definition includes:
+
+- The workflow’s input/output keys.
+- A collection of [task configurations](tasks.md#task-configuration) that specify the task conditions, sequence, and data flow until the workflow is completed.
+- The workflow's runtime behavior, such as the timeout policy and compensation flow.
+
+## Workflow execution
+
+A workflow execution is the execution instance of a workflow definition. 
+
+Whenever a workflow definition is invoked with a given input, a new workflow execution with a unique ID is created. The workflow is governed by a defined state (like RUNNING or COMPLETED), which makes it intuitive to track the workflow.
