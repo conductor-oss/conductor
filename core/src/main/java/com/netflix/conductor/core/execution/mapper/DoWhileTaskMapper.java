@@ -86,9 +86,10 @@ public class DoWhileTaskMapper implements TaskMapper {
         doWhileTask.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
         doWhileTask.setStatus(TaskModel.Status.IN_PROGRESS);
         doWhileTask.setStartTime(System.currentTimeMillis());
-        doWhileTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
-        doWhileTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         doWhileTask.setRetryCount(taskMapperContext.getRetryCount());
+
+        // Apply static defaults or dynamic per-workflow overrides for rate limits
+        TaskMapperUtils.applyRateLimits(workflowModel, workflowTask, taskDefinition, doWhileTask);
 
         Map<String, Object> taskInput =
                 parametersUtils.getTaskInputV2(
