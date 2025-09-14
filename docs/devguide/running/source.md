@@ -9,9 +9,10 @@ You can [run Conductor using Docker](docker.md) to download Conductor with persi
 
 ## Building Conductor server from source
 
-!!! info "Prerequisites"
-    - Java (JDK) v17
-    - (Optional) [Docker](https://www.docker.com/get-started/) for running tests
+> [!NOTE] 
+> "Prerequisites"
+>  * Java (JDK) v17
+>  * (Optional) [Docker](https://www.docker.com/get-started/) for running tests
 
 **To build Conductor server from source:**
 
@@ -74,10 +75,11 @@ The API documentation should now be accessible at [http://localhost:8080/swagger
 
 ## Running Conductor UI from source
 
-!!! info "Prerequisites"
-    - A running Conductor server on port 8080
-    - [Node v14](https://nodejs.org) for the UI to build
-    - [Yarn](https://classic.yarnpkg.com/en/docs/install) for building and running the UI
+> [!NOTE]
+> "Prerequisites"
+> * A running Conductor server on port 8080
+> * [Node v14](https://nodejs.org) for the UI to build
+> * [Yarn](https://classic.yarnpkg.com/en/docs/install) for building and running the UI
 
 The UI is a standard `create-react-app` React single page application (SPA).
 
@@ -101,6 +103,6 @@ The UI should now be accessible at [http://localhost:5000](http://localhost:5000
 ![conductor ui](conductorUI.png)
 
 
-!!! note
-    To use the UI locally, there is no need to build the project. If you require compiled assets to host on a production web server, you can build the project using `yarn build`.
+> [!NOTE]
+> To use the UI locally, there is no need to build the project. If you require compiled assets to host on a production web server, you can build the project using `yarn build`.
 
