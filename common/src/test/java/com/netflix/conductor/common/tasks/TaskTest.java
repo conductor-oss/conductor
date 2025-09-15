@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -27,10 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import com.google.protobuf.Any;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TaskTest {
 
@@ -98,8 +96,18 @@ public class TaskTest {
         final Task task = new Task();
         // In order to avoid forgetting putting inside the copy method the newly added fields check
         // the number of declared fields.
-        final int expectedTaskFieldsNumber = 42;
+        final int expectedTaskFieldsNumber = 43;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
+
+        final ExecutionMetadata executionMetadata = new ExecutionMetadata();
+        executionMetadata.setServerSendTime(1000L);
+        executionMetadata.setClientReceiveTime(2000L);
+        executionMetadata.setExecutionStartTime(3000L);
+        executionMetadata.setExecutionEndTime(4000L);
+        executionMetadata.setClientSendTime(5000L);
+        executionMetadata.setPollNetworkLatency(6000L);
+        executionMetadata.setUpdateNetworkLatency(7000L);
+        executionMetadata.setAdditionalContextMap(new HashMap<>());
 
         assertEquals(expectedTaskFieldsNumber, declaredFieldsNumber);
 
@@ -139,8 +147,24 @@ public class TaskTest {
         task.setWorkerId("");
         task.setSubWorkflowId("");
         task.setSubworkflowChanged(false);
+        task.setExecutionMetadata(executionMetadata);
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);
+
+        // Verify execution metadata is copied
+        assertNotNull(copy.getExecutionMetadata());
+        assertEquals(Long.valueOf(1000L), copy.getOrCreateExecutionMetadata().getServerSendTime());
+        assertEquals(
+                Long.valueOf(2000L), copy.getOrCreateExecutionMetadata().getClientReceiveTime());
+        assertEquals(
+                Long.valueOf(3000L), copy.getOrCreateExecutionMetadata().getExecutionStartTime());
+        assertEquals(
+                Long.valueOf(4000L), copy.getOrCreateExecutionMetadata().getExecutionEndTime());
+        assertEquals(Long.valueOf(5000L), copy.getOrCreateExecutionMetadata().getClientSendTime());
+        assertEquals(
+                Long.valueOf(6000L), copy.getOrCreateExecutionMetadata().getPollNetworkLatency());
+        assertEquals(
+                Long.valueOf(7000L), copy.getOrCreateExecutionMetadata().getUpdateNetworkLatency());
     }
 }
