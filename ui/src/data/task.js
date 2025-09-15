@@ -140,3 +140,18 @@ export function useSaveTask(callbacks) {
     });
   }, callbacks);
 }
+
+export function useUpdateTask(callbacks) {
+  const path = "/tasks";
+  const fetchContext = useFetchContext();
+
+  return useMutation(({ body }) => {
+    return fetchWithContext(path, fetchContext, {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  }, callbacks);
+}
