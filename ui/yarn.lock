@@ -9193,10 +9193,10 @@ optionator@^0.9.1:
     type-check "^0.4.0"
     word-wrap "^1.2.5"
 
-orkes-workflow-visualizer@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/orkes-workflow-visualizer/-/orkes-workflow-visualizer-1.1.0.tgz#11c2b122522e239b6a1be51c2756d6dd7968c673"
-  integrity sha512-MkwpM4C37iKPYerTIRZ4rO/43P5wmg6CgtngBHw7G9RTWGpLwCqIcNt+7GyDxu0n0JjysP4d/hJNM2fpOudgNQ==
+orkes-workflow-visualizer@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/orkes-workflow-visualizer/-/orkes-workflow-visualizer-1.1.1.tgz#9404de386bce2d3e81fe481aa1ffb0a1bcb38294"
+  integrity sha512-v3S6iHlLBdpdniASSwCUnTMC4oSn7fSNpfvKBSOUFx44gWYr6SvjqMxT/iNMoOz44o+QNpWUEL//2DbLUVn6iw==
   dependencies:
     "@use-gesture/react" "^10.2.21"
     date-fns "^2.29.3"
