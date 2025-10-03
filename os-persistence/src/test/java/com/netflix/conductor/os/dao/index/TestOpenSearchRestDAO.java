@@ -78,13 +78,13 @@ public class TestOpenSearchRestDAO extends OpenSearchRestDaoBaseTest {
 
         assertTrue(
                 "Index template for 'message' should exist",
-                indexDAO.doesResourceExist("/_template/template_" + MSG_DOC_TYPE));
+                indexDAO.doesResourceExist("/_index_template/template_" + MSG_DOC_TYPE));
         assertTrue(
                 "Index template for 'event' should exist",
-                indexDAO.doesResourceExist("/_template/template_" + EVENT_DOC_TYPE));
+                indexDAO.doesResourceExist("/_index_template/template_" + EVENT_DOC_TYPE));
         assertTrue(
                 "Index template for 'task_log' should exist",
-                indexDAO.doesResourceExist("/_template/template_" + LOG_DOC_TYPE));
+                indexDAO.doesResourceExist("/_index_template/template_" + LOG_DOC_TYPE));
     }
 
     @Test
