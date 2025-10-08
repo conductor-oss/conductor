@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# Pre-commit hook to auto-format code with Spotless
+#
+# To install: ln -s ../../hooks/pre-commit .git/hooks/pre-commit
+#
+
+echo "Running Spotless formatter..."
+./gradlew spotlessApply
+
+# Re-add any files that were modified by spotless
+git diff --name-only --cached | xargs git add
+
+exit 0

@@ -84,6 +84,14 @@ git clone https://github.com/conductor-oss/conductor
 cd conductor
 ```
 
+### (Optional) Install Git Hook for Auto-formatting
+
+To automatically format code before commits:
+
+```shell
+ln -s ../../hooks/pre-commit .git/hooks/pre-commit
+```
+
 ### Start with Docker Compose (_recommended for local deployment_)
 
 ```shell
