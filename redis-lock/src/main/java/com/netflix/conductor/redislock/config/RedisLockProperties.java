@@ -76,11 +76,11 @@ public class RedisLockProperties {
     }
 
     public String getServerUsername() {
-      return serverUsername;
+        return serverUsername;
     }
 
     public void setServerUsername(String serverUsername) {
-      this.serverUsername = serverUsername;
+        this.serverUsername = serverUsername;
     }
 
     public String getServerPassword() {
