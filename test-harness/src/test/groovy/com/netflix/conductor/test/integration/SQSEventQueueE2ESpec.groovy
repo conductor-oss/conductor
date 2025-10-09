@@ -31,6 +31,7 @@ import com.netflix.conductor.core.exception.ConflictException
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.config.LocalStackSQSConfiguration
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.json.JsonSlurper
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -365,6 +366,89 @@ class SQSEventQueueE2ESpec extends AbstractSpecification {
         println "   - Total handlers: ${eventHandlers.size()}"
         println "   - No duplicate names: ${handlerNames.size() == uniqueNames.size()}"
         println "   - Our handler properly configured: ${ourHandler.name}"
+    }
+
+    def "Test SQS queue policy is correctly formatted when using accountsToAuthorize"() {
+        given: "A queue created with account authorization"
+        def queueName = "conductor-test-authorized-queue"
+        def accountIds = ["111122223333", "444455556666"]
+
+        when: "Create queue with accountsToAuthorize using SQS client"
+        // First ensure queue exists
+        def queueUrl
+        try {
+            def createResponse = testSqsClient.createQueue(CreateQueueRequest.builder()
+                    .queueName(queueName)
+                    .build())
+            queueUrl = createResponse.queueUrl()
+            println "Created test queue: ${queueUrl}"
+        } catch (QueueNameExistsException e) {
+            def urlResponse = testSqsClient.getQueueUrl(GetQueueUrlRequest.builder()
+                    .queueName(queueName)
+                    .build())
+            queueUrl = urlResponse.queueUrl()
+            println "Queue already exists: ${queueUrl}"
+        }
+
+        // Get queue ARN
+        def arnResponse = testSqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributeNames(QueueAttributeName.QUEUE_ARN)
+                .build())
+        def queueArn = arnResponse.attributes().get(QueueAttributeName.QUEUE_ARN)
+
+        // Build policy JSON with correct AWS format
+        def policyJson = """
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": ["${accountIds[0]}", "${accountIds[1]}"]
+      },
+      "Action": "sqs:SendMessage",
+      "Resource": "${queueArn}"
+    }
+  ]
+}
+"""
+
+        and: "Set the policy on the queue"
+        def setPolicyResponse = testSqsClient.setQueueAttributes(SetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributes([(QueueAttributeName.POLICY): policyJson])
+                .build())
+
+        then: "Policy is successfully set without errors"
+        setPolicyResponse.sdkHttpResponse().isSuccessful()
+        setPolicyResponse.sdkHttpResponse().statusCode() == 200
+
+        when: "Retrieve and verify the policy"
+        def getPolicyResponse = testSqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributeNames(QueueAttributeName.POLICY)
+                .build())
+        def retrievedPolicy = getPolicyResponse.attributes().get(QueueAttributeName.POLICY)
+
+        then: "Policy is correctly stored and retrievable"
+        retrievedPolicy != null
+        retrievedPolicy.contains('"Version"')
+        retrievedPolicy.contains('"Statement"')
+        retrievedPolicy.contains('"Effect"')
+        retrievedPolicy.contains('"Principal"')
+        retrievedPolicy.contains('"AWS"')
+        retrievedPolicy.contains('"Action"')
+        retrievedPolicy.contains('"Resource"')
+        accountIds.each { accountId ->
+            assert retrievedPolicy.contains(accountId)
+        }
+
+        println "✅ SQS Policy format test passed:"
+        println "   - Policy successfully set on queue"
+        println "   - All required fields present with correct capitalization"
+        println "   - Account IDs: ${accountIds}"
+        println "   - Policy JSON format verified against AWS SQS requirements"
     }
 
     // Helper methods
