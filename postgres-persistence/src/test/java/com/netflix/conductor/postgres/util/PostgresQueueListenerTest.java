@@ -65,8 +65,12 @@ public class PostgresQueueListenerTest {
 
     private void clearDb() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
-            conn.prepareStatement("truncate table queue_message").executeUpdate();
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            conn.setAutoCommit(false);
+            conn.prepareStatement("truncate table queue_message restart identity cascade")
+                    .executeUpdate();
+            // Commit to ensure truncation is visible across connection pool
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
