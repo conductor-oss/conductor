@@ -417,7 +417,7 @@ class SQSEventQueueE2ESpec extends AbstractSpecification {
         and: "Set the policy on the queue"
         def setPolicyResponse = testSqsClient.setQueueAttributes(SetQueueAttributesRequest.builder()
                 .queueUrl(queueUrl)
-                .attributes([(QueueAttributeName.POLICY): policyJson])
+                .attributes([(QueueAttributeName.POLICY): policyJson.toString()])
                 .build())
 
         then: "Policy is successfully set without errors"
