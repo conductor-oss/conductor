@@ -1,10 +1,12 @@
 # Extending System Tasks
 
-[System tasks](../../../documentation/configuration/workflowdef/systemtasks/index.md) allow Conductor to run simple tasks on the server - removing the need to build (and deploy) workers for basic tasks.  This allows for automating more mundane tasks without building specific microservices for them.
+[System tasks](../../../documentation/configuration/workflowdef/systemtasks/index.md) allow Conductor to run basic tasks on the server without needing to build and deploy custom workers. Since system tasks run on the Conductor server, there is no need to create task definitions before using them.
 
-However, sometimes it might be necessary to add additional parameters to a System Task to gain the behavior that is desired.
+However, a task definition may be useful for adding additional parameters to a system task, so as to gain the desired behavior.
 
-## Example HTTP Task
+## Example
+
+This example workflow consists of a single [HTTP Task](../../../documentation/configuration/workflowdef/systemtasks/http-task.md). When triggered, the HTTP task will return the weather in Beverly Hills, CA (90210).
 
 ```json
 {
@@ -22,16 +24,7 @@ However, sometimes it might be necessary to add additional parameters to a Syste
           "readTimeOut": 1300
         }
       },
-      "type": "HTTP",
-      "decisionCases": {},
-      "defaultCase": [],
-      "forkTasks": [],
-      "startDelay": 0,
-      "joinOn": [],
-      "optional": false,
-      "defaultExclusiveJoinTask": [],
-      "asyncComplete": false,
-      "loopOver": []
+      "type": "HTTP"
     }
   ],
   "inputParameters": [],
@@ -39,37 +32,22 @@ However, sometimes it might be necessary to add additional parameters to a Syste
     "data": "${get_weather_ref.output.response.body.currentConditions.comment}"
   },
   "schemaVersion": 2,
-  "restartable": true,
-  "workflowStatusListenerEnabled": false,
   "ownerEmail": "conductor@example.com",
   "timeoutPolicy": "ALERT_ONLY",
-  "timeoutSeconds": 0,
-  "variables": {},
-  "inputTemplate": {}
+  "timeoutSeconds": 0
 }
-
 ```
 
-This very simple workflow has a single HTTP Task inside.  No parameters need to be passed, and when run, the HTTP task will return the weather in Beverly Hills, CA (Zip code = 90210).
+To get the weather, the HTTP task makes a call to a third-party weather API. However, an API call can sometimes fail due to an issue on the remote server. Retrying the task can help result in a successful response. 
 
-> This API has a very slow response time. In the HTTP task, the connection is set to time out after 1300ms, which is *too short* for this API, resulting in a timeout.  This API *will* work if we allowed for a longer timeout, but in order to demonstrate adding retries to the HTTP Task, we will artificially force the API call to fail.
-
-When this workflow is run - it fails, as expected.
-
-Now, sometimes an API call might fail due to an issue on the remote server, and retrying the call will result in a response.  With many Conductor tasks,  ```retryCount```, ```retryDelaySeconds``` and ```retryLogic``` fields can be applied to retry the worker (with the desired parameters).
-
-By default, the [HTTP Task](../../../documentation/configuration/workflowdef/systemtasks/http-task.md) does not have ```retryCount```, ```retryDelaySeconds``` or ```retryLogic``` built in.  Attempting to add these parameters to a HTTP Task results in an error.
-
-## The Solution
-
-We can create a task with the same name with the desired parameters.  Defining the following task (note that the ```name``` is identical to the one in the workflow):
+To configure automatic retries for the HTTP task, you can create a task definition with the same name:
 
 ```json
 {
 
-  "createdBy": "",
+  "createdBy": "user@example.com",
   "name": "get_weather_90210",
-  "description": "editing HTTP task",
+  "description": "extends HTTP task",
   "retryCount": 3,
   "timeoutSeconds": 5,
   "inputKeys": [],
@@ -82,17 +60,8 @@ We can create a task with the same name with the desired parameters.  Defining t
   "rateLimitPerFrequency": 0,
   "rateLimitFrequencyInSeconds": 1
 }
-
 ```
 
-We've added the three parameters: ```retryCount: 3, retryDelaySeconds: 5, retryLogic: FIXED```
+The task definition configures the `get_weather_90210` task with the following retry policy: `retryCount: 3`, `retryDelaySeconds: 5`, and `retryLogic: FIXED`.
 
-The ```get_weather_90210``` task will now run 4 times (it will fail once, and then retry 3 times), with a ```FIXED``` 5 second delay between attempts.
-
-Re-running the task (and looking at the timeline view) shows that this is what occurs.  There are 4 attempts, with a 5 second delay between them.
-
-If we change the ```retryLogic``` to EXPONENTIAL_BACKOFF, the delay between attempts grows exponentially:
-
-1. 5*2^0 = 5 seconds
-2. 5*2^1 = 10 seconds
-3. 5*2^2 = 20 seconds
+When running the workflow again, the HTTP task will no run up to four times (fail once, then retry thrice), with a fixed 5 second delay between attempts.
