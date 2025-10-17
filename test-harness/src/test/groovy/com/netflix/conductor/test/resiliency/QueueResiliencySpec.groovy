@@ -517,6 +517,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         taskResource.getTaskLogs("testTaskId")
 
         then:
+        thrown(com.netflix.conductor.core.exception.NotFoundException)
         0 * queueDAO._
     }
 
@@ -525,6 +526,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         taskResource.getTask("testTaskId")
 
         then:
+        thrown(com.netflix.conductor.core.exception.NotFoundException)
         0 * queueDAO._
     }
 
