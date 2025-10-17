@@ -1,5 +1,6 @@
 {
   "index_patterns": [ "*event*" ],
+  "priority": 2,
   "template": {
     "settings": {
       "refresh_interval": "1s"
