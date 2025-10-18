@@ -1247,14 +1247,17 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         IndexRequest request = new IndexRequest(index);
         request.id(docId).source(docBytes, XContentType.JSON);
 
-        if (bulkRequests.get(docType) == null) {
-            bulkRequests.put(
-                    docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
-        }
+        synchronized (this) {
+            if (bulkRequests.get(docType) == null) {
+                bulkRequests.put(
+                        docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            }
 
-        bulkRequests.get(docType).getBulkRequest().add(request);
-        if (bulkRequests.get(docType).getBulkRequest().numberOfActions() >= this.indexBatchSize) {
-            indexBulkRequest(docType);
+            bulkRequests.get(docType).getBulkRequest().add(request);
+            if (bulkRequests.get(docType).getBulkRequest().numberOfActions()
+                    >= this.indexBatchSize) {
+                indexBulkRequest(docType);
+            }
         }
     }
 
