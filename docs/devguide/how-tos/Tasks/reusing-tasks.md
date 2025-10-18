@@ -1,13 +1,8 @@
 # Reusing Tasks
 
-A powerful feature of Conductor is that it supports and enables re-usability out of the box. Task workers typically
-perform a unit of work and is usually a part of a larger workflow. Such workers are often re-usable in multiple
-workflows. Once a task is defined, you can use it across as any workflow.
+Since task workers typically perform a unit of work as part of a larger workflow, Conductor’s infrastructure is built to enable task reusability out of the box. Once a task is defined in Conductor, it can be reused numerous times:
 
-When re-using tasks, it's important to think of situations that a multi-tenant system faces. All the work assigned to
-this worker by default goes to the same task scheduling queue. This could result in your worker not being polled quickly
-if there is a noisy neighbour in the ecosystem. One way you can tackle this situation is by re-using the worker code,
-but having different task names registered for different use cases. And for each task name, you can run an appropriate
-number of workers based on expected load.
+- In the same workflow, using different task reference names.
+- Across various workflows.
 
-
+When reusing tasks, it's important to think of situations that a multi-tenant system faces. By default, all the work assigned to this worker goes into the same task queue. This could result in your worker not being polled quickly if there is a noisy neighbor in the ecosystem. You can tackle this situation by scaling up the number of workers to handle the task load, or even using [task-to-domain](../../../devguide/how-tos/Tasks/taskdomains.md) to route the task load into separate queues.

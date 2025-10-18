@@ -11,8 +11,9 @@ Here are the operators available in Conductor OSS:
 | [Dynamic Fork](dynamic-fork-task.md) | Dynamic parallel execution |
 | [Fork](fork-task.md)                 | Static parallel execution  | 
 | [Join](join-task.md)                 | Map                        |
-| [Set Variable](set-variable-task.md)     | Global variable declaration           |
-| [Sub Workflow](sub-workflow-task.md) | Subroutine / Fork process  | 
+| [Set Variable](set-variable-task.md)     | Workflow variable declaration           |
+| [Start Workflow](start-workflow-task.md) | Entry point   | 
+| [Sub Workflow](sub-workflow-task.md) | Subroutine  | 
 | [Switch](switch-task.md)             | Switch / If..then...else selection     | 
 | [Terminate](terminate-task.md)       | Exit                       |
 
