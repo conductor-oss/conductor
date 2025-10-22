@@ -477,14 +477,19 @@
           }
         },
         "workflowDefinition": {
-          "description": "Inline workflow definition (can be WorkflowDef object or DSL string)",
+          "description": "Inline workflow definition (can be WorkflowDef object, DSL string, or Map that gets converted)",
           "oneOf": [
             {
-              "type": "object"
+              "type": "object",
+              "description": "WorkflowDef object or LinkedHashMap"
             },
             {
               "type": "string",
-              "pattern": "^\\$\\{.*\\}$"
+              "pattern": "^\\$\\{.*\\}$",
+              "description": "DSL expression string"
+            },
+            {
+              "type": "null"
             }
           ]
         },
@@ -498,7 +503,21 @@
           "enum": ["RETURN_EXISTING", "FAIL"]
         },
         "priority": {
-          "description": "Priority of the sub-workflow"
+          "description": "Priority of the sub-workflow (can be integer or string expression)",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            {
+              "type": "string",
+              "description": "Expression that evaluates to priority"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -540,7 +559,7 @@
         },
         "concurrentExecLimit": {
           "type": "integer",
-          "description": "Concurrent execution limit"
+          "description": "Concurrent execution limit (required field, primitive int)"
         }
       }
     },
@@ -553,41 +572,22 @@
         },
         "ttlInSecond": {
           "type": "integer",
-          "description": "TTL in seconds"
+          "description": "TTL in seconds (required field, primitive int)"
         }
       }
     },
     "StateChangeEvent": {
       "type": "object",
+      "required": ["type"],
       "properties": {
-        "name": {
+        "type": {
           "type": "string",
-          "description": "Event name"
+          "description": "Type of the state change event"
         },
-        "condition": {
-          "type": "string",
-          "description": "Event condition"
-        },
-        "actions": {
-          "type": "array",
-          "description": "Actions to perform",
-          "items": {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string"
-              },
-              "start_workflow": {
-                "type": "object"
-              },
-              "complete_task": {
-                "type": "object"
-              },
-              "fail_task": {
-                "type": "object"
-              }
-            }
-          }
+        "payload": {
+          "type": "object",
+          "description": "Event payload containing event-specific data",
+          "additionalProperties": true
         }
       }
     }

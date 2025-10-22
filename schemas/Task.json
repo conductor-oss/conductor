@@ -221,20 +221,7 @@
       "minimum": 0
     },
     "executionMetadata": {
-      "type": "object",
-      "description": "Execution metadata containing timing information and worker context",
-      "properties": {
-        "timings": {
-          "type": "object",
-          "description": "Detailed timing information for various stages of task execution",
-          "additionalProperties": true
-        },
-        "workerContext": {
-          "type": "object",
-          "description": "Context information from the worker executing the task",
-          "additionalProperties": true
-        }
-      }
+      "$ref": "#/definitions/ExecutionMetadata"
     },
     "parentTaskId": {
       "type": "string",
@@ -343,41 +330,46 @@
     },
     "ExecutionMetadata": {
       "type": "object",
-      "description": "Metadata about task execution including timing and worker context",
+      "description": "Execution metadata for capturing operational metadata including enhanced timing measurements",
       "properties": {
-        "timings": {
-          "type": "object",
-          "description": "Timing breakdowns for task execution stages",
-          "properties": {
-            "queueTime": {
-              "type": "integer",
-              "description": "Time spent in queue (milliseconds)"
-            },
-            "executionTime": {
-              "type": "integer",
-              "description": "Time spent executing (milliseconds)"
-            },
-            "totalTime": {
-              "type": "integer",
-              "description": "Total time (milliseconds)"
-            }
-          },
-          "additionalProperties": true
+        "serverSendTime": {
+          "type": "integer",
+          "description": "Server send time (milliseconds)",
+          "format": "int64"
         },
-        "workerContext": {
+        "clientReceiveTime": {
+          "type": "integer",
+          "description": "Client receive time (milliseconds)",
+          "format": "int64"
+        },
+        "executionStartTime": {
+          "type": "integer",
+          "description": "Execution start time (milliseconds)",
+          "format": "int64"
+        },
+        "executionEndTime": {
+          "type": "integer",
+          "description": "Execution end time (milliseconds)",
+          "format": "int64"
+        },
+        "clientSendTime": {
+          "type": "integer",
+          "description": "Client send time (milliseconds)",
+          "format": "int64"
+        },
+        "pollNetworkLatency": {
+          "type": "integer",
+          "description": "Poll network latency (milliseconds)",
+          "format": "int64"
+        },
+        "updateNetworkLatency": {
+          "type": "integer",
+          "description": "Update network latency (milliseconds)",
+          "format": "int64"
+        },
+        "additionalContext": {
           "type": "object",
-          "description": "Context information from the worker",
-          "properties": {
-            "workerId": {
-              "type": "string"
-            },
-            "workerHost": {
-              "type": "string"
-            },
-            "workerVersion": {
-              "type": "string"
-            }
-          },
+          "description": "Additional context as Map for flexibility",
           "additionalProperties": true
         }
       }

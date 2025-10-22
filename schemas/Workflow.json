@@ -378,22 +378,57 @@
           "format": "int64"
         },
         "executionMetadata": {
-          "type": "object",
-          "description": "Execution metadata containing timing and worker context",
-          "properties": {
-            "timings": {
-              "type": "object",
-              "description": "Timing information"
-            },
-            "workerContext": {
-              "type": "object",
-              "description": "Worker context information"
-            }
-          }
+          "$ref": "#/definitions/ExecutionMetadata"
         },
         "parentTaskId": {
           "type": "string",
           "description": "Parent task ID if this task has a parent"
+        }
+      }
+    },
+    "ExecutionMetadata": {
+      "type": "object",
+      "description": "Execution metadata for capturing operational metadata including enhanced timing measurements",
+      "properties": {
+        "serverSendTime": {
+          "type": "integer",
+          "description": "Server send time (milliseconds)",
+          "format": "int64"
+        },
+        "clientReceiveTime": {
+          "type": "integer",
+          "description": "Client receive time (milliseconds)",
+          "format": "int64"
+        },
+        "executionStartTime": {
+          "type": "integer",
+          "description": "Execution start time (milliseconds)",
+          "format": "int64"
+        },
+        "executionEndTime": {
+          "type": "integer",
+          "description": "Execution end time (milliseconds)",
+          "format": "int64"
+        },
+        "clientSendTime": {
+          "type": "integer",
+          "description": "Client send time (milliseconds)",
+          "format": "int64"
+        },
+        "pollNetworkLatency": {
+          "type": "integer",
+          "description": "Poll network latency (milliseconds)",
+          "format": "int64"
+        },
+        "updateNetworkLatency": {
+          "type": "integer",
+          "description": "Update network latency (milliseconds)",
+          "format": "int64"
+        },
+        "additionalContext": {
+          "type": "object",
+          "description": "Additional context as Map for flexibility",
+          "additionalProperties": true
         }
       }
     }
