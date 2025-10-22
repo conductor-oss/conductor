@@ -227,15 +227,6 @@ The schemas accurately reflect:
 - Jakarta validation constraints
 - Protobuf field mappings
 
-## Maintenance
-
-When updating these schemas:
-1. Review the corresponding Java model classes for changes
-2. Update field types, constraints, and descriptions
-3. Ensure recursive references remain valid
-4. Test with sample workflow/task definitions
-5. Update this README with any new patterns or breaking changes
-
 ## Version
 
 Current schema version: 1.0
