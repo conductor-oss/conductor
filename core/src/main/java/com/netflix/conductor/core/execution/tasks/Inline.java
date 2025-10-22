@@ -131,13 +131,9 @@ public class Inline extends WorkflowSystemTask {
     }
 
     /**
-     * Normalizes the evaluator result to a plain Java object. This ensures that JavaScript engine
-     * wrapper objects (like Nashorn's ScriptObjectMirror or GraalJS's ProxyObject) are converted to
-     * standard Java Maps/Lists, preventing issues when the result is used directly in subsequent
-     * tasks like FORK_JOIN_DYNAMIC.
-     *
-     * <p>This method is engine-agnostic and uses reflection to detect array-like objects from any
-     * JavaScript engine implementation.
+     * Normalizes the evaluator result to plain Java objects. Converts JavaScript engine wrapper
+     * objects to standard Java Maps/Lists. This method is engine-agnostic and uses reflection to
+     * work with both Nashorn and GraalJS.
      *
      * @param result The raw result from the evaluator
      * @return A normalized plain Java object (Map, List, or primitive)
