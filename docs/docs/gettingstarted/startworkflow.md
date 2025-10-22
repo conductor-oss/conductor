@@ -13,6 +13,13 @@ When starting a Workflow execution with a registered definition, `/workflow` acc
 | externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](/externalpayloadstorage.html) for more info.                        | optional                                                                                                |
 | priority                        | Priority level for the tasks within this workflow execution. Possible values are between 0 - 99.                                          | optional                                                                                                |
 
+## Synchronous Execution
+
+!!! note "Enterprise Feature"
+    Synchronous workflow execution (using `waitForCompletion` and `waitForSeconds` parameters) is available in Orkes Conductor (Enterprise) but is not currently implemented in Conductor OSS.
+
+Conductor OSS executes all workflows **asynchronously**. The start workflow API returns a workflow ID immediately, and you must poll the workflow status separately to check for completion.
+
 **Example:**
 
 Send a `POST` request to `/workflow` with payload like:
