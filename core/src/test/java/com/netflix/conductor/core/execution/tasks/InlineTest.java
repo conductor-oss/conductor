@@ -17,15 +17,12 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -34,11 +31,10 @@ public class InlineTest {
 
     private final WorkflowModel workflow = new WorkflowModel();
     private final WorkflowExecutor executor = mock(WorkflowExecutor.class);
-    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
     public void testInlineTaskValidationFailures() {
-        Inline inline = new Inline(getStringEvaluatorMap(), objectMapper);
+        Inline inline = new Inline(getStringEvaluatorMap());
 
         Map<String, Object> inputObj = new HashMap<>();
         inputObj.put("value", 1);
@@ -69,7 +65,7 @@ public class InlineTest {
 
     @Test
     public void testInlineValueParamExpression() {
-        Inline inline = new Inline(getStringEvaluatorMap(), objectMapper);
+        Inline inline = new Inline(getStringEvaluatorMap());
 
         Map<String, Object> inputObj = new HashMap<>();
         inputObj.put("value", 101);
@@ -101,7 +97,7 @@ public class InlineTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testInlineJavascriptExpression() {
-        Inline inline = new Inline(getStringEvaluatorMap(), objectMapper);
+        Inline inline = new Inline(getStringEvaluatorMap());
 
         Map<String, Object> inputObj = new HashMap<>();
         inputObj.put("value", 101);
@@ -141,7 +137,7 @@ public class InlineTest {
     public void testInlineJavascriptResultIsNormalizedToPlainMap() {
         // This test verifies that JavaScript evaluator results are normalized to plain Java Maps
         // This is critical for FORK_JOIN_DYNAMIC which checks instanceof Map
-        Inline inline = new Inline(getStringEvaluatorMap(), objectMapper);
+        Inline inline = new Inline(getStringEvaluatorMap());
 
         Map<String, Object> inputObj = new HashMap<>();
         inputObj.put("value1", "data1");

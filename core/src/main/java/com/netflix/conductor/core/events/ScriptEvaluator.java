@@ -12,15 +12,24 @@
  */
 package com.netflix.conductor.core.events;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
 import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class ScriptEvaluator {
 
     private static ScriptEngine engine;
+    private static final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     private ScriptEvaluator() {}
 
@@ -41,6 +50,9 @@ public class ScriptEvaluator {
      * Evaluates the script with the help of input provided. Set environment variable
      * CONDUCTOR_NASHORN_ES6_ENABLED=true for Nashorn ES6 support.
      *
+     * <p>Normalizes JavaScript engine wrapper objects (ScriptObjectMirror) to plain Java types to
+     * ensure compatibility with instanceof checks and JSON serialization.
+     *
      * @param script Script to be evaluated.
      * @param input Input parameters.
      * @throws ScriptException
@@ -50,7 +62,8 @@ public class ScriptEvaluator {
         initEngine(false);
         Bindings bindings = engine.createBindings();
         bindings.put("$", input);
-        return engine.eval(script, bindings);
+        Object result = engine.eval(script, bindings);
+        return normalizeJavaScriptResult(result);
     }
 
     // to mock in a test
@@ -88,5 +101,48 @@ public class ScriptEvaluator {
             return ((Number) input).doubleValue() > 0;
         }
         return false;
+    }
+
+    /**
+     * Normalizes JavaScript engine wrapper objects to plain Java types. Engine-agnostic approach
+     * using reflection to work with both Nashorn and GraalJS.
+     *
+     * <p>This ensures JavaScript objects become plain Java Maps and arrays become Java Lists,
+     * making them compatible with instanceof checks and JSON serialization.
+     *
+     * @param result The raw result from the script engine
+     * @return A normalized plain Java object (Map, List, or primitive)
+     */
+    private static Object normalizeJavaScriptResult(Object result) {
+        if (result == null) {
+            return null;
+        }
+
+        // Use reflection to detect JavaScript arrays (engine-agnostic)
+        try {
+            Method isArrayMethod = result.getClass().getMethod("isArray");
+            Boolean isArray = (Boolean) isArrayMethod.invoke(result);
+            if (isArray != null && isArray) {
+                List<Object> list = new ArrayList<>();
+                Method valuesMethod = result.getClass().getMethod("values");
+                Object valuesCollection = valuesMethod.invoke(result);
+                if (valuesCollection instanceof Iterable) {
+                    for (Object value : (Iterable<?>) valuesCollection) {
+                        list.add(normalizeJavaScriptResult(value));
+                    }
+                }
+                return list;
+            }
+        } catch (Exception e) {
+            // Not a JavaScript array
+        }
+
+        // Serialize/deserialize to convert JavaScript objects to plain Java types
+        try {
+            String json = objectMapper.writeValueAsString(result);
+            return objectMapper.readValue(json, Object.class);
+        } catch (Exception e) {
+            return result;
+        }
     }
 }
