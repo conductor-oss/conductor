@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +25,8 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INLINE;
 
@@ -60,10 +63,12 @@ public class Inline extends WorkflowSystemTask {
     public static final String NAME = "INLINE";
 
     private final Map<String, Evaluator> evaluators;
+    private final ObjectMapper objectMapper;
 
-    public Inline(Map<String, Evaluator> evaluators) {
+    public Inline(Map<String, Evaluator> evaluators, ObjectMapper objectMapper) {
         super(TASK_TYPE_INLINE);
         this.evaluators = evaluators;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -78,7 +83,7 @@ public class Inline extends WorkflowSystemTask {
             checkExpression(expression);
             Evaluator evaluator = evaluators.get(evaluatorType);
             Object evalResult = evaluator.evaluate(expression, taskInput);
-            task.addOutput("result", evalResult);
+            task.addOutput("result", normalizeResult(evalResult));
             task.setStatus(TaskModel.Status.COMPLETED);
         } catch (Exception e) {
             String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
@@ -122,6 +127,55 @@ public class Inline extends WorkflowSystemTask {
                     "Empty '"
                             + QUERY_EXPRESSION_PARAMETER
                             + "' in Inline task's input parameters. A non-empty String value must be provided.");
+        }
+    }
+
+    /**
+     * Normalizes the evaluator result to a plain Java object. This ensures that JavaScript engine
+     * wrapper objects (like Nashorn's ScriptObjectMirror or GraalJS's ProxyObject) are converted to
+     * standard Java Maps/Lists, preventing issues when the result is used directly in subsequent
+     * tasks like FORK_JOIN_DYNAMIC.
+     *
+     * <p>This method is engine-agnostic and uses reflection to detect array-like objects from any
+     * JavaScript engine implementation.
+     *
+     * @param result The raw result from the evaluator
+     * @return A normalized plain Java object (Map, List, or primitive)
+     */
+    private Object normalizeResult(Object result) {
+        if (result == null) {
+            return null;
+        }
+
+        // Use reflection to check if this is a JavaScript array wrapper (engine-agnostic)
+        // Both Nashorn (ScriptObjectMirror) and GraalJS (ProxyObject) have isArray() methods
+        try {
+            Method isArrayMethod = result.getClass().getMethod("isArray");
+            Boolean isArray = (Boolean) isArrayMethod.invoke(result);
+            if (isArray != null && isArray) {
+                // Convert to Java List by extracting values
+                java.util.List<Object> list = new java.util.ArrayList<>();
+                Method valuesMethod = result.getClass().getMethod("values");
+                Object valuesCollection = valuesMethod.invoke(result);
+                if (valuesCollection instanceof Iterable) {
+                    for (Object value : (Iterable<?>) valuesCollection) {
+                        list.add(normalizeResult(value)); // Recursively normalize nested objects
+                    }
+                }
+                return list;
+            }
+        } catch (Exception e) {
+            // No isArray() method or invocation failed - not a JS array, continue
+        }
+
+        // Serialize to JSON and deserialize back to ensure proper Java types
+        // This preserves arrays as Lists and objects as Maps
+        try {
+            String json = objectMapper.writeValueAsString(result);
+            return objectMapper.readValue(json, Object.class);
+        } catch (Exception e) {
+            // Fallback to direct conversion if serialization fails
+            return objectMapper.convertValue(result, Object.class);
         }
     }
 }

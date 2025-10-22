@@ -555,4 +555,60 @@ public class ForkJoinDynamicTaskMapperTest {
         assertEquals(
                 "value2", result.getRight().get(secondTask.getTaskReferenceName()).get("param1"));
     }
+
+    @Test
+    public void dynamicForkInputsRemainUnwrappedWhenInlineTaskOutputProvided() {
+        ObjectMapper realObjectMapper = new ObjectMapperProvider().getObjectMapper();
+        ForkJoinDynamicTaskMapper mapper =
+                new ForkJoinDynamicTaskMapper(
+                        idGenerator,
+                        parametersUtils,
+                        realObjectMapper,
+                        metadataDAO,
+                        systemTaskRegistry);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("fork_join_dynamic");
+        workflowTask.setType(TaskType.FORK_JOIN_DYNAMIC.name());
+
+        // Simulate INLINE task output after normalization
+        // The normalization converts JavaScript objects to plain Java Maps
+        Map<String, Object> inlineOutput1 = new HashMap<>();
+        inlineOutput1.put("param1", "value1");
+        inlineOutput1.put("param2", "data1");
+
+        Map<String, Object> inlineOutput2 = new HashMap<>();
+        inlineOutput2.put("param1", "value2");
+        inlineOutput2.put("param2", "data2");
+
+        Map<String, Object> mapperInput = new HashMap<>();
+        mapperInput.put("forkTaskWorkflow", "sub_workflow_definition_name");
+        mapperInput.put("forkTaskWorkflowVersion", "1");
+        mapperInput.put("forkTaskInputs", Arrays.asList(inlineOutput1, inlineOutput2));
+
+        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
+                mapper.getDynamicTasksSimple(workflowTask, mapperInput);
+
+        assertNotNull(result);
+        // Verify that inputs are not wrapped under an "input" key
+        result.getLeft()
+                .forEach(task -> assertFalse(task.getInputParameters().containsKey("input")));
+        result.getRight().values().forEach(input -> assertFalse(input.containsKey("input")));
+
+        // Verify that the parameters are directly accessible
+        WorkflowTask firstTask = result.getLeft().get(0);
+        WorkflowTask secondTask = result.getLeft().get(1);
+        assertEquals("value1", firstTask.getInputParameters().get("param1"));
+        assertEquals("data1", firstTask.getInputParameters().get("param2"));
+        assertEquals("value2", secondTask.getInputParameters().get("param1"));
+        assertEquals("data2", secondTask.getInputParameters().get("param2"));
+        assertEquals(
+                "value1", result.getRight().get(firstTask.getTaskReferenceName()).get("param1"));
+        assertEquals(
+                "data1", result.getRight().get(firstTask.getTaskReferenceName()).get("param2"));
+        assertEquals(
+                "value2", result.getRight().get(secondTask.getTaskReferenceName()).get("param1"));
+        assertEquals(
+                "data2", result.getRight().get(secondTask.getTaskReferenceName()).get("param2"));
+    }
 }
