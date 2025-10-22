@@ -126,7 +126,7 @@ Additionally, definitions implement the `Metadata` interface requiring:
 
 The schemas correctly model two important recursive relationships in Conductor:
 
-1. **WorkflowTask recursion**: Tasks can contain nested tasks for control flow
+**WorkflowTask recursion**: Tasks can contain nested tasks for control flow
    ```
    WorkflowTask
    ├── decisionCases: Map<String, List<WorkflowTask>>
@@ -134,13 +134,6 @@ The schemas correctly model two important recursive relationships in Conductor:
    ├── forkTasks: List<List<WorkflowTask>>
    └── loopOver: List<WorkflowTask>
    ```
-
-2. **Workflow history recursion**: Workflows can contain their execution history
-   ```
-   Workflow
-   └── history: List<Workflow>
-   ```
-
 ### Schema Validation
 
 Schemas are defined to support JSON Schema validation using the `$ref` keyword. Both internal references (`#/definitions/...`) and external references are supported.
