@@ -110,10 +110,10 @@ docker compose -f docker/docker-compose.yaml up
 Check-out the [Conductor docs](https://github.com/conductor-oss/conductor/tree/main/docs) for additional details
 - - - 
 # Database Specifications
-* The default persistence used is Redis
-* The default indexing backend is [Elasticsearch](https://www.elastic.co/) (7.x)
-* To use [Opensearch](https://opensearch.org/) (2.x), comment out Elasticsearch import so lucene dependencies don't conflict [server/build.gradle](https://github.com/conductor-oss/conductor/blob/main/server/build.gradle#L44-L46)
-
+* **Default persistence**: Redis (standalone) for DB and queues
+  * **Alternative peristence**:  Postgres, MySQL
+* **Default indexing backend**: [Elasticsearch](https://www.elastic.co/) 7.x
+  * **Alternative indexing backends**: [OpenSearch](https://opensearch.org/) 2.x, Postgres, Sqlite
 
 ## Configuration for various database backends
 
