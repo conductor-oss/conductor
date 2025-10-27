@@ -78,12 +78,9 @@ public class TaskResource {
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "count", defaultValue = "1") int count,
             @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
-        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
-        return Optional.ofNullable(
-                        taskService.batchPoll(taskType, workerId, domain, count, timeout))
-                .filter(tasks -> !tasks.isEmpty())
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.noContent().build());
+        List<Task> tasks = taskService.batchPoll(taskType, workerId, domain, count, timeout);
+        // Return empty list instead of 204 to avoid NPE in client libraries
+        return ResponseEntity.ok(tasks != null ? tasks : List.of());
     }
 
     @PostMapping(produces = TEXT_PLAIN_VALUE)

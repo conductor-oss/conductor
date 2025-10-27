@@ -235,7 +235,7 @@ public class AMQPObservableQueueTest {
         when(channel.queueBind(eq(queueName), eq(name), eq(routingKey)))
                 .thenReturn(new AMQImpl.Queue.BindOk());
         // messageCount
-        when(channel.messageCount(eq(name))).thenReturn((long) queue.size());
+        when(channel.messageCount(eq(queueName))).thenReturn((long) queue.size());
         // basicGet
 
         OngoingStubbing<String> getResponseOngoingStubbing =
@@ -601,8 +601,9 @@ public class AMQPObservableQueueTest {
 
         final String name = RandomStringUtils.randomAlphabetic(30),
                 type = "topic",
-                queueName = RandomStringUtils.randomAlphabetic(30),
                 routingKey = RandomStringUtils.randomAlphabetic(30);
+
+        final String queueName = String.format("bound_to_%s", name);
 
         final AMQPSettings settings =
                 new AMQPSettings(properties)

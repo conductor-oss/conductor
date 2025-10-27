@@ -1,0 +1,436 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://conductoross.org/schemas/Workflow.json",
+  "title": "Workflow",
+  "description": "Workflow runtime instance schema",
+  "type": "object",
+  "required": ["workflowId", "workflowDefinition"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "description": "Current status of the workflow",
+      "enum": ["RUNNING", "COMPLETED", "FAILED", "TIMED_OUT", "TERMINATED", "PAUSED"],
+      "default": "RUNNING"
+    },
+    "endTime": {
+      "type": "integer",
+      "description": "End time in milliseconds since epoch",
+      "format": "int64",
+      "minimum": 0
+    },
+    "workflowId": {
+      "type": "string",
+      "description": "Unique identifier for the workflow instance"
+    },
+    "parentWorkflowId": {
+      "type": "string",
+      "description": "Parent workflow ID if this is a sub-workflow"
+    },
+    "parentWorkflowTaskId": {
+      "type": "string",
+      "description": "Parent workflow task ID that spawned this sub-workflow"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "List of tasks that have been scheduled, in progress, or completed",
+      "items": {
+        "$ref": "#/definitions/Task"
+      },
+      "default": []
+    },
+    "input": {
+      "type": "object",
+      "description": "Input parameters to the workflow",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "output": {
+      "type": "object",
+      "description": "Output of the workflow",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "correlationId": {
+      "type": "string",
+      "description": "Correlation ID for the workflow execution"
+    },
+    "reRunFromWorkflowId": {
+      "type": "string",
+      "description": "Workflow ID from which this is a re-run"
+    },
+    "reasonForIncompletion": {
+      "type": "string",
+      "description": "Reason for workflow incompletion (if not completed successfully)"
+    },
+    "event": {
+      "type": "string",
+      "description": "Event that triggered this workflow"
+    },
+    "taskToDomain": {
+      "type": "object",
+      "description": "Mapping of task reference names to domain",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "failedReferenceTaskNames": {
+      "type": "array",
+      "description": "Set of failed task reference names",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "failedTaskNames": {
+      "type": "array",
+      "description": "Set of failed task names",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "workflowDefinition": {
+      "description": "Workflow definition for this instance",
+      "type": "object"
+    },
+    "externalInputPayloadStoragePath": {
+      "type": "string",
+      "description": "External storage path for workflow input payload"
+    },
+    "externalOutputPayloadStoragePath": {
+      "type": "string",
+      "description": "External storage path for workflow output payload"
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Priority of the workflow (0-99)",
+      "minimum": 0,
+      "maximum": 99,
+      "default": 0
+    },
+    "variables": {
+      "type": "object",
+      "description": "Workflow variables that can be used across tasks",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "lastRetriedTime": {
+      "type": "integer",
+      "description": "Last retry timestamp in milliseconds",
+      "format": "int64",
+      "minimum": 0
+    },
+    "history": {
+      "type": "array",
+      "description": "History of workflow executions (recursive structure)",
+      "items": {
+        "$ref": "#"
+      },
+      "default": []
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "Idempotency key for the workflow"
+    },
+    "rateLimitKey": {
+      "type": "string",
+      "description": "Rate limit key"
+    },
+    "rateLimited": {
+      "type": "boolean",
+      "description": "Whether the workflow is rate limited",
+      "default": false
+    },
+    "ownerApp": {
+      "type": "string",
+      "description": "Owner application"
+    },
+    "createTime": {
+      "type": "integer",
+      "description": "Creation timestamp in milliseconds (start time)",
+      "format": "int64"
+    },
+    "updateTime": {
+      "type": "integer",
+      "description": "Last update timestamp in milliseconds",
+      "format": "int64"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "User who created/started this workflow"
+    },
+    "updatedBy": {
+      "type": "string",
+      "description": "User who last updated this workflow"
+    }
+  },
+  "definitions": {
+    "Task": {
+      "type": "object",
+      "required": ["taskType", "taskId", "workflowInstanceId"],
+      "properties": {
+        "taskType": {
+          "type": "string",
+          "description": "Type of the task"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the task",
+          "enum": [
+            "IN_PROGRESS",
+            "CANCELED",
+            "FAILED",
+            "FAILED_WITH_TERMINAL_ERROR",
+            "COMPLETED",
+            "COMPLETED_WITH_ERRORS",
+            "SCHEDULED",
+            "TIMED_OUT",
+            "SKIPPED"
+          ]
+        },
+        "inputData": {
+          "type": "object",
+          "description": "Input data for the task",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "referenceTaskName": {
+          "type": "string",
+          "description": "Reference name of the task from the workflow definition"
+        },
+        "retryCount": {
+          "type": "integer",
+          "description": "Number of times this task has been retried",
+          "minimum": 0,
+          "default": 0
+        },
+        "seq": {
+          "type": "integer",
+          "description": "Sequence number of this task in the workflow",
+          "minimum": 0
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "Correlation ID for the task"
+        },
+        "pollCount": {
+          "type": "integer",
+          "description": "Number of times this task has been polled",
+          "minimum": 0,
+          "default": 0
+        },
+        "taskDefName": {
+          "type": "string",
+          "description": "Task definition name"
+        },
+        "scheduledTime": {
+          "type": "integer",
+          "description": "Time when the task was scheduled (milliseconds)",
+          "format": "int64"
+        },
+        "startTime": {
+          "type": "integer",
+          "description": "Time when the task was first polled (milliseconds)",
+          "format": "int64"
+        },
+        "endTime": {
+          "type": "integer",
+          "description": "Time when the task completed (milliseconds)",
+          "format": "int64"
+        },
+        "updateTime": {
+          "type": "integer",
+          "description": "Time when the task was last updated (milliseconds)",
+          "format": "int64"
+        },
+        "startDelayInSeconds": {
+          "type": "integer",
+          "description": "Delay in seconds before starting the task",
+          "minimum": 0,
+          "default": 0
+        },
+        "retriedTaskId": {
+          "type": "string",
+          "description": "Task ID of the retried task"
+        },
+        "retried": {
+          "type": "boolean",
+          "description": "Whether this task has been retried",
+          "default": false
+        },
+        "executed": {
+          "type": "boolean",
+          "description": "Whether this task has completed its lifecycle",
+          "default": false
+        },
+        "callbackFromWorker": {
+          "type": "boolean",
+          "description": "Whether callback is expected from worker",
+          "default": true
+        },
+        "responseTimeoutSeconds": {
+          "type": "integer",
+          "description": "Response timeout in seconds",
+          "format": "int64",
+          "minimum": 0
+        },
+        "workflowInstanceId": {
+          "type": "string",
+          "description": "ID of the workflow instance this task belongs to"
+        },
+        "workflowType": {
+          "type": "string",
+          "description": "Type/name of the workflow"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Unique identifier for this task instance"
+        },
+        "reasonForIncompletion": {
+          "type": "string",
+          "description": "Reason for task incompletion (max 500 characters)"
+        },
+        "callbackAfterSeconds": {
+          "type": "integer",
+          "description": "Callback delay in seconds",
+          "format": "int64",
+          "minimum": 0
+        },
+        "workerId": {
+          "type": "string",
+          "description": "ID of the worker that polled this task"
+        },
+        "outputData": {
+          "type": "object",
+          "description": "Output data from the task",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "workflowTask": {
+          "type": "object",
+          "description": "Workflow task definition associated with this task"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain for the task execution"
+        },
+        "inputMessage": {
+          "description": "Input message (protobuf Any type)"
+        },
+        "outputMessage": {
+          "description": "Output message (protobuf Any type)"
+        },
+        "rateLimitPerFrequency": {
+          "type": "integer",
+          "description": "Rate limit per frequency",
+          "minimum": 0,
+          "default": 0
+        },
+        "rateLimitFrequencyInSeconds": {
+          "type": "integer",
+          "description": "Rate limit frequency in seconds",
+          "minimum": 0,
+          "default": 0
+        },
+        "externalInputPayloadStoragePath": {
+          "type": "string",
+          "description": "External storage path for task input payload"
+        },
+        "externalOutputPayloadStoragePath": {
+          "type": "string",
+          "description": "External storage path for task output payload"
+        },
+        "workflowPriority": {
+          "type": "integer",
+          "description": "Priority inherited from workflow",
+          "minimum": 0,
+          "maximum": 99
+        },
+        "executionNameSpace": {
+          "type": "string",
+          "description": "Execution namespace"
+        },
+        "isolationGroupId": {
+          "type": "string",
+          "description": "Isolation group ID"
+        },
+        "iteration": {
+          "type": "integer",
+          "description": "Iteration number for loop tasks",
+          "minimum": 0,
+          "default": 0
+        },
+        "subWorkflowId": {
+          "type": "string",
+          "description": "Sub-workflow ID if this is a SUB_WORKFLOW task"
+        },
+        "subworkflowChanged": {
+          "type": "boolean",
+          "description": "Whether sub-workflow has been modified",
+          "default": false
+        },
+        "firstStartTime": {
+          "type": "integer",
+          "description": "First start time across all retries",
+          "format": "int64"
+        },
+        "executionMetadata": {
+          "$ref": "#/definitions/ExecutionMetadata"
+        },
+        "parentTaskId": {
+          "type": "string",
+          "description": "Parent task ID if this task has a parent"
+        }
+      }
+    },
+    "ExecutionMetadata": {
+      "type": "object",
+      "description": "Execution metadata for capturing operational metadata including enhanced timing measurements",
+      "properties": {
+        "serverSendTime": {
+          "type": "integer",
+          "description": "Server send time (milliseconds)",
+          "format": "int64"
+        },
+        "clientReceiveTime": {
+          "type": "integer",
+          "description": "Client receive time (milliseconds)",
+          "format": "int64"
+        },
+        "executionStartTime": {
+          "type": "integer",
+          "description": "Execution start time (milliseconds)",
+          "format": "int64"
+        },
+        "executionEndTime": {
+          "type": "integer",
+          "description": "Execution end time (milliseconds)",
+          "format": "int64"
+        },
+        "clientSendTime": {
+          "type": "integer",
+          "description": "Client send time (milliseconds)",
+          "format": "int64"
+        },
+        "pollNetworkLatency": {
+          "type": "integer",
+          "description": "Poll network latency (milliseconds)",
+          "format": "int64"
+        },
+        "updateNetworkLatency": {
+          "type": "integer",
+          "description": "Update network latency (milliseconds)",
+          "format": "int64"
+        },
+        "additionalContext": {
+          "type": "object",
+          "description": "Additional context as Map for flexibility",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

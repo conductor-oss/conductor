@@ -54,6 +54,7 @@ public class AMQPEventQueueProvider implements EventQueueProvider {
             LOGGER.info("Retrieve queue with URI {}", queueURI);
         }
         // Build the queue with the inner Builder class of AMQPObservableQueue
-        return queues.computeIfAbsent(queueURI, q -> new Builder(properties).build(useExchange, q));
+        return queues.computeIfAbsent(
+                queueURI, q -> new Builder(properties).build(useExchange, q, queueType));
     }
 }
