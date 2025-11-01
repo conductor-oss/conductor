@@ -21,8 +21,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.script.ScriptException;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -192,7 +190,7 @@ public @interface WorkflowTaskTypeConstraint {
                 String expression, Map<String, Object> inputParameters) {
             try {
                 Object returnValue = ScriptEvaluator.eval(expression, inputParameters);
-            } catch (ScriptException e) {
+            } catch (Exception e) {
                 throw new IllegalArgumentException(
                         String.format("Expression is not well formatted: %s", e.getMessage()));
             }

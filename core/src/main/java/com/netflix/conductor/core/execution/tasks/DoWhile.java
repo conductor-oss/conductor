@@ -16,8 +16,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.script.ScriptException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -157,7 +155,7 @@ public class DoWhile extends WorkflowSystemTask {
                         doWhileTaskModel.getIteration() + 1);
                 return markTaskSuccess(doWhileTaskModel);
             }
-        } catch (ScriptException e) {
+        } catch (Exception e) {
             String message =
                     String.format(
                             "Unable to evaluate condition %s, exception %s",
@@ -239,7 +237,7 @@ public class DoWhile extends WorkflowSystemTask {
     }
 
     @VisibleForTesting
-    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) throws ScriptException {
+    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) {
         TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
         // Use paramUtils to compute the task input
         Map<String, Object> conditionInput =
