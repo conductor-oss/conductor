@@ -41,13 +41,16 @@ dependencies {
 
     implementation "com.github.ben-manes.caffeine:caffeine"
 
-    implementation "org.openjdk.nashorn:nashorn-core:15.4"
+    // Nashorn is deprecated and removed in Java 15+, replaced by GraalJS
+    // implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
     implementation "io.micrometer:micrometer-core:${revMicrometer}"
     implementation "com.google.guava:guava:${revGuava}"
 
-    //gralVm dependencies for executing python
+    //GraalVM dependencies for executing JavaScript and Python
     implementation("org.graalvm.polyglot:polyglot:24.1.0")
+    implementation("org.graalvm.js:js:24.1.0")
+    implementation("org.graalvm.js:js-scriptengine:24.1.0")
     implementation("org.graalvm.polyglot:python:24.1.0")
     implementation "org.graalvm.sdk:graal-sdk:24.1.0"
 
