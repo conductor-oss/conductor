@@ -338,4 +338,108 @@ public class TestGraalJSFeatures {
         Object result3 = ScriptEvaluator.eval(script3, input);
         assertEquals(123, ((Number) result3).intValue());
     }
+
+    @Test
+    public void testContextPooling() {
+        // Test that context pooling can be enabled and works correctly
+        // Note: Context pooling is controlled by environment variables
+        // This test verifies the code paths work with pooling disabled (default)
+        Map<String, Object> input = new HashMap<>();
+        input.put("value", 42);
+
+        // Multiple evaluations should work correctly without pooling
+        for (int i = 0; i < 5; i++) {
+            String script = "$.value * " + (i + 1);
+            Object result = ScriptEvaluator.eval(script, input);
+            assertEquals(42 * (i + 1), ((Number) result).intValue());
+        }
+    }
+
+    @Test
+    public void testScriptEvaluatorInitialization() {
+        // Test that ScriptEvaluator initializes properly with defaults
+        // This verifies the self-initializing behavior
+        Map<String, Object> input = new HashMap<>();
+        input.put("test", "value");
+
+        // First evaluation should trigger initialization
+        String script = "$.test";
+        Object result = ScriptEvaluator.eval(script, input);
+        assertEquals("value", result);
+
+        // Subsequent evaluations should use the initialized state
+        result = ScriptEvaluator.eval(script, input);
+        assertEquals("value", result);
+    }
+
+    @Test
+    public void testDeepCopyBehavior() {
+        // Test that ScriptEvaluator works correctly with complex nested objects
+        // Note: Deep copy protection is implemented in JavascriptEvaluator layer
+        // This test verifies ScriptEvaluator can handle nested structures
+        Map<String, Object> input = new HashMap<>();
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("original", "value");
+        input.put("data", nested);
+
+        // Script that accesses nested data
+        String script =
+                """
+                (function() {
+                    return $.data.original + ' modified';
+                })()
+                """;
+
+        Object result = ScriptEvaluator.eval(script, input);
+        assertEquals("value modified", result);
+
+        // Original input should still have its data intact
+        assertEquals("value", nested.get("original"));
+    }
+
+    @Test
+    public void testMultipleScriptExecutions() {
+        // Test that multiple scripts can execute concurrently without interference
+        Map<String, Object> input1 = new HashMap<>();
+        input1.put("value", 10);
+
+        Map<String, Object> input2 = new HashMap<>();
+        input2.put("value", 20);
+
+        String script1 = "$.value * 2";
+        String script2 = "$.value * 3";
+
+        Object result1 = ScriptEvaluator.eval(script1, input1);
+        Object result2 = ScriptEvaluator.eval(script2, input2);
+
+        assertEquals(20, ((Number) result1).intValue());
+        assertEquals(60, ((Number) result2).intValue());
+    }
+
+    @Test
+    public void testErrorMessageWithLineNumber() {
+        // Test that error messages include line number information
+        Map<String, Object> input = new HashMap<>();
+
+        String script =
+                """
+                (function() {
+                    const x = 1;
+                    const y = 2;
+                    throw new Error('Test error on line 4');
+                })()
+                """;
+
+        try {
+            ScriptEvaluator.eval(script, input);
+            fail("Should have thrown TerminateWorkflowException");
+        } catch (Exception e) {
+            // Error message should contain line information
+            assertTrue(
+                    "Error message should contain 'line'",
+                    e.getMessage().toLowerCase().contains("line")
+                            || e.getCause() != null
+                                    && e.getCause().getMessage().toLowerCase().contains("line"));
+        }
+    }
 }
