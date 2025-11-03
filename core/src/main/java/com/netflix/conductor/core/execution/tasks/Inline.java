@@ -40,7 +40,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INL
  *          "type": "INLINE",
  *          "inputParameters": {
  *              "input": "${workflow.input}",
- *              "evaluatorType": "javascript"
+ *              "evaluatorType": "javascript",
  *              "expression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
  *          }
  *      }
@@ -48,7 +48,14 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INL
  * }
  * ...
  * </pre>
- *     then to use task output, e.g. <code>script_test.output.testvalue</code> {@link Inline} is a
+ *     <p>The <code>evaluatorType</code> parameter is optional and defaults to "javascript" for
+ *     backward compatibility. Supported values include:
+ *     <ul>
+ *       <li>"javascript" - JavaScript evaluation using GraalJS engine (default)
+ *       <li>"graaljs" - Explicit GraalJS evaluation (same as "javascript")
+ *       <li>"python" - Python evaluation using GraalVM Python
+ *     </ul>
+ *     Then to use task output, e.g. <code>script_test.output.testvalue</code>. {@link Inline} is a
  *     replacement for deprecated {@link Lambda}
  */
 @Component(TASK_TYPE_INLINE)
@@ -70,7 +77,11 @@ public class Inline extends WorkflowSystemTask {
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         Map<String, Object> taskInput = task.getInputData();
+        // Get evaluatorType, default to "javascript" for backward compatibility if missing
         String evaluatorType = (String) taskInput.get(QUERY_EVALUATOR_TYPE);
+        if (evaluatorType == null) {
+            evaluatorType = "javascript";
+        }
         String expression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
 
         try {
@@ -101,6 +112,8 @@ public class Inline extends WorkflowSystemTask {
     }
 
     private void checkEvaluatorType(String evaluatorType) {
+        // evaluatorType is now optional with "javascript" as default, but must not be blank if
+        // provided
         if (StringUtils.isBlank(evaluatorType)) {
             LOGGER.error("Empty {} in INLINE task. ", QUERY_EVALUATOR_TYPE);
             throw new TerminateWorkflowException(
