@@ -149,6 +149,9 @@ public class AsyncSystemTaskExecutor {
             if (task.getStatus() == TaskModel.Status.SCHEDULED) {
                 task.setStartTime(System.currentTimeMillis());
                 Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
+                // Persist pollCount to DB before blocking operation
+                // This prevents WorkflowRepairService from re-queueing during long-running tasks
+                executionDAOFacade.updateTask(task);
                 systemTask.start(workflow, task, workflowExecutor);
             } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 systemTask.execute(workflow, task, workflowExecutor);

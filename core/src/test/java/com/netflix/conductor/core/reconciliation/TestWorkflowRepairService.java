@@ -95,6 +95,63 @@ public class TestWorkflowRepairService {
     }
 
     @Test
+    public void verifyScheduledTaskWithPollCountIsNotRequeued() {
+        // This test verifies the fix for duplicate task execution issue.
+        // When a task has been polled (pollCount > 0), it means a worker is actively
+        // processing it, so we should NOT re-queue it even if it's not in the queue.
+        TaskModel task = new TaskModel();
+        task.setTaskType("SIMPLE");
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setTaskId("abcd");
+        task.setCallbackAfterSeconds(60);
+        task.setPollCount(1); // Task has been polled by a worker
+
+        when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
+
+        assertFalse(workflowRepairService.verifyAndRepairTask(task));
+        // Verify that queue message is checked
+        verify(queueDAO, times(1)).containsMessage(anyString(), anyString());
+        // Verify that queue message is NOT pushed because pollCount > 0
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    public void verifySystemTaskWithPollCountIsNotRequeued() {
+        // This test verifies the fix for duplicate HTTP task execution issue.
+        // Async system tasks (like HTTP) that have been polled should not be re-queued.
+        String taskType = "HTTP";
+        TaskModel task = new TaskModel();
+        task.setTaskType(taskType);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setTaskId("abcd");
+        task.setCallbackAfterSeconds(60);
+        task.setPollCount(2); // Task has been polled multiple times
+
+        when(systemTaskRegistry.isSystemTask(taskType)).thenReturn(true);
+        when(systemTaskRegistry.get(taskType))
+                .thenReturn(
+                        new WorkflowSystemTask(taskType) {
+                            @Override
+                            public boolean isAsync() {
+                                return true;
+                            }
+
+                            @Override
+                            public boolean isAsyncComplete(TaskModel task) {
+                                return false;
+                            }
+                        });
+
+        when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
+
+        assertFalse(workflowRepairService.verifyAndRepairTask(task));
+        // Verify that queue message is checked
+        verify(queueDAO, times(1)).containsMessage(anyString(), anyString());
+        // Verify that queue message is NOT pushed because pollCount > 0
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
     public void verifyAndRepairSystemTask() {
         String taskType = "TEST_SYS_TASK";
         TaskModel task = new TaskModel();

@@ -143,6 +143,16 @@ public class WorkflowRepairService {
             // Ensure QueueDAO contains this taskId
             String taskQueueName = QueueUtils.getQueueName(task);
             if (!queueDAO.containsMessage(taskQueueName, task.getTaskId())) {
+                // Check if task has been polled (pollCount > 0) which indicates a worker is
+                // actively processing it. Don't re-queue to avoid duplicate executions.
+                if (task.getPollCount() > 0) {
+                    LOGGER.debug(
+                            "Task {} in workflow {} has been polled (pollCount: {}), skipping re-queue to avoid duplicate execution",
+                            task.getTaskId(),
+                            task.getWorkflowInstanceId(),
+                            task.getPollCount());
+                    return false;
+                }
                 queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
                 LOGGER.info(
                         "Task {} in workflow {} re-queued for repairs",
