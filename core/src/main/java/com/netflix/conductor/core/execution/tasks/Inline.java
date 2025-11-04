@@ -27,37 +27,22 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_INLINE;
 
+// @formatter:off
 /**
  * @author X-Ultra
- *     <p>Task that enables execute inline script at workflow execution. For example,
- *     <pre>
- * ...
- * {
- *  "tasks": [
- *      {
- *          "name": "INLINE",
- *          "taskReferenceName": "inline_test",
- *          "type": "INLINE",
- *          "inputParameters": {
- *              "input": "${workflow.input}",
- *              "evaluatorType": "javascript",
- *              "expression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
- *          }
- *      }
- *  ]
- * }
- * ...
- * </pre>
- *     <p>The <code>evaluatorType</code> parameter is optional and defaults to "javascript" for
- *     backward compatibility. Supported values include:
- *     <ul>
- *       <li>"javascript" - JavaScript evaluation using GraalJS engine (default)
- *       <li>"graaljs" - Explicit GraalJS evaluation (same as "javascript")
- *       <li>"python" - Python evaluation using GraalVM Python
- *     </ul>
- *     Then to use task output, e.g. <code>script_test.output.testvalue</code>. {@link Inline} is a
- *     replacement for deprecated {@link Lambda}
+ *     <p>Task that enables execute inline script at workflow execution.
+ *     <p>Example: { "tasks": [ { "name": "INLINE", "taskReferenceName": "inline_test", "type":
+ *     "INLINE", "inputParameters": { "input": "${workflow.input}", "evaluatorType": "javascript",
+ *     "expression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
+ *     } } ] }
+ *     <p>The evaluatorType parameter is optional and defaults to "javascript" for backward
+ *     compatibility. Supported values include: - "javascript" - JavaScript evaluation using GraalJS
+ *     engine (default) - "graaljs" - Explicit GraalJS evaluation (same as "javascript") - "python"
+ *     - Python evaluation using GraalVM Python
+ *     <p>To use task output, reference it as script_test.output.testvalue This is a replacement for
+ *     the deprecated Lambda task.
  */
+// @formatter:on
 @Component(TASK_TYPE_INLINE)
 public class Inline extends WorkflowSystemTask {
 
