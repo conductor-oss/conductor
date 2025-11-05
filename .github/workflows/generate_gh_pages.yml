@@ -10,16 +10,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Deploy docs
+  deploy:
+    name: Deploy MkDocs Site
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install mkdocs
 
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yml
-          REQUIREMENTS: requirements.txt
