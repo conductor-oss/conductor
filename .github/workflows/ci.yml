@@ -17,20 +17,20 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: Gradle wrapper validation
-        uses: gradle/wrapper-validation-action@v1
+        uses: gradle/actions/wrapper-validation@v4
       - name: Set up Zulu JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: "17"
       - name: Cache SonarCloud packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -50,17 +50,17 @@ jobs:
           echo "Running build for commit ${{ github.sha }}"
           ./gradlew build
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v4
         if: always()
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: "**/build/reports"
       - name: Store Buildscan URL
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-scan
           path: "buildscan.log"
@@ -71,7 +71,7 @@ jobs:
       run:
         working-directory: ui
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: yarn install
@@ -80,7 +80,7 @@ jobs:
         run: yarn run build
 
       - name: Run E2E Tests
-        uses: cypress-io/github-action@v4
+        uses: cypress-io/github-action@v6
         with:
           working-directory: ui
           install: false
@@ -88,21 +88,21 @@ jobs:
           wait-on: "http://localhost:5000"
 
       - name: Run Component Tests
-        uses: cypress-io/github-action@v4
+        uses: cypress-io/github-action@v6
         with:
           working-directory: ui
           install: false
           component: true
 
       - name: Archive test screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: cypress-screenshots
           path: ui/cypress/screenshots
 
       - name: Archive test videos
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: cypress-videos
