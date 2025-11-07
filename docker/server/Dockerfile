@@ -4,7 +4,7 @@
 # ===========================================================================================================
 # 0. Builder stage 1
 # ===========================================================================================================
-FROM openjdk:17-bullseye AS builder
+FROM eclipse-temurin:17-jdk-jammy AS builder
 
 ARG INDEXING_BACKEND=elasticsearch
 
@@ -26,7 +26,7 @@ RUN ls -ltr
 # ===========================================================================================================
 # 1. Builder stage 2
 # ===========================================================================================================
-FROM alpine:3.20 AS ui-builder
+FROM alpine:3.22 AS ui-builder
 ARG YARN_OPTS
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
@@ -48,13 +48,12 @@ RUN echo "Done building UI"
 # ===========================================================================================================
 # 2. Bin stage
 # ===========================================================================================================
-FROM alpine:3.19
+FROM alpine:3.22
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add openjdk17
-RUN apk add nginx
-RUN apk add curl
+# Install runtime dependencies
+RUN apk add --no-cache openjdk17-jre nginx curl
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
@@ -70,7 +69,7 @@ RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui/build .
 COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
 
-# Copy the files for the server into the app folders
+# Make startup script executable
 RUN chmod +x /app/startup.sh
 
 HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD curl -I -XGET http://localhost:8080/health || exit 1
