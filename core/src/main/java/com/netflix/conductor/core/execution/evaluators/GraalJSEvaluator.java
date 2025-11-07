@@ -24,26 +24,24 @@ import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Component(JavascriptEvaluator.NAME)
-public class JavascriptEvaluator implements Evaluator {
+/**
+ * GraalJS evaluator - an alias for JavaScript evaluator using GraalJS engine. This allows explicit
+ * specification of "graaljs" as the evaluator type while maintaining backward compatibility with
+ * "javascript".
+ */
+@Component(GraalJSEvaluator.NAME)
+public class GraalJSEvaluator implements Evaluator {
 
-    public static final String NAME = "javascript";
-    private static final Logger LOGGER = LoggerFactory.getLogger(JavascriptEvaluator.class);
+    public static final String NAME = "graaljs";
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraalJSEvaluator.class);
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Override
     public Object evaluate(String expression, Object input) {
-        LOGGER.debug("Javascript evaluator -- expression: {}", expression);
+        LOGGER.debug("GraalJS evaluator -- expression: {}", expression);
 
         Object inputCopy = new HashMap<>();
-        // We make a deep copy because there is a way to make it error out otherwise:
-        // e.g. there's an input parameter (an empty map) 'myParam',
-        // and an expression which has `$.myParam = {"a":"b"}`; It will put a 'PolyglotMap' from
-        // GraalVM into input map
-        // and that PolyglotMap can't be evaluated because the context is already closed.
-        // this caused a workflow with INLINE task to be undecideable due to Exception in
-        // TaskModelProtoMapper
-        // on 'to.setInputData(convertToJsonMap(from.getInputData()))' call
+        // Deep copy to prevent PolyglotMap issues (same as JavascriptEvaluator)
         try {
             inputCopy =
                     objectMapper.readValue(
@@ -52,9 +50,9 @@ public class JavascriptEvaluator implements Evaluator {
             LOGGER.error("Error making a deep copy of input: {}", expression, e);
         }
 
-        // Evaluate the expression by using the GraalJS evaluation engine.
+        // Evaluate using the same GraalJS evaluation engine
         Object result = ScriptEvaluator.eval(expression, inputCopy);
-        LOGGER.debug("Javascript evaluator -- result: {}", result);
+        LOGGER.debug("GraalJS evaluator -- result: {}", result);
         return result;
     }
 }
