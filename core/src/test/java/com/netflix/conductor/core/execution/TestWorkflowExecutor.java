@@ -2100,6 +2100,45 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testTerminateWorkflowWithInvalidFailureWorkflowFormat() {
+        // Test case for invalid failureWorkflow format (missing components)
+        // This should not throw ArrayIndexOutOfBoundsException
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        // Invalid format - only 2 components instead of 3
+        workflowDef.setFailureWorkflow("$.input");
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("test-workflow-1");
+        workflow.setCorrelationId("testid");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setWorkflowDefinition(workflowDef);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("testParam", "testValue");
+        workflow.setInput(input);
+
+        TaskModel failedTask = new TaskModel();
+        failedTask.setTaskId("taskid1");
+        failedTask.setReferenceTaskName("failed_task");
+        failedTask.setStatus(TaskModel.Status.FAILED);
+        workflow.getTasks().add(failedTask);
+
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        // This should not throw ArrayIndexOutOfBoundsException
+        // The invalid format should be logged and handled gracefully
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
+        assertNotNull(workflow.getFailedTaskId());
+    }
+
+    @Test
     public void testRerunOptionalSubWorkflow() {
         IDGenerator idGenerator = new IDGenerator();
         // setup
