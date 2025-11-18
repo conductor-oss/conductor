@@ -22,7 +22,9 @@ On success, this API returns the ID of the workflow.
 !!! note "Enterprise Feature"
     Synchronous workflow execution (using `waitForCompletion` and `waitForSeconds` parameters) is available in Orkes Conductor (Enterprise) but is not currently implemented in Conductor OSS.
 
-Conductor OSS executes all workflows **asynchronously**. The start workflow API returns a workflow ID immediately, and you must poll the workflow status separately to check for completion.
+    This feature is planned for implementation in Conductor OSS in 2026. Track progress at [#659](https://github.com/conductor-oss/conductor/issues/659).
+
+Conductor OSS currently executes all workflows **asynchronously**. The start workflow API returns a workflow ID immediately, and you must poll the workflow status separately to check for completion.
 
 
 ## Basic Example
