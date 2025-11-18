@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,20 +21,20 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.sqs.eventqueue.SQSObservableQueue;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import rx.Scheduler;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class SQSEventQueueProvider implements EventQueueProvider {
 
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-    private final AmazonSQS client;
+    private final SqsClient client;
     private final int batchSize;
     private final long pollTimeInMS;
     private final int visibilityTimeoutInSeconds;
     private final Scheduler scheduler;
 
     public SQSEventQueueProvider(
-            AmazonSQS client, SQSEventQueueProperties properties, Scheduler scheduler) {
+            SqsClient client, SQSEventQueueProperties properties, Scheduler scheduler) {
         this.client = client;
         this.batchSize = properties.getBatchSize();
         this.pollTimeInMS = properties.getPollTimeDuration().toMillis();

@@ -26,4 +26,6 @@ message WorkflowSummary {
     string external_output_payload_storage_path = 16;
     int32 priority = 17;
     repeated string failed_task_names = 18;
+    string created_by = 19;
+    map<string, string> task_to_domain = 20;
 }

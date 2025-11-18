@@ -1,94 +1,170 @@
-![Conductor](docs/docs/img/logo.png)
 
-# Conductor
-Conductor is a platform created by Netflix to orchestrate workflows that span across microservices.
-
-[![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
-[![CI](https://github.com/Netflix/conductor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Netflix/conductor/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
-
-## Workflow Creation in Code
-Conductor supports creating workflows using JSON and Code.  
-SDK support for creating workflows using code is available in multiple languages and can be found at https://github.com/conductor-sdk
-
-## Documentation
-[Main Documentation Site](https://conductor.netflix.com/)  
-
-## Releases
-The latest version is [![Github release](https://img.shields.io/github/v/release/Netflix/conductor.svg)](https://GitHub.com/Netflix/conductor/releases)
-
-[2.31.8](https://github.com/Netflix/conductor/releases/tag/v2.31.8) is the **final** release of `2.31` branch. As of Feb 2022, `1.x` & `2.x` versions are no longer supported.
-
-## Community Contributions
-The modules contributed by the community are housed at [conductor-community](https://github.com/Netflix/conductor-community). Compatible versions of the community modules are released simultaneously with releases of the main modules.
-
-[Discussion Forum](https://github.com/Netflix/conductor/discussions): Please use the forum for questions and discussing ideas and join the community.
-
-[List of Conductor community projects](/docs/docs/resources/related.md): Backup tool, Cron like workflow starter, Docker containers and more.
-
-## Getting Started - Building & Running Conductor
-###  Using Docker:
-The easiest way to get started is with Docker containers. Please follow the instructions [here](https://conductor.netflix.com/gettingstarted/docker.html). 
-
-###  From Source:
-Conductor Server is a [Spring Boot](https://spring.io/projects/spring-boot) project and follows all applicable conventions. See instructions [here](http://conductor.netflix.com/gettingstarted/source.html).
+<picture>
+  <!-- Dark mode logo -->
+  <source srcset="https://github.com/user-attachments/assets/104b3a67-6013-4622-8075-a45da3a9e726" media="(prefers-color-scheme: dark)">
+  <!-- Light mode logo -->
+  <img src="https://assets.conductor-oss.org/logo.png" alt="Logo">
+</picture>
 
 
-## Published Artifacts
-Binaries are available from [Netflix OSS Maven](https://artifacts.netflix.net/netflixoss/com/netflix/conductor/) repository, or the [Maven Central Repository](https://search.maven.org/search?q=g:com.netflix.conductor).
+<h1 align="center" style="border-bottom: none">
+    Conductor - Scalable Workflow Orchestration
+</h1>
 
-| Artifact                        | Description                                                                                     |
-|---------------------------------|-------------------------------------------------------------------------------------------------|
-| conductor-common                | Common models used by various conductor modules                                                 |
-| conductor-core                  | Core Conductor module                                                                           |
-| conductor-redis-persistence     | Persistence and queue using Redis/Dynomite                                                      |
-| conductor-cassandra-persistence | Persistence using Cassandra                                                                     |
-| conductor-es6-persistence       | Indexing using Elasticsearch 6.X                                                                |
-| conductor-rest                  | Spring MVC resources for the core services                                                      |
-| conductor-ui                    | node.js based UI for Conductor                                                                  |
-| conductor-client                | Java client for Conductor that includes helpers for running worker tasks                        |
-| conductor-client-spring         | Client starter kit for Spring                                                                   |
-| conductor-server                | Spring Boot Web Application                                                                     |
-| conductor-redis-lock            | Workflow execution lock implementation using Redis                                              |
-| conductor-awss3-storage         | External payload storage implementation using AWS S3                                            |
-| conductor-awssqs-event-queue    | Event queue implementation using AWS SQS                                                        |
-| conductor-http-task             | Workflow system task implementation to send make requests                                       |
-| conductor-json-jq-task          | Workflow system task implementation to evaluate JSON using [jq](https://stedolan.github.io/jq/) |
-| conductor-grpc                  | Protobuf models used by the server and client                                                   |
-| conductor-grpc-client           | gRPC client to interact with the gRPC server                                                    |
-| conductor-grpc-server           | gRPC server Application                                                                         |
-| conductor-test-harness          | Integration and regression tests                                                                |
 
-## Database Requirements
+[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor?style=social)](https://github.com/conductor-oss/conductor/stargazers)
+[![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://github.com/conductor-oss/conductor/releases)
+[![License](https://img.shields.io/github/license/conductor-oss/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)
+[![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 
-* The default persistence used is [Dynomite](https://github.com/Netflix/dynomite)
-* For queues, we are relying on [dyno-queues](https://github.com/Netflix/dyno-queues)
-* The indexing backend is [Elasticsearch](https://www.elastic.co/) (6.x)
 
-## Other Requirements
-* JDK 11+
-* UI requires Node 14 to build. Earlier Node versions may work but is untested.
 
-## Get Support
-Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use Github issue tracking for filing issues and the [Discussion Forum](https://github.com/Netflix/conductor/discussions) for any other questions, ideas or support requests. 
 
-## Contributions
-Whether it is a small documentation correction, bug fix or a new feature, contributions are highly appreciated. We just ask you to follow standard OSS guidelines. The [Discussion Forum](https://github.com/Netflix/conductor/discussions) is a good place to ask questions, discuss new features and explore ideas. Please check with us before spending too much time, only to find out later that someone else is already working on a similar feature.
+Conductor is an open-source orchestration engine built at Netflix to help developers manage microservices and event-driven workflows. Today, it’s actively maintained by the team at [Orkes](https://orkes.io) and a growing [community of contributors](https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email).
 
-`main` branch is the current working branch. Please send your PR's to `main` branch, making sure that it builds on your local system successfully. Also, please make sure all the conflicts are resolved.
 
-## License
-Copyright 2022 Netflix, Inc.
+[![conductor_oss_getting_started](https://github.com/user-attachments/assets/6153aa58-8ad1-4ec5-93d1-38ba1b83e3f4)](https://youtu.be/4azDdDlx27M)
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+- - - 
+# Table of Contents
+1. [What is Conductor?](#what-is-conductor)
+    * [Key benefits](#key-benefits)
+    * [Features](#features)
+2. [Getting Started with Conductor](#getting-started-with-conductor)
+    * [Requirements](#requirements)
+    * [Quick Start guide](#quick-start-guide)
+    * [Create your first workflow](#create-your-first-workflow)
+3. [Documentation](#documentation)
+4. [Database Specifications](#database-specifications)
+5. [Build from source](#build-from-source)
+6. [Contributing](#contributing)
+7. [Community](#community)
+8. [Conductor OSS Roadmap](#conductor-oss-roadmap)
+9. [License](#license)
 
-    http://www.apache.org/licenses/LICENSE-2.0
+# What is Conductor?
+Conductor (or [Netflix Conductor](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40)) is a microservices orchestration engine for distributed and asynchronous workflows. It empowers developers to create workflows that define interactions between services, databases, and other external systems.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Conductor is designed to enable flexible, resilient, and scalable workflows. It allows you to compose services into complex workflows without coupling them tightly, simplifying orchestration across cloud-native applications and enterprise systems alike.
+
+## Key benefits
+* **Resilience and Error Handling:** Conductor enables automatic retries and fallback mechanisms.
+* **Scalability:** Built to scale with complex workflows in high-traffic environments.
+* **Observability:** Provides monitoring and debugging capabilities for workflows.
+* **Ease of Integration:** Seamlessly integrates with microservices, external APIs, and legacy systems.
+
+## Features
+* **Workflow as code:** Define workflows in JSON and manage them with versioning.
+* **Rich task types:** Includes task types like HTTP, JSON, Lambda, Sub Workflow, and Event tasks, allowing for flexible workflow definitions.
+* **Dynamic workflow management:** Workflows can evolve independently of the underlying services.
+* **Built-in UI:** A customizable UI is available to monitor and manage workflows.
+* **Flexible persistence and queue options:** Use Redis, MySQL, Postgres, and more.
+- - - 
+# Getting Started with Conductor
+
+## Requirements
+* Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
+* Install Java (JDK) 17 or newer
+* Node 14 for the UI to build
+  * _Earlier versions may work, but are untested_
+  
+
+## Quick Start guide
+
+### Clone the repo
+
+```shell
+git clone https://github.com/conductor-oss/conductor
+```
+
+### Change to new Conductor directory
+
+```shell
+cd conductor
+```
+
+### (Optional) Install Git Hook for Auto-formatting
+
+To automatically format code before commits:
+
+```shell
+ln -s ../../hooks/pre-commit .git/hooks/pre-commit
+```
+
+### Start with Docker Compose (_recommended for local deployment_)
+
+```shell
+docker compose -f docker/docker-compose.yaml up
+```
+
+## Create your first workflow
+
+### With the UI:
+* http://localhost:8127
+
+### Or the REST API with your preferred HTTP client:
+* http://localhost:8080
+
+# Documentation
+Check-out the [Conductor docs](https://github.com/conductor-oss/conductor/tree/main/docs) for additional details
+- - - 
+# Database Specifications
+* **Default persistence**: Redis (standalone) for DB and queues
+  * **Alternative peristence**:  Postgres, MySQL
+* **Default indexing backend**: [Elasticsearch](https://www.elastic.co/) 7.x
+  * **Alternative indexing backends**: [OpenSearch](https://opensearch.org/) 2.x, Postgres, Sqlite
+
+## Configuration for various database backends
+
+| Backend              | Configuration                                                                             |
+|----------------------|-------------------------------------------------------------------------------------------|
+| Redis + ES7 (default)         | [config-redis.properties](docker/server/config/config-redis.properties)                   |
+| Redis + OS   | [config-redis-os.properties](docker/server/config/config-redis-os.properties)             |
+| Postgres             | [config-postgres.properties](docker/server/config/config-postgres.properties)             |
+| Postgres + ES7       | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties)     |
+| MySQL + ES7          | [config-mysql.properties](docker/server/config/config-mysql.properties)                   |
+
+
+# Build from source
+Build from source and deploy Conductor as a standalone Java application. Configure databases, queues, and environment settings as needed. Follow the **[Building Conductor From Source](docs/devguide/running/source.md)** guide included in this repo. 
+
+## Available SDKs
+Conductor provides several SDKs for interacting with the API and creating custom clients:
+
+* [**Java SDK:**](https://github.com/conductor-oss/java-sdk) Fully featured for building and executing workflows in Java.
+* [**Python SDK:**](https://github.com/conductor-oss/python-sdk) Python library for creating and managing workflows.
+* [**Javascript SDK:**](https://github.com/conductor-oss/javascript-sdk) For integrating Conductor workflows with Javascript/Typescript-based services.
+* [**Go SDK:**](https://github.com/conductor-oss/go-sdk) For integrating Conductor workflows with Go-based services.
+* [**C# SDK:**](https://github.com/conductor-oss/csharp-sdk)The conductor-csharp repository provides the client SDKs to build task workers in C#
+
+Each SDK is maintained as part of the Conductor project, providing examples and comprehensive API documentation.
+- - - 
+# Contributing
+
+We welcome contributions from everyone!
+
+- **Report Issues:** Found a bug or have a feature request? Open an [issue on GitHub](https://github.com/conductor-oss/conductor/issues).
+- **Contribute code:** Check out our [Contribution Guide](CONTRIBUTING.md), and explore our [Good first issues](https://github.com/conductor-oss/conductor/labels/good%20first%20issue) for beginner-friendly tasks to tackle first.
+- **Contribute to our Docs:** Contribute edits or updates to keep our [documentation](https://github.com/conductor-oss/conductor/tree/main/docs) in great shape for the community.
+- **Build a Conductor SDK:** Need an [SDK](https://github.com/conductor-sdk) not available for Conductor today? Build your own using the [Swagger API](http://localhost:8080) included with your local deployment. 
+
+- - - 
+# Community
+**[Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)** channel for community discussions and support. 
+
+## Contributors
+
+<a href="https://github.com/conductor-oss/conductor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=conductor-oss/conductor" />
+</a>
+
+- - - 
+# Conductor OSS Roadmap
+[See the roadmap for the Conductor](ROADMAP.md)
+If you would like to participate in the roadmap and development, [please reach out](https://forms.gle/P2i1xHrxPQLrjzTB7).
+
+
+- - -
+# License
+Conductor is licensed under the [Apache 2.0 License ©](LICENSE)

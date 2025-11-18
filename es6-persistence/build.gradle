@@ -1,5 +1,5 @@
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -10,6 +10,8 @@
  *  an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  *  specific language governing permissions and limitations under the License.
  */
+
+
 
 dependencies {
     implementation project(':conductor-common')
@@ -23,12 +25,18 @@ dependencies {
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "org.elasticsearch.client:transport"
-    implementation "org.elasticsearch.client:elasticsearch-rest-client"
-    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+    implementation "org.elasticsearch.client:transport:${revElasticSearch6}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
 
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
     testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
     testImplementation project(':conductor-common').sourceSets.test.output
+}
+
+switch (org.gradle.internal.os.OperatingSystem.current()) {
+    case org.gradle.internal.os.OperatingSystem.MAC_OS:
+        tasks.forEach(task -> task.onlyIf { project.hasProperty('ES6Test') })
+        break;
 }

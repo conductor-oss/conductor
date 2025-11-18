@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,12 +28,14 @@ import com.netflix.conductor.common.run.*;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.QueueDAO;
@@ -50,6 +53,7 @@ public class ExecutionService {
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
+    private final TaskStatusListener taskStatusListener;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -63,7 +67,8 @@ public class ExecutionService {
             QueueDAO queueDAO,
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
-            SystemTaskRegistry systemTaskRegistry) {
+            SystemTaskRegistry systemTaskRegistry,
+            TaskStatusListener taskStatusListener) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
@@ -72,6 +77,7 @@ public class ExecutionService {
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
+        this.taskStatusListener = taskStatusListener;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -179,6 +185,22 @@ public class ExecutionService {
                 queueDAO.postpone(queueName, taskId, 0, queueTaskMessagePostponeSecs);
             }
         }
+        taskIds.stream()
+                .map(executionDAOFacade::getTaskModel)
+                .filter(Objects::nonNull)
+                .filter(task -> TaskModel.Status.IN_PROGRESS.equals(task.getStatus()))
+                .forEach(
+                        task -> {
+                            try {
+                                taskStatusListener.onTaskInProgress(task);
+                            } catch (Exception e) {
+                                String errorMsg =
+                                        String.format(
+                                                "Error while notifying TaskStatusListener: %s for workflow: %s",
+                                                task.getTaskId(), task.getWorkflowInstanceId());
+                                LOGGER.error(errorMsg, e);
+                            }
+                        });
         executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
         Monitors.recordTaskPoll(queueName);
         tasks.forEach(this::ackTaskReceived);
@@ -239,8 +261,8 @@ public class ExecutionService {
         workflowExecutor.terminateWorkflow(workflowId, reason);
     }
 
-    public void updateTask(TaskResult taskResult) {
-        workflowExecutor.updateTask(taskResult);
+    public TaskModel updateTask(TaskResult taskResult) {
+        return workflowExecutor.updateTask(taskResult);
     }
 
     public List<Task> getTasks(String taskType, String startKey, int count) {
@@ -252,12 +274,28 @@ public class ExecutionService {
     }
 
     public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
-        return executionDAOFacade.getTasksForWorkflow(workflowId).stream()
-                .filter(task -> !task.getStatus().isTerminal())
-                .filter(task -> task.getReferenceTaskName().equals(taskReferenceName))
-                .findFirst() // There can only be one task by a given reference name running at a
-                // time.
-                .orElse(null);
+        List<TaskModel> tasks = executionDAOFacade.getTaskModelsForWorkflow(workflowId);
+        Stream<TaskModel> taskStream =
+                tasks.stream().filter(task -> !task.getStatus().isTerminal());
+        Optional<TaskModel> found =
+                taskStream
+                        .filter(task -> task.getReferenceTaskName().equals(taskReferenceName))
+                        .findFirst();
+        if (found.isPresent()) {
+            return found.get().toTask();
+        }
+        // If no task is found, let's check if there is one inside an iteration
+        found =
+                tasks.stream()
+                        .filter(task -> !task.getStatus().isTerminal())
+                        .filter(
+                                task ->
+                                        TaskUtils.removeIterationFromTaskRefName(
+                                                        task.getReferenceTaskName())
+                                                .equals(taskReferenceName))
+                        .findFirst();
+
+        return found.map(TaskModel::toTask).orElse(null);
     }
 
     /**

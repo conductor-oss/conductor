@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -109,6 +109,11 @@ public class WorkflowRepairService {
                                 () ->
                                         new NotFoundException(
                                                 "Could not find workflow: " + workflowId));
+        verifyAndRepairWorkflowTasks(workflow);
+    }
+
+    /** Verify and repair tasks in a workflow. */
+    public void verifyAndRepairWorkflowTasks(WorkflowModel workflow) {
         workflow.getTasks().forEach(this::verifyAndRepairTask);
         // repair the parent workflow if needed
         verifyAndRepairWorkflow(workflow.getParentWorkflowId());

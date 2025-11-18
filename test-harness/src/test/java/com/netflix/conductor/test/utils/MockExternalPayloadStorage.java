@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +47,6 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     private final ObjectMapper objectMapper;
     private final File payloadDir;
 
-    @Autowired
     public MockExternalPayloadStorage(ObjectMapper objectMapper) throws IOException {
         this.objectMapper = objectMapper;
         this.payloadDir = Files.createTempDirectory("payloads").toFile();

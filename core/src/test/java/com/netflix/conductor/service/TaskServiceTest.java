@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,6 @@ package com.netflix.conductor.service;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolationException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.dao.QueueDAO;
+
+import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 

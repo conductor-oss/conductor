@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -29,7 +29,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.service.TaskService;
+import com.netflix.conductor.service.WorkflowService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,11 +49,13 @@ public class TaskResourceTest {
     private TaskService mockTaskService;
 
     private TaskResource taskResource;
+    private WorkflowService workflowService;
 
     @Before
     public void before() {
         this.mockTaskService = mock(TaskService.class);
-        this.taskResource = new TaskResource(this.mockTaskService);
+        this.workflowService = mock(WorkflowService.class);
+        this.taskResource = new TaskResource(this.mockTaskService, this.workflowService);
     }
 
     @Test
@@ -86,7 +90,9 @@ public class TaskResourceTest {
         TaskResult taskResult = new TaskResult();
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId("123");
-        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn("123");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("123");
+        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn(taskModel);
         assertEquals("123", taskResource.updateTask(taskResult));
     }
 
@@ -101,7 +107,7 @@ public class TaskResourceTest {
         List<TaskExecLog> listOfLogs = new ArrayList<>();
         listOfLogs.add(new TaskExecLog("test log"));
         when(mockTaskService.getTaskLogs(anyString())).thenReturn(listOfLogs);
-        assertEquals(listOfLogs, taskResource.getTaskLogs("123"));
+        assertEquals(ResponseEntity.ok(listOfLogs), taskResource.getTaskLogs("123"));
     }
 
     @Test

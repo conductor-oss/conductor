@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package com.netflix.conductor.test.resiliency
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -36,6 +37,7 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
  * 2. Succeeds
  * 3. Doesn't involve QueueDAO
  */
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired
@@ -515,6 +517,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         taskResource.getTaskLogs("testTaskId")
 
         then:
+        thrown(com.netflix.conductor.core.exception.NotFoundException)
         0 * queueDAO._
     }
 
@@ -523,6 +526,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         taskResource.getTask("testTaskId")
 
         then:
+        thrown(com.netflix.conductor.core.exception.NotFoundException)
         0 * queueDAO._
     }
 

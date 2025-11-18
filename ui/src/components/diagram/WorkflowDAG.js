@@ -230,7 +230,27 @@ export default class WorkflowDAG {
     const forkedTasks = _.get(dfTaskResult, "inputData.forkedTaskDefs");
     const forkedTasksCount = _.get(forkedTasks, "length");
 
+    // If no tasks found, attempt to aggregate from DO_WHILE iterations
     if (!forkedTasksCount) {
+      const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
+        key.startsWith(dfTask.taskReferenceName + "__")
+      );
+      let aggregatedForkedTasks = [];
+      for (const key of matchingKeys) {
+        const results = this.taskResultsByRef.get(key);
+        if (results && results.length > 0) {
+          for (const result of results) {
+            const dtasks = _.get(result, "inputData.forkedTaskDefs", []);
+            aggregatedForkedTasks = aggregatedForkedTasks.concat(dtasks);
+          }
+        }
+      }
+      if (aggregatedForkedTasks.length > 0) {
+        aggregatedForkedTasks.forEach((task) => this.addVertex(task, [dfTask]));
+        return aggregatedForkedTasks;
+      }
+
+      // No forked tasks found: add a placeholder
       const placeholderRef = dfTask.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
 
       const placeholderTask = {
@@ -254,6 +274,100 @@ export default class WorkflowDAG {
     }
   }
 
+  getRefTaskChilds(task) {
+    switch (task.type) {
+      case "FORK_JOIN": {
+        const outerForkTasks = task.forkTasks || [];
+        return _.flatten(
+          outerForkTasks.map((innerForkTasks) =>
+            innerForkTasks.map((tasks) => tasks)
+          )
+        );
+      }
+
+      case "FORK_JOIN_DYNAMIC": {
+        const dfTaskResult = this.getLastTaskResult(task.taskReferenceName);
+        const forkedTasks = _.get(dfTaskResult, "inputData.forkedTaskDefs");
+        const forkedTasksCount = _.get(forkedTasks, "length");
+
+        // If nothing found, try to aggregate results from DO_WHILE iterations
+        if (!forkedTasksCount) {
+          const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
+            key.startsWith(task.taskReferenceName + "__")
+          );
+          let aggregatedForkedTasks = [];
+          for (const key of matchingKeys) {
+            const results = this.taskResultsByRef.get(key);
+            if (results && results.length > 0) {
+              for (const result of results) {
+                const dtasks = _.get(result, "inputData.forkedTaskDefs", []);
+                aggregatedForkedTasks = aggregatedForkedTasks.concat(dtasks);
+              }
+            }
+          }
+          if (aggregatedForkedTasks.length > 0) {
+            return aggregatedForkedTasks;
+          }
+
+          // If still nothing, return a placeholder node
+          const placeholderRef = task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
+          const placeholderTask = {
+            name: placeholderRef, // will be overwritten if results available
+            taskReferenceName: placeholderRef, // will be overwritten if results available
+            type: "DF_EMPTY_PLACEHOLDER",
+          };
+          return [placeholderTask];
+        } else {
+          return dfTaskResult.inputData.forkedTaskDefs;
+        }
+      }
+
+      case "DECISION": // DECISION is deprecated and will be removed in a future release
+      case "SWITCH": {
+        const retval = [];
+        if (!_.isEmpty(task.defaultCase)) {
+          // NOTE: fixed SWITCH default case in DO_WHILE loop
+          retval.push(..._.flatten(task.defaultCase.map((t) => this.getRefTask(t))));
+        }
+        retval.push(
+          ..._.flatten(
+            Object.entries(task.decisionCases).map(([caseValue, tasks]) => {
+              return tasks;
+            })
+          )
+        );
+        return retval;
+      }
+
+      case "DO_WHILE": {
+        return task.loopOver;
+      }
+
+      /*
+      case "TERMINATE": 
+      case "JOIN": 
+      case "TERMINAL":
+      case "EVENT":
+      case "SUB_WORKFLOW":
+      case "EXCLUSIVE_JOIN":
+      */
+      default: {
+        return [];
+      }
+    }
+  }
+
+  getRefTask(task) {
+    const taskRefs = this.getRefTaskChilds(task)
+      .map((t) => {
+        return this.getRefTask(t);
+      })
+      .reduce((r, tasks) => {
+        return r.concat(tasks);
+      }, []);
+    return [task].concat(taskRefs);
+  }
+
   processDoWhileTask(doWhileTask, antecedents) {
     console.assert(Array.isArray(antecedents));
 
@@ -272,7 +386,7 @@ export default class WorkflowDAG {
       aliasForRef: doWhileTask.taskReferenceName,
     };
 
-    const loopOverRefPrefixes = doWhileTask.loopOver.map(
+    const loopOverRefPrefixes = this.getRefTask(doWhileTask).map(
       (t) => t.taskReferenceName
     );
     if (hasDoWhileExecuted) {
@@ -505,7 +619,7 @@ export default class WorkflowDAG {
       return this.taskResultsById.get(taskPointer.id);
     } else {
       const node = this.graph.node(taskPointer.ref);
-      return _.last(node.taskResults);
+      return _.last(node?.taskResults);
     }
   }
 }

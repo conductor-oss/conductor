@@ -1,0 +1,56 @@
+plugins {
+    id 'groovy'
+}
+dependencies {
+
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    compileOnly project(':conductor-server')
+    implementation project(':conductor-rest')
+    implementation project(':conductor-grpc-server')
+    implementation project(':conductor-grpc-client')
+    implementation project(':conductor-redis-persistence')
+
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "org.apache.commons:commons-lang3"
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.retry:spring-retry'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.apache.commons:commons-lang3"
+
+    implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    implementation "com.google.guava:guava:${revGuava}"
+    testImplementation "org.springframework:spring-web"
+
+    implementation "redis.clients:jedis:${revJedis}"
+    implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+
+
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.spockframework:spock-core:${revSpock}"
+    testImplementation "org.spockframework:spock-spring:${revSpock}"
+
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
+
+    implementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    implementation "org.testcontainers:mysql:${revTestContainer}"
+    implementation "org.testcontainers:postgresql:${revTestContainer}"
+    implementation(group: 'com.rabbitmq', name: 'amqp-client'){ version{require "${revAmqpClient}"}}
+
+    //In memory
+    implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+
+}
+
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,6 +24,8 @@ import org.springframework.boot.convert.DurationUnit;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 
+import com.netflix.conductor.model.TaskModel;
+
 @ConfigurationProperties("conductor.app")
 public class ConductorProperties {
 
@@ -41,6 +43,13 @@ public class ConductorProperties {
     /** The timeout duration to set when a workflow is pushed to the decider queue. */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration workflowOffsetTimeout = Duration.ofSeconds(30);
+
+    /**
+     * The maximum timeout duration to set when a workflow with running task is pushed to the
+     * decider queue.
+     */
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration maxPostponeDurationSeconds = Duration.ofSeconds(3600);
 
     /** The number of threads to use to do background sweep on active workflows. */
     private int sweeperThreadCount = Runtime.getRuntime().availableProcessors() * 2;
@@ -81,6 +90,9 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
+    /** Used to enable/disable the indexing of tasks. */
+    private boolean taskIndexingEnabled = true;
+
     /** Used to enable/disable the indexing of task execution logs. */
     private boolean taskExecLogIndexingEnabled = true;
 
@@ -89,6 +101,9 @@ public class ConductorProperties {
 
     /** The number of threads to be used within the threadpool for system task workers. */
     private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
+
+    /** The max number of the threads to be polled within the threadpool for system task workers. */
+    private int systemTaskMaxPollCount = systemTaskWorkerThreadCount;
 
     /**
      * The interval (in seconds) after which a system task will be checked by the system task worker
@@ -213,6 +228,24 @@ public class ConductorProperties {
     /** Used to limit the size of task execution logs. */
     private int taskExecLogSizeLimit = 10;
 
+    /**
+     * This property defines the number of poll counts (executions) after which SystemTasks
+     * implementing getEvaluationOffset should begin postponing the next execution.
+     *
+     * @see
+     *     com.netflix.conductor.core.execution.tasks.WorkflowSystemTask#getEvaluationOffset(TaskModel,
+     *     long)
+     * @see com.netflix.conductor.core.execution.tasks.Join#getEvaluationOffset(TaskModel, long)
+     */
+    private int systemTaskPostponeThreshold = 200;
+
+    /**
+     * Timeout used by {@link com.netflix.conductor.core.execution.tasks.SystemTaskWorker} when
+     * polling, i.e.: call to {@link com.netflix.conductor.dao.QueueDAO#pop(String, int, int)}.
+     */
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration systemTaskQueuePopTimeout = Duration.ofMillis(100);
+
     public String getStack() {
         return stack;
     }
@@ -243,6 +276,14 @@ public class ConductorProperties {
 
     public void setWorkflowOffsetTimeout(Duration workflowOffsetTimeout) {
         this.workflowOffsetTimeout = workflowOffsetTimeout;
+    }
+
+    public Duration getMaxPostponeDurationSeconds() {
+        return maxPostponeDurationSeconds;
+    }
+
+    public void setMaxPostponeDurationSeconds(Duration maxPostponeDurationSeconds) {
+        this.maxPostponeDurationSeconds = maxPostponeDurationSeconds;
     }
 
     public int getSweeperThreadCount() {
@@ -333,6 +374,14 @@ public class ConductorProperties {
         this.taskExecLogIndexingEnabled = taskExecLogIndexingEnabled;
     }
 
+    public boolean isTaskIndexingEnabled() {
+        return taskIndexingEnabled;
+    }
+
+    public void setTaskIndexingEnabled(boolean taskIndexingEnabled) {
+        this.taskIndexingEnabled = taskIndexingEnabled;
+    }
+
     public boolean isAsyncIndexingEnabled() {
         return asyncIndexingEnabled;
     }
@@ -347,6 +396,14 @@ public class ConductorProperties {
 
     public void setSystemTaskWorkerThreadCount(int systemTaskWorkerThreadCount) {
         this.systemTaskWorkerThreadCount = systemTaskWorkerThreadCount;
+    }
+
+    public int getSystemTaskMaxPollCount() {
+        return systemTaskMaxPollCount;
+    }
+
+    public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
+        this.systemTaskMaxPollCount = systemTaskMaxPollCount;
     }
 
     public Duration getSystemTaskWorkerCallbackDuration() {
@@ -529,5 +586,21 @@ public class ConductorProperties {
         Properties props = System.getProperties();
         props.forEach((key, value) -> map.put(key.toString(), value));
         return map;
+    }
+
+    public void setSystemTaskPostponeThreshold(int systemTaskPostponeThreshold) {
+        this.systemTaskPostponeThreshold = systemTaskPostponeThreshold;
+    }
+
+    public int getSystemTaskPostponeThreshold() {
+        return systemTaskPostponeThreshold;
+    }
+
+    public Duration getSystemTaskQueuePopTimeout() {
+        return systemTaskQueuePopTimeout;
+    }
+
+    public void setSystemTaskQueuePopTimeout(Duration systemTaskQueuePopTimeout) {
+        this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
     }
 }

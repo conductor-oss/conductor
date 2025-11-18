@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,8 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.validation.ConstraintViolationException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +34,8 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
+
+import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
@@ -61,11 +60,6 @@ public class WorkflowServiceTest {
         }
 
         @Bean
-        public StartWorkflowOperation startWorkflowOperation() {
-            return mock(StartWorkflowOperation.class);
-        }
-
-        @Bean
         public ExecutionService executionService() {
             return mock(ExecutionService.class);
         }
@@ -79,10 +73,8 @@ public class WorkflowServiceTest {
         public WorkflowService workflowService(
                 WorkflowExecutor workflowExecutor,
                 ExecutionService executionService,
-                MetadataService metadataService,
-                StartWorkflowOperation startWorkflowOperation) {
-            return new WorkflowServiceImpl(
-                    workflowExecutor, executionService, metadataService, startWorkflowOperation);
+                MetadataService metadataService) {
+            return new WorkflowServiceImpl(workflowExecutor, executionService, metadataService);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -45,20 +45,33 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
         config.setMaxTotal(properties.getMaxConnectionsPerHost());
         log.info("Starting conductor server using redis_standalone.");
         Host host = hostSupplier.getHosts().get(0);
-        return new JedisStandalone(getJedisPool(config, host));
+        return new JedisStandalone(getJedisPool(config, host, properties));
     }
 
-    private JedisPool getJedisPool(JedisPoolConfig config, Host host) {
-        if (host.getPassword() != null) {
+    private JedisPool getJedisPool(JedisPoolConfig config, Host host, RedisProperties properties) {
+        if (properties.getUsername() != null && host.getPassword() != null) {
             log.info("Connecting to Redis Standalone with AUTH");
             return new JedisPool(
                     config,
                     host.getHostName(),
                     host.getPort(),
                     Protocol.DEFAULT_TIMEOUT,
-                    host.getPassword());
+                    properties.getUsername(),
+                    host.getPassword(),
+                    properties.getDatabase(),
+                    properties.isSsl());
+        } else if (host.getPassword() != null) {
+            log.info("Connecting to Redis Standalone with AUTH");
+            return new JedisPool(
+                    config,
+                    host.getHostName(),
+                    host.getPort(),
+                    Protocol.DEFAULT_TIMEOUT,
+                    host.getPassword(),
+                    properties.getDatabase(),
+                    properties.isSsl());
         } else {
-            return new JedisPool(config, host.getHostName(), host.getPort());
+            return new JedisPool(config, host.getHostName(), host.getPort(), properties.isSsl());
         }
     }
 }

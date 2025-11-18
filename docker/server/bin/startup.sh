@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  Copyright 2021 Netflix, Inc.
+#  Copyright 2023 Conductor authors
 #  <p>
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
 #  the License. You may obtain a copy of the License at
@@ -16,6 +16,10 @@
 
 echo "Starting Conductor server"
 
+echo "Running Nginx in background"
+# Start nginx as daemon
+nginx
+
 # Start the server
 cd /app/libs
 echo "Property file: $CONFIG_PROP"
@@ -24,8 +28,8 @@ export config_file=
 
 if [ -z "$CONFIG_PROP" ];
   then
-    echo "Using an in-memory instance of conductor";
-    export config_file=/app/config/config-local.properties
+    echo "Using default configuration file";
+    export config_file=/app/config/config.properties
   else
     echo "Using '$CONFIG_PROP'";
     export config_file=/app/config/$CONFIG_PROP
@@ -33,4 +37,4 @@ fi
 
 echo "Using java options config: $JAVA_OPTS"
 
-java ${JAVA_OPTS} -jar -DCONDUCTOR_CONFIG_FILE=$config_file conductor-server-*-boot.jar 2>&1 | tee -a /app/logs/server.log
+java ${JAVA_OPTS} -jar -DCONDUCTOR_CONFIG_FILE=$config_file conductor-server.jar 2>&1 | tee -a /app/logs/server.log

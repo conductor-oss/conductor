@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.acl.Permission;
  * A base class for {@link com.netflix.conductor.common.metadata.workflow.WorkflowDef} and {@link
  * com.netflix.conductor.common.metadata.tasks.TaskDef}.
  */
+@Deprecated
 public abstract class BaseDef extends Auditable {
 
     private final Map<Permission, String> accessPolicy = new EnumMap<>(Permission.class);

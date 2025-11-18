@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,8 +14,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import javax.script.ScriptException;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +110,17 @@ public class DoWhile extends WorkflowSystemTask {
         }
         doWhileTaskModel.addOutput(String.valueOf(doWhileTaskModel.getIteration()), output);
 
+        Optional<Integer> keepLastN =
+                Optional.ofNullable(doWhileTaskModel.getWorkflowTask().getInputParameters())
+                        .map(parameters -> parameters.get("keepLastN"))
+                        .map(value -> (Integer) value);
+        if (keepLastN.isPresent() && doWhileTaskModel.getIteration() > keepLastN.get()) {
+            Integer iteration = doWhileTaskModel.getIteration();
+            IntStream.range(0, iteration - keepLastN.get() - 1)
+                    .mapToObj(Integer::toString)
+                    .forEach(doWhileTaskModel::removeOutput);
+        }
+
         if (hasFailures) {
             LOGGER.debug(
                     "Task {} failed in {} iteration",
@@ -145,7 +155,7 @@ public class DoWhile extends WorkflowSystemTask {
                         doWhileTaskModel.getIteration() + 1);
                 return markTaskSuccess(doWhileTaskModel);
             }
-        } catch (ScriptException e) {
+        } catch (Exception e) {
             String message =
                     String.format(
                             "Unable to evaluate condition %s, exception %s",
@@ -227,7 +237,7 @@ public class DoWhile extends WorkflowSystemTask {
     }
 
     @VisibleForTesting
-    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) throws ScriptException {
+    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) {
         TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
         // Use paramUtils to compute the task input
         Map<String, Object> conditionInput =

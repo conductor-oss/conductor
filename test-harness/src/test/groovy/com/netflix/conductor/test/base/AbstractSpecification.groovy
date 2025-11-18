@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,10 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
@@ -27,8 +27,11 @@ import com.netflix.conductor.test.util.WorkflowTestUtil
 
 import spock.lang.Specification
 
-@SpringBootTest
-@TestPropertySource(locations = "classpath:application-integrationtest.properties")
+@SpringBootTest(classes = ConductorTestApp.class)
+@TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
+        "conductor.db.type=memory",
+        "conductor.queue.type=xxx"
+])
 abstract class AbstractSpecification extends Specification {
 
     @Autowired
@@ -49,9 +52,6 @@ abstract class AbstractSpecification extends Specification {
     @Autowired
     AsyncSystemTaskExecutor asyncSystemTaskExecutor
 
-    @Autowired
-    StartWorkflowOperation startWorkflowOperation
-
     def cleanup() {
         workflowTestUtil.clearWorkflows()
     }
@@ -63,6 +63,6 @@ abstract class AbstractSpecification extends Specification {
     protected String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> workflowInput, String workflowInputPath) {
         StartWorkflowInput input = new StartWorkflowInput(name: name, version: version, correlationId: correlationId, workflowInput: workflowInput, externalInputPayloadStoragePath: workflowInputPath)
 
-        startWorkflowOperation.execute(input)
+        workflowExecutor.startWorkflow(input)
     }
 }

@@ -1,0 +1,52 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'java'
+}
+
+configurations {
+    // Prevent shaded dependencies from being published, while keeping them available to tests
+    shadow.extendsFrom compileOnly
+    testRuntime.extendsFrom compileOnly
+}
+
+ext['elasticsearch.version'] = revElasticSearch7
+
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-common-persistence')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.retry:spring-retry'
+
+    implementation "commons-io:commons-io:${revCommonsIo}"
+    implementation "org.apache.commons:commons-lang3"
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+
+    implementation "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch7}"
+    implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch7}"
+
+    testImplementation "net.java.dev.jna:jna:5.7.0"
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    testImplementation project(':conductor-test-util').sourceSets.test.output
+    testImplementation 'org.springframework.retry:spring-retry'
+
+}
+
+// Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier = null
+
+    // Service files are not included by default.
+    mergeServiceFiles {
+        include 'META-INF/services/*'
+        include 'META-INF/maven/*'
+    }
+}
+jar.dependsOn shadowJar

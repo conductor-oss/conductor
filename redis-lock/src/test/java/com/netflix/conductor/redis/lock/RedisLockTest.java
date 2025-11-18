@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,12 +21,11 @@ import org.redisson.Redisson;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.testcontainers.containers.*;
 
 import com.netflix.conductor.redislock.config.RedisLockProperties;
 import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
 import com.netflix.conductor.redislock.lock.RedisLock;
-
-import redis.embedded.RedisServer;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -38,16 +37,16 @@ public class RedisLockTest {
     private static RedisLock redisLock;
     private static Config config;
     private static RedissonClient redisson;
-    private static RedisServer redisServer = null;
+
+    static GenericContainer redis =
+            new GenericContainer("redis:5.0.3-alpine").withExposedPorts(6379);
 
     @BeforeClass
     public static void setUp() throws Exception {
-        String testServerAddress = "redis://127.0.0.1:6371";
-        redisServer = new RedisServer(6371);
-        if (redisServer.isActive()) {
-            redisServer.stop();
-        }
-        redisServer.start();
+        redis.start();
+        int port = redis.getFirstMappedPort();
+        String host = redis.getHost();
+        String testServerAddress = "redis://" + host + ":" + port;
 
         RedisLockProperties properties = mock(RedisLockProperties.class);
         when(properties.getServerType()).thenReturn(REDIS_SERVER_TYPE.SINGLE);
@@ -68,7 +67,7 @@ public class RedisLockTest {
 
     @AfterClass
     public static void tearDown() {
-        redisServer.stop();
+        redis.stop();
     }
 
     @Test

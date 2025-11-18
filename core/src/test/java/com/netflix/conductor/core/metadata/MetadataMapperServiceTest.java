@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,6 @@ package com.netflix.conductor.core.metadata;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.validation.ConstraintViolationException;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -36,6 +34,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.dao.MetadataDAO;
+
+import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,22 +12,16 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.validation.ConstraintViolationException;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -35,10 +29,13 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+
+import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
@@ -54,12 +51,12 @@ import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaAutowiredMembersInspection")
 @RunWith(SpringRunner.class)
+@TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 @EnableAutoConfiguration
 public class MetadataServiceTest {
 
     @TestConfiguration
     static class TestMetadataConfiguration {
-
         @Bean
         public MetadataDAO metadataDAO() {
             return mock(MetadataDAO.class);
@@ -69,6 +66,7 @@ public class MetadataServiceTest {
         public ConductorProperties properties() {
             ConductorProperties properties = mock(ConductorProperties.class);
             when(properties.isOwnerEmailMandatory()).thenReturn(true);
+
             return properties;
         }
 
@@ -77,7 +75,22 @@ public class MetadataServiceTest {
                 MetadataDAO metadataDAO, ConductorProperties properties) {
             EventHandlerDAO eventHandlerDAO = mock(EventHandlerDAO.class);
 
+            Map<String, TaskDef> taskDefinitions = new HashMap<>();
+
             when(metadataDAO.getAllWorkflowDefs()).thenReturn(mockWorkflowDefs());
+
+            Answer<TaskDef> upsertTaskDef =
+                    (invocation) -> {
+                        TaskDef argument = invocation.getArgument(0, TaskDef.class);
+                        taskDefinitions.put(argument.getName(), argument);
+                        return argument;
+                    };
+            when(metadataDAO.createTaskDef(any(TaskDef.class))).then(upsertTaskDef);
+            when(metadataDAO.updateTaskDef(any(TaskDef.class))).then(upsertTaskDef);
+            when(metadataDAO.getTaskDef(any()))
+                    .then(
+                            invocation ->
+                                    taskDefinitions.get(invocation.getArgument(0, String.class)));
 
             return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
         }
@@ -180,7 +193,6 @@ public class MetadataServiceTest {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");
         taskDef.setOwnerEmail("sample@test.com");
-        when(metadataDAO.getTaskDef(any())).thenReturn(null);
         metadataService.updateTaskDef(taskDef);
     }
 
@@ -189,7 +201,6 @@ public class MetadataServiceTest {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test");
         taskDef.setOwnerEmail("sample@test.com");
-        when(metadataDAO.getTaskDef(any())).thenReturn(null);
         metadataService.updateTaskDef(taskDef);
     }
 
@@ -201,6 +212,27 @@ public class MetadataServiceTest {
         taskDef.setResponseTimeoutSeconds(60 * 60);
         metadataService.registerTaskDef(Collections.singletonList(taskDef));
         verify(metadataDAO, times(1)).createTaskDef(any(TaskDef.class));
+    }
+
+    @Test
+    public void testUpdateTask() {
+        String taskDefName = "another-task";
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName(taskDefName);
+        taskDef.setOwnerEmail("sample@test.com");
+        taskDef.setRetryCount(1);
+        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+        TaskDef before = metadataService.getTaskDef(taskDefName);
+
+        taskDef.setRetryCount(2);
+        taskDef.setCreatedBy("someone-else");
+        taskDef.setCreateTime(1000L);
+        metadataService.updateTaskDef(taskDef);
+        verify(metadataDAO, times(1)).updateTaskDef(any(TaskDef.class));
+
+        TaskDef after = metadataService.getTaskDef(taskDefName);
+        assertEquals(2, after.getRetryCount());
+        assertEquals(before.getCreateTime(), after.getCreateTime());
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -277,9 +309,68 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
         metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
         verify(metadataDAO, times(1)).updateWorkflowDef(workflowDef);
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testUpdateWorkflowDefWithCaseExpression() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("somename");
+        workflowDef.setOwnerEmail("sample@test.com");
+        List<WorkflowTask> tasks = new ArrayList<>();
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("hello");
+        workflowTask.setName("hello");
+        workflowTask.setType("DECISION");
+
+        WorkflowTask caseTask = new WorkflowTask();
+        caseTask.setTaskReferenceName("casetrue");
+        caseTask.setName("casetrue");
+
+        List<WorkflowTask> caseTaskList = new ArrayList<>();
+        caseTaskList.add(caseTask);
+
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap();
+        decisionCases.put("true", caseTaskList);
+
+        workflowTask.setDecisionCases(decisionCases);
+        workflowTask.setCaseExpression("1 >0abcd");
+        tasks.add(workflowTask);
+        workflowDef.setTasks(tasks);
+
+        BulkResponse<String> bulkResponse =
+                metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testUpdateWorkflowDefWithJavscriptEvaluator() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("somename");
+        workflowDef.setOwnerEmail("sample@test.com");
+        List<WorkflowTask> tasks = new ArrayList<>();
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("hello");
+        workflowTask.setName("hello");
+        workflowTask.setType("SWITCH");
+        workflowTask.setEvaluatorType("javascript");
+        workflowTask.setExpression("1>abcd");
+        WorkflowTask caseTask = new WorkflowTask();
+        caseTask.setTaskReferenceName("casetrue");
+        caseTask.setName("casetrue");
+
+        List<WorkflowTask> caseTaskList = new ArrayList<>();
+        caseTaskList.add(caseTask);
+
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap();
+        decisionCases.put("true", caseTaskList);
+
+        workflowTask.setDecisionCases(decisionCases);
+        tasks.add(workflowTask);
+        workflowDef.setTasks(tasks);
+
+        BulkResponse<String> bulkResponse =
+                metadataService.updateWorkflowDef(Collections.singletonList(workflowDef));
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -322,13 +413,12 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.registerWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
-                            "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
+                            "Invalid name 'invalid:name'. Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #"));
             throw ex;
         }
         fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
@@ -342,13 +432,12 @@ public class MetadataServiceTest {
             workflowDef.setOwnerEmail("inavlid-email");
             metadataService.validateWorkflowDef(workflowDef);
         } catch (ConstraintViolationException ex) {
-            assertEquals(3, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(
                     messages.contains(
-                            "Workflow name cannot contain the following set of characters: ':'"));
-            assertTrue(messages.contains("ownerEmail should be valid email address"));
+                            "Invalid name 'invalid:name'. Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #"));
             throw ex;
         }
         fail("metadataService.validateWorkflowDef did not throw ConstraintViolationException !");
@@ -366,7 +455,7 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         metadataService.registerWorkflowDef(workflowDef);
         verify(metadataDAO, times(1)).createWorkflowDef(workflowDef);
         assertEquals(2, workflowDef.getSchemaVersion());
@@ -384,7 +473,7 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
-        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
+
         metadataService.validateWorkflowDef(workflowDef);
         verify(metadataDAO, times(1)).createWorkflowDef(workflowDef);
         assertEquals(2, workflowDef.getSchemaVersion());

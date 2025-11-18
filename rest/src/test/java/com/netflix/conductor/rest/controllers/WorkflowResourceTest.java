@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -208,6 +208,13 @@ public class WorkflowResourceTest {
     public void testTerminate() {
         workflowResource.terminate("w123", "test");
         verify(mockWorkflowService, times(1)).terminateWorkflow(anyString(), anyString());
+    }
+
+    @Test
+    public void testTerminateRemove() {
+        workflowResource.terminateRemove("w123", "test", false);
+        verify(mockWorkflowService, times(1))
+                .terminateRemove(anyString(), anyString(), anyBoolean());
     }
 
     @Test

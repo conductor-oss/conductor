@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,8 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import javax.annotation.PreDestroy;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -52,6 +50,7 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
@@ -440,9 +439,13 @@ public class ExecutionDAOFacade {
     }
 
     public List<Task> getTasksForWorkflow(String workflowId) {
-        return executionDAO.getTasksForWorkflow(workflowId).stream()
+        return getTaskModelsForWorkflow(workflowId).stream()
                 .map(TaskModel::toTask)
                 .collect(Collectors.toList());
+    }
+
+    public List<TaskModel> getTaskModelsForWorkflow(String workflowId) {
+        return executionDAO.getTasksForWorkflow(workflowId);
     }
 
     public TaskModel getTaskModel(String taskId) {
@@ -510,7 +513,7 @@ public class ExecutionDAOFacade {
              * of tasks on a system failure. So only index for each update if async indexing is not enabled.
              * If it *is* enabled, tasks will be indexed only when a workflow is in terminal state.
              */
-            if (!properties.isAsyncIndexingEnabled()) {
+            if (!properties.isAsyncIndexingEnabled() && properties.isTaskIndexingEnabled()) {
                 indexDAO.indexTask(new TaskSummary(taskModel.toTask()));
             }
         } catch (TerminateWorkflowException e) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,6 @@ package com.netflix.conductor.client.grpc;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -34,6 +32,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 public class TaskClient extends ClientBase {
 

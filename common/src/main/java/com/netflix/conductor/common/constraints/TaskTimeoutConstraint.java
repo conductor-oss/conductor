@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,12 +17,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
-
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.Payload;
 
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -64,6 +64,20 @@ public @interface TaskTimeoutConstraint {
                                     taskDef.getTimeoutSeconds());
                     context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 }
+            }
+
+            // Check if timeoutSeconds is greater than totalTimeoutSeconds
+            if (taskDef.getTimeoutSeconds() > 0
+                    && taskDef.getTotalTimeoutSeconds() > 0
+                    && taskDef.getTimeoutSeconds() > taskDef.getTotalTimeoutSeconds()) {
+                valid = false;
+                String message =
+                        String.format(
+                                "TaskDef: %s timeoutSeconds: %d must be less than or equal to totalTimeoutSeconds: %d",
+                                taskDef.getName(),
+                                taskDef.getTimeoutSeconds(),
+                                taskDef.getTotalTimeoutSeconds());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
             }
 
             return valid;

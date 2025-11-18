@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -127,7 +128,7 @@ public class TestDeciderOutcomes {
 
         @Bean(TASK_TYPE_JOIN)
         public Join join() {
-            return new Join();
+            return new Join(new ConductorProperties());
         }
 
         @Bean
@@ -139,6 +140,7 @@ public class TestDeciderOutcomes {
     @Before
     public void init() {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
+        systemTaskRegistry = mock(SystemTaskRegistry.class);
 
         ExternalPayloadStorageUtils externalPayloadStorageUtils =
                 mock(ExternalPayloadStorageUtils.class);
@@ -162,7 +164,11 @@ public class TestDeciderOutcomes {
         taskMappers.put(
                 FORK_JOIN_DYNAMIC.name(),
                 new ForkJoinDynamicTaskMapper(
-                        new IDGenerator(), parametersUtils, objectMapper, metadataDAO));
+                        new IDGenerator(),
+                        parametersUtils,
+                        objectMapper,
+                        metadataDAO,
+                        systemTaskRegistry));
         taskMappers.put(
                 USER_DEFINED.name(), new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(SIMPLE.name(), new SimpleTaskMapper(parametersUtils));
@@ -206,8 +212,8 @@ public class TestDeciderOutcomes {
         outcome = deciderService.decide(workflow);
         assertFalse(outcome.isComplete);
         assertEquals(outcome.tasksToBeUpdated.toString(), 3, outcome.tasksToBeUpdated.size());
-        assertEquals(1, outcome.tasksToBeScheduled.size());
-        assertEquals("junit_task_3", outcome.tasksToBeScheduled.get(0).getTaskDefName());
+        assertEquals(2, outcome.tasksToBeScheduled.size());
+        assertEquals("DECISION", outcome.tasksToBeScheduled.get(0).getTaskDefName());
     }
 
     @Test
@@ -234,8 +240,8 @@ public class TestDeciderOutcomes {
         outcome = deciderService.decide(workflow);
         assertFalse(outcome.isComplete);
         assertEquals(outcome.tasksToBeUpdated.toString(), 3, outcome.tasksToBeUpdated.size());
-        assertEquals(1, outcome.tasksToBeScheduled.size());
-        assertEquals("junit_task_3", outcome.tasksToBeScheduled.get(0).getTaskDefName());
+        assertEquals(2, outcome.tasksToBeScheduled.size());
+        assertEquals("SWITCH", outcome.tasksToBeScheduled.get(0).getTaskDefName());
     }
 
     @Test
@@ -441,6 +447,79 @@ public class TestDeciderOutcomes {
     }
 
     @Test
+    public void testPermissive() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test-permissive");
+
+        WorkflowTask task1 = new WorkflowTask();
+        task1.setName("task0");
+        task1.setPermissive(true);
+        task1.setTaskReferenceName("t0");
+        task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+        task1.setTaskDefinition(new TaskDef("task0"));
+
+        WorkflowTask task2 = new WorkflowTask();
+        task2.setName("task1");
+        task2.setPermissive(true);
+        task2.setTaskReferenceName("t1");
+        task2.setTaskDefinition(new TaskDef("task1"));
+
+        def.getTasks().add(task1);
+        def.getTasks().add(task2);
+        def.setSchemaVersion(2);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        DeciderOutcome outcome = deciderService.decide(workflow);
+        assertNotNull(outcome);
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+        assertEquals(
+                task1.getTaskReferenceName(),
+                outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+
+        for (int i = 0; i < 3; i++) {
+            String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+            assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+
+            workflow.getTasks().clear();
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+            workflow.getTasks().get(0).setStatus(TaskModel.Status.FAILED);
+
+            outcome = deciderService.decide(workflow);
+
+            assertNotNull(outcome);
+            assertEquals(1, outcome.tasksToBeUpdated.size());
+            assertEquals(1, outcome.tasksToBeScheduled.size());
+
+            assertEquals(TaskModel.Status.FAILED, workflow.getTasks().get(0).getStatus());
+            assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+            assertEquals(
+                    task1.getTaskReferenceName(),
+                    outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+            assertEquals(i + 1, outcome.tasksToBeScheduled.get(0).getRetryCount());
+        }
+
+        String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+
+        workflow.getTasks().clear();
+        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+        workflow.getTasks().get(0).setStatus(TaskModel.Status.FAILED);
+
+        outcome = deciderService.decide(workflow);
+
+        assertNotNull(outcome);
+        assertEquals(1, outcome.tasksToBeUpdated.size());
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+
+        assertEquals(TaskModel.Status.FAILED, workflow.getTasks().get(0).getStatus());
+        assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+        assertEquals(
+                task2.getTaskReferenceName(),
+                outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+    }
+
+    @Test
     public void testOptionalWithDynamicFork() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
@@ -471,6 +550,7 @@ public class TestDeciderOutcomes {
         for (int i = 0; i < 3; i++) {
             WorkflowTask workflowTask = new WorkflowTask();
             workflowTask.setName("f" + i);
+            workflowTask.getInputParameters().put("joinOn", new ArrayList<>());
             workflowTask.setTaskReferenceName("f" + i);
             workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
             workflowTask.setOptional(true);
@@ -490,7 +570,7 @@ public class TestDeciderOutcomes {
         assertEquals(TASK_TYPE_FORK, outcome.tasksToBeScheduled.get(0).getTaskType());
         assertEquals(TaskModel.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
 
-        for (int retryCount = 0; retryCount < 4; retryCount++) {
+        for (int retryCount = 0; retryCount < 3; retryCount++) {
 
             for (TaskModel taskToBeScheduled : outcome.tasksToBeScheduled) {
                 if (taskToBeScheduled.getTaskDefName().equals("join0")) {
@@ -506,20 +586,18 @@ public class TestDeciderOutcomes {
             outcome = deciderService.decide(workflow);
             assertNotNull(outcome);
         }
-        assertEquals(TASK_TYPE_JOIN, outcome.tasksToBeScheduled.get(0).getTaskType());
+        assertEquals("f0", outcome.tasksToBeScheduled.get(0).getTaskType());
 
         for (int i = 0; i < 3; i++) {
-            assertEquals(
-                    TaskModel.Status.COMPLETED_WITH_ERRORS,
-                    outcome.tasksToBeUpdated.get(i).getStatus());
+            assertEquals(TaskModel.Status.FAILED, outcome.tasksToBeUpdated.get(i).getStatus());
             assertEquals("f" + (i), outcome.tasksToBeUpdated.get(i).getTaskDefName());
         }
 
-        assertEquals(TaskModel.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(0).getStatus());
-        new Join().execute(workflow, outcome.tasksToBeScheduled.get(0), null);
-        assertEquals(
-                TaskModel.Status.COMPLETED_WITH_ERRORS,
-                outcome.tasksToBeScheduled.get(0).getStatus());
+        assertEquals(TaskModel.Status.SCHEDULED, outcome.tasksToBeScheduled.get(0).getStatus());
+        System.out.println(outcome.tasksToBeScheduled.get(0));
+        new Join(new ConductorProperties())
+                .execute(workflow, outcome.tasksToBeScheduled.get(0), null);
+        assertEquals(TaskModel.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
     }
 
     @Test

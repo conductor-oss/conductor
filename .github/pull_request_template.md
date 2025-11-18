@@ -3,7 +3,7 @@ Pull Request type
 - [ ] Bugfix
 - [ ] Feature
 - [ ] Refactoring (no functional changes, no api changes)
-- [ ] Build related changes (Please run `./gradlew generateLock saveLock` to refresh dependencies)
+- [ ] Build related changes
 - [ ] WHOSUSING.md
 - [ ] Other (please describe):
 

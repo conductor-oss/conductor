@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -40,7 +40,8 @@ public enum TaskType {
     TERMINATE,
     KAFKA_PUBLISH,
     JSON_JQ_TRANSFORM,
-    SET_VARIABLE;
+    SET_VARIABLE,
+    NOOP;
 
     /**
      * TaskType constants representing each of the possible enumeration values. Motivation: to not
@@ -69,6 +70,7 @@ public enum TaskType {
     public static final String TASK_TYPE_JSON_JQ_TRANSFORM = "JSON_JQ_TRANSFORM";
     public static final String TASK_TYPE_SET_VARIABLE = "SET_VARIABLE";
     public static final String TASK_TYPE_FORK = "FORK";
+    public static final String TASK_TYPE_NOOP = "NOOP";
 
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
 

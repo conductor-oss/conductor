@@ -1,5 +1,5 @@
 /*
- *  Copyright 2021 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -14,12 +14,14 @@ apply plugin: 'groovy'
 
 dependencies {
     implementation project(':conductor-common')
+    implementation project(':conductor-metrics')
+
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.springframework.retry:spring-retry'
 
-    implementation "com.fasterxml.jackson.core:jackson-annotations"
-    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${revFasterXml}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
 
     implementation "commons-io:commons-io:${revCommonsIo}"
 
@@ -27,7 +29,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
 
     implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
 
@@ -35,11 +37,22 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
-    implementation "com.netflix.spectator:spectator-api:${revSpectator}"
-
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.github.ben-manes.caffeine:caffeine"
+
+    // Nashorn is deprecated and removed in Java 15+, replaced by GraalJS
+    // implementation "org.openjdk.nashorn:nashorn-core:15.4"
+
+    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "com.google.guava:guava:${revGuava}"
+
+    //GraalVM dependencies for executing JavaScript and Python
+    implementation("org.graalvm.polyglot:polyglot:24.1.0")
+    implementation("org.graalvm.js:js:24.1.0")
+    implementation("org.graalvm.js:js-scriptengine:24.1.0")
+    implementation("org.graalvm.polyglot:python:24.1.0")
+    implementation "org.graalvm.sdk:graal-sdk:24.1.0"
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
@@ -53,7 +66,7 @@ dependencies {
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation project(':conductor-common').sourceSets.test.output
 
-    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.junit.vintage:junit-vintage-engine"

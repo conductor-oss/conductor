@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -93,6 +93,9 @@ public class TaskModel {
 
     /** Time when the task was last updated */
     private long updateTime;
+
+    /** Time when first task started */
+    private long firstStartTime;
 
     private int startDelayInSeconds;
 
@@ -571,6 +574,7 @@ public class TaskModel {
     /**
      * @return {@link Optional} containing the task definition if available
      */
+    @JsonIgnore
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask()).map(WorkflowTask::getTaskDefinition);
     }
@@ -871,6 +875,10 @@ public class TaskModel {
 
     public void addOutput(String key, Object value) {
         this.outputData.put(key, value);
+    }
+
+    public void removeOutput(String key) {
+        this.outputData.remove(key);
     }
 
     public void addOutput(Map<String, Object> outputData) {

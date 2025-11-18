@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,17 +12,15 @@
  */
 package com.netflix.conductor.core.execution.tasks
 
-import javax.validation.ConstraintViolation
-import javax.validation.Validator
-
 import com.netflix.conductor.common.config.ObjectMapperProvider
 import com.netflix.conductor.core.exception.NotFoundException
 import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.operation.StartWorkflowOperation
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
+import jakarta.validation.ConstraintViolation
+import jakarta.validation.Validator
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -42,21 +40,19 @@ class StartWorkflowSpec extends Specification {
     Validator validator
     WorkflowModel workflowModel
     TaskModel taskModel
-    StartWorkflowOperation startWorkflowOperation
 
     def setup() {
         workflowExecutor = Mock(WorkflowExecutor.class)
         validator = Mock(Validator.class) {
             validate(_) >> new HashSet<ConstraintViolation<Object>>()
         }
-        startWorkflowOperation = Mock(StartWorkflowOperation.class)
 
         def inputData = [:]
         inputData[START_WORKFLOW_PARAMETER] = ['name': 'some_workflow']
         taskModel = new TaskModel(status: SCHEDULED, inputData: inputData)
         workflowModel = new WorkflowModel()
 
-        startWorkflow = new StartWorkflow(new ObjectMapperProvider().getObjectMapper(), validator, startWorkflowOperation)
+        startWorkflow = new StartWorkflow(new ObjectMapperProvider().getObjectMapper(), validator)
     }
 
     def "StartWorkflow task is asynchronous"() {
@@ -94,7 +90,7 @@ class StartWorkflowSpec extends Specification {
 
         then:
         taskModel.status == SCHEDULED
-        1 * startWorkflowOperation.execute(*_) >> { throw new TransientException("") }
+        1 * workflowExecutor.startWorkflow(*_) >> { throw new TransientException("") }
     }
 
     def "WorkflowExecutor throws a NotFoundException"() {
@@ -104,7 +100,7 @@ class StartWorkflowSpec extends Specification {
         then:
         taskModel.status == FAILED
         taskModel.reasonForIncompletion != null
-        1 * startWorkflowOperation.execute(*_) >> { throw new NotFoundException("") }
+        1 * workflowExecutor.startWorkflow(*_) >> { throw new NotFoundException("") }
     }
 
     def "WorkflowExecutor throws a RuntimeException"() {
@@ -114,6 +110,6 @@ class StartWorkflowSpec extends Specification {
         then:
         taskModel.status == FAILED
         taskModel.reasonForIncompletion != null
-        1 * startWorkflowOperation.execute(*_) >> { throw new RuntimeException("I am an unexpected exception") }
+        1 * workflowExecutor.startWorkflow(*_) >> { throw new RuntimeException("I am an unexpected exception") }
     }
 }

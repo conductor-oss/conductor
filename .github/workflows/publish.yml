@@ -1,10 +1,14 @@
-name: Publish to NetflixOSS and Maven Central
+name: Publish Conductor OSS toMaven Central
 on:
   release:
     types:
       - released
       - prereleased
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0)'
+        required: true
 permissions:
   contents: read
 
@@ -14,11 +18,11 @@ jobs:
     name: Gradle Build and Publish
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Zulu JDK 11
+      - name: Set up Zulu JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
       - name: Cache Gradle packages
         uses: actions/cache@v3
         with:
@@ -28,39 +32,13 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Publish candidate
-        if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc.')
-        run: ./gradlew -Prelease.useLastTag=true candidate --scan
-        env:
-          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
-          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v') && (!contains(github.ref, '-rc.'))
-        run: ./gradlew -Prelease.useLastTag=true final --scan
-        env:
-          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
-          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
-      - name: Publish tag to community repo
-        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          export TAG=$(git describe --tags --abbrev=0)
-          echo "Current release version is $TAG"
-          echo "Triggering community build"
-          curl \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: Bearer ${{ secrets.COMMUNITY_REPO_TRIGGER }}" \
-            -X POST https://api.github.com/repos/Netflix/conductor-community/dispatches \
-            -d '{"event_type": "publish_build","client_payload": {"tag":"'"$TAG"'"}}'
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
-        if: always() # always run even if the previous step fails
-        with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          export VERSION="${{github.ref_name}}"
+          export PUBLISH_VERSION=`echo ${VERSION:1}`
+          echo Publishing version $PUBLISH_VERSION
+          ./gradlew publish -PmavenCentral -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
+        env:
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}

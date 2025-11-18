@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -289,7 +289,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         jedisProxy.zaddnx(rateLimitKey, score, taskId);
         recordRedisDaoRequests("checkTaskRateLimiting", task.getTaskType(), task.getWorkflowType());
 
-        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, limit);
+        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, Integer.MAX_VALUE);
         boolean rateLimited = !ids.contains(taskId);
         if (rateLimited) {
             LOGGER.info(

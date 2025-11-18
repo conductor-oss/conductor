@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,7 +13,10 @@
 package com.netflix.conductor.test.integration
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.TestPropertySource
 
+import com.netflix.conductor.ConductorTestApp
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -31,6 +34,10 @@ import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
+@TestPropertySource(properties = [
+        "conductor.db.type=memory",
+        "conductor.queue.type=xxx"
+])
 class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
     @Autowired
@@ -46,18 +53,26 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
     def WORKFLOW_WITH_OPTIONAL_TASK = 'optional_task_wf'
 
     @Shared
+    def WORKFLOW_WITH_PERMISSIVE_TASK = 'permissive_task_wf'
+
+    @Shared
+    def WORKFLOW_WITH_PERMISSIVE_OPTIONAL_TASK = 'permissive_optional_task_wf'
+
+    @Shared
     def TEST_WORKFLOW = 'integration_test_wf3'
 
     @Shared
     def WAIT_TIME_OUT_WORKFLOW = 'test_wait_timeout'
 
     def setup() {
-        //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF, WORKFLOW_WITH_OPTIONAL_TASK
+        //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF, WORKFLOW_WITH_OPTIONAL_TASK, WORKFLOW_WITH_PERMISSIVE_TASK, WORKFLOW_WITH_PERMISSIVE_OPTIONAL_TASK
         workflowTestUtil.registerWorkflows(
                 'simple_workflow_1_integration_test.json',
                 'simple_workflow_1_input_template_integration_test.json',
                 'simple_workflow_3_integration_test.json',
                 'simple_workflow_with_optional_task_integration_test.json',
+                'simple_workflow_with_permissive_task_integration_test.json',
+                'simple_workflow_with_permissive_optional_task_integration_test.json',
                 'simple_wait_task_workflow_integration_test.json')
     }
 
@@ -104,6 +119,155 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         }
 
         when: "Poll the optional task again and do not complete it and run decide"
+        workflowExecutionService.poll('task_optional', 'task1.integration.worker')
+        Thread.sleep(5000)
+        workflowExecutor.decide(workflowInstanceId)
+
+        then: "Ensure that the workflow is updated"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 3
+            tasks[1].status == Task.Status.COMPLETED_WITH_ERRORS
+            tasks[1].taskType == 'task_optional'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+        }
+
+        when: "The second task 'integration_task_2' is polled and completed"
+        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+
+        then: "Verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(task2Try1)
+
+        and: "Ensure that the workflow is in completed state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 3
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_2'
+        }
+    }
+
+    def "Test simple workflow which has a permissive task"() {
+
+        given: "A input parameters for a workflow with a permissive task"
+        def correlationId = 'integration_test' + UUID.randomUUID().toString()
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when: "A permissive task workflow is started"
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_PERMISSIVE_TASK, 1,
+                correlationId, workflowInput,
+                null)
+
+        then: "verify that the workflow has started and the permissive task is in a scheduled state"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'task_permissive'
+        }
+
+        when: "The first permissive task is polled and failed"
+        Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('task_permissive',
+                'task1.integration.worker', 'NETWORK ERROR')
+
+        then: "Verify that the task_permissive was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
+
+        when: "A decide is executed on the workflow"
+        workflowExecutor.decide(workflowInstanceId)
+
+        then: "verify that the workflow is still running and the first permissive task has failed and the retry has kicked in"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'task_permissive'
+            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].taskType == 'task_permissive'
+        }
+
+        when: "The first permissive task is polled and failed"
+        Tuple polledAndFailedTaskTry2 = workflowTestUtil.pollAndFailTask('task_permissive',
+                'task1.integration.worker', 'NETWORK ERROR')
+
+        then: "Verify that the task_permissive was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry2)
+
+        workflowExecutor.decide(workflowInstanceId)
+
+        then: "Ensure that the workflow is updated"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 3
+            tasks[1].status == Task.Status.FAILED
+            tasks[1].taskType == 'task_permissive'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+        }
+
+        when: "The second task 'integration_task_2' is polled and completed"
+        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
+
+        then: "Verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(task2Try1)
+
+        and: "Ensure that the workflow is in completed state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.FAILED
+            reasonForIncompletion == "Task ${tasks[1].taskId} failed with status: FAILED and reason: 'NETWORK ERROR'"
+            tasks.size() == 3
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_2'
+        }
+    }
+
+    def "Test simple workflow which has a permissive optional task"() {
+
+        given: "A input parameters for a workflow with a permissive optional task"
+        def correlationId = 'integration_test' + UUID.randomUUID().toString()
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when: "A permissive optional task workflow is started"
+        def workflowInstanceId = startWorkflow(WORKFLOW_WITH_PERMISSIVE_OPTIONAL_TASK, 1,
+                correlationId, workflowInput,
+                null)
+
+        then: "verify that the workflow has started and the permissive optional task is in a scheduled state"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'task_optional'
+        }
+
+        when: "The first permissive optional task is polled and failed"
+        Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('task_optional',
+                'task1.integration.worker', 'NETWORK ERROR')
+
+        then: "Verify that the task_optional was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
+
+        when: "A decide is executed on the workflow"
+        workflowExecutor.decide(workflowInstanceId)
+
+        then: "verify that the workflow is still running and the first permissive optional task has failed and the retry has kicked in"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'task_optional'
+            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].taskType == 'task_optional'
+        }
+
+        when: "Poll the permissive optional task again and do not complete it and run decide"
         workflowExecutionService.poll('task_optional', 'task1.integration.worker')
         Thread.sleep(5000)
         workflowExecutor.decide(workflowInstanceId)
@@ -730,7 +894,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
             tasks[0].taskType == 'WAIT'
             tasks[0].status == Task.Status.TIMED_OUT
             tasks[1].taskType == 'WAIT'
-            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[1].status == Task.Status.SCHEDULED
         }
 
         when: "The wait task is completed"
@@ -881,7 +1045,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
         when: "a workflow is started with this definition"
         def input = new HashMap()
         def correlationId = 'empty_workflow'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: emptyWorkflowDef, workflowInput: input, correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: emptyWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -936,7 +1100,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_template'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: templateWorkflowDef, workflowInput: input, correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: templateWorkflowDef, workflowInput: input, correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -974,7 +1138,7 @@ class WorkflowAndTaskConfigurationSpec extends AbstractSpecification {
 
         when: "the workflow is started"
         def correlationId = 'workflow_taskdef_not_registered'
-        def workflowInstanceId = startWorkflowOperation.execute(new StartWorkflowInput(workflowDefinition: testWorkflowDef, workflowInput: [:], correlationId: correlationId))
+        def workflowInstanceId = workflowExecutor.startWorkflow(new StartWorkflowInput(workflowDefinition: testWorkflowDef, workflowInput: [:], correlationId: correlationId))
 
         then: "the workflow is in running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

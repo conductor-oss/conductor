@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +27,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
@@ -35,6 +35,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -48,19 +49,24 @@ public class WorkflowSweeper {
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowRepairService workflowRepairService;
     private final QueueDAO queueDAO;
+    private final ExecutionDAOFacade executionDAOFacade;
+    private final ExecutionLockService executionLockService;
 
     private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
 
-    @Autowired
     public WorkflowSweeper(
             WorkflowExecutor workflowExecutor,
             Optional<WorkflowRepairService> workflowRepairService,
             ConductorProperties properties,
-            QueueDAO queueDAO) {
+            QueueDAO queueDAO,
+            ExecutionDAOFacade executionDAOFacade,
+            ExecutionLockService executionLockService) {
         this.properties = properties;
         this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
+        this.executionDAOFacade = executionDAOFacade;
         this.workflowRepairService = workflowRepairService.orElse(null);
+        this.executionLockService = executionLockService;
         LOGGER.info("WorkflowSweeper initialized.");
     }
 
@@ -71,23 +77,26 @@ public class WorkflowSweeper {
     }
 
     public void sweep(String workflowId) {
+        WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
+        WorkflowContext.set(workflowContext);
         WorkflowModel workflow = null;
         try {
-            WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
-            WorkflowContext.set(workflowContext);
+            if (!executionLockService.acquireLock(workflowId)) {
+                return;
+            }
+            workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
             LOGGER.debug("Running sweeper for workflow {}", workflowId);
-
             if (workflowRepairService != null) {
                 // Verify and repair tasks in the workflow.
-                workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
+                workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
             }
-
-            workflow = workflowExecutor.decide(workflowId);
+            long decideStartTime = System.currentTimeMillis();
+            workflow = workflowExecutor.decide(workflow.getWorkflowId());
+            Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
             if (workflow != null && workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
             }
-
         } catch (NotFoundException nfe) {
             queueDAO.remove(DECIDER_QUEUE, workflowId);
             LOGGER.info(
@@ -96,6 +105,8 @@ public class WorkflowSweeper {
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "sweep");
             LOGGER.error("Error running sweep for " + workflowId, e);
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
         long workflowOffsetTimeout =
                 workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
@@ -133,6 +144,13 @@ public class WorkflowSweeper {
                                     ? taskModel.getResponseTimeoutSeconds() + 1
                                     : workflowOffsetTimeout;
                 }
+
+                if (postponeDurationSeconds
+                        > properties.getMaxPostponeDurationSeconds().getSeconds()) {
+                    postponeDurationSeconds =
+                            properties.getMaxPostponeDurationSeconds().getSeconds();
+                }
+
                 break;
             } else if (taskModel.getStatus() == Status.SCHEDULED) {
                 Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();

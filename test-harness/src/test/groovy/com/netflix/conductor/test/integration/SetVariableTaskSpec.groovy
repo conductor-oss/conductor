@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -62,7 +62,7 @@ class SetVariableTaskSpec extends AbstractSpecification {
         def EXTRA_HASHMAP_SIZE = 17
         def expectedErrorMessage =
                 String.format(
-                        "The variables payload size: %d of workflow: %s is greater than the permissible limit: %d bytes",
+                        "The variables payload size: %d of workflow: %s is greater than the permissible limit: %d kilobytes",
                         EXTRA_HASHMAP_SIZE + maxThreshold * 1024 + 1, workflowInstanceId, maxThreshold)
 
         then: "verify that the task is completed and variables were set"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -82,6 +82,8 @@ public class MetadataServiceImpl implements MetadataService {
         }
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
+        taskDefinition.setCreateTime(existing.getCreateTime());
+        taskDefinition.setCreatedBy(existing.getCreatedBy());
         metadataDAO.updateTaskDef(taskDefinition);
     }
 
@@ -122,8 +124,8 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    public BulkResponse updateWorkflowDef(List<WorkflowDef> workflowDefList) {
-        BulkResponse bulkResponse = new BulkResponse();
+    public BulkResponse<String> updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        BulkResponse<String> bulkResponse = new BulkResponse<>();
         for (WorkflowDef workflowDef : workflowDefList) {
             try {
                 updateWorkflowDef(workflowDef);
@@ -216,6 +218,11 @@ public class MetadataServiceImpl implements MetadataService {
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return eventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
+    }
+
+    @Override
+    public List<WorkflowDef> getWorkflowDefsLatestVersions() {
+        return metadataDAO.getAllWorkflowDefsLatestVersions();
     }
 
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {

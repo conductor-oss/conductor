@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,8 +14,6 @@ package com.netflix.conductor.client.grpc;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -25,6 +23,7 @@ import com.netflix.conductor.grpc.MetadataServicePb;
 
 import com.google.common.base.Preconditions;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 public class MetadataClient extends ClientBase {
 
@@ -46,7 +45,7 @@ public class MetadataClient extends ClientBase {
      * @param workflowDef the workflow definition
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
+        Preconditions.checkNotNull(workflowDef, "Workflow definition cannot be null");
         stub.createWorkflow(
                 MetadataServicePb.CreateWorkflowRequest.newBuilder()
                         .setWorkflow(protoMapper.toProto(workflowDef))

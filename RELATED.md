@@ -1,1 +1,1 @@
-[Related Projects](docs/docs/resources/related.md)
+[Related Projects](docs/resources/related.md)

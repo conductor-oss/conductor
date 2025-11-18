@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tabs, Tab, Paper } from "../../components";
 import Timeline from "./Timeline";
 import TaskList from "./TaskList";
-import WorkflowGraph from "../../components/diagram/WorkflowGraph";
 import { makeStyles } from "@material-ui/styles";
+import { WorkflowVisualizerJson } from "orkes-workflow-visualizer";
+import {
+  pendingTaskSelection,
+  taskWithLatestIteration,
+} from "../../utils/helpers";
+import { useFetchForWorkflowDefinition } from "../../utils/helperFunctions";
+import PanAndZoomWrapper from "../../components/diagram/PanAndZoomWrapper";
 
 const useStyles = makeStyles({
   taskWrapper: {
@@ -18,9 +24,27 @@ export default function TaskDetails({
   dag,
   selectedTask,
   setSelectedTask,
+  setSelectedNode,
 }) {
   const [tabIndex, setTabIndex] = useState(0);
+  // For PanAndZoomWrapper
+  const [layout, setLayout] = useState({ height: 0, width: 0 });
+
+  const handleSetLayout = (value) => {
+    setLayout((prevLayout) => {
+      if (
+        prevLayout?.width === value?.width &&
+        prevLayout?.height === value?.height
+      ) {
+        return prevLayout;
+      }
+      return value;
+    });
+  };
+  //
   const classes = useStyles();
+  const { fetchForWorkflowDefinition, extractSubWorkflowNames } =
+    useFetchForWorkflowDefinition();
 
   return (
     <div className={classes.taskWrapper}>
@@ -32,12 +56,42 @@ export default function TaskDetails({
         </Tabs>
 
         {tabIndex === 0 && (
-          <WorkflowGraph
-            selectedTask={selectedTask}
-            executionMode={true}
-            dag={dag}
-            onClick={setSelectedTask}
-          />
+          <div style={{ height: "calc(100vh - 300px)" }}>
+            <PanAndZoomWrapper
+              layout={layout}
+              workflowName={execution?.workflowName}
+            >
+              <WorkflowVisualizerJson
+                data={execution}
+                executionMode={true}
+                onClick={(e, data) => {
+                  const selectedTaskRefName =
+                    data?.data?.task?.executionData?.status === "PENDING"
+                      ? pendingTaskSelection(data?.data?.task)?.workflowTask
+                          ?.taskReferenceName
+                      : taskWithLatestIteration(execution?.tasks, {
+                          ref: data.id,
+                        })?.referenceTaskName;
+                  setSelectedNode(data);
+                  setSelectedTask({ ref: selectedTaskRefName });
+                }}
+                subWorkflowFetcher={async (workflowName, version) =>
+                  await fetchForWorkflowDefinition({
+                    workflowName: workflowName,
+                    currentVersion: version,
+                    collapseWorkflowList: extractSubWorkflowNames(
+                      execution?.workflowDefinition
+                    ),
+                  })
+                }
+                handleLayoutChange={(value) => {
+                  if (value != null && value.width != null) {
+                    handleSetLayout(value);
+                  }
+                }}
+              />
+            </PanAndZoomWrapper>
+          </div>
         )}
         {tabIndex === 1 && (
           <TaskList

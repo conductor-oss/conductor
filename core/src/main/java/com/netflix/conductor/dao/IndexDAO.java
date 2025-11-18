@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -235,7 +235,7 @@ public interface IndexDAO {
      *
      * @param indexName Name of the index to search
      * @param archiveTtlDays Archival Time to Live
-     * @return List of worlflow Ids matching the pattern
+     * @return List of workflow Ids matching the pattern
      */
     List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays);
 

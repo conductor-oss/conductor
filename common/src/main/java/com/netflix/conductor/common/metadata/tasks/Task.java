@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -201,6 +201,15 @@ public class Task {
      */
     @ProtoField(id = 42)
     private boolean subworkflowChanged;
+
+    @ProtoField(id = 43)
+    private long firstStartTime;
+
+    @ProtoField(id = 44)
+    private ExecutionMetadata executionMetadata;
+
+    // If the task is an event associated with a parent task, the id of the parent task
+    private String parentTaskId;
 
     public Task() {}
 
@@ -713,7 +722,9 @@ public class Task {
         return iteration > 0;
     }
 
-    /** * @return the priority defined on workflow */
+    /**
+     * @return the priority defined on workflow
+     */
     public int getWorkflowPriority() {
         return workflowPriority;
     }
@@ -754,6 +765,69 @@ public class Task {
         }
     }
 
+    public String getParentTaskId() {
+        return parentTaskId;
+    }
+
+    public void setParentTaskId(String parentTaskId) {
+        this.parentTaskId = parentTaskId;
+    }
+
+    public long getFirstStartTime() {
+        return firstStartTime;
+    }
+
+    public void setFirstStartTime(long firstStartTime) {
+        this.firstStartTime = firstStartTime;
+    }
+
+    /**
+     * @return the execution metadata containing timing, worker context, and other operational data.
+     *     Returns null if no execution metadata has been explicitly set or used.
+     */
+    public ExecutionMetadata getExecutionMetadata() {
+        // Only return ExecutionMetadata if it exists and has data
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
+     */
+    public ExecutionMetadata getOrCreateExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
+        return executionMetadata;
+    }
+
+    /**
+     * @return the execution metadata only if it has data, null otherwise (for protobuf
+     *     serialization)
+     */
+    public ExecutionMetadata getExecutionMetadataIfHasData() {
+        if (executionMetadata != null && executionMetadata.hasData()) {
+            return executionMetadata;
+        }
+        return null;
+    }
+
+    /**
+     * @return true if the task has execution metadata (without creating it)
+     */
+    public boolean hasExecutionMetadata() {
+        return executionMetadata != null;
+    }
+
+    /**
+     * @param executionMetadata the execution metadata to set
+     */
+    public void setExecutionMetadata(ExecutionMetadata executionMetadata) {
+        this.executionMetadata = executionMetadata;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -786,7 +860,9 @@ public class Task {
         copy.setIsolationGroupId(isolationGroupId);
         copy.setSubWorkflowId(getSubWorkflowId());
         copy.setSubworkflowChanged(subworkflowChanged);
-
+        copy.setParentTaskId(parentTaskId);
+        copy.setFirstStartTime(firstStartTime);
+        copy.setExecutionMetadata(executionMetadata);
         return copy;
     }
 
@@ -807,7 +883,8 @@ public class Task {
         deepCopy.setWorkerId(workerId);
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
-
+        deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }
 
@@ -908,6 +985,9 @@ public class Task {
                 + ", subworkflowChanged='"
                 + subworkflowChanged
                 + '\''
+                + ", firstStartTime='"
+                + firstStartTime
+                + '\''
                 + '}';
     }
 
@@ -961,7 +1041,9 @@ public class Task {
                         getExternalOutputPayloadStoragePath(),
                         task.getExternalOutputPayloadStoragePath())
                 && Objects.equals(getIsolationGroupId(), task.getIsolationGroupId())
-                && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace());
+                && Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace())
+                && Objects.equals(getParentTaskId(), task.getParentTaskId())
+                && Objects.equals(getFirstStartTime(), task.getFirstStartTime());
     }
 
     @Override
@@ -1003,6 +1085,8 @@ public class Task {
                 getExternalInputPayloadStoragePath(),
                 getExternalOutputPayloadStoragePath(),
                 getIsolationGroupId(),
-                getExecutionNameSpace());
+                getExecutionNameSpace(),
+                getParentTaskId(),
+                getFirstStartTime());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,11 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -28,6 +23,11 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Validated
 public interface MetadataService {
@@ -69,7 +69,7 @@ public interface MetadataService {
     /**
      * @param workflowDefList Workflow definitions to be updated.
      */
-    BulkResponse updateWorkflowDef(
+    BulkResponse<String> updateWorkflowDef(
             @NotNull(message = "WorkflowDef list name cannot be null or empty")
                     @Size(min = 1, message = "WorkflowDefList is empty")
                     List<@NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef>
@@ -154,4 +154,6 @@ public interface MetadataService {
     List<EventHandler> getEventHandlersForEvent(
             @NotEmpty(message = "EventName cannot be null or empty") String event,
             boolean activeOnly);
+
+    List<WorkflowDef> getWorkflowDefsLatestVersions();
 }

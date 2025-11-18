@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -107,6 +107,14 @@ public class RedisProperties {
     private boolean testWhileIdle = false;
 
     private int numTestsPerEvictionRun = 3;
+
+    private int database = 0;
+
+    private String username = null;
+
+    private boolean ssl = false;
+
+    private String clientName = null;
 
     public int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
@@ -282,5 +290,37 @@ public class RedisProperties {
         } else {
             return () -> new RetryNTimes(maxRetryAttempts, false);
         }
+    }
+
+    public int getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(int database) {
+        this.database = database;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }

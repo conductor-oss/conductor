@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -50,7 +50,11 @@ public class Conductor {
      */
     private static void loadExternalConfig() throws IOException {
         String configFile = System.getProperty("CONDUCTOR_CONFIG_FILE");
+        if (StringUtils.isBlank(configFile)) {
+            configFile = System.getenv("CONDUCTOR_CONFIG_FILE");
+        }
         if (StringUtils.isNotBlank(configFile)) {
+            log.info("Loading {}", configFile);
             FileSystemResource resource = new FileSystemResource(configFile);
             if (resource.exists()) {
                 Properties properties = new Properties();

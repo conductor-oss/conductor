@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,10 +22,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.netflix.conductor.ConductorTestApp;
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.client.http.MetadataClient;
@@ -55,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
@@ -447,7 +448,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             taskClient.getTaskDetails("test999");
         } catch (ConductorClientException e) {
             assertEquals(404, e.getStatus());
-            assertEquals("No such task found by taskId: test999", e.getMessage());
+            assertEquals("Task not found for taskId: test999", e.getMessage());
         }
     }
 
@@ -497,7 +498,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ConductorClientException.class)
     public void testGetTaskDefNotExisting() {
         metadataClient.getTaskDef("");
     }

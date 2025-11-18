@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -11,8 +11,6 @@
  * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.util
-
-import javax.annotation.PostConstruct
 
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,6 +29,7 @@ import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.annotation.PostConstruct
 
 /**
  * This is a helper class used to initialize task definitions required by the tests when loaded up.

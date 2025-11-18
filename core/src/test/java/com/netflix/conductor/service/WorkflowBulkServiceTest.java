@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,8 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.ConstraintViolationException;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +26,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
 
@@ -50,8 +50,14 @@ public class WorkflowBulkServiceTest {
         }
 
         @Bean
-        public WorkflowBulkService workflowBulkService(WorkflowExecutor workflowExecutor) {
-            return new WorkflowBulkServiceImpl(workflowExecutor);
+        WorkflowService workflowService() {
+            return mock(WorkflowService.class);
+        }
+
+        @Bean
+        public WorkflowBulkService workflowBulkService(
+                WorkflowExecutor workflowExecutor, WorkflowService workflowService) {
+            return new WorkflowBulkServiceImpl(workflowExecutor, workflowService);
         }
     }
 
@@ -137,6 +143,30 @@ public class WorkflowBulkServiceTest {
     public void testTerminateNull() {
         try {
             workflowBulkService.terminate(null, null);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowIds list cannot be null."));
+            throw ex;
+        }
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testDeleteWorkflowNull() {
+        try {
+            workflowBulkService.deleteWorkflow(null, false);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowIds list cannot be null."));
+            throw ex;
+        }
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testTerminateRemoveNull() {
+        try {
+            workflowBulkService.terminateRemove(null, null, false);
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());

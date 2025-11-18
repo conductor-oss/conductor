@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -32,7 +32,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.Utils;
 
 @Audit
@@ -43,17 +42,14 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionService executionService;
     private final MetadataService metadataService;
-    private final StartWorkflowOperation startWorkflowOperation;
 
     public WorkflowServiceImpl(
             WorkflowExecutor workflowExecutor,
             ExecutionService executionService,
-            MetadataService metadataService,
-            StartWorkflowOperation startWorkflowOperation) {
+            MetadataService metadataService) {
         this.workflowExecutor = workflowExecutor;
         this.executionService = executionService;
         this.metadataService = metadataService;
-        this.startWorkflowOperation = startWorkflowOperation;
     }
 
     /**
@@ -63,7 +59,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
-        return startWorkflowOperation.execute(new StartWorkflowInput(startWorkflowRequest));
+        return workflowExecutor.startWorkflow(new StartWorkflowInput(startWorkflowRequest));
     }
 
     /**
@@ -99,7 +95,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         startWorkflowInput.setTaskToDomain(taskToDomain);
         startWorkflowInput.setWorkflowDefinition(workflowDef);
 
-        return startWorkflowOperation.execute(startWorkflowInput);
+        return workflowExecutor.startWorkflow(startWorkflowInput);
     }
 
     /**
@@ -132,7 +128,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         startWorkflowInput.setPriority(priority);
         startWorkflowInput.setWorkflowInput(input);
 
-        return startWorkflowOperation.execute(startWorkflowInput);
+        return workflowExecutor.startWorkflow(startWorkflowInput);
     }
 
     /**
@@ -193,6 +189,19 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      */
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
+        executionService.removeWorkflow(workflowId, archiveWorkflow);
+    }
+
+    /**
+     * Terminate workflow execution, and then remove it from the system. Acts as terminate and
+     * remove combined.
+     *
+     * @param workflowId WorkflowId of the workflow
+     * @param reason Reason for terminating the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
+     */
+    public void terminateRemove(String workflowId, String reason, boolean archiveWorkflow) {
+        workflowExecutor.terminateWorkflow(workflowId, reason);
         executionService.removeWorkflow(workflowId, archiveWorkflow);
     }
 

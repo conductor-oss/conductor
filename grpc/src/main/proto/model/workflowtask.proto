@@ -4,6 +4,7 @@ package conductor.proto;
 import "model/taskdef.proto";
 import "model/subworkflowparams.proto";
 import "google/protobuf/struct.proto";
+import "model/cacheconfig.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "WorkflowTaskPb";
@@ -41,4 +42,7 @@ message WorkflowTask {
     int32 retry_count = 26;
     string evaluator_type = 27;
     string expression = 28;
+    string join_status = 30;
+    CacheConfig cache_config = 31;
+    bool permissive = 32;
 }

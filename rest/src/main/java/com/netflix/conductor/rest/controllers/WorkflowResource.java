@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -207,6 +207,16 @@ public class WorkflowResource {
         workflowService.terminateWorkflow(workflowId, reason);
     }
 
+    @DeleteMapping("/{workflowId}/terminate-remove")
+    @Operation(summary = "Terminate workflow execution and remove the workflow from the system")
+    public void terminateRemove(
+            @PathVariable("workflowId") String workflowId,
+            @RequestParam(value = "reason", required = false) String reason,
+            @RequestParam(value = "archiveWorkflow", defaultValue = "true", required = false)
+                    boolean archiveWorkflow) {
+        workflowService.terminateRemove(workflowId, reason, archiveWorkflow);
+    }
+
     @Operation(
             summary = "Search for workflows based on payload and other parameters",
             description =
@@ -270,7 +280,7 @@ public class WorkflowResource {
     @Operation(
             summary =
                     "Get the uri and path of the external storage where the workflow payload is to be stored")
-    @GetMapping("/externalstoragelocation")
+    @GetMapping({"/externalstoragelocation", "external-storage-location"})
     public ExternalStorageLocation getExternalStorageLocation(
             @RequestParam("path") String path,
             @RequestParam("operation") String operation,

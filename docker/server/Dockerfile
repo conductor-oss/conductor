@@ -1,35 +1,74 @@
 #
-# conductor:server - Netflix conductor server
+# conductor:server - Build Conductor Server
 #
-
 # ===========================================================================================================
-# 0. Builder stage
+# 0. Builder stage 1
 # ===========================================================================================================
-FROM eclipse-temurin:11-jdk-focal AS builder
+FROM azul/zulu-openjdk-debian:17 AS builder
 
-LABEL maintainer="Netflix OSS <conductor@netflix.com>"
+ARG INDEXING_BACKEND=elasticsearch
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 # Copy the project directly onto the image
 COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test --stacktrace
+RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
+WORKDIR /server/build/libs
+RUN ls -ltr
+
+
+#
+# conductor:server - Build Conductor UI
+#
+# ===========================================================================================================
+# 1. Builder stage 2
+# ===========================================================================================================
+FROM alpine:3.20 AS ui-builder
+ARG YARN_OPTS
+
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
+
+# Install dependencies
+RUN apk add --update nodejs npm yarn
+
+COPY . /conductor
+WORKDIR /conductor/ui
+
+# Include monaco sources into bundle (instead of using CDN)
+ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
+ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
+RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
+RUN ls -ltr
+RUN echo "Done building UI"
+
 
 # ===========================================================================================================
-# 1. Bin stage
+# 2. Bin stage
 # ===========================================================================================================
-FROM eclipse-temurin:11-jre-focal 
+FROM alpine:3.19
 
-LABEL maintainer="Netflix OSS <conductor@netflix.com>"
+LABEL maintainer="Orkes OSS <oss@orkes.io>"
+
+RUN apk add openjdk17
+RUN apk add nginx
+RUN apk add curl
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
 
 # Copy the compiled output to new image
-COPY --from=builder /conductor/docker/server/bin /app
-COPY --from=builder /conductor/docker/server/config /app/config
-COPY --from=builder /conductor/server/build/libs/conductor-server-*-boot.jar /app/libs
+COPY docker/server/bin /app
+COPY docker/server/config /app/config
+COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-server.jar
+
+# Copy compiled UI assets to nginx www directory
+WORKDIR /usr/share/nginx/html
+RUN rm -rf ./*
+COPY --from=ui-builder /conductor/ui/build .
+COPY --from=ui-builder /conductor/docker/server/nginx/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh

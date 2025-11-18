@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -84,16 +84,7 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     @Conditional(IsHttpProtocol.class)
-    public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder =
-                RestClient.builder(convertToHttpHosts(properties.toURLs()));
-        if (properties.getRestClientConnectionRequestTimeout() > 0) {
-            restClientBuilder.setRequestConfigCallback(
-                    requestConfigBuilder ->
-                            requestConfigBuilder.setConnectionRequestTimeout(
-                                    properties.getRestClientConnectionRequestTimeout()));
-        }
-
+    public RestClient restClient(RestClientBuilder restClientBuilder) {
         return restClientBuilder.build();
     }
 
@@ -101,6 +92,13 @@ public class ElasticSearchV6Configuration {
     @Conditional(IsHttpProtocol.class)
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+
+        if (properties.getRestClientConnectionRequestTimeout() > 0) {
+            builder.setRequestConfigCallback(
+                    requestConfigBuilder ->
+                            requestConfigBuilder.setConnectionRequestTimeout(
+                                    properties.getRestClientConnectionRequestTimeout()));
+        }
 
         if (properties.getUsername() != null && properties.getPassword() != null) {
             log.info(

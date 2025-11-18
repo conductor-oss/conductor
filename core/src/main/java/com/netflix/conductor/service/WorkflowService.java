@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,12 +15,6 @@ package com.netflix.conductor.service;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
 import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -31,6 +25,12 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 @Validated
 public interface WorkflowService {
@@ -164,7 +164,7 @@ public interface WorkflowService {
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
-     * Pauses the workflow given a worklfowId.
+     * Pauses the workflow given a workflowId.
      *
      * @param workflowId WorkflowId of the workflow.
      */
@@ -241,6 +241,19 @@ public interface WorkflowService {
     void terminateWorkflow(
             @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
             String reason);
+
+    /**
+     * Terminate workflow execution, and then remove it from the system. Acts as terminate and
+     * remove combined.
+     *
+     * @param workflowId WorkflowId of the workflow
+     * @param reason Reason for terminating the workflow.
+     * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
+     */
+    void terminateRemove(
+            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+            String reason,
+            boolean archiveWorkflow);
 
     /**
      * Search for workflows based on payload and given parameters. Use sort options as sort ASCor

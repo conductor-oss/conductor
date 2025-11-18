@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,8 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -32,6 +30,7 @@ import com.netflix.conductor.proto.WorkflowPb;
 
 import com.google.common.base.Preconditions;
 import io.grpc.ManagedChannelBuilder;
+import jakarta.annotation.Nullable;
 
 public class WorkflowClient extends ClientBase {
 
@@ -130,7 +129,7 @@ public class WorkflowClient extends ClientBase {
      * Retrieve all running workflow instances for a given name and version
      *
      * @param workflowName the name of the workflow
-     * @param version      the version of the wokflow definition. Defaults to 1.
+     * @param version      the version of the workflow definition. Defaults to 1.
      * @return the list of running workflow instances
      */
     public List<String> getRunningWorkflow(String workflowName, @Nullable Integer version) {

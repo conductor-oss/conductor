@@ -1,0 +1,194 @@
+{
+  "name": "FanInOutPermissiveTest_2",
+  "description": "FanInOutPermissiveTest_2",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "fanouttask",
+      "inputParameters": {},
+      "type": "FORK_JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [
+        [
+          {
+            "name": "integration_p_task_0_RT_1",
+            "taskReferenceName": "t1",
+            "inputParameters": {
+              "p1": "workflow.input.param1",
+              "p2": "workflow.input.param2"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "permissive": true,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "taskDefinition": {
+              "createdBy": "integration_app",
+              "name": "integration_p_task_0_RT_1",
+              "description": "integration_p_task_0_RT_1",
+              "retryCount": 0,
+              "timeoutSeconds": 120,
+              "inputKeys": [],
+              "outputKeys": [],
+              "timeoutPolicy": "TIME_OUT_WF",
+              "retryLogic": "FIXED",
+              "retryDelaySeconds": 0,
+              "responseTimeoutSeconds": 3600,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1
+            }
+          },
+          {
+            "name": "integration_p_task_0_RT_3",
+            "taskReferenceName": "t3",
+            "inputParameters": {
+              "p1": "workflow.input.param1",
+              "p2": "workflow.input.param2"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "permissive": true,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "taskDefinition": {
+              "createdBy": "integration_app",
+              "name": "integration_p_task_0_RT_3",
+              "description": "integration_p_task_0_RT_3",
+              "retryCount": 0,
+              "timeoutSeconds": 120,
+              "inputKeys": [],
+              "outputKeys": [],
+              "timeoutPolicy": "TIME_OUT_WF",
+              "retryLogic": "FIXED",
+              "retryDelaySeconds": 0,
+              "responseTimeoutSeconds": 3600,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1
+            }
+          }
+        ],
+        [
+          {
+            "name": "integration_p_task_0_RT_2",
+            "taskReferenceName": "t2",
+            "inputParameters": {
+              "tp1": "workflow.input.param1"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "permissive": true,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "taskDefinition": {
+              "createdBy": "integration_app",
+              "name": "integration_p_task_0_RT_2",
+              "description": "integration_p_task_0_RT_2",
+              "retryCount": 0,
+              "timeoutSeconds": 120,
+              "inputKeys": [],
+              "outputKeys": [],
+              "timeoutPolicy": "TIME_OUT_WF",
+              "retryLogic": "FIXED",
+              "retryDelaySeconds": 0,
+              "responseTimeoutSeconds": 3600,
+              "inputTemplate": {},
+              "rateLimitPerFrequency": 0,
+              "rateLimitFrequencyInSeconds": 1
+            }
+          }
+        ]
+      ],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "join",
+      "taskReferenceName": "fanouttask_join",
+      "inputParameters": {},
+      "type": "JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [
+        "t3",
+        "t2"
+      ],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "integration_p_task_0_RT_4",
+      "taskReferenceName": "t4",
+      "inputParameters": {
+        "tp1": "workflow.input.param1"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "permissive": true,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "taskDefinition": {
+        "createdBy": "integration_app",
+        "name": "integration_p_task_0_RT_4",
+        "description": "integration_p_task_0_RT_4",
+        "retryCount": 0,
+        "timeoutSeconds": 120,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 0,
+        "responseTimeoutSeconds": 3600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1
+      }
+    }
+  ],
+  "inputParameters": [
+    "param1",
+    "param2"
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}

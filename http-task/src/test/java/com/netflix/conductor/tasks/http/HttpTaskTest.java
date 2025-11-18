@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -315,7 +315,7 @@ public class HttpTaskTest {
         task.setScheduledTime(0);
 
         httpTask.start(workflow, task, workflowExecutor);
-        assertEquals(task.getStatus(), TaskModel.Status.FAILED);
+        assertEquals(TaskModel.Status.FAILED, task.getStatus());
     }
 
     @Test

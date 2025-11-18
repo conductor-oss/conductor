@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -207,7 +207,9 @@ public class DeciderService {
                     tasksToBeScheduled.put(retryTask.get().getReferenceTaskName(), retryTask.get());
                     executedTaskRefNames.remove(retryTask.get().getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);
-                } else {
+                } else if (!(pendingTask.getWorkflowTask() != null
+                        && pendingTask.getWorkflowTask().isPermissive()
+                        && !pendingTask.getWorkflowTask().isOptional())) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
             }
@@ -254,6 +256,39 @@ public class DeciderService {
         if (hasSuccessfulTerminateTask
                 || (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow))) {
             LOGGER.debug("Marking workflow: {} as complete.", workflow);
+            List<TaskModel> permissiveTasksTerminalNonSuccessful =
+                    workflow.getTasks().stream()
+                            .filter(t -> t.getWorkflowTask() != null)
+                            .filter(t -> t.getWorkflowTask().isPermissive())
+                            .filter(t -> !t.getWorkflowTask().isOptional())
+                            .collect(
+                                    Collectors.toMap(
+                                            TaskModel::getReferenceTaskName,
+                                            t -> t,
+                                            (t1, t2) ->
+                                                    t1.getRetryCount() > t2.getRetryCount()
+                                                            ? t1
+                                                            : t2))
+                            .values()
+                            .stream()
+                            .filter(
+                                    t ->
+                                            t.getStatus().isTerminal()
+                                                    && !t.getStatus().isSuccessful())
+                            .toList();
+            if (!permissiveTasksTerminalNonSuccessful.isEmpty()) {
+                final String errMsg =
+                        permissiveTasksTerminalNonSuccessful.stream()
+                                .map(
+                                        t ->
+                                                String.format(
+                                                        "Task %s failed with status: %s and reason: '%s'",
+                                                        t.getTaskId(),
+                                                        t.getStatus(),
+                                                        t.getReasonForIncompletion()))
+                                .collect(Collectors.joining(". "));
+                throw new TerminateWorkflowException(errMsg);
+            }
             outcome.isComplete = true;
         }
 
@@ -437,11 +472,6 @@ public class DeciderService {
             if (status == null || !status.isTerminal()) {
                 return false;
             }
-            // if we reach here, the task has been completed.
-            // Was the task successful in completion?
-            if (!status.isSuccessful()) {
-                return false;
-            }
         }
 
         boolean noPendingSchedule =
@@ -529,7 +559,8 @@ public class DeciderService {
         if (!task.getStatus().isRetriable()
                 || TaskType.isBuiltIn(task.getTaskType())
                 || expectedRetryCount <= retryCount) {
-            if (workflowTask != null && workflowTask.isOptional()) {
+            if (workflowTask != null
+                    && (workflowTask.isOptional() || workflowTask.isPermissive())) {
                 return Optional.empty();
             }
             WorkflowModel.Status status;

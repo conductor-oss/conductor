@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,13 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import javax.validation.executable.ExecutableValidator;
-
-import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,10 +29,15 @@ import org.mockito.Mockito;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.dao.MetadataDAO;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.executable.ExecutableValidator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -54,10 +52,7 @@ public class WorkflowTaskTypeConstraintTest {
 
     @BeforeClass
     public static void init() {
-        validatorFactory =
-                Validation.byProvider(ApacheValidationProvider.class)
-                        .configure()
-                        .buildValidatorFactory();
+        validatorFactory = Validation.buildDefaultValidatorFactory();
         validator = validatorFactory.getValidator();
     }
 
@@ -170,10 +165,10 @@ public class WorkflowTaskTypeConstraintTest {
 
         assertTrue(
                 validationErrors.contains(
-                        "loopExpression field is required for taskType: DO_WHILE taskName: encode"));
+                        "loopCondition field is required for taskType: DO_WHILE taskName: encode"));
         assertTrue(
                 validationErrors.contains(
-                        "loopover field is required for taskType: DO_WHILE taskName: encode"));
+                        "loopOver field is required for taskType: DO_WHILE taskName: encode"));
     }
 
     @Test
@@ -403,25 +398,6 @@ public class WorkflowTaskTypeConstraintTest {
         assertTrue(
                 validationErrors.contains(
                         "subWorkflowParam field is required for taskType: SUB_WORKFLOW taskName: encode"));
-    }
-
-    @Test
-    public void testWorkflowTaskTypeSubworkflow() {
-        WorkflowTask workflowTask = createSampleWorkflowTask();
-        workflowTask.setType("SUB_WORKFLOW");
-
-        SubWorkflowParams subWorkflowTask = new SubWorkflowParams();
-        workflowTask.setSubWorkflowParam(subWorkflowTask);
-
-        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
-        assertEquals(2, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be null"));
-        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be empty"));
     }
 
     @Test

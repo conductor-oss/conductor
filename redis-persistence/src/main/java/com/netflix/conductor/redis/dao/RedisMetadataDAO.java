@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -296,6 +296,27 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             }
         }
         recordRedisDaoPayloadSize("getAllWorkflowDefs", size, "n/a", "n/a");
+        return workflows;
+    }
+
+    @Override
+    public List<WorkflowDef> getAllWorkflowDefsLatestVersions() {
+        List<WorkflowDef> workflows = new LinkedList<>();
+
+        // Get all definitions latest versions from WORKFLOW_DEF_NAMES
+        recordRedisDaoRequests("getAllWorkflowLatestVersionsDefs");
+        Set<String> wfNames = jedisProxy.smembers(nsKey(WORKFLOW_DEF_NAMES));
+        int size = 0;
+        // Place all workflows into the Priority Queue. The PQ will allow us to grab the latest
+        // version of the workflows.
+        for (String wfName : wfNames) {
+            WorkflowDef def = getLatestWorkflowDef(wfName).orElse(null);
+            if (def != null) {
+                workflows.add(def);
+                size += def.toString().length();
+            }
+        }
+        recordRedisDaoPayloadSize("getAllWorkflowLatestVersionsDefs", size, "n/a", "n/a");
         return workflows;
     }
 

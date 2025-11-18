@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -36,6 +36,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.model.TaskModel;
 
 @Audit
 @Trace
@@ -86,13 +87,22 @@ public class TaskServiceImpl implements TaskService {
      */
     public List<Task> batchPoll(
             String taskType, String workerId, String domain, Integer count, Integer timeout) {
+        LOGGER.debug(
+                "Tasks being batch polled: /tasks/poll/batch/{}?{}&{}&{}&{}",
+                taskType,
+                workerId,
+                domain,
+                count,
+                timeout);
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
         LOGGER.debug(
-                "The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+                "The Tasks {} being returned for /tasks/poll/batch/{}?{}&{}&{}&{}",
                 polledTasks.stream().map(Task::getTaskId).collect(Collectors.toList()),
                 taskType,
                 workerId,
-                domain);
+                domain,
+                count,
+                timeout);
         Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
         return polledTasks;
     }
@@ -124,19 +134,39 @@ public class TaskServiceImpl implements TaskService {
      * Updates a task.
      *
      * @param taskResult Instance of {@link TaskResult}
-     * @return task Id of the updated task.
+     * @return the updated task.
      */
-    public String updateTask(TaskResult taskResult) {
+    public TaskModel updateTask(TaskResult taskResult) {
         LOGGER.debug(
                 "Update Task: {} with callback time: {}",
                 taskResult,
                 taskResult.getCallbackAfterSeconds());
-        executionService.updateTask(taskResult);
-        LOGGER.debug(
-                "Task: {} updated successfully with callback time: {}",
-                taskResult,
-                taskResult.getCallbackAfterSeconds());
-        return taskResult.getTaskId();
+        return executionService.updateTask(taskResult);
+    }
+
+    @Override
+    public String updateTask(
+            String workflowId,
+            String taskRefName,
+            TaskResult.Status status,
+            String workerId,
+            Map<String, Object> output) {
+        Task pending = getPendingTaskForWorkflow(workflowId, taskRefName);
+        if (pending == null) {
+            return null;
+        }
+
+        TaskResult taskResult = new TaskResult(pending);
+        taskResult.setStatus(status);
+        taskResult.getOutputData().putAll(output);
+        if (StringUtils.isNotBlank(workerId)) {
+            taskResult.setWorkerId(workerId);
+        }
+        TaskModel updatedTask = updateTask(taskResult);
+        if (updatedTask != null) {
+            return updatedTask.getTaskId();
+        }
+        return null;
     }
 
     /**

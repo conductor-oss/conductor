@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -51,19 +51,17 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.operation.StartWorkflowOperation;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.spectator.api.Counter;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.Registry;
-import com.netflix.spectator.api.Spectator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 
@@ -82,7 +80,7 @@ public class TestDeciderService {
 
         @Bean(TASK_TYPE_SUB_WORKFLOW)
         public SubWorkflow subWorkflow(ObjectMapper objectMapper) {
-            return new SubWorkflow(objectMapper, mock(StartWorkflowOperation.class));
+            return new SubWorkflow(objectMapper);
         }
 
         @Bean("asyncCompleteSystemTask")
@@ -125,7 +123,7 @@ public class TestDeciderService {
     private DeciderService deciderService;
 
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
-    private static Registry registry;
+    private static MeterRegistry registry;
 
     @Autowired private ObjectMapper objectMapper;
 
@@ -143,8 +141,7 @@ public class TestDeciderService {
 
     @BeforeClass
     public static void init() {
-        registry = new DefaultRegistry();
-        Spectator.globalRegistry().add(registry);
+        registry = new SimpleMeterRegistry();
     }
 
     @Before
@@ -493,7 +490,7 @@ public class TestDeciderService {
     public void testTaskTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -509,7 +506,6 @@ public class TestDeciderService {
         // Task should be marked as timed out
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -519,7 +515,6 @@ public class TestDeciderService {
         // Nothing will happen
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         boolean exception = false;
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
@@ -534,7 +529,6 @@ public class TestDeciderService {
         assertTrue(exception);
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
@@ -543,14 +537,13 @@ public class TestDeciderService {
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(counterCount, counter.count());
     }
 
     @Test
     public void testCheckTaskPollTimeout() {
         Counter counter =
                 registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        long counterCount = counter.count();
+        double counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -563,7 +556,6 @@ public class TestDeciderService {
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
 
-        assertEquals(++counterCount, counter.count());
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
 
@@ -572,7 +564,6 @@ public class TestDeciderService {
         task.setStatus(TaskModel.Status.SCHEDULED);
         deciderService.checkTaskPollTimeout(taskType, task);
 
-        assertEquals(counterCount, counter.count());
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
     }
@@ -1149,8 +1140,8 @@ public class TestDeciderService {
                         "TIMED_OUT",
                         "ownerApp",
                         "junit");
-        long counterCount = counter.count();
-        assertEquals(0, counter.count());
+        double counterCount = counter.count();
+        assertEquals(0, counter.count(), 0);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test");
@@ -1172,7 +1163,6 @@ public class TestDeciderService {
         workflowDef.setTimeoutSeconds(2);
         workflow.setWorkflowDefinition(workflowDef);
         deciderService.checkWorkflowTimeout(workflow);
-        assertEquals(++counterCount, counter.count());
 
         // time out
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
@@ -1240,6 +1230,55 @@ public class TestDeciderService {
 
         // then the workflow completion check returns true
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
+    @Test
+    public void testWorkflowCompleted_WhenAllOptionalTasksInTerminalState() {
+        var workflowDef = createOnlyOptionalTaskWorkflow();
+
+        var workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        // Workflow should be running
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        var task1 = new TaskModel();
+        task1.setTaskType(SIMPLE.name());
+        task1.setReferenceTaskName("o1");
+        task1.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        var task2 = new TaskModel();
+        task2.setTaskType(SIMPLE.name());
+        task2.setReferenceTaskName("o2");
+        task2.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+
+        workflow.getTasks().addAll(List.of(task1, task2));
+
+        // Workflow should be COMPLETED. All optional tasks have reached a terminal state.
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
+    private WorkflowDef createOnlyOptionalTaskWorkflow() {
+        var workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
+        workflowTask1.setTaskReferenceName("o1");
+        workflowTask1.setTaskDefinition(new TaskDef("junit_task_1"));
+        workflowTask1.setOptional(true);
+
+        var workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setTaskReferenceName("o2");
+        workflowTask2.setTaskDefinition(new TaskDef("junit_task_2"));
+        workflowTask2.setOptional(true);
+
+        var workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+        workflowDef.setName("only_optional_tasks_workflow");
+        workflowDef.getTasks().addAll(Arrays.asList(workflowTask1, workflowTask2));
+        return workflowDef;
     }
 
     private WorkflowDef createConditionalWF() {

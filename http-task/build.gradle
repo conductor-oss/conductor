@@ -1,5 +1,5 @@
 /*
- *  Copyright 2022 Netflix, Inc.
+ *  Copyright 2023 Conductor authors
  *  <p>
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  *  the License. You may obtain a copy of the License at
@@ -17,8 +17,11 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
     implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
+    implementation("org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}")
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"
     testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
+    testImplementation "org.bouncycastle:bcprov-jdk15on:1.70"
+    testImplementation "org.bouncycastle:bcpkix-jdk15on:1.70"
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -167,13 +167,18 @@ public class HttpTask extends WorkflowSystemTask {
         HttpResponse response = new HttpResponse();
         try {
             ResponseEntity<String> responseEntity =
-                    restTemplate.exchange(input.getUri(), input.getMethod(), request, String.class);
+                    restTemplate.exchange(
+                            input.getUri(),
+                            HttpMethod.valueOf(input.getMethod()),
+                            request,
+                            String.class);
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.hasBody()) {
                 response.body = extractBody(responseEntity.getBody());
             }
 
             response.statusCode = responseEntity.getStatusCodeValue();
-            response.reasonPhrase = responseEntity.getStatusCode().getReasonPhrase();
+            response.reasonPhrase =
+                    HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
             response.headers = responseEntity.getHeaders();
             return response;
         } catch (RestClientException ex) {
@@ -253,7 +258,7 @@ public class HttpTask extends WorkflowSystemTask {
 
     public static class Input {
 
-        private HttpMethod method; // PUT, POST, GET, DELETE, OPTIONS, HEAD
+        private String method; // PUT, POST, GET, DELETE, OPTIONS, HEAD
         private String vipAddress;
         private String appName;
         private Map<String, Object> headers = new HashMap<>();
@@ -267,7 +272,7 @@ public class HttpTask extends WorkflowSystemTask {
         /**
          * @return the method
          */
-        public HttpMethod getMethod() {
+        public String getMethod() {
             return method;
         }
 
@@ -275,7 +280,7 @@ public class HttpTask extends WorkflowSystemTask {
          * @param method the method to set
          */
         public void setMethod(String method) {
-            this.method = HttpMethod.valueOf(method);
+            this.method = method;
         }
 
         /**

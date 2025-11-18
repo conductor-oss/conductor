@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Netflix, Inc.
+ * Copyright 2021 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -231,6 +231,54 @@ public class ParametersUtilsTest {
         assertEquals(2, inputList.size());
         assertEquals("${name}", inputList.get(0));
         assertEquals("${version}", inputList.get(1));
+    }
+
+    @Test
+    public void testNestedPathExpressions() throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "conductor");
+        map.put("index", 1);
+        map.put("mapValue", "a");
+        map.put("recordIds", List.of(1, 2, 3));
+        map.put("map", Map.of("a", List.of(1, 2, 3), "b", List.of(2, 4, 5), "c", List.of(3, 7, 8)));
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("k1", "${recordIds[${index}]}");
+        input.put("k2", "${map.${mapValue}[${index}]}");
+        input.put("k3", "${map.b[${map.${mapValue}[${index}]}]}");
+
+        Object jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(map), Object.class);
+
+        Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
+        assertNotNull(replaced);
+
+        assertEquals(2, replaced.get("k1"));
+        assertEquals(2, replaced.get("k2"));
+        assertEquals(5, replaced.get("k3"));
+    }
+
+    @Test
+    public void testReplaceWithLineTerminators() throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "conductor");
+        map.put("version", 2);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("k1", "Name: ${name}; Version: ${version};");
+        input.put("k2", "Name: ${name};\nVersion: ${version};");
+        input.put("k3", "Name: ${name};\rVersion: ${version};");
+        input.put("k4", "Name: ${name};\r\nVersion: ${version};");
+
+        Object jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(map), Object.class);
+
+        Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
+
+        assertNotNull(replaced);
+
+        assertEquals("Name: conductor; Version: 2;", replaced.get("k1"));
+        assertEquals("Name: conductor;\nVersion: 2;", replaced.get("k2"));
+        assertEquals("Name: conductor;\rVersion: 2;", replaced.get("k3"));
+        assertEquals("Name: conductor;\r\nVersion: 2;", replaced.get("k4"));
     }
 
     @Test

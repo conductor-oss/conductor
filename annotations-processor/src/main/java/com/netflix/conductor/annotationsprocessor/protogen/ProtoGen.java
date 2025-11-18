@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Netflix, Inc.
+ * Copyright 2022 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -20,7 +20,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
-import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
 
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
@@ -35,6 +34,7 @@ import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import jakarta.annotation.Generated;
 
 public class ProtoGen {
     private static final String GENERATOR_NAME =
