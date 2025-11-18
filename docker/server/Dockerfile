@@ -6,6 +6,8 @@
 # ===========================================================================================================
 FROM openjdk:17-bullseye AS builder
 
+ARG INDEXING_BACKEND=elasticsearch
+
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 # Copy the project directly onto the image
@@ -13,7 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test -x spotlessCheck
+RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
 
