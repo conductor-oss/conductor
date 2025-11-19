@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -37,8 +36,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Integration-style tests for DoWhile task cleanup functionality. These tests verify the interaction
- * between removeIterations() and ExecutionDAOFacade using a mock that simulates database behavior.
+ * Integration-style tests for DoWhile task cleanup functionality. These tests verify the
+ * interaction between removeIterations() and ExecutionDAOFacade using a mock that simulates
+ * database behavior.
  */
 public class DoWhileIntegrationTest {
 
@@ -57,11 +57,14 @@ public class DoWhileIntegrationTest {
         executionDAOFacade = mock(ExecutionDAOFacade.class);
 
         // Configure mock to actually remove from our simulated database
-        doAnswer(invocation -> {
-            String taskId = invocation.getArgument(0);
-            taskDatabase.remove(taskId);
-            return null;
-        }).when(executionDAOFacade).removeTask(anyString());
+        doAnswer(
+                        invocation -> {
+                            String taskId = invocation.getArgument(0);
+                            taskDatabase.remove(taskId);
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .removeTask(anyString());
 
         // Create real DoWhile task handler
         ParametersUtils parametersUtils = new ParametersUtils(new ObjectMapper());
@@ -115,8 +118,7 @@ public class DoWhileIntegrationTest {
                         .collect(Collectors.toSet());
 
         for (int i = 91; i <= 100; i++) {
-            assertTrue(
-                    "Should contain iteration " + i, remainingIterations.contains(i));
+            assertTrue("Should contain iteration " + i, remainingIterations.contains(i));
         }
         assertEquals("Should have exactly 10 iterations", 10, remainingIterations.size());
     }
@@ -134,10 +136,14 @@ public class DoWhileIntegrationTest {
         String wf2Id = workflow2.getWorkflowId();
 
         // Count tasks for each workflow
-        long wf1CountBefore = taskDatabase.values().stream()
-            .filter(t -> wf1Id.equals(t.getWorkflowInstanceId())).count();
-        long wf2CountBefore = taskDatabase.values().stream()
-            .filter(t -> wf2Id.equals(t.getWorkflowInstanceId())).count();
+        long wf1CountBefore =
+                taskDatabase.values().stream()
+                        .filter(t -> wf1Id.equals(t.getWorkflowInstanceId()))
+                        .count();
+        long wf2CountBefore =
+                taskDatabase.values().stream()
+                        .filter(t -> wf2Id.equals(t.getWorkflowInstanceId()))
+                        .count();
 
         assertEquals(10, wf1CountBefore);
         assertEquals(10, wf2CountBefore);
@@ -146,10 +152,14 @@ public class DoWhileIntegrationTest {
         doWhile.removeIterations(workflow1, doWhileTask1, 2);
 
         // Count after cleanup
-        long wf1CountAfter = taskDatabase.values().stream()
-            .filter(t -> wf1Id.equals(t.getWorkflowInstanceId())).count();
-        long wf2CountAfter = taskDatabase.values().stream()
-            .filter(t -> wf2Id.equals(t.getWorkflowInstanceId())).count();
+        long wf1CountAfter =
+                taskDatabase.values().stream()
+                        .filter(t -> wf1Id.equals(t.getWorkflowInstanceId()))
+                        .count();
+        long wf2CountAfter =
+                taskDatabase.values().stream()
+                        .filter(t -> wf2Id.equals(t.getWorkflowInstanceId()))
+                        .count();
 
         // Verify workflow1 tasks were removed (keeping 2 iterations = 4 tasks)
         assertEquals(4, wf1CountAfter);
@@ -174,8 +184,7 @@ public class DoWhileIntegrationTest {
 
         // Verify no tasks were removed
         int finalCount = taskDatabase.size();
-        assertEquals(
-                "Should not remove any tasks when below threshold", initialCount, finalCount);
+        assertEquals("Should not remove any tasks when below threshold", initialCount, finalCount);
     }
 
     @Test
@@ -205,8 +214,9 @@ public class DoWhileIntegrationTest {
 
         // Verify old tasks are actually gone from database
         for (String taskId : oldTaskIds) {
-            assertFalse("Task " + taskId + " should be removed from database",
-                taskDatabase.containsKey(taskId));
+            assertFalse(
+                    "Task " + taskId + " should be removed from database",
+                    taskDatabase.containsKey(taskId));
         }
 
         // Get task IDs from iterations 3 and 4 (should remain)
@@ -235,8 +245,10 @@ public class DoWhileIntegrationTest {
 
         // Should have iterations 3, 4, 5 remaining (6 tasks)
         assertEquals("Should have 6 tasks after first cleanup", 6, taskDatabase.size());
-        Set<Integer> iterations1 = taskDatabase.values().stream()
-            .map(TaskModel::getIteration).collect(Collectors.toSet());
+        Set<Integer> iterations1 =
+                taskDatabase.values().stream()
+                        .map(TaskModel::getIteration)
+                        .collect(Collectors.toSet());
         assertEquals("Should have iterations 3, 4, 5", Set.of(3, 4, 5), iterations1);
 
         // Simulate adding more iterations (6, 7, 8)
@@ -255,8 +267,10 @@ public class DoWhileIntegrationTest {
         // Should have iterations 6, 7, 8 remaining (6 tasks)
         assertEquals("Should have 6 tasks after second cleanup", 6, taskDatabase.size());
 
-        Set<Integer> iterations2 = taskDatabase.values().stream()
-            .map(TaskModel::getIteration).collect(Collectors.toSet());
+        Set<Integer> iterations2 =
+                taskDatabase.values().stream()
+                        .map(TaskModel::getIteration)
+                        .collect(Collectors.toSet());
         assertEquals("Should have iterations 6, 7, 8", Set.of(6, 7, 8), iterations2);
     }
 
