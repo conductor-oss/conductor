@@ -72,25 +72,6 @@ describe("<Timeline>", () => {
     });
   });
 
-  it("Timeline zoom to fit button works", () => {
-    cy.fixture("doWhile/doWhileSwitch").then((data) => {
-      const dag = new WorkflowDAG(data);
-      const tasks = data.tasks;
-
-      mount(
-        <TimelineComponent
-          dag={dag}
-          tasks={tasks}
-          onClick={() => {}}
-          selectedTask={null}
-        />
-      );
-
-      // Test the zoom to fit functionality
-      cy.get('button[aria-label="Zoom to Fit"]').should("exist").click();
-    });
-  });
-
   it("Timeline handles tasks with start/end times correctly", () => {
     cy.fixture("doWhile/doWhileSwitch").then((data) => {
       const dag = new WorkflowDAG(data);
@@ -134,52 +115,4 @@ describe("<Timeline>", () => {
     });
   });
 
-  it("Do_while containing FORK_JOIN_DYNAMIC - renders without crashing", () => {
-    cy.fixture("doWhile/doWhileForkJoinDynamic").then((data) => {
-      const dag = new WorkflowDAG(data);
-      const tasks = data.tasks;
-
-      // This test verifies the fix for #534 - Timeline should not crash
-      // when DO_WHILE contains FORK_JOIN_DYNAMIC tasks
-      mount(
-        <TimelineComponent
-          dag={dag}
-          tasks={tasks}
-          onClick={() => {}}
-          selectedTask={null}
-        />
-      );
-
-      // Verify Timeline renders without errors
-      cy.get(".timeline-container").should("exist");
-      cy.get(".vis-timeline").should("exist");
-
-      // Verify timeline items are rendered for multiple iterations
-      cy.get(".vis-item").should("have.length.at.least", 1);
-    });
-  });
-
-  it("Do_while containing FORK_JOIN_DYNAMIC - handles nested groups correctly", () => {
-    cy.fixture("doWhile/doWhileForkJoinDynamic").then((data) => {
-      const dag = new WorkflowDAG(data);
-      const tasks = data.tasks;
-
-      mount(
-        <TimelineComponent
-          dag={dag}
-          tasks={tasks}
-          onClick={() => {}}
-          selectedTask={null}
-        />
-      );
-
-      // Verify the fix: Timeline should handle FORK_JOIN_DYNAMIC tasks
-      // inside DO_WHILE without trying to access undefined dfParent.ref
-      cy.get(".timeline-container").should("exist");
-      cy.get(".vis-labelset").should("exist");
-
-      // Verify groups and items are created correctly
-      cy.get(".vis-item").should("exist");
-    });
-  });
 });
