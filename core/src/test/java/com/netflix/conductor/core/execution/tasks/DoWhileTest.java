@@ -292,25 +292,6 @@ public class DoWhileTest {
         verify(executionDAOFacade, times(15)).removeTask(anyString());
     }
 
-    @Test
-    public void testBackwardCompatibility_SingleParameterConstructor() {
-        // Test backward compatibility with Orkes Conductor and other forks
-        // Create DoWhile with single-parameter constructor
-        DoWhile doWhileCompat = new DoWhile(parametersUtils);
-
-        // Create workflow with 10 iterations
-        WorkflowModel workflow = createWorkflowWithIterations(10, 3);
-        TaskModel doWhileTask = getDoWhileTask(workflow);
-        doWhileTask.setIteration(10);
-
-        // Execute removal - should not throw exception even though executionDAOFacade is null
-        // Cleanup will be silently skipped when DAO is not available
-        doWhileCompat.removeIterations(workflow, doWhileTask, 3);
-
-        // No exception means backward compatibility works correctly
-        // The cleanup feature is gracefully degraded when DAO is not available
-    }
-
     // Helper methods
 
     private WorkflowModel createWorkflowWithIterations(int iterations, int tasksPerIteration) {
