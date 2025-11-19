@@ -43,6 +43,12 @@ public class DoWhile extends WorkflowSystemTask {
     private final ParametersUtils parametersUtils;
     private final ExecutionDAOFacade executionDAOFacade;
 
+    // Constructor with single parameter for backward compatibility (e.g., Orkes Conductor)
+    public DoWhile(ParametersUtils parametersUtils) {
+        this(parametersUtils, null);
+    }
+
+    // Constructor with both parameters for iteration cleanup feature
     public DoWhile(ParametersUtils parametersUtils, ExecutionDAOFacade executionDAOFacade) {
         super(TASK_TYPE_DO_WHILE);
         this.parametersUtils = parametersUtils;
@@ -184,6 +190,14 @@ public class DoWhile extends WorkflowSystemTask {
      */
     @VisibleForTesting
     void removeIterations(WorkflowModel workflow, TaskModel doWhileTaskModel, int keepLastN) {
+        // If executionDAOFacade is not available, skip cleanup (backward compatibility)
+        if (executionDAOFacade == null) {
+            LOGGER.debug(
+                    "ExecutionDAOFacade not available, skipping iteration cleanup for task {}",
+                    doWhileTaskModel.getReferenceTaskName());
+            return;
+        }
+
         int currentIteration = doWhileTaskModel.getIteration();
 
         // Calculate which iterations should be removed (all iterations before currentIteration -
