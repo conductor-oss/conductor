@@ -78,12 +78,18 @@ public class PostgresQueueDAOTest {
     @Before
     public void before() {
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(true);
+            // Explicitly disable autoCommit to match HikariCP pool configuration
+            conn.setAutoCommit(false);
             String[] stmts =
-                    new String[] {"truncate table queue;", "truncate table queue_message;"};
+                    new String[] {
+                        "truncate table queue restart identity cascade;",
+                        "truncate table queue_message restart identity cascade;"
+                    };
             for (String stmt : stmts) {
                 conn.prepareStatement(stmt).executeUpdate();
             }
+            // Commit to ensure truncation is visible across connection pool
+            conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

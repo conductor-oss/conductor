@@ -1,3 +1,3 @@
 # Javascript/TypeScript SDK
 
-See [conductor-sdk/conductor-javascript](https://github.com/conductor-sdk/conductor-javascript/blob/main/README.md)
+Refer to [conductor-sdk/conductor-javascript](https://github.com/conductor-oss/javascript-sdk/blob/main/README.md)

@@ -8,4 +8,4 @@ Conductor tasks that are executed by remote workers communicate over HTTP endpoi
 * [Python](python-sdk.md)
 * [Javascript/Typescript](js-sdk.md)
 
-The non-Java Conductor SDKs are hosted on a separate GitHub repository: [github.com/conductor-sdk](https://github.com/conductor-sdk).  Contributions from the community are encouraged!
+Conductor SDKs are hosted in the Conductor OSS GitHub org: [github.com/conductor-oss](https://github.com/conductor-oss).  Contributions from the community are encouraged!

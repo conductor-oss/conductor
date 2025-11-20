@@ -1,32 +1,48 @@
 # Tasks
-Tasks are the building blocks of Conductor Workflows. There must be at least one task configured in each Workflow Definition. A typical Conductor workflow defines a lists of tasks that are executed until the completion or termination of the workflow.
 
-Tasks can be categorized into three types: 
+A task is the basic building block of a Conductor workflow. They are reusable and modular, representing steps in your application like processing data files, calling an AI model, or executing some logic.
 
-## Types of Tasks
-### System Tasks
-[**System Tasks**](../../documentation/configuration/workflowdef/systemtasks/index.md) are built-in tasks that are general purpose and re-usable. They are executed within the JVM of the Conductor server and managed by Conductor for execution and scalability. Such tasks allow you to get started without having to write custom workers. 
+In Conductor, tasks can be defined, configured, and then executed. Learn more about the distinct but related concepts, **task definition**, **task configuration**, and **task execution** below.
 
-### Simple Tasks
-[**Simple Tasks**](workers.md) or Worker Tasks are implemented by your application and run in a separate environment from Conductor. These tasks talk to the Conductor server via REST/gRPC to poll for tasks and update its status after execution.
+
+## Types of tasks
+
+Tasks are categorized into three types, enabling you to flexibly build workflows using pre-built tasks, custom logic, or a combination of both:
+
+### System tasks
+
+[System tasks](../../documentation/configuration/workflowdef/systemtasks/index.md) are built-in, general-purpose tasks designed for common uses like calling an HTTP endpoint or publishing events to an external system.
+
+System tasks are managed by Conductor and executed within its server's JVM, allowing you to get started without having to write custom workers.
+
+### Worker tasks
+Worker tasks (`SIMPLE`) can be used to implement custom logic outside the scope of Conductor’s system tasks. Also known as Simple tasks, Worker tasks are implemented by your task workers that run in a separate environment from Conductor.
 
 ### Operators
-[**Operators**](../../documentation/configuration/workflowdef/operators/index.md) are built-in primitives in Conductor that allow you control the flow of tasks in your workflow. Operators are similar to programming constructs such as `for` loops, `switch` blocks, etc.
+[Operators](../../documentation/configuration/workflowdef/operators/index.md) are built-in control flow primitives similar to programming language constructs like loops, switch cases, or fork/joins. Like system tasks, operators are also managed by Conductor.
 
-## Task Configuration
-Task Configurations appear within the `tasks` array property of the Workflow Definition. This array is the blueprint that describes how a workflow will process an input payload by passing it through successive tasks.
 
-* For all tasks, the configuration will specifiy what **input parameters** the task takes. 
-* For SIMPLE (worker based) tasks, the configuration will contain a reference to a registered worker `taskName`. 
-* For System Tasks and Operators, the task configuration will contain important parameters that control the behavior of the task. For example, the task configuration of an HTTP task will specify an endpoint URL and the templatized payload that it will be called with when the task executes.
+## Task definition
+[Task definitions](../../documentation/configuration/taskdef.md) are used to define a task's default parameters, like inputs and output keys, timeouts, and retries. This provides reusability across workflows, as the registered task definition will be referenced when a task is configured in a workflow definition.
 
-## Task Definition
-Not to be confused with Task Configurations, [Task Definitions](../../documentation/configuration/taskdef.md) help define default task level parameters like inputs and outputs, timeouts, retries etc. for SIMPLE (i.e. worker implemented) tasks.
+When using Worker tasks (`SIMPLE`), its task definition must be registered to the Conductor server before it can execute in a workflow. Because system tasks are managed by Conductor, tt is not necessary to add a task definition for system tasks unless you wish to customize its default parameters.
 
-* All simple tasks need to be registered before they can be used by active workflows.
-* Task definitions can be registered via the UI, or through the API.
-* A registered task definition can be referenced from within different workflows.
 
-## Task Execution
-Each time a workload is passed into a configured task, a Task Execution object is created. This object has a unique ID and represents the result of the operation. This includes the status (i.e. whether the task was completed successfully), and any input, output and variables associated with the task. 
+## Task configuration
+
+Stored in the `tasks` array of a [workflow definition](workflows.md#workflow-definition), task configurations make up the workflow-specific blueprint that describes:
+
+- The order and control flow of tasks.
+- How data is passed from one task to another through task inputs and outputs.
+- Other workflow-specific behavior, like optionality, caching, and schema enforcement.
+
+The specific configuration for each task differs depending on the task type. For system tasks and operators, the task configuration will contain important parameters that control the behavior of the task. For example, the task configuration of an HTTP task will specify an endpoint URL and its templatized payload that will be used when the task executes.
+
+For Worker tasks (`SIMPLE`), the configuration will simply contain its inputs/outputs and a reference to its task definition name, because the logic of its behavior will already be specified in the worker code of your application.
+
+There must be at least one task configured in each workflow definition.
+
+## Task execution
+
+A task execution object is created during runtime when an input is passed into a configured task. This object has a unique ID and represents the result of the task operation, including the task status, start time, and inputs/outputs.
 

@@ -36,9 +36,13 @@ build/
 # asdf version file
 .tool-versions
 
+# jenv version file
+.java-version
+
 
 .qodo
 conductorosstest.db
 conductorosstest.db
 /server-lite/src/main/resources/static
 yarn.lock
+.java-version

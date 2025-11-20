@@ -4,7 +4,9 @@
 # ===========================================================================================================
 # 0. Builder stage 1
 # ===========================================================================================================
-FROM openjdk:17-bullseye AS builder
+FROM azul/zulu-openjdk-debian:17 AS builder
+
+ARG INDEXING_BACKEND=elasticsearch
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
@@ -13,7 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
-RUN ./gradlew build -x test
+RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
 
