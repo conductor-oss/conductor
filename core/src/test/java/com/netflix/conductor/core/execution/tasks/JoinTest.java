@@ -112,7 +112,7 @@ public class JoinTest {
 
         TaskModel task = new TaskModel();
         Map<String, Object> inputData = new HashMap<>();
-        inputData.put("joinMode", "sync");  // lowercase
+        inputData.put("joinMode", "sync"); // lowercase
         task.setInputData(inputData);
         task.setPollCount(500);
 
