@@ -10,13 +10,19 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.sqs.eventqueue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Uninterruptibles;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.mockito.stubbing.Answer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
+
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.events.queue.DefaultEventQueueProcessor;
 import com.netflix.conductor.core.events.queue.Message;
@@ -25,16 +31,12 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.mockito.stubbing.Answer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
+
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -58,20 +60,26 @@ public class DefaultEventQueueProcessorTest {
 
         when(queue.getOrCreateQueue()).thenReturn("junit_queue_url");
         when(queue.isRunning()).thenReturn(true);
-        when(queue.receiveMessages()).thenAnswer((Answer<List<Message>>) invocation -> {
-            List<Message> copy = new ArrayList<>(messages);
-            messages.clear();
-            return copy;
-        });
+        when(queue.receiveMessages())
+                .thenAnswer(
+                        (Answer<List<Message>>)
+                                invocation -> {
+                                    List<Message> copy = new ArrayList<>(messages);
+                                    messages.clear();
+                                    return copy;
+                                });
         when(queue.getOnSubscribe()).thenCallRealMethod();
         when(queue.observe()).thenCallRealMethod();
         when(queue.getName()).thenReturn(Status.COMPLETED.name());
 
-        doAnswer(invocation -> {
-            List<Message> msgs = invocation.getArgument(0);
-            messages.addAll(msgs);
-            return null;
-        }).when(queue).publish(any());
+        doAnswer(
+                        invocation -> {
+                            List<Message> msgs = invocation.getArgument(0);
+                            messages.addAll(msgs);
+                            return null;
+                        })
+                .when(queue)
+                .publish(any());
 
         workflowExecutor = mock(WorkflowExecutor.class);
         assertNotNull(workflowExecutor);
@@ -84,11 +92,14 @@ public class DefaultEventQueueProcessorTest {
         WorkflowModel workflow2 = createWorkflow("v_2", task2);
         doReturn(workflow2).when(workflowExecutor).getWorkflow(eq("v_2"), anyBoolean());
 
-        doAnswer(invocation -> {
-            TaskResult result = invocation.getArgument(0);
-            updatedTasks.add(result);
-            return null;
-        }).when(workflowExecutor).updateTask(any(TaskResult.class));
+        doAnswer(
+                        invocation -> {
+                            TaskResult result = invocation.getArgument(0);
+                            updatedTasks.add(result);
+                            return null;
+                        })
+                .when(workflowExecutor)
+                .updateTask(any(TaskResult.class));
     }
 
     @Before
@@ -97,24 +108,27 @@ public class DefaultEventQueueProcessorTest {
         updatedTasks.clear();
         Map<Status, ObservableQueue> queues = new HashMap<>();
         queues.put(Status.COMPLETED, queue);
-        defaultEventQueueProcessor = new DefaultEventQueueProcessor(queues, workflowExecutor, objectMapper);
+        defaultEventQueueProcessor =
+                new DefaultEventQueueProcessor(queues, workflowExecutor, objectMapper);
     }
 
     @Test
-    public void shouldUpdateTaskByReferenceName() {
-        defaultEventQueueProcessor.updateByTaskRefName("v_0", "t0", new HashMap<>(), Status.COMPLETED);
+    public void shouldUpdateTaskByReferenceName() throws Exception {
+        defaultEventQueueProcessor.updateByTaskRefName(
+                "v_0", "t0", new HashMap<>(), Status.COMPLETED);
         Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
         assertTrue(updatedTasks.stream().anyMatch(task -> "t0".equals(task.getTaskId())));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForUnknownWorkflow() {
-        defaultEventQueueProcessor.updateByTaskRefName("v_1", "t1", new HashMap<>(), Status.CANCELED);
+    public void shouldThrowExceptionForUnknownWorkflow() throws Exception {
+        defaultEventQueueProcessor.updateByTaskRefName(
+                "v_1", "t1", new HashMap<>(), Status.CANCELED);
         Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
     }
 
     @Test
-    public void shouldUpdateTaskByTaskId() {
+    public void shouldUpdateTaskByTaskId() throws Exception {
         defaultEventQueueProcessor.updateByTaskId("v_2", "t2", new HashMap<>(), Status.COMPLETED);
         Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
         assertTrue(updatedTasks.stream().anyMatch(task -> "t2".equals(task.getTaskId())));
