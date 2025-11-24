@@ -7,6 +7,11 @@ option java_outer_classname = "RateLimitConfigPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message RateLimitConfig {
+    enum RateLimitPolicy {
+        QUEUE = 0;
+        REJECT = 1;
+    }
     string rate_limit_key = 1;
     int32 concurrent_exec_limit = 2;
+    RateLimitConfig.RateLimitPolicy policy = 3;
 }
