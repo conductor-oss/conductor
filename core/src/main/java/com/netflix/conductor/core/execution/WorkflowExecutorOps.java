@@ -1634,8 +1634,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (failureWorkflow != null) {
             if (failureWorkflow.startsWith("$")) {
                 String[] paramPathComponents = failureWorkflow.split("\\.");
-                String name = paramPathComponents[2]; // name of the input parameter
-                failureWorkflow = (String) workflow.getInput().get(name);
+                if (paramPathComponents.length < 3) {
+                    LOGGER.warn(
+                            "Invalid failureWorkflow format: {}. Expected format: $.workflow.paramName",
+                            failureWorkflow);
+                    failureWorkflow = null;
+                } else {
+                    String name = paramPathComponents[2]; // name of the input parameter
+                    failureWorkflow = (String) workflow.getInput().get(name);
+                }
             }
         }
         if (terminateWorkflowException.getTask() != null) {
