@@ -137,6 +137,10 @@ public class WorkflowSweeper {
                         postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
+                    if (properties.isHumanTaskPreventsDeciderQueue()) {
+                        queueDAO.remove(DECIDER_QUEUE, workflowModel.getWorkflowId());
+                        return;
+                    }
                     postponeDurationSeconds = workflowOffsetTimeout;
                 } else {
                     postponeDurationSeconds =

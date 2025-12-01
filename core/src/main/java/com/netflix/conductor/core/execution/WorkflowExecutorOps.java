@@ -909,6 +909,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
 
+        if (TaskType.TASK_TYPE_HUMAN.equals(task.getTaskType()) && task.getStatus().isTerminal()) {
+            queueDAO.push(DECIDER_QUEUE, workflowId, workflowInstance.getPriority(), 0);
+            LOGGER.debug(
+                    "Waking up workflow {} because HUMAN task {} was completed",
+                    workflowId,
+                    task.getTaskId());
+        }
+
         if (!isLazyEvaluateWorkflow(workflowInstance.getWorkflowDefinition(), task)) {
             decide(workflowId);
         }

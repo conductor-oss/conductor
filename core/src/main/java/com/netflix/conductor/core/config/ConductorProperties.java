@@ -246,6 +246,12 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.MILLIS)
     private Duration systemTaskQueuePopTimeout = Duration.ofMillis(100);
 
+    /**
+     * If set to true, workflows with HUMAN tasks in IN_PROGRESS state will be removed from the decider queue
+     * instead of being postponed.
+     */
+    private boolean humanTaskPreventsDeciderQueue = true;
+
     public String getStack() {
         return stack;
     }
@@ -602,5 +608,13 @@ public class ConductorProperties {
 
     public void setSystemTaskQueuePopTimeout(Duration systemTaskQueuePopTimeout) {
         this.systemTaskQueuePopTimeout = systemTaskQueuePopTimeout;
+    }
+
+    public boolean isHumanTaskPreventsDeciderQueue() {
+        return humanTaskPreventsDeciderQueue;
+    }
+
+    public void setHumanTaskPreventsDeciderQueue(boolean humanTaskPreventsDeciderQueue) {
+        this.humanTaskPreventsDeciderQueue = humanTaskPreventsDeciderQueue;
     }
 }
