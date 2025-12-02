@@ -96,7 +96,13 @@ public class LocalOnlyLock implements Lock {
                 return;
             }
             LOGGER.trace("Releasing {}", lockId);
-            LOCKIDTOSEMAPHOREMAP.get(lockId).unlock();
+            try {
+                LOCKIDTOSEMAPHOREMAP.get(lockId).unlock();
+            } catch (IllegalMonitorStateException e) {
+                // Releasing a lock without holding it can cause this exception, which can be
+                // ignored.
+                // This matches the behavior of RedisLock implementation.
+            }
             removeLeaseExpirationJob(lockId);
         }
     }

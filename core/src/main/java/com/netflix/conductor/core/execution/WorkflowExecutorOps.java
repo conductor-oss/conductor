@@ -1048,7 +1048,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     public WorkflowModel decide(String workflowId) {
         StopWatch watch = new StopWatch();
         watch.start();
-        if (!executionLockService.acquireLock(workflowId)) {
+        boolean lockAcquired = executionLockService.acquireLock(workflowId);
+        if (!lockAcquired) {
             return null;
         }
         try {
@@ -1061,7 +1062,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return decide(workflow);
 
         } finally {
-            executionLockService.releaseLock(workflowId);
+            if (lockAcquired) {
+                executionLockService.releaseLock(workflowId);
+            }
             watch.stop();
             Monitors.recordWorkflowDecisionTime(watch.getTime());
         }
