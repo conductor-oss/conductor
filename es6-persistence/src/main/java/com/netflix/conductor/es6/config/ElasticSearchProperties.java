@@ -86,6 +86,14 @@ public class ElasticSearchProperties {
     /** Elasticsearch basic auth password */
     private String password;
 
+    /**
+     * Whether to wait for index refresh when updating tasks and workflows. When enabled, the
+     * operation will block until the changes are visible for search. This guarantees immediate
+     * search visibility but can significantly impact performance (20-30s delays). Defaults to false
+     * for better performance.
+     */
+    private boolean waitForIndexRefresh = false;
+
     public String getUrl() {
         return url;
     }
@@ -204,6 +212,14 @@ public class ElasticSearchProperties {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isWaitForIndexRefresh() {
+        return waitForIndexRefresh;
+    }
+
+    public void setWaitForIndexRefresh(boolean waitForIndexRefresh) {
+        this.waitForIndexRefresh = waitForIndexRefresh;
     }
 
     public List<URL> toURLs() {
