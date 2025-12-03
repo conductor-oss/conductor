@@ -27,7 +27,7 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-ext["tomcat.version"] = "10.1.41"
+ext["tomcat.version"] = "10.1.45"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
