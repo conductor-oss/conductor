@@ -498,8 +498,10 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             IndexRequest request =
                     new IndexRequest(workflowIndexName)
                             .id(workflowId)
-                            .source(docBytes, XContentType.JSON)
-                            .setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+                            .source(docBytes, XContentType.JSON);
+            if (properties.isWaitForIndexRefresh()) {
+                request.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            }
             elasticSearchClient.index(request, RequestOptions.DEFAULT);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
@@ -524,12 +526,11 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             long startTime = Instant.now().toEpochMilli();
             String taskId = task.getTaskId();
 
-            indexObject(
-                    taskIndexName,
-                    TASK_DOC_TYPE,
-                    taskId,
-                    task,
-                    WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            WriteRequest.RefreshPolicy refreshPolicy =
+                    properties.isWaitForIndexRefresh()
+                            ? WriteRequest.RefreshPolicy.WAIT_UNTIL
+                            : null;
+            indexObject(taskIndexName, TASK_DOC_TYPE, taskId, task, refreshPolicy);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",

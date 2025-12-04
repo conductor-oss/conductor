@@ -364,9 +364,10 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             String docType =
                     StringUtils.isBlank(docTypeOverride) ? WORKFLOW_DOC_TYPE : docTypeOverride;
 
-            UpdateRequest req =
-                    buildUpdateRequest(id, doc, workflowIndexName, docType)
-                            .setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            UpdateRequest req = buildUpdateRequest(id, doc, workflowIndexName, docType);
+            if (properties.isWaitForIndexRefresh()) {
+                req.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            }
             elasticSearchClient.update(req).actionGet();
 
             long endTime = Instant.now().toEpochMilli();
@@ -399,7 +400,11 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             UpdateRequest req = new UpdateRequest(taskIndexName, docType, id);
             req.doc(doc, XContentType.JSON);
             req.upsert(doc, XContentType.JSON);
-            indexObject(req, TASK_DOC_TYPE, WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            WriteRequest.RefreshPolicy refreshPolicy =
+                    properties.isWaitForIndexRefresh()
+                            ? WriteRequest.RefreshPolicy.WAIT_UNTIL
+                            : null;
+            indexObject(req, TASK_DOC_TYPE, refreshPolicy);
             long endTime = Instant.now().toEpochMilli();
             LOGGER.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",
