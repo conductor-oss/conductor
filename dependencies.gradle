@@ -33,7 +33,7 @@ ext {
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
     revPostgres = '42.7.2'
-    revProtoBuf = '3.25.5'
+    revProtoBuf = '4.33.0'
     revJakartaAnnotation = '2.1.1'
     revJAXB = '4.0.1'
     revJAXRS = '4.0.0'
