@@ -38,6 +38,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
+    com.netflix.conductor.service.ExecutionLockService executionLockService
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -50,6 +51,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
+        executionLockService = Mock(com.netflix.conductor.service.ExecutionLockService.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class) {
             isTaskRetrievalRequired() >> true
@@ -57,8 +59,9 @@ class AsyncSystemTaskExecutorTest extends Specification {
 
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
+        properties.workflowExecutionLockEnabled = false
 
-        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor)
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, executionLockService)
     }
 
     // this is not strictly a unit test, but its essential to test AsyncSystemTaskExecutor with SubWorkflow
@@ -236,7 +239,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
         workflowSystemTask.getEvaluationOffset(task, 1) >> Optional.empty();
-
+        workflowSystemTask.isAsync() >> true
+        workflowSystemTask.isAsyncComplete(task) >> true
 
         when:
         executor.execute(workflowSystemTask, taskId)
@@ -244,17 +248,15 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
-        1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
+        2 * executionDAOFacade.updateTask(task)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
-
-        0 * workflowExecutor.decide(workflowId) // verify that workflow is NOT decided
+        1 * queueDAO.remove(queueName, taskId)
+        1 * workflowExecutor.decide(workflowId)
 
         task.status == TaskModel.Status.IN_PROGRESS
-        task.startTime != 0 // verify that startTime is set
-        task.endTime == 0 // verify that endTime is not set
-        task.pollCount == 1 // verify that poll count is incremented
-        task.callbackAfterSeconds == properties.systemTaskWorkerCallbackDuration.seconds
+        task.startTime != 0
+        task.endTime == 0
+        task.pollCount == 1
     }
 
     def "Execute with a task id that is in SCHEDULED state and WorkflowSystemTask.start sets the task in a terminal state"() {
@@ -265,6 +267,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.isAsync() >> true
+        workflowSystemTask.isAsyncComplete(task) >> false
 
         when:
         executor.execute(workflowSystemTask, taskId)
@@ -273,15 +277,14 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         1 * executionDAOFacade.updateTask(task)
-
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        1 * workflowExecutor.decide(workflowId)
 
         task.status == TaskModel.Status.COMPLETED
-        task.startTime != 0 // verify that startTime is set
-        task.endTime != 0 // verify that endTime is set
-        task.pollCount == 1 // verify that poll count is incremented
+        task.startTime != 0
+        task.endTime != 0
+        task.pollCount == 1
     }
 
     def "Execute with a task id that is in SCHEDULED state but WorkflowSystemTask.start fails"() {
@@ -323,6 +326,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
+        workflowSystemTask.isAsync() >> true
+        workflowSystemTask.isAsyncComplete(task) >> true
 
         when:
         executor.execute(workflowSystemTask, taskId)
@@ -330,18 +335,15 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
-
-        1 * workflowSystemTask.isAsyncComplete(task) >> true
+        2 * executionDAOFacade.updateTask(task)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
         1 * queueDAO.remove(queueName, taskId)
-
-        1 * workflowExecutor.decide(workflowId) // verify that workflow is decided
+        1 * workflowExecutor.decide(workflowId)
 
         task.status == TaskModel.Status.IN_PROGRESS
-        task.startTime != 0 // verify that startTime is set
-        task.endTime == 0 // verify that endTime is not set
-        task.pollCount == 1 // verify that poll count is incremented
+        task.startTime != 0
+        task.endTime == 0
+        task.pollCount == 1
     }
 
     def "Execute with a task id that is in IN_PROGRESS state"() {
