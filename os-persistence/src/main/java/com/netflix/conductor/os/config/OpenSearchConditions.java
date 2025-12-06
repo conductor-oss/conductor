@@ -15,6 +15,36 @@ package com.netflix.conductor.os.config;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+/**
+ * Conditional configuration for enabling OpenSearch as the indexing backend.
+ *
+ * <p>OpenSearch is enabled when:
+ *
+ * <ul>
+ *   <li>{@code conductor.indexing.enabled=true} (defaults to true if not specified)
+ *   <li>{@code conductor.indexing.type=opensearch}
+ * </ul>
+ *
+ * <p><b>Important:</b> To prevent Elasticsearch 7 auto-configuration from conflicting with
+ * OpenSearch, you must also set {@code conductor.elasticsearch.version=0}. This is a temporary
+ * workaround that will be addressed in a future release.
+ *
+ * <p><b>Recommended Configuration:</b>
+ *
+ * <pre>{@code
+ * # Enable OpenSearch indexing
+ * conductor.indexing.enabled=true
+ * conductor.indexing.type=opensearch
+ *
+ * # Disable ES7 auto-configuration (required until ES7 module is updated)
+ * conductor.elasticsearch.version=0
+ *
+ * # OpenSearch connection settings (new namespace)
+ * conductor.opensearch.url=http://localhost:9200
+ * conductor.opensearch.version=2
+ * conductor.opensearch.indexPrefix=conductor
+ * }</pre>
+ */
 public class OpenSearchConditions {
 
     private OpenSearchConditions() {}

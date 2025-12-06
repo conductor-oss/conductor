@@ -33,14 +33,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         classes = {TestObjectMapperConfiguration.class, OpenSearchTest.TestConfiguration.class})
 @RunWith(SpringRunner.class)
 @TestPropertySource(
-        properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=0"})
+        properties = {
+            "conductor.indexing.enabled=true",
+            "conductor.indexing.type=opensearch",
+            // Disable ES7 auto-configuration
+            "conductor.elasticsearch.version=0",
+            // Use new OpenSearch namespace
+            "conductor.opensearch.version=2"
+        })
 public abstract class OpenSearchTest {
 
     @Configuration
     static class TestConfiguration {
 
         @Bean
-        public OpenSearchProperties elasticSearchProperties() {
+        public OpenSearchProperties openSearchProperties() {
             return new OpenSearchProperties();
         }
     }
