@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,11 +25,13 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 @Component
 public class AsyncSystemTaskExecutor {
@@ -35,6 +42,8 @@ public class AsyncSystemTaskExecutor {
     private final long queueTaskMessagePostponeSecs;
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
+    private final ExecutionLockService executionLockService;
+    private final ConductorProperties properties;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
@@ -43,11 +52,14 @@ public class AsyncSystemTaskExecutor {
             QueueDAO queueDAO,
             MetadataDAO metadataDAO,
             ConductorProperties conductorProperties,
-            WorkflowExecutor workflowExecutor) {
+            WorkflowExecutor workflowExecutor,
+            ExecutionLockService executionLockService) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
         this.workflowExecutor = workflowExecutor;
+        this.executionLockService = executionLockService;
+        this.properties = conductorProperties;
         this.systemTaskCallbackTime =
                 conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs =
@@ -146,12 +158,78 @@ public class AsyncSystemTaskExecutor {
                 task.incrementPollCount();
             }
 
-            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                task.setStartTime(System.currentTimeMillis());
-                Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                systemTask.start(workflow, task, workflowExecutor);
-            } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                systemTask.execute(workflow, task, workflowExecutor);
+            // Acquire workflow lock for SCHEDULED tasks to prevent concurrent execution
+            boolean lockAcquired = false;
+            ScheduledFuture<?> leaseRenewalFuture = null;
+            ScheduledExecutorService renewalExecutor = null;
+
+            if (properties != null && properties.isWorkflowExecutionLockEnabled()) {
+                if (executionLockService != null && task.getStatus() == TaskModel.Status.SCHEDULED) {
+                    lockAcquired = executionLockService.acquireLock(workflowId);
+                    if (!lockAcquired) {
+                        postponeQuietly(queueName, task);
+                        return;
+                    }
+
+                    // Start lock renewal for long-running async system tasks to prevent expiration
+                    if (systemTask.isAsync()) {
+                        long leaseTime = properties.getLockLeaseTime().toMillis();
+                        long renewalInterval = Math.max(leaseTime / 2, 30000);
+                        long renewalTimeout = Math.max(leaseTime / 10, 1000);
+
+                        renewalExecutor = Executors.newSingleThreadScheduledExecutor(
+                            r -> {
+                                Thread t = new Thread(r, "lock-renewal-" + workflowId + "-" + task.getTaskId());
+                                t.setDaemon(true);
+                                return t;
+                            });
+
+                        leaseRenewalFuture = renewalExecutor.scheduleAtFixedRate(
+                            () -> {
+                                executionLockService.acquireLock(workflowId, renewalTimeout, leaseTime);
+                            },
+                            renewalInterval, renewalInterval, TimeUnit.MILLISECONDS
+                        );
+                    }
+                }
+            }
+
+            try {
+                if (task.getStatus() == TaskModel.Status.SCHEDULED) {
+                    task.setStartTime(System.currentTimeMillis());
+                    Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
+
+                    // Set IN_PROGRESS status for async tasks to prevent redundant status updates
+                    boolean isAsyncTask = systemTask.isAsync() && systemTask.isAsyncComplete(task);
+                    if (isAsyncTask) {
+                        task.setStatus(TaskModel.Status.IN_PROGRESS);
+                        task.setWorkerId(Utils.getServerId());
+                        executionDAOFacade.updateTask(task);
+                    }
+
+                    systemTask.start(workflow, task, workflowExecutor);
+                } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                    systemTask.execute(workflow, task, workflowExecutor);
+                }
+            } finally {
+                // Stop lock renewal and release lock
+                if (leaseRenewalFuture != null) {
+                    leaseRenewalFuture.cancel(false);
+                }
+                if (renewalExecutor != null) {
+                    renewalExecutor.shutdown();
+                    try {
+                        if (!renewalExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                            renewalExecutor.shutdownNow();
+                        }
+                    } catch (InterruptedException e) {
+                        renewalExecutor.shutdownNow();
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                if (lockAcquired) {
+                    executionLockService.releaseLock(workflowId);
+                }
             }
 
             // Update message in Task queue based on Task status
