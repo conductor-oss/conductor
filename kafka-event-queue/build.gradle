@@ -31,7 +31,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.9'
 
     // Add SLF4J binding for logging with Logback
-    runtimeOnly 'ch.qos.logback:logback-classic:1.4.11'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.5.21'
 }
 
 // test {
