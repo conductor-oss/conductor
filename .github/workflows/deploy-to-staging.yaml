@@ -1,0 +1,16 @@
+name: Build and Deploy to Staging
+
+on:
+  workflow_dispatch:
+
+jobs:
+    deploy-to-staging:
+      uses: paper-indonesia/paper-devops/.github/workflows/pg-deployDockerToStaging.yml@master
+      secrets: inherit
+      with:
+        dockerfile_path: docker/server/Dockerfile
+        dockerfile_context: .
+        helm_values_path: staging/conductor-oss/values.yaml
+        deploy_consumer: false
+        namespace: conductor
+        release_name: conductor-server

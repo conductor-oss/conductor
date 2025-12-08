@@ -15,6 +15,7 @@ COPY . /conductor
 WORKDIR /conductor
 
 # Build the server on run
+RUN ./gradlew :conductor-rest:spotlessApply # fixing code formatting 
 RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
 RUN ls -ltr
