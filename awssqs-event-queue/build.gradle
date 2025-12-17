@@ -14,3 +14,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation project(':conductor-common').sourceSets.test.output
 }
+
+tasks.withType(Test).configureEach {
+    // SQS/Rx tests are memory-heavy, so make heap explicit & stable
+    maxHeapSize = "1024m"
+}
