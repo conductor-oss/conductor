@@ -607,18 +607,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         workflow.setStatus(WorkflowModel.Status.TERMINATED);
-        terminateWorkflow(workflow, reason, null);
+        terminateWorkflow(workflow, reason, null, null);
     }
 
     /**
-     * @param workflow the workflow to be terminated
-     * @param reason the reason for termination
-     * @param failureWorkflow the failure workflow (if any) to be triggered as a result of this
+     * @param workflow Workflow to be terminated
+     * @param reason Reason for termination
+     * @param failureWorkflow Failure workflow (if any), to be triggered as a result of this
      *     termination
+     * @param failureWorkflowVersion Failure workflow version (if any)
      */
     @Override
     public WorkflowModel terminateWorkflow(
-            WorkflowModel workflow, String reason, String failureWorkflow) {
+            WorkflowModel workflow,
+            String reason,
+            String failureWorkflow,
+            Integer failureWorkflowVersion) {
         try {
             executionLockService.acquireLock(workflow.getWorkflowId(), 60000);
 
@@ -715,6 +719,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     String failureWFId = idGenerator.generate();
                     StartWorkflowInput startWorkflowInput = new StartWorkflowInput();
                     startWorkflowInput.setName(failureWorkflow);
+                    startWorkflowInput.setVersion(failureWorkflowVersion);
                     startWorkflowInput.setWorkflowInput(input);
                     startWorkflowInput.setCorrelationId(workflow.getCorrelationId());
                     startWorkflowInput.setTaskToDomain(workflow.getTaskToDomain());
@@ -1678,6 +1683,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         String failureWorkflow = workflow.getWorkflowDefinition().getFailureWorkflow();
+        Integer failureWorkflowVersion =
+                workflow.getWorkflowDefinition().getFailureWorkflowVersion();
+
         if (failureWorkflow != null) {
             if (failureWorkflow.startsWith("$")) {
                 String[] paramPathComponents = failureWorkflow.split("\\.");
@@ -1689,7 +1697,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.updateTask(terminateWorkflowException.getTask());
         }
         return terminateWorkflow(
-                workflow, terminateWorkflowException.getMessage(), failureWorkflow);
+                workflow,
+                terminateWorkflowException.getMessage(),
+                failureWorkflow,
+                failureWorkflowVersion);
     }
 
     private boolean rerunWF(

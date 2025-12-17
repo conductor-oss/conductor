@@ -2192,6 +2192,7 @@ public class TestWorkflowExecutor {
     @Test
     @SuppressWarnings("unchecked")
     public void testTerminateWorkflowWithFailureWorkflow() {
+        // Given a workflow with a failure compensation definition
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("workflow");
         workflowDef.setFailureWorkflow("failure_workflow");
@@ -2219,6 +2220,7 @@ public class TestWorkflowExecutor {
 
         WorkflowDef failureWorkflowDef = new WorkflowDef();
         failureWorkflowDef.setName("failure_workflow");
+
         when(metadataDAO.getLatestWorkflowDef(failureWorkflowDef.getName()))
                 .thenReturn(Optional.of(failureWorkflowDef));
 
@@ -2226,12 +2228,77 @@ public class TestWorkflowExecutor {
                 .thenReturn(workflow);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
 
+        // When applying "decide" to terminate workflow
         workflowExecutor.decide(workflow.getWorkflowId());
 
+        // Then should assert workflow properties
         assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
         assertTrue(workflow.getOutput().containsKey("conductor.failure_workflow"));
         assertNotNull(workflow.getFailedTaskId());
         assertTrue(!workflow.getFailedReferenceTaskNames().isEmpty());
+
+        // And verify that the failure workflow definition was fetched without version
+        verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
+        assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTerminateWorkflowWithCustomFailureWorkflowVersion() {
+        // Given a workflow with a failure compensation definition
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setFailureWorkflow("failure_workflow_with_custom_version");
+        workflowDef.setFailureWorkflowVersion(10);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("1");
+        workflow.setCorrelationId("testid");
+        workflow.setWorkflowDefinition(new WorkflowDef());
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+        workflow.setWorkflowDefinition(workflowDef);
+
+        TaskModel successTask = new TaskModel();
+        successTask.setTaskId("taskid1");
+        successTask.setReferenceTaskName("success");
+        successTask.setStatus(TaskModel.Status.COMPLETED);
+
+        TaskModel failedTask = new TaskModel();
+        failedTask.setTaskId("taskid2");
+        failedTask.setReferenceTaskName("failed");
+        failedTask.setStatus(TaskModel.Status.FAILED);
+        workflow.getTasks().addAll(Arrays.asList(successTask, failedTask));
+
+        WorkflowDef failureWorkflowDef = new WorkflowDef();
+        failureWorkflowDef.setName("failure_workflow_with_custom_version");
+        failureWorkflowDef.setVersion(10);
+
+        when(metadataDAO.getWorkflowDef(
+                        failureWorkflowDef.getName(), failureWorkflowDef.getVersion()))
+                .thenReturn(Optional.of(failureWorkflowDef));
+
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        // When applying "decide" to terminate workflow
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        // Then should assert workflow properties
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
+        assertTrue(workflow.getOutput().containsKey("conductor.failure_workflow"));
+        assertNotNull(workflow.getFailedTaskId());
+        assertTrue(!workflow.getFailedReferenceTaskNames().isEmpty());
+
+        // And verify that the failure workflow definition was fetched with a custom version
+        verify(metadataDAO).getWorkflowDef("failure_workflow_with_custom_version", 10);
+
+        assertEquals(
+                workflowDef.getFailureWorkflowVersion(),
+                workflow.getWorkflowDefinition().getFailureWorkflowVersion());
     }
 
     @Test

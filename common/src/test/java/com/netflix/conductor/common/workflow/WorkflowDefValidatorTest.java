@@ -355,4 +355,34 @@ public class WorkflowDefValidatorTest {
         Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
         assertEquals(0, result.size());
     }
+
+    @Test
+    public void testWorkflowWithFailureDefinition() {
+        // Given a workflow with a failure compensation definition
+        var workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow_with_failure_definition");
+        workflowDef.setOwnerEmail("owner@orkers.io");
+        workflowDef.setFailureWorkflow("failure_workflow");
+        workflowDef.setFailureWorkflowVersion(1);
+
+        var workflowTask = new WorkflowTask();
+        workflowTask.setName("simple_task");
+        workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
+        workflowTask.setTaskReferenceName("simple_task");
+        workflowTask.setInputParameters(Map.of("param", "value"));
+
+        workflowDef.getTasks().add(workflowTask);
+
+        // When validate constraints
+        var factory = Validation.buildDefaultValidatorFactory();
+        var validator = factory.getValidator();
+        var result = validator.validate(workflowDef);
+
+        // Then there should be no violations
+        assertEquals(0, result.size());
+
+        // And should assert failures definitions
+        assertEquals("failure_workflow", workflowDef.getFailureWorkflow());
+        assertEquals(Integer.valueOf(1), workflowDef.getFailureWorkflowVersion());
+    }
 }
