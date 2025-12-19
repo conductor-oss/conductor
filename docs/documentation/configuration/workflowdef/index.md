@@ -4,7 +4,7 @@ The Workflow Definition contains all the information necessary to define the beh
 
 ## Workflow Properties
 | Field                         | Type                             | Description                                                                                                                     | Notes                                                                                             |
-| :---------------------------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
+|:------------------------------|:---------------------------------|:--------------------------------------------------------------------------------------------------------------------------------| :------------------------------------------------------------------------------------------------ |
 | name                          | string                           | Name of the workflow                                                                                                            |                                                                                                   |
 | description                   | string                           | Description of the workflow                                                                                                     | Optional                                                                                          |
 | version                       | number                           | Numeric field used to identify the version of the schema. Use incrementing numbers.                                             | When starting a workflow execution, if not specified, the definition with highest version is used |
@@ -13,6 +13,7 @@ The Workflow Definition contains all the information necessary to define the beh
 | outputParameters              | object                           | JSON template used to generate the output of the workflow                                                                       | If not specified, the output is defined as the output of the _last_ executed task                 |
 | inputTemplate                 | object                           | Default input values. See [Using inputTemplate](#default-input-with-inputtemplate)                                              | Optional.                                                                                         |
 | failureWorkflow               | string                           | Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure. [Explanation](#failure-workflow) | Optional.                                                                                         |
+| failureWorkflowVersion        | number                           | Failure Workflow version, to be run on current Workflow failure. [Explanation](#failure-workflow)                               | Optional.                                                                                         |
 | schemaVersion                 | number                           | Current Conductor Schema version. schemaVersion 1 is discontinued.                                                              | Must be 2                                                                                         |
 | restartable                   | boolean                          | Flag to allow Workflow restarts                                                                                                 | Defaults to true                                                                                  |
 | workflowStatusListenerEnabled | boolean                          | Enable status callback. [Explanation](#workflow-status-listener)                                                                | Defaults to false                                                                                 |
@@ -162,6 +163,7 @@ We can configure these two tasks in the `tasks` array of our Workflow Definition
     "trackingNumber": "${shipping_task_ref.output.trackingNumber}"
   },
   "failureWorkflow": "shipping_issues",
+  "failureWorkflowVersion": 1,
   "restartable": true,
   "workflowStatusListenerEnabled": true,
   "ownerEmail": "conductor@example.com",
