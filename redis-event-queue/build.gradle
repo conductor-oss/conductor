@@ -1,0 +1,21 @@
+dependencies {
+    // Core Conductor dependencies
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    // Spring Boot support
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // Apache Commons Lang for utility classes
+    implementation 'org.apache.commons:commons-lang3'
+
+    // Reactive programming support with RxJava
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    // Lettuce Redis client
+    implementation "io.lettuce:lettuce-core:${revLettuce}"
+
+    // Test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation project(':conductor-common').sourceSets.test.output
+}

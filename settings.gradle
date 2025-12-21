@@ -75,6 +75,7 @@ include 'amqp'
 include 'nats'
 include 'nats-streaming'
 include 'kafka-event-queue'
+include 'redis-event-queue'
 
 include 'test-harness'
 

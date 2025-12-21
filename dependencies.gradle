@@ -66,6 +66,7 @@ ext {
     revNatsStreaming = '2.6.5'
     revNats = '2.16.14'
     revStan = '2.2.3'
+    revLettuce = '6.3.0.RELEASE'
     revFlyway = '10.15.2'
     revConductorClient = '4.0.10'
 }
