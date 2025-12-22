@@ -62,6 +62,7 @@ import com.netflix.conductor.service.ExecutionLockService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
@@ -2428,6 +2429,38 @@ public class TestWorkflowExecutor {
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
         assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());
+    }
+
+    @Test
+    public void testUpdateTaskForHumanTask() {
+        String workflowId = "test-workflow-id";
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setWorkflowDefinition(new WorkflowDef());
+        workflow.setPriority(5);
+
+        TaskModel humanTask = new TaskModel();
+        humanTask.setTaskType(TaskType.TASK_TYPE_HUMAN);
+        humanTask.setReferenceTaskName("humanTask");
+        humanTask.setWorkflowInstanceId(workflowId);
+        humanTask.setScheduledTime(System.currentTimeMillis());
+        humanTask.setTaskId("human-task-id");
+        humanTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        workflow.getTasks().add(humanTask);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel(humanTask.getTaskId())).thenReturn(humanTask);
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.setWorkflowInstanceId(workflowId);
+        taskResult.setTaskId(humanTask.getTaskId());
+        taskResult.setStatus(TaskResult.Status.COMPLETED);
+
+        workflowExecutor.updateTask(taskResult);
+
+        // Verify that the workflow is pushed to the decider queue
+        verify(queueDAO, times(1)).push(DECIDER_QUEUE, workflowId, workflow.getPriority(), 0);
     }
 
     @Test
