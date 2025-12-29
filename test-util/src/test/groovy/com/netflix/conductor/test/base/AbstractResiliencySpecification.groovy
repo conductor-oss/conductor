@@ -31,8 +31,6 @@ import spock.mock.DetachedMockFactory
 
 @TestPropertySource(properties = [
         "conductor.system-task-workers.enabled=false",
-        "conductor.workflow-repair-service.enabled=true",
-        "conductor.workflow-reconciler.enabled=false",
         "conductor.integ-test.queue-spy.enabled=true"
 ])
 abstract class AbstractResiliencySpecification extends AbstractSpecification {

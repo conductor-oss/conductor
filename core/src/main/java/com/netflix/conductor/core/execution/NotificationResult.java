@@ -22,6 +22,8 @@ import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,9 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class NotificationResult {
-    private Workflow targetWorkflow;
-    private Workflow blockingWorkflow;
-    private List<Task> blockingTasks;
+    private WorkflowModel targetWorkflow;
+    private WorkflowModel blockingWorkflow;
+    private List<TaskModel> blockingTasks;
 
     public SignalResponse toResponse(
             WorkflowSignalReturnStrategy returnStrategy, String requestId) {
@@ -58,7 +60,7 @@ public class NotificationResult {
     }
 
     private WorkflowRun getWorkflowRun(
-            Workflow workflow, String requestId, WorkflowSignalReturnStrategy returnStrategy) {
+            WorkflowModel workflow, String requestId, WorkflowSignalReturnStrategy returnStrategy) {
         WorkflowRun workflowRun = toWorkflowRun(workflow, requestId);
         workflowRun.setTargetWorkflowId(this.targetWorkflow.getWorkflowId());
         workflowRun.setTargetWorkflowStatus(this.targetWorkflow.getStatus().toString());
@@ -66,9 +68,9 @@ public class NotificationResult {
         return workflowRun;
     }
 
-    private static WorkflowRun toWorkflowRun(Workflow workflow, String requestId) {
+    private static WorkflowRun toWorkflowRun(WorkflowModel workflow, String requestId) {
         WorkflowRun run = new WorkflowRun();
-        run.setTasks(workflow.getTasks());
+        run.setTasks(new ArrayList<>());
 
         run.setWorkflowId(workflow.getWorkflowId());
         run.setRequestId(requestId);
@@ -78,9 +80,9 @@ public class NotificationResult {
         run.setCreateTime(workflow.getCreateTime());
         run.setOutput(workflow.getOutput());
         run.setTasks(new ArrayList<>());
-        workflow.getTasks().forEach(task -> run.getTasks().add(task));
+        workflow.getTasks().forEach(task -> run.getTasks().add(task.toTask()));
         run.setPriority(workflow.getPriority());
-        run.setUpdateTime(workflow.getUpdateTime());
+        run.setUpdateTime(workflow.getUpdatedTime());
         run.setStatus(Workflow.WorkflowStatus.valueOf(workflow.getStatus().name()));
         run.setVariables(workflow.getVariables());
 
@@ -88,7 +90,7 @@ public class NotificationResult {
     }
 
     private TaskRun toTaskRun(
-            Task task, String requestId, WorkflowSignalReturnStrategy responseType) {
+            TaskModel task, String requestId, WorkflowSignalReturnStrategy responseType) {
         TaskRun run = new TaskRun();
         run.setTargetWorkflowId(targetWorkflow.getWorkflowId());
         run.setTargetWorkflowStatus(targetWorkflow.getStatus().toString());

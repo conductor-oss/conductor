@@ -23,8 +23,9 @@ import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -33,9 +34,9 @@ import static org.junit.Assert.assertTrue;
 
 public class NotificationResultTest {
 
-    private Workflow targetWorkflow;
-    private Workflow blockingWorkflow;
-    private Task blockingTask;
+    private WorkflowModel targetWorkflow;
+    private WorkflowModel blockingWorkflow;
+    private TaskModel blockingTask;
     private String requestId;
 
     @Before
@@ -43,13 +44,13 @@ public class NotificationResultTest {
         requestId = "req123";
 
         // Create target workflow
-        targetWorkflow = createWorkflow("workflow123", Workflow.WorkflowStatus.RUNNING);
+        targetWorkflow = createWorkflow("workflow123", WorkflowModel.Status.RUNNING);
 
         // Create blocking workflow (could be a sub-workflow)
-        blockingWorkflow = createWorkflow("blockingWorkflow456", Workflow.WorkflowStatus.RUNNING);
+        blockingWorkflow = createWorkflow("blockingWorkflow456", WorkflowModel.Status.RUNNING);
 
         // Create a blocking task
-        blockingTask = createTask("blockingTask1", "WAIT", Task.Status.IN_PROGRESS);
+        blockingTask = createTask("blockingTask1", "WAIT", TaskModel.Status.IN_PROGRESS);
     }
 
     @Test
@@ -156,7 +157,7 @@ public class NotificationResultTest {
     @Test
     public void testToResponse_WithBlockingTasks_TargetWorkflowStrategy() {
         // Given
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(blockingTask);
 
         NotificationResult result =
@@ -183,7 +184,7 @@ public class NotificationResultTest {
     @Test
     public void testToResponse_WithBlockingTasks_BlockingWorkflowStrategy() {
         // Given
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(blockingTask);
 
         NotificationResult result =
@@ -210,7 +211,7 @@ public class NotificationResultTest {
     @Test
     public void testToResponse_WithBlockingTasks_BlockingTaskStrategy() {
         // Given
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(blockingTask);
 
         NotificationResult result =
@@ -238,7 +239,7 @@ public class NotificationResultTest {
     @Test
     public void testToResponse_WithBlockingTasks_BlockingTaskInputStrategy() {
         // Given
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(blockingTask);
 
         NotificationResult result =
@@ -266,9 +267,9 @@ public class NotificationResultTest {
     @Test
     public void testToResponse_WithMultipleBlockingTasks() {
         // Given - Multiple blocking tasks, should return first one
-        List<Task> blockingTasks = new ArrayList<>();
-        Task task1 = createTask("task1", "WAIT", Task.Status.IN_PROGRESS);
-        Task task2 = createTask("task2", "SIMPLE", Task.Status.COMPLETED);
+        List<TaskModel> blockingTasks = new ArrayList<>();
+        TaskModel task1 = createTask("task1", "WAIT", TaskModel.Status.IN_PROGRESS);
+        TaskModel task2 = createTask("task2", "SIMPLE", TaskModel.Status.COMPLETED);
         blockingTasks.add(task1);
         blockingTasks.add(task2);
 
@@ -294,7 +295,7 @@ public class NotificationResultTest {
     @Test
     public void testGetWorkflowRun_AllFieldsSet() {
         // Given
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(blockingTask);
 
         NotificationResult result =
@@ -328,7 +329,7 @@ public class NotificationResultTest {
     @Test
     public void testToTaskRun_AllFieldsSet() {
         // Given
-        Task task = createTask("testTask", "SIMPLE", Task.Status.COMPLETED);
+        TaskModel task = createTask("testTask", "SIMPLE", TaskModel.Status.COMPLETED);
         task.setTaskDefName("simpleTaskDef");
         task.setWorkflowType("testWorkflowType");
         task.setReasonForIncompletion("N/A");
@@ -338,7 +339,7 @@ public class NotificationResultTest {
         task.setRetryCount(2);
         task.setRetriedTaskId("retriedTask789");
 
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(task);
 
         NotificationResult result =
@@ -365,7 +366,7 @@ public class NotificationResultTest {
         assertEquals(task.getWorkflowPriority(), taskRun.getPriority());
         assertEquals(task.getWorkflowInstanceId(), taskRun.getWorkflowId());
         assertEquals(task.getCorrelationId(), taskRun.getCorrelationId());
-        assertEquals(Task.Status.valueOf(task.getStatus().name()), taskRun.getStatus());
+        assertEquals(TaskModel.Status.valueOf(task.getStatus().name()), taskRun.getStatus());
         assertEquals(task.getInputData(), taskRun.getInput());
         assertEquals(task.getOutputData(), taskRun.getOutput());
         assertEquals(task.getWorkerId(), taskRun.getCreatedBy());
@@ -397,12 +398,12 @@ public class NotificationResultTest {
     @Test
     public void testWorkflowRun_TasksCopiedCorrectly() {
         // Given
-        Task task1 = createTask("task1", "SIMPLE", Task.Status.COMPLETED);
-        Task task2 = createTask("task2", "WAIT", Task.Status.IN_PROGRESS);
+        TaskModel task1 = createTask("task1", "SIMPLE", TaskModel.Status.COMPLETED);
+        TaskModel task2 = createTask("task2", "WAIT", TaskModel.Status.IN_PROGRESS);
         targetWorkflow.getTasks().add(task1);
         targetWorkflow.getTasks().add(task2);
 
-        List<Task> blockingTasks = new ArrayList<>();
+        List<TaskModel> blockingTasks = new ArrayList<>();
         blockingTasks.add(task1);
 
         NotificationResult result =
@@ -427,8 +428,8 @@ public class NotificationResultTest {
     }
 
     // Helper methods
-    private Workflow createWorkflow(String workflowId, Workflow.WorkflowStatus status) {
-        Workflow workflow = new Workflow();
+    private WorkflowModel createWorkflow(String workflowId, WorkflowModel.Status status) {
+        WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
         workflow.setStatus(status);
         workflow.setCorrelationId("corr123");
@@ -439,15 +440,16 @@ public class NotificationResultTest {
         workflow.setTasks(new ArrayList<>());
         workflow.setCreatedBy("testUser");
         workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setUpdateTime(System.currentTimeMillis());
+        workflow.setUpdatedTime(System.currentTimeMillis());
         workflow.setPriority(0);
         workflow.setVariables(new HashMap<>());
         workflow.getVariables().put("var1", "value1");
         return workflow;
     }
 
-    private Task createTask(String referenceTaskName, String taskType, Task.Status status) {
-        Task task = new Task();
+    private TaskModel createTask(
+            String referenceTaskName, String taskType, TaskModel.Status status) {
+        TaskModel task = new TaskModel();
         task.setTaskId("task-" + referenceTaskName);
         task.setReferenceTaskName(referenceTaskName);
         task.setTaskType(taskType);

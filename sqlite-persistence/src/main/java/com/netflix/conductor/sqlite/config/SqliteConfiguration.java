@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.sqlite.config;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
 
 import javax.sql.DataSource;
@@ -29,7 +31,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -60,8 +62,33 @@ public class SqliteConfiguration {
         this.properties = properties;
     }
 
-    @Bean(initMethod = "migrate")
     @PostConstruct
+    public void initializeSqlite() {
+        try (Connection conn = dataSource.getConnection();
+                Statement stmt = conn.createStatement()) {
+
+            // Enable WAL mode for better concurrent access
+            stmt.execute("PRAGMA journal_mode=WAL");
+
+            // Set busy timeout to 30 seconds (30000 ms)
+            // This makes SQLite wait up to 30s when encountering locks
+            stmt.execute("PRAGMA busy_timeout=30000");
+
+            // Enable foreign keys
+            stmt.execute("PRAGMA foreign_keys=ON");
+
+            // Optimize for concurrency
+            stmt.execute("PRAGMA synchronous=NORMAL");
+
+            // Use memory for temporary storage
+            stmt.execute("PRAGMA temp_store=MEMORY");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize SQLite database", e);
+        }
+    }
+
+    @Bean(initMethod = "migrate")
     public Flyway flywayForPrimaryDb() {
         FluentConfiguration config =
                 Flyway.configure()
@@ -155,26 +182,40 @@ public class SqliteConfiguration {
 
     @Bean
     public RetryTemplate sqliteRetryTemplate(SqliteProperties properties) {
-        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
+        CustomRetryPolicy retryPolicy = new CustomRetryPolicy();
+        retryPolicy.setMaxAttempts(10); // Increased for SQLite locking scenarios
+
+        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+        backOffPolicy.setInitialInterval(50L); // Start with 50ms
+        backOffPolicy.setMultiplier(2.0); // Double each time
+        backOffPolicy.setMaxInterval(5000L); // Max 5 seconds
 
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
+        retryTemplate.setBackOffPolicy(backOffPolicy);
         return retryTemplate;
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {
 
+        // PostgreSQL error codes
         private static final String ER_LOCK_DEADLOCK = "40P01";
         private static final String ER_SERIALIZATION_FAILURE = "40001";
+
+        // SQLite error codes
+        private static final int SQLITE_BUSY = 5;
+        private static final int SQLITE_LOCKED = 6;
 
         @Override
         public boolean canRetry(final RetryContext context) {
             final Optional<Throwable> lastThrowable =
                     Optional.ofNullable(context.getLastThrowable());
             return lastThrowable
-                    .map(throwable -> super.canRetry(context) && isDeadLockError(throwable))
+                    .map(
+                            throwable ->
+                                    super.canRetry(context)
+                                            && (isDeadLockError(throwable)
+                                                    || isSqliteBusyError(throwable)))
                     .orElseGet(() -> super.canRetry(context));
         }
 
@@ -185,6 +226,30 @@ public class SqliteConfiguration {
             }
             return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState())
                     || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
+        }
+
+        private boolean isSqliteBusyError(Throwable throwable) {
+            SQLException sqlException = findCauseSQLException(throwable);
+            if (sqlException == null) {
+                return false;
+            }
+
+            // Check for SQLite BUSY (5) or LOCKED (6) error codes
+            int errorCode = sqlException.getErrorCode();
+            if (errorCode == SQLITE_BUSY || errorCode == SQLITE_LOCKED) {
+                return true;
+            }
+
+            // Also check message for SQLite busy/locked indicators
+            String message = sqlException.getMessage();
+            if (message != null) {
+                return message.contains("SQLITE_BUSY")
+                        || message.contains("database is locked")
+                        || message.contains("SQLITE_LOCKED")
+                        || message.contains("table is locked");
+            }
+
+            return false;
         }
 
         private SQLException findCauseSQLException(Throwable throwable) {

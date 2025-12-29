@@ -35,18 +35,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.*;
 import com.netflix.conductor.core.execution.NotificationResult;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.WorkflowService;
 import com.netflix.conductor.service.WorkflowTestService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -57,6 +59,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
 @RequestMapping(WORKFLOW)
+@Slf4j
 public class WorkflowResource {
 
     private final WorkflowService workflowService;
@@ -139,7 +142,7 @@ public class WorkflowResource {
 
         // Poll every 100ms using Flux.interval
         return Flux.interval(Duration.ofMillis(100))
-                .map(tick -> workflowService.getExecutionStatus(workflowId, true))
+                .map(tick -> workflowService.getWorkflowModel(workflowId, true))
                 .filter(
                         workflow -> {
                             // Check if workflow is terminal
@@ -177,9 +180,10 @@ public class WorkflowResource {
                         Duration.ofSeconds(waitForSeconds),
                         Mono.defer(
                                 () -> {
+                                    log.info("Execution timed out for {}", workflowId);
                                     // Timeout reached, return current state
                                     var workflow =
-                                            workflowService.getExecutionStatus(workflowId, true);
+                                            workflowService.getWorkflowModel(workflowId, true);
                                     NotificationResult result =
                                             NotificationResult.builder()
                                                     .targetWorkflow(workflow)
@@ -432,15 +436,16 @@ public class WorkflowResource {
      * @param taskRefs Array of task reference names to wait for
      * @return BlockingTaskResult containing blocking tasks and the workflow where they were found
      */
-    private BlockingTaskResult findBlockingTasks(Workflow workflow, String[] taskRefs) {
-        List<Task> blockingTasks = new ArrayList<>();
-        Workflow blockingWorkflow = null;
+    private BlockingTaskResult findBlockingTasks(WorkflowModel workflow, String[] taskRefs) {
+        List<TaskModel> blockingTasks = new ArrayList<>();
+        WorkflowModel blockingWorkflow = null;
 
         // Check tasks in the current workflow
-        for (Task task : workflow.getTasks()) {
+        for (TaskModel task : workflow.getTasks()) {
             // Check for WAIT tasks that are not terminal (actively waiting)
             if (TaskType.TASK_TYPE_WAIT.equals(task.getTaskType())
-                    && !task.getStatus().isTerminal()) {
+                    && !task.getStatus().isTerminal()
+                    && task.getWaitTimeout() == 0) {
                 blockingTasks.add(task);
                 if (blockingWorkflow == null) {
                     blockingWorkflow = workflow;
@@ -464,8 +469,8 @@ public class WorkflowResource {
                     && StringUtils.isNotBlank(task.getSubWorkflowId())
                     && !task.getStatus().isTerminal()) {
                 try {
-                    Workflow subWorkflow =
-                            workflowService.getExecutionStatus(task.getSubWorkflowId(), true);
+                    WorkflowModel subWorkflow =
+                            workflowService.getWorkflowModel(task.getSubWorkflowId(), true);
                     BlockingTaskResult subResult = findBlockingTasks(subWorkflow, taskRefs);
                     if (subResult.hasBlockingTasks()) {
                         blockingTasks.addAll(subResult.blockingTasks);
@@ -484,10 +489,10 @@ public class WorkflowResource {
 
     /** Result of finding blocking tasks in a workflow hierarchy */
     private static class BlockingTaskResult {
-        final List<Task> blockingTasks;
-        final Workflow blockingWorkflow;
+        final List<TaskModel> blockingTasks;
+        final WorkflowModel blockingWorkflow;
 
-        BlockingTaskResult(List<Task> blockingTasks, Workflow blockingWorkflow) {
+        BlockingTaskResult(List<TaskModel> blockingTasks, WorkflowModel blockingWorkflow) {
             this.blockingTasks = blockingTasks;
             this.blockingWorkflow = blockingWorkflow;
         }
