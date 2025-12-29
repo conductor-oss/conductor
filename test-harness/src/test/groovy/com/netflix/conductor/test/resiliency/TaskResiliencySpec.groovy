@@ -89,8 +89,7 @@ class TaskResiliencySpec extends AbstractResiliencySpecification {
         }
 
         when: "Running a repair and decide on the workflow"
-        workflowRepairService.verifyAndRepairWorkflow(workflowInstanceId, true)
-        workflowExecutor.decide(workflowInstanceId)
+        sweep(workflowInstanceId)
         workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
         then: "verify that the next scheduled task can be polled and executed successfully"
