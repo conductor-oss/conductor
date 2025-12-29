@@ -18,13 +18,11 @@ import java.time.temporal.ChronoUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
+import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
-import com.netflix.dyno.connectionpool.RetryPolicy.RetryPolicyFactory;
-import com.netflix.dyno.connectionpool.impl.RetryNTimes;
-import com.netflix.dyno.connectionpool.impl.RunOnce;
 
+@Configuration
 @ConfigurationProperties("conductor.redis")
 public class RedisProperties {
 
@@ -82,9 +80,6 @@ public class RedisProperties {
 
     /** The read connection port to be used for connecting to dyno-queues */
     private int queuesNonQuorumPort = 22122;
-
-    /** The sharding strategy to be used for the dyno queue configuration */
-    private String queueShardingStrategy = RedisQueuesShardingStrategyProvider.ROUND_ROBIN_STRATEGY;
 
     /** The time in seconds after which the in-memory task definitions cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
@@ -252,14 +247,6 @@ public class RedisProperties {
         this.queuesNonQuorumPort = queuesNonQuorumPort;
     }
 
-    public String getQueueShardingStrategy() {
-        return queueShardingStrategy;
-    }
-
-    public void setQueueShardingStrategy(String queueShardingStrategy) {
-        this.queueShardingStrategy = queueShardingStrategy;
-    }
-
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
@@ -282,14 +269,6 @@ public class RedisProperties {
             prefix = prefix + "." + getKeyspaceDomain();
         }
         return prefix;
-    }
-
-    public RetryPolicyFactory getConnectionRetryPolicy() {
-        if (getMaxRetryAttempts() == 0) {
-            return RunOnce::new;
-        } else {
-            return () -> new RetryNTimes(maxRetryAttempts, false);
-        }
     }
 
     public int getDatabase() {

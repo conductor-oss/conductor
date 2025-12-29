@@ -30,7 +30,9 @@ dependencies {
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
 
-    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+        exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
     testImplementation project(':conductor-test-util').sourceSets.test.output
 
     //In memory

@@ -17,12 +17,8 @@ import org.springframework.context.annotation.Bean;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.commands.JedisCommands;
-
-import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
-import static com.netflix.conductor.redis.config.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
 
 abstract class JedisCommandsConfigurer {
 
@@ -31,27 +27,16 @@ abstract class JedisCommandsConfigurer {
         return new ConfigurationHostSupplier(properties);
     }
 
-    @Bean(name = DEFAULT_CLIENT_INJECTION_NAME)
+    @Bean
     public JedisCommands jedisCommands(
             RedisProperties properties,
             ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier) {
-        return createJedisCommands(properties, conductorProperties, hostSupplier, tokenMapSupplier);
-    }
-
-    @Bean(name = READ_CLIENT_INJECTION_NAME)
-    public JedisCommands readJedisCommands(
-            RedisProperties properties,
-            ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier) {
-        return createJedisCommands(properties, conductorProperties, hostSupplier, tokenMapSupplier);
+            HostSupplier hostSupplier) {
+        return createJedisCommands(properties, conductorProperties, hostSupplier);
     }
 
     protected abstract JedisCommands createJedisCommands(
             RedisProperties properties,
             ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier);
+            HostSupplier hostSupplier);
 }

@@ -29,7 +29,9 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     implementation "redis.clients:jedis:${revJedis}"
-    implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+        exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
 
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"

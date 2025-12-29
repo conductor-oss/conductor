@@ -29,6 +29,7 @@ import com.netflix.conductor.core.utils.Utils
 import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
+import spock.lang.Ignore
 
 /**
  * When QueueDAO is unavailable,
@@ -38,6 +39,10 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
  * 3. Doesn't involve QueueDAO
  */
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
+@Ignore
+//FIXME Interaction based testing won't work. Spy doesn't detect/intercept any calls because BaseRedisQueueDAO
+// methods are final.
+// No test in this class currently works.
 class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired

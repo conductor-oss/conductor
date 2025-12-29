@@ -26,7 +26,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisSentinel;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Protocol;
@@ -42,8 +41,7 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
     protected JedisCommands createJedisCommands(
             RedisProperties properties,
             ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier) {
+            HostSupplier hostSupplier) {
         GenericObjectPoolConfig<?> genericObjectPoolConfig = new GenericObjectPoolConfig<>();
         genericObjectPoolConfig.setMinIdle(properties.getMinIdleConnections());
         genericObjectPoolConfig.setMaxIdle(properties.getMaxIdleConnections());

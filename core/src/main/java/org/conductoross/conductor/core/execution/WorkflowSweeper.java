@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -62,6 +64,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ObjectMapper objectMapper;
     private SystemTaskRegistry systemTaskRegistry;
     private final Clock clock = Clock.systemDefaultZone();
+    private AtomicBoolean stop = new AtomicBoolean(false);
 
     public WorkflowSweeper(
             @Qualifier(SWEEPER_EXECUTOR_NAME) Executor sweeperExecutor,
@@ -114,6 +117,9 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private void pollAndSweep() {
         try {
             while (true) {
+                if(stop.get()) {
+                    return;
+                }
                 try {
                     if (!isRunning()) {
                         log.trace("Component stopped, skip workflow sweep");
@@ -283,6 +289,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
 
     @Override
     public void doStop() {
-        ((ExecutorService) this.sweeperExecutor).shutdown();
+        stop.set(true);
+        ((ExecutorService) this.sweeperExecutor).shutdownNow();
     }
 }

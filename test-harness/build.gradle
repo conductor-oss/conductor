@@ -27,7 +27,9 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     testImplementation "redis.clients:jedis:${revJedis}"
-    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+        exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
@@ -53,4 +55,8 @@ dependencies {
     testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"
     testImplementation "software.amazon.awssdk:sts:${revAwsSdk}"
     testImplementation "software.amazon.awssdk:sqs:${revAwsSdk}"
+    testImplementation "commons-io:commons-io:${revCommonsIo}"
+}
+tasks.withType(Test)  {
+    maxParallelForks = 1
 }

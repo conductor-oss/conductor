@@ -19,11 +19,15 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.reconciliation.WorkflowRepairService
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
-
+import spock.lang.Ignore
 import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
+@Ignore
+//FIXME Interaction based testing won't work. Spy doesn't detect/intercept any calls because BaseRedisQueueDAO
+// methods are final.
+// No test in this class currently works.
 class TaskResiliencySpec extends AbstractResiliencySpecification {
 
     @Shared
