@@ -29,11 +29,11 @@ import com.netflix.conductor.rest.config.RestConfiguration;
 // database persistence module.
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @ComponentScan(
-    basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"},
-    excludeFilters =
-    @ComponentScan.Filter(
-        type = FilterType.ASSIGNABLE_TYPE,
-        classes = { RestConfiguration.class}))
+        basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"},
+        excludeFilters =
+                @ComponentScan.Filter(
+                        type = FilterType.ASSIGNABLE_TYPE,
+                        classes = {RestConfiguration.class}))
 public class ConductorTestApp {
 
     public static void main(String[] args) throws IOException {

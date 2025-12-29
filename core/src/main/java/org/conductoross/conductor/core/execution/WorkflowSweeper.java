@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -117,7 +116,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private void pollAndSweep() {
         try {
             while (true) {
-                if(stop.get()) {
+                if (stop.get()) {
                     return;
                 }
                 try {

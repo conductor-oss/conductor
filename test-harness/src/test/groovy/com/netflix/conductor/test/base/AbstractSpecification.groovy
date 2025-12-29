@@ -12,23 +12,24 @@
  */
 package com.netflix.conductor.test.base
 
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import org.conductoross.conductor.core.execution.WorkflowSweeper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.TestPropertySource
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.utility.DockerImageName
 
 import com.netflix.conductor.ConductorTestApp
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.utility.DockerImageName
+
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 

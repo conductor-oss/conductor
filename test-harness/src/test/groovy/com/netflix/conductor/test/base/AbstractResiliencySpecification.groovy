@@ -12,9 +12,10 @@
  */
 package com.netflix.conductor.test.base
 
-import com.netflix.conductor.dao.QueueDAO
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
+
+import com.netflix.conductor.dao.QueueDAO
 
 @TestPropertySource(properties = [
         "conductor.system-task-workers.enabled=false",
