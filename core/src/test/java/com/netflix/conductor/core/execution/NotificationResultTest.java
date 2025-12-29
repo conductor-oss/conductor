@@ -366,7 +366,7 @@ public class NotificationResultTest {
         assertEquals(task.getWorkflowPriority(), taskRun.getPriority());
         assertEquals(task.getWorkflowInstanceId(), taskRun.getWorkflowId());
         assertEquals(task.getCorrelationId(), taskRun.getCorrelationId());
-        assertEquals(TaskModel.Status.valueOf(task.getStatus().name()), taskRun.getStatus());
+        assertEquals(task.getStatus().name(), taskRun.getStatus().name());
         assertEquals(task.getInputData(), taskRun.getInput());
         assertEquals(task.getOutputData(), taskRun.getOutput());
         assertEquals(task.getWorkerId(), taskRun.getCreatedBy());
