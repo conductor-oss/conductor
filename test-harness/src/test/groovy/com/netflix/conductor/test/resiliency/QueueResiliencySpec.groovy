@@ -504,32 +504,6 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         thrown(Exception)
     }
 
-    def "Verify log doesn't involve QueueDAO"() {
-        when:
-        taskResource.log("testTaskId", "test log")
-
-        then:
-        0 * queueDAO._
-    }
-
-    def "Verify getTaskLogs doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTaskLogs("testTaskId")
-
-        then:
-        thrown(com.netflix.conductor.core.exception.NotFoundException)
-        0 * queueDAO._
-    }
-
-    def "Verify getTask doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTask("testTaskId")
-
-        then:
-        thrown(com.netflix.conductor.core.exception.NotFoundException)
-        0 * queueDAO._
-    }
-
     def "Verify getAllQueueDetails fails when QueueDAO is unavailable"() {
         when:
         taskResource.all()

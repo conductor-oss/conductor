@@ -26,9 +26,6 @@ import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAc
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
 class TaskResiliencySpec extends AbstractResiliencySpecification {
 
-    @Autowired
-    WorkflowRepairService workflowRepairService
-
     @Shared
     def SIMPLE_TWO_TASK_WORKFLOW = 'integration_test_wf'
 
