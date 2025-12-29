@@ -279,7 +279,8 @@ public class WorkflowResourceTest {
 
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -322,7 +323,8 @@ public class WorkflowResourceTest {
 
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -365,7 +367,8 @@ public class WorkflowResourceTest {
 
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -409,7 +412,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - task2 completes first
         Mono<SignalResponse> result =
@@ -461,7 +465,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
         WorkflowModel subWorkflowModel = toWorkflowModel(subWorkflow);
         when(mockWorkflowService.getWorkflowModel(eq(subWorkflowId), eq(true)))
                 .thenReturn(subWorkflowModel);
@@ -504,7 +509,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - very short timeout, should timeout immediately
         Mono<SignalResponse> result =
@@ -544,7 +550,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - version 0 should be converted to null
         Mono<SignalResponse> result =
@@ -591,7 +598,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -631,7 +639,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - waitForSeconds is 0, should default to 10
         Mono<SignalResponse> result =
@@ -674,7 +683,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - wait for task1
         Mono<SignalResponse> result =
@@ -722,7 +732,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -769,7 +780,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
         when(mockWorkflowService.getWorkflowModel(eq(subWorkflowId), eq(true)))
                 .thenThrow(new RuntimeException("Sub-workflow not found"));
 
@@ -810,7 +822,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When - taskRefs with spaces around them
         Mono<SignalResponse> result =
@@ -859,7 +872,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
 
         // When
         Mono<SignalResponse> result =
@@ -923,7 +937,8 @@ public class WorkflowResourceTest {
         when(mockWorkflowService.startWorkflow(any(StartWorkflowRequest.class)))
                 .thenReturn(workflowId);
         WorkflowModel workflowModel = toWorkflowModel(workflow);
-        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true))).thenReturn(workflowModel);
+        when(mockWorkflowService.getWorkflowModel(eq(workflowId), eq(true)))
+                .thenReturn(workflowModel);
         WorkflowModel subWorkflowModel1 = toWorkflowModel(subWorkflow1);
         when(mockWorkflowService.getWorkflowModel(eq(subWorkflowId1), eq(true)))
                 .thenReturn(subWorkflowModel1);
