@@ -18,11 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
@@ -42,12 +37,9 @@ import static org.junit.Assert.assertTrue;
  * Tests the customized {@link ObjectMapper} that is used by {@link com.netflix.conductor.Conductor}
  * application.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@RunWith(SpringRunner.class)
-@TestPropertySource(properties = "conductor.queue.type=")
 public class ConductorObjectMapperTest {
 
-    @Autowired ObjectMapper objectMapper;
+    ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
     public void testSimpleMapping() throws IOException {
