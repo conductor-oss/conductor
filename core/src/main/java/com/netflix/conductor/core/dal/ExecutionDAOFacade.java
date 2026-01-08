@@ -333,18 +333,19 @@ public class ExecutionDAOFacade {
      *
      * @param workflowId the id of the workflow to be removed
      * @param archiveWorkflow if true, the workflow and associated tasks will be archived in the
-     *     {@link IndexDAO} after removal from {@link ExecutionDAO}.
+     *     {@link IndexDAO} before removal from {@link ExecutionDAO}.
      */
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         WorkflowModel workflow = getWorkflowModelFromDataStore(workflowId, true);
 
-        executionDAO.removeWorkflow(workflowId);
+        // remove workflow from index
         try {
             removeWorkflowIndex(workflow, archiveWorkflow);
         } catch (JsonProcessingException e) {
             throw new TransientException("Workflow can not be serialized to json", e);
         }
 
+        // remove tasks from index
         workflow.getTasks()
                 .forEach(
                         task -> {
@@ -357,7 +358,15 @@ public class ExecutionDAOFacade {
                                                 task.getTaskId(), workflow.getWorkflowId()),
                                         e);
                             }
+                        });
 
+        // if all successful, remove from execution DAO
+        executionDAO.removeWorkflow(workflowId);
+
+        // finally remove from queues
+        workflow.getTasks()
+                .forEach(
+                        task -> {
                             try {
                                 queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
                             } catch (Exception e) {
