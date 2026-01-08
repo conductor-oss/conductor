@@ -33,6 +33,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.TestDeciderService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
@@ -155,6 +156,46 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
         verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
         verify(indexDAO, times(1)).asyncRemoveTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testRemoveWorkflowContinuesOnIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing workflow"))
+                .when(indexDAO)
+                .asyncRemoveWorkflow(anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
+    }
+
+    @Test
+    public void testRemoveWorkflowContinuesOnTaskIndexNotFound() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        doThrow(new NotFoundException("missing task"))
+                .when(indexDAO)
+                .asyncRemoveTask(anyString(), anyString());
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        verify(executionDAO, times(1)).removeWorkflow(anyString());
     }
 
     @Test
