@@ -29,6 +29,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
@@ -146,6 +147,7 @@ public class ExecutionDAOFacadeTest {
 
         TaskModel task = new TaskModel();
         task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.COMPLETED);
         workflow.setTasks(Collections.singletonList(task));
 
         when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
@@ -176,12 +178,17 @@ public class ExecutionDAOFacadeTest {
     @Test
     public void testUpdateWorkflowSkipsTaskIndexingWhenDisabled() {
         WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflowName");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
         workflow.setWorkflowId("workflowId");
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         workflow.setCreateTime(System.currentTimeMillis() - 10_000);
 
         TaskModel task = new TaskModel();
         task.setTaskId("taskId");
+        task.setStatus(TaskModel.Status.COMPLETED);
         workflow.setTasks(Collections.singletonList(task));
 
         ConductorProperties properties = mock(ConductorProperties.class);
