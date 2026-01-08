@@ -153,8 +153,7 @@ public class TaskResource {
         return Optional.ofNullable(taskService.getTaskLogs(taskId))
                 .filter(logs -> !logs.isEmpty())
                 .map(ResponseEntity::ok)
-                .orElseThrow(
-                        () -> new NotFoundException("Task logs not found for taskId: %s", taskId));
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{taskId}")

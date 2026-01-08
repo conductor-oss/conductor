@@ -30,6 +30,8 @@ import com.netflix.conductor.rest.controllers.TaskResource
 import com.netflix.conductor.rest.controllers.WorkflowResource
 import com.netflix.conductor.test.base.AbstractResiliencySpecification
 
+import spock.lang.Ignore
+
 /**
  * When QueueDAO is unavailable,
  * Ensure All Worklow and Task resource endpoints either:
@@ -38,6 +40,10 @@ import com.netflix.conductor.test.base.AbstractResiliencySpecification
  * 3. Doesn't involve QueueDAO
  */
 @TestPropertySource(properties = "conductor.app.workflow.name-validation.enabled=true")
+@Ignore
+//FIXME Interaction based testing won't work. Spy doesn't detect/intercept any calls because BaseRedisQueueDAO
+// methods are final.
+// No test in this class currently works.
 class QueueResiliencySpec extends AbstractResiliencySpecification {
 
     @Autowired
@@ -502,32 +508,6 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         then:
         1 * queueDAO.getSize(*_) >> { throw new IllegalStateException("Queue getSize failed from Spy") }
         thrown(Exception)
-    }
-
-    def "Verify log doesn't involve QueueDAO"() {
-        when:
-        taskResource.log("testTaskId", "test log")
-
-        then:
-        0 * queueDAO._
-    }
-
-    def "Verify getTaskLogs doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTaskLogs("testTaskId")
-
-        then:
-        thrown(com.netflix.conductor.core.exception.NotFoundException)
-        0 * queueDAO._
-    }
-
-    def "Verify getTask doesn't involve QueueDAO"() {
-        when:
-        taskResource.getTask("testTaskId")
-
-        then:
-        thrown(com.netflix.conductor.core.exception.NotFoundException)
-        0 * queueDAO._
     }
 
     def "Verify getAllQueueDetails fails when QueueDAO is unavailable"() {

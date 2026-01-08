@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -55,6 +56,8 @@ import com.netflix.conductor.service.ExecutionLockService;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
+
+import static org.conductoross.conductor.core.execution.ExecutorUtils.computePostpone;
 
 /** Workflow services provider interface */
 @Trace
@@ -1070,6 +1073,21 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
+    @Override
+    public WorkflowModel decideWithLock(WorkflowModel workflow) {
+        if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
+            LOGGER.debug(
+                    "decideWithLock couldn't acquire lock for workflow {}",
+                    workflow.getWorkflowId());
+            return null;
+        }
+        try {
+            return decide(workflow);
+        } finally {
+            executionLockService.releaseLock(workflow.getWorkflowId());
+        }
+    }
+
     /**
      * @param workflow the workflow to evaluate the state for
      * @return true if the workflow has completed (success or failed), false otherwise. Note: This
@@ -1127,6 +1145,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
             if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                 executionDAOFacade.updateWorkflow(workflow);
+            }
+
+            Duration timeout = properties.getWorkflowOffsetTimeout();
+            if (!workflow.getStatus().isTerminal()) {
+                Duration updatedOffset = computePostpone(workflow, timeout);
+                if (updatedOffset.getSeconds() != timeout.getSeconds()) {
+                    // we have a new value, setUnack uses time in millis
+                    LOGGER.debug(
+                            "Pushing the workflow {} into decider queue by {} millis",
+                            workflow.getWorkflowId(),
+                            updatedOffset.getSeconds() * 1000);
+                    queueDAO.setUnackTimeout(
+                            DECIDER_QUEUE,
+                            workflow.getWorkflowId(),
+                            updatedOffset.getSeconds() * 1000);
+                }
             }
 
             return workflow;

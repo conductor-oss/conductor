@@ -31,6 +31,9 @@ import com.netflix.conductor.service.MetadataService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.annotation.PostConstruct
 
+import static java.util.concurrent.TimeUnit.SECONDS
+import static org.awaitility.Awaitility.await
+
 /**
  * This is a helper class used to initialize task definitions required by the tests when loaded up.
  * The task definitions that are loaded up in {@link WorkflowTestUtil#taskDefinitions()} method as part of the post construct of the bean.
@@ -345,5 +348,37 @@ class WorkflowTestUtil {
                 assert payload.containsKey(k)
                 assert payload[k] == v
         }
+    }
+
+    static def awaitIgnoreUnfulfilled(Closure closure) {
+        try {
+            await().atMost(2, SECONDS).until(closure)
+        } catch (Exception ignored) {
+            System.out.println("Condition was not fulfilled within 2 seconds but continue execution")
+        }
+    }
+
+    Tuple completeTask(String taskId, String workerId, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
+        def polledIntegrationTask = workflowExecutionService.getTask(taskId)
+        if (polledIntegrationTask == null) {
+            return new Tuple(null, null)
+        }
+        def taskResult = new TaskResult(polledIntegrationTask)
+        taskResult.status = TaskResult.Status.COMPLETED
+        if (outputParams) {
+            outputParams.forEach { k, v ->
+                taskResult.outputData[k] = v
+            }
+        }
+
+        def wf0 = workflowExecutionService.getExecutionStatus(polledIntegrationTask.workflowInstanceId, true)
+        workflowExecutionService.updateTask(taskResult)
+
+        awaitIgnoreUnfulfilled {
+            def wf1 = workflowExecutionService.getExecutionStatus(polledIntegrationTask.workflowInstanceId, true)
+            workflowStatusHasChanged(wf0, wf1) || nextTaskHasBeenScheduled(wf1, polledIntegrationTask.taskId)
+        }
+
+        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask)
     }
 }

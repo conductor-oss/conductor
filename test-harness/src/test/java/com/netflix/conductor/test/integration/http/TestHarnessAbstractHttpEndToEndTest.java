@@ -47,7 +47,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.validation.ValidationError;
-import com.netflix.conductor.test.integration.AbstractEndToEndTest;
+import com.netflix.conductor.test.integration.TestHarnessAbstractEndToEndTest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -58,7 +58,7 @@ import static org.junit.Assert.fail;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = ConductorTestApp.class)
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
-public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
+public abstract class TestHarnessAbstractHttpEndToEndTest extends TestHarnessAbstractEndToEndTest {
 
     @LocalServerPort protected int port;
 

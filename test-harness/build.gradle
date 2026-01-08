@@ -27,7 +27,9 @@ dependencies {
     testImplementation "org.springframework:spring-web"
 
     testImplementation "redis.clients:jedis:${revJedis}"
-    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+        exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
@@ -44,6 +46,7 @@ dependencies {
     testImplementation "jakarta.ws.rs:jakarta.ws.rs-api:${revJAXRS}"
     testImplementation "org.glassfish.jersey.core:jersey-common:${revJerseyCommon}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "io.projectreactor.netty:reactor-netty-http:${revReactor}"
     
     // S3 and AWS dependencies for LocalStack testing
     testImplementation project(':conductor-awss3-storage')
@@ -52,4 +55,8 @@ dependencies {
     testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"
     testImplementation "software.amazon.awssdk:sts:${revAwsSdk}"
     testImplementation "software.amazon.awssdk:sqs:${revAwsSdk}"
+    testImplementation "commons-io:commons-io:${revCommonsIo}"
+}
+tasks.withType(Test)  {
+    maxParallelForks = 1
 }

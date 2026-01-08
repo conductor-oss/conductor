@@ -17,8 +17,12 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation "redis.clients:jedis:${revJedis}"
-    implementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+    implementation ("io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}") {
+        exclude group: 'com.netflix.conductor', module: 'conductor-core'
+    }
     implementation('com.thoughtworks.xstream:xstream:1.4.20')
+    implementation "org.apache.commons:commons-lang3:"
+    implementation "com.google.guava:guava:${revGuava}"
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
