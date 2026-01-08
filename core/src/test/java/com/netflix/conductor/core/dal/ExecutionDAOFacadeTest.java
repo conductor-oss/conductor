@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.dal;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +70,7 @@ public class ExecutionDAOFacadeTest {
         ConductorProperties properties = mock(ConductorProperties.class);
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
         when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(true);
         executionDAOFacade =
                 new ExecutionDAOFacade(
                         executionDAO,
@@ -169,6 +171,76 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, times(15)).updateTask(anyString(), anyString(), any(), any());
         verify(indexDAO, never()).removeWorkflow(anyString());
         verify(indexDAO, never()).removeTask(anyString(), anyString());
+    }
+
+    @Test
+    public void testUpdateWorkflowSkipsTaskIndexingWhenDisabled() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        workflow.setCreateTime(System.currentTimeMillis() - 10_000);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(false);
+        when(properties.getAsyncUpdateShortRunningWorkflowDuration())
+                .thenReturn(Duration.ofSeconds(1));
+        when(properties.getAsyncUpdateDelay()).thenReturn(Duration.ofSeconds(0));
+        ExecutionDAOFacade disabledTaskIndexingFacade =
+                new ExecutionDAOFacade(
+                        executionDAO,
+                        mock(QueueDAO.class),
+                        indexDAO,
+                        mock(RateLimitingDAO.class),
+                        mock(ConcurrentExecutionLimitDAO.class),
+                        mock(PollDataDAO.class),
+                        objectMapper,
+                        properties,
+                        externalPayloadStorageUtils);
+
+        disabledTaskIndexingFacade.updateWorkflow(workflow);
+
+        verify(indexDAO, never()).asyncIndexTask(any());
+    }
+
+    @Test
+    public void testRemoveWorkflowWithTaskIndexingDisabled() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("taskId");
+        workflow.setTasks(Collections.singletonList(task));
+
+        ConductorProperties properties = mock(ConductorProperties.class);
+        when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
+        when(properties.isTaskIndexingEnabled()).thenReturn(false);
+        ExecutionDAOFacade disabledTaskIndexingFacade =
+                new ExecutionDAOFacade(
+                        executionDAO,
+                        mock(QueueDAO.class),
+                        indexDAO,
+                        mock(RateLimitingDAO.class),
+                        mock(ConcurrentExecutionLimitDAO.class),
+                        mock(PollDataDAO.class),
+                        objectMapper,
+                        properties,
+                        externalPayloadStorageUtils);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        disabledTaskIndexingFacade.removeWorkflow("workflowId", false);
+
+        verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
+        verify(indexDAO, never()).asyncRemoveTask(anyString(), anyString());
+        verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
     }
 
     @Test
