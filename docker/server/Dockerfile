@@ -4,7 +4,7 @@
 # ===========================================================================================================
 # 0. Builder stage 1
 # ===========================================================================================================
-FROM azul/zulu-openjdk-debian:17 AS builder
+FROM azul/zulu-openjdk-debian:21 AS builder
 
 ARG INDEXING_BACKEND=elasticsearch
 
@@ -52,7 +52,7 @@ FROM alpine:3.19
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add openjdk17
+RUN apk add openjdk21
 RUN apk add nginx
 RUN apk add curl
 
