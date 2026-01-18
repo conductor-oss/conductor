@@ -48,6 +48,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
     private final Lock mu = new ReentrantLock();
     private final String queueType;
     private final String subject;
+    private final String streamName;
     private final String queueUri;
     private final JetStreamProperties properties;
     private final Scheduler scheduler;
@@ -78,7 +79,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             this.subject = getQueuePrefix(conductorProperties, properties) + queueUri;
             queueGroup = null;
         }
-
+        this.streamName = this.subject.replaceAll(".", "_");
         this.queueType = queueType;
         this.properties = properties;
         this.scheduler = scheduler;
@@ -247,7 +248,8 @@ public class JetStreamObservableQueue implements ObservableQueue {
     private void createStream(JetStreamManagement jsm) {
         StreamConfiguration streamConfig =
                 StreamConfiguration.builder()
-                        .name(subject)
+                        .name(streamName)
+                        .subjects(subject)
                         .replicas(properties.getReplicas())
                         .retentionPolicy(RetentionPolicy.Limits)
                         .maxBytes(properties.getStreamMaxBytes())
@@ -293,7 +295,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
                         .build();
 
         try {
-            jsm.addOrUpdateConsumer(subject, consumerConfig);
+            jsm.addOrUpdateConsumer(streamName, consumerConfig);
             return consumerConfig;
         } catch (IOException | JetStreamApiException e) {
             throw new NatsException("Failed to add/update consumer", e);
