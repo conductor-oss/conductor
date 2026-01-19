@@ -63,17 +63,22 @@ Conductor is designed to enable flexible, resilient, and scalable workflows. It 
 - - - 
 # Getting Started with Conductor
 
-## Requirements
-* Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
-* Install Java (JDK) 17 or newer
-* Node 14 for the UI to build
-  * _Earlier versions may work, but are untested_
-  
+## Quick Start with Docker
 
-## Quick Start guide
+```shell
+git clone https://github.com/conductor-oss/conductor
+cd conductor
+docker compose -f docker/docker-compose.yaml up
+```
+
+Access the UI at http://localhost:8080
+
+## Requirements for Source Build
+* Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
+* Install Java (JDK) 21 or newer
+* Node 18 for the UI to build
 
 ### Clone the repo
-
 ```shell
 git clone https://github.com/conductor-oss/conductor
 ```
