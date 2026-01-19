@@ -73,7 +73,8 @@ public class TestWorkflowRepairService {
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
         assertTrue(workflowRepairService.verifyAndRepairTask(task));
-        // Verify that a new queue message is pushed for sync system tasks that fails queue contains
+        // Verify that a new queue message is pushed for sync system tasks that fails
+        // queue contains
         // check.
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
     }
@@ -89,7 +90,8 @@ public class TestWorkflowRepairService {
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
         assertFalse(workflowRepairService.verifyAndRepairTask(task));
-        // Verify that queue message is never pushed for simple task in IN_PROGRESS state
+        // Verify that queue message is never pushed for simple task in IN_PROGRESS
+        // state
         verify(queueDAO, never()).containsMessage(anyString(), anyString());
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
     }
@@ -129,14 +131,16 @@ public class TestWorkflowRepairService {
         when(queueDAO.containsMessage(anyString(), anyString())).thenReturn(false);
 
         assertTrue(workflowRepairService.verifyAndRepairTask(task));
-        // Verify that a new queue message is pushed for tasks that fails queue contains check.
+        // Verify that a new queue message is pushed for tasks that fails queue contains
+        // check.
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
 
         // Verify a system task in IN_PROGRESS state can be recovered.
         reset(queueDAO);
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         assertTrue(workflowRepairService.verifyAndRepairTask(task));
-        // Verify that a new queue message is pushed for async System task in IN_PROGRESS state that
+        // Verify that a new queue message is pushed for async System task in
+        // IN_PROGRESS state that
         // fails queue contains check.
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyLong());
     }

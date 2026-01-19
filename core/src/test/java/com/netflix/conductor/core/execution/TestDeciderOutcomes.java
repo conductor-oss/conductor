@@ -60,7 +60,6 @@ import com.netflix.conductor.core.execution.tasks.Decision;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -127,13 +126,13 @@ public class TestDeciderOutcomes {
         }
 
         @Bean(TASK_TYPE_JOIN)
-        public Join join() {
-            return new Join(new ConductorProperties());
+        public Join join(SystemTaskRegistry systemTaskRegistry) {
+            return new Join(new ConductorProperties(), systemTaskRegistry);
         }
 
         @Bean
-        public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
-            return new SystemTaskRegistry(tasks);
+        public SystemTaskRegistry systemTaskRegistry() {
+            return new SystemTaskRegistry(Collections.emptySet());
         }
     }
 
@@ -595,7 +594,7 @@ public class TestDeciderOutcomes {
 
         assertEquals(TaskModel.Status.SCHEDULED, outcome.tasksToBeScheduled.get(0).getStatus());
         System.out.println(outcome.tasksToBeScheduled.get(0));
-        new Join(new ConductorProperties())
+        new Join(new ConductorProperties(), new SystemTaskRegistry(Set.of(new Switch())))
                 .execute(workflow, outcome.tasksToBeScheduled.get(0), null);
         assertEquals(TaskModel.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
     }
