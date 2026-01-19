@@ -50,9 +50,11 @@ jobs:
           ../gradlew clean build -x test -Pversion=${{ steps.version.outputs.version }}
       - name: Prepare JAR for distribution
         run: |
-          # Find the standalone JAR and copy with standardized name
+          # Find the standalone JAR and copy with standardized names
           JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
           cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
+          # Create "latest" version for stable download link
+          cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
 
       - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -60,12 +62,20 @@ jobs:
           files: |
             server-lite/build/libs/*standalone.jar
             server-lite/build/libs/conductor-lite-*.jar
+            server-lite/build/libs/conductor-server-lite-latest.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload JAR to S3
+      
+      - name: Upload JARs to S3
         run: |
+          # Upload versioned JAR
           aws s3 cp "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar" \
             "s3://${{ secrets.AWS_S3_BUCKET }}/conductor-lite-${{ steps.version.outputs.version }}.jar" \
+            --acl public-read
+          
+          # Upload "latest" JAR for stable download link
+          aws s3 cp "server-lite/build/libs/conductor-server-lite-latest.jar" \
+            "s3://${{ secrets.AWS_S3_BUCKET }}/conductor-server-lite-latest.jar" \
             --acl public-read
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
