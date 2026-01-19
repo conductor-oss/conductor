@@ -23,13 +23,19 @@ application {
 
 
 runtime {
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    options = ['--strip-debug', '--compress', 'zip-9', '--no-header-files', '--no-man-pages']
     modules = ['java.naming', 'java.xml', 'jdk.unsupported', 'java.desktop', 'java.security.sasl', 'jdk.crypto.ec', 'java.sql', 'java.management', 'jdk.management']
     
     jpackage {
         imageName = 'conductor-server-lite'
         skipInstaller = false
-        installerOptions = ['--vendor', 'Orkes', '--app-version', project.findProperty('version') ?: '1.0.0']
+        
+        // Strip pre-release suffix (e.g., -rc1, -beta) for jpackage compatibility
+        // JPackage requires version to be 1-3 integers separated by dots (X.Y.Z)
+        def rawVersion = project.findProperty('version') ?: '1.0.0'
+        def cleanVersion = rawVersion.replaceAll(/-.*$/, '')  // Remove everything after first dash
+        
+        installerOptions = ['--vendor', 'Orkes', '--app-version', cleanVersion]
         
         if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
              installerType = 'dmg'
