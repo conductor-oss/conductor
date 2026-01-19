@@ -13,6 +13,29 @@
 
 plugins {
     id 'org.springframework.boot'
+    id 'org.beryx.runtime' version '1.13.0'
+}
+
+runtime {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    modules = ['java.naming', 'java.xml', 'jdk.unsupported', 'java.desktop', 'java.security.sasl', 'jdk.crypto.ec', 'java.sql', 'java.management', 'jdk.management']
+    
+    jpackage {
+        imageName = 'conductor-server-lite'
+        skipInstaller = false
+        installerOptions = ['--vendor', 'Orkes', '--app-version', project.findProperty('version') ?: '1.0.0']
+        
+        if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+             installerType = 'dmg'
+             installerOptions += ['--mac-package-identifier', 'io.orkes.conductor']
+        } else if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
+             installerType = 'msi'
+             installerOptions += ['--win-dir-chooser', '--win-menu', '--win-shortcut']
+        } else {
+             installerType = 'deb'
+             installerOptions += ['--linux-shortcut']
+        }
+    }
 }
 
 dependencies {
