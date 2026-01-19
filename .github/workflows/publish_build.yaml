@@ -42,9 +42,22 @@ jobs:
           VERSION="${{ github.event.inputs.version || github.ref_name }}"
           PUBLISH_VERSION="${VERSION#v}"
           echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
-      - name: Build Native Installer
+      
+      - name: Set up tools for UI build
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Build UI and Native Installer
         run: |
+          # Install yarn
+          npm install -g yarn
+          
           cd server-lite
+          # Build UI assets
+          ./build_ui.sh
+          
+          # Build JPackage
           ../gradlew jpackage -x test -Pversion=${{ steps.version.outputs.version }}
       - name: Upload Installer
         uses: actions/upload-artifact@v4
