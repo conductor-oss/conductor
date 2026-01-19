@@ -59,6 +59,7 @@ jobs:
       - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
           files: |
             server-lite/build/libs/*standalone.jar
             server-lite/build/libs/conductor-lite-*.jar
