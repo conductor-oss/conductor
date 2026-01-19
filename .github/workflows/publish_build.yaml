@@ -61,7 +61,6 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           files: |
-            server-lite/build/libs/*standalone.jar
             server-lite/build/libs/conductor-lite-*.jar
             server-lite/build/libs/conductor-server-lite-latest.jar
         env:
