@@ -13,63 +13,6 @@
 
 plugins {
     id 'org.springframework.boot'
-    id 'org.beryx.runtime' version '1.13.0'
-    id 'application'
-}
-
-application {
-    mainClass = 'org.conductoross.conductor.Conductor'
-}
-
-
-runtime {
-    options = ['--strip-debug', '--compress', 'zip-9', '--no-header-files', '--no-man-pages']
-    modules = ['java.naming', 'java.xml', 'jdk.unsupported', 'java.desktop', 'java.security.sasl', 'jdk.crypto.ec', 'java.sql', 'java.management', 'jdk.management']
-    
-    jpackage {
-        imageName = 'conductor-server-lite'
-        skipInstaller = false
-        
-        // Transform version to JPackage-compatible format (X.Y.Z - integers only)
-        // Examples:
-        //   3.21.24-rc1  -> 3.21.241  (patch + rc number)
-        //   3.21.24-rc2  -> 3.21.242
-        //   3.21.24-beta1 -> 3.21.241
-        //   3.21.24      -> 3.21.24   (unchanged)
-        def rawVersion = project.findProperty('version') ?: '1.0.0'
-        def cleanVersion = rawVersion
-        
-        def matcher = rawVersion =~ /^(\d+\.\d+\.\d+)[-.]?(rc|alpha|beta|snapshot)?(\d+)?$/
-        if (matcher.matches()) {
-            def baseVersion = matcher.group(1)
-            def suffix = matcher.group(2)
-            def suffixNum = matcher.group(3)
-            
-            if (suffix && suffixNum) {
-                // Append suffix number to the patch version: 3.21.24-rc1 -> 3.21.241
-                def parts = baseVersion.split('\\.')
-                cleanVersion = "${parts[0]}.${parts[1]}.${parts[2]}${suffixNum}"
-            } else {
-                cleanVersion = baseVersion
-            }
-        }
-        
-        // Set app version for both image and installer stages
-        appVersion = cleanVersion
-        imageOptions = ['--app-version', cleanVersion]
-        installerOptions = ['--vendor', 'Orkes', '--app-version', cleanVersion]
-        
-        if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-             installerType = 'dmg'
-             installerOptions += ['--mac-package-identifier', 'io.orkes.conductor']
-        } else if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
-             installerType = 'msi'
-             installerOptions += ['--win-dir-chooser', '--win-menu', '--win-shortcut']
-        } else {
-             installerType = 'deb'
-             installerOptions += ['--linux-shortcut']
-        }
-    }
 }
 
 dependencies {

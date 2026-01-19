@@ -63,17 +63,57 @@ Conductor is designed to enable flexible, resilient, and scalable workflows. It 
 - - - 
 # Getting Started with Conductor
 
-## Requirements
-* Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
-* Install Java (JDK) 17 or newer
-* Node 14 for the UI to build
-  * _Earlier versions may work, but are untested_
-  
+## Installation Options
 
-## Quick Start guide
+### 1. One-Line Install
+
+**Mac/Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/conductor-oss/conductor/main/install.sh | bash
+~/.conductor/start-conductor.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/conductor-oss/conductor/main/install.cmd | iex
+%USERPROFILE%\.conductor\start-conductor.cmd
+```
+
+### 2. Homebrew (Mac)
+```bash
+brew tap conductor-oss/homebrew-conductor
+brew install conductor
+```
+
+### 3. Docker (All Platforms)
+Recommended for local development with persistence (Redis/Postgres).
+```shell
+git clone https://github.com/conductor-oss/conductor
+cd conductor
+docker compose -f docker/docker-compose.yaml up
+```
+
+### 4. Standalone JAR
+Download the latest `conductor-server-lite-standalone.jar` from [Releases](https://github.com/conductor-oss/conductor/releases).
+```bash
+java -jar conductor-server-lite-standalone.jar
+```
+_Requires Java 21+_
+
+## Create your first workflow
+
+### With the UI:
+* http://localhost:8080
+
+### Or the REST API with your preferred HTTP client:
+* http://localhost:8080/swagger-ui/index.html
+
+## Requirements for Source Build
+* Install Docker Desktop ([Mac](https://docs.docker.com/desktop/setup/install/mac-install/), [Windows/PC](https://docs.docker.com/desktop/setup/install/windows-install/), [Linux](https://docs.docker.com/desktop/setup/install/linux/))
+* Install Java (JDK) 21 or newer
+* Node 18 for the UI to build
 
 ### Clone the repo
-
 ```shell
 git clone https://github.com/conductor-oss/conductor
 ```
