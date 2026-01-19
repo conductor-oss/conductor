@@ -54,14 +54,12 @@ jobs:
           JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
           cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
 
-      - name: Upload JAR and Install Scripts to GitHub Release
+      - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             server-lite/build/libs/*standalone.jar
             server-lite/build/libs/conductor-lite-*.jar
-            install.sh
-            install.cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload JAR to S3
