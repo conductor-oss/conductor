@@ -49,6 +49,7 @@ jobs:
           node-version: '18'
       
       - name: Build UI and Native Installer
+        shell: bash
         run: |
           # Install yarn
           npm install -g yarn
@@ -58,7 +59,7 @@ jobs:
           ./build_ui.sh
           
           # Build JPackage
-          ../gradlew jpackage -x test -Pversion=${{ steps.version.outputs.version }}
+          ../gradlew jpackage -x test "-Pversion=${{ steps.version.outputs.version }}"
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
