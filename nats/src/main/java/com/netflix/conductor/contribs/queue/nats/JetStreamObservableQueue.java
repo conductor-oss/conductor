@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +80,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             this.subject = getQueuePrefix(conductorProperties, properties) + queueUri;
             queueGroup = null;
         }
-        this.streamName = this.subject.replaceAll(".", "_");
+        this.streamName = streamNameFromSubject(this.subject);
         this.queueType = queueType;
         this.properties = properties;
         this.scheduler = scheduler;
@@ -97,6 +98,14 @@ public class JetStreamObservableQueue implements ObservableQueue {
                 ? conductorProperties.getAppId() + "_jsm_notify_" + stack
                 : properties.getListenerQueuePrefix();
     }
+
+    private static String streamNameFromSubject(String subject) {
+        return subject
+                .replace(".", "_")
+                .replace("*", "ANY")
+                .replace(">", "ALL")
+                .toUpperCase(Locale.ROOT);
+    }    
 
     @Override
     public Observable<Message> observe() {
@@ -307,7 +316,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
             JetStream js = nc.jetStream();
 
             PushSubscribeOptions pso =
-                    PushSubscribeOptions.builder().configuration(consumerConfig).stream(subject)
+                    PushSubscribeOptions.builder().configuration(consumerConfig).stream(streamName)
                             .bind(true)
                             .build();
 
