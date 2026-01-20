@@ -12,10 +12,8 @@
  */
 package com.netflix.conductor.model;
 
-import java.util.HashMap;
+import java.util.*;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -156,6 +154,8 @@ public class TaskModel {
      */
     private boolean subworkflowChanged;
 
+    private String parentTaskId;
+
     @JsonIgnore private Map<String, Object> inputPayload = new HashMap<>();
 
     @JsonIgnore private Map<String, Object> outputPayload = new HashMap<>();
@@ -163,6 +163,8 @@ public class TaskModel {
     @JsonIgnore private Map<String, Object> inputData = new HashMap<>();
 
     @JsonIgnore private Map<String, Object> outputData = new HashMap<>();
+
+    private Map<String, List<Object>> updateListeners = new LinkedHashMap<>();
 
     public String getTaskType() {
         return taskType;
@@ -416,6 +418,10 @@ public class TaskModel {
         }
     }
 
+    public Map<String, List<Object>> getUpdateListeners() {
+        return updateListeners;
+    }
+
     @JsonIgnore
     public void setOutputData(Map<String, Object> outputData) {
         if (outputData == null) {
@@ -565,6 +571,14 @@ public class TaskModel {
 
     public void setSubworkflowChanged(boolean subworkflowChanged) {
         this.subworkflowChanged = subworkflowChanged;
+    }
+
+    public String getParentTaskId() {
+        return parentTaskId;
+    }
+
+    public void setParentTaskId(String parentTaskId) {
+        this.parentTaskId = parentTaskId;
     }
 
     public void incrementPollCount() {
@@ -885,6 +899,10 @@ public class TaskModel {
         if (outputData != null) {
             this.outputData.putAll(outputData);
         }
+    }
+
+    public void addUpdateListener(String type, Map<String, Object> options) {
+        this.getUpdateListeners().computeIfAbsent(type, t -> new LinkedList<>()).add(options);
     }
 
     public void clearOutput() {

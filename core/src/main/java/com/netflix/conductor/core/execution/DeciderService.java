@@ -33,6 +33,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.mapper.ParentTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -519,7 +520,7 @@ public class DeciderService {
             }
         }
         if (taskToSchedule != null) {
-            return getTasksToBeScheduled(workflow, taskToSchedule, 0);
+            return getTasksToBeScheduled(workflow, taskToSchedule, 0, task.getParentTaskId());
         }
 
         return Collections.emptyList();
@@ -854,15 +855,25 @@ public class DeciderService {
     }
 
     public List<TaskModel> getTasksToBeScheduled(
+            WorkflowModel workflow,
+            WorkflowTask taskToSchedule,
+            int retryCount,
+            String previousTaskParentId) {
+        return getTasksToBeScheduled(
+                workflow, taskToSchedule, retryCount, null, previousTaskParentId);
+    }
+
+    public List<TaskModel> getTasksToBeScheduled(
             WorkflowModel workflow, WorkflowTask taskToSchedule, int retryCount) {
-        return getTasksToBeScheduled(workflow, taskToSchedule, retryCount, null);
+        return getTasksToBeScheduled(workflow, taskToSchedule, retryCount, null, null);
     }
 
     public List<TaskModel> getTasksToBeScheduled(
             WorkflowModel workflow,
             WorkflowTask taskToSchedule,
             int retryCount,
-            String retriedTaskId) {
+            String retriedTaskId,
+            String previousTaskParentTaskId) {
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
                         taskToSchedule.getInputParameters(), workflow, null, null);
@@ -880,7 +891,8 @@ public class DeciderService {
                         .collect(Collectors.toList());
 
         String taskId = idGenerator.generate();
-        TaskMapperContext taskMapperContext =
+
+        TaskMapperContext.Builder taskMapperContext =
                 TaskMapperContext.newBuilder()
                         .withWorkflowModel(workflow)
                         .withTaskDefinition(taskToSchedule.getTaskDefinition())
@@ -889,8 +901,19 @@ public class DeciderService {
                         .withRetryCount(retryCount)
                         .withRetryTaskId(retriedTaskId)
                         .withTaskId(taskId)
-                        .withDeciderService(this)
-                        .build();
+                        .withDeciderService(this);
+
+        TaskModel previousTaskParent =
+                previousTaskParentTaskId == null
+                        ? null
+                        : workflow.getTasks().stream()
+                                .filter(t -> t.getTaskId().equals(previousTaskParentTaskId))
+                                .findFirst()
+                                .orElse(null);
+
+        TaskMapper previousTaskParentMapper =
+                taskMappers.get(
+                        previousTaskParent == null ? null : previousTaskParent.getTaskType());
 
         // For static forks, each branch of the fork creates a join task upon completion for
         // dynamic forks, a join task is created with the fork and also with each branch of the
@@ -899,8 +922,21 @@ public class DeciderService {
         // in this workflow instance
         return taskMappers
                 .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))
-                .getMappedTasks(taskMapperContext)
+                .getMappedTasks(taskMapperContext.build())
                 .stream()
+                .map(
+                        task -> {
+                            if (previousTaskParentMapper
+                                            instanceof ParentTaskMapper parentTaskMapper
+                                    && parentTaskMapper.isChild(
+                                            workflow, previousTaskParent, task.getWorkflowTask())) {
+                                task.setParentTaskId(previousTaskParentTaskId);
+                                return parentTaskMapper.processChild(
+                                        workflow, previousTaskParent, task);
+                            }
+
+                            return task;
+                        })
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
     }
