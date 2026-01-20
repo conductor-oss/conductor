@@ -82,12 +82,29 @@ public class TestWorkflowSweeper {
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
         when(properties.getMaxPostponeDurationSeconds())
                 .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
+        when(properties.isHumanTaskPreventsDeciderQueue()).thenReturn(false);
+
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
         verify(queueDAO)
                 .setUnackTimeout(
                         DECIDER_QUEUE,
                         workflowModel.getWorkflowId(),
                         defaultPostPoneOffSetSeconds * 1000);
+    }
+
+    @Test
+    public void testRemoveFromDeciderQueueForHumanTaskType() {
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowId("1");
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId("task1");
+        taskModel.setTaskType(TaskType.TASK_TYPE_HUMAN);
+        taskModel.setStatus(Status.IN_PROGRESS);
+        workflowModel.setTasks(List.of(taskModel));
+        when(properties.isHumanTaskPreventsDeciderQueue()).thenReturn(true);
+
+        workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+        verify(queueDAO).remove(DECIDER_QUEUE, workflowModel.getWorkflowId());
     }
 
     @Test
