@@ -32,11 +32,14 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
  * Periodically polls all running workflows in the system and evaluates them for timeouts and/or
  * maintain consistency.
  */
+// Deprecated - and superseeded by new WorkflowSweeper in org.conductoross.conductor.core.execution
+// package
+@Deprecated(forRemoval = true)
 @Component
 @ConditionalOnProperty(
         name = "conductor.workflow-reconciler.enabled",
         havingValue = "true",
-        matchIfMissing = true)
+        matchIfMissing = false)
 public class WorkflowReconciler extends LifecycleAwareComponent {
 
     private final WorkflowSweeper workflowSweeper;

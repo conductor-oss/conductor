@@ -50,7 +50,9 @@ public class JsonJqTransformTest {
 
         assertNull(task.getOutputData().get("error"));
         assertEquals("VALUE", task.getOutputData().get("result").toString());
-        assertEquals("[\"VALUE\"]", task.getOutputData().get("resultList").toString());
+        List<?> resultList = (List<?>) task.getOutputData().get("resultList");
+        assertEquals(1, resultList.size());
+        assertEquals("VALUE", resultList.get(0));
     }
 
     @Test
@@ -126,6 +128,8 @@ public class JsonJqTransformTest {
                 result.get("requestTransform"));
         assertEquals(
                 "{result: \"reply: \" + .response.body.message}", result.get("responseTransform"));
+        List<Object> resultList = (List<Object>) task.getOutputData().get("resultList");
+        assertTrue(resultList.get(0) instanceof Map);
     }
 
     @Test

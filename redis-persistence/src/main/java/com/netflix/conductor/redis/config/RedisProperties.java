@@ -18,13 +18,11 @@ import java.time.temporal.ChronoUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
+import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
-import com.netflix.dyno.connectionpool.RetryPolicy.RetryPolicyFactory;
-import com.netflix.dyno.connectionpool.impl.RetryNTimes;
-import com.netflix.dyno.connectionpool.impl.RunOnce;
 
+@Configuration
 @ConfigurationProperties("conductor.redis")
 public class RedisProperties {
 
@@ -83,9 +81,6 @@ public class RedisProperties {
     /** The read connection port to be used for connecting to dyno-queues */
     private int queuesNonQuorumPort = 22122;
 
-    /** The sharding strategy to be used for the dyno queue configuration */
-    private String queueShardingStrategy = RedisQueuesShardingStrategyProvider.ROUND_ROBIN_STRATEGY;
-
     /** The time in seconds after which the in-memory task definitions cache will be refreshed */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
@@ -111,6 +106,10 @@ public class RedisProperties {
     private int database = 0;
 
     private String username = null;
+
+    private boolean ssl = false;
+
+    private String clientName = null;
 
     public int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
@@ -248,14 +247,6 @@ public class RedisProperties {
         this.queuesNonQuorumPort = queuesNonQuorumPort;
     }
 
-    public String getQueueShardingStrategy() {
-        return queueShardingStrategy;
-    }
-
-    public void setQueueShardingStrategy(String queueShardingStrategy) {
-        this.queueShardingStrategy = queueShardingStrategy;
-    }
-
     public Duration getTaskDefCacheRefreshInterval() {
         return taskDefCacheRefreshInterval;
     }
@@ -280,14 +271,6 @@ public class RedisProperties {
         return prefix;
     }
 
-    public RetryPolicyFactory getConnectionRetryPolicy() {
-        if (getMaxRetryAttempts() == 0) {
-            return RunOnce::new;
-        } else {
-            return () -> new RetryNTimes(maxRetryAttempts, false);
-        }
-    }
-
     public int getDatabase() {
         return database;
     }
@@ -302,5 +285,21 @@ public class RedisProperties {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }

@@ -255,7 +255,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     private void initIndexTemplate(String type) {
         String template = "template_" + type;
         try {
-            if (doesResourceNotExist("/_template/" + template)) {
+            if (doesResourceNotExist("/_index_template/" + template)) {
                 logger.info("Creating the index template '" + template + "'");
                 InputStream stream =
                         OpenSearchRestDAO.class.getResourceAsStream("/" + template + ".json");
@@ -263,7 +263,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
                 HttpEntity entity =
                         new NByteArrayEntity(templateSource, ContentType.APPLICATION_JSON);
-                Request request = new Request(HttpMethod.PUT, "/_template/" + template);
+                Request request = new Request(HttpMethod.PUT, "/_index_template/" + template);
                 request.setEntity(entity);
                 String test =
                         IOUtils.toString(
@@ -1247,14 +1247,17 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         IndexRequest request = new IndexRequest(index);
         request.id(docId).source(docBytes, XContentType.JSON);
 
-        if (bulkRequests.get(docType) == null) {
-            bulkRequests.put(
-                    docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
-        }
+        synchronized (this) {
+            if (bulkRequests.get(docType) == null) {
+                bulkRequests.put(
+                        docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            }
 
-        bulkRequests.get(docType).getBulkRequest().add(request);
-        if (bulkRequests.get(docType).getBulkRequest().numberOfActions() >= this.indexBatchSize) {
-            indexBulkRequest(docType);
+            bulkRequests.get(docType).getBulkRequest().add(request);
+            if (bulkRequests.get(docType).getBulkRequest().numberOfActions()
+                    >= this.indexBatchSize) {
+                indexBulkRequest(docType);
+            }
         }
     }
 

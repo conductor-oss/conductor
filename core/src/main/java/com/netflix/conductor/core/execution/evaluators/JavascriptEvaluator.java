@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,32 +12,49 @@
  */
 package com.netflix.conductor.core.execution.evaluators;
 
-import javax.script.ScriptException;
+import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.core.events.ScriptEvaluator;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component(JavascriptEvaluator.NAME)
 public class JavascriptEvaluator implements Evaluator {
 
     public static final String NAME = "javascript";
     private static final Logger LOGGER = LoggerFactory.getLogger(JavascriptEvaluator.class);
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Override
     public Object evaluate(String expression, Object input) {
         LOGGER.debug("Javascript evaluator -- expression: {}", expression);
+
+        Object inputCopy = new HashMap<>();
+        // We make a deep copy because there is a way to make it error out otherwise:
+        // e.g. there's an input parameter (an empty map) 'myParam',
+        // and an expression which has `$.myParam = {"a":"b"}`; It will put a 'PolyglotMap' from
+        // GraalVM into input map
+        // and that PolyglotMap can't be evaluated because the context is already closed.
+        // this caused a workflow with INLINE task to be undecideable due to Exception in
+        // TaskModelProtoMapper
+        // on 'to.setInputData(convertToJsonMap(from.getInputData()))' call
         try {
-            // Evaluate the expression by using the Javascript evaluation engine.
-            Object result = ScriptEvaluator.eval(expression, input);
-            LOGGER.debug("Javascript evaluator -- result: {}", result);
-            return result;
-        } catch (ScriptException e) {
-            LOGGER.error("Error while evaluating script: {}", expression, e);
-            throw new TerminateWorkflowException(e.getMessage());
+            inputCopy =
+                    objectMapper.readValue(
+                            objectMapper.writeValueAsString(input), new TypeReference<>() {});
+        } catch (Exception e) {
+            LOGGER.error("Error making a deep copy of input: {}", expression, e);
         }
+
+        // Evaluate the expression by using the GraalJS evaluation engine.
+        Object result = ScriptEvaluator.eval(expression, inputCopy);
+        LOGGER.debug("Javascript evaluator -- result: {}", result);
+        return result;
     }
 }

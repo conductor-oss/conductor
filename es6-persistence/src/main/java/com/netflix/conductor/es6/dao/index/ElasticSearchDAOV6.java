@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -35,6 +37,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Strings;
@@ -109,7 +112,8 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     private final ExecutorService executorService;
     private final ExecutorService logExecutorService;
 
-    private final ConcurrentHashMap<String, BulkRequests> bulkRequests;
+    private final ConcurrentHashMap<Pair<String, WriteRequest.RefreshPolicy>, BulkRequests>
+            bulkRequests;
     private final int indexBatchSize;
     private final long asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
@@ -270,7 +274,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                         .execute()
                         .actionGet();
             } catch (Exception e) {
-                LOGGER.error("Failed to init " + template, e);
+                LOGGER.error("Failed to init {}", template, e);
             }
         }
     }
@@ -346,7 +350,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                         .execute()
                         .actionGet();
             } catch (Exception e) {
-                LOGGER.error("Failed to init index " + indexName + " mappings", e);
+                LOGGER.error("Failed to init index {} mappings", indexName, e);
             }
         }
     }
@@ -361,6 +365,9 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
                     StringUtils.isBlank(docTypeOverride) ? WORKFLOW_DOC_TYPE : docTypeOverride;
 
             UpdateRequest req = buildUpdateRequest(id, doc, workflowIndexName, docType);
+            if (properties.isWaitForIndexRefresh()) {
+                req.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+            }
             elasticSearchClient.update(req).actionGet();
 
             long endTime = Instant.now().toEpochMilli();
@@ -393,7 +400,11 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             UpdateRequest req = new UpdateRequest(taskIndexName, docType, id);
             req.doc(doc, XContentType.JSON);
             req.upsert(doc, XContentType.JSON);
-            indexObject(req, TASK_DOC_TYPE);
+            WriteRequest.RefreshPolicy refreshPolicy =
+                    properties.isWaitForIndexRefresh()
+                            ? WriteRequest.RefreshPolicy.WAIT_UNTIL
+                            : null;
+            indexObject(req, TASK_DOC_TYPE, refreshPolicy);
             long endTime = Instant.now().toEpochMilli();
             LOGGER.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",
@@ -413,28 +424,44 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         return CompletableFuture.runAsync(() -> indexTask(task), executorService);
     }
 
-    private void indexObject(UpdateRequest req, String docType) {
-        if (bulkRequests.get(docType) == null) {
+    private void indexObject(final UpdateRequest req, final String docType) {
+        indexObject(req, docType, null);
+    }
+
+    private void indexObject(
+            final UpdateRequest req,
+            final String docType,
+            final WriteRequest.RefreshPolicy refreshPolicy) {
+        Pair<String, WriteRequest.RefreshPolicy> requestTypeKey =
+                new ImmutablePair<>(docType, refreshPolicy);
+        if (bulkRequests.get(requestTypeKey) == null) {
+            BulkRequestBuilder bulkRequestBuilder = elasticSearchClient.prepareBulk();
+            Optional.ofNullable(requestTypeKey.getRight())
+                    .ifPresent(bulkRequestBuilder::setRefreshPolicy);
             bulkRequests.put(
-                    docType,
-                    new BulkRequests(
-                            System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+                    requestTypeKey,
+                    new BulkRequests(System.currentTimeMillis(), bulkRequestBuilder));
         }
-        bulkRequests.get(docType).getBulkRequestBuilder().add(req);
-        if (bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions()
+        bulkRequests.get(requestTypeKey).getBulkRequestBuilder().add(req);
+        if (bulkRequests.get(requestTypeKey).getBulkRequestBuilder().numberOfActions()
                 >= this.indexBatchSize) {
-            indexBulkRequest(docType);
+            indexBulkRequest(requestTypeKey);
         }
     }
 
-    private synchronized void indexBulkRequest(String docType) {
-        if (bulkRequests.get(docType).getBulkRequestBuilder() != null
-                && bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() > 0) {
-            updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
+    private synchronized void indexBulkRequest(
+            Pair<String, WriteRequest.RefreshPolicy> requestTypeKey) {
+        if (bulkRequests.get(requestTypeKey).getBulkRequestBuilder() != null
+                && bulkRequests.get(requestTypeKey).getBulkRequestBuilder().numberOfActions() > 0) {
+            updateWithRetry(
+                    bulkRequests.get(requestTypeKey).getBulkRequestBuilder(),
+                    requestTypeKey.getLeft());
+            BulkRequestBuilder bulkRequestBuilder = elasticSearchClient.prepareBulk();
+            Optional.ofNullable(requestTypeKey.getRight())
+                    .ifPresent(bulkRequestBuilder::setRefreshPolicy);
             bulkRequests.put(
-                    docType,
-                    new BulkRequests(
-                            System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+                    requestTypeKey,
+                    new BulkRequests(System.currentTimeMillis(), bulkRequestBuilder));
         }
     }
 

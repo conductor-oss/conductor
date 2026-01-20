@@ -16,8 +16,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.script.ScriptException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -26,6 +24,7 @@ import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -40,10 +39,12 @@ public class DoWhile extends WorkflowSystemTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(DoWhile.class);
 
     private final ParametersUtils parametersUtils;
+    private final ExecutionDAOFacade executionDAOFacade;
 
-    public DoWhile(ParametersUtils parametersUtils) {
+    public DoWhile(ParametersUtils parametersUtils, ExecutionDAOFacade executionDAOFacade) {
         super(TASK_TYPE_DO_WHILE);
         this.parametersUtils = parametersUtils;
+        this.executionDAOFacade = executionDAOFacade;
     }
 
     @Override
@@ -121,6 +122,9 @@ public class DoWhile extends WorkflowSystemTask {
             IntStream.range(0, iteration - keepLastN.get() - 1)
                     .mapToObj(Integer::toString)
                     .forEach(doWhileTaskModel::removeOutput);
+
+            // Remove old iteration tasks from the database
+            removeIterations(workflow, doWhileTaskModel, keepLastN.get());
         }
 
         if (hasFailures) {
@@ -157,7 +161,7 @@ public class DoWhile extends WorkflowSystemTask {
                         doWhileTaskModel.getIteration() + 1);
                 return markTaskSuccess(doWhileTaskModel);
             }
-        } catch (ScriptException e) {
+        } catch (Exception e) {
             String message =
                     String.format(
                             "Unable to evaluate condition %s, exception %s",
@@ -166,6 +170,87 @@ public class DoWhile extends WorkflowSystemTask {
             return markTaskFailure(
                     doWhileTaskModel, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, message);
         }
+    }
+
+    /**
+     * Removes old iterations from the workflow to prevent database bloat. This method identifies
+     * and deletes tasks from iterations that exceed the keepLastN retention policy.
+     *
+     * @param workflow The workflow model containing all tasks
+     * @param doWhileTaskModel The DO_WHILE task model
+     * @param keepLastN Number of most recent iterations to keep
+     */
+    @VisibleForTesting
+    void removeIterations(WorkflowModel workflow, TaskModel doWhileTaskModel, int keepLastN) {
+        int currentIteration = doWhileTaskModel.getIteration();
+
+        // Calculate which iterations should be removed (all iterations before currentIteration -
+        // keepLastN)
+        int iterationsToRemove = currentIteration - keepLastN;
+
+        if (iterationsToRemove <= 0) {
+            // Nothing to remove yet
+            return;
+        }
+
+        LOGGER.debug(
+                "Removing iterations 1 to {} for DO_WHILE task {} (keeping last {} iterations)",
+                iterationsToRemove,
+                doWhileTaskModel.getReferenceTaskName(),
+                keepLastN);
+
+        // Find and remove tasks from old iterations
+        List<TaskModel> tasksToRemove =
+                workflow.getTasks().stream()
+                        .filter(
+                                task -> {
+                                    // Check if this task belongs to the DO_WHILE loop
+                                    String taskRefWithoutIteration =
+                                            TaskUtils.removeIterationFromTaskRefName(
+                                                    task.getReferenceTaskName());
+                                    boolean belongsToLoop =
+                                            doWhileTaskModel
+                                                            .getWorkflowTask()
+                                                            .has(taskRefWithoutIteration)
+                                                    && !doWhileTaskModel
+                                                            .getReferenceTaskName()
+                                                            .equals(task.getReferenceTaskName());
+
+                                    // Check if this task is from an old iteration that should be
+                                    // removed
+                                    boolean isOldIteration =
+                                            task.getIteration() <= iterationsToRemove;
+
+                                    return belongsToLoop && isOldIteration;
+                                })
+                        .collect(Collectors.toList());
+
+        // Remove each task from the database
+        for (TaskModel taskToRemove : tasksToRemove) {
+            try {
+                LOGGER.debug(
+                        "Removing task {} (iteration {}) from workflow {}",
+                        taskToRemove.getReferenceTaskName(),
+                        taskToRemove.getIteration(),
+                        workflow.getWorkflowId());
+                executionDAOFacade.removeTask(taskToRemove.getTaskId());
+            } catch (Exception e) {
+                LOGGER.error(
+                        "Failed to remove task {} (iteration {}) from workflow {}",
+                        taskToRemove.getReferenceTaskName(),
+                        taskToRemove.getIteration(),
+                        workflow.getWorkflowId(),
+                        e);
+                // Continue with other tasks even if one fails
+            }
+        }
+
+        LOGGER.info(
+                "Removed {} tasks from {} old iterations for DO_WHILE task {} in workflow {}",
+                tasksToRemove.size(),
+                iterationsToRemove,
+                doWhileTaskModel.getReferenceTaskName(),
+                workflow.getWorkflowId());
     }
 
     /**
@@ -239,7 +324,7 @@ public class DoWhile extends WorkflowSystemTask {
     }
 
     @VisibleForTesting
-    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) throws ScriptException {
+    boolean evaluateCondition(WorkflowModel workflow, TaskModel task) {
         TaskDef taskDefinition = task.getTaskDefinition().orElse(null);
         // Use paramUtils to compute the task input
         Map<String, Object> conditionInput =

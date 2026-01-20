@@ -26,7 +26,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisCluster;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
 
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Protocol;
@@ -45,8 +44,7 @@ public class RedisClusterConfiguration extends JedisCommandsConfigurer {
     protected JedisCommands createJedisCommands(
             RedisProperties properties,
             ConductorProperties conductorProperties,
-            HostSupplier hostSupplier,
-            TokenMapSupplier tokenMapSupplier) {
+            HostSupplier hostSupplier) {
         GenericObjectPoolConfig<?> genericObjectPoolConfig = new GenericObjectPoolConfig<>();
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
         Set<HostAndPort> hosts =
@@ -65,7 +63,9 @@ public class RedisClusterConfiguration extends JedisCommandsConfigurer {
                             DEFAULT_MAX_ATTEMPTS,
                             properties.getUsername(),
                             password,
-                            genericObjectPoolConfig));
+                            properties.getClientName(),
+                            genericObjectPoolConfig,
+                            properties.isSsl()));
         } else if (password != null) {
             log.info("Connecting to Redis Cluster with AUTH");
             return new JedisCluster(
@@ -75,7 +75,9 @@ public class RedisClusterConfiguration extends JedisCommandsConfigurer {
                             Protocol.DEFAULT_TIMEOUT,
                             DEFAULT_MAX_ATTEMPTS,
                             password,
-                            genericObjectPoolConfig));
+                            properties.getClientName(),
+                            genericObjectPoolConfig,
+                            properties.isSsl()));
         } else {
             return new JedisCluster(
                     new redis.clients.jedis.JedisCluster(hosts, genericObjectPoolConfig));

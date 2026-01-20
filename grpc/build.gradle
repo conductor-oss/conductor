@@ -13,14 +13,14 @@
 
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.19'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.5'
     }
 }
 
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.8.19"
+    id "com.google.protobuf" version "0.9.5"
 }
 
 repositories{
@@ -42,16 +42,18 @@ dependencies {
 
 }
 
-def artifactName = 'com.google.protobuf:protoc:3.14.0:osx-x86_64'
+// Use protoc 3.25.5 for code generation to maintain compatibility with protobuf-java 4.x runtime
+// See: https://github.com/grpc/grpc-java/issues/12246
+def artifactName = 'com.google.protobuf:protoc:3.25.5'
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.LINUX:
-        artifactName = "com.google.protobuf:protoc:3.21.12"
+        artifactName = "com.google.protobuf:protoc:3.25.5"
         break;
     case org.gradle.internal.os.OperatingSystem.MAC_OS:
-        artifactName = "com.google.protobuf:protoc:3.14.0:osx-x86_64"
+        artifactName = "com.google.protobuf:protoc:3.25.5"
         break;
     case org.gradle.internal.os.OperatingSystem.WINDOWS:
-        artifactName = "com.google.protobuf:protoc:3.21.12"
+        artifactName = "com.google.protobuf:protoc:3.25.5"
         break;
 }
 
