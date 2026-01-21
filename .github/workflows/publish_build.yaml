@@ -20,11 +20,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Zulu JDK 17
+      - name: Set up Zulu JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -34,19 +34,119 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+      - name: Set version
+        id: version
+        run: |
+          # Use inputs.version for workflow_dispatch, or ref_name for release events
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          # Strip the 'v' prefix if present
+          PUBLISH_VERSION="${VERSION#v}"
+          echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $PUBLISH_VERSION"
       - name: Create Standalone server
         run: |
-          export VERSION="${{ github.event.inputs.version }}"
-          export PUBLISH_VERSION=`echo ${VERSION:1}`
-          echo Publishing version $PUBLISH_VERSION
           cd server-lite
           ./build_ui.sh
-          ../gradlew clean build -x test -Pversion=$PUBLISH_VERSION
-      - name: Upload JAR to GitHub Release
+          ../gradlew clean build -x test -Pversion=${{ steps.version.outputs.version }}
+      - name: Prepare JAR for distribution
+        run: |
+          # Find the standalone JAR and copy with standardized names
+          JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
+          cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
+          # Create "latest" version for stable download link
+          cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
+
+      - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: server-lite/build/libs/*standalone.jar
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          files: |
+            server-lite/build/libs/conductor-lite-*.jar
+            server-lite/build/libs/conductor-server-lite-latest.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload JARs to S3
+        run: |
+          # Upload versioned JAR
+          aws s3 cp "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar" \
+            "s3://${{ secrets.AWS_S3_BUCKET }}/conductor-lite-${{ steps.version.outputs.version }}.jar" \
+            --acl public-read
+          
+          # Upload "latest" JAR for stable download link
+          aws s3 cp "server-lite/build/libs/conductor-server-lite-latest.jar" \
+            "s3://${{ secrets.AWS_S3_BUCKET }}/conductor-server-lite-latest.jar" \
+            --acl public-read
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Calculate JAR SHA256
+        id: sha256
+        run: |
+          # Calculate SHA256 of the standalone JAR (the one uploaded to GitHub Release)
+          JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
+          SHA256=$(shasum -a 256 "$JAR_FILE" | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Checkout Homebrew tap
+        if: github.event.action != 'prereleased'
+        uses: actions/checkout@v5
+        with:
+          repository: conductor-oss/homebrew-conductor
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update Homebrew formula
+        if: github.event.action != 'prereleased'
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          BREW_VERSION="${{ steps.version.outputs.version }}"
+          SHA256="${{ steps.sha256.outputs.sha256 }}"
+
+          cd homebrew-tap
+
+          # Update the existing conductor.rb formula
+          cat > Formula/conductor.rb << 'FORMULA_EOF'
+          class Conductor < Formula
+            desc "Conductor OSS Server"
+            homepage "https://github.com/conductor-oss/conductor"
+            url "https://github.com/conductor-oss/conductor/releases/download/VERSION_PLACEHOLDER/conductor-server-lite-standalone.jar"
+            sha256 "SHA256_PLACEHOLDER"
+            license "Apache 2.0"
+            version "BREW_VERSION_PLACEHOLDER"
+
+            depends_on "openjdk@21"
+
+            def install
+              libexec.install "conductor-server-lite-standalone.jar"
+              (bin/"conductor").write <<~EOS
+                #!/bin/bash
+                exec java -jar #{libexec}/conductor-server-lite-standalone.jar "$@"
+              EOS
+              chmod 0755, bin/"conductor"
+            end
+
+            test do
+              system "#{bin}/conductor", "--version"
+            end
+          end
+          FORMULA_EOF
+
+          # Replace placeholders
+          sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" Formula/conductor.rb
+          sed -i "s/BREW_VERSION_PLACEHOLDER/$BREW_VERSION/g" Formula/conductor.rb
+          sed -i "s/SHA256_PLACEHOLDER/$SHA256/g" Formula/conductor.rb
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' Formula/conductor.rb
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/conductor.rb
+          git commit -m "Update conductor to $BREW_VERSION"
+          git push
 
 

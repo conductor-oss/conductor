@@ -266,8 +266,8 @@ public class HttpTask extends WorkflowSystemTask {
         private Object body;
         private String accept = MediaType.APPLICATION_JSON_VALUE;
         private String contentType = MediaType.APPLICATION_JSON_VALUE;
-        private Integer connectionTimeOut;
-        private Integer readTimeOut;
+        private Integer connectionTimeOut = 3000;
+        private Integer readTimeOut = 3000;
 
         /**
          * @return the method
