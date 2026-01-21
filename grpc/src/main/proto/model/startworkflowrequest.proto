@@ -9,6 +9,10 @@ option java_outer_classname = "StartWorkflowRequestPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message StartWorkflowRequest {
+    message TaskRateLimitOverride {
+        int32 rate_limit_per_frequency = 1;
+        int32 rate_limit_frequency_in_seconds = 2;
+    }
     string name = 1;
     int32 version = 2;
     string correlation_id = 3;
@@ -18,4 +22,5 @@ message StartWorkflowRequest {
     string external_input_payload_storage_path = 7;
     int32 priority = 8;
     string created_by = 9;
+    map<string, StartWorkflowRequest.TaskRateLimitOverride> task_rate_limit_overrides = 10;
 }
