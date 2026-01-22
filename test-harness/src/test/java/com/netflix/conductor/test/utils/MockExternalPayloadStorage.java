@@ -14,6 +14,8 @@ package com.netflix.conductor.test.utils;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -64,37 +66,73 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
         return location;
     }
 
+    /**
+     * Validates and resolves a file path to prevent directory traversal attacks.
+     *
+     * @param path the user-provided path
+     * @return a validated File object
+     * @throws SecurityException if the path attempts directory traversal
+     */
+    private File validateAndResolvePath(String path) throws IOException {
+        // Normalize the path to remove any ".." or "." components
+        Path normalized = Paths.get(path).normalize();
+
+        // Check if the normalized path contains ".." which would indicate traversal attempt
+        if (normalized.toString().contains("..")) {
+            throw new SecurityException("Path traversal not allowed: " + path);
+        }
+
+        // Create the file object
+        File file = new File(payloadDir, normalized.toString());
+
+        // Verify the canonical path is still within payloadDir
+        String canonicalPath = file.getCanonicalPath();
+        String canonicalBaseDir = payloadDir.getCanonicalPath();
+
+        if (!canonicalPath.startsWith(canonicalBaseDir + File.separator)
+                && !canonicalPath.equals(canonicalBaseDir)) {
+            throw new SecurityException("Access denied - path outside allowed directory: " + path);
+        }
+
+        return file;
+    }
+
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
-        File file = new File(payloadDir, path);
-        String filePath = file.getAbsolutePath();
         try {
-            if (!file.exists() && file.createNewFile()) {
-                LOGGER.debug("Created file: {}", filePath);
-            }
-            IOUtils.copy(payload, new FileOutputStream(file));
-            LOGGER.debug("Written to {}", filePath);
-        } catch (IOException e) {
-            // just handle this exception here and return empty map so that test will fail in case
-            // this exception is thrown
-            LOGGER.error("Error writing to {}", filePath);
-        } finally {
+            File file = validateAndResolvePath(path);
+            String filePath = file.getAbsolutePath();
             try {
-                if (payload != null) {
-                    payload.close();
+                if (!file.exists() && file.createNewFile()) {
+                    LOGGER.debug("Created file: {}", filePath);
                 }
+                IOUtils.copy(payload, new FileOutputStream(file));
+                LOGGER.debug("Written to {}", filePath);
             } catch (IOException e) {
-                LOGGER.warn("Unable to close input stream when writing to file");
+                // just handle this exception here and return empty map so that test will fail in
+                // case this exception is thrown
+                LOGGER.error("Error writing to {}", filePath);
+            } finally {
+                try {
+                    if (payload != null) {
+                        payload.close();
+                    }
+                } catch (IOException e) {
+                    LOGGER.warn("Unable to close input stream when writing to file");
+                }
             }
+        } catch (SecurityException | IOException e) {
+            LOGGER.error("Security validation failed for path: {}", path, e);
         }
     }
 
     @Override
     public InputStream download(String path) {
         try {
+            File file = validateAndResolvePath(path);
             LOGGER.debug("Reading from {}", path);
-            return new FileInputStream(new File(payloadDir, path));
-        } catch (IOException e) {
+            return new FileInputStream(file);
+        } catch (SecurityException | IOException e) {
             LOGGER.error("Error reading {}", path, e);
             return null;
         }
