@@ -41,8 +41,11 @@ public class StatusChangePublisherConfiguration {
 
     @Bean
     public WorkflowStatusListener getWorkflowStatusListener(
-            RestClientManager restClientManager, ExecutionDAOFacade executionDAOFacade) {
+            RestClientManager restClientManager,
+            ExecutionDAOFacade executionDAOFacade,
+            StatusNotifierNotificationProperties config) {
 
-        return new StatusChangePublisher(restClientManager, executionDAOFacade);
+        return new StatusChangePublisher(
+                restClientManager, executionDAOFacade, config.getSubscribedWorkflowStatuses());
     }
 }
