@@ -105,7 +105,7 @@ public class JetStreamObservableQueue implements ObservableQueue {
                 .replace("*", "ANY")
                 .replace(">", "ALL")
                 .toUpperCase(Locale.ROOT);
-    }    
+    }
 
     @Override
     public Observable<Message> observe() {
