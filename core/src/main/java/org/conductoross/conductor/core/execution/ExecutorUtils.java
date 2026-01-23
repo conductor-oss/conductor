@@ -104,5 +104,4 @@ public class ExecutorUtils {
                 workflowModel.getWorkflowId());
         return Duration.ofSeconds(Math.max(0, unackSeconds));
     }
-
 }

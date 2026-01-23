@@ -12,8 +12,6 @@
  */
 package org.conductoross.conductor.core.execution;
 
-import static org.junit.Assert.assertEquals;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +24,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+
+import static org.junit.Assert.assertEquals;
 
 public class ExecutorUtilsTest {
 

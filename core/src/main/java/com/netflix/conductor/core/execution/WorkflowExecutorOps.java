@@ -1151,9 +1151,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             if (!workflow.getStatus().isTerminal()) {
                 Duration updatedOffset =
                         computePostpone(
-                                workflow,
-                                timeout,
-                                properties.getMaxPostponeDurationSeconds());
+                                workflow, timeout, properties.getMaxPostponeDurationSeconds());
                 if (updatedOffset.getSeconds() != timeout.getSeconds()) {
                     // we have a new value, setUnack uses time in millis
                     LOGGER.debug(
