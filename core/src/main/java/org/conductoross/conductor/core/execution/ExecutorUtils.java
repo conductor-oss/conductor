@@ -13,6 +13,7 @@
 package org.conductoross.conductor.core.execution;
 
 import java.time.Duration;
+import java.util.Random;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.model.TaskModel;
@@ -26,9 +27,12 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 public class ExecutorUtils {
 
     public static Duration computePostpone(
-            WorkflowModel workflowModel, Duration workflowOffsetTimeout) {
+            WorkflowModel workflowModel,
+            Duration workflowOffsetTimeout,
+            Duration maxPostponeDuration) {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
+        long maxPostponeDurationSeconds = maxPostponeDuration.getSeconds();
 
         long postponeDurationSeconds = 0;
         for (TaskModel taskModel : workflowModel.getTasks()) {
@@ -40,6 +44,10 @@ public class ExecutorUtils {
                                 (taskModel.getWaitTimeout() - currentTimeMillis) / 1000;
                         postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
+                } else if (taskModel.getTaskType().equals("HUMAN")) {
+                    // HUMAN tasks always use the default workflowOffsetTimeout
+                    // This matches the old sweeper behavior
+                    postponeDurationSeconds = workflowOffsetTimeoutSeconds;
                 } else {
                     // Could taskModel.getResponseTimeoutSeconds() be set and no taskDef?...
                     // not sure but keeping it this way just in case.
@@ -75,11 +83,16 @@ public class ExecutorUtils {
                 workflowOffsetTimeoutSeconds,
                 workflowModel.getWorkflowId());
 
-        if (postponeDurationSeconds > 0) {
-            return Duration.ofSeconds(
-                    Math.min(postponeDurationSeconds, workflowOffsetTimeoutSeconds));
+        // Cap postpone duration to the configured maximum (matches old sweeper behavior)
+        if (postponeDurationSeconds > maxPostponeDurationSeconds) {
+            postponeDurationSeconds = maxPostponeDurationSeconds;
         }
-        return Duration.ofSeconds(workflowOffsetTimeoutSeconds);
+
+        if (postponeDurationSeconds > 0) {
+            long capped = Math.min(postponeDurationSeconds, workflowOffsetTimeoutSeconds);
+            return Duration.ofSeconds(applyJitter(capped));
+        }
+        return Duration.ofSeconds(applyJitter(workflowOffsetTimeoutSeconds));
     }
 
     private static long getMinTimeout(TaskDef taskDef) {
@@ -88,5 +101,23 @@ public class ExecutorUtils {
         return Math.min(
                 taskDef.getTimeoutSeconds(),
                 Math.min(taskDef.getResponseTimeoutSeconds(), pollTimeoutSeconds));
+    }
+
+    /**
+     * Apply jitter to postpone duration to prevent thundering herd. Jitter will be +- (1/3) of the
+     * duration.
+     *
+     * <p>For example, if duration is 45 seconds, returns value between [30-60] seconds.
+     *
+     * @param durationSeconds postpone duration in seconds
+     * @return duration with jitter applied
+     */
+    public static long applyJitter(long durationSeconds) {
+        if (durationSeconds <= 3) {
+            return durationSeconds; // Too small for jitter
+        }
+        long range = durationSeconds / 3;
+        long jitter = new Random().nextInt((int) (2 * range + 1)) - range;
+        return durationSeconds + jitter;
     }
 }
