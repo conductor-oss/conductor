@@ -41,7 +41,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.test.integration.AbstractEndToEndTest;
+import com.netflix.conductor.test.integration.TestHarnessAbstractEndToEndTest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,9 +50,13 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = ConductorTestApp.class,
-        properties = {"conductor.grpc-server.enabled=true", "conductor.grpc-server.port=8092"})
+        properties = {
+            "conductor.grpc-server.enabled=true",
+            "conductor.grpc-server.port=8092",
+            "conductor.app.sweeperThreadCount=1"
+        })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
-public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
+public abstract class TestHarnessAbstractGrpcEndToEndTest extends TestHarnessAbstractEndToEndTest {
 
     protected static TaskClient taskClient;
     protected static WorkflowClient workflowClient;

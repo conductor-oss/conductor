@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,11 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestScriptEval {
 
@@ -48,7 +45,7 @@ public class TestScriptEval {
     }
 
     @Test
-    public void testES6Setting() throws Exception {
+    public void testES6Support() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         Map<String, Object> app = new HashMap<>();
         app.put("name", "conductor");
@@ -59,30 +56,35 @@ public class TestScriptEval {
         payload.put("author", "Netflix");
         payload.put("oss", true);
 
+        // GraalJS supports ES6 by default, no need for environment variable
         String script1 =
                 """
                 (function(){\s
                 const variable = 1; // const support => es6\s
                 return $.app.name == 'conductor';})();"""; // true
 
-        MockedStatic<ScriptEvaluator> evaluator = Mockito.mockStatic(ScriptEvaluator.class);
-        evaluator
-                .when(() -> ScriptEvaluator.getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))
-                .thenReturn("true");
-        evaluator
-                .when(() -> ScriptEvaluator.eval(Mockito.any(), Mockito.any()))
-                .thenCallRealMethod();
-        evaluator
-                .when(() -> ScriptEvaluator.evalBool(Mockito.any(), Mockito.any()))
-                .thenCallRealMethod();
-        evaluator.when(() -> ScriptEvaluator.initEngine(Mockito.anyBoolean())).thenCallRealMethod();
-        evaluator.when(() -> ScriptEvaluator.toBoolean(Mockito.any())).thenCallRealMethod();
-        ScriptEvaluator.initEngine(true);
         assertTrue(ScriptEvaluator.evalBool(script1, payload));
-        evaluator
-                .when(() -> ScriptEvaluator.getEnv("CONDUCTOR_NASHORN_ES6_ENABLED"))
-                .thenReturn("false");
-        ScriptEvaluator.initEngine(true);
-        evaluator.close();
+    }
+
+    @Test
+    public void testArrayAndObjectHandling() throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("numbers", new int[] {1, 2, 3, 4, 5});
+
+        String script = "$.numbers.length > 3";
+        assertTrue(ScriptEvaluator.evalBool(script, payload));
+
+        String sumScript = "$.numbers.reduce((a, b) => a + b, 0)";
+        Object result = ScriptEvaluator.eval(sumScript, payload);
+        assertEquals(15, ((Number) result).intValue());
+    }
+
+    @Test
+    public void testNullHandling() throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("value", null);
+
+        String script = "$.value == null";
+        assertTrue(ScriptEvaluator.evalBool(script, payload));
     }
 }

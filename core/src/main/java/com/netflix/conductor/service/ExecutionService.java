@@ -41,6 +41,7 @@ import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 @Trace
 @Service
@@ -410,6 +411,10 @@ public class ExecutionService {
 
     public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
         return executionDAOFacade.getWorkflow(workflowId, includeTasks);
+    }
+
+    public WorkflowModel getWorkflowModel(String workflowId, boolean includeTasks) {
+        return executionDAOFacade.getWorkflowModel(workflowId, includeTasks);
     }
 
     public List<String> getRunningWorkflows(String workflowName, int version) {

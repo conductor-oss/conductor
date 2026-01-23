@@ -24,6 +24,7 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 
+    testImplementation project(':conductor-server')
     testImplementation project(':conductor-test-util')
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation "redis.clients:jedis:${revJedis}"

@@ -28,7 +28,12 @@ import org.springframework.core.io.FileSystemResource;
 // In case that SQL database is selected this class will be imported back in the appropriate
 // database persistence module.
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
-@ComponentScan(basePackages = {"com.netflix.conductor", "io.orkes.conductor"})
+@ComponentScan(
+        basePackages = {
+            "com.netflix.conductor",
+            "io.orkes.conductor",
+            "org.conductoross.conductor"
+        })
 public class Conductor {
 
     private static final Logger log = LoggerFactory.getLogger(Conductor.class);

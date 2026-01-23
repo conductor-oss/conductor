@@ -14,6 +14,14 @@ Use these parameters in top level of the Do While task configuration.
 | loopCondition | String      | The condition that is evaluated after each iteration. This is a JavaScript expression, evaluated using the Nashorn engine. | Required. |
 | loopOver      | List[Task] | The list of task configurations that will be executed as long as the condition is true.                                                                                                                                               | Required. |
 
+## Input parameters
+
+Use these parameters in the `inputParameters` section of the Do While task configuration.
+
+| Parameter     | Type    | Description                                                                                                                                                                                                                                                                                        | Required / Optional |
+| ------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| keepLastN     | Integer | Number of most recent iterations to keep in the database and task output. Older iterations are automatically removed to prevent database bloat. When not specified, all iterations are retained (default behavior). This is useful for long-running loops with many iterations. Minimum value: 1. | Optional.           |
+
 ## JSON configuration
 
 Here is the task configuration for a Do While task.
@@ -22,7 +30,9 @@ Here is the task configuration for a Do While task.
 {
   "name": "do_while",
   "taskReferenceName": "do_while_ref",
-  "inputParameters": {},
+  "inputParameters": {
+    "keepLastN": 10
+  },
   "type": "DO_WHILE",
   "loopCondition": "(function () {\n  if ($.do_while_ref['iteration'] < 5) {\n    return true;\n  }\n  return false;\n})();",
   "loopOver": [ // List of tasks to be executed in the loop
@@ -54,6 +64,53 @@ When a Do While loop is executed, each task in the loop will have its `taskRefer
 
 Each loop task output is stored as part of the Do While task, indexed by the iteration value, allowing `loopCondition` to reference the output of a task for a specific iteration (e.g., `$.LoopTask['iteration]['first_task']`).
 
+
+## Iteration cleanup
+
+For Do While loops with many iterations (e.g., 100+ iterations), storing all iteration data can lead to database bloat, memory exhaustion, and performance degradation. The `keepLastN` input parameter provides automatic cleanup of old iterations.
+
+**How it works:**
+
+When `keepLastN` is specified in `inputParameters`, Conductor automatically removes old iteration data from both the database and the task output once the number of iterations exceeds the `keepLastN` value. For example, with `keepLastN: 5`:
+
+- Iterations 1-5: All iterations kept
+- Iteration 6: Iteration 1 is removed, keeping iterations 2-6
+- Iteration 7: Iteration 2 is removed, keeping iterations 3-7
+- And so on...
+
+**Important considerations:**
+
+- **Opt-in behavior:** Cleanup only occurs when `keepLastN` is explicitly set. Without this parameter, all iterations are retained (default behavior).
+- **Backward compatibility:** Existing workflows without `keepLastN` continue to work unchanged.
+- **Output data:** Only the most recent N iterations will be available in the task output. Older iterations are permanently removed.
+- **Loop condition:** Ensure your `loopCondition` only references recent iterations if using `keepLastN`, as older iteration data will not be available.
+- **Best practices:**
+  - For loops expected to run 100+ iterations, consider setting `keepLastN` to a reasonable value (e.g., 5-10).
+  - Choose a `keepLastN` value that balances memory usage with your need to access historical iteration data.
+  - If your `loopCondition` needs to reference older iterations, ensure `keepLastN` is set high enough to retain that data.
+
+**Example with cleanup:**
+
+```json
+{
+  "name": "long_running_loop",
+  "taskReferenceName": "long_running_loop_ref",
+  "inputParameters": {
+    "keepLastN": 5
+  },
+  "type": "DO_WHILE",
+  "loopCondition": "if ($.long_running_loop_ref['iteration'] < 1000) { true; } else { false; }",
+  "loopOver": [
+    {
+      "name": "process_item",
+      "taskReferenceName": "process_item_ref",
+      "type": "SIMPLE"
+    }
+  ]
+}
+```
+
+In this example, even though the loop runs 1000 iterations, only the last 5 iterations are kept in the database and output at any given time, preventing database bloat.
 
 ## Examples
 
