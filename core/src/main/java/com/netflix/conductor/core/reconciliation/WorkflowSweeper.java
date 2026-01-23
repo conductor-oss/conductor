@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Conductor Authors.
+ * Copyright 2025 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,61 +12,139 @@
  */
 package com.netflix.conductor.core.reconciliation;
 
-import java.time.Instant;
-import java.util.Optional;
-import java.util.Random;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.annotations.VisibleForTesting;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
-import com.netflix.conductor.core.WorkflowContext;
+import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.conductor.service.ExecutionLockService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
-// @Component
-public class WorkflowSweeper {
+@Component
+@Slf4j
+@ConditionalOnProperty(
+        name = "conductor.app.sweeper.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
+public class WorkflowSweeper extends LifecycleAwareComponent {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
-
-    private final ConductorProperties properties;
-    private final WorkflowExecutor workflowExecutor;
-    private final WorkflowRepairService workflowRepairService;
     private final QueueDAO queueDAO;
-    private final ExecutionDAOFacade executionDAOFacade;
-    private final ExecutionLockService executionLockService;
-
-    private static final String CLASS_NAME = WorkflowSweeper.class.getSimpleName();
+    private final SweeperProperties sweeperProperties;
+    private final WorkflowExecutor workflowExecutor;
+    private final ExecutionDAO executionDAO;
+    private final Duration worflowOffsetTimeout;
+    private final Executor sweeperExecutor;
+    private final ConductorProperties properties;
+    private final ObjectMapper objectMapper;
+    private SystemTaskRegistry systemTaskRegistry;
+    private final Clock clock = Clock.systemDefaultZone();
+    private AtomicBoolean stop = new AtomicBoolean(false);
 
     public WorkflowSweeper(
-            WorkflowExecutor workflowExecutor,
-            Optional<WorkflowRepairService> workflowRepairService,
-            ConductorProperties properties,
+            @Qualifier(SWEEPER_EXECUTOR_NAME) Executor sweeperExecutor,
             QueueDAO queueDAO,
-            ExecutionDAOFacade executionDAOFacade,
-            ExecutionLockService executionLockService) {
-        this.properties = properties;
+            WorkflowExecutor workflowExecutor,
+            ExecutionDAO executionDAO,
+            ConductorProperties properties,
+            SweeperProperties sweeperProperties,
+            SystemTaskRegistry systemTaskRegistry,
+            ObjectMapper objectMapper) {
         this.queueDAO = queueDAO;
+        this.executionDAO = executionDAO;
+        this.sweeperProperties = sweeperProperties;
         this.workflowExecutor = workflowExecutor;
-        this.executionDAOFacade = executionDAOFacade;
-        this.workflowRepairService = workflowRepairService.orElse(null);
-        this.executionLockService = executionLockService;
-        LOGGER.info("WorkflowSweeper initialized.");
+        this.worflowOffsetTimeout = properties.getWorkflowOffsetTimeout();
+        this.sweeperExecutor = sweeperExecutor;
+        this.properties = properties;
+        this.systemTaskRegistry = systemTaskRegistry;
+        this.objectMapper = objectMapper;
+        log.info("Initializing sweeper with {} threads", properties.getSweeperThreadCount());
+        for (int i = 0; i < properties.getSweeperThreadCount(); i++) {
+            sweeperExecutor.execute(this::pollAndSweep);
+        }
+    }
+
+    /*
+    For system task -> Verify the task isAsync() and not isAsyncComplete() or isAsyncComplete() in SCHEDULED state,
+    and in SCHEDULED or IN_PROGRESS state. (Example: SUB_WORKFLOW tasks in SCHEDULED state)
+    For simple task -> Verify the task is in SCHEDULED state.
+    */
+    private final Predicate<TaskModel> isTaskRepairable =
+            task -> {
+                if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
+                    WorkflowSystemTask workflowSystemTask =
+                            systemTaskRegistry.get(task.getTaskType());
+                    return workflowSystemTask.isAsync()
+                            && (!workflowSystemTask.isAsyncComplete(task)
+                                    || (workflowSystemTask.isAsyncComplete(task)
+                                            && task.getStatus() == TaskModel.Status.SCHEDULED))
+                            && (task.getStatus() == TaskModel.Status.IN_PROGRESS
+                                    || task.getStatus() == TaskModel.Status.SCHEDULED);
+                } else { // Else if simple task or wait task
+                    return (task.getStatus() == TaskModel.Status.SCHEDULED
+                            || (!task.getStatus().isTerminal()
+                                    && task.getWaitTimeout() > 0
+                                    && (clock.millis() - task.getWaitTimeout() > 1000)));
+                }
+            };
+
+    private void pollAndSweep() {
+        try {
+            while (true) {
+                if (stop.get()) {
+                    return;
+                }
+                try {
+                    if (!isRunning()) {
+                        log.trace("Component stopped, skip workflow sweep");
+                    } else {
+                        List<String> workflowIds =
+                                queueDAO.pop(
+                                        DECIDER_QUEUE,
+                                        sweeperProperties.getSweepBatchSize(),
+                                        sweeperProperties.getQueuePopTimeout());
+                        log.trace("Found {} workflows to sweep", workflowIds.size());
+                        workflowIds.stream()
+                                .parallel()
+                                .forEach(
+                                        workflowId ->
+                                                Monitors.getTimer("workflowSweeper")
+                                                        .record(() -> sweep(workflowId)));
+                    }
+                } catch (Throwable e) {
+                    log.warn("Error while running sweeper {}", e.getMessage(), e);
+                }
+            }
+        } catch (Throwable e) {
+            log.error("Error polling for sweep entries {}", e.getMessage(), e);
+        }
     }
 
     @Async(SWEEPER_EXECUTOR_NAME)
@@ -76,137 +154,149 @@ public class WorkflowSweeper {
     }
 
     public void sweep(String workflowId) {
-        WorkflowContext workflowContext = new WorkflowContext(properties.getAppId());
-        WorkflowContext.set(workflowContext);
-        WorkflowModel workflow = null;
+        log.info("Running sweeper for workflow {}", workflowId);
+
         try {
-            if (!executionLockService.acquireLock(workflowId)) {
-                return;
-            }
-            workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
-            LOGGER.debug("Running sweeper for workflow {}", workflowId);
-            if (workflowRepairService != null) {
-                // Verify and repair tasks in the workflow.
-                workflowRepairService.verifyAndRepairWorkflowTasks(workflow);
-            }
-            long decideStartTime = System.currentTimeMillis();
-            workflow = workflowExecutor.decide(workflow.getWorkflowId());
-            Monitors.recordWorkflowDecisionTime(System.currentTimeMillis() - decideStartTime);
-            if (workflow != null && workflow.getStatus().isTerminal()) {
+            WorkflowModel workflow = workflowExecutor.getWorkflow(workflowId, true);
+            if (workflow == null || workflow.getStatus().isTerminal()) {
                 queueDAO.remove(DECIDER_QUEUE, workflowId);
                 return;
             }
-        } catch (NotFoundException nfe) {
-            queueDAO.remove(DECIDER_QUEUE, workflowId);
-            LOGGER.info(
-                    "Workflow NOT found for id:{}. Removed it from decider queue", workflowId, nfe);
-            return;
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "sweep");
-            LOGGER.error("Error running sweep for " + workflowId, e);
-        } finally {
-            executionLockService.releaseLock(workflowId);
-        }
-        long workflowOffsetTimeout =
-                workflowOffsetWithJitter(properties.getWorkflowOffsetTimeout().getSeconds());
-        if (workflow != null) {
-            long startTime = Instant.now().toEpochMilli();
-            unack(workflow, workflowOffsetTimeout);
-            long endTime = Instant.now().toEpochMilli();
-            Monitors.recordUnackTime(workflow.getWorkflowName(), endTime - startTime);
-        } else {
-            LOGGER.warn(
-                    "Workflow with {} id can not be found. Attempting to unack using the id",
-                    workflowId);
-            queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowId, workflowOffsetTimeout * 1000);
+
+            String tasks =
+                    workflow.getTasks().stream()
+                            .map(t -> t.getReferenceTaskName() + ":" + t.getStatus())
+                            .toList()
+                            .toString();
+            workflow = workflowExecutor.decideWithLock(workflow);
+            if (workflow == null) {
+                // couldn't get a lock
+                // Let's try again... with the lockTime timeout / 2
+                int backoff = (int) (properties.getLockLeaseTime().toMillis() / 2);
+                log.info("can't get a lock on  {}, will try after {} ms", workflowId, backoff);
+                queueDAO.push(DECIDER_QUEUE, workflowId, 0, Duration.ofMillis(backoff).toSeconds());
+                return;
+            }
+            if (workflow.getStatus().isTerminal()) {
+                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+                return;
+            }
+
+            String tasksAfterDecide =
+                    workflow.getTasks().stream()
+                            .map(t -> t.getReferenceTaskName() + ":" + t.getStatus())
+                            .toList()
+                            .toString();
+
+            // Workflow has not completed and decide did not change the status of the tasks
+            // Every task that is running MUST be in the queue
+            if (tasks.equals(tasksAfterDecide)) {
+                workflow.getTasks().forEach(this::verifyAndRepairTask);
+            }
+
+            // Workflow is in running status, there MUST be at-least one task that is not terminal
+            // (scheduled, in progress)
+            boolean hasRunningTasks =
+                    workflow.getTasks().stream().anyMatch(task -> !task.getStatus().isTerminal());
+            if (!hasRunningTasks) {
+                // Workflow is in RUNNING status but there are no tasks that are running
+                // This can happen in case of the database failures where the task scheduling failed
+                // after the last task was completed
+                // To fix, we reset the executed flag of the last task and re-run decide
+                forceSetLastTaskAsNotExecuted(workflow);
+                workflow = workflowExecutor.decideWithLock(workflow);
+            }
+
+            // If parent workflow exists, call repair on that too - meaning ensure the parent is in
+            // the decider queue
+            if (workflow != null && StringUtils.isNotBlank(workflow.getParentWorkflowId())) {
+                ensureWorkflowExistsInDecider(workflow.getParentWorkflowId());
+            }
+        } catch (Throwable e) {
+            log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
         }
     }
 
-    /**
-     * Calculates the next decider queue unack delay by evaluating active tasks and choosing the
-     * smallest eligible delay. This prevents long-running tasks from delaying evaluation when a
-     * shorter timeout is due, while still honoring maxPostpone caps.
-     */
-    @VisibleForTesting
-    void unack(WorkflowModel workflowModel, long workflowOffsetTimeout) {
-        // Pick the minimum next-evaluation delay across eligible tasks, capped by maxPostpone.
-        Long postponeDurationSeconds = null;
-        long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
-        for (TaskModel taskModel : workflowModel.getTasks()) {
-            Long candidateSeconds = null;
-            if (taskModel.getStatus() == Status.IN_PROGRESS) {
-                // Active tasks: delay based on wait/response timeout or workflow offset.
-                if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)) {
-                    if (taskModel.getWaitTimeout() == 0) {
-                        candidateSeconds = workflowOffsetTimeout;
-                    } else {
-                        // waitTimeout is an absolute epoch ms; compute remaining seconds.
-                        long deltaInSeconds =
-                                (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
-                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
-                    }
-                } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
-                    candidateSeconds = workflowOffsetTimeout;
-                } else {
-                    candidateSeconds =
-                            (taskModel.getResponseTimeoutSeconds() != 0)
-                                    // Add 1s so the response timeout window fully elapses.
-                                    ? taskModel.getResponseTimeoutSeconds() + 1
-                                    : workflowOffsetTimeout;
-                }
-            } else if (taskModel.getStatus() == Status.SCHEDULED) {
-                // Scheduled tasks: use poll timeout when present, else workflow timeout or offset.
-                Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
-                if (taskDefinition.isPresent()) {
-                    TaskDef taskDef = taskDefinition.get();
-                    if (taskDef.getPollTimeoutSeconds() != null
-                            && taskDef.getPollTimeoutSeconds() != 0) {
-                        candidateSeconds = taskDef.getPollTimeoutSeconds().longValue() + 1;
-                    } else {
-                        candidateSeconds =
-                                (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
-                                        ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
-                                                + 1
-                                        : workflowOffsetTimeout;
-                    }
-                } else {
-                    candidateSeconds =
-                            (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
-                                    ? workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1
-                                    : workflowOffsetTimeout;
-                }
-            }
-
-            if (candidateSeconds == null) {
-                continue;
-            }
-            if (candidateSeconds < 0) {
-                candidateSeconds = 0L;
-            }
-            // Cap every candidate to avoid excessive unack delay.
-            if (candidateSeconds > maxPostponeSeconds) {
-                candidateSeconds = maxPostponeSeconds;
-            }
-            if (postponeDurationSeconds == null || candidateSeconds < postponeDurationSeconds) {
-                postponeDurationSeconds = candidateSeconds;
+    void verifyAndRepairTask(TaskModel task) {
+        if (isTaskRepairable.test(task)) {
+            // Ensure QueueDAO contains this taskId
+            String taskQueueName = QueueUtils.getQueueName(task);
+            if (!queueDAO.containsMessage(taskQueueName, task.getTaskId())) {
+                queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
+                log.info(
+                        "Task {} in workflow {} re-queued for repairs",
+                        task.getTaskId(),
+                        task.getWorkflowInstanceId());
+                Monitors.recordQueueMessageRepushFromRepairService(task.getTaskDefName());
             }
         }
-        // Default to immediate re-evaluation if no eligible task delay is found.
-        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
-        queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), unackSeconds * 1000);
+        if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+            WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
+            if (subWorkflow.getStatus().isTerminal()) {
+                log.info(
+                        "Repairing sub workflow task {} for sub workflow {} in workflow {}",
+                        task.getTaskId(),
+                        task.getSubWorkflowId(),
+                        task.getWorkflowInstanceId());
+                repairSubWorkflowTask(task, subWorkflow);
+            }
+        }
     }
 
-    /**
-     * jitter will be +- (1/3) workflowOffsetTimeout for example, if workflowOffsetTimeout is 45
-     * seconds, this function returns values between [30-60] seconds
-     *
-     * @param workflowOffsetTimeout
-     * @return
-     */
-    @VisibleForTesting
-    long workflowOffsetWithJitter(long workflowOffsetTimeout) {
-        long range = workflowOffsetTimeout / 3;
-        long jitter = new Random().nextInt((int) (2 * range + 1)) - range;
-        return workflowOffsetTimeout + jitter;
+    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
+        switch (subWorkflow.getStatus()) {
+            case COMPLETED:
+                task.setStatus(TaskModel.Status.COMPLETED);
+                break;
+            case FAILED:
+                task.setStatus(TaskModel.Status.FAILED);
+                break;
+            case TERMINATED:
+                task.setStatus(TaskModel.Status.CANCELED);
+                break;
+            case TIMED_OUT:
+                task.setStatus(TaskModel.Status.TIMED_OUT);
+                break;
+        }
+        task.addOutput(subWorkflow.getOutput());
+        executionDAO.updateTask(task);
+    }
+
+    private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
+        if (workflow.getTasks() != null && !workflow.getTasks().isEmpty()) {
+            TaskModel taskModel = workflow.getTasks().getLast();
+            log.warn(
+                    "Force setting isExecuted to false for last task - {} - {} - {} - {} for workflow {}",
+                    taskModel.getTaskId(),
+                    taskModel.getReferenceTaskName(),
+                    taskModel.getStatus(),
+                    taskModel.getTaskDefName(),
+                    taskModel.getWorkflowInstanceId());
+            try {
+                log.debug(
+                        "workflow {} JSON {}",
+                        workflow.getWorkflowId(),
+                        objectMapper.writeValueAsString(workflow));
+            } catch (Exception e) {
+                log.error("Could not warn about workflow {}", workflow.getWorkflowId(), e);
+            }
+            taskModel.setExecuted(false);
+            executionDAO.updateWorkflow(workflow);
+        }
+    }
+
+    private void ensureWorkflowExistsInDecider(String workflowId) {
+        String queueName = Utils.DECIDER_QUEUE;
+        if (!queueDAO.containsMessage(queueName, workflowId)) {
+            queueDAO.push(queueName, workflowId, worflowOffsetTimeout.getSeconds());
+            Monitors.recordQueueMessageRepushFromRepairService(queueName);
+        }
+    }
+
+    @Override
+    public void doStop() {
+        stop.set(true);
+        ((ExecutorService) this.sweeperExecutor).shutdownNow();
     }
 }

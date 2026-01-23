@@ -54,10 +54,9 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import static com.netflix.conductor.core.execution.ExecutorUtils.computePostpone;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
-
-import static org.conductoross.conductor.core.execution.ExecutorUtils.computePostpone;
 
 /** Workflow services provider interface */
 @Trace
