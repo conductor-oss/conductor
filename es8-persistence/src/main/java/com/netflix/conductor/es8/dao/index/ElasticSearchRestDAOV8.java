@@ -38,27 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
-import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
-import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch._types.SortOptions;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.CountResponse;
-import co.elastic.clients.elasticsearch.core.DeleteResponse;
-import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.json.JsonData;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -73,6 +52,28 @@ import com.netflix.conductor.es8.config.ElasticSearchProperties;
 import com.netflix.conductor.es8.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.CountResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -95,7 +96,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     private static final String MSG_DOC_TYPE = "message";
     private static final String ILM_POLICY_NAME = "conductor-default-ilm-policy";
     private static final String ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE = "50gb";
-
+    private static final int TASK_LOG_DELETE_BATCH_SIZE = 500;
 
     private @interface HttpMethod {
 
@@ -139,8 +140,9 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
 
         this.objectMapper = objectMapper;
         this.elasticSearchAdminClient = restClientBuilder.build();
-        this.transport = new RestClientTransport(
-                this.elasticSearchAdminClient, new JacksonJsonpMapper(objectMapper));
+        this.transport =
+                new RestClientTransport(
+                        this.elasticSearchAdminClient, new JacksonJsonpMapper(objectMapper));
         this.elasticSearchClient = new ElasticsearchClient(transport);
         this.elasticSearchAsyncClient = new ElasticsearchAsyncClient(transport);
         this.clusterHealthColor = properties.getClusterHealthColor();
@@ -265,8 +267,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     }
 
     private void initIndexesTemplates() {
-        TemplateDefinition workflowDefinition =
-                loadTemplateDefinition("/template_workflow.json");
+        TemplateDefinition workflowDefinition = loadTemplateDefinition("/template_workflow.json");
         initIndexAliasTemplate(
                 "template_workflow",
                 workflowIndexName + "-*",
@@ -336,7 +337,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
             aliases.set(aliasName, objectMapper.createObjectNode());
 
             HttpEntity entity =
-                    new NStringEntity(objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
+                    new NStringEntity(
+                            objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
             Request request = new Request(HttpMethod.PUT, "/_index_template/" + templateName);
             request.setEntity(entity);
             elasticSearchAdminClient.performRequest(request);
@@ -440,7 +442,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                 settings.put("index.refresh_interval", refreshInterval);
             }
 
-            Request request = new Request(HttpMethod.PUT, "/_component_template/conductor-common-settings");
+            Request request =
+                    new Request(HttpMethod.PUT, "/_component_template/conductor-common-settings");
             request.setEntity(
                     new NStringEntity(
                             objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON));
@@ -571,8 +574,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
         try {
             long startTime = Instant.now().toEpochMilli();
             String workflowId = workflow.getWorkflowId();
-            Refresh refresh =
-                    properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
+            Refresh refresh = properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
             elasticSearchClient.index(
                     i -> {
                         i.index(workflowIndexName).id(workflowId).document(workflow);
@@ -604,8 +606,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
             long startTime = Instant.now().toEpochMilli();
             String taskId = task.getTaskId();
 
-            Refresh refreshPolicy =
-                    properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
+            Refresh refreshPolicy = properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
             indexObject(taskIndexName, TASK_DOC_TYPE, taskId, task, refreshPolicy);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
@@ -636,12 +637,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
         List<BulkOperation> operations = new ArrayList<>();
         for (TaskExecLog log : taskExecLogs) {
             operations.add(
-                    BulkOperation.of(
-                            op ->
-                                    op.index(
-                                            i ->
-                                                    i.index(logIndexName)
-                                                            .document(log))));
+                    BulkOperation.of(op -> op.index(i -> i.index(logIndexName).document(log))));
         }
 
         try {
@@ -678,9 +674,11 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                     sort ->
                                                             sort.field(
                                                                     field ->
-                                                                            field.field("createdTime")
+                                                                            field.field(
+                                                                                            "createdTime")
                                                                                     .order(
-                                                                                            SortOrder.Asc)))
+                                                                                            SortOrder
+                                                                                                    .Asc)))
                                             .size(properties.getTaskLogResultLimit())
                                             .trackTotalHits(t -> t.enabled(true)),
                             TaskExecLog.class);
@@ -721,7 +719,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                     field ->
                                                                             field.field("created")
                                                                                     .order(
-                                                                                            SortOrder.Asc)))
+                                                                                            SortOrder
+                                                                                                    .Asc)))
                                             .trackTotalHits(t -> t.enabled(true)),
                             Map.class);
             return mapGetMessagesResponse(response);
@@ -769,7 +768,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                     field ->
                                                                             field.field("created")
                                                                                     .order(
-                                                                                            SortOrder.Asc)))
+                                                                                            SortOrder
+                                                                                                    .Asc)))
                                             .trackTotalHits(t -> t.enabled(true)),
                             EventExecution.class);
 
@@ -923,9 +923,14 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     public void removeWorkflow(String workflowId) {
         long startTime = Instant.now().toEpochMilli();
         try {
+            List<String> taskIds = findTaskIdsForWorkflow(workflowId);
+            if (!taskIds.isEmpty()) {
+                deleteTaskLogsByTaskIds(taskIds);
+            }
+            deleteTasksByWorkflowId(workflowId);
+
             DeleteResponse response =
-                    elasticSearchClient.delete(
-                            d -> d.index(workflowIndexName).id(workflowId));
+                    elasticSearchClient.delete(d -> d.index(workflowIndexName).id(workflowId));
 
             if (response.result() == Result.NotFound) {
                 logger.error("Index removal failed - document not found by id: {}", workflowId);
@@ -962,11 +967,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
 
             logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
             elasticSearchClient.update(
-                    u ->
-                            u.index(workflowIndexName)
-                                    .id(workflowInstanceId)
-                                    .doc(source),
-                    Map.class);
+                    u -> u.index(workflowIndexName).id(workflowInstanceId).doc(source), Map.class);
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating workflow: {}",
@@ -996,7 +997,6 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
         if (taskSearchResult.getTotalHits() == 0) {
             logger.error("Task: {} does not belong to workflow: {}", taskId, workflowId);
             Monitors.error(className, "removeTask");
-            return;
         }
 
         try {
@@ -1006,8 +1006,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
             if (response.result() != Result.Deleted) {
                 logger.error("Index removal failed - task not found by id: {}", workflowId);
                 Monitors.error(className, "removeTask");
-                return;
             }
+            deleteTaskLogsByTaskIds(Collections.singletonList(taskId));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for removing task:{} of workflow: {}",
@@ -1021,6 +1021,89 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
             logger.error(
                     "Failed to remove task {} of workflow: {} from index", taskId, workflowId, e);
             Monitors.error(className, "removeTask");
+        }
+    }
+
+    private List<String> findTaskIdsForWorkflow(String workflowId) {
+        int pageSize = 500;
+        int start = 0;
+        long totalHits = 0;
+        List<String> taskIds = new ArrayList<>();
+        try {
+            Query query = Query.of(q -> q.term(t -> t.field("workflowId").value(workflowId)));
+            do {
+                SearchResult<String> result =
+                        searchObjectIds(taskIndexName, query, start, pageSize, null);
+                if (totalHits == 0) {
+                    totalHits = result.getTotalHits();
+                }
+                taskIds.addAll(result.getResults());
+                start += pageSize;
+                if (start >= 10_000) {
+                    if (totalHits > taskIds.size()) {
+                        logger.warn(
+                                "Task log cleanup capped at {} tasks for workflow {} (totalHits={})",
+                                taskIds.size(),
+                                workflowId,
+                                totalHits);
+                    }
+                    break;
+                }
+            } while (start < totalHits);
+        } catch (Exception e) {
+            logger.warn("Failed to fetch task ids for workflow {}", workflowId, e);
+        }
+        return taskIds;
+    }
+
+    private void deleteTasksByWorkflowId(String workflowId) {
+        Query query = Query.of(q -> q.term(t -> t.field("workflowId").value(workflowId)));
+        deleteByQuery(taskIndexName, query, "tasks for workflow " + workflowId);
+    }
+
+    private void deleteTaskLogsByTaskIds(List<String> taskIds) {
+        if (taskIds == null || taskIds.isEmpty()) {
+            return;
+        }
+        List<String> uniqueIds =
+                taskIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        for (int i = 0; i < uniqueIds.size(); i += TASK_LOG_DELETE_BATCH_SIZE) {
+            List<String> batch =
+                    uniqueIds.subList(
+                            i, Math.min(i + TASK_LOG_DELETE_BATCH_SIZE, uniqueIds.size()));
+            Query query =
+                    Query.of(
+                            q ->
+                                    q.terms(
+                                            t ->
+                                                    t.field("taskId")
+                                                            .terms(
+                                                                    tv ->
+                                                                            tv.value(
+                                                                                    batch.stream()
+                                                                                            .map(
+                                                                                                    FieldValue
+                                                                                                            ::of)
+                                                                                            .collect(
+                                                                                                    Collectors
+                                                                                                            .toList())))));
+            deleteByQuery(logIndexName, query, "task logs");
+        }
+    }
+
+    private void deleteByQuery(String indexName, Query query, String description) {
+        try {
+            DeleteByQueryResponse response =
+                    elasticSearchClient.deleteByQuery(
+                            d -> d.index(indexName).query(query).refresh(true));
+            if (response.failures() != null && !response.failures().isEmpty()) {
+                logger.warn(
+                        "Delete-by-query for {} had {} failures",
+                        description,
+                        response.failures().size());
+            }
+        } catch (Exception e) {
+            logger.warn("Delete-by-query failed for {}", description, e);
         }
     }
 
@@ -1079,8 +1162,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
         try {
             GetResponse<Map> response =
                     elasticSearchClient.get(
-                            g -> g.index(workflowIndexName).id(workflowInstanceId),
-                            Map.class);
+                            g -> g.index(workflowIndexName).id(workflowInstanceId), Map.class);
             if (response.found()) {
                 Map sourceAsMap = response.source();
                 if (sourceAsMap != null && sourceAsMap.get(fieldToGet) != null) {
@@ -1147,11 +1229,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
      * @throws IOException If we cannot communicate with ES.
      */
     private SearchResult<String> searchObjectIds(
-            String indexName,
-            Query queryBuilder,
-            int start,
-            int size,
-            List<String> sortOptions)
+            String indexName, Query queryBuilder, int start, int size, List<String> sortOptions)
             throws IOException {
         List<SortOptions> sort = buildSortOptions(sortOptions);
         SearchResponse<Void> response =
@@ -1171,9 +1249,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                         Void.class);
 
         List<String> result =
-                response.hits().hits().stream()
-                        .map(hit -> hit.id())
-                        .collect(Collectors.toList());
+                response.hits().hits().stream().map(hit -> hit.id()).collect(Collectors.toList());
         long count = totalHits(response);
         return new SearchResult<>(count, result);
     }
@@ -1245,11 +1321,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
             }
             String sortField = field;
             SortOrder sortOrder = order;
-            options.add(
-                    SortOptions.of(
-                            s ->
-                                    s.field(
-                                            f -> f.field(sortField).order(sortOrder))));
+            options.add(SortOptions.of(s -> s.field(f -> f.field(sortField).order(sortOrder))));
         }
         return options;
     }
@@ -1264,8 +1336,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         String archiveTo = LocalDate.now().minusDays(archiveTtlDays).toString();
-        String archiveFrom =
-                LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString();
+        String archiveFrom = LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString();
         Query q =
                 Query.of(
                         qb ->
@@ -1279,11 +1350,13 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                                                 r.field(
                                                                                                                 "endTime")
                                                                                                         .lt(
-                                                                                                                JsonData.of(
-                                                                                                                        archiveTo))
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                archiveTo))
                                                                                                         .gte(
-                                                                                                                JsonData.of(
-                                                                                                                        archiveFrom)))))
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                archiveFrom)))))
                                                         .should(
                                                                 Query.of(
                                                                         q1 ->
@@ -1325,8 +1398,9 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                         q1 ->
                                                                                 q1.exists(
                                                                                         e ->
-                                                                                                e.field(
-                                                                                                        "archived"))))
+                                                                                                e
+                                                                                                        .field(
+                                                                                                                "archived"))))
                                                         .minimumShouldMatch("1")));
 
         SearchResult<String> workflowIds;
@@ -1362,8 +1436,7 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     public List<String> searchRecentRunningWorkflows(
             int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
         Instant now = Instant.now();
-        long fromMillis =
-                now.minus(Duration.ofHours(lastModifiedHoursAgoFrom)).toEpochMilli();
+        long fromMillis = now.minus(Duration.ofHours(lastModifiedHoursAgoFrom)).toEpochMilli();
         long toMillis = now.minus(Duration.ofHours(lastModifiedHoursAgoTo)).toEpochMilli();
         Query q =
                 Query.of(
@@ -1378,8 +1451,9 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                                                 r.field(
                                                                                                                 "updateTime")
                                                                                                         .gt(
-                                                                                                                JsonData.of(
-                                                                                                                        fromMillis)))))
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                fromMillis)))))
                                                         .must(
                                                                 Query.of(
                                                                         q1 ->
@@ -1388,8 +1462,9 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                                                                                 r.field(
                                                                                                                 "updateTime")
                                                                                                         .lt(
-                                                                                                                JsonData.of(
-                                                                                                                        toMillis)))))
+                                                                                                                JsonData
+                                                                                                                        .of(
+                                                                                                                                toMillis)))))
                                                         .must(
                                                                 Query.of(
                                                                         q1 ->
@@ -1471,7 +1546,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                 "indexQueue",
                                 ((ThreadPoolExecutor) executorService).getQueue().size());
                         Monitors.recordWorkerQueueSize(
-                                "logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
+                                "logQueue",
+                                ((ThreadPoolExecutor) logExecutorService).getQueue().size());
 
                         if (response.errors()) {
                             long errorCount =
@@ -1507,13 +1583,16 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                                     });
                         } catch (Exception retryException) {
                             logger.error(
-                                    "Bulk indexing retry failed for doc type {}", docType, retryException);
+                                    "Bulk indexing retry failed for doc type {}",
+                                    docType,
+                                    retryException);
                         }
                         Monitors.recordWorkerQueueSize(
                                 "indexQueue",
                                 ((ThreadPoolExecutor) executorService).getQueue().size());
                         Monitors.recordWorkerQueueSize(
-                                "logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
+                                "logQueue",
+                                ((ThreadPoolExecutor) logExecutorService).getQueue().size());
                     }
                 };
 
@@ -1524,7 +1603,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                     builder.maxConcurrentRequests(
                             Math.max(1, Math.min(4, properties.getAsyncMaxPoolSize())));
                     if (asyncBufferFlushTimeout > 0) {
-                        builder.flushInterval(asyncBufferFlushTimeout, TimeUnit.SECONDS, bulkScheduler);
+                        builder.flushInterval(
+                                asyncBufferFlushTimeout, TimeUnit.SECONDS, bulkScheduler);
                     }
                     builder.listener(listener);
                     if (refreshPolicy != null) {

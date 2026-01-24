@@ -13,10 +13,12 @@
 package com.netflix.conductor.es8.dao.index;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
-import org.joda.time.DateTime;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -80,8 +82,7 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
                 "Alias for workflow should exist",
                 indexDAO.doesResourceExist("/_alias/" + workflowAlias));
         assertTrue(
-                "Alias for task should exist",
-                indexDAO.doesResourceExist("/_alias/" + taskAlias));
+                "Alias for task should exist", indexDAO.doesResourceExist("/_alias/" + taskAlias));
 
         assertTrue(
                 "Index template for 'message' should exist",
@@ -381,17 +382,19 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
         WorkflowSummary oldWorkflow =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         oldWorkflow.setStatus(WorkflowStatus.RUNNING);
-        oldWorkflow.setUpdateTime(getFormattedTime(new DateTime().minusHours(2).toDate()));
+        oldWorkflow.setUpdateTime(
+                getFormattedTime(Date.from(Instant.now().minus(Duration.ofHours(2)))));
 
         WorkflowSummary recentWorkflow =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         recentWorkflow.setStatus(WorkflowStatus.RUNNING);
-        recentWorkflow.setUpdateTime(getFormattedTime(new DateTime().minusHours(1).toDate()));
+        recentWorkflow.setUpdateTime(
+                getFormattedTime(Date.from(Instant.now().minus(Duration.ofHours(1)))));
 
         WorkflowSummary tooRecentWorkflow =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
         tooRecentWorkflow.setStatus(WorkflowStatus.RUNNING);
-        tooRecentWorkflow.setUpdateTime(getFormattedTime(new DateTime().toDate()));
+        tooRecentWorkflow.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
 
         indexDAO.indexWorkflow(oldWorkflow);
         indexDAO.indexWorkflow(recentWorkflow);

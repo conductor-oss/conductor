@@ -16,11 +16,11 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-
 import com.netflix.conductor.es8.dao.query.parser.internal.AbstractNode;
 import com.netflix.conductor.es8.dao.query.parser.internal.BooleanOp;
 import com.netflix.conductor.es8.dao.query.parser.internal.ParserException;
+
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 /**
  * @author Viren

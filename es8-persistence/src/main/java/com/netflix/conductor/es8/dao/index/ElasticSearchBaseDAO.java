@@ -13,12 +13,12 @@
 package com.netflix.conductor.es8.dao.index;
 
 import org.apache.commons.lang3.StringUtils;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es8.dao.query.parser.Expression;
 import com.netflix.conductor.es8.dao.query.parser.internal.ParserException;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 abstract class ElasticSearchBaseDAO implements IndexDAO {
@@ -26,8 +26,7 @@ abstract class ElasticSearchBaseDAO implements IndexDAO {
     String indexPrefix;
     ObjectMapper objectMapper;
 
-    Query boolQueryBuilder(String expression, String queryString)
-            throws ParserException {
+    Query boolQueryBuilder(String expression, String queryString) throws ParserException {
         Query queryBuilder = Query.of(q -> q.matchAll(m -> m));
         if (StringUtils.isNotEmpty(expression)) {
             Expression exp = Expression.fromString(expression);

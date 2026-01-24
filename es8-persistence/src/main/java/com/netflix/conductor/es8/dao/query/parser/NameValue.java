@@ -15,10 +15,6 @@ package com.netflix.conductor.es8.dao.query.parser;
 import java.io.InputStream;
 import java.util.List;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
-
 import com.netflix.conductor.es8.dao.query.parser.internal.AbstractNode;
 import com.netflix.conductor.es8.dao.query.parser.internal.ComparisonOp;
 import com.netflix.conductor.es8.dao.query.parser.internal.ComparisonOp.Operators;
@@ -27,6 +23,10 @@ import com.netflix.conductor.es8.dao.query.parser.internal.ListConst;
 import com.netflix.conductor.es8.dao.query.parser.internal.Name;
 import com.netflix.conductor.es8.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.es8.dao.query.parser.internal.Range;
+
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 
 /**
  * @author Viren
@@ -108,26 +108,15 @@ public class NameValue extends AbstractNode implements FilterProvider {
                                                     .lte(JsonData.of(range.getHigh()))));
         } else if (op.getOperator().equals(Operators.IN.value())) {
             List<FieldValue> values =
-                    valueList.getList().stream()
-                            .map(val -> FieldValue.of(val.toString()))
-                            .toList();
+                    valueList.getList().stream().map(val -> FieldValue.of(val.toString())).toList();
             return Query.of(
-                    q ->
-                            q.terms(
-                                    t ->
-                                            t.field(name.getName())
-                                                    .terms(tf -> tf.value(values))));
+                    q -> q.terms(t -> t.field(name.getName()).terms(tf -> tf.value(values))));
         } else if (op.getOperator().equals(Operators.NOT_EQUALS.value())) {
-            Query query =
-                    queryString(name.getName() + ":" + value.getValue().toString());
+            Query query = queryString(name.getName() + ":" + value.getValue().toString());
             return Query.of(q -> q.bool(b -> b.mustNot(query)));
         } else if (op.getOperator().equals(Operators.GREATER_THAN.value())) {
             return Query.of(
-                    q ->
-                            q.range(
-                                    r ->
-                                            r.field(name.getName())
-                                                    .gt(JsonData.of(value.getValue()))));
+                    q -> q.range(r -> r.field(name.getName()).gt(JsonData.of(value.getValue()))));
         } else if (op.getOperator().equals(Operators.IS.value())) {
             if (value.getSysConstant().equals(ConstValue.SystemConsts.NULL)) {
                 return Query.of(
@@ -140,27 +129,17 @@ public class NameValue extends AbstractNode implements FilterProvider {
                                                                         exists.exists(
                                                                                 e ->
                                                                                         e.field(
-                                                                                                name.getName()))))));
+                                                                                                name
+                                                                                                        .getName()))))));
             } else if (value.getSysConstant().equals(ConstValue.SystemConsts.NOT_NULL)) {
-                return Query.of(
-                        q ->
-                                q.exists(
-                                        e -> e.field(name.getName())));
+                return Query.of(q -> q.exists(e -> e.field(name.getName())));
             }
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
             return Query.of(
-                    q ->
-                            q.range(
-                                    r ->
-                                            r.field(name.getName())
-                                                    .lt(JsonData.of(value.getValue()))));
+                    q -> q.range(r -> r.field(name.getName()).lt(JsonData.of(value.getValue()))));
         } else if (op.getOperator().equals(Operators.STARTS_WITH.value())) {
             return Query.of(
-                    q ->
-                            q.prefix(
-                                    p ->
-                                            p.field(name.getName())
-                                                    .value(value.getUnquotedValue())));
+                    q -> q.prefix(p -> p.field(name.getName()).value(value.getUnquotedValue())));
         }
 
         throw new IllegalStateException("Incorrect/unsupported operators");
