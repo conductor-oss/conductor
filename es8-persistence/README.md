@@ -9,7 +9,7 @@ It uses the Elasticsearch Java API Client (`elasticsearch-java`) aligned with ES
 This module uses composable index templates, write aliases, and an ILM policy:
 
 - **ILM policy:** `conductor-default-ilm-policy`
-- **Rollover conditions (hot phase):** `max_primary_shard_size=50gb`, `max_age=30d`
+- **Rollover conditions (hot phase):** `max_primary_shard_size=50gb`
 - **Write aliases:** `${indexPrefix}_workflow`, `${indexPrefix}_task`, `${indexPrefix}_task_log`,
   `${indexPrefix}_message`, `${indexPrefix}_event`
 - **Initial indices:** `${alias}-000001` (created automatically when index management is enabled)

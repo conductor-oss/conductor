@@ -95,7 +95,6 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     private static final String MSG_DOC_TYPE = "message";
     private static final String ILM_POLICY_NAME = "conductor-default-ilm-policy";
     private static final String ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE = "50gb";
-    private static final String ILM_ROLLOVER_MAX_AGE = "30d";
 
 
     private @interface HttpMethod {
@@ -414,7 +413,6 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
                 ObjectNode actions = hot.putObject("actions");
                 ObjectNode rollover = actions.putObject("rollover");
                 rollover.put("max_primary_shard_size", ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE);
-                rollover.put("max_age", ILM_ROLLOVER_MAX_AGE);
 
                 Request request = new Request(HttpMethod.PUT, resourcePath);
                 request.setEntity(
