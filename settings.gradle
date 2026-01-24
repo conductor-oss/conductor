@@ -46,7 +46,7 @@ include 'redis-lock'
 
 include 'awss3-storage'
 include 'awssqs-event-queue'
-include 'azure-event-queue'
+//include 'azure-event-queue'
 
 include 'redis-concurrency-limit'
 
