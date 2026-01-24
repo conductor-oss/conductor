@@ -2,6 +2,8 @@
 
 This module provides ES7 persistence when indexing workflows and tasks.
 
+If you need Elasticsearch 8.x, use the `es8-persistence` module instead.
+
 ### ES Breaking changes
 
 From ES6 to ES7 there were significant breaking changes which affected ES7-persistence module implementation.
