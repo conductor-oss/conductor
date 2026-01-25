@@ -37,8 +37,7 @@ public class Join extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Join.class);
 
-    @VisibleForTesting
-    static final double EVALUATION_OFFSET_BASE = 1.2;
+    @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
     private final ConductorProperties properties;
     private final SystemTaskRegistry systemTaskRegistry;
@@ -58,9 +57,10 @@ public class Join extends WorkflowSystemTask {
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get
             // complete
-            joinOn = joinOn.stream()
-                    .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                    .toList();
+            joinOn =
+                    joinOn.stream()
+                            .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
+                            .toList();
         }
 
         // Track resolved references and whether all tasks are terminal
@@ -120,21 +120,23 @@ public class Join extends WorkflowSystemTask {
 
         // All tasks are terminal - check for any non-optional failures
         // (both permissive and non-permissive are handled the same now)
-        boolean hasNonOptionalFailure = resolvedJoinOn.stream()
-                .map(workflow::getTaskByRefName)
-                .filter(Objects::nonNull)
-                .filter(t -> !t.getStatus().isSuccessful())
-                .anyMatch(t -> !t.getWorkflowTask().isOptional());
+        boolean hasNonOptionalFailure =
+                resolvedJoinOn.stream()
+                        .map(workflow::getTaskByRefName)
+                        .filter(Objects::nonNull)
+                        .filter(t -> !t.getStatus().isSuccessful())
+                        .anyMatch(t -> !t.getWorkflowTask().isOptional());
 
         if (hasNonOptionalFailure) {
-            final String failureReasons = resolvedJoinOn.stream()
-                    .map(workflow::getTaskByRefName)
-                    .filter(Objects::nonNull)
-                    .filter(t -> !t.getStatus().isSuccessful())
-                    .filter(t -> !t.getWorkflowTask().isOptional())
-                    .map(TaskModel::getReasonForIncompletion)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining(" "));
+            final String failureReasons =
+                    resolvedJoinOn.stream()
+                            .map(workflow::getTaskByRefName)
+                            .filter(Objects::nonNull)
+                            .filter(t -> !t.getStatus().isSuccessful())
+                            .filter(t -> !t.getWorkflowTask().isOptional())
+                            .map(TaskModel::getReasonForIncompletion)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.joining(" "));
             task.setReasonForIncompletion(failureReasons.trim());
             task.setStatus(TaskModel.Status.FAILED);
             return true;
@@ -153,22 +155,16 @@ public class Join extends WorkflowSystemTask {
     }
 
     /**
-     * Resolves a single task reference to account for container tasks (Switch,
-     * etc.).
+     * Resolves a single task reference to account for container tasks (Switch, etc.).
      *
-     * <p>
-     * When a task reference points to a system task that has completed, this method
-     * uses the
-     * polymorphic {@link WorkflowSystemTask#getTerminalTaskRef} to determine the
-     * actual terminal
-     * task reference. This allows container tasks like Switch to define their own
-     * resolution logic
+     * <p>When a task reference points to a system task that has completed, this method uses the
+     * polymorphic {@link WorkflowSystemTask#getTerminalTaskRef} to determine the actual terminal
+     * task reference. This allows container tasks like Switch to define their own resolution logic
      * without hardcoding task type checks in Join.
      *
      * @param workflow the workflow model
-     * @param taskRef  the task reference to resolve
-     * @return the resolved task reference (may be the same as input if no
-     *         resolution needed)
+     * @param taskRef the task reference to resolve
+     * @return the resolved task reference (may be the same as input if no resolution needed)
      */
     @VisibleForTesting
     String resolveTaskReference(WorkflowModel workflow, String taskRef) {
@@ -180,8 +176,7 @@ public class Join extends WorkflowSystemTask {
         }
 
         // Only resolve tasks that are terminal (so container tasks know their state)
-        if (task.getStatus().isTerminal()
-                && systemTaskRegistry.isSystemTask(task.getTaskType())) {
+        if (task.getStatus().isTerminal() && systemTaskRegistry.isSystemTask(task.getTaskType())) {
             // Use polymorphic resolution - each system task knows its own terminal
             // reference
             WorkflowSystemTask systemTask = systemTaskRegistry.get(task.getTaskType());
