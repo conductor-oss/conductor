@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
@@ -49,6 +50,7 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es8.config.ElasticSearchProperties;
+import com.netflix.conductor.es8.dao.query.parser.Expression;
 import com.netflix.conductor.es8.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -80,7 +82,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.*;
 
 @Trace
-public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements IndexDAO {
+public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private static final Logger logger = LoggerFactory.getLogger(ElasticSearchRestDAOV8.class);
 
@@ -131,6 +133,8 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
     private final int asyncBufferFlushTimeout;
     private final ElasticSearchProperties properties;
     private final RetryTemplate retryTemplate;
+    private final ObjectMapper objectMapper;
+    private final String indexPrefix;
 
     public ElasticSearchRestDAOV8(
             RestClientBuilder restClientBuilder,
@@ -528,6 +532,28 @@ public class ElasticSearchRestDAOV8 extends ElasticSearchBaseDAO implements Inde
         Request request = new Request("GET", "/_cluster/health");
         request.addParameters(params);
         elasticSearchAdminClient.performRequest(request);
+    }
+
+    private Query boolQueryBuilder(String expression, String queryString) throws ParserException {
+        Query queryBuilder = Query.of(q -> q.matchAll(m -> m));
+        if (StringUtils.isNotEmpty(expression)) {
+            Expression exp = Expression.fromString(expression);
+            queryBuilder = exp.getFilterBuilder();
+        }
+        Query baseQuery = queryBuilder;
+        Query filterQuery = Query.of(q -> q.bool(b -> b.must(baseQuery)));
+        Query stringQuery = Query.of(q -> q.simpleQueryString(qs -> qs.query(queryString)));
+        return Query.of(q -> q.bool(b -> b.must(stringQuery).must(filterQuery)));
+    }
+
+    private String getIndexName(String documentType) {
+        if (StringUtils.isBlank(indexPrefix)) {
+            return documentType;
+        }
+        if (indexPrefix.endsWith("_")) {
+            return indexPrefix + documentType;
+        }
+        return indexPrefix + "_" + documentType;
     }
 
     /**
