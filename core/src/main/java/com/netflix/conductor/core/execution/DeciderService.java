@@ -75,6 +75,7 @@ public class DeciderService {
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
+            @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
@@ -84,6 +85,9 @@ public class DeciderService {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
+        LOGGER.info("taskMappers: {}", taskMappers.keySet());
+        LOGGER.info("annotatedTaskMappers: {}", annotatedTaskSystems.keySet());
+        this.taskMappers.putAll(annotatedTaskSystems);
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
