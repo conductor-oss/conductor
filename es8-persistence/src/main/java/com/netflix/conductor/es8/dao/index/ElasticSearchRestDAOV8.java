@@ -345,7 +345,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                             objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
             Request request = new Request(HttpMethod.PUT, "/_index_template/" + templateName);
             request.setEntity(entity);
-            elasticSearchAdminClient.performRequest(request);
+            executeWithRetry(
+                    () -> {
+                        elasticSearchAdminClient.performRequest(request);
+                        return null;
+                    });
         } catch (Exception e) {
             logger.error("Failed to init " + templateName, e);
         }
@@ -386,7 +390,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                             objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
             Request request = new Request(HttpMethod.PUT, "/_index_template/" + templateName);
             request.setEntity(entity);
-            elasticSearchAdminClient.performRequest(request);
+            executeWithRetry(
+                    () -> {
+                        elasticSearchAdminClient.performRequest(request);
+                        return null;
+                    });
         } catch (Exception e) {
             logger.error("Failed to init " + templateName, e);
         }
@@ -425,7 +433,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                         new NStringEntity(
                                 objectMapper.writeValueAsString(root),
                                 ContentType.APPLICATION_JSON));
-                elasticSearchAdminClient.performRequest(request);
+                executeWithRetry(
+                        () -> {
+                            elasticSearchAdminClient.performRequest(request);
+                            return null;
+                        });
                 logger.info("Created ILM policy '{}'", ILM_POLICY_NAME);
             }
         } catch (Exception e) {
@@ -451,7 +463,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             request.setEntity(
                     new NStringEntity(
                             objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON));
-            elasticSearchAdminClient.performRequest(request);
+            executeWithRetry(
+                    () -> {
+                        elasticSearchAdminClient.performRequest(request);
+                        return null;
+                    });
             logger.info("Created/updated component template 'conductor-common-settings'");
         } catch (Exception e) {
             logger.error("Failed to create component template 'conductor-common-settings'", e);
@@ -496,7 +512,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             request.setEntity(
                     new NStringEntity(
                             objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON));
-            elasticSearchAdminClient.performRequest(request);
+            executeWithRetry(
+                    () -> {
+                        elasticSearchAdminClient.performRequest(request);
+                        return null;
+                    });
             logger.info("Created write index '{}' for alias '{}'", indexName, aliasName);
         }
     }
@@ -505,7 +525,11 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         String dataStreamPath = "/_data_stream/" + dataStreamName;
         if (doesResourceNotExist(dataStreamPath)) {
             Request request = new Request(HttpMethod.PUT, dataStreamPath);
-            elasticSearchAdminClient.performRequest(request);
+            executeWithRetry(
+                    () -> {
+                        elasticSearchAdminClient.performRequest(request);
+                        return null;
+                    });
             logger.info("Created data stream '{}'", dataStreamName);
         }
     }
@@ -595,20 +619,38 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         return !doesResourceExist(resourcePath);
     }
 
+    private <T> T executeWithRetry(Callable<T> action) throws IOException {
+        try {
+            return retryTemplate.execute(context -> action.call());
+        } catch (Exception e) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            }
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
+            throw new IOException("Elasticsearch operation failed", e);
+        }
+    }
+
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         try {
             long startTime = Instant.now().toEpochMilli();
             String workflowId = workflow.getWorkflowId();
             Refresh refresh = properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
-            elasticSearchClient.index(
-                    i -> {
-                        i.index(workflowIndexName).id(workflowId).document(workflow);
-                        if (refresh != null) {
-                            i.refresh(refresh);
-                        }
-                        return i;
-                    });
+            executeWithRetry(
+                    () ->
+                            elasticSearchClient.index(
+                                    i -> {
+                                        i.index(workflowIndexName)
+                                                .id(workflowId)
+                                                .document(workflow);
+                                        if (refresh != null) {
+                                            i.refresh(refresh);
+                                        }
+                                        return i;
+                                    }));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -667,7 +709,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
 
         try {
-            elasticSearchClient.bulk(b -> b.operations(operations));
+            executeWithRetry(() -> elasticSearchClient.bulk(b -> b.operations(operations)));
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -956,7 +998,10 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             deleteTasksByWorkflowId(workflowId);
 
             DeleteResponse response =
-                    elasticSearchClient.delete(d -> d.index(workflowIndexName).id(workflowId));
+                    executeWithRetry(
+                            () ->
+                                    elasticSearchClient.delete(
+                                            d -> d.index(workflowIndexName).id(workflowId)));
 
             if (response.result() == Result.NotFound) {
                 logger.error("Index removal failed - document not found by id: {}", workflowId);
@@ -992,8 +1037,14 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                             .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
 
             logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-            elasticSearchClient.update(
-                    u -> u.index(workflowIndexName).id(workflowInstanceId).doc(source), Map.class);
+            executeWithRetry(
+                    () ->
+                            elasticSearchClient.update(
+                                    u ->
+                                            u.index(workflowIndexName)
+                                                    .id(workflowInstanceId)
+                                                    .doc(source),
+                                    Map.class));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating workflow: {}",
@@ -1027,7 +1078,10 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
         try {
             DeleteResponse response =
-                    elasticSearchClient.delete(d -> d.index(taskIndexName).id(taskId));
+                    executeWithRetry(
+                            () ->
+                                    elasticSearchClient.delete(
+                                            d -> d.index(taskIndexName).id(taskId)));
 
             if (response.result() != Result.Deleted) {
                 logger.error("Index removal failed - task not found by id: {}", workflowId);
@@ -1120,8 +1174,10 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     private void deleteByQuery(String indexName, Query query, String description) {
         try {
             DeleteByQueryResponse response =
-                    elasticSearchClient.deleteByQuery(
-                            d -> d.index(indexName).query(query).refresh(true));
+                    executeWithRetry(
+                            () ->
+                                    elasticSearchClient.deleteByQuery(
+                                            d -> d.index(indexName).query(query).refresh(true)));
             if (response.failures() != null && !response.failures().isEmpty()) {
                 logger.warn(
                         "Delete-by-query for {} had {} failures",
@@ -1152,8 +1208,10 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                             .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
 
             logger.debug("Updating task: {} of workflow: {} with {}", taskId, workflowId, source);
-            elasticSearchClient.update(
-                    u -> u.index(taskIndexName).id(taskId).doc(source), Map.class);
+            executeWithRetry(
+                    () ->
+                            elasticSearchClient.update(
+                                    u -> u.index(taskIndexName).id(taskId).doc(source), Map.class));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for updating task: {} of workflow: {}",
