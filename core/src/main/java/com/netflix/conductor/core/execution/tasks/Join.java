@@ -37,7 +37,8 @@ public class Join extends WorkflowSystemTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Join.class);
 
-    @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
+    @VisibleForTesting
+    static final double EVALUATION_OFFSET_BASE = 1.2;
 
     private final ConductorProperties properties;
     private final SystemTaskRegistry systemTaskRegistry;
@@ -52,66 +53,45 @@ public class Join extends WorkflowSystemTask {
     @SuppressWarnings("unchecked")
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get
             // complete
-            joinOn =
-                    joinOn.stream()
-                            .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                            .toList();
+            joinOn = joinOn.stream()
+                    .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
+                    .toList();
         }
 
-        // Resolve joinOn references - container tasks (Switch, etc.) are resolved to
-        // their terminal child tasks using the polymorphic getTerminalTaskRef() method
-        List<String> resolvedJoinOn = resolveJoinOnReferences(workflow, joinOn);
-        LOGGER.debug(
-                "Join task {} - original joinOn: {}, resolved joinOn: {}",
-                task.getTaskId(),
-                joinOn,
-                resolvedJoinOn);
+        // Track resolved references and whether all tasks are terminal
+        // Resolution happens lazily - we exit early if any task isn't terminal yet
+        List<String> resolvedJoinOn = new ArrayList<>();
+        boolean allTasksTerminal = true;
 
-        boolean allTasksTerminal =
-                resolvedJoinOn.stream()
-                        .map(workflow::getTaskByRefName)
-                        .allMatch(t -> t != null && t.getStatus().isTerminal());
+        for (String joinOnRef : joinOn) {
+            // Resolve this reference (container tasks like Switch resolve to their terminal
+            // child)
+            String resolvedRef = resolveTaskReference(workflow, joinOnRef);
+            resolvedJoinOn.add(resolvedRef);
 
-        for (String joinOnRef : resolvedJoinOn) {
-            TaskModel forkedTask = workflow.getTaskByRefName(joinOnRef);
+            TaskModel forkedTask = workflow.getTaskByRefName(resolvedRef);
             if (forkedTask == null) {
-                // Continue checking other tasks if a referenced task is not yet scheduled
+                // Task not yet scheduled - can't be terminal
+                allTasksTerminal = false;
                 continue;
             }
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty
-            if (!forkedTask.getOutputData().isEmpty()) {
-                task.addOutput(joinOnRef, forkedTask.getOutputData());
+            if (!taskStatus.isTerminal()) {
+                // Task not terminal - exit early, no need to check remaining tasks
+                allTasksTerminal = false;
+                continue;
             }
 
-            // Determine if the join task fails immediately due to a non-optional,
-            // non-permissive
-            // task failure,
-            // or waits for all tasks to be terminal if the failed task is permissive.
-            var isJoinFailure =
-                    !taskStatus.isSuccessful()
-                            && !forkedTask.getWorkflowTask().isOptional()
-                            && (!forkedTask.getWorkflowTask().isPermissive() || allTasksTerminal);
-            if (isJoinFailure) {
-                final String failureReasons =
-                        resolvedJoinOn.stream()
-                                .map(workflow::getTaskByRefName)
-                                .filter(Objects::nonNull)
-                                .filter(t -> !t.getStatus().isSuccessful())
-                                .map(TaskModel::getReasonForIncompletion)
-                                .collect(Collectors.joining(" "));
-                failureReason.append(failureReasons);
-                task.setReasonForIncompletion(failureReason.toString());
-                task.setStatus(TaskModel.Status.FAILED);
-                return true;
+            // Only add to task output if it's not empty
+            if (!forkedTask.getOutputData().isEmpty()) {
+                task.addOutput(resolvedRef, forkedTask.getOutputData());
             }
 
             // check for optional task failures
@@ -126,84 +106,106 @@ public class Join extends WorkflowSystemTask {
             }
         }
 
-        // Finalize the join task's status based on the outcomes of all referenced
-        // tasks.
-        if (allTasksTerminal) {
-            if (!optionalTaskFailures.isEmpty()) {
-                task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
-                optionalTaskFailures.append("completed with errors");
-                task.setReasonForIncompletion(optionalTaskFailures.toString());
-            } else {
-                task.setStatus(TaskModel.Status.COMPLETED);
-            }
+        LOGGER.debug(
+                "Join task {} - original joinOn: {}, resolved joinOn: {}, allTerminal: {}",
+                task.getTaskId(),
+                joinOn,
+                resolvedJoinOn,
+                allTasksTerminal);
+
+        // If not all tasks are terminal, we're still waiting
+        if (!allTasksTerminal) {
+            return false;
+        }
+
+        // All tasks are terminal - check for any non-optional failures
+        // (both permissive and non-permissive are handled the same now)
+        boolean hasNonOptionalFailure = resolvedJoinOn.stream()
+                .map(workflow::getTaskByRefName)
+                .filter(Objects::nonNull)
+                .filter(t -> !t.getStatus().isSuccessful())
+                .anyMatch(t -> !t.getWorkflowTask().isOptional());
+
+        if (hasNonOptionalFailure) {
+            final String failureReasons = resolvedJoinOn.stream()
+                    .map(workflow::getTaskByRefName)
+                    .filter(Objects::nonNull)
+                    .filter(t -> !t.getStatus().isSuccessful())
+                    .filter(t -> !t.getWorkflowTask().isOptional())
+                    .map(TaskModel::getReasonForIncompletion)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining(" "));
+            task.setReasonForIncompletion(failureReasons.trim());
+            task.setStatus(TaskModel.Status.FAILED);
             return true;
         }
 
-        // Task execution not complete, waiting on more tasks to reach terminal state.
-        return false;
+        // Finalize the join task's status based on the outcomes of all referenced
+        // tasks.
+        if (!optionalTaskFailures.isEmpty()) {
+            task.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+            optionalTaskFailures.append("completed with errors");
+            task.setReasonForIncompletion(optionalTaskFailures.toString());
+        } else {
+            task.setStatus(TaskModel.Status.COMPLETED);
+        }
+        return true;
     }
 
     /**
-     * Resolves joinOn task references to account for container tasks (Switch, etc.).
+     * Resolves a single task reference to account for container tasks (Switch,
+     * etc.).
      *
-     * <p>When a joinOn reference points to a system task that has completed, this method uses the
-     * polymorphic {@link WorkflowSystemTask#getTerminalTaskRef} to determine the actual terminal
-     * task reference. This allows container tasks like Switch to define their own resolution logic
+     * <p>
+     * When a task reference points to a system task that has completed, this method
+     * uses the
+     * polymorphic {@link WorkflowSystemTask#getTerminalTaskRef} to determine the
+     * actual terminal
+     * task reference. This allows container tasks like Switch to define their own
+     * resolution logic
      * without hardcoding task type checks in Join.
      *
      * @param workflow the workflow model
-     * @param joinOn the original list of task references to join on
-     * @return a list of resolved task references
+     * @param taskRef  the task reference to resolve
+     * @return the resolved task reference (may be the same as input if no
+     *         resolution needed)
      */
     @VisibleForTesting
-    List<String> resolveJoinOnReferences(WorkflowModel workflow, List<String> joinOn) {
-        List<String> resolved = new ArrayList<>();
-        for (String taskRef : joinOn) {
-            TaskModel task = workflow.getTaskByRefName(taskRef);
-            if (task == null) {
-                // Task not yet scheduled, keep the original reference
-                LOGGER.info("Resolution: {} -> {} (task not yet scheduled)", taskRef, taskRef);
-                resolved.add(taskRef);
-                continue;
-            }
-
-            // Only resolve tasks that are terminal (so container tasks know their state)
-            if (task.getStatus().isTerminal()
-                    && systemTaskRegistry.isSystemTask(task.getTaskType())) {
-                // Use polymorphic resolution - each system task knows its own terminal
-                // reference
-                WorkflowSystemTask systemTask = systemTaskRegistry.get(task.getTaskType());
-                String terminalRef =
-                        systemTask.getTerminalTaskRef(workflow, task, systemTaskRegistry);
-
-                LOGGER.info(
-                        "Resolution: {} (type={}, status={}) -> terminalRef={}",
-                        taskRef,
-                        task.getTaskType(),
-                        task.getStatus(),
-                        terminalRef);
-
-                if (!taskRef.equals(terminalRef)) {
-                    LOGGER.debug(
-                            "Resolved {} task {} to terminal task {}",
-                            task.getTaskType(),
-                            taskRef,
-                            terminalRef);
-                }
-                resolved.add(terminalRef);
-            } else {
-                LOGGER.info(
-                        "Resolution: {} (type={}, status={}) -> {} (no resolution: terminal={}, isSystemTask={})",
-                        taskRef,
-                        task.getTaskType(),
-                        task.getStatus(),
-                        taskRef,
-                        task.getStatus().isTerminal(),
-                        systemTaskRegistry.isSystemTask(task.getTaskType()));
-                resolved.add(taskRef);
-            }
+    String resolveTaskReference(WorkflowModel workflow, String taskRef) {
+        TaskModel task = workflow.getTaskByRefName(taskRef);
+        if (task == null) {
+            // Task not yet scheduled, keep the original reference
+            LOGGER.debug("Resolution: {} -> {} (task not yet scheduled)", taskRef, taskRef);
+            return taskRef;
         }
-        return resolved;
+
+        // Only resolve tasks that are terminal (so container tasks know their state)
+        if (task.getStatus().isTerminal()
+                && systemTaskRegistry.isSystemTask(task.getTaskType())) {
+            // Use polymorphic resolution - each system task knows its own terminal
+            // reference
+            WorkflowSystemTask systemTask = systemTaskRegistry.get(task.getTaskType());
+            String terminalRef = systemTask.getTerminalTaskRef(workflow, task, systemTaskRegistry);
+
+            LOGGER.debug(
+                    "Resolution: {} (type={}, status={}) -> terminalRef={}",
+                    taskRef,
+                    task.getTaskType(),
+                    task.getStatus(),
+                    terminalRef);
+
+            return terminalRef;
+        } else {
+            LOGGER.debug(
+                    "Resolution: {} (type={}, status={}) -> {} (no resolution: terminal={}, isSystemTask={})",
+                    taskRef,
+                    task.getTaskType(),
+                    task.getStatus(),
+                    taskRef,
+                    task.getStatus().isTerminal(),
+                    systemTaskRegistry.isSystemTask(task.getTaskType()));
+            return taskRef;
+        }
     }
 
     @Override

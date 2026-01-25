@@ -59,7 +59,8 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
     /**
      * Tests nested Switch task execution.
      *
-     * <p>Workflow Diagram:
+     * <p>
+     * Workflow Diagram:
      *
      * <pre>
      * [Start]
@@ -71,8 +72,11 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
      * (default)                 (default)                 [End]
      * </pre>
      *
-     * <p>Verifies: - Nested Switch tasks are correctly scheduled and executed - Inner Switch
-     * receives correct case input from workflow - Simple task inside nested Switch is polled and
+     * <p>
+     * Verifies: - Nested Switch tasks are correctly scheduled and executed - Inner
+     * Switch
+     * receives correct case input from workflow - Simple task inside nested Switch
+     * is polled and
      * completed
      */
     @Test
@@ -127,9 +131,8 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
         // Poll for the simple task (it should be scheduled if resolving works)
-        List<Task> polled =
-                taskClient.batchPollTasksByTaskType(
-                        "simple_task_nested_switch0", "test_worker", 1, 100);
+        List<Task> polled = taskClient.batchPollTasksByTaskType(
+                "simple_task_nested_switch0", "test_worker", 1, 100);
         assertNotNull(polled);
         assertEquals(1, polled.size());
 
@@ -144,7 +147,8 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
     /**
      * Tests Fork/Join with a nested Switch task in one of the branches.
      *
-     * <p>Workflow Diagram:
+     * <p>
+     * Workflow Diagram:
      *
      * <pre>
      *                    [Start]
@@ -169,9 +173,13 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
      *               [End]
      * </pre>
      *
-     * <p>Verifies: - Fork correctly schedules parallel branches - Switch task in branch2 correctly
-     * routes to caseX - Join task uses polymorphic resolution to wait for: - branch1_simple (direct
-     * reference) - branch2_switch -> resolved to branch2_simple_inside_switch - Workflow completes
+     * <p>
+     * Verifies: - Fork correctly schedules parallel branches - Switch task in
+     * branch2 correctly
+     * routes to caseX - Join task uses polymorphic resolution to wait for: -
+     * branch1_simple (direct
+     * reference) - branch2_switch -> resolved to branch2_simple_inside_switch -
+     * Workflow completes
      * when both branch tasks complete
      */
     @Test
@@ -237,9 +245,8 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
         // Poll and complete branch1_simple task
-        List<Task> polledBranch1 =
-                taskClient.batchPollTasksByTaskType(
-                        "fork_join_switch_task0", "test_worker", 1, 100);
+        List<Task> polledBranch1 = taskClient.batchPollTasksByTaskType(
+                "fork_join_switch_task0", "test_worker", 1, 100);
         assertNotNull(polledBranch1);
         assertEquals(1, polledBranch1.size());
         Task task1 = polledBranch1.get(0);
@@ -251,9 +258,8 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
 
         // Poll and complete branch2_simple_inside_switch task (inside the Switch)
-        List<Task> polledBranch2 =
-                taskClient.batchPollTasksByTaskType(
-                        "fork_join_switch_task1", "test_worker", 1, 100);
+        List<Task> polledBranch2 = taskClient.batchPollTasksByTaskType(
+                "fork_join_switch_task1", "test_worker", 1, 100);
         assertNotNull(polledBranch2);
         assertEquals(1, polledBranch2.size());
         Task task2 = polledBranch2.get(0);
@@ -270,42 +276,14 @@ public class SwitchAndJoinIntegrationTest extends TestHarnessAbstractHttpEndToEn
             Thread.sleep(500);
         }
 
-        // Debug output if workflow is still running
-        if (workflow.getStatus() != Workflow.WorkflowStatus.COMPLETED) {
-            System.out.println(
-                    "=== DEBUG: Workflow still RUNNING after " + (maxRetries * 500) + "ms ===");
-            System.out.println("Workflow Status: " + workflow.getStatus());
-            System.out.println("Tasks:");
-            for (Task t : workflow.getTasks()) {
-                System.out.println(
-                        "  - "
-                                + t.getReferenceTaskName()
-                                + " ("
-                                + t.getTaskType()
-                                + "): "
-                                + t.getStatus());
-                if ("SWITCH".equals(t.getTaskType())) {
-                    System.out.println("    Output: " + t.getOutputData());
-                    if (t.getWorkflowTask() != null) {
-                        System.out.println(
-                                "    WorkflowTask decisionCases: "
-                                        + t.getWorkflowTask().getDecisionCases());
-                    } else {
-                        System.out.println("    WorkflowTask: NULL");
-                    }
-                }
-            }
-        }
-
         // Now the workflow should be COMPLETED
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
 
         // Verify that Join task is completed
-        Task joinTaskResult =
-                workflow.getTasks().stream()
-                        .filter(t -> "my_join".equals(t.getReferenceTaskName()))
-                        .findFirst()
-                        .orElse(null);
+        Task joinTaskResult = workflow.getTasks().stream()
+                .filter(t -> "my_join".equals(t.getReferenceTaskName()))
+                .findFirst()
+                .orElse(null);
         assertNotNull(joinTaskResult);
         assertEquals(Task.Status.COMPLETED, joinTaskResult.getStatus());
     }
