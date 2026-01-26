@@ -38,6 +38,7 @@ dependencies {
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
+    testImplementation "org.awaitility:awaitility:${revAwaitility}"
 
     implementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
