@@ -13,7 +13,14 @@
 package com.netflix.conductor.os.config;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.*;
 
@@ -368,5 +375,101 @@ public class OpenSearchPropertiesTest {
         assertEquals("http://new:9200", props.getUrl());
         // IndexPrefix was not set via new property (should use legacy fallback)
         assertEquals("legacy_prefix", props.getIndexPrefix());
+    }
+
+    // =========================================================================
+    // Test Cluster 4: Integration Tests
+    // =========================================================================
+
+    /**
+     * Integration test with Spring Boot context to verify new properties work end-to-end.
+     */
+    @RunWith(SpringRunner.class)
+    @SpringBootTest(classes = OpenSearchPropertiesTest.IntegrationTestWithNewProperties.TestConfig.class)
+    @TestPropertySource(
+            properties = {
+                "conductor.opensearch.url=http://integration-new:9200",
+                "conductor.opensearch.version=2",
+                "conductor.opensearch.indexPrefix=integration_new",
+                "conductor.opensearch.clusterHealthColor=yellow"
+            })
+    public static class IntegrationTestWithNewProperties {
+
+        @Configuration
+        @EnableConfigurationProperties(OpenSearchProperties.class)
+        static class TestConfig {}
+
+        @Autowired private OpenSearchProperties properties;
+
+        @Test
+        public void testNewPropertiesBindCorrectlyInSpringContext() {
+            assertEquals("http://integration-new:9200", properties.getUrl());
+            assertEquals(2, properties.getVersion());
+            assertEquals("integration_new", properties.getIndexPrefix());
+            assertEquals("yellow", properties.getClusterHealthColor());
+        }
+    }
+
+    /**
+     * Integration test with Spring Boot context to verify legacy properties still work.
+     */
+    @RunWith(SpringRunner.class)
+    @SpringBootTest(
+            classes = OpenSearchPropertiesTest.IntegrationTestWithLegacyProperties.TestConfig.class)
+    @TestPropertySource(
+            properties = {
+                "conductor.elasticsearch.url=http://integration-legacy:9200",
+                "conductor.elasticsearch.version=1",
+                "conductor.elasticsearch.indexName=integration_legacy",
+                "conductor.elasticsearch.clusterHealthColor=green"
+            })
+    public static class IntegrationTestWithLegacyProperties {
+
+        @Configuration
+        @EnableConfigurationProperties(OpenSearchProperties.class)
+        static class TestConfig {}
+
+        @Autowired private OpenSearchProperties properties;
+
+        @Test
+        public void testLegacyPropertiesBindCorrectlyInSpringContext() {
+            assertEquals("http://integration-legacy:9200", properties.getUrl());
+            assertEquals(1, properties.getVersion());
+            assertEquals("integration_legacy", properties.getIndexPrefix());
+            assertEquals("green", properties.getClusterHealthColor());
+        }
+    }
+
+    /**
+     * Integration test with Spring Boot context to verify mixed properties resolve correctly.
+     */
+    @RunWith(SpringRunner.class)
+    @SpringBootTest(classes = OpenSearchPropertiesTest.IntegrationTestWithMixedProperties.TestConfig.class)
+    @TestPropertySource(
+            properties = {
+                // Legacy properties
+                "conductor.elasticsearch.indexName=legacy_mixed",
+                "conductor.elasticsearch.clusterHealthColor=green",
+                // New properties (should take precedence)
+                "conductor.opensearch.url=http://integration-mixed:9200",
+                "conductor.opensearch.version=2"
+            })
+    public static class IntegrationTestWithMixedProperties {
+
+        @Configuration
+        @EnableConfigurationProperties(OpenSearchProperties.class)
+        static class TestConfig {}
+
+        @Autowired private OpenSearchProperties properties;
+
+        @Test
+        public void testMixedPropertiesResolveCorrectlyInSpringContext() {
+            // New properties should win
+            assertEquals("http://integration-mixed:9200", properties.getUrl());
+            assertEquals(2, properties.getVersion());
+            // Legacy properties should be used where new ones aren't set
+            assertEquals("legacy_mixed", properties.getIndexPrefix());
+            assertEquals("green", properties.getClusterHealthColor());
+        }
     }
 }
