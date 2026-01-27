@@ -36,9 +36,9 @@ import jakarta.annotation.PostConstruct;
  * compatibility, legacy {@code conductor.elasticsearch.*} properties are also supported but
  * deprecated. When both namespaces are configured, {@code conductor.opensearch.*} takes precedence.
  *
- * <p><b>Migration Guide:</b> Replace {@code conductor.elasticsearch.*} properties with their
- * {@code conductor.opensearch.*} equivalents. The legacy namespace will be removed in a future
- * major release.
+ * <p><b>Migration Guide:</b> Replace {@code conductor.elasticsearch.*} properties with their {@code
+ * conductor.opensearch.*} equivalents. The legacy namespace will be removed in a future major
+ * release.
  *
  * @see <a href="https://github.com/conductor-oss/conductor">Conductor Documentation</a>
  */
@@ -140,13 +140,15 @@ public class OpenSearchProperties {
         boolean usingLegacyProperties = false;
 
         // Check and apply legacy version property
-        // Note: conductor.elasticsearch.version=0 is a special value used to disable ES7 auto-config
+        // Note: conductor.elasticsearch.version=0 is a special value used to disable ES7
+        // auto-config
         // For OpenSearch, we only consider positive version numbers from legacy config
         String legacyVersion = environment.getProperty(LEGACY_PREFIX + "version");
         if (legacyVersion != null && !hasNewProperty("version")) {
             try {
                 int parsedVersion = Integer.parseInt(legacyVersion);
-                // Only use legacy version if it's a valid OpenSearch version (not 0 which is ES7 disable flag)
+                // Only use legacy version if it's a valid OpenSearch version (not 0 which is ES7
+                // disable flag)
                 if (parsedVersion > 0) {
                     this.version = parsedVersion;
                     usingLegacyProperties = true;
@@ -176,7 +178,8 @@ public class OpenSearchProperties {
             usingLegacyProperties = true;
         }
 
-        String legacyClusterHealthColor = environment.getProperty(LEGACY_PREFIX + "clusterHealthColor");
+        String legacyClusterHealthColor =
+                environment.getProperty(LEGACY_PREFIX + "clusterHealthColor");
         if (legacyClusterHealthColor != null && !hasNewProperty("clusterHealthColor")) {
             this.clusterHealthColor = legacyClusterHealthColor;
             usingLegacyProperties = true;
@@ -188,7 +191,8 @@ public class OpenSearchProperties {
             usingLegacyProperties = true;
         }
 
-        String legacyAsyncWorkerQueueSize = environment.getProperty(LEGACY_PREFIX + "asyncWorkerQueueSize");
+        String legacyAsyncWorkerQueueSize =
+                environment.getProperty(LEGACY_PREFIX + "asyncWorkerQueueSize");
         if (legacyAsyncWorkerQueueSize != null && !hasNewProperty("asyncWorkerQueueSize")) {
             this.asyncWorkerQueueSize = Integer.parseInt(legacyAsyncWorkerQueueSize);
             usingLegacyProperties = true;
@@ -206,13 +210,15 @@ public class OpenSearchProperties {
             usingLegacyProperties = true;
         }
 
-        String legacyIndexReplicasCount = environment.getProperty(LEGACY_PREFIX + "indexReplicasCount");
+        String legacyIndexReplicasCount =
+                environment.getProperty(LEGACY_PREFIX + "indexReplicasCount");
         if (legacyIndexReplicasCount != null && !hasNewProperty("indexReplicasCount")) {
             this.indexReplicasCount = Integer.parseInt(legacyIndexReplicasCount);
             usingLegacyProperties = true;
         }
 
-        String legacyTaskLogResultLimit = environment.getProperty(LEGACY_PREFIX + "taskLogResultLimit");
+        String legacyTaskLogResultLimit =
+                environment.getProperty(LEGACY_PREFIX + "taskLogResultLimit");
         if (legacyTaskLogResultLimit != null && !hasNewProperty("taskLogResultLimit")) {
             this.taskLogResultLimit = Integer.parseInt(legacyTaskLogResultLimit);
             usingLegacyProperties = true;
@@ -229,12 +235,15 @@ public class OpenSearchProperties {
 
         String legacyAutoIndexManagementEnabled =
                 environment.getProperty(LEGACY_PREFIX + "autoIndexManagementEnabled");
-        if (legacyAutoIndexManagementEnabled != null && !hasNewProperty("autoIndexManagementEnabled")) {
-            this.autoIndexManagementEnabled = Boolean.parseBoolean(legacyAutoIndexManagementEnabled);
+        if (legacyAutoIndexManagementEnabled != null
+                && !hasNewProperty("autoIndexManagementEnabled")) {
+            this.autoIndexManagementEnabled =
+                    Boolean.parseBoolean(legacyAutoIndexManagementEnabled);
             usingLegacyProperties = true;
         }
 
-        String legacyDocumentTypeOverride = environment.getProperty(LEGACY_PREFIX + "documentTypeOverride");
+        String legacyDocumentTypeOverride =
+                environment.getProperty(LEGACY_PREFIX + "documentTypeOverride");
         if (legacyDocumentTypeOverride != null && !hasNewProperty("documentTypeOverride")) {
             this.documentTypeOverride = legacyDocumentTypeOverride;
             usingLegacyProperties = true;
@@ -280,8 +289,7 @@ public class OpenSearchProperties {
                     String.format(
                             "Unsupported OpenSearch version: %d. Supported versions are: [%s]. "
                                     + "Please configure 'conductor.opensearch.version' with a supported version.",
-                            this.version,
-                            supportedVersionsStr));
+                            this.version, supportedVersionsStr));
         }
         log.info("OpenSearch configured with version: {}", this.version);
     }

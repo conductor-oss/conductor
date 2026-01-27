@@ -381,11 +381,10 @@ public class OpenSearchPropertiesTest {
     // Test Cluster 4: Integration Tests
     // =========================================================================
 
-    /**
-     * Integration test with Spring Boot context to verify new properties work end-to-end.
-     */
+    /** Integration test with Spring Boot context to verify new properties work end-to-end. */
     @RunWith(SpringRunner.class)
-    @SpringBootTest(classes = OpenSearchPropertiesTest.IntegrationTestWithNewProperties.TestConfig.class)
+    @SpringBootTest(
+            classes = OpenSearchPropertiesTest.IntegrationTestWithNewProperties.TestConfig.class)
     @TestPropertySource(
             properties = {
                 "conductor.opensearch.url=http://integration-new:9200",
@@ -410,9 +409,7 @@ public class OpenSearchPropertiesTest {
         }
     }
 
-    /**
-     * Integration test with Spring Boot context to verify legacy properties still work.
-     */
+    /** Integration test with Spring Boot context to verify legacy properties still work. */
     @RunWith(SpringRunner.class)
     @SpringBootTest(
             classes = OpenSearchPropertiesTest.IntegrationTestWithLegacyProperties.TestConfig.class)
@@ -440,11 +437,10 @@ public class OpenSearchPropertiesTest {
         }
     }
 
-    /**
-     * Integration test with Spring Boot context to verify mixed properties resolve correctly.
-     */
+    /** Integration test with Spring Boot context to verify mixed properties resolve correctly. */
     @RunWith(SpringRunner.class)
-    @SpringBootTest(classes = OpenSearchPropertiesTest.IntegrationTestWithMixedProperties.TestConfig.class)
+    @SpringBootTest(
+            classes = OpenSearchPropertiesTest.IntegrationTestWithMixedProperties.TestConfig.class)
     @TestPropertySource(
             properties = {
                 // Legacy properties
