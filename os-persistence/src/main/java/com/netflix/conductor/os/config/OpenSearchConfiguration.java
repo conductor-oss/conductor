@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -45,6 +46,12 @@ public class OpenSearchConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(OpenSearchConfiguration.class);
 
+    private final Environment environment;
+
+    public OpenSearchConfiguration(Environment environment) {
+        this.environment = environment;
+    }
+
     @Bean
     public RestClient restClient(RestClientBuilder restClientBuilder) {
         return restClientBuilder.build();
@@ -52,6 +59,10 @@ public class OpenSearchConfiguration {
 
     @Bean
     public RestClientBuilder osRestClientBuilder(OpenSearchProperties properties) {
+        // Inject environment for backward compatibility with legacy properties
+        properties.setEnvironment(environment);
+        properties.init();
+
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
 
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
