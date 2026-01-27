@@ -17,9 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.lang.NonNull;
 
+import com.netflix.conductor.asq.eventqueue.AzureObservableQueue;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.asq.eventqueue.AzureObservableQueue;
 
 import com.azure.storage.queue.QueueServiceClient;
 import rx.Scheduler;

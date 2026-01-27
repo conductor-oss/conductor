@@ -23,10 +23,10 @@ import org.springframework.context.annotation.Configuration;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 
-import com.azure.identity.WorkloadIdentityCredential;
-import com.azure.identity.WorkloadIdentityCredentialBuilder;
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.identity.WorkloadIdentityCredential;
+import com.azure.identity.WorkloadIdentityCredentialBuilder;
 import com.azure.storage.queue.*;
 import com.azure.storage.queue.QueueServiceClient;
 import rx.Scheduler;
@@ -40,30 +40,33 @@ public class AzureEventQueueConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureEventQueueProperties.class);
 
-   @Bean
-   @ConditionalOnProperty(name = "conductor.event-queues.azure.identity", havingValue = "defaultAzureCredential", matchIfMissing = true)
-   public QueueServiceClient getDefaultAzureClient() throws Exception {
-                try {
-                    DefaultAzureCredential credential = new
-     DefaultAzureCredentialBuilder().build();
+    @Bean
+    @ConditionalOnProperty(
+            name = "conductor.event-queues.azure.identity",
+            havingValue = "defaultAzureCredential",
+            matchIfMissing = true)
+    public QueueServiceClient getDefaultAzureClient() throws Exception {
+        try {
+            DefaultAzureCredential credential = new DefaultAzureCredentialBuilder().build();
 
-                    String endpoint = azureEventQueueProperties.getEndpoint();
-                    QueueServiceClient serviceClient =
-                            new QueueServiceClientBuilder()
-                                    .endpoint(endpoint)
-                                    .credential(credential)
-                                    .buildClient();
-                    return serviceClient;
-                } catch (Exception e) {
-                    throw new Exception("Unable to initialize azure queue client " +
-     e.getMessage());
-                }
-            }
+            String endpoint = azureEventQueueProperties.getEndpoint();
+            QueueServiceClient serviceClient =
+                    new QueueServiceClientBuilder()
+                            .endpoint(endpoint)
+                            .credential(credential)
+                            .buildClient();
+            return serviceClient;
+        } catch (Exception e) {
+            throw new Exception("Unable to initialize azure queue client " + e.getMessage());
+        }
+    }
 
     @Bean
-    @ConditionalOnProperty(name = "conductor.event-queues.azure.identity", havingValue = "workloadIdentityCredential")
-    public QueueServiceClient getWorkloadIdentityAzureClient(ConductorProperties conductorProperties)
-            throws Exception {
+    @ConditionalOnProperty(
+            name = "conductor.event-queues.azure.identity",
+            havingValue = "workloadIdentityCredential")
+    public QueueServiceClient getWorkloadIdentityAzureClient(
+            ConductorProperties conductorProperties) throws Exception {
         try {
             WorkloadIdentityCredential credential = new WorkloadIdentityCredentialBuilder().build();
 
