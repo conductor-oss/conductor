@@ -220,4 +220,153 @@ public class OpenSearchPropertiesTest {
             assertEquals(version, props.getVersion());
         }
     }
+
+    // =========================================================================
+    // Test Cluster 3: Property Precedence
+    // =========================================================================
+
+    @Test
+    public void testNewUrlPropertyOverridesLegacy() {
+        MockEnvironment env = new MockEnvironment();
+        env.setProperty("conductor.elasticsearch.url", "http://legacy:9200");
+        env.setProperty("conductor.opensearch.url", "http://new:9200");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding for new property
+        props.setUrl("http://new:9200");
+        props.setEnvironment(env);
+        props.init();
+
+        // New property should be preserved (not overridden by legacy fallback)
+        assertEquals("http://new:9200", props.getUrl());
+    }
+
+    @Test
+    public void testNewVersionPropertyOverridesLegacy() {
+        MockEnvironment env = new MockEnvironment();
+        env.setProperty("conductor.elasticsearch.version", "1");
+        env.setProperty("conductor.opensearch.version", "2");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding for new property
+        props.setVersion(2);
+        props.setEnvironment(env);
+        props.init();
+
+        // New property should be preserved (not overridden by legacy fallback)
+        assertEquals(2, props.getVersion());
+    }
+
+    @Test
+    public void testNewIndexPrefixPropertyOverridesLegacy() {
+        MockEnvironment env = new MockEnvironment();
+        env.setProperty("conductor.elasticsearch.indexName", "legacy_prefix");
+        env.setProperty("conductor.opensearch.indexPrefix", "new_prefix");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding for new property
+        props.setIndexPrefix("new_prefix");
+        props.setEnvironment(env);
+        props.init();
+
+        // New property should be preserved (not overridden by legacy fallback)
+        assertEquals("new_prefix", props.getIndexPrefix());
+    }
+
+    @Test
+    public void testMixedPropertiesResolveCorrectly() {
+        MockEnvironment env = new MockEnvironment();
+        // Legacy properties set in environment
+        env.setProperty("conductor.elasticsearch.indexName", "legacy_prefix");
+        env.setProperty("conductor.elasticsearch.indexBatchSize", "100");
+        env.setProperty("conductor.opensearch.url", "http://new:9200");
+        env.setProperty("conductor.opensearch.version", "2");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding for new properties
+        props.setUrl("http://new:9200");
+        props.setVersion(2);
+        // Don't set indexPrefix or indexBatchSize - let them fallback from legacy
+        props.setEnvironment(env);
+        props.init();
+
+        // New properties should be preserved
+        assertEquals("http://new:9200", props.getUrl());
+        assertEquals(2, props.getVersion());
+        // Legacy properties should be used where new ones aren't set
+        assertEquals("legacy_prefix", props.getIndexPrefix());
+        assertEquals(100, props.getIndexBatchSize());
+    }
+
+    @Test
+    public void testOnlyNewPropertiesWork() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding
+        props.setUrl("http://new:9200");
+        props.setVersion(2);
+        props.setIndexPrefix("new_prefix");
+        props.setClusterHealthColor("yellow");
+
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init();
+
+        assertEquals("http://new:9200", props.getUrl());
+        assertEquals(2, props.getVersion());
+        assertEquals("new_prefix", props.getIndexPrefix());
+        assertEquals("yellow", props.getClusterHealthColor());
+    }
+
+    @Test
+    public void testNewPropertiesTakePrecedenceForAllConfigurableFields() {
+        MockEnvironment env = new MockEnvironment();
+        // Set all as legacy
+        env.setProperty("conductor.elasticsearch.url", "http://legacy:9200");
+        env.setProperty("conductor.elasticsearch.indexName", "legacy_prefix");
+        env.setProperty("conductor.elasticsearch.clusterHealthColor", "green");
+        env.setProperty("conductor.elasticsearch.indexReplicasCount", "1");
+        env.setProperty("conductor.elasticsearch.username", "legacy_user");
+        // Set new properties in environment so hasNewProperty() returns true
+        env.setProperty("conductor.opensearch.url", "http://new:9200");
+        env.setProperty("conductor.opensearch.indexPrefix", "new_prefix");
+        env.setProperty("conductor.opensearch.clusterHealthColor", "yellow");
+        env.setProperty("conductor.opensearch.indexReplicasCount", "2");
+        env.setProperty("conductor.opensearch.username", "new_user");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Simulate Spring's @ConfigurationProperties binding for new properties
+        props.setUrl("http://new:9200");
+        props.setIndexPrefix("new_prefix");
+        props.setClusterHealthColor("yellow");
+        props.setIndexReplicasCount(2);
+        props.setUsername("new_user");
+        props.setEnvironment(env);
+        props.init();
+
+        // All new properties should be preserved (not overridden by legacy fallback)
+        assertEquals("http://new:9200", props.getUrl());
+        assertEquals("new_prefix", props.getIndexPrefix());
+        assertEquals("yellow", props.getClusterHealthColor());
+        assertEquals(2, props.getIndexReplicasCount());
+        assertEquals("new_user", props.getUsername());
+    }
+
+    @Test
+    public void testHasNewPropertyDetectsCorrectly() {
+        MockEnvironment env = new MockEnvironment();
+        env.setProperty("conductor.opensearch.url", "http://new:9200");
+        env.setProperty("conductor.elasticsearch.indexName", "legacy_prefix");
+
+        OpenSearchProperties props = new OpenSearchProperties();
+        // Set only URL via new property
+        props.setUrl("http://new:9200");
+        // Don't set indexPrefix - let it fallback from legacy
+        props.setEnvironment(env);
+        props.init();
+
+        // URL was set via new property (should be preserved)
+        assertEquals("http://new:9200", props.getUrl());
+        // IndexPrefix was not set via new property (should use legacy fallback)
+        assertEquals("legacy_prefix", props.getIndexPrefix());
+    }
 }
