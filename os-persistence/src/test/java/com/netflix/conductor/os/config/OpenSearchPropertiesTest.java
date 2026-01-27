@@ -135,4 +135,89 @@ public class OpenSearchPropertiesTest {
         assertEquals(2, props.getVersion());
         assertEquals("localhost:9201", props.getUrl());
     }
+
+    // =========================================================================
+    // Test Cluster 2: Version Validation
+    // =========================================================================
+
+    @Test
+    public void testSupportedVersion1IsAccepted() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        props.setVersion(1);
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init(); // Should not throw
+
+        assertEquals(1, props.getVersion());
+    }
+
+    @Test
+    public void testSupportedVersion2IsAccepted() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        props.setVersion(2);
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init(); // Should not throw
+
+        assertEquals(2, props.getVersion());
+    }
+
+    @Test
+    public void testDefaultVersionIs2() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init();
+
+        assertEquals(2, props.getVersion());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUnsupportedVersion3ThrowsException() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        props.setVersion(3);
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init(); // Should throw IllegalArgumentException
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUnsupportedVersion99ThrowsException() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        props.setVersion(99);
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+        props.init(); // Should throw IllegalArgumentException
+    }
+
+    @Test
+    public void testUnsupportedVersionExceptionMessage() {
+        OpenSearchProperties props = new OpenSearchProperties();
+        props.setVersion(99);
+        MockEnvironment env = new MockEnvironment();
+        props.setEnvironment(env);
+
+        try {
+            props.init();
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            // Verify error message contains useful information
+            assertTrue(e.getMessage().contains("Unsupported OpenSearch version: 99"));
+            assertTrue(e.getMessage().contains("Supported versions are"));
+        }
+    }
+
+    @Test
+    public void testAllSupportedVersionsAreAccepted() {
+        // Test all versions in SUPPORTED_VERSIONS set
+        for (int version : OpenSearchProperties.getSupportedVersions()) {
+            OpenSearchProperties props = new OpenSearchProperties();
+            props.setVersion(version);
+            MockEnvironment env = new MockEnvironment();
+            props.setEnvironment(env);
+            props.init(); // Should not throw
+
+            assertEquals(version, props.getVersion());
+        }
+    }
 }
