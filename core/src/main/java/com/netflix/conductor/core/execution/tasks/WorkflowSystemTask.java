@@ -112,6 +112,24 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * Returns the task reference that represents the terminal point for this task.
+     *
+     * <p>For simple tasks, this returns the task itself. For container tasks (SWITCH, FORK_JOIN,
+     * etc.), this may return the last child task in the executed branch. This allows the Join task
+     * to correctly wait for all child tasks within container tasks.
+     *
+     * <p>Container tasks should override this method to provide their own resolution logic.
+     *
+     * @param workflow the workflow model
+     * @param task the task model (should be in terminal state for meaningful resolution)
+     * @return the reference name of the terminal task
+     */
+    public String getTerminalTaskRef(
+            WorkflowModel workflow, TaskModel task, SystemTaskRegistry systemTaskRegistry) {
+        return task.getReferenceTaskName();
+    }
+
+    /**
      * Default to true for retrieving tasks when retrieving workflow data. Some cases (e.g.
      * subworkflows) might not need the tasks at all, and by setting this to false in that case, you
      * can get a solid performance gain.
