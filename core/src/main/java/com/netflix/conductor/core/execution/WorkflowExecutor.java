@@ -118,12 +118,17 @@ public interface WorkflowExecutor {
     void terminateWorkflow(String workflowId, String reason);
 
     /**
-     * @param workflow the workflow to be terminated
-     * @param reason the reason for termination
-     * @param failureWorkflow the failure workflow (if any) to be triggered as a result of this
+     * @param workflow Workflow to be terminated
+     * @param reason Reason for termination
+     * @param failureWorkflow Failure workflow (if any), to be triggered as a result of this
      *     termination
+     * @param failureWorkflowVersion Failure workflow version (if any)
      */
-    WorkflowModel terminateWorkflow(WorkflowModel workflow, String reason, String failureWorkflow);
+    WorkflowModel terminateWorkflow(
+            WorkflowModel workflow,
+            String reason,
+            String failureWorkflow,
+            Integer failureWorkflowVersion);
 
     /**
      * @param workflowId

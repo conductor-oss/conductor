@@ -60,32 +60,35 @@ public class WorkflowDef extends Auditable {
     private String failureWorkflow;
 
     @ProtoField(id = 8)
+    private Integer failureWorkflowVersion;
+
+    @ProtoField(id = 9)
     @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     @Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
     private int schemaVersion = 2;
 
     // By default a workflow is restartable
-    @ProtoField(id = 9)
+    @ProtoField(id = 10)
     private boolean restartable = true;
 
-    @ProtoField(id = 10)
+    @ProtoField(id = 11)
     private boolean workflowStatusListenerEnabled = false;
 
-    @ProtoField(id = 11)
+    @ProtoField(id = 12)
     @OwnerEmailMandatoryConstraint
     private String ownerEmail;
 
-    @ProtoField(id = 12)
+    @ProtoField(id = 13)
     private TimeoutPolicy timeoutPolicy = TimeoutPolicy.ALERT_ONLY;
 
-    @ProtoField(id = 13)
+    @ProtoField(id = 14)
     @NotNull
     private long timeoutSeconds;
 
-    @ProtoField(id = 14)
+    @ProtoField(id = 15)
     private Map<String, Object> variables = new HashMap<>();
 
-    @ProtoField(id = 15)
+    @ProtoField(id = 16)
     private Map<String, Object> inputTemplate = new HashMap<>();
 
     @ProtoField(id = 17)
@@ -220,6 +223,24 @@ public class WorkflowDef extends Auditable {
      */
     public void setFailureWorkflow(String failureWorkflow) {
         this.failureWorkflow = failureWorkflow;
+    }
+
+    /**
+     * Failure workflow version
+     *
+     * @return failureWorkflowVersion
+     */
+    public Integer getFailureWorkflowVersion() {
+        return failureWorkflowVersion;
+    }
+
+    /**
+     * Sets the failure workflow version
+     *
+     * @param failureWorkflowVersion
+     */
+    public void setFailureWorkflowVersion(Integer failureWorkflowVersion) {
+        this.failureWorkflowVersion = failureWorkflowVersion;
     }
 
     /**
