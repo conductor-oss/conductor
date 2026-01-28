@@ -57,8 +57,6 @@ import com.netflix.conductor.service.ExecutionLockService;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
-import static org.conductoross.conductor.core.execution.ExecutorUtils.computePostpone;
-
 /** Workflow services provider interface */
 @Trace
 @Component
@@ -1147,20 +1145,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 executionDAOFacade.updateWorkflow(workflow);
             }
 
-            Duration timeout = properties.getWorkflowOffsetTimeout();
             if (!workflow.getStatus().isTerminal()) {
-                Duration updatedOffset = computePostpone(workflow, timeout);
-                if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                    // we have a new value, setUnack uses time in millis
-                    LOGGER.debug(
-                            "Pushing the workflow {} into decider queue by {} millis",
-                            workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
-                    queueDAO.setUnackTimeout(
-                            DECIDER_QUEUE,
-                            workflow.getWorkflowId(),
-                            updatedOffset.getSeconds() * 1000);
-                }
+                Duration timeout = properties.getWorkflowOffsetTimeout();
+                queueDAO.setUnackTimeout(
+                        DECIDER_QUEUE, workflow.getWorkflowId(), timeout.getSeconds() * 1000);
             }
 
             return workflow;
