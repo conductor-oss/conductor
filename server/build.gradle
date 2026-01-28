@@ -44,6 +44,8 @@ dependencies {
     def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
     if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
+        implementation project(':conductor-os-persistence-v2')
+        implementation project(':conductor-os-persistence-v3')
     } else {
         implementation project(':conductor-es7-persistence')
     }
