@@ -73,6 +73,7 @@ public class OpenSearchDeprecationConfiguration {
                 "║                                                                            ║\n" +
                 "║  All other conductor.opensearch.* properties remain the same.             ║\n" +
                 "║                                                                            ║\n" +
+                "║  Legacy code: github.com/conductor-oss/conductor-os-persistence-v1        ║\n" +
                 "║  See: https://github.com/conductor-oss/conductor/issues/678               ║\n" +
                 "║                                                                            ║\n" +
                 "╚════════════════════════════════════════════════════════════════════════════╝\n";
