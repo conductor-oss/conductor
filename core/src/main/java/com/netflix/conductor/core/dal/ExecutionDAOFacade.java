@@ -13,10 +13,8 @@
 package com.netflix.conductor.core.dal;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -41,6 +39,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.execution.listeners.TaskUpdateListener;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.*;
@@ -76,6 +75,7 @@ public class ExecutionDAOFacade {
     private final ObjectMapper objectMapper;
     private final ConductorProperties properties;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
+    private final List<TaskUpdateListener> taskUpdateListeners;
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
@@ -88,7 +88,8 @@ public class ExecutionDAOFacade {
             PollDataDAO pollDataDAO,
             ObjectMapper objectMapper,
             ConductorProperties properties,
-            ExternalPayloadStorageUtils externalPayloadStorageUtils) {
+            ExternalPayloadStorageUtils externalPayloadStorageUtils,
+            List<TaskUpdateListener> taskUpdateListeners) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.indexDAO = indexDAO;
@@ -98,6 +99,7 @@ public class ExecutionDAOFacade {
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
+        this.taskUpdateListeners = taskUpdateListeners;
         this.scheduledThreadPoolExecutor =
                 new ScheduledThreadPoolExecutor(
                         4,
@@ -505,7 +507,17 @@ public class ExecutionDAOFacade {
             }
         }
         externalizeTaskData(taskModel);
+
+        if (!taskModel.getUpdateListeners().isEmpty()) {
+            for (TaskUpdateListener<?> listener : taskUpdateListeners) {
+                for (Object entry : taskModel.getUpdateListeners().getOrDefault(listener.getType(), Collections.emptyList())) {
+                    listener.onTaskUpdateWithOptions(taskModel, entry);
+                }
+            }
+        }
+
         executionDAO.updateTask(taskModel);
+
         try {
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing

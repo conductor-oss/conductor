@@ -32,6 +32,7 @@ public class TaskMapperContext {
     private final String retryTaskId;
     private final String taskId;
     private final DeciderService deciderService;
+    private final String parentTaskId;
 
     private TaskMapperContext(Builder builder) {
         workflowModel = builder.workflowModel;
@@ -42,6 +43,7 @@ public class TaskMapperContext {
         retryTaskId = builder.retryTaskId;
         taskId = builder.taskId;
         deciderService = builder.deciderService;
+        parentTaskId = builder.parentTaskId;
     }
 
     public static Builder newBuilder() {
@@ -104,6 +106,7 @@ public class TaskMapperContext {
         taskModel.setWorkflowType(workflowModel.getWorkflowName());
         taskModel.setCorrelationId(workflowModel.getCorrelationId());
         taskModel.setScheduledTime(System.currentTimeMillis());
+        taskModel.setParentTaskId(parentTaskId);
 
         taskModel.setTaskId(taskId);
         taskModel.setWorkflowTask(workflowTask);
@@ -194,6 +197,7 @@ public class TaskMapperContext {
         private String retryTaskId;
         private String taskId;
         private DeciderService deciderService;
+        private String parentTaskId;
 
         private Builder() {}
 
@@ -290,6 +294,18 @@ public class TaskMapperContext {
          */
         public Builder withDeciderService(DeciderService val) {
             deciderService = val;
+            return this;
+        }
+
+        /**
+         * Sets the {@code parentTaskId} and returns a reference to this Builder so that the methods
+         * can be chained together.
+         *
+         * @param parentTaskId the {@code parentTaskId} to set
+         * @return a reference to this Builder
+         */
+        public Builder withParentTaskId(String parentTaskId) {
+            parentTaskId = parentTaskId;
             return this;
         }
 

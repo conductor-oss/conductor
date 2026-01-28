@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.listeners.TaskUpdateListener;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -35,9 +36,12 @@ import com.netflix.conductor.model.WorkflowModel;
  * expression evaluation in the Switch task.
  */
 @Component
-public class SwitchTaskMapper implements TaskMapper {
+public class SwitchTaskMapper implements ParentTaskMapper, TaskUpdateListener.Action<TaskModel> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwitchTaskMapper.class);
+
+    private static final String SELECTED_CASE = "selectedCase";
+    private static final String BRANCH_OUTPUT = "branchOutput";
 
     private final Map<String, Evaluator> evaluators;
 
@@ -108,7 +112,7 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.getInputData().putAll(taskInput);
         switchTask.getInputData().put("case", evalResult);
         switchTask.addOutput("evaluationResult", List.of(evalResult));
-        switchTask.addOutput("selectedCase", evalResult);
+        switchTask.addOutput(SELECTED_CASE, evalResult);
         switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
@@ -135,9 +139,64 @@ public class SwitchTaskMapper implements TaskMapper {
                                     selectedTask,
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
+
+            for (TaskModel caseTask : caseTasks) {
+                caseTask.setParentTaskId(switchTask.getTaskId());
+            }
+
             tasksToBeScheduled.addAll(caseTasks);
-            switchTask.getInputData().put("hasChildren", "true");
+            switchTask.getInputData().put(HAS_CHILDREN, "true");
         }
         return tasksToBeScheduled;
+    }
+
+    @Override
+    public boolean isChild(WorkflowModel workflow, TaskModel switchTask, WorkflowTask task) {
+        String selectedCase = (String) switchTask.getOutputData().get(SELECTED_CASE);
+        List<WorkflowTask> workflowTasks =
+                switchTask
+                        .getWorkflowTask()
+                        .getDecisionCases()
+                        .getOrDefault(selectedCase, switchTask.getWorkflowTask().getDefaultCase());
+
+        return this.isChild(task, workflowTasks);
+    }
+
+    private boolean isLastTaskInBranch(TaskModel switchTask, TaskModel task) {
+        String selectedCase = (String) switchTask.getOutputData().get(SELECTED_CASE);
+        List<WorkflowTask> workflowTasks =
+                switchTask
+                        .getWorkflowTask()
+                        .getDecisionCases()
+                        .getOrDefault(selectedCase, switchTask.getWorkflowTask().getDefaultCase());
+
+        return !workflowTasks.isEmpty()
+                && workflowTasks
+                        .get(workflowTasks.size() - 1)
+                        .getTaskReferenceName()
+                        .equals(task.getReferenceTaskName());
+    }
+
+    @Override
+    public TaskModel processChild(
+            WorkflowModel workflow, TaskModel switchTask, TaskModel childTask) {
+        if (isLastTaskInBranch(switchTask, childTask)) {
+            this.addParentTaskListener(switchTask, childTask);
+        }
+
+        return childTask;
+    }
+
+    @Override
+    public Result onTaskUpdate(TaskModel switchCase, TaskModel updated) {
+        if (updated.getStatus().isTerminal() && isLastTaskInBranch(switchCase, updated)) {
+            switchCase.getOutputData().put(BRANCH_OUTPUT, updated.getOutputData());
+            switchCase.setStatus(TaskModel.Status.COMPLETED);
+            switchCase.setEndTime(System.currentTimeMillis());
+
+            return Result.TARGET_UPDATED;
+        }
+
+        return Result.UNMODIFIED;
     }
 }
