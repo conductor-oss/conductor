@@ -196,6 +196,7 @@ public class TestWorkflowExecutor {
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
                         taskMappers,
+                        new HashMap<>(),
                         Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
@@ -709,7 +710,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -755,7 +756,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -868,7 +869,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -947,7 +948,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -1037,7 +1038,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
@@ -1194,7 +1195,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.TIMED_OUT);
 
@@ -1279,7 +1280,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
         workflow.setReasonForIncompletion("task1 failed");
@@ -1435,7 +1436,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRerunWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
         workflow.setReasonForIncompletion("task1 failed");
@@ -2539,7 +2540,7 @@ public class TestWorkflowExecutor {
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setCreateTime(10L);
         workflow.setEndTime(100L);
-        //noinspection unchecked
+        // noinspection unchecked
         workflow.setOutput(Collections.EMPTY_MAP);
         workflow.setStatus(WorkflowModel.Status.FAILED);
 
