@@ -13,7 +13,6 @@
 package com.netflix.conductor.core.reconciliation;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,12 +71,8 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
                 List<String> workflowIds =
                         queueDAO.pop(DECIDER_QUEUE, sweeperThreadCount, sweeperWorkflowPollTimeout);
                 if (workflowIds != null) {
-                    // wait for all workflow ids to be "swept"
-                    CompletableFuture.allOf(
-                                    workflowIds.stream()
-                                            .map(workflowSweeper::sweepAsync)
-                                            .toArray(CompletableFuture[]::new))
-                            .get();
+                    // Process all workflow ids synchronously
+                    workflowIds.forEach(workflowSweeper::sweep);
                     LOGGER.debug(
                             "Sweeper processed {} from the decider queue",
                             String.join(",", workflowIds));
