@@ -132,14 +132,13 @@ public class TestExecutorUtils {
         Duration result =
                 ExecutorUtils.computePostpone(workflow, workflowOffsetTimeout, maxPostponeDuration);
 
-        // Should be approximately 120 - 10 + 1 = 111 seconds, but capped at workflowOffsetTimeout (30s)
+        // Should be approximately 120 - 10 + 1 = 111 seconds, but capped at workflowOffsetTimeout
+        // (30s)
         // Then jitter: 30 ± 10 = [20, 40] seconds
         assertTrue(
-                "Postpone should be capped at workflow offset (20-40s)",
-                result.getSeconds() >= 20);
+                "Postpone should be capped at workflow offset (20-40s)", result.getSeconds() >= 20);
         assertTrue(
-                "Postpone should be capped at workflow offset (20-40s)",
-                result.getSeconds() <= 40);
+                "Postpone should be capped at workflow offset (20-40s)", result.getSeconds() <= 40);
     }
 
     @Test
