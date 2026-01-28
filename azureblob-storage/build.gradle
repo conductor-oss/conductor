@@ -5,4 +5,5 @@ dependencies {
 
     implementation "com.azure:azure-storage-blob:${revAzureStorageBlobSdk}"
     implementation "org.apache.commons:commons-lang3"
+    implementation "com.azure:azure-identity:1.16.2"
 }

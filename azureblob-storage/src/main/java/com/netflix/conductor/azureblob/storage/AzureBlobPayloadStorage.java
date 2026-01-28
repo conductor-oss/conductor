@@ -37,6 +37,8 @@ import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
+import com.azure.identity.WorkloadIdentityCredential;
+import com.azure.identity.WorkloadIdentityCredentialBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.common.Utility;
 import com.azure.storage.common.implementation.credentials.SasTokenCredential;
@@ -61,6 +63,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
     private final BlobContainerClient blobContainerClient;
     private final long expirationSec;
     private final SasTokenCredential sasTokenCredential;
+    private final WorkloadIdentityCredential workloadIdentityCredential;
 
     public AzureBlobPayloadStorage(IDGenerator idGenerator, AzureBlobProperties properties) {
         this.idGenerator = idGenerator;
@@ -78,13 +81,18 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
         if (connectionString != null) {
             blobContainerClientBuilder.connectionString(connectionString);
             sasTokenCredential = null;
+            workloadIdentityCredential = null;
         } else if (endpoint != null) {
             blobContainerClientBuilder.endpoint(endpoint);
             if (sasToken != null) {
                 sasTokenCredential = SasTokenCredential.fromSasTokenString(sasToken);
                 blobContainerClientBuilder.sasToken(sasTokenCredential.getSasToken());
+                workloadIdentityCredential = null;
             } else {
                 sasTokenCredential = null;
+                // use WorkloadIdentityCredential
+                workloadIdentityCredential = new WorkloadIdentityCredentialBuilder().build();
+                blobContainerClientBuilder.credential(workloadIdentityCredential);
             }
         } else {
             String msg = "Missing property for connectionString OR endpoint";
@@ -117,10 +125,14 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
             BlockBlobClient blockBlobClient =
                     blobContainerClient.getBlobClient(objectKey).getBlockBlobClient();
             String blobUrl = Utility.urlDecode(blockBlobClient.getBlobUrl());
+            String blobUrl_noDecode = blockBlobClient.getBlobUrl();
 
             if (sasTokenCredential != null) {
                 blobUrl = blobUrl + "?" + sasTokenCredential.getSasToken();
-            } else {
+            } else if(workloadIdentityCredential != null ){
+                // do not decode blob url when using workloadIdentityCredential
+                blobUrl = blobUrl_noDecode;
+            }else{
                 BlobSasPermission blobSASPermission = new BlobSasPermission();
                 if (operation.equals(Operation.READ)) {
                     blobSASPermission.setReadPermission(true);
