@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestPropertySource(
         properties = {
             "conductor.indexing.enabled=true",
-            "conductor.indexing.type=opensearch",
+            "conductor.indexing.type=opensearch2",
             // Disable ES7 auto-configuration
             "conductor.elasticsearch.version=0",
             // Use new OpenSearch namespace
