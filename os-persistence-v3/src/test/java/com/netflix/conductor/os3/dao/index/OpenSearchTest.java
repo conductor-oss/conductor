@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestPropertySource(
         properties = {
             "conductor.indexing.enabled=true",
-            "conductor.indexing.type=opensearch",
+            "conductor.indexing.type=opensearch3",
             // Disable ES7 auto-configuration
             "conductor.elasticsearch.version=0",
             // Use new OpenSearch namespace
@@ -55,7 +55,7 @@ public abstract class OpenSearchTest {
     protected static OpensearchContainer<?> container =
             new OpensearchContainer<>(
                     DockerImageName.parse(
-                            "opensearchproject/opensearch:2.18.0")); // this should match the client
+                            "opensearchproject/opensearch:3.0.0")); // this should match the client
     // version
 
     @Autowired protected ObjectMapper objectMapper;
