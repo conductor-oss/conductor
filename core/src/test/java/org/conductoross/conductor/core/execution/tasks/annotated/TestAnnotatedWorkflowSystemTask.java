@@ -57,6 +57,14 @@ public class TestAnnotatedWorkflowSystemTask {
         public Map<String, Object> returnsNull(@InputParam("input") String input) {
             return null;
         }
+
+        public Map<String, Object> taskWithContext(
+                TaskContext context, @InputParam("input") String input) {
+            if (context == null) {
+                throw new RuntimeException("TaskContext is null");
+            }
+            return Map.of("taskId", context.getTaskId(), "input", input);
+        }
     }
 
     @Test
@@ -129,6 +137,27 @@ public class TestAnnotatedWorkflowSystemTask {
         assertTrue(result);
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertTrue(task.getOutputData().isEmpty());
+    }
+
+    @Test
+    public void testTaskWithContext() throws Exception {
+        TestWorkerBean bean = new TestWorkerBean();
+        Method method =
+                TestWorkerBean.class.getMethod("taskWithContext", TaskContext.class, String.class);
+        WorkerTask annotation = createAnnotation("context_task");
+
+        AnnotatedWorkflowSystemTask systemTask =
+                new AnnotatedWorkflowSystemTask("context_task", method, bean, annotation);
+
+        TaskModel task = createTask(Map.of("input", "context_test"));
+        task.setTaskId("ctx-task-id");
+
+        boolean result = systemTask.execute(workflow, task, workflowExecutor);
+
+        assertTrue(result);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("ctx-task-id", task.getOutputData().get("taskId"));
+        assertEquals("context_test", task.getOutputData().get("input"));
     }
 
     @Test

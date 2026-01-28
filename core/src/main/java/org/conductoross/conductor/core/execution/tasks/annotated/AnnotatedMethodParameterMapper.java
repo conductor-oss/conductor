@@ -77,6 +77,13 @@ public class AnnotatedMethodParameterMapper {
         Object[] values = new Object[parameterTypes.length];
 
         for (int i = 0; i < parameterTypes.length; i++) {
+            Class<?> parameterType = parameterTypes[i];
+
+            if (parameterType.equals(TaskContext.class)) {
+                values[i] = TaskContext.get();
+                continue;
+            }
+
             Annotation[] paramAnnotation = parameterAnnotations[i];
 
             // WorkflowInstanceIdInputParam not available in SDK v3.x - uncomment when
@@ -87,7 +94,6 @@ public class AnnotatedMethodParameterMapper {
             // } else
             if (paramAnnotation.length > 0) {
                 Type type = parameters[i].getParameterizedType();
-                Class<?> parameterType = parameterTypes[i];
                 values[i] = getInputValue(task, parameterType, type, paramAnnotation);
             } else {
                 // No annotation - convert entire input data to parameter type

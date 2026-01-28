@@ -71,6 +71,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
+        TaskContext.set(task);
         try {
             LOGGER.debug(
                     "Executing annotated task {} for workflow {}",
@@ -99,6 +100,8 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion("Unexpected error: " + e.getMessage());
             return true;
+        } finally {
+            TaskContext.clear();
         }
     }
 
