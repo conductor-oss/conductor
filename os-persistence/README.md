@@ -43,7 +43,16 @@ All other `conductor.opensearch.*` properties remain the same.
 - Version-specific modules use shadow plugin to relocate packages and avoid conflicts
 - Follows the same pattern as `es6-persistence` and `es7-persistence`
 
+## Legacy Code Reference
+
+If you need the original OpenSearch 1.x persistence module code for reference, it has been archived at:
+
+https://github.com/conductor-oss/conductor-os-persistence-v1
+
+**Note:** The archived module is no longer maintained and should not be used in production.
+
 ## See Also
 
 - Issue #678: https://github.com/conductor-oss/conductor/issues/678
-- Migration Guide: [link to docs when published]
+- Legacy OpenSearch 1.x Module: https://github.com/conductor-oss/conductor-os-persistence-v1
+- Legacy Elasticsearch 6.x Module: https://github.com/conductor-oss/conductor-es6-persistence
