@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
