@@ -67,6 +67,9 @@ public class ElasticSearchProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration indexRefreshInterval = Duration.ofSeconds(30);
 
+    /** Path to a PEM-encoded certificate to trust for HTTPS connections. */
+    private String trustCertPath;
+
     /** The timeout in milliseconds used when requesting a connection from the connection manager */
     private int restClientConnectionRequestTimeout = -1;
 
@@ -184,6 +187,14 @@ public class ElasticSearchProperties {
 
     public void setIndexRefreshInterval(Duration indexRefreshInterval) {
         this.indexRefreshInterval = indexRefreshInterval;
+    }
+
+    public String getTrustCertPath() {
+        return trustCertPath;
+    }
+
+    public void setTrustCertPath(String trustCertPath) {
+        this.trustCertPath = trustCertPath;
     }
 
     public int getRestClientConnectionRequestTimeout() {

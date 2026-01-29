@@ -13,7 +13,13 @@
 package com.netflix.conductor.es8.config;
 
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.List;
+import javax.net.ssl.SSLContext;
 
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -54,6 +60,7 @@ public class ElasticSearchV8Configuration {
     public RestClientBuilder elasticRestClientBuilder(ElasticSearchProperties properties) {
         RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
 
+        CredentialsProvider credentialsProvider = null;
         if (properties.getRestClientConnectionRequestTimeout() > 0) {
             builder.setRequestConfigCallback(
                     requestConfigBuilder ->
@@ -65,18 +72,60 @@ public class ElasticSearchV8Configuration {
             log.info(
                     "Configure ElasticSearch with BASIC authentication. User:{}",
                     properties.getUsername());
-            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(
                     AuthScope.ANY,
                     new UsernamePasswordCredentials(
                             properties.getUsername(), properties.getPassword()));
-            builder.setHttpClientConfigCallback(
-                    httpClientBuilder ->
-                            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         } else {
             log.info("Configure ElasticSearch with no authentication.");
         }
+
+        SSLContext sslContext = null;
+        if (properties.getTrustCertPath() != null && !properties.getTrustCertPath().isBlank()) {
+            try {
+                sslContext = buildSslContextFromCert(properties.getTrustCertPath().trim());
+                log.info("Configured Elasticsearch REST client with custom trust certificate.");
+            } catch (Exception e) {
+                log.warn("Failed to load trust certificate for Elasticsearch REST client", e);
+            }
+        }
+
+        if (credentialsProvider != null || sslContext != null) {
+            CredentialsProvider finalCredentialsProvider = credentialsProvider;
+            SSLContext finalSslContext = sslContext;
+            builder.setHttpClientConfigCallback(
+                    httpClientBuilder -> {
+                        if (finalCredentialsProvider != null) {
+                            httpClientBuilder.setDefaultCredentialsProvider(
+                                    finalCredentialsProvider);
+                        }
+                        if (finalSslContext != null) {
+                            httpClientBuilder.setSSLContext(finalSslContext);
+                        }
+                        return httpClientBuilder;
+                    });
+        }
         return builder;
+    }
+
+    private SSLContext buildSslContextFromCert(String certPath) throws Exception {
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        var certificates = List.<Certificate>of();
+        try (var inputStream = Files.newInputStream(Path.of(certPath))) {
+            certificates = certificateFactory.generateCertificates(inputStream).stream()
+                    .map(Certificate.class::cast)
+                    .toList();
+        }
+        if (certificates.isEmpty()) {
+            throw new IllegalArgumentException("No certificates found at " + certPath);
+        }
+        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustStore.load(null, null);
+        for (int i = 0; i < certificates.size(); i++) {
+            trustStore.setCertificateEntry("conductor-es-cert-" + i, certificates.get(i));
+        }
+        return org.apache.http.ssl.SSLContexts.custom().loadTrustMaterial(trustStore, null).build();
     }
 
     @Primary // If you are including this project, it's assumed you want ES to be your indexing

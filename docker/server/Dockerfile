@@ -34,7 +34,7 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 # Install dependencies
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-COPY . /conductor
+COPY ./conductor/ui /conductor/ui
 WORKDIR /conductor/ui
 
 # Include monaco sources into bundle (instead of using CDN)

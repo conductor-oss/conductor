@@ -53,6 +53,9 @@ conductor.elasticsearch.indexPrefix=conductor
 # Default refresh interval applied via the component template.
 conductor.elasticsearch.indexRefreshInterval=30s
 
+# Path to a PEM-encoded certificate to trust for HTTPS connections.
+conductor.elasticsearch.trustCertPath=
+
 # Worker queue size used in executor service for async methods in IndexDao.
 conductor.elasticsearch.asyncWorkerQueueSize=100
 
