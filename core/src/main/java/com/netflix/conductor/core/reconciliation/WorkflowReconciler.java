@@ -32,7 +32,8 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
  * Periodically polls all running workflows in the system and evaluates them for timeouts and/or
  * maintain consistency.
  */
-// Deprecated - superseded by WorkflowSweeper in com.netflix.conductor.core.reconciliation package
+// Deprecated - and superseeded by new WorkflowSweeper in org.conductoross.conductor.core.execution
+// package
 @Deprecated(forRemoval = true)
 @Component
 @ConditionalOnProperty(
