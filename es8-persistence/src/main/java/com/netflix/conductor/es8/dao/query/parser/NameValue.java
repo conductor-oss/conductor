@@ -103,9 +103,13 @@ public class NameValue extends AbstractNode implements FilterProvider {
                     q ->
                             q.range(
                                     r ->
-                                            r.field(name.getName())
-                                                    .gte(JsonData.of(range.getLow()))
-                                                    .lte(JsonData.of(range.getHigh()))));
+                                            r.untyped(
+                                                    u ->
+                                                            u.field(name.getName())
+                                                                    .gte(JsonData.of(range.getLow()))
+                                                                    .lte(
+                                                                            JsonData.of(
+                                                                                    range.getHigh())))));
         } else if (op.getOperator().equals(Operators.IN.value())) {
             List<FieldValue> values =
                     valueList.getList().stream().map(val -> FieldValue.of(val.toString())).toList();
@@ -116,7 +120,16 @@ public class NameValue extends AbstractNode implements FilterProvider {
             return Query.of(q -> q.bool(b -> b.mustNot(query)));
         } else if (op.getOperator().equals(Operators.GREATER_THAN.value())) {
             return Query.of(
-                    q -> q.range(r -> r.field(name.getName()).gt(JsonData.of(value.getValue()))));
+                    q ->
+                            q.range(
+                                    r ->
+                                            r.untyped(
+                                                    u ->
+                                                            u.field(name.getName())
+                                                                    .gt(
+                                                                            JsonData.of(
+                                                                                    value
+                                                                                            .getValue())))));
         } else if (op.getOperator().equals(Operators.IS.value())) {
             if (value.getSysConstant().equals(ConstValue.SystemConsts.NULL)) {
                 return Query.of(
@@ -136,7 +149,16 @@ public class NameValue extends AbstractNode implements FilterProvider {
             }
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
             return Query.of(
-                    q -> q.range(r -> r.field(name.getName()).lt(JsonData.of(value.getValue()))));
+                    q ->
+                            q.range(
+                                    r ->
+                                            r.untyped(
+                                                    u ->
+                                                            u.field(name.getName())
+                                                                    .lt(
+                                                                            JsonData.of(
+                                                                                    value
+                                                                                            .getValue())))));
         } else if (op.getOperator().equals(Operators.STARTS_WITH.value())) {
             return Query.of(
                     q -> q.prefix(p -> p.field(name.getName()).value(value.getUnquotedValue())));
