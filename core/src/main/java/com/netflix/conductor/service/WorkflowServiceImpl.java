@@ -33,6 +33,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.Utils;
+import com.netflix.conductor.model.WorkflowModel;
 
 @Audit
 @Trace
@@ -180,6 +181,11 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new NotFoundException("Workflow with id: %s not found.", workflowId);
         }
         return workflow;
+    }
+
+    @Override
+    public WorkflowModel getWorkflowModel(String workflowId, boolean includeTasks) {
+        return executionService.getWorkflowModel(workflowId, includeTasks);
     }
 
     /**

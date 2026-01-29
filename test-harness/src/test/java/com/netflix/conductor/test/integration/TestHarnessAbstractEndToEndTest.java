@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -51,11 +52,13 @@ import static org.junit.Assert.assertNotNull;
         properties = {
             "conductor.indexing.enabled=true",
             "conductor.elasticsearch.version=7",
-            "conductor.queue.type=xxx"
+            "conductor.queue.type=redis_standalone",
+            "conductor.db.type=redis_standalone"
         })
-public abstract class AbstractEndToEndTest {
+public abstract class TestHarnessAbstractEndToEndTest {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractEndToEndTest.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(TestHarnessAbstractEndToEndTest.class);
 
     private static final String TASK_DEFINITION_PREFIX = "task_";
     private static final String DEFAULT_DESCRIPTION = "description";
@@ -68,6 +71,9 @@ public abstract class AbstractEndToEndTest {
                     DockerImageName.parse("elasticsearch")
                             .withTag("7.17.11")); // this should match the client version
 
+    private static GenericContainer redis =
+            new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+                    .withExposedPorts(6379);
     private static RestClient restClient;
 
     // Initialization happens in a static block so the container is initialized
@@ -75,15 +81,21 @@ public abstract class AbstractEndToEndTest {
     // container is stopped when JVM exits
     // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
     static {
-        container.start();
-        String httpHostAddress = container.getHttpHostAddress();
-        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
-        log.info("Initialized Elasticsearch {}", container.getContainerId());
     }
 
     @BeforeClass
     public static void initializeEs() {
+        container.start();
+        redis.start();
         String httpHostAddress = container.getHttpHostAddress();
+        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
+        System.setProperty(
+                "conductor.redis.hosts", "localhost:" + redis.getFirstMappedPort() + ":us-east-1c");
+        System.setProperty(
+                "conductor.redis-lock.serverAddress",
+                String.format("redis://localhost:%s", redis.getFirstMappedPort()));
+        log.info("Initialized Elasticsearch {}", container.getContainerId());
+
         String host = httpHostAddress.split(":")[0];
         int port = Integer.parseInt(httpHostAddress.split(":")[1]);
 
@@ -109,6 +121,8 @@ public abstract class AbstractEndToEndTest {
         if (restClient != null) {
             restClient.close();
         }
+        redis.stop();
+        container.stop();
     }
 
     @Test

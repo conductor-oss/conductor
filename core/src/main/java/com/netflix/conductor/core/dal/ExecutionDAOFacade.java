@@ -310,7 +310,7 @@ public class ExecutionDAOFacade {
             } else {
                 indexDAO.asyncIndexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
             }
-            if (workflowModel.getStatus().isTerminal()) {
+            if (workflowModel.getStatus().isTerminal() && properties.isTaskIndexingEnabled()) {
                 workflowModel
                         .getTasks()
                         .forEach(
@@ -574,6 +574,9 @@ public class ExecutionDAOFacade {
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)
             throws JsonProcessingException {
+        if (!properties.isTaskIndexingEnabled()) {
+            return;
+        }
         if (archiveTask) {
             if (task.getStatus().isTerminal()) {
                 // Only allow archival if task is in terminal state

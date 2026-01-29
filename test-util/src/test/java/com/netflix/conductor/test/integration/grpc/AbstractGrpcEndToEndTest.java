@@ -13,6 +13,7 @@
 package com.netflix.conductor.test.integration.grpc;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.test.integration.AbstractEndToEndTest;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -156,11 +158,21 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         assertNotNull(polled);
         assertEquals(0, polled.size());
 
-        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
-        assertNotNull(polled);
-        assertEquals(1, polled.size());
-        assertEquals(t0.getName(), polled.get(0).getTaskDefName());
-        Task task = polled.get(0);
+        // Wait for the workflow engine to schedule the task to the queue
+        List<Task> tasks = new java.util.ArrayList<>();
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<Task> polledTasks =
+                                    taskClient.batchPollTasksByTaskType(
+                                            t0.getName(), "test", 1, 100);
+                            assertNotNull(polledTasks);
+                            assertEquals(1, polledTasks.size());
+                            assertEquals(t0.getName(), polledTasks.get(0).getTaskDefName());
+                            tasks.clear();
+                            tasks.addAll(polledTasks);
+                        });
+        Task task = tasks.get(0);
 
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
@@ -183,61 +195,115 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         assertNotNull(taskById);
         assertEquals(task.getTaskId(), taskById.getTaskId());
 
-        Thread.sleep(1000);
-        SearchResult<WorkflowSummary> searchResult =
-                workflowClient.search("workflowType='" + def.getName() + "'");
-        assertNotNull(searchResult);
-        assertEquals(1, searchResult.getTotalHits());
-        assertEquals(workflow.getWorkflowId(), searchResult.getResults().get(0).getWorkflowId());
+        // Wait for Elasticsearch/OpenSearch to index the workflow and tasks
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> searchResult =
+                                    workflowClient.search("workflowType='" + def.getName() + "'");
+                            assertNotNull(searchResult);
+                            assertEquals(1, searchResult.getTotalHits());
+                            assertEquals(
+                                    workflowId, searchResult.getResults().get(0).getWorkflowId());
+                        });
 
-        SearchResult<Workflow> searchResultV2 =
-                workflowClient.searchV2("workflowType='" + def.getName() + "'");
-        assertNotNull(searchResultV2);
-        assertEquals(1, searchResultV2.getTotalHits());
-        assertEquals(workflow.getWorkflowId(), searchResultV2.getResults().get(0).getWorkflowId());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<Workflow> searchResultV2 =
+                                    workflowClient.searchV2("workflowType='" + def.getName() + "'");
+                            assertNotNull(searchResultV2);
+                            assertEquals(1, searchResultV2.getTotalHits());
+                            assertEquals(
+                                    workflowId, searchResultV2.getResults().get(0).getWorkflowId());
+                        });
 
-        SearchResult<WorkflowSummary> searchResultAdvanced =
-                workflowClient.search(0, 1, null, null, "workflowType='" + def.getName() + "'");
-        assertNotNull(searchResultAdvanced);
-        assertEquals(1, searchResultAdvanced.getTotalHits());
-        assertEquals(
-                workflow.getWorkflowId(), searchResultAdvanced.getResults().get(0).getWorkflowId());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<WorkflowSummary> searchResultAdvanced =
+                                    workflowClient.search(
+                                            0,
+                                            1,
+                                            null,
+                                            null,
+                                            "workflowType='" + def.getName() + "'");
+                            assertNotNull(searchResultAdvanced);
+                            assertEquals(1, searchResultAdvanced.getTotalHits());
+                            assertEquals(
+                                    workflowId,
+                                    searchResultAdvanced.getResults().get(0).getWorkflowId());
+                        });
 
-        SearchResult<Workflow> searchResultV2Advanced =
-                workflowClient.searchV2(0, 1, null, null, "workflowType='" + def.getName() + "'");
-        assertNotNull(searchResultV2Advanced);
-        assertEquals(1, searchResultV2Advanced.getTotalHits());
-        assertEquals(
-                workflow.getWorkflowId(),
-                searchResultV2Advanced.getResults().get(0).getWorkflowId());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<Workflow> searchResultV2Advanced =
+                                    workflowClient.searchV2(
+                                            0,
+                                            1,
+                                            null,
+                                            null,
+                                            "workflowType='" + def.getName() + "'");
+                            assertNotNull(searchResultV2Advanced);
+                            assertEquals(1, searchResultV2Advanced.getTotalHits());
+                            assertEquals(
+                                    workflowId,
+                                    searchResultV2Advanced.getResults().get(0).getWorkflowId());
+                        });
 
-        SearchResult<TaskSummary> taskSearchResult =
-                taskClient.search("taskType='" + t0.getName() + "'");
-        assertNotNull(taskSearchResult);
-        assertEquals(1, searchResultV2Advanced.getTotalHits());
-        assertEquals(t0.getName(), taskSearchResult.getResults().get(0).getTaskDefName());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<TaskSummary> taskSearchResult =
+                                    taskClient.search("taskType='" + t0.getName() + "'");
+                            assertNotNull(taskSearchResult);
+                            assertEquals(1, taskSearchResult.getTotalHits());
+                            assertEquals(
+                                    t0.getName(),
+                                    taskSearchResult.getResults().get(0).getTaskDefName());
+                        });
 
-        SearchResult<TaskSummary> taskSearchResultAdvanced =
-                taskClient.search(0, 1, null, null, "taskType='" + t0.getName() + "'");
-        assertNotNull(taskSearchResultAdvanced);
-        assertEquals(1, taskSearchResultAdvanced.getTotalHits());
-        assertEquals(t0.getName(), taskSearchResultAdvanced.getResults().get(0).getTaskDefName());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<TaskSummary> taskSearchResultAdvanced =
+                                    taskClient.search(
+                                            0, 1, null, null, "taskType='" + t0.getName() + "'");
+                            assertNotNull(taskSearchResultAdvanced);
+                            assertEquals(1, taskSearchResultAdvanced.getTotalHits());
+                            assertEquals(
+                                    t0.getName(),
+                                    taskSearchResultAdvanced.getResults().get(0).getTaskDefName());
+                        });
 
-        SearchResult<Task> taskSearchResultV2 =
-                taskClient.searchV2("taskType='" + t0.getName() + "'");
-        assertNotNull(taskSearchResultV2);
-        assertEquals(1, searchResultV2Advanced.getTotalHits());
-        assertEquals(
-                t0.getTaskReferenceName(),
-                taskSearchResultV2.getResults().get(0).getReferenceTaskName());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<Task> taskSearchResultV2 =
+                                    taskClient.searchV2("taskType='" + t0.getName() + "'");
+                            assertNotNull(taskSearchResultV2);
+                            assertEquals(1, taskSearchResultV2.getTotalHits());
+                            assertEquals(
+                                    t0.getTaskReferenceName(),
+                                    taskSearchResultV2.getResults().get(0).getReferenceTaskName());
+                        });
 
-        SearchResult<Task> taskSearchResultV2Advanced =
-                taskClient.searchV2(0, 1, null, null, "taskType='" + t0.getName() + "'");
-        assertNotNull(taskSearchResultV2Advanced);
-        assertEquals(1, taskSearchResultV2Advanced.getTotalHits());
-        assertEquals(
-                t0.getTaskReferenceName(),
-                taskSearchResultV2Advanced.getResults().get(0).getReferenceTaskName());
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            SearchResult<Task> taskSearchResultV2Advanced =
+                                    taskClient.searchV2(
+                                            0, 1, null, null, "taskType='" + t0.getName() + "'");
+                            assertNotNull(taskSearchResultV2Advanced);
+                            assertEquals(1, taskSearchResultV2Advanced.getTotalHits());
+                            assertEquals(
+                                    t0.getTaskReferenceName(),
+                                    taskSearchResultV2Advanced
+                                            .getResults()
+                                            .get(0)
+                                            .getReferenceTaskName());
+                        });
 
         workflowClient.terminateWorkflow(workflowId, "terminate reason");
         workflow = workflowClient.getWorkflow(workflowId, true);

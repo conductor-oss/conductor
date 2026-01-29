@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -40,7 +39,7 @@ import com.netflix.conductor.service.ExecutionLockService;
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
-@Component
+// @Component
 public class WorkflowSweeper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
@@ -123,60 +122,78 @@ public class WorkflowSweeper {
         }
     }
 
+    /**
+     * Calculates the next decider queue unack delay by evaluating active tasks and choosing the
+     * smallest eligible delay. This prevents long-running tasks from delaying evaluation when a
+     * shorter timeout is due, while still honoring maxPostpone caps.
+     */
     @VisibleForTesting
     void unack(WorkflowModel workflowModel, long workflowOffsetTimeout) {
-        long postponeDurationSeconds = 0;
+        // Pick the minimum next-evaluation delay across eligible tasks, capped by maxPostpone.
+        Long postponeDurationSeconds = null;
+        long maxPostponeSeconds = properties.getMaxPostponeDurationSeconds().getSeconds();
         for (TaskModel taskModel : workflowModel.getTasks()) {
+            Long candidateSeconds = null;
             if (taskModel.getStatus() == Status.IN_PROGRESS) {
+                // Active tasks: delay based on wait/response timeout or workflow offset.
                 if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_WAIT)) {
                     if (taskModel.getWaitTimeout() == 0) {
-                        postponeDurationSeconds = workflowOffsetTimeout;
+                        candidateSeconds = workflowOffsetTimeout;
                     } else {
+                        // waitTimeout is an absolute epoch ms; compute remaining seconds.
                         long deltaInSeconds =
                                 (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
-                        postponeDurationSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
-                    postponeDurationSeconds = workflowOffsetTimeout;
+                    candidateSeconds = workflowOffsetTimeout;
                 } else {
-                    postponeDurationSeconds =
+                    candidateSeconds =
                             (taskModel.getResponseTimeoutSeconds() != 0)
+                                    // Add 1s so the response timeout window fully elapses.
                                     ? taskModel.getResponseTimeoutSeconds() + 1
                                     : workflowOffsetTimeout;
                 }
-
-                if (postponeDurationSeconds
-                        > properties.getMaxPostponeDurationSeconds().getSeconds()) {
-                    postponeDurationSeconds =
-                            properties.getMaxPostponeDurationSeconds().getSeconds();
-                }
-
-                break;
             } else if (taskModel.getStatus() == Status.SCHEDULED) {
+                // Scheduled tasks: use poll timeout when present, else workflow timeout or offset.
                 Optional<TaskDef> taskDefinition = taskModel.getTaskDefinition();
                 if (taskDefinition.isPresent()) {
                     TaskDef taskDef = taskDefinition.get();
                     if (taskDef.getPollTimeoutSeconds() != null
                             && taskDef.getPollTimeoutSeconds() != 0) {
-                        postponeDurationSeconds = taskDef.getPollTimeoutSeconds() + 1;
+                        candidateSeconds = taskDef.getPollTimeoutSeconds().longValue() + 1;
                     } else {
-                        postponeDurationSeconds =
+                        candidateSeconds =
                                 (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
                                         ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
                                                 + 1
                                         : workflowOffsetTimeout;
                     }
                 } else {
-                    postponeDurationSeconds =
+                    candidateSeconds =
                             (workflowModel.getWorkflowDefinition().getTimeoutSeconds() != 0)
                                     ? workflowModel.getWorkflowDefinition().getTimeoutSeconds() + 1
                                     : workflowOffsetTimeout;
                 }
-                break;
+            }
+
+            if (candidateSeconds == null) {
+                continue;
+            }
+            if (candidateSeconds < 0) {
+                candidateSeconds = 0L;
+            }
+            // Cap every candidate to avoid excessive unack delay.
+            if (candidateSeconds > maxPostponeSeconds) {
+                candidateSeconds = maxPostponeSeconds;
+            }
+            if (postponeDurationSeconds == null || candidateSeconds < postponeDurationSeconds) {
+                postponeDurationSeconds = candidateSeconds;
             }
         }
-        queueDAO.setUnackTimeout(
-                DECIDER_QUEUE, workflowModel.getWorkflowId(), postponeDurationSeconds * 1000);
+        // Default to immediate re-evaluation if no eligible task delay is found.
+        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
+        queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), unackSeconds * 1000);
     }
 
     /**
