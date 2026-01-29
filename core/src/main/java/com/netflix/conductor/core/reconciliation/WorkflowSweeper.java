@@ -183,7 +183,30 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             // Workflow has not completed and decide did not change the status of the tasks
             // Every task that is running MUST be in the queue
             if (tasks.equals(tasksAfterDecide)) {
-                workflow.getTasks().forEach(this::verifyAndRepairTask);
+                long now = System.currentTimeMillis();
+                workflow.getTasks().stream()
+                        .filter(isTaskRepairable)
+                        .forEach(
+                                task -> {
+                                    log.warn(
+                                            "Going to repair the task {} / {}, with status {}, workflow = {}, timeout = {}, now-wait = {}",
+                                            task.getTaskId(),
+                                            task.getReferenceTaskName(),
+                                            task.getStatus(),
+                                            workflowId,
+                                            task.getWaitTimeout(),
+                                            (now - task.getWaitTimeout()));
+                                    Monitors.recordQueueMessageRepushFromRepairService(
+                                            task.getTaskDefName());
+                                    String queueName = QueueUtils.getQueueName(task);
+                                    if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
+                                        queueDAO.push(
+                                                queueName,
+                                                task.getTaskId(),
+                                                0,
+                                                task.getCallbackAfterSeconds());
+                                    }
+                                });
             }
 
             // Workflow is in running status, there MUST be at-least one task that is not terminal
@@ -195,6 +218,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 // This can happen in case of the database failures where the task scheduling failed
                 // after the last task was completed
                 // To fix, we reset the executed flag of the last task and re-run decide
+                // TODO: This MIGHT not be completely accurate, write a test to validate what
+                // happens if the last task is a JOIN task
                 forceSetLastTaskAsNotExecuted(workflow);
                 workflow = workflowExecutor.decideWithLock(workflow);
             }
@@ -209,51 +234,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
     }
 
-    void verifyAndRepairTask(TaskModel task) {
-        if (isTaskRepairable.test(task)) {
-            // Ensure QueueDAO contains this taskId
-            String taskQueueName = QueueUtils.getQueueName(task);
-            if (!queueDAO.containsMessage(taskQueueName, task.getTaskId())) {
-                queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
-                log.info(
-                        "Task {} in workflow {} re-queued for repairs",
-                        task.getTaskId(),
-                        task.getWorkflowInstanceId());
-                Monitors.recordQueueMessageRepushFromRepairService(task.getTaskDefName());
-            }
-        }
-        if (task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                && task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-            WorkflowModel subWorkflow = executionDAO.getWorkflow(task.getSubWorkflowId(), false);
-            if (subWorkflow.getStatus().isTerminal()) {
-                log.info(
-                        "Repairing sub workflow task {} for sub workflow {} in workflow {}",
-                        task.getTaskId(),
-                        task.getSubWorkflowId(),
-                        task.getWorkflowInstanceId());
-                repairSubWorkflowTask(task, subWorkflow);
-            }
-        }
-    }
-
-    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
-        switch (subWorkflow.getStatus()) {
-            case COMPLETED:
-                task.setStatus(TaskModel.Status.COMPLETED);
-                break;
-            case FAILED:
-                task.setStatus(TaskModel.Status.FAILED);
-                break;
-            case TERMINATED:
-                task.setStatus(TaskModel.Status.CANCELED);
-                break;
-            case TIMED_OUT:
-                task.setStatus(TaskModel.Status.TIMED_OUT);
-                break;
-        }
-        task.addOutput(subWorkflow.getOutput());
-        executionDAO.updateTask(task);
-    }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
         if (workflow.getTasks() != null && !workflow.getTasks().isEmpty()) {
