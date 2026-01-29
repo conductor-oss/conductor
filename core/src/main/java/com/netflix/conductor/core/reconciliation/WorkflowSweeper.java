@@ -201,10 +201,27 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                     String queueName = QueueUtils.getQueueName(task);
                                     if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
                                         queueDAO.push(
-                                                queueName,
+                                                queueName, task.getTaskId(), task.getCallbackAfterSeconds());
+                                    }
+                                });
+
+                // Repair subworkflow tasks if needed
+                workflow.getTasks().stream()
+                        .filter(
+                                task ->
+                                        task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                                                && task.getStatus() == TaskModel.Status.IN_PROGRESS)
+                        .forEach(
+                                task -> {
+                                    WorkflowModel subWorkflow =
+                                            executionDAO.getWorkflow(task.getSubWorkflowId(), false);
+                                    if (subWorkflow.getStatus().isTerminal()) {
+                                        log.info(
+                                                "Repairing sub workflow task {} for sub workflow {} in workflow {}",
                                                 task.getTaskId(),
-                                                0,
-                                                task.getCallbackAfterSeconds());
+                                                task.getSubWorkflowId(),
+                                                task.getWorkflowInstanceId());
+                                        repairSubWorkflowTask(task, subWorkflow);
                                     }
                                 });
             }
@@ -234,6 +251,25 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
     }
 
+
+    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
+        switch (subWorkflow.getStatus()) {
+            case COMPLETED:
+                task.setStatus(TaskModel.Status.COMPLETED);
+                break;
+            case FAILED:
+                task.setStatus(TaskModel.Status.FAILED);
+                break;
+            case TERMINATED:
+                task.setStatus(TaskModel.Status.CANCELED);
+                break;
+            case TIMED_OUT:
+                task.setStatus(TaskModel.Status.TIMED_OUT);
+                break;
+        }
+        task.addOutput(subWorkflow.getOutput());
+        executionDAO.updateTask(task);
+    }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
         if (workflow.getTasks() != null && !workflow.getTasks().isEmpty()) {
