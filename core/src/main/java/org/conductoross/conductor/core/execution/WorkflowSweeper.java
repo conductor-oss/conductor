@@ -212,26 +212,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                                 queueName, task.getTaskId(), task.getCallbackAfterSeconds());
                                     }
                                 });
-
-                // Repair subworkflow tasks if needed
-                workflow.getTasks().stream()
-                        .filter(
-                                task ->
-                                        task.getTaskType().equals(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                                                && task.getStatus() == TaskModel.Status.IN_PROGRESS)
-                        .forEach(
-                                task -> {
-                                    WorkflowModel subWorkflow =
-                                            executionDAO.getWorkflow(task.getSubWorkflowId(), false);
-                                    if (subWorkflow.getStatus().isTerminal()) {
-                                        log.info(
-                                                "Repairing sub workflow task {} for sub workflow {} in workflow {}",
-                                                task.getTaskId(),
-                                                task.getSubWorkflowId(),
-                                                task.getWorkflowInstanceId());
-                                        repairSubWorkflowTask(task, subWorkflow);
-                                    }
-                                });
             }
 
             // Workflow is in running status, there MUST be at-least one task that is not terminal
@@ -255,26 +235,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
         }
-    }
-
-
-    private void repairSubWorkflowTask(TaskModel task, WorkflowModel subWorkflow) {
-        switch (subWorkflow.getStatus()) {
-            case COMPLETED:
-                task.setStatus(TaskModel.Status.COMPLETED);
-                break;
-            case FAILED:
-                task.setStatus(TaskModel.Status.FAILED);
-                break;
-            case TERMINATED:
-                task.setStatus(TaskModel.Status.CANCELED);
-                break;
-            case TIMED_OUT:
-                task.setStatus(TaskModel.Status.TIMED_OUT);
-                break;
-        }
-        task.addOutput(subWorkflow.getOutput());
-        executionDAO.updateTask(task);
     }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {
