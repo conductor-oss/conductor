@@ -15,6 +15,7 @@ package com.netflix.conductor.core.reconciliation;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,6 +24,7 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -143,6 +145,12 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         } catch (Throwable e) {
             log.error("Error polling for sweep entries {}", e.getMessage(), e);
         }
+    }
+
+    @Async(SWEEPER_EXECUTOR_NAME)
+    public CompletableFuture<Void> sweepAsync(String workflowId) {
+        sweep(workflowId);
+        return CompletableFuture.completedFuture(null);
     }
 
     public void sweep(String workflowId) {

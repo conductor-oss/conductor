@@ -54,6 +54,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import static com.netflix.conductor.core.execution.ExecutorUtils.computePostpone;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
@@ -1145,10 +1146,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 executionDAOFacade.updateWorkflow(workflow);
             }
 
+            Duration timeout = properties.getWorkflowOffsetTimeout();
             if (!workflow.getStatus().isTerminal()) {
-                Duration timeout = properties.getWorkflowOffsetTimeout();
+                Duration updatedOffset =
+                        computePostpone(
+                                workflow, timeout, properties.getMaxPostponeDurationSeconds());
+                // Always reschedule non-terminal workflows to ensure they remain in the queue
+                LOGGER.debug(
+                        "Rescheduling workflow {} to decider queue with postpone duration {} seconds",
+                        workflow.getWorkflowId(),
+                        updatedOffset.getSeconds());
                 queueDAO.setUnackTimeout(
-                        DECIDER_QUEUE, workflow.getWorkflowId(), timeout.getSeconds() * 1000);
+                        DECIDER_QUEUE, workflow.getWorkflowId(), updatedOffset.getSeconds() * 1000);
             }
 
             return workflow;
