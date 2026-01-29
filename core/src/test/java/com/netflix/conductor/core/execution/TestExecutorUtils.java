@@ -25,6 +25,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import org.conductoross.conductor.core.execution.ExecutorUtils;
+
 import static org.junit.Assert.*;
 
 /**
