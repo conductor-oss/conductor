@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.test.base
 
-import org.conductoross.conductor.core.execution.WorkflowSweeper
+import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
