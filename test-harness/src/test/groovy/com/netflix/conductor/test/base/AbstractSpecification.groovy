@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.test.base
 
-import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -26,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor
 import com.netflix.conductor.core.execution.StartWorkflowInput
 import com.netflix.conductor.core.execution.WorkflowExecutor
+import com.netflix.conductor.core.reconciliation.WorkflowSweeper
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
