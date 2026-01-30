@@ -47,7 +47,7 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 @ConditionalOnProperty(
         name = "conductor.app.legacy.sweeper.enabled",
         havingValue = "true",
-        matchIfMissing = true)
+        matchIfMissing = false)
 public class WorkflowSweeper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);
