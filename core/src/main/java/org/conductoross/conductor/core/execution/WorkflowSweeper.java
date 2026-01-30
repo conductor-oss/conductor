@@ -150,7 +150,6 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
     }
 
-    @Async(SWEEPER_EXECUTOR_NAME)
     public CompletableFuture<Void> sweepAsync(String workflowId) {
         sweep(workflowId);
         return CompletableFuture.completedFuture(null);
