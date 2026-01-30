@@ -17,7 +17,6 @@ WORKDIR /conductor
 # Build the server on run
 RUN ./gradlew build -x test -x spotlessCheck -PindexingBackend=${INDEXING_BACKEND}
 WORKDIR /server/build/libs
-RUN ls -ltr
 
 
 #
@@ -34,15 +33,14 @@ LABEL maintainer="Orkes OSS <oss@orkes.io>"
 # Install dependencies
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-COPY ./conductor/ui /conductor/ui
+COPY ui /conductor/ui
+COPY docker/server/nginx/nginx.conf /conductor/docker/server/nginx/nginx.conf
 WORKDIR /conductor/ui
 
 # Include monaco sources into bundle (instead of using CDN)
 ENV REACT_APP_MONACO_EDITOR_USING_CDN=false
 ENV REACT_APP_ENABLE_ERRORS_INSPECTOR=true
 RUN yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build
-RUN ls -ltr
-RUN echo "Done building UI"
 
 
 # ===========================================================================================================

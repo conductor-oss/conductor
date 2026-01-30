@@ -1,8 +1,47 @@
-# General
+# Git/VCS
+.git
+.gitignore
+.gitattributes
+.github
 
-# Backend 
-server/build/libs
+# IDE/editor
+.idea
+.vscode
+.classpath
+.project
+.settings
+*.iml
 
-# UI
+# OS/filesystem noise
+.DS_Store
+
+# Caches & temp
+**/.gradle
+**/.cache
+**/tmp
+**/logs
+**/*.log
+
+# Build outputs (keep source in docker build)
+**/build
+**/out
+**/target
+**/dist
+**/coverage
+
+# Python
+venv
+**/__pycache__/
+**/.pytest_cache/
+
+# JS tooling
 **/node_modules
+**/.npm
+**/.yarn
+**/.pnpm-store
+**/.eslintcache
+**/.parcel-cache
+**/.next
+
+# UI build artifacts (explicit)
 ui/build

@@ -106,10 +106,13 @@ public class NameValue extends AbstractNode implements FilterProvider {
                                             r.untyped(
                                                     u ->
                                                             u.field(name.getName())
-                                                                    .gte(JsonData.of(range.getLow()))
+                                                                    .gte(
+                                                                            JsonData.of(
+                                                                                    range.getLow()))
                                                                     .lte(
                                                                             JsonData.of(
-                                                                                    range.getHigh())))));
+                                                                                    range
+                                                                                            .getHigh())))));
         } else if (op.getOperator().equals(Operators.IN.value())) {
             List<FieldValue> values =
                     valueList.getList().stream().map(val -> FieldValue.of(val.toString())).toList();

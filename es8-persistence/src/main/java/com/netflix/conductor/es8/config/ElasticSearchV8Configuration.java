@@ -19,6 +19,7 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.util.List;
+
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.HttpHost;
@@ -113,9 +114,10 @@ public class ElasticSearchV8Configuration {
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         var certificates = List.<Certificate>of();
         try (var inputStream = Files.newInputStream(Path.of(certPath))) {
-            certificates = certificateFactory.generateCertificates(inputStream).stream()
-                    .map(Certificate.class::cast)
-                    .toList();
+            certificates =
+                    certificateFactory.generateCertificates(inputStream).stream()
+                            .map(Certificate.class::cast)
+                            .toList();
         }
         if (certificates.isEmpty()) {
             throw new IllegalArgumentException("No certificates found at " + certPath);

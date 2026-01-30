@@ -1431,18 +1431,19 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                                                                         q1 ->
                                                                                 q1.range(
                                                                                         r ->
-                                                                                                r.untyped(
-                                                                                                        u ->
-                                                                                                                u.field(
-                                                                                                                                "endTime")
-                                                                                                                        .lt(
-                                                                                                                                JsonData
-                                                                                                                                        .of(
-                                                                                                                                                archiveTo))
-                                                                                                                        .gte(
-                                                                                                                                JsonData
-                                                                                                                                        .of(
-                                                                                                                                                archiveFrom))))))
+                                                                                                r
+                                                                                                        .untyped(
+                                                                                                                u ->
+                                                                                                                        u.field(
+                                                                                                                                        "endTime")
+                                                                                                                                .lt(
+                                                                                                                                        JsonData
+                                                                                                                                                .of(
+                                                                                                                                                        archiveTo))
+                                                                                                                                .gte(
+                                                                                                                                        JsonData
+                                                                                                                                                .of(
+                                                                                                                                                        archiveFrom))))))
                                                         .should(
                                                                 Query.of(
                                                                         q1 ->
@@ -1534,27 +1535,29 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                                                                         q1 ->
                                                                                 q1.range(
                                                                                         r ->
-                                                                                                r.untyped(
-                                                                                                        u ->
-                                                                                                                u.field(
-                                                                                                                                "updateTime")
-                                                                                                                        .gt(
-                                                                                                                                JsonData
-                                                                                                                                        .of(
-                                                                                                                                                fromMillis))))))
+                                                                                                r
+                                                                                                        .untyped(
+                                                                                                                u ->
+                                                                                                                        u.field(
+                                                                                                                                        "updateTime")
+                                                                                                                                .gt(
+                                                                                                                                        JsonData
+                                                                                                                                                .of(
+                                                                                                                                                        fromMillis))))))
                                                         .must(
                                                                 Query.of(
                                                                         q1 ->
                                                                                 q1.range(
                                                                                         r ->
-                                                                                                r.untyped(
-                                                                                                        u ->
-                                                                                                                u.field(
-                                                                                                                                "updateTime")
-                                                                                                                        .lt(
-                                                                                                                                JsonData
-                                                                                                                                        .of(
-                                                                                                                                                toMillis))))))
+                                                                                                r
+                                                                                                        .untyped(
+                                                                                                                u ->
+                                                                                                                        u.field(
+                                                                                                                                        "updateTime")
+                                                                                                                                .lt(
+                                                                                                                                        JsonData
+                                                                                                                                                .of(
+                                                                                                                                                        toMillis))))))
                                                         .must(
                                                                 Query.of(
                                                                         q1 ->
