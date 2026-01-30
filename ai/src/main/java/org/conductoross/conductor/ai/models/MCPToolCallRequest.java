@@ -46,7 +46,7 @@ public class MCPToolCallRequest extends LLMWorkerInput {
     private String mcpServer;
 
     /** Name of the tool to call on the MCP server. */
-    private String methodName;
+    private String method;
 
     /** HTTP headers for remote MCP servers (optional). Only applicable for HTTP/HTTPS transport. */
     private Map<String, String> headers;

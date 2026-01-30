@@ -524,7 +524,7 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
         "mcpServer": "http://localhost:3000",
-        "methodName": "get_weather",
+        "method": "get_weather",
         "location": "New York",
         "units": "fahrenheit"
       }
@@ -559,7 +559,7 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
         "mcpServer": "stdio://npx -y @modelcontextprotocol/server-filesystem /tmp",
-        "methodName": "read_file",
+        "method": "read_file",
         "path": "/tmp/config.json"
       }
     }
@@ -575,7 +575,7 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
 - **stdio (local)**: `stdio://npx -y @modelcontextprotocol/server-everything`
 - **stdio (Python)**: `stdio://python -m mcp_server.weather`
 
-> **Note**: All input parameters except `mcpServer`, `methodName`, and `headers` are automatically passed as arguments to the MCP tool.
+> **Note**: All input parameters except `mcpServer`, `method`, and `headers` are automatically passed as arguments to the MCP tool.
 
 #### MCP + AI Agent Workflow
 
@@ -608,7 +608,7 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
           },
           {
             "role": "user",
-            "message": "Which tool should I use and what parameters? Respond with JSON: {methodName: string, arguments: object}"
+            "message": "Which tool should I use and what parameters? Respond with JSON: {method: string, arguments: object}"
           }
         ],
         "temperature": 0.1,
@@ -621,7 +621,7 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
         "mcpServer": "http://localhost:3000",
-        "methodName": "${plan.output.result.methodName}",
+        "method": "${plan.output.result.method}",
         "arguments": "${plan.output.result.arguments}"
       }
     },
@@ -663,7 +663,7 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
   },
   "plan": {
     "result": {
-      "methodName": "get_weather",
+      "method": "get_weather",
       "arguments": {"location": "San Francisco", "units": "fahrenheit"}
     }
   },
