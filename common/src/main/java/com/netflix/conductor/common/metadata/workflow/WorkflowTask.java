@@ -162,6 +162,9 @@ public class WorkflowTask {
     @ProtoField(id = 32)
     private boolean permissive;
 
+    @ProtoField(id = 33)
+    private String joinMode;
+
     /**
      * @return the name
      */
@@ -581,6 +584,20 @@ public class WorkflowTask {
 
     public void setPermissive(boolean permissive) {
         this.permissive = permissive;
+    }
+
+    /**
+     * @return the join mode (SYNC or ASYNC)
+     */
+    public String getJoinMode() {
+        return joinMode;
+    }
+
+    /**
+     * @param joinMode the join mode to set (SYNC or ASYNC)
+     */
+    public void setJoinMode(String joinMode) {
+        this.joinMode = joinMode;
     }
 
     private Collection<List<WorkflowTask>> children() {
