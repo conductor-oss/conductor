@@ -1,0 +1,60 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    maven { url 'https://repo.spring.io/snapshot' }
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation ("org.conductoross:conductor-client:4.2.0-rc3") {
+        exclude group:"org.conductoross", module: "conductor-common"
+    }
+
+    api "org.springframework.ai:spring-ai-commons:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-model:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-openai:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-openai-sdk:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-anthropic:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-mistral-ai:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-huggingface:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-coherence-store:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-vertex-ai-gemini:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-bedrock-converse:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-vertex-ai-embedding:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-azure-openai:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-ollama:${revSpringAI}"
+    api "com.google.genai:google-genai:1.18.0"
+    api "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
+
+    api("io.modelcontextprotocol.sdk:mcp:${revMCP}")
+    api "com.squareup.okhttp3:okhttp:4.12.0"
+
+    //Document reader and parsers
+    // Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-pdf-document-reader
+    api "org.springframework.ai:spring-ai-pdf-document-reader:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-tika-document-reader:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-markdown-document-reader:${revSpringAI}"
+    api "org.springframework.ai:spring-ai-jsoup-document-reader:${revSpringAI}"
+
+    //Vector Databases
+
+    api "org.mongodb:mongodb-driver-sync:${mongodb}"
+    api "org.mongodb:mongodb-driver-core:${mongodb}"
+    api "org.mongodb:bson:${mongodb}"
+    api "io.pinecone:pinecone-client:${pinecone}"
+    api "com.pgvector:pgvector:${pgVector}"
+    api "org.springframework.boot:spring-boot-starter-jdbc"
+
+
+    testImplementation "org.testcontainers:mongodb:${revTestContainer}"
+    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
+
+}

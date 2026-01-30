@@ -622,7 +622,7 @@ public class DeciderService {
         rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
         rescheduled.setInputData(new HashMap<>(task.getInputData()));
-        rescheduled.setReasonForIncompletion(null);
+        rescheduled.setReasonForIncompletion(task.getReasonForIncompletion());
         rescheduled.setSubWorkflowId(null);
         rescheduled.setSeq(0);
         rescheduled.setScheduledTime(0);

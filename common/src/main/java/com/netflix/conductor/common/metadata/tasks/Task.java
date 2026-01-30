@@ -786,11 +786,14 @@ public class Task {
      *     Returns null if no execution metadata has been explicitly set or used.
      */
     public ExecutionMetadata getExecutionMetadata() {
+        if (executionMetadata == null) {
+            executionMetadata = new ExecutionMetadata();
+        }
         // Only return ExecutionMetadata if it exists and has data
         if (executionMetadata != null && executionMetadata.hasData()) {
             return executionMetadata;
         }
-        return null;
+        return executionMetadata;
     }
 
     /**

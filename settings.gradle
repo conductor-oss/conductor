@@ -29,6 +29,7 @@ gradleEnterprise {
 
 rootProject.name = 'conductor'
 
+include 'ai'
 include 'annotations'
 include 'annotations-processor'
 
