@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.base
 
+import org.conductoross.conductor.core.execution.WorkflowSweeper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -28,7 +29,6 @@ import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
-import org.conductoross.conductor.core.execution.WorkflowSweeper
 
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
