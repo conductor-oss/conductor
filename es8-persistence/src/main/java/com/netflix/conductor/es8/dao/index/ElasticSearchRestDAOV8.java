@@ -254,9 +254,9 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             createIndexesTemplates();
             createWorkflowIndex();
             createTaskIndex();
-            ensureDataStream(logIndexName);
-            ensureDataStream(messageIndexName);
-            ensureDataStream(eventIndexName);
+            createTaskLogIndex();
+            createMessageIndex();
+            createEventIndex();
         }
     }
 
@@ -288,28 +288,28 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                 taskIndexName);
 
         TemplateDefinition logDefinition = loadTemplateDefinition("/template_task_log.json");
-        initDataStreamTemplate(
+        initIndexAliasTemplate(
                 "template_" + LOG_DOC_TYPE,
-                logIndexName,
+                logIndexName + "-*",
                 logDefinition.mappings,
                 logDefinition.settings,
-                "createdTime");
+                logIndexName);
 
         TemplateDefinition eventDefinition = loadTemplateDefinition("/template_event.json");
-        initDataStreamTemplate(
+        initIndexAliasTemplate(
                 "template_" + EVENT_DOC_TYPE,
-                eventIndexName,
+                eventIndexName + "-*",
                 eventDefinition.mappings,
                 eventDefinition.settings,
-                "created");
+                eventIndexName);
 
         TemplateDefinition messageDefinition = loadTemplateDefinition("/template_message.json");
-        initDataStreamTemplate(
+        initIndexAliasTemplate(
                 "template_" + MSG_DOC_TYPE,
-                messageIndexName,
+                messageIndexName + "-*",
                 messageDefinition.mappings,
                 messageDefinition.settings,
-                "created");
+                messageIndexName);
     }
 
     /** Initializes the index template for alias-based indices. */
@@ -355,51 +355,6 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
     }
 
-    /** Initializes the index template for data streams. */
-    private void initDataStreamTemplate(
-            String templateName,
-            String dataStreamName,
-            JsonNode mappings,
-            JsonNode additionalSettings,
-            String timestampField) {
-        try {
-            logger.info("Creating/updating the data stream template '{}'", templateName);
-            ObjectNode root = objectMapper.createObjectNode();
-            root.putArray("index_patterns").add(dataStreamName);
-            root.put("priority", 500);
-            root.putArray("composed_of").add("conductor-common-settings");
-            ObjectNode dataStream = objectMapper.createObjectNode();
-            if (timestampField != null && !timestampField.isBlank()) {
-                ObjectNode timestamp = objectMapper.createObjectNode();
-                timestamp.put("name", timestampField);
-                dataStream.set("timestamp_field", timestamp);
-            }
-            root.set("data_stream", dataStream);
-
-            ObjectNode template = root.putObject("template");
-            ObjectNode settings = template.putObject("settings");
-            if (additionalSettings != null && additionalSettings.isObject()) {
-                settings.setAll((ObjectNode) additionalSettings);
-            }
-            if (mappings != null) {
-                template.set("mappings", mappings);
-            }
-
-            HttpEntity entity =
-                    new NStringEntity(
-                            objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
-            Request request = new Request(HttpMethod.PUT, "/_index_template/" + templateName);
-            request.setEntity(entity);
-            executeWithRetry(
-                    () -> {
-                        elasticSearchAdminClient.performRequest(request);
-                        return null;
-                    });
-        } catch (Exception e) {
-            logger.error("Failed to init " + templateName, e);
-        }
-    }
-
     private void createWorkflowIndex() {
         try {
             ensureWriteIndex(workflowIndexName);
@@ -413,6 +368,30 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             ensureWriteIndex(taskIndexName);
         } catch (IOException e) {
             logger.error("Failed to initialize index alias '{}'", taskIndexName, e);
+        }
+    }
+
+    private void createTaskLogIndex() {
+        try {
+            ensureWriteIndex(logIndexName);
+        } catch (IOException e) {
+            logger.error("Failed to initialize index alias '{}'", logIndexName, e);
+        }
+    }
+
+    private void createMessageIndex() {
+        try {
+            ensureWriteIndex(messageIndexName);
+        } catch (IOException e) {
+            logger.error("Failed to initialize index alias '{}'", messageIndexName, e);
+        }
+    }
+
+    private void createEventIndex() {
+        try {
+            ensureWriteIndex(eventIndexName);
+        } catch (IOException e) {
+            logger.error("Failed to initialize index alias '{}'", eventIndexName, e);
         }
     }
 
@@ -474,6 +453,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
     }
 
+
     private String formatRefreshInterval(Duration refreshInterval) {
         if (refreshInterval == null) {
             return null;
@@ -521,18 +501,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
     }
 
-    private void ensureDataStream(String dataStreamName) throws IOException {
-        String dataStreamPath = "/_data_stream/" + dataStreamName;
-        if (doesResourceNotExist(dataStreamPath)) {
-            Request request = new Request(HttpMethod.PUT, dataStreamPath);
-            executeWithRetry(
-                    () -> {
-                        elasticSearchAdminClient.performRequest(request);
-                        return null;
-                    });
-            logger.info("Created data stream '{}'", dataStreamName);
-        }
-    }
+    // task logs, messages, and event executions are ILM-managed rollover indices (alias + write
+    // index) similar to workflow/task indices.
 
     private static class TemplateDefinition {
         private final JsonNode settings;
@@ -589,7 +559,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
      * @throws IOException If an error occurred during requests to ES.
      */
     public boolean doesResourceExist(final String resourcePath) throws IOException {
-        Request request = new Request(HttpMethod.HEAD, resourcePath);
+        boolean preferGet = resourcePath.startsWith("/_data_stream/");
+        Request request = new Request(preferGet ? HttpMethod.GET : HttpMethod.HEAD, resourcePath);
         try {
             Response response = elasticSearchAdminClient.performRequest(request);
             return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
@@ -599,10 +570,18 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                 return false;
             }
             if (statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED) {
-                Response response =
-                        elasticSearchAdminClient.performRequest(
-                                new Request(HttpMethod.GET, resourcePath));
-                return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+                try {
+                    Response response =
+                            elasticSearchAdminClient.performRequest(
+                                    new Request(HttpMethod.GET, resourcePath));
+                    return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+                } catch (ResponseException inner) {
+                    int innerStatus = inner.getResponse().getStatusLine().getStatusCode();
+                    if (innerStatus == HttpStatus.SC_NOT_FOUND) {
+                        return false;
+                    }
+                    throw inner;
+                }
             }
             throw e;
         }
