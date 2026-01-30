@@ -27,7 +27,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -40,6 +39,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +64,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ConductorProperties properties;
     private final ObjectMapper objectMapper;
     private SystemTaskRegistry systemTaskRegistry;
+    private final ExecutionLockService executionLockService;
     private final Clock clock = Clock.systemDefaultZone();
     private AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -75,7 +76,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             ConductorProperties properties,
             SweeperProperties sweeperProperties,
             SystemTaskRegistry systemTaskRegistry,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ExecutionLockService executionLockService) {
         this.queueDAO = queueDAO;
         this.executionDAO = executionDAO;
         this.sweeperProperties = sweeperProperties;
@@ -85,6 +87,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         this.properties = properties;
         this.systemTaskRegistry = systemTaskRegistry;
         this.objectMapper = objectMapper;
+        this.executionLockService = executionLockService;
         log.info("Initializing sweeper with {} threads", properties.getSweeperThreadCount());
         for (int i = 0; i < properties.getSweeperThreadCount(); i++) {
             sweeperExecutor.execute(this::pollAndSweep);
@@ -154,6 +157,10 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     }
 
     public void sweep(String workflowId) {
+        if (!executionLockService.acquireLock(workflowId)) {
+            log.error("Couldn't acquire lock to sweep workflow {}", workflowId);
+            return;
+        }
         log.info("Running sweeper for workflow {}", workflowId);
 
         try {
@@ -168,13 +175,9 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                             .map(t -> t.getReferenceTaskName() + ":" + t.getStatus())
                             .toList()
                             .toString();
-            workflow = workflowExecutor.decideWithLock(workflow);
+            workflow = workflowExecutor.decide(workflowId);
             if (workflow == null) {
-                // couldn't get a lock
-                // Let's try again... with the lockTime timeout / 2
-                int backoff = (int) (properties.getLockLeaseTime().toMillis() / 2);
-                log.info("can't get a lock on  {}, will try after {} ms", workflowId, backoff);
-                queueDAO.push(DECIDER_QUEUE, workflowId, 0, Duration.ofMillis(backoff).toSeconds());
+                log.warn("Workflow {} not found after decide", workflowId);
                 return;
             }
             if (workflow.getStatus().isTerminal()) {
@@ -209,7 +212,9 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                     String queueName = QueueUtils.getQueueName(task);
                                     if (!queueDAO.containsMessage(queueName, task.getTaskId())) {
                                         queueDAO.push(
-                                                queueName, task.getTaskId(), task.getCallbackAfterSeconds());
+                                                queueName,
+                                                task.getTaskId(),
+                                                task.getCallbackAfterSeconds());
                                     }
                                 });
             }
@@ -224,7 +229,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 // after the last task was completed
                 // To fix, we reset the executed flag of the last task and re-run decide
                 forceSetLastTaskAsNotExecuted(workflow);
-                workflow = workflowExecutor.decideWithLock(workflow);
+                workflow = workflowExecutor.decide(workflowId);
             }
 
             // If parent workflow exists, call repair on that too - meaning ensure the parent is in
@@ -234,6 +239,8 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             }
         } catch (Throwable e) {
             log.error("Error running sweep for {}, error = {}", workflowId, e.getMessage(), e);
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
     }
 
