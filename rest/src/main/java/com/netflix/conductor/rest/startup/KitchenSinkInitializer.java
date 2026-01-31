@@ -78,7 +78,7 @@ public class KitchenSinkInitializer {
         } catch (ConflictException ignored) {
             // Already present in the system :)
         } catch (Exception e) {
-            LOGGER.error("Error initializing kitchen sink", e);
+            LOGGER.error("Error initializing kitchen sink {}", e.getMessage());
         }
     }
 

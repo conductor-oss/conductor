@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Conductor Authors.
+ * Copyright 2026 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,23 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.core.execution.tasks.annotated;
+package org.conductoross.conductor.common;
 
-/**
- * Exception thrown when a worker method execution should not be retried. This maps to
- * FAILED_WITH_TERMINAL_ERROR status.
- */
-public class NonRetryableException extends RuntimeException {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-    public NonRetryableException(String message) {
-        super(message);
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Documented {
+
+    enum LifeCycle {
+        BETA,
+        DEPRECATED,
+        GA
     }
 
-    public NonRetryableException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    String usage() default "";
 
-    public NonRetryableException(Throwable cause) {
-        super(cause);
-    }
+    boolean required() default false;
+
+    LifeCycle lifecycle() default LifeCycle.GA;
 }
