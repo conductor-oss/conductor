@@ -16,8 +16,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.conductoross.conductor.sdk.workflow.task.InputParam;
-import org.conductoross.conductor.sdk.workflow.task.WorkerTask;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -25,6 +23,8 @@ import org.mockito.Mockito;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.sdk.workflow.task.InputParam;
+import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;

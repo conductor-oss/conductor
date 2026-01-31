@@ -16,10 +16,9 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.sdk.workflow.task.OutputParam;
-
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.sdk.workflow.task.OutputParam;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

@@ -17,10 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.sdk.workflow.task.InputParam;
 import org.junit.Test;
 
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.sdk.workflow.task.InputParam;
 
 import static org.junit.Assert.*;
 

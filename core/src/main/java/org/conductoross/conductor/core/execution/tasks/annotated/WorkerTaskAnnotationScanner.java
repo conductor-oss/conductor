@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper;
-import org.conductoross.conductor.sdk.workflow.task.WorkerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -34,6 +33,7 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
  * Spring component that scans for @WorkerTask annotated methods in Spring beans and adds them to

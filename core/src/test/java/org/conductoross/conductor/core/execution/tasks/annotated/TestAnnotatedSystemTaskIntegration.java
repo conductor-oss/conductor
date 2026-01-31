@@ -15,8 +15,6 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 import java.util.Map;
 import java.util.Set;
 
-import org.conductoross.conductor.sdk.workflow.task.InputParam;
-import org.conductoross.conductor.sdk.workflow.task.WorkerTask;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,8 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.sdk.workflow.task.InputParam;
+import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 import static org.junit.Assert.*;
 

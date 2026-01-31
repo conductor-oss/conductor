@@ -15,7 +15,6 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.conductoross.conductor.sdk.workflow.task.WorkerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +22,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
  * Adapter that wraps a @WorkerTask annotated method as a WorkflowSystemTask. This enables

@@ -22,10 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.sdk.workflow.task.InputParam;
-
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.sdk.workflow.task.InputParam;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
