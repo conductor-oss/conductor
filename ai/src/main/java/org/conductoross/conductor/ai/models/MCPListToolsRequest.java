@@ -29,10 +29,9 @@ import lombok.NoArgsConstructor;
 public class MCPListToolsRequest extends LLMWorkerInput {
 
     /**
-     * MCP server URL or stdio command.
+     * MCP server URL.
      *
-     * <p>Examples: - HTTP/SSE: "http://localhost:3000/sse" - HTTPS: "https://api.example.com/mcp" -
-     * stdio: "stdio://npx -y @modelcontextprotocol/server-everything"
+     * <p>Examples: - HTTP/SSE: "http://localhost:3000/sse" - HTTPS: "https://api.example.com/mcp"
      */
     private String mcpServer;
 

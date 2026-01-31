@@ -12,17 +12,9 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
@@ -46,42 +38,34 @@ import okhttp3.Response;
 /**
  * Service for interacting with MCP (Model Context Protocol) servers.
  *
- * <p>Supports both remote (HTTP/HTTPS) and local (stdio) MCP servers.
+ * <p>Supports remote (HTTP/HTTPS) MCP servers.
  */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
 public class MCPService {
 
     private static final Logger log = LoggerFactory.getLogger(MCPService.class);
-    private static final String STDIO_PREFIX = "stdio://";
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final JsonTextParser jsonTextParser = new JsonTextParser(objectMapper);
-
-    // Cache for stdio processes to avoid recreating them for each request
-    private final Map<String, StdioMCPClient> stdioClients = new ConcurrentHashMap<>();
 
     /**
      * Lists all tools available from an MCP server.
      *
-     * @param serverUrl MCP server URL (http://, https://, or stdio://)
-     * @param headers HTTP headers for remote servers (ignored for stdio)
+     * @param serverUrl MCP server URL (http:// or https://)
+     * @param headers HTTP headers for the request
      * @return List of available tools
      */
     public List<McpSchema.Tool> listTools(String serverUrl, Map<String, String> headers) {
-        if (isStdioServer(serverUrl)) {
-            return listToolsStdio(serverUrl);
-        } else {
-            return listToolsHttp(serverUrl, headers);
-        }
+        return listToolsHttp(serverUrl, headers);
     }
 
     /**
      * Calls a tool on an MCP server.
      *
-     * @param serverUrl MCP server URL (http://, https://, or stdio://)
+     * @param serverUrl MCP server URL (http:// or https://)
      * @param toolName Name of the tool to call
      * @param arguments Tool arguments
-     * @param headers HTTP headers for remote servers (ignored for stdio)
+     * @param headers HTTP headers for the request
      * @return Tool call result as Map (preserves parsed JSON fields)
      */
     public Map<String, Object> callTool(
@@ -89,13 +73,7 @@ public class MCPService {
             String toolName,
             Map<String, Object> arguments,
             Map<String, String> headers) {
-
-        if (isStdioServer(serverUrl)) {
-            McpSchema.CallToolResult result = callToolStdio(serverUrl, toolName, arguments);
-            return objectMapper.convertValue(result, Map.class);
-        } else {
-            return callToolHttp(serverUrl, toolName, arguments, headers);
-        }
+        return callToolHttp(serverUrl, toolName, arguments, headers);
     }
 
     /** Lists tools from an HTTP/HTTPS MCP server. */
@@ -406,181 +384,12 @@ public class MCPService {
         }
     }
 
-    /** Checks if server URL is a stdio command. */
-    private boolean isStdioServer(String serverUrl) {
-        return serverUrl != null && serverUrl.startsWith(STDIO_PREFIX);
-    }
-
-    /** Lists tools from a stdio MCP server. */
-    private List<McpSchema.Tool> listToolsStdio(String serverUrl) {
-        StdioMCPClient client = getOrCreateStdioClient(serverUrl);
-        return client.listTools();
-    }
-
-    /** Calls a tool on a stdio MCP server. */
-    private McpSchema.CallToolResult callToolStdio(
-            String serverUrl, String toolName, Map<String, Object> arguments) {
-        StdioMCPClient client = getOrCreateStdioClient(serverUrl);
-        return client.callTool(toolName, arguments);
-    }
-
-    /** Gets or creates a stdio MCP client for the given command. */
-    private StdioMCPClient getOrCreateStdioClient(String serverUrl) {
-        return stdioClients.computeIfAbsent(
-                serverUrl,
-                url -> {
-                    String command = url.substring(STDIO_PREFIX.length()).trim();
-                    log.debug("Creating stdio MCP client for command: {}", command);
-                    return new StdioMCPClient(command, objectMapper);
-                });
-    }
-
     /** Closes an HTTP MCP client. */
     private void closeClient(McpSyncClient client) {
         try {
             client.close();
         } catch (Exception e) {
             log.warn("Error closing MCP client: {}", e.getMessage());
-        }
-    }
-
-    /** Stdio MCP client that communicates via stdin/stdout. */
-    private static class StdioMCPClient {
-        private final Process process;
-        private final BufferedWriter writer;
-        private final BufferedReader reader;
-        private final ObjectMapper objectMapper;
-        private final AtomicInteger requestId = new AtomicInteger(1);
-
-        StdioMCPClient(String command, ObjectMapper objectMapper) {
-            this.objectMapper = objectMapper;
-            try {
-                // Parse command into parts
-                String[] commandParts = command.split("\\s+");
-
-                ProcessBuilder pb = new ProcessBuilder(commandParts);
-                pb.redirectErrorStream(true);
-
-                this.process = pb.start();
-                this.writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-                this.reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-                // Initialize the connection
-                initialize();
-
-                log.debug("Stdio MCP client started successfully for command: {}", command);
-            } catch (IOException e) {
-                log.error("Failed to start stdio MCP server: {}", e.getMessage(), e);
-                throw new RuntimeException(
-                        "Failed to start stdio MCP server: " + e.getMessage(), e);
-            }
-        }
-
-        private void initialize() throws IOException {
-            ObjectNode request = objectMapper.createObjectNode();
-            request.put("jsonrpc", "2.0");
-            request.put("id", requestId.getAndIncrement());
-            request.put("method", "initialize");
-            request.set(
-                    "params",
-                    objectMapper
-                            .createObjectNode()
-                            .put("protocolVersion", "2024-11-05")
-                            .put(
-                                    "clientInfo",
-                                    objectMapper
-                                            .createObjectNode()
-                                            .put("name", "conductor")
-                                            .put("version", "1.0.0")));
-
-            sendRequest(request);
-            JsonNode response = readResponse();
-
-            if (response.has("error")) {
-                throw new IOException("Failed to initialize: " + response.get("error"));
-            }
-        }
-
-        List<McpSchema.Tool> listTools() {
-            try {
-                ObjectNode request = objectMapper.createObjectNode();
-                request.put("jsonrpc", "2.0");
-                request.put("id", requestId.getAndIncrement());
-                request.put("method", "tools/list");
-
-                sendRequest(request);
-                JsonNode response = readResponse();
-
-                if (response.has("error")) {
-                    throw new RuntimeException("MCP error: " + response.get("error"));
-                }
-
-                JsonNode tools = response.path("result").path("tools");
-                return objectMapper.convertValue(
-                        tools,
-                        objectMapper
-                                .getTypeFactory()
-                                .constructCollectionType(List.class, McpSchema.Tool.class));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to list tools: " + e.getMessage(), e);
-            }
-        }
-
-        McpSchema.CallToolResult callTool(String toolName, Map<String, Object> arguments) {
-            try {
-                ObjectNode request = objectMapper.createObjectNode();
-                request.put("jsonrpc", "2.0");
-                request.put("id", requestId.getAndIncrement());
-                request.put("method", "tools/call");
-
-                ObjectNode params = objectMapper.createObjectNode();
-                params.put("name", toolName);
-                params.set("arguments", objectMapper.valueToTree(arguments));
-                request.set("params", params);
-
-                sendRequest(request);
-                JsonNode response = readResponse();
-
-                if (response.has("error")) {
-                    throw new RuntimeException("MCP error: " + response.get("error"));
-                }
-
-                return objectMapper.convertValue(
-                        response.get("result"), McpSchema.CallToolResult.class);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to call tool: " + e.getMessage(), e);
-            }
-        }
-
-        private void sendRequest(ObjectNode request) throws IOException {
-            String json = objectMapper.writeValueAsString(request);
-            log.debug("Sending MCP request: {}", json);
-            writer.write(json);
-            writer.newLine();
-            writer.flush();
-        }
-
-        private JsonNode readResponse() throws IOException {
-            String line = reader.readLine();
-            if (line == null) {
-                throw new IOException("MCP server closed connection");
-            }
-            log.debug("Received MCP response: {}", line);
-            return objectMapper.readTree(line);
-        }
-
-        void close() {
-            try {
-                writer.close();
-                reader.close();
-                process.destroy();
-                process.waitFor(5, TimeUnit.SECONDS);
-                if (process.isAlive()) {
-                    process.destroyForcibly();
-                }
-            } catch (Exception e) {
-                log.warn("Error closing stdio MCP client: {}", e.getMessage());
-            }
         }
     }
 

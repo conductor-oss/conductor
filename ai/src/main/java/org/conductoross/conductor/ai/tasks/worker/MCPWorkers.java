@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Worker tasks for interacting with MCP (Model Context Protocol) servers.
  *
- * <p>Supports both local (stdio) and remote (HTTP/HTTPS) MCP servers.
+ * <p>Supports remote (HTTP/HTTPS) MCP servers.
  */
 @Slf4j
 @Component
@@ -50,8 +50,7 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
     /**
      * Lists all available tools from an MCP server.
      *
-     * <p>Supports: - HTTP/HTTPS servers: "http://localhost:3000/sse" - stdio servers: "stdio://npx
-     * -y @modelcontextprotocol/server-everything"
+     * <p>Supports HTTP/HTTPS servers: "http://localhost:3000/sse" or "https://api.example.com/mcp"
      *
      * @param request MCP list tools request
      * @return List of tool definitions

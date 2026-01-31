@@ -23,7 +23,7 @@ The Conductor AI module provides built-in integration with 11 popular LLM provid
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
 | **Cohere** | ✅ | ✅ | ❌ | ❌ | Command, Command-R, Command-R+, embed-english-v3.0 |
-| **Grok** | ✅ | ❌ | ❌ | ❌ | Grok-2, Grok-2-mini |
+| **Grok** | ✅ | ❌ | ❌ | ❌ | Grok-3, Grok-3-mini |
 | **Perplexity AI** | ✅ | ❌ | ❌ | ❌ | Sonar, Sonar Pro |
 | **HuggingFace** | ✅ | ❌ | ❌ | ❌ | Llama 3.x, Mistral 7B, Zephyr |
 | **Ollama** | ✅ | ✅ | ❌ | ❌ | Llama 3.x, Mistral, Phi, nomic-embed-text (local deployment) |
@@ -38,20 +38,299 @@ The Conductor AI module provides built-in integration with 11 popular LLM provid
 
 ## AI Task Types
 
-| Task Type | Task Name | Description | Input | Output |
-|-----------|-----------|-------------|-------|--------|
-| **Chat Complete** | `LLM_CHAT_COMPLETE` | Multi-turn conversational AI | Messages, model, parameters | Response text, token usage |
-| **Text Complete** | `LLM_TEXT_COMPLETE` | Single prompt completion | Prompt, model, parameters | Completion text |
-| **Generate Embeddings** | `LLM_GENERATE_EMBEDDINGS` | Convert text to vector embeddings | Text, model | Float array (embeddings) |
-| **Image Generation** | `GENERATE_IMAGE` | Generate images from text | Prompt, style, size, model | Image URL/data |
-| **Audio Generation** | `GENERATE_AUDIO` | Text-to-speech synthesis | Text, voice, model | Audio URL/data |
-| **Index Text** | `LLM_INDEX_TEXT` | Store text with embeddings in vector DB | Text, namespace, index, metadata | Document ID |
-| **Store Embeddings** | `LLM_STORE_EMBEDDINGS` | Store pre-computed embeddings | Embeddings, namespace, index | Document ID |
-| **Search Index** | `LLM_SEARCH_INDEX` | Semantic search using text | Query text, namespace, index, limit | Matching documents |
-| **Search Embeddings** | `LLM_SEARCH_EMBEDDINGS` | Search using embedding vectors | Embeddings, namespace, index, limit | Matching documents |
-| **Get Embeddings** | `LLM_GET_EMBEDDINGS` | Retrieve stored embeddings | Document ID, namespace, index | Embeddings array |
-| **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server | MCP server URL (stdio/HTTP/HTTPS) | Tool definitions |
-| **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server | MCP server URL, tool name, arguments | Tool result |
+### Overview
+
+| Task Type | Task Name | Description |
+|-----------|-----------|-------------|
+| **Chat Complete** | `LLM_CHAT_COMPLETE` | Multi-turn conversational AI with optional tool calling |
+| **Text Complete** | `LLM_TEXT_COMPLETE` | Single prompt completion |
+| **Generate Embeddings** | `LLM_GENERATE_EMBEDDINGS` | Convert text to vector embeddings |
+| **Image Generation** | `GENERATE_IMAGE` | Generate images from text prompts |
+| **Audio Generation** | `GENERATE_AUDIO` | Text-to-speech synthesis |
+| **Index Text** | `LLM_INDEX_TEXT` | Store text with embeddings in vector DB |
+| **Store Embeddings** | `LLM_STORE_EMBEDDINGS` | Store pre-computed embeddings |
+| **Search Index** | `LLM_SEARCH_INDEX` | Semantic search using text query |
+| **Search Embeddings** | `LLM_SEARCH_EMBEDDINGS` | Search using embedding vectors |
+| **Get Embeddings** | `LLM_GET_EMBEDDINGS` | Retrieve stored embeddings |
+| **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
+| **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
+
+---
+
+### LLM_CHAT_COMPLETE
+
+Multi-turn conversational AI with support for tool calling.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `llmProvider` | String | ✅ | Provider name (e.g., `openai`, `anthropic`, `gemini`) |
+| `model` | String | ✅ | Model identifier (e.g., `gpt-4o`, `claude-3-5-sonnet-20241022`) |
+| `messages` | Array | ✅ | Conversation messages with `role` and `message` fields |
+| `temperature` | Number | ❌ | Sampling temperature (0.0-2.0, default: 1.0) |
+| `maxTokens` | Integer | ❌ | Maximum tokens in response |
+| `topP` | Number | ❌ | Nucleus sampling parameter |
+| `stopSequences` | Array | ❌ | Sequences that stop generation |
+| `tools` | Array | ❌ | Tool definitions for function calling |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | String | Generated response text |
+| `finishReason` | String | Why generation stopped (`STOP`, `TOOL_CALLS`, `LENGTH`) |
+| `tokenUsed` | Integer | Total tokens used |
+| `promptTokens` | Integer | Tokens in the prompt |
+| `completionTokens` | Integer | Tokens in the response |
+| `toolCalls` | Array | Tool invocations (when `finishReason` is `TOOL_CALLS`) |
+
+---
+
+### LLM_TEXT_COMPLETE
+
+Single prompt text completion.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `llmProvider` | String | ✅ | Provider name |
+| `model` | String | ✅ | Model identifier |
+| `prompt` | String | ✅ | Text prompt to complete |
+| `temperature` | Number | ❌ | Sampling temperature |
+| `maxTokens` | Integer | ❌ | Maximum tokens in response |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | String | Generated completion text |
+| `tokenUsed` | Integer | Total tokens used |
+
+---
+
+### LLM_GENERATE_EMBEDDINGS
+
+Convert text to vector embeddings for semantic search.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `llmProvider` | String | ✅ | Provider name |
+| `model` | String | ✅ | Embedding model (e.g., `text-embedding-3-small`) |
+| `text` | String | ✅ | Text to embed |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | Array\<Number\> | Vector embedding (e.g., 1536 dimensions for OpenAI) |
+
+---
+
+### GENERATE_IMAGE
+
+Generate images from text prompts.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `llmProvider` | String | ✅ | Provider name (e.g., `openai`) |
+| `model` | String | ✅ | Image model (e.g., `dall-e-3`) |
+| `prompt` | String | ✅ | Image description |
+| `width` | Integer | ❌ | Image width in pixels |
+| `height` | Integer | ❌ | Image height in pixels |
+| `n` | Integer | ❌ | Number of images to generate |
+| `style` | String | ❌ | Style preset (e.g., `vivid`, `natural`) |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | String | URL to generated image |
+| `b64_json` | String | Base64-encoded image data (if requested) |
+
+---
+
+### GENERATE_AUDIO
+
+Text-to-speech synthesis.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `llmProvider` | String | ✅ | Provider name |
+| `model` | String | ✅ | TTS model (e.g., `tts-1`, `tts-1-hd`) |
+| `text` | String | ✅ | Text to convert to speech |
+| `voice` | String | ❌ | Voice selection (e.g., `alloy`, `echo`, `nova`) |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | String | URL to audio file |
+| `format` | String | Audio format (e.g., `mp3`) |
+
+---
+
+### LLM_INDEX_TEXT
+
+Store text with auto-generated embeddings in a vector database.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `vectorDB` | String | ✅ | Vector database name (e.g., `pgvectordb`, `pinecone`) |
+| `namespace` | String | ✅ | Namespace for organization |
+| `index` | String | ✅ | Index name |
+| `embeddingModelProvider` | String | ✅ | Provider for embeddings |
+| `embeddingModel` | String | ✅ | Embedding model name |
+| `text` | String | ✅ | Text to index |
+| `docId` | String | ❌ | Document identifier (auto-generated if not provided) |
+| `metadata` | Object | ❌ | Additional metadata to store |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `docId` | String | Document identifier |
+
+---
+
+### LLM_STORE_EMBEDDINGS
+
+Store pre-computed embeddings in a vector database.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `vectorDB` | String | ✅ | Vector database name |
+| `namespace` | String | ✅ | Namespace for organization |
+| `index` | String | ✅ | Index name |
+| `embeddings` | Array\<Number\> | ✅ | Pre-computed embedding vector |
+| `docId` | String | ❌ | Document identifier |
+| `metadata` | Object | ❌ | Additional metadata |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `docId` | String | Document identifier |
+
+---
+
+### LLM_SEARCH_INDEX
+
+Semantic search using a text query (auto-generates embeddings).
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `vectorDB` | String | ✅ | Vector database name |
+| `namespace` | String | ✅ | Namespace to search |
+| `index` | String | ✅ | Index name |
+| `embeddingModelProvider` | String | ✅ | Provider for query embedding |
+| `embeddingModel` | String | ✅ | Embedding model name |
+| `query` | String | ✅ | Search query text |
+| `llmMaxResults` | Integer | ❌ | Maximum results to return (default: 10) |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | Array | Matching documents with `docId`, `score`, and `text` |
+
+---
+
+### LLM_SEARCH_EMBEDDINGS
+
+Search using pre-computed embedding vectors.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `vectorDB` | String | ✅ | Vector database name |
+| `namespace` | String | ✅ | Namespace to search |
+| `index` | String | ✅ | Index name |
+| `embeddings` | Array\<Number\> | ✅ | Query embedding vector |
+| `llmMaxResults` | Integer | ❌ | Maximum results to return |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | Array | Matching documents with `docId`, `score`, and `text` |
+
+---
+
+### LLM_GET_EMBEDDINGS
+
+Retrieve stored embeddings by document ID.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `vectorDB` | String | ✅ | Vector database name |
+| `namespace` | String | ✅ | Namespace |
+| `index` | String | ✅ | Index name |
+| `docId` | String | ✅ | Document identifier |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | Array\<Number\> | Stored embedding vector |
+
+---
+
+### LIST_MCP_TOOLS
+
+List available tools from an MCP (Model Context Protocol) server.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `mcpServer` | String | ✅ | MCP server URL (e.g., `http://localhost:3000/mcp`) |
+| `headers` | Object | ❌ | HTTP headers for authentication |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tools` | Array | Tool definitions with `name`, `description`, and `inputSchema` |
+
+---
+
+### CALL_MCP_TOOL
+
+Call a specific tool on an MCP server.
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `mcpServer` | String | ✅ | MCP server URL |
+| `method` | String | ✅ | Tool name to call |
+| `headers` | Object | ❌ | HTTP headers for authentication |
+| `*` | Any | ❌ | All other parameters passed as tool arguments |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `content` | Array | Result content items with `type` and `text` |
+| `isError` | Boolean | Whether the call resulted in an error |
+
 
 ## Configuration
 
@@ -516,7 +795,6 @@ MCP allows workflows to interact with external tools and data sources via HTTP/H
 The Model Context Protocol supports multiple [transport types](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports):
 - **Streamable HTTP** (default): Standard HTTP/HTTPS endpoints (recommended per MCP spec 2025-11-25)
 - **SSE** (deprecated): Only used when URL explicitly contains `/sse` endpoint
-- **stdio**: Local MCP servers running as processes (e.g., `stdio://npx -y @modelcontextprotocol/server-everything`)
 
 #### Call MCP Tool (HTTP Server)
 
@@ -554,35 +832,11 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
 }
 ```
 
-#### Call MCP Tool (stdio/Local Server)
-
-```json
-{
-  "name": "mcp_local_tools_workflow",
-    "version": 1,
-  "schemaVersion": 2,
-  "tasks": [
-    {
-      "name": "filesystem_operation",
-      "taskReferenceName": "fs_op",
-      "type": "CALL_MCP_TOOL",
-      "inputParameters": {
-        "mcpServer": "stdio://npx -y @modelcontextprotocol/server-filesystem /tmp",
-        "method": "read_file",
-        "path": "/tmp/config.json"
-      }
-    }
-  ]
-}
-```
-
 **MCP Server URL Formats:**
 - **HTTP**: `http://localhost:3000` (uses Streamable HTTP transport)
 - **HTTP/SSE (deprecated)**: `http://localhost:3000/sse`
 - **HTTP/Streamable**: `http://localhost:3000/mcp`
 - **HTTPS**: `https://api.example.com/mcp`
-- **stdio (local)**: `stdio://npx -y @modelcontextprotocol/server-everything`
-- **stdio (Python)**: `stdio://python -m mcp_server.weather`
 
 > **Note**: All input parameters except `mcpServer`, `method`, and `headers` are automatically passed as arguments to the MCP tool.
 
@@ -716,312 +970,11 @@ When the LLM decides to call tools, the output looks like this:
 }
 ```
 
-#### Complete Agentic Workflow with DO_WHILE Loop
-
-This pattern shows how to build a complete tool-calling agent using a while loop:
-1. **Outer DO_WHILE** loops until the LLM finishes (no more tool calls)
-2. **LLM task** generates response or tool calls
-3. **Inner DO_WHILE** iterates through each tool call sequentially
-4. **CALL_MCP_TOOL** executes each tool
-5. Loop continues with tool results added to conversation
-
-```json
-{
-  "name": "agentic_tool_calling_workflow",
-  "version": 1,
-  "schemaVersion": 2,
-  "tasks": [
-    {
-      "name": "init_conversation",
-      "taskReferenceName": "init",
-      "type": "SET_VARIABLE",
-      "inputParameters": {
-        "messages": [
-          {
-            "role": "system",
-            "message": "You are a helpful assistant with access to tools. Use them when needed."
-          },
-          {
-            "role": "user",
-            "message": "${workflow.input.query}"
-          }
-        ],
-        "toolResults": []
-      }
-    },
-    {
-      "name": "agent_loop",
-      "taskReferenceName": "agent_loop",
-      "type": "DO_WHILE",
-      "loopCondition": "if ($.agent_loop['iteration'] < 1) { true } else { $.agent.output.finishReason === 'TOOL_CALLS' && $.agent_loop['iteration'] < 10 }",
-      "loopOver": [
-        {
-          "name": "agent_chat",
-          "taskReferenceName": "agent",
-          "type": "LLM_CHAT_COMPLETE",
-          "inputParameters": {
-            "llmProvider": "openai",
-            "model": "gpt-4o",
-            "messages": "${init.output.messages}",
-            "tools": [
-              {
-                "name": "get_current_weather",
-                "type": "MCP_TOOL",
-                "description": "Get the current weather for a location",
-                "inputSchema": {
-                  "type": "object",
-                  "properties": {
-                    "city": {"type": "string", "description": "City name"}
-                  },
-                  "required": ["city"]
-                },
-                "configParams": {
-                  "mcpServer": "http://localhost:3000/mcp"
-                }
-              }
-            ],
-            "temperature": 0.3,
-            "maxTokens": 1000
-          }
-        },
-        {
-          "name": "process_tool_calls",
-          "taskReferenceName": "tool_switch",
-          "type": "SWITCH",
-          "evaluatorType": "javascript",
-          "expression": "$.agent.output.finishReason === 'TOOL_CALLS' ? 'execute_tools' : 'done'",
-          "decisionCases": {
-            "execute_tools": [
-              {
-                "name": "tool_loop",
-                "taskReferenceName": "tool_loop",
-                "type": "DO_WHILE",
-                "loopCondition": "$.tool_loop['iteration'] < $.agent.output.toolCalls.length",
-                "loopOver": [
-                  {
-                    "name": "get_current_tool",
-                    "taskReferenceName": "current_tool",
-                    "type": "SET_VARIABLE",
-                    "inputParameters": {
-                      "toolCall": "${agent.output.toolCalls[tool_loop.output.iteration]}"
-                    }
-                  },
-                  {
-                    "name": "execute_mcp_tool",
-                    "taskReferenceName": "mcp_call",
-                    "type": "CALL_MCP_TOOL",
-                    "inputParameters": {
-                      "mcpServer": "${current_tool.output.toolCall.configParams.mcpServer}",
-                      "method": "${current_tool.output.toolCall.name}",
-                      "city": "${current_tool.output.toolCall.inputParameters.city}"
-                    }
-                  },
-                  {
-                    "name": "accumulate_result",
-                    "taskReferenceName": "accumulate",
-                    "type": "SET_VARIABLE",
-                    "inputParameters": {
-                      "toolResults": "${workflow.variables.toolResults.concat([{\"tool\": current_tool.output.toolCall.name, \"result\": mcp_call.output}])}"
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "update_messages",
-                "taskReferenceName": "update_msgs",
-                "type": "SET_VARIABLE",
-                "inputParameters": {
-                  "messages": "${init.output.messages.concat([{\"role\": \"assistant\", \"message\": \"Tool results: \" + JSON.stringify(workflow.variables.toolResults)}])}"
-                }
-              }
-            ]
-          },
-          "defaultCase": []
-        }
-      ]
-    }
-  ],
-  "outputParameters": {
-    "response": "${agent.output.result}",
-    "toolsUsed": "${workflow.variables.toolResults}"
-  }
-}
-```
-
-**Workflow Input:**
-```json
-{
-  "query": "What's the weather in Tokyo?"
-}
-```
-
-**How it works:**
-1. The outer `agent_loop` runs the LLM until it stops requesting tools
-2. When `finishReason` is `TOOL_CALLS`, the inner `tool_loop` iterates through each tool call
-3. Each tool is executed via `CALL_MCP_TOOL` and results are accumulated
-4. The conversation continues with tool results until the LLM provides a final answer
-
-**Output:**
-```json
-{
-  "response": "The current weather in Tokyo is 18°C and partly cloudy.",
-  "toolsUsed": [
-    {
-      "tool": "get_current_weather",
-      "result": {"content": [{"type": "text", "text": "Tokyo: 18°C, Partly cloudy"}]}
-    }
-  ]
-}
-```
-
-
-#### Tool Calling with DO_WHILE Loop
-
-For iterative tool calling (where the LLM may need multiple rounds of tool use):
-
-```json
-{
-  "name": "iterative_agent_workflow",
-    "version": 1,
-  "schemaVersion": 2,
-  "tasks": [
-    {
-      "name": "agent_loop",
-      "taskReferenceName": "loop",
-      "type": "DO_WHILE",
-      "loopCondition": "$.loop['iteration'] < 5 && $.agent_step.output.finishReason === 'TOOL_CALLS'",
-      "loopOver": [
-        {
-          "name": "agent_step",
-          "taskReferenceName": "agent_step",
-          "type": "LLM_CHAT_COMPLETE",
-          "inputParameters": {
-            "llmProvider": "anthropic",
-            "model": "claude-3-5-sonnet-20241022",
-            "messages": "${workflow.input.messages}",
-            "tools": "${workflow.input.tools}",
-            "temperature": 0.3
-          }
-        },
-        {
-          "name": "execute_tools_if_needed",
-          "taskReferenceName": "tool_check",
-          "type": "SWITCH",
-          "evaluatorType": "javascript",
-          "expression": "$.agent_step.output.finishReason === 'TOOL_CALLS' ? 'call_tools' : 'done'",
-          "decisionCases": {
-            "call_tools": [
-              {
-                "name": "fork_execute_tools",
-                "taskReferenceName": "fork_exec",
-                "type": "FORK_JOIN_DYNAMIC",
-                "inputParameters": {
-                  "dynamicTasks": "${agent_step.output.toolCalls}",
-                  "dynamicTasksInput": "${agent_step.output.toolCalls}"
-                },
-                "dynamicForkTasksParam": "dynamicTasks",
-                "dynamicForkTasksInputParamName": "dynamicTasksInput"
-              },
-              {
-                "name": "join_results",
-                "taskReferenceName": "join_exec",
-                "type": "JOIN"
-              }
-            ]
-          },
-          "defaultCase": []
-        }
-      ]
-    }
-  ]
-}
-```
-
 > **Key Points:**
 > - `finishReason: "TOOL_CALLS"` indicates the LLM wants to invoke tools
 > - `toolCalls` array contains all tool invocations with their parameters
-> - Each tool call has a unique `taskReferenceName` for the dynamic fork
-> - Use `SWITCH` to branch based on whether tool calls are present
-> - Use `FORK_JOIN_DYNAMIC` to execute multiple tool calls in parallel
+> - Each tool call has a unique `taskReferenceName` for workflow orchestration
 > - The `configParams.mcpServer` in each tool definition specifies the MCP server URL
-
-#### Using Local MCP Servers (stdio)
-
-For local MCP servers that communicate via stdin/stdout, use the `stdio://` prefix followed by the command:
-
-```json
-{
-  "tools": [
-    {
-      "name": "get_weather",
-      "type": "MCP_TOOL",
-      "description": "Get current weather for a location",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "location": {"type": "string"}
-        },
-        "required": ["location"]
-      },
-      "configParams": {
-        "mcpServer": "stdio://npx -y @modelcontextprotocol/server-weather"
-      }
-    }
-  ]
-}
-```
-
-**Supported stdio formats:**
-
-| Format | Example |
-|--------|---------|
-| **npx** | `stdio://npx -y @modelcontextprotocol/server-everything` |
-| **npx with args** | `stdio://npx -y @modelcontextprotocol/server-filesystem /tmp` |
-| **Python module** | `stdio://python -m mcp_server.weather` |
-| **Python script** | `stdio://python /path/to/server.py` |
-| **uv (Python)** | `stdio://uv run mcp-server-weather` |
-| **Direct executable** | `stdio:///usr/local/bin/my-mcp-server` |
-
-**Example with multiple tools from different servers:**
-
-```json
-{
-  "tools": [
-    {
-      "name": "read_file",
-      "type": "MCP_TOOL",
-      "description": "Read a file from the filesystem",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "path": {"type": "string"}
-        },
-        "required": ["path"]
-      },
-      "configParams": {
-        "mcpServer": "stdio://npx -y @modelcontextprotocol/server-filesystem /home/user"
-      }
-    },
-    {
-      "name": "get_weather",
-      "type": "MCP_TOOL", 
-      "description": "Get weather for a location",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "location": {"type": "string"}
-        },
-        "required": ["location"]
-      },
-      "configParams": {
-        "mcpServer": "http://weather-api.example.com/mcp"
-      }
-    }
-  ]
-}
-```
-
-> **Note**: Stdio servers are spawned as child processes and cached for reuse. The command after `stdio://` is split on whitespace and executed directly.
 
 
 ## Enable/Disable AI Workers
