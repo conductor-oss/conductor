@@ -12,7 +12,6 @@ dependencies {
     compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
     implementation "org.apache.commons:commons-lang3"
-    implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
 
     implementation "org.apache.bval:bval-jsr:${revBval}"
 

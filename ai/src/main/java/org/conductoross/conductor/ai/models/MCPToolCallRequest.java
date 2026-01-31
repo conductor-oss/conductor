@@ -15,9 +15,6 @@ package org.conductoross.conductor.ai.models;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -51,25 +48,5 @@ public class MCPToolCallRequest extends LLMWorkerInput {
     /** HTTP headers for remote MCP servers (optional). Only applicable for HTTP/HTTPS transport. */
     private Map<String, String> headers;
 
-    /**
-     * Additional arguments to pass to the MCP tool. These are collected via @JsonAnySetter and
-     * passed as tool arguments.
-     */
-    @JsonIgnore @Builder.Default private Map<String, Object> args = new HashMap<>();
-
-    /** Captures any additional properties as tool arguments. */
-    @JsonAnySetter
-    public void setArgs(String key, Object value) {
-        // Skip known fields
-        if ("mcpServer".equals(key) || "toolName".equals(key) || "headers".equals(key)) {
-            return;
-        }
-        args.put(key, value);
-    }
-
-    /** Exposes tool arguments for serialization. */
-    @JsonAnyGetter
-    public Map<String, Object> getArgs() {
-        return args;
-    }
+    private Map<String, Object> arguments = new HashMap<>();
 }

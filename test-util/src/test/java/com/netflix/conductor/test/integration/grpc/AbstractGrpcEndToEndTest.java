@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = ConductorTestApp.class,
-        properties = {"conductor.grpc-server.enabled=true", "conductor.grpc-server.port=8092"})
+        properties = {"conductor.grpc-server.enabled=true", "conductor.grpc-server.port=8092", "conductor.app.sweeper.enabled=false"})
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
 

@@ -84,13 +84,13 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
                 "Calling MCP tool '{}' on server: {} with args: {}",
                 request.getMethod(),
                 request.getMcpServer(),
-                request.getArgs());
+                request.getArguments());
 
         Map<String, Object> result =
                 mcpService.callTool(
                         request.getMcpServer(),
                         request.getMethod(),
-                        request.getArgs(),
+                        request.getArguments(),
                         request.getHeaders());
 
         log.debug("MCP tool call completed. IsError: {}", result.get("isError"));

@@ -90,6 +90,7 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-jul')
         implementation('org.apache.logging.log4j:log4j-web')
         implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+        implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
         compileOnly 'org.projectlombok:lombok:1.18.34'
 
         annotationProcessor 'org.projectlombok:lombok:1.18.34'

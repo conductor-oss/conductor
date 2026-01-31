@@ -134,7 +134,8 @@ public class MCPService {
                                     RequestBody.create(
                                             objectMapper.writeValueAsString(request),
                                             MediaType.get("application/json")))
-                            .header("Content-Type", "application/json");
+                            .header("Content-Type", "application/json")
+                            .header("Accept", "application/json, text/event-stream");
 
             // Add custom headers
             if (headers != null && !headers.isEmpty()) {
@@ -151,9 +152,19 @@ public class MCPService {
                                     response.body() != null ? response.body().string() : ""));
                 }
 
-                // Parse JSON-RPC response
+                // Get response body and content type
                 String responseBody = response.body().string();
-                JsonNode responseJson = objectMapper.readTree(responseBody);
+                String contentType = response.header("Content-Type", "application/json");
+
+                // Parse response based on content type
+                JsonNode responseJson;
+                if (contentType != null && contentType.contains("text/event-stream")) {
+                    // Parse SSE format
+                    responseJson = parseSseResponse(responseBody);
+                } else {
+                    // Parse as JSON directly
+                    responseJson = objectMapper.readTree(responseBody);
+                }
 
                 if (responseJson.has("error")) {
                     throw new RuntimeException(
@@ -188,6 +199,7 @@ public class MCPService {
                         serverUrl);
                 return tools;
             }
+
         } catch (Exception e) {
             log.error(
                     "Failed to list tools via direct JSON-RPC from {}: {}",
@@ -247,7 +259,8 @@ public class MCPService {
                                     RequestBody.create(
                                             objectMapper.writeValueAsString(request),
                                             MediaType.get("application/json")))
-                            .header("Content-Type", "application/json");
+                            .header("Content-Type", "application/json")
+                            .header("Accept", "application/json, text/event-stream");
 
             // Add custom headers
             if (headers != null && !headers.isEmpty()) {
@@ -264,9 +277,19 @@ public class MCPService {
                                     response.body() != null ? response.body().string() : ""));
                 }
 
-                // Parse JSON-RPC response
+                // Get response body and content type
                 String responseBody = response.body().string();
-                JsonNode responseJson = objectMapper.readTree(responseBody);
+                String contentType = response.header("Content-Type", "application/json");
+
+                // Parse response based on content type
+                JsonNode responseJson;
+                if (contentType != null && contentType.contains("text/event-stream")) {
+                    // Parse SSE format
+                    responseJson = parseSseResponse(responseBody);
+                } else {
+                    // Parse as JSON directly
+                    responseJson = objectMapper.readTree(responseBody);
+                }
 
                 if (responseJson.has("error")) {
                     throw new RuntimeException(responseJson.get("error").toString());
@@ -290,6 +313,7 @@ public class MCPService {
                         serverUrl);
                 return result;
             }
+
         } catch (Exception e) {
             log.error(
                     "Failed to call tool '{}' via direct JSON-RPC on {}: {}",
@@ -337,6 +361,48 @@ public class MCPService {
                     log.warn("Failed to add parsed JSON field: {}", e.getMessage(), e);
                 }
             }
+        }
+    }
+
+    /**
+     * Parses an SSE (Server-Sent Events) response to extract JSON data.
+     *
+     * <p>SSE format:
+     *
+     * <pre>
+     * event: message
+     * data: {"jsonrpc": "2.0", ...}
+     * </pre>
+     *
+     * @param sseBody the raw SSE response body
+     * @return parsed JSON node from the data field
+     */
+    private JsonNode parseSseResponse(String sseBody) {
+        log.debug("Parsing SSE response: {}", sseBody);
+
+        // Find all "data:" lines and concatenate their content
+        StringBuilder jsonData = new StringBuilder();
+        String[] lines = sseBody.split("\n");
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("data:")) {
+                String data = trimmed.substring(5).trim();
+                // Skip empty data or "[DONE]" markers
+                if (!data.isEmpty() && !data.equals("[DONE]")) {
+                    jsonData.append(data);
+                }
+            }
+        }
+
+        if (jsonData.length() == 0) {
+            throw new RuntimeException("No data found in SSE response: " + sseBody);
+        }
+
+        try {
+            return objectMapper.readTree(jsonData.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse SSE data as JSON: " + jsonData, e);
         }
     }
 

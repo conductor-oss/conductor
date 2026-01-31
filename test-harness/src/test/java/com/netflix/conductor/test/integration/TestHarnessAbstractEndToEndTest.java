@@ -48,17 +48,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-@TestPropertySource(
-        properties = {
-            "conductor.indexing.enabled=true",
-            "conductor.elasticsearch.version=7",
-            "conductor.queue.type=redis_standalone",
-            "conductor.db.type=redis_standalone"
-        })
+@TestPropertySource(properties = {
+        "conductor.indexing.enabled=true",
+        "conductor.elasticsearch.version=7",
+        "conductor.queue.type=redis_standalone",
+        "conductor.db.type=redis_standalone"
+})
 public abstract class TestHarnessAbstractEndToEndTest {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(TestHarnessAbstractEndToEndTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TestHarnessAbstractEndToEndTest.class);
 
     private static final String TASK_DEFINITION_PREFIX = "task_";
     private static final String DEFAULT_DESCRIPTION = "description";
@@ -66,14 +64,15 @@ public abstract class TestHarnessAbstractEndToEndTest {
     private static final String DEFAULT_NULL_VALUE = "null";
     protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
-    private static final ElasticsearchContainer container =
-            new ElasticsearchContainer(
-                    DockerImageName.parse("elasticsearch")
-                            .withTag("7.17.11")); // this should match the client version
+    private static final ElasticsearchContainer container = new ElasticsearchContainer(
+            DockerImageName.parse("elasticsearch")
+                    .withTag("7.17.11")) // this should match the client version
+            .withExposedPorts(9200, 9300)
+            .withEnv("xpack.security.enabled", "false")
+            .withEnv("discovery.type", "single-node");
 
-    private static GenericContainer redis =
-            new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
-                    .withExposedPorts(6379);
+    private static GenericContainer redis = new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
+            .withExposedPorts(6379);
     private static RestClient restClient;
 
     // Initialization happens in a static block so the container is initialized
@@ -177,8 +176,7 @@ public abstract class TestHarnessAbstractEndToEndTest {
     public void testEphemeralWorkflowsWithEphemeralAndStoredTasks() {
         createAndRegisterTaskDefinitions("storedTask", 1);
 
-        WorkflowDef workflowDefinition =
-                createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
 
         WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
         TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
@@ -267,14 +265,13 @@ public abstract class TestHarnessAbstractEndToEndTest {
         String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
         List<TaskDef> definitions = new LinkedList<>();
         for (int i = 0; i < numberOfTaskDefinitions; i++) {
-            TaskDef def =
-                    new TaskDef(
-                            prefix + i,
-                            "task " + i + DEFAULT_DESCRIPTION,
-                            DEFAULT_EMAIL_ADDRESS,
-                            3,
-                            60,
-                            60);
+            TaskDef def = new TaskDef(
+                    prefix + i,
+                    "task " + i + DEFAULT_DESCRIPTION,
+                    DEFAULT_EMAIL_ADDRESS,
+                    3,
+                    60,
+                    60);
             def.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
             definitions.add(def);
         }
