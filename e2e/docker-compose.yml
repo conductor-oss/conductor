@@ -1,0 +1,124 @@
+services:
+  proxy:
+    image: haproxy:3.2-alpine
+    container_name: conductor-proxy
+    user: root
+    ports:
+      - "8080:8080"
+    depends_on:
+      conductor-server-1:
+        condition: service_healthy
+      conductor-server-2:
+        condition: service_healthy
+    command: |
+      sh -c 'sh -s <<EOF
+        cat > /usr/local/etc/haproxy/haproxy.cfg <<EON
+          defaults
+            mode http
+            timeout connect 10s
+            timeout server 60s
+            timeout client 60s
+            timeout http-request 60s
+
+          frontend conductor-api
+            bind *:8080
+            default_backend conductor-servers
+
+          backend conductor-servers
+            balance roundrobin
+            option httpchk GET /health
+            server conductor-server-1 conductor-server-1:8080 check
+            server conductor-server-2 conductor-server-2:8080 check
+
+      EON
+      haproxy -f /usr/local/etc/haproxy/haproxy.cfg
+      EOF'
+    networks:
+      - conductor-network
+
+  conductor-server-1:
+    image: conductor:server-e2e
+    container_name: conductor-server-1
+    environment:
+      - CONFIG_PROP=config-redis.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - conductor-network
+
+  conductor-server-2:
+    image: conductor:server-e2e
+    container_name: conductor-server-2
+    environment:
+      - CONFIG_PROP=config-redis.properties
+      - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - conductor-network
+
+  redis:
+    image: redis:6.2.3-alpine
+    container_name: conductor-redis
+    ports:
+      - "7379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - conductor-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
+    container_name: conductor-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - cluster.routing.allocation.disk.threshold_enabled=false
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - conductor-network
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  conductor-network:
+    driver: bridge

@@ -1,0 +1,124 @@
+{
+  "name": "do_while_keep_last_n_3",
+  "description": "Test workflow for fork with do-while different keepLastN",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork",
+      "taskReferenceName": "fork_ref",
+      "inputParameters": {},
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "inline",
+            "taskReferenceName": "inline_ref",
+            "inputParameters": {
+              "expression": "(function () { return $.value1 + $.value2; })();",
+              "evaluatorType": "graaljs",
+              "value1": 1,
+              "value2": 2
+            },
+            "type": "INLINE"
+          },
+          {
+            "name": "do_while_1",
+            "taskReferenceName": "do_while_ref_1",
+            "inputParameters": {
+              "number": 5,
+              "keepLastN": 4
+            },
+            "type": "DO_WHILE",
+            "loopCondition": "(function () { if ($.do_while_ref_1['iteration'] < $.number) { return true; } return false; })();",
+            "loopOver": [
+              {
+                "name": "set_variable_1",
+                "taskReferenceName": "set_variable_ref_1",
+                "inputParameters": {
+                  "name": "Conductor"
+                },
+                "type": "SET_VARIABLE"
+              },
+              {
+                "name": "simple",
+                "taskReferenceName": "simple_ref",
+                "inputParameters": {},
+                "type": "SIMPLE",
+                "taskDefinition": {
+                  "name": "simple",
+                  "retryCount": 0,
+                  "timeoutSeconds": 60,
+                  "ownerEmail": "test@conductor.io"
+                }
+              }
+            ],
+            "evaluatorType": "graaljs"
+          }
+        ],
+        [
+          {
+            "name": "set_variable",
+            "taskReferenceName": "set_variable_ref",
+            "inputParameters": {
+              "name": "Conductor"
+            },
+            "type": "SET_VARIABLE"
+          },
+          {
+            "name": "do_while",
+            "taskReferenceName": "do_while_ref",
+            "inputParameters": {
+              "number": 5,
+              "keepLastN": 2
+            },
+            "type": "DO_WHILE",
+            "loopCondition": "(function () { if ($.do_while_ref['iteration'] < $.number) { return true; } return false; })();",
+            "loopOver": [
+              {
+                "name": "simple_1",
+                "taskReferenceName": "simple_ref_1",
+                "inputParameters": {},
+                "type": "SIMPLE",
+                "taskDefinition": {
+                  "name": "simple_1",
+                  "retryCount": 0,
+                  "timeoutSeconds": 60,
+                  "ownerEmail": "test@conductor.io"
+                }
+              },
+              {
+                "name": "simple_2",
+                "taskReferenceName": "simple_ref_2",
+                "inputParameters": {},
+                "type": "SIMPLE",
+                "taskDefinition": {
+                  "name": "simple_2",
+                  "retryCount": 0,
+                  "timeoutSeconds": 60,
+                  "ownerEmail": "test@conductor.io"
+                }
+              }
+            ],
+            "evaluatorType": "graaljs"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join",
+      "taskReferenceName": "join_ref",
+      "inputParameters": {},
+      "type": "JOIN"
+    }
+  ],
+  "inputParameters": [
+    "values",
+    "batchSize"
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}

@@ -1,0 +1,101 @@
+{
+  "name": "do_while_keep_last_n_2",
+  "description": "Test workflow for nested do-while with keepLastN",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while_batch_creation",
+      "taskReferenceName": "do_while_batch_creation_ref",
+      "inputParameters": {
+        "items": "${workflow.input.batch}",
+        "keepLastN": 4
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "",
+      "loopOver": [
+        {
+          "name": "dynamic_fork_prep",
+          "taskReferenceName": "dynamic_fork_prep_ref",
+          "inputParameters": {
+            "expression": "(function () { let obj = []; for (var i = 0; i < $.urls.length; i++) { obj.push({ \"value\": $.urls[i] }); } return obj; })();",
+            "evaluatorType": "graaljs",
+            "urls": "${do_while_batch_creation_ref.output.item}"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "fork_join_dynamic",
+          "taskReferenceName": "fork_join_dynamic_ref",
+          "inputParameters": {
+            "forkTaskWorkflow": "wait",
+            "forkTaskInputs": "${dynamic_fork_prep_ref.output.result}",
+            "forkTaskWorkflowVersion": "1"
+          },
+          "type": "FORK_JOIN_DYNAMIC",
+          "dynamicForkTasksParam": "dynamicTasks",
+          "dynamicForkTasksInputParamName": "dynamicTasksInput",
+          "optional": true
+        },
+        {
+          "name": "join",
+          "taskReferenceName": "join_ref",
+          "inputParameters": {},
+          "type": "JOIN"
+        }
+      ],
+      "evaluatorType": "value-param"
+    },
+    {
+      "name": "do_while_batch_creation",
+      "taskReferenceName": "do_while_batch_creation_ref_2",
+      "inputParameters": {
+        "items": "${workflow.input.batch}",
+        "keepLastN": 2
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "",
+      "loopOver": [
+        {
+          "name": "dynamic_fork_prep",
+          "taskReferenceName": "dynamic_fork_prep_ref_2",
+          "inputParameters": {
+            "expression": "(function () { let obj = []; for (var i = 0; i < $.urls.length; i++) { obj.push({ \"value\": $.urls[i] }); } return obj; })();",
+            "evaluatorType": "graaljs",
+            "urls": "${do_while_batch_creation_ref.output.item}"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "fork_join_dynamic",
+          "taskReferenceName": "fork_join_dynamic_ref_2",
+          "inputParameters": {
+            "forkTaskWorkflow": "wait",
+            "forkTaskInputs": "${dynamic_fork_prep_ref.output.result}",
+            "forkTaskWorkflowVersion": "1"
+          },
+          "type": "FORK_JOIN_DYNAMIC",
+          "dynamicForkTasksParam": "dynamicTasks",
+          "dynamicForkTasksInputParamName": "dynamicTasksInput",
+          "optional": true
+        },
+        {
+          "name": "join",
+          "taskReferenceName": "join_ref_2",
+          "inputParameters": {},
+          "type": "JOIN"
+        }
+      ],
+      "evaluatorType": "value-param"
+    }
+  ],
+  "inputParameters": [
+    "values",
+    "batchSize"
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}

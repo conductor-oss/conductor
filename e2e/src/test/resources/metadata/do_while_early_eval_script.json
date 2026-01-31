@@ -1,0 +1,238 @@
+{
+  "name": "do_while_early_eval_script",
+  "description": "Test workflow for do-while early script evaluation",
+  "version": 5,
+  "tasks": [
+    {
+      "name": "platform_reserve_token",
+      "taskReferenceName": "reserve_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "sublimit_id": "none"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "name": "platform_reserve_token",
+        "description": "Reserve token task",
+        "retryCount": 3,
+        "timeoutSeconds": 3600,
+        "inputKeys": [
+          "resource_pool_name",
+          "sublimit_id"
+        ],
+        "outputKeys": [
+          "token_id"
+        ],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 600,
+        "ownerEmail": "test@conductor.io"
+      },
+      "rateLimited": false,
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "platform_acquire_token",
+      "taskReferenceName": "acquire_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "token_id": "${reserve_token_ref.output.token_id}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "name": "platform_acquire_token",
+        "description": "Acquire token task",
+        "retryCount": 5,
+        "timeoutSeconds": 0,
+        "inputKeys": [
+          "resource_pool_name",
+          "token_id"
+        ],
+        "outputKeys": [
+          "acquired_at"
+        ],
+        "timeoutPolicy": "RETRY",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 600,
+        "ownerEmail": "test@conductor.io"
+      },
+      "rateLimited": false,
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    {
+      "name": "predictions_daily_bq_export_pipeline_loop",
+      "taskReferenceName": "predictions_daily_bq_export_pipeline_loop",
+      "description": "Do while loop for pipeline execution",
+      "inputParameters": {},
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "rateLimited": false,
+      "asyncComplete": false,
+      "evaluatorType": "graaljs",
+      "loopCondition": "const a = 1; if ($.predictions_process_daily_bq_export_pipeline_results.is_pipeline_failure === true && $.predictions_daily_bq_export_pipeline_loop['iteration'] < 3) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "predictions_start_daily_bq_export_pipeline",
+          "taskReferenceName": "predictions_start_daily_bq_export_pipeline",
+          "description": "Start pipeline task",
+          "inputParameters": {
+            "namespace_id": "${workflow.input.namespace_id}"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "name": "predictions_start_daily_bq_export_pipeline",
+            "description": "Start pipeline",
+            "retryCount": 5,
+            "timeoutSeconds": 360,
+            "inputKeys": [
+              "namespace_id"
+            ],
+            "outputKeys": [
+              "pipeline_uid",
+              "query_end_time",
+              "pipeline_started_at_rfc",
+              "namespace_enabled"
+            ],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 360,
+            "responseTimeoutSeconds": 360,
+            "ownerEmail": "test@conductor.io"
+          },
+          "rateLimited": false,
+          "asyncComplete": false,
+          "loopOver": []
+        },
+        {
+          "name": "if_terminate_condition",
+          "taskReferenceName": "if_terminate_condition",
+          "inputParameters": {
+            "switchCaseValue": "${predictions_start_daily_bq_export_pipeline.output.namespace_enabled}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "false": [
+              {
+                "name": "platform_return_token",
+                "taskReferenceName": "return_token_namespace_not_enabled",
+                "inputParameters": {
+                  "resource_pool_name": "predictionspipelinespool",
+                  "token_id": "${reserve_token_ref.output.token_id}"
+                },
+                "type": "SIMPLE",
+                "taskDefinition": {
+                  "name": "platform_return_token",
+                  "retryCount": 3,
+                  "timeoutSeconds": 3600,
+                  "ownerEmail": "test@conductor.io"
+                }
+              },
+              {
+                "name": "terminate_condition_is_true",
+                "taskReferenceName": "terminate_condition_is_true",
+                "inputParameters": {
+                  "terminationStatus": "COMPLETED",
+                  "terminationReason": "Namespace not enabled"
+                },
+                "type": "TERMINATE"
+              }
+            ]
+          },
+          "defaultCase": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue"
+        },
+        {
+          "name": "predictions_get_sagemaker_pipeline_execution_status_long_running",
+          "taskReferenceName": "predictions_get_daily_bq_export_pipeline_status_long_running",
+          "description": "Get pipeline status",
+          "inputParameters": {
+            "pipeline_started_at_rfc": "${predictions_start_daily_bq_export_pipeline.output.pipeline_started_at_rfc}",
+            "pipeline_uid": "${predictions_start_daily_bq_export_pipeline.output.pipeline_uid}",
+            "pipeline_timeout_duration": "24h",
+            "wait_duration": "2m"
+          },
+          "type": "SIMPLE",
+          "taskDefinition": {
+            "name": "predictions_get_sagemaker_pipeline_execution_status_long_running",
+            "retryCount": 6,
+            "timeoutSeconds": 0,
+            "responseTimeoutSeconds": 100,
+            "ownerEmail": "test@conductor.io"
+          }
+        },
+        {
+          "name": "predictions_process_daily_bq_export_pipeline_results",
+          "taskReferenceName": "predictions_process_daily_bq_export_pipeline_results",
+          "description": "Process pipeline results",
+          "inputParameters": {
+            "namespace_id": "${workflow.input.namespace_id}",
+            "pipeline_uid": "${predictions_start_daily_bq_export_pipeline.output.pipeline_uid}"
+          },
+          "type": "SIMPLE",
+          "taskDefinition": {
+            "name": "predictions_process_daily_bq_export_pipeline_results",
+            "retryCount": 3,
+            "timeoutSeconds": 100,
+            "responseTimeoutSeconds": 100,
+            "ownerEmail": "test@conductor.io"
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform_return_token",
+      "taskReferenceName": "return_token_ref",
+      "inputParameters": {
+        "resource_pool_name": "predictionspipelinespool",
+        "token_id": "${reserve_token_ref.output.token_id}"
+      },
+      "type": "SIMPLE",
+      "taskDefinition": {
+        "name": "platform_return_token",
+        "retryCount": 3,
+        "timeoutSeconds": 3600,
+        "ownerEmail": "test@conductor.io"
+      }
+    }
+  ],
+  "inputParameters": [
+    "namespace_id"
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {}
+}

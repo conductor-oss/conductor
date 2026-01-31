@@ -1,0 +1,120 @@
+{
+  "name": "do_while_wait_switch",
+  "description": "Test workflow for do-while with WAIT and SWITCH tasks",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "status": "${workflow.variables.status}"
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "$.status != 'Completed'",
+      "loopOver": [
+        {
+          "name": "inline_sample",
+          "taskReferenceName": "inline_sample_ref",
+          "inputParameters": {
+            "expression": "(function () { const current = $.iteration; return current; })();",
+            "evaluatorType": "graaljs",
+            "iteration": "${do_while_ref.output}"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "http",
+          "taskReferenceName": "http_ref",
+          "inputParameters": {
+            "uri": "https://jsonplaceholder.typicode.com/posts/1",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json"
+          },
+          "type": "HTTP"
+        },
+        {
+          "name": "wait",
+          "taskReferenceName": "wait_ref",
+          "inputParameters": {},
+          "type": "WAIT"
+        },
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "switchCaseValue": "${wait_ref.output.result}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "a": [
+              {
+                "name": "http_1",
+                "taskReferenceName": "http_ref_1",
+                "inputParameters": {
+                  "uri": "https://jsonplaceholder.typicode.com/posts/1",
+                  "method": "GET",
+                  "accept": "application/json",
+                  "contentType": "application/json"
+                },
+                "type": "HTTP"
+              },
+              {
+                "name": "set_variable",
+                "taskReferenceName": "set_variable_ref",
+                "inputParameters": {
+                  "status": "Completed"
+                },
+                "type": "SET_VARIABLE"
+              }
+            ],
+            "b": [
+              {
+                "name": "http_2",
+                "taskReferenceName": "http_ref_2",
+                "inputParameters": {
+                  "uri": "https://jsonplaceholder.typicode.com/posts/1",
+                  "method": "GET",
+                  "accept": "application/json",
+                  "contentType": "application/json"
+                },
+                "type": "HTTP"
+              },
+              {
+                "name": "set_variable_1",
+                "taskReferenceName": "set_variable_ref_1",
+                "inputParameters": {
+                  "status": "RUNNING"
+                },
+                "type": "SET_VARIABLE"
+              }
+            ]
+          },
+          "defaultCase": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue"
+        }
+      ],
+      "evaluatorType": "graaljs"
+    },
+    {
+      "name": "http_3",
+      "taskReferenceName": "http_ref_3",
+      "inputParameters": {
+        "uri": "https://jsonplaceholder.typicode.com/posts/1",
+        "method": "GET",
+        "accept": "application/json",
+        "contentType": "application/json"
+      },
+      "type": "HTTP"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {}
+}

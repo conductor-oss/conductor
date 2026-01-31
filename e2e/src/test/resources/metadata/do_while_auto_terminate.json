@@ -1,0 +1,153 @@
+{
+  "name": "do_while_auto_terminate",
+  "description": "Test workflow for do-while with random termination logic",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "status": "${workflow.variables.status}",
+        "keepLastN": 3
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "$.status != 'Completed'",
+      "loopOver": [
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_ref",
+          "inputParameters": {
+            "switchCaseValue": "b"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "a": [
+              {
+                "name": "eval_c_or_d",
+                "taskReferenceName": "eval_c_or_d_ref",
+                "inputParameters": {
+                  "expression": "(function () { let r = Math.floor(Math.random() * 10) + 1; return r > 3 ? 'c': 'd'; })();",
+                  "evaluatorType": "graaljs",
+                  "value1": 1,
+                  "value2": 2
+                },
+                "type": "INLINE"
+              },
+              {
+                "name": "switch_1",
+                "taskReferenceName": "switch_ref_1",
+                "inputParameters": {
+                  "switchCaseValue": "${eval_c_or_d_ref.output.result}"
+                },
+                "type": "SWITCH",
+                "decisionCases": {
+                  "c": [
+                    {
+                      "name": "inline_2",
+                      "taskReferenceName": "inline_ref_2",
+                      "inputParameters": {
+                        "expression": "(function () { return $.value1 + $.value2; })();",
+                        "evaluatorType": "graaljs",
+                        "value1": 1,
+                        "value2": 2
+                      },
+                      "type": "INLINE"
+                    }
+                  ],
+                  "d": [
+                    {
+                      "name": "set_variable",
+                      "taskReferenceName": "set_variable_ref",
+                      "inputParameters": {
+                        "status": "Completed"
+                      },
+                      "type": "SET_VARIABLE"
+                    }
+                  ]
+                },
+                "defaultCase": [
+                  {
+                    "name": "wait",
+                    "taskReferenceName": "wait_ref",
+                    "inputParameters": {
+                      "duration": "1 seconds"
+                    },
+                    "type": "WAIT"
+                  }
+                ],
+                "evaluatorType": "value-param",
+                "expression": "switchCaseValue"
+              }
+            ],
+            "b": [
+              {
+                "name": "inline",
+                "taskReferenceName": "inline_ref",
+                "inputParameters": {
+                  "expression": "(function () { return $.value1 + $.value2; })();",
+                  "evaluatorType": "graaljs",
+                  "value1": 1,
+                  "value2": 2
+                },
+                "type": "INLINE"
+              },
+              {
+                "name": "set_variable_1",
+                "taskReferenceName": "set_variable_ref_1",
+                "inputParameters": {
+                  "status": "RUNNING"
+                },
+                "type": "SET_VARIABLE"
+              }
+            ]
+          },
+          "defaultCase": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue"
+        },
+        {
+          "name": "max_loop_ctrl",
+          "taskReferenceName": "max_loop_ctrl_ref",
+          "inputParameters": {
+            "expression": "(function () { return $.iteration > 25 ? 'stop': 'continue'; })();",
+            "evaluatorType": "graaljs",
+            "iteration": "${do_while_ref.output.iteration}"
+          },
+          "type": "INLINE"
+        },
+        {
+          "name": "switch_2",
+          "taskReferenceName": "switch_ref_2",
+          "inputParameters": {
+            "switchCaseValue": "${max_loop_ctrl_ref.output.result}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "stop": [
+              {
+                "name": "set_variable_2",
+                "taskReferenceName": "set_variable_ref_2",
+                "inputParameters": {
+                  "status": "Completed"
+                },
+                "type": "SET_VARIABLE"
+              }
+            ]
+          },
+          "defaultCase": [],
+          "evaluatorType": "value-param",
+          "expression": "switchCaseValue"
+        }
+      ],
+      "evaluatorType": "graaljs"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {}
+}

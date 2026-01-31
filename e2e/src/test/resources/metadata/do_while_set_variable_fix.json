@@ -1,0 +1,83 @@
+{
+  "name": "do_while_set_variable_fix",
+  "description": "Test workflow for do-while set variable fix",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "set_variable",
+      "taskReferenceName": "set_initial_variable_ref",
+      "inputParameters": {
+        "isApproved": false,
+        "isSkipApproval": false
+      },
+      "type": "SET_VARIABLE"
+    },
+    {
+      "name": "do_while",
+      "taskReferenceName": "do_while_ref",
+      "inputParameters": {
+        "isApproved": "${workflow.variables.isApproved}"
+      },
+      "type": "DO_WHILE",
+      "loopCondition": "(function () { return !$.isApproved; })();",
+      "loopOver": [
+        {
+          "name": "switch",
+          "taskReferenceName": "switch_is_skip_approval_ref",
+          "inputParameters": {
+            "isSkipApproval": "${workflow.variables.isSkipApproval}"
+          },
+          "type": "SWITCH",
+          "decisionCases": {
+            "true": [
+              {
+                "name": "set_variable",
+                "taskReferenceName": "set_is_approved",
+                "inputParameters": {
+                  "isApproved": true
+                },
+                "type": "SET_VARIABLE"
+              }
+            ],
+            "false": [
+              {
+                "name": "wait_2",
+                "taskReferenceName": "wait_ref_2",
+                "inputParameters": {
+                  "duration": "2 seconds"
+                },
+                "type": "WAIT"
+              },
+              {
+                "name": "set_variable",
+                "taskReferenceName": "wait_ref_bug_from_here_down_below",
+                "inputParameters": {
+                  "isSkipApproval": true
+                },
+                "type": "SET_VARIABLE"
+              },
+              {
+                "name": "wait_1",
+                "taskReferenceName": "wait_ref_1",
+                "inputParameters": {
+                  "duration": "2 seconds"
+                },
+                "type": "WAIT"
+              }
+            ]
+          },
+          "evaluatorType": "value-param",
+          "expression": "isSkipApproval"
+        }
+      ],
+      "evaluatorType": "graaljs"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}

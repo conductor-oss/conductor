@@ -1,0 +1,22 @@
+{
+  "name": "do_while_wait_subworkflow",
+  "description": "Simple wait workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "wait",
+      "taskReferenceName": "wait_ref",
+      "inputParameters": {
+        "duration": "1 seconds"
+      },
+      "type": "WAIT"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "test@conductor.io",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}
