@@ -209,6 +209,7 @@ public class Task {
     private ExecutionMetadata executionMetadata;
 
     // If the task is an event associated with a parent task, the id of the parent task
+    @ProtoField(id = 45)
     private String parentTaskId;
 
     public Task() {}
