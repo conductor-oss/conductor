@@ -15,9 +15,7 @@ apply plugin: 'groovy'
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-metrics')
-    implementation ("org.conductoross:conductor-client:4.2.0-rc3") {
-        exclude group:"org.conductoross", module: "conductor-common"
-    }
+    implementation ("org.conductoross:conductor-client:4.2.0-rc3")
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'

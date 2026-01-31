@@ -12,9 +12,6 @@ dependencies {
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-    implementation ("org.conductoross:conductor-client:4.2.0-rc3") {
-        exclude group:"org.conductoross", module: "conductor-common"
-    }
 
     api "org.springframework.ai:spring-ai-commons:${revSpringAI}"
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"

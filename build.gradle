@@ -64,6 +64,10 @@ allprojects {
                 if (details.requested.group.startsWith('com.fasterxml.jackson.') ) {
                     details.useVersion "2.18.0"
                 }
+                // Force commons-lang3 to 3.18.0+ for compatibility with commons-compress used by Testcontainers
+                if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
+                    details.useVersion "3.18.0"
+                }
             }
         }
     }
