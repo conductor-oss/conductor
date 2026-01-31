@@ -22,6 +22,7 @@ public class SampleWorkers {
 
     @WorkerTask("HELLO")
     public String hello(@InputParam("name") String name) {
-        return "Hello %s, from the sample worker".formatted(name);
+        return "Hello %s, from the sample worker, with id: %s"
+                .formatted(name, TaskContext.get().getTaskId());
     }
 }

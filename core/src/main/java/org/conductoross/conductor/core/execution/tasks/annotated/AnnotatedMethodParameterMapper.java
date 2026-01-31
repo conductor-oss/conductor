@@ -103,28 +103,6 @@ public class AnnotatedMethodParameterMapper {
         return values;
     }
 
-    // WorkflowInstanceIdInputParam not available in SDK v3.x - uncomment when
-    // upgrading
-    // private boolean containsWorkflowInstanceIdInputParamAnnotation(Annotation[]
-    // annotations) {
-    // return Arrays.stream(annotations)
-    // .map(Annotation::annotationType)
-    // .anyMatch(WorkflowInstanceIdInputParam.class::equals);
-    // }
-    //
-    // private void validateParameterForWorkflow InstanceId(Parameter parameter) {
-    // if (!parameter.getType().equals(String.class)) {
-    // throw new IllegalArgumentException(
-    // "Parameter "
-    // + parameter
-    // + " is annotated with "
-    // + WorkflowInstanceIdInputParam.class.getSimpleName()
-    // + " but is not of type "
-    // + String.class.getSimpleName()
-    // + ".");
-    // }
-    // }
-
     private Object getInputValue(
             TaskModel task, Class<?> parameterType, Type type, Annotation[] paramAnnotation) {
         InputParam ip = findInputParamAnnotation(paramAnnotation);
