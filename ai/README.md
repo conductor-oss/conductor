@@ -235,7 +235,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "chat_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "chat_task",
@@ -281,7 +282,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "embedding_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "generate_embeddings",
@@ -309,7 +311,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "image_gen_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "generate_image",
@@ -342,7 +345,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "tts_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "generate_audio",
@@ -372,7 +376,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "semantic_search_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "index_documents",
@@ -424,7 +429,8 @@ conductor.ai.ollama.auth-header=Bearer token-here
 ```json
 {
   "name": "rag_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "search_knowledge_base",
@@ -473,14 +479,15 @@ MCP allows workflows to interact with external tools and data sources via HTTP/H
 ```json
 {
   "name": "mcp_list_tools_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "list_mcp_tools",
       "taskReferenceName": "list_tools",
       "type": "LIST_MCP_TOOLS",
       "inputParameters": {
-        "mcpServer": "http://localhost:3000"
+        "mcpServer": "http://localhost:3000/mcp"
       }
     }
   ]
@@ -516,14 +523,15 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
 ```json
 {
   "name": "mcp_weather_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "get_weather",
       "taskReferenceName": "weather",
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
-        "mcpServer": "http://localhost:3000",
+        "mcpServer": "http://localhost:3000/mcp",
         "method": "get_weather",
         "location": "New York",
         "units": "fahrenheit"
@@ -551,7 +559,8 @@ The Model Context Protocol supports multiple [transport types](https://modelcont
 ```json
 {
   "name": "mcp_local_tools_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "filesystem_operation",
@@ -584,14 +593,15 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
 ```json
 {
   "name": "mcp_ai_agent_workflow",
-  "version": 1,
+    "version": 1,
+  "schemaVersion": 2,
   "tasks": [
     {
       "name": "list_available_tools",
       "taskReferenceName": "discover_tools",
       "type": "LIST_MCP_TOOLS",
       "inputParameters": {
-        "mcpServer": "http://localhost:3000"
+        "mcpServer": "http://localhost:3000/mcp"
       }
     },
     {
@@ -620,7 +630,7 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
       "taskReferenceName": "execute",
       "type": "CALL_MCP_TOOL",
       "inputParameters": {
-        "mcpServer": "http://localhost:3000",
+        "mcpServer": "http://localhost:3000/mcp",
         "method": "${plan.output.result.method}",
         "arguments": "${plan.output.result.arguments}"
       }
@@ -675,6 +685,344 @@ Complete example combining MCP tools with LLM for autonomous agent behavior:
   }
 }
 ```
+
+### 8. LLM Tool Calling with MCP Tools
+
+Use `LLM_CHAT_COMPLETE` with the `tools` parameter to let the LLM autonomously decide when to call MCP tools. When the LLM needs to use a tool, it returns `finishReason: "TOOL_CALLS"` with the tool invocations.
+
+#### LLM Output with Tool Calls
+
+When the LLM decides to call tools, the output looks like this:
+
+```json
+{
+  "result": [],
+  "media": [],
+  "finishReason": "TOOL_CALLS",
+  "tokenUsed": 90,
+  "promptTokens": 75,
+  "completionTokens": 15,
+  "toolCalls": [
+    {
+      "taskReferenceName": "call_2prFOIfVdwS4BTAi4Z43qPGe",
+      "name": "get_weather",
+      "type": "MCP_TOOL",
+      "inputParameters": {
+        "method": "get_weather",
+        "location": "Tokyo"
+      }
+    }
+  ]
+}
+```
+
+#### Complete Agentic Workflow with DO_WHILE Loop
+
+This pattern shows how to build a complete tool-calling agent using a while loop:
+1. **Outer DO_WHILE** loops until the LLM finishes (no more tool calls)
+2. **LLM task** generates response or tool calls
+3. **Inner DO_WHILE** iterates through each tool call sequentially
+4. **CALL_MCP_TOOL** executes each tool
+5. Loop continues with tool results added to conversation
+
+```json
+{
+  "name": "agentic_tool_calling_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "init_conversation",
+      "taskReferenceName": "init",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a helpful assistant with access to tools. Use them when needed."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.query}"
+          }
+        ],
+        "toolResults": []
+      }
+    },
+    {
+      "name": "agent_loop",
+      "taskReferenceName": "agent_loop",
+      "type": "DO_WHILE",
+      "loopCondition": "if ($.agent_loop['iteration'] < 1) { true } else { $.agent.output.finishReason === 'TOOL_CALLS' && $.agent_loop['iteration'] < 10 }",
+      "loopOver": [
+        {
+          "name": "agent_chat",
+          "taskReferenceName": "agent",
+          "type": "LLM_CHAT_COMPLETE",
+          "inputParameters": {
+            "llmProvider": "openai",
+            "model": "gpt-4o",
+            "messages": "${init.output.messages}",
+            "tools": [
+              {
+                "name": "get_current_weather",
+                "type": "MCP_TOOL",
+                "description": "Get the current weather for a location",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {"type": "string", "description": "City name"}
+                  },
+                  "required": ["city"]
+                },
+                "configParams": {
+                  "mcpServer": "http://localhost:3000/mcp"
+                }
+              }
+            ],
+            "temperature": 0.3,
+            "maxTokens": 1000
+          }
+        },
+        {
+          "name": "process_tool_calls",
+          "taskReferenceName": "tool_switch",
+          "type": "SWITCH",
+          "evaluatorType": "javascript",
+          "expression": "$.agent.output.finishReason === 'TOOL_CALLS' ? 'execute_tools' : 'done'",
+          "decisionCases": {
+            "execute_tools": [
+              {
+                "name": "tool_loop",
+                "taskReferenceName": "tool_loop",
+                "type": "DO_WHILE",
+                "loopCondition": "$.tool_loop['iteration'] < $.agent.output.toolCalls.length",
+                "loopOver": [
+                  {
+                    "name": "get_current_tool",
+                    "taskReferenceName": "current_tool",
+                    "type": "SET_VARIABLE",
+                    "inputParameters": {
+                      "toolCall": "${agent.output.toolCalls[tool_loop.output.iteration]}"
+                    }
+                  },
+                  {
+                    "name": "execute_mcp_tool",
+                    "taskReferenceName": "mcp_call",
+                    "type": "CALL_MCP_TOOL",
+                    "inputParameters": {
+                      "mcpServer": "${current_tool.output.toolCall.configParams.mcpServer}",
+                      "method": "${current_tool.output.toolCall.name}",
+                      "city": "${current_tool.output.toolCall.inputParameters.city}"
+                    }
+                  },
+                  {
+                    "name": "accumulate_result",
+                    "taskReferenceName": "accumulate",
+                    "type": "SET_VARIABLE",
+                    "inputParameters": {
+                      "toolResults": "${workflow.variables.toolResults.concat([{\"tool\": current_tool.output.toolCall.name, \"result\": mcp_call.output}])}"
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "update_messages",
+                "taskReferenceName": "update_msgs",
+                "type": "SET_VARIABLE",
+                "inputParameters": {
+                  "messages": "${init.output.messages.concat([{\"role\": \"assistant\", \"message\": \"Tool results: \" + JSON.stringify(workflow.variables.toolResults)}])}"
+                }
+              }
+            ]
+          },
+          "defaultCase": []
+        }
+      ]
+    }
+  ],
+  "outputParameters": {
+    "response": "${agent.output.result}",
+    "toolsUsed": "${workflow.variables.toolResults}"
+  }
+}
+```
+
+**Workflow Input:**
+```json
+{
+  "query": "What's the weather in Tokyo?"
+}
+```
+
+**How it works:**
+1. The outer `agent_loop` runs the LLM until it stops requesting tools
+2. When `finishReason` is `TOOL_CALLS`, the inner `tool_loop` iterates through each tool call
+3. Each tool is executed via `CALL_MCP_TOOL` and results are accumulated
+4. The conversation continues with tool results until the LLM provides a final answer
+
+**Output:**
+```json
+{
+  "response": "The current weather in Tokyo is 18°C and partly cloudy.",
+  "toolsUsed": [
+    {
+      "tool": "get_current_weather",
+      "result": {"content": [{"type": "text", "text": "Tokyo: 18°C, Partly cloudy"}]}
+    }
+  ]
+}
+```
+
+
+#### Tool Calling with DO_WHILE Loop
+
+For iterative tool calling (where the LLM may need multiple rounds of tool use):
+
+```json
+{
+  "name": "iterative_agent_workflow",
+    "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "agent_loop",
+      "taskReferenceName": "loop",
+      "type": "DO_WHILE",
+      "loopCondition": "$.loop['iteration'] < 5 && $.agent_step.output.finishReason === 'TOOL_CALLS'",
+      "loopOver": [
+        {
+          "name": "agent_step",
+          "taskReferenceName": "agent_step",
+          "type": "LLM_CHAT_COMPLETE",
+          "inputParameters": {
+            "llmProvider": "anthropic",
+            "model": "claude-3-5-sonnet-20241022",
+            "messages": "${workflow.input.messages}",
+            "tools": "${workflow.input.tools}",
+            "temperature": 0.3
+          }
+        },
+        {
+          "name": "execute_tools_if_needed",
+          "taskReferenceName": "tool_check",
+          "type": "SWITCH",
+          "evaluatorType": "javascript",
+          "expression": "$.agent_step.output.finishReason === 'TOOL_CALLS' ? 'call_tools' : 'done'",
+          "decisionCases": {
+            "call_tools": [
+              {
+                "name": "fork_execute_tools",
+                "taskReferenceName": "fork_exec",
+                "type": "FORK_JOIN_DYNAMIC",
+                "inputParameters": {
+                  "dynamicTasks": "${agent_step.output.toolCalls}",
+                  "dynamicTasksInput": "${agent_step.output.toolCalls}"
+                },
+                "dynamicForkTasksParam": "dynamicTasks",
+                "dynamicForkTasksInputParamName": "dynamicTasksInput"
+              },
+              {
+                "name": "join_results",
+                "taskReferenceName": "join_exec",
+                "type": "JOIN"
+              }
+            ]
+          },
+          "defaultCase": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+> **Key Points:**
+> - `finishReason: "TOOL_CALLS"` indicates the LLM wants to invoke tools
+> - `toolCalls` array contains all tool invocations with their parameters
+> - Each tool call has a unique `taskReferenceName` for the dynamic fork
+> - Use `SWITCH` to branch based on whether tool calls are present
+> - Use `FORK_JOIN_DYNAMIC` to execute multiple tool calls in parallel
+> - The `configParams.mcpServer` in each tool definition specifies the MCP server URL
+
+#### Using Local MCP Servers (stdio)
+
+For local MCP servers that communicate via stdin/stdout, use the `stdio://` prefix followed by the command:
+
+```json
+{
+  "tools": [
+    {
+      "name": "get_weather",
+      "type": "MCP_TOOL",
+      "description": "Get current weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {"type": "string"}
+        },
+        "required": ["location"]
+      },
+      "configParams": {
+        "mcpServer": "stdio://npx -y @modelcontextprotocol/server-weather"
+      }
+    }
+  ]
+}
+```
+
+**Supported stdio formats:**
+
+| Format | Example |
+|--------|---------|
+| **npx** | `stdio://npx -y @modelcontextprotocol/server-everything` |
+| **npx with args** | `stdio://npx -y @modelcontextprotocol/server-filesystem /tmp` |
+| **Python module** | `stdio://python -m mcp_server.weather` |
+| **Python script** | `stdio://python /path/to/server.py` |
+| **uv (Python)** | `stdio://uv run mcp-server-weather` |
+| **Direct executable** | `stdio:///usr/local/bin/my-mcp-server` |
+
+**Example with multiple tools from different servers:**
+
+```json
+{
+  "tools": [
+    {
+      "name": "read_file",
+      "type": "MCP_TOOL",
+      "description": "Read a file from the filesystem",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string"}
+        },
+        "required": ["path"]
+      },
+      "configParams": {
+        "mcpServer": "stdio://npx -y @modelcontextprotocol/server-filesystem /home/user"
+      }
+    },
+    {
+      "name": "get_weather",
+      "type": "MCP_TOOL", 
+      "description": "Get weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {"type": "string"}
+        },
+        "required": ["location"]
+      },
+      "configParams": {
+        "mcpServer": "http://weather-api.example.com/mcp"
+      }
+    }
+  ]
+}
+```
+
+> **Note**: Stdio servers are spawned as child processes and cached for reuse. The command after `stdio://` is split on whitespace and executed directly.
+
 
 ## Enable/Disable AI Workers
 
