@@ -186,6 +186,7 @@ public class TestDeciderOutcomes {
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
                         taskMappers,
+                        new HashMap<>(),
                         Duration.ofMinutes(60));
     }
 
