@@ -81,9 +81,12 @@ A selection of `docker-compose-*.yaml` and `config-*.properties` files are provi
 | File                           | Containers                                                                              |
 |--------------------------------|-----------------------------------------------------------------------------------------|
 | [docker-compose.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose.yaml)                          | <ul><li>Redis</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>           |
+| [docker-compose-es8.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-es8.yaml)                 | <ul><li>Redis</li><li>Elasticsearch v8</li><li>Conductor server (includes UI)</li></ul>           |
 | [docker-compose-postgres.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres.yaml)   | <ul><li>Postgres</li><li>Conductor server (includes UI)</li></ul>  |
 | [docker-compose-postgres-es7.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres-es7.yaml)       | <ul><li>Postgres</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
+| [docker-compose-postgres-es8.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-postgres-es8.yaml)       | <ul><li>Postgres</li><li>Elasticsearch v8</li><li>Conductor server (includes UI)</li></ul>   |
 | [docker-compose-mysql.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-mysql.yaml)       | <ul><li>MySQL</li><li>Redis</li><li>Elasticsearch v7</li><li>Conductor server (includes UI)</li></ul>   |
+| [docker-compose-mysql-es8.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-mysql-es8.yaml)       | <ul><li>MySQL</li><li>Redis</li><li>Elasticsearch v8</li><li>Conductor server (includes UI)</li></ul>   |
 | [docker-compose-redis-os.yaml](https://github.com/conductor-oss/conductor/blob/main/docker/docker-compose-redis-os.yaml)    | <ul><li>Redis</li><li>Opensearch</li><li>Conductor server (includes UI)</li></ul>   |
   
 ### Running Conductor with alternative persistence stores
@@ -100,6 +103,8 @@ conductor $ docker compose -f docker/docker-compose-postgres.yaml up
 ### Configuring Elasticsearch
 
 By default, Conductor comes packaged with Elasticsearch for the UI's indexing backend. While Elasticsearch is optional, disabling it will disable the search functionality in the UI.
+
+For Elasticsearch 8.x, use the `docker-compose-*-es8.yaml` files (or set `INDEXING_BACKEND=elasticsearch8` when building) and ensure `conductor.elasticsearch.version=8` in your config.
 
 #### Disabling Elasticsearch
 

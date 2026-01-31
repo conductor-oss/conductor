@@ -118,17 +118,20 @@ Check-out the [Conductor docs](https://github.com/conductor-oss/conductor/tree/m
 * **Default persistence**: Redis (standalone) for DB and queues
   * **Alternative peristence**:  Postgres, MySQL
 * **Default indexing backend**: [Elasticsearch](https://www.elastic.co/) 7.x
-  * **Alternative indexing backends**: [OpenSearch](https://opensearch.org/) 2.x, Postgres, Sqlite
+  * **Alternative indexing backends**: Elasticsearch 8.x, [OpenSearch](https://opensearch.org/) 2.x, Postgres, Sqlite
 
 ## Configuration for various database backends
 
 | Backend              | Configuration                                                                             |
 |----------------------|-------------------------------------------------------------------------------------------|
-| Redis + ES7 (default)         | [config-redis.properties](docker/server/config/config-redis.properties)                   |
-| Redis + OS   | [config-redis-os.properties](docker/server/config/config-redis-os.properties)             |
-| Postgres             | [config-postgres.properties](docker/server/config/config-postgres.properties)             |
-| Postgres + ES7       | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties)     |
-| MySQL + ES7          | [config-mysql.properties](docker/server/config/config-mysql.properties)                   |
+| Redis + ES7 (default) | [config-redis.properties](docker/server/config/config-redis.properties)                   |
+| Redis + ES8           | [config-redis-es8.properties](docker/server/config/config-redis-es8.properties)           |
+| Redis + OS            | [config-redis-os.properties](docker/server/config/config-redis-os.properties)             |
+| Postgres              | [config-postgres.properties](docker/server/config/config-postgres.properties)             |
+| Postgres + ES7        | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties)     |
+| Postgres + ES8        | [config-postgres-es8.properties](docker/server/config/config-postgres-es8.properties)     |
+| MySQL + ES7           | [config-mysql.properties](docker/server/config/config-mysql.properties)                   |
+| MySQL + ES8           | [config-mysql-es8.properties](docker/server/config/config-mysql-es8.properties)           |
 
 
 # Build from source

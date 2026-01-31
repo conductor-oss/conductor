@@ -68,6 +68,7 @@ include 'postgres-persistence'
 include 'sqlite-persistence'
 include 'metrics'
 include 'es7-persistence'
+include 'es8-persistence'
 include 'os-persistence'
 include 'azureblob-storage'
 include 'postgres-external-storage'
@@ -79,4 +80,3 @@ include 'kafka-event-queue'
 include 'test-harness'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
-
