@@ -25,6 +25,8 @@ import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -32,6 +34,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Conditional(AIIntegrationEnabledCondition.class)
 @Slf4j
 public class LLMs {
 

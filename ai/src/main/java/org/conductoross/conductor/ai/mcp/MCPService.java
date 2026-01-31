@@ -24,8 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -47,6 +49,7 @@ import okhttp3.Response;
  * <p>Supports both remote (HTTP/HTTPS) and local (stdio) MCP servers.
  */
 @Component
+@Conditional(AIIntegrationEnabledCondition.class)
 public class MCPService {
 
     private static final Logger log = LoggerFactory.getLogger(MCPService.class);

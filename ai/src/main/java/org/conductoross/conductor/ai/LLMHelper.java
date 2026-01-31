@@ -38,6 +38,7 @@ import org.conductoross.conductor.ai.models.ToolSpec;
 import org.conductoross.conductor.ai.models.guardrail.Guardrail;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -56,6 +57,7 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
@@ -77,6 +79,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIM
 @Component
 @Slf4j
 @RequiredArgsConstructor
+@Conditional(AIIntegrationEnabledCondition.class)
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
