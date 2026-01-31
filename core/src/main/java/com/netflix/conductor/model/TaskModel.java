@@ -422,7 +422,20 @@ public class TaskModel {
 
     @JsonIgnore
     public Map<String, Object> getOutputData() {
-        return externalOutputPayloadStoragePath != null ? outputPayload : outputData;
+        if (!outputPayload.isEmpty() && !outputData.isEmpty()) {
+            // Combine payload + data
+            // data has precedence over payload because:
+            //  with external storage enabled, payload contains the old values
+            //  while data contains the latest and if payload took precedence, it
+            //  would remove latest outputs
+            outputPayload.forEach(outputData::putIfAbsent);
+            outputPayload = new HashMap<>();
+            return outputData;
+        } else if (outputPayload.isEmpty()) {
+            return outputData;
+        } else {
+            return outputPayload;
+        }
     }
 
     @JsonIgnore
