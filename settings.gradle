@@ -11,22 +11,6 @@
  *  specific language governing permissions and limitations under the License.
  */
 
-plugins {
-    id "com.gradle.enterprise" version "3.11.1"
-}
-
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlways()
-
-        buildScanPublished { scan ->
-            file("buildscan.log") << "${new Date()} - ${scan.buildScanUri}\n"
-        }
-    }
-}
-
 rootProject.name = 'conductor'
 
 include 'ai'
