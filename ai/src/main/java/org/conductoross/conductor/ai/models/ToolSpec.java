@@ -14,8 +14,6 @@ package org.conductoross.conductor.ai.models;
 
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.guardrail.Guardrail;
-
 import lombok.Data;
 
 @Data
@@ -27,5 +25,4 @@ public class ToolSpec {
     private String description;
     private Map<String, Object> inputSchema;
     private Map<String, Object> outputSchema;
-    private Guardrail guardrail;
 }

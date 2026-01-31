@@ -35,7 +35,6 @@ import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.ToolCall;
 import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.models.guardrail.Guardrail;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
@@ -354,7 +353,6 @@ public class LLMHelper {
                                             .get("integrationName");
                     args.put("integrationName", integrationName);
                     String type = matched.map(ToolSpec::getType).orElse(TASK_TYPE_SIMPLE);
-                    Optional<Guardrail> guardrail = matched.map(ToolSpec::getGuardrail);
                     tools.add(
                             ToolCall.builder()
                                     .taskReferenceName(id)
@@ -362,7 +360,6 @@ public class LLMHelper {
                                     .inputParameters(args)
                                     .integrationNames(getIntegrationNames(name, input.getTools()))
                                     .type(type)
-                                    .guardrail(guardrail.orElse(null))
                                     .build());
                 }
                 finishReason = result.getMetadata().getFinishReason();

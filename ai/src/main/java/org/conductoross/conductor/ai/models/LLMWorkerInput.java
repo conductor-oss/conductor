@@ -18,8 +18,6 @@ import java.util.Map;
 
 import lombok.Data;
 
-import static io.orkes.conductor.client.model.integration.Category.AI_MODEL;
-
 @Data
 public class LLMWorkerInput {
 
@@ -43,8 +41,8 @@ public class LLMWorkerInput {
     private boolean allowRawPrompts;
 
     public Map<String, String> getIntegrationNames() {
-        if (llmProvider != null && !integrationNames.containsKey(AI_MODEL.toString())) {
-            integrationNames.put(AI_MODEL.toString(), llmProvider);
+        if (llmProvider != null && !integrationNames.containsKey("AI_MODEL")) {
+            integrationNames.put("AI_MODEL", llmProvider);
         }
         return integrationNames;
     }

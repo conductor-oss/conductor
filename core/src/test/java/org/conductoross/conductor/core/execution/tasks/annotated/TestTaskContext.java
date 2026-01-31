@@ -16,6 +16,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
 import static org.junit.Assert.*;
 
@@ -30,10 +31,11 @@ public class TestTaskContext {
     public void testThreadLocalBehavior() {
         TaskModel task = new TaskModel();
         task.setTaskId("id-1");
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
         assertNull(TaskContext.get());
 
-        TaskContext context = TaskContext.set(task);
+        TaskContext context = TaskContext.set(task.toTask());
         assertNotNull(context);
         assertEquals("id-1", context.getTaskId());
         assertSame(context, TaskContext.get());
@@ -51,19 +53,18 @@ public class TestTaskContext {
         task.setRetryCount(3);
         task.setPollCount(5);
         task.setCallbackAfterSeconds(10);
+        task.setStatus(TaskModel.Status.SCHEDULED);
 
-        TaskContext.set(task);
+        TaskContext.set(task.toTask());
         TaskContext context = TaskContext.get();
 
         assertEquals("workflow-1", context.getWorkflowInstanceId());
         assertEquals("task-1", context.getTaskId());
-        assertEquals("worker-1", context.getWorkerId());
         assertEquals(3, context.getRetryCount());
         assertEquals(5, context.getPollCount());
         assertEquals(10, context.getCallbackAfterSeconds());
 
         context.setCallbackAfter(20);
-        assertEquals(20, task.getCallbackAfterSeconds());
-        assertEquals(20, context.getCallbackAfterSeconds());
+        assertEquals(20, context.getTaskResult().getCallbackAfterSeconds());
     }
 }

@@ -22,6 +22,8 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
 /**
@@ -71,7 +73,7 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        TaskContext.set(task);
+        TaskContext.set(task.toTask());
         try {
             LOGGER.debug(
                     "Executing annotated task {} for workflow {}",
@@ -96,9 +98,9 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
             handleInvocationException(task, e);
             return true;
         } catch (Exception e) {
-            LOGGER.error("Unexpected error executing annotated task " + getTaskType(), e);
+            LOGGER.error("error executing annotated task " + getTaskType(), e);
             task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion("Unexpected error: " + e.getMessage());
+            task.setReasonForIncompletion(e.getMessage());
             return true;
         } finally {
             TaskContext.clear();

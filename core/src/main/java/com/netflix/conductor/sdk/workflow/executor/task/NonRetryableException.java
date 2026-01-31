@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Conductor Authors.
+ * Copyright 2024 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,18 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.models.guardrail;
+package com.netflix.conductor.sdk.workflow.executor.task;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+/**
+ * Exception thrown when a worker method execution should not be retried. This maps to
+ * FAILED_WITH_TERMINAL_ERROR status.
+ */
+public class NonRetryableException extends RuntimeException {
 
-@Data
-@JsonTypeName("HUMAN") // must match the mapping above
-@EqualsAndHashCode(callSuper = false)
-public class HumanGuardrail extends Guardrail {
-    private String assignee;
-    private String message;
-    private String userFormTemplate;
-    private int formTemplateVersion;
+    public NonRetryableException(String message) {
+        super(message);
+    }
+
+    public NonRetryableException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public NonRetryableException(Throwable cause) {
+        super(cause);
+    }
 }

@@ -23,6 +23,8 @@ import org.mockito.Mockito;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
@@ -242,6 +244,7 @@ public class TestAnnotatedWorkflowSystemTask {
         task.setWorkflowInstanceId("workflow-123");
         task.setInputData(new HashMap<>(inputData));
         task.setOutputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
         return task;
     }
 

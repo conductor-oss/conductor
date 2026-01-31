@@ -25,6 +25,7 @@ import org.conductoross.conductor.ai.models.StoreEmbeddingsInput;
 import org.conductoross.conductor.ai.models.VectorDBInput;
 import org.conductoross.conductor.ai.vectordb.VectorDBs;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,8 +43,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @Slf4j
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class VectorDBWorkers
-        implements org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker {
+public class VectorDBWorkers implements AnnotatedSystemTaskWorker {
 
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<Map<String, Object>>() {};

@@ -24,6 +24,7 @@ import org.conductoross.conductor.ai.models.ImageGenRequest;
 import org.conductoross.conductor.ai.models.LLMResponse;
 import org.conductoross.conductor.ai.models.TextCompletion;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -43,14 +44,12 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @Slf4j
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class LLMWorkers
-        implements org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker {
+public class LLMWorkers implements AnnotatedSystemTaskWorker {
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final LLMs llm;
 
     public LLMWorkers(LLMs llm) {
-        Thread.dumpStack();
         this.llm = llm;
         log.info("AI Workers initialized {}", llm.getClass());
     }

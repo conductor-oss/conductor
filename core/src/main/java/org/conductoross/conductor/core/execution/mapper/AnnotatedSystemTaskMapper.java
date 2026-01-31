@@ -17,9 +17,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -29,14 +26,15 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * TaskMapper for @WorkerTask annotated system tasks. Unlike user-defined tasks, annotated system
  * tasks do not require a task definition and can be scheduled directly from the workflow
  * definition. If a task definition exists, it will be used for rate limiting and other settings.
  */
+@Slf4j
 public class AnnotatedSystemTaskMapper implements TaskMapper {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotatedSystemTaskMapper.class);
 
     private final String taskType;
     private final ParametersUtils parametersUtils;
@@ -56,7 +54,7 @@ public class AnnotatedSystemTaskMapper implements TaskMapper {
 
     @Override
     public List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext) {
-        LOGGER.debug("TaskMapperContext {} in AnnotatedSystemTaskMapper", taskMapperContext);
+        log.info("TaskMapper for {}", taskType);
 
         WorkflowTask workflowTask = taskMapperContext.getWorkflowTask();
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();

@@ -14,8 +14,6 @@ package org.conductoross.conductor.ai.models;
 
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.guardrail.Guardrail;
-
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 
 import lombok.AllArgsConstructor;
@@ -34,5 +32,4 @@ public class ToolCall {
     private String type = TaskType.TASK_TYPE_SIMPLE;
     private Map<String, Object> inputParameters;
     private Map<String, Object> output;
-    private Guardrail guardrail;
 }

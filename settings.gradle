@@ -21,7 +21,6 @@ include 'server'
 include 'server-lite'
 include 'common'
 include 'core'
-include 'system-workers'
 
 include 'cassandra-persistence'
 include 'redis-persistence'
