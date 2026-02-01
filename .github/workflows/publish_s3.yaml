@@ -1,4 +1,4 @@
-#name: Publish Conductor Server to S3
+name: Publish Conductor Server to S3
 on:
   release:
     types:
