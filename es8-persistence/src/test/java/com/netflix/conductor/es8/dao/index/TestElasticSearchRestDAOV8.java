@@ -58,31 +58,36 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     public void assertInitialSetup() throws IOException {
         String workflowAlias = INDEX_PREFIX + "_" + WORKFLOW_DOC_TYPE;
         String taskAlias = INDEX_PREFIX + "_" + TASK_DOC_TYPE;
-        String logDataStream = INDEX_PREFIX + "_" + LOG_DOC_TYPE;
-        String messageDataStream = INDEX_PREFIX + "_" + MSG_DOC_TYPE;
-        String eventDataStream = INDEX_PREFIX + "_" + EVENT_DOC_TYPE;
+        String logAlias = INDEX_PREFIX + "_" + LOG_DOC_TYPE;
+        String messageAlias = INDEX_PREFIX + "_" + MSG_DOC_TYPE;
+        String eventAlias = INDEX_PREFIX + "_" + EVENT_DOC_TYPE;
 
         String workflowIndex = workflowAlias + "-000001";
         String taskIndex = taskAlias + "-000001";
+        String logIndex = logAlias + "-000001";
+        String messageIndex = messageAlias + "-000001";
+        String eventIndex = eventAlias + "-000001";
 
         assertTrue("Index 'conductor_workflow-000001' should exist", indexExists(workflowIndex));
         assertTrue("Index 'conductor_task-000001' should exist", indexExists(taskIndex));
-
-        assertTrue(
-                "Data stream '" + logDataStream + "' should exist",
-                indexDAO.doesResourceExist("/_data_stream/" + logDataStream));
-        assertTrue(
-                "Data stream '" + messageDataStream + "' should exist",
-                indexDAO.doesResourceExist("/_data_stream/" + messageDataStream));
-        assertTrue(
-                "Data stream '" + eventDataStream + "' should exist",
-                indexDAO.doesResourceExist("/_data_stream/" + eventDataStream));
+        assertTrue("Index 'conductor_task_log-000001' should exist", indexExists(logIndex));
+        assertTrue("Index 'conductor_message-000001' should exist", indexExists(messageIndex));
+        assertTrue("Index 'conductor_event-000001' should exist", indexExists(eventIndex));
 
         assertTrue(
                 "Alias for workflow should exist",
                 indexDAO.doesResourceExist("/_alias/" + workflowAlias));
         assertTrue(
                 "Alias for task should exist", indexDAO.doesResourceExist("/_alias/" + taskAlias));
+        assertTrue(
+                "Alias for task_log should exist",
+                indexDAO.doesResourceExist("/_alias/" + logAlias));
+        assertTrue(
+                "Alias for message should exist",
+                indexDAO.doesResourceExist("/_alias/" + messageAlias));
+        assertTrue(
+                "Alias for event should exist",
+                indexDAO.doesResourceExist("/_alias/" + eventAlias));
 
         assertTrue(
                 "Index template for 'message' should exist",

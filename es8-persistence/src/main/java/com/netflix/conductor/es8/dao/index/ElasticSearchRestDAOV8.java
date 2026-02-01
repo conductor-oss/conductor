@@ -14,6 +14,7 @@ package com.netflix.conductor.es8.dao.index;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,10 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
@@ -58,11 +56,15 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -72,13 +74,16 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.ilm.IlmPolicy;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.*;
 
 @Trace
@@ -321,33 +326,24 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             String aliasName) {
         try {
             logger.info("Creating/updating the index template '{}'", templateName);
-            ObjectNode root = objectMapper.createObjectNode();
-            root.putArray("index_patterns").add(indexPattern);
-            root.put("priority", 500);
-            root.putArray("composed_of").add("conductor-common-settings");
-
-            ObjectNode template = root.putObject("template");
-            ObjectNode settings = template.putObject("settings");
-            if (additionalSettings != null && additionalSettings.isObject()) {
-                settings.setAll((ObjectNode) additionalSettings);
-            }
-            settings.put("index.lifecycle.rollover_alias", aliasName);
-
+            IndexTemplateMapping.Builder template =
+                    new IndexTemplateMapping.Builder()
+                            .settings(buildIndexTemplateSettings(additionalSettings, aliasName))
+                            .aliases(aliasName, a -> a);
             if (mappings != null) {
-                template.set("mappings", mappings);
+                template.mappings(parseTypeMapping(mappings));
             }
-
-            ObjectNode aliases = template.putObject("aliases");
-            aliases.set(aliasName, objectMapper.createObjectNode());
-
-            HttpEntity entity =
-                    new NStringEntity(
-                            objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON);
-            Request request = new Request(HttpMethod.PUT, "/_index_template/" + templateName);
-            request.setEntity(entity);
             executeWithRetry(
                     () -> {
-                        elasticSearchAdminClient.performRequest(request);
+                        elasticSearchClient
+                                .indices()
+                                .putIndexTemplate(
+                                        r ->
+                                                r.name(templateName)
+                                                        .indexPatterns(indexPattern)
+                                                        .priority(500L)
+                                                        .composedOf("conductor-common-settings")
+                                                        .template(template.build()));
                         return null;
                     });
         } catch (Exception e) {
@@ -397,28 +393,30 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private void ensureIlmPolicy() {
         try {
-            String resourcePath = "/_ilm/policy/" + ILM_POLICY_NAME;
-            if (doesResourceNotExist(resourcePath)) {
-                ObjectNode root = objectMapper.createObjectNode();
-                ObjectNode policy = root.putObject("policy");
-                ObjectNode phases = policy.putObject("phases");
-                ObjectNode hot = phases.putObject("hot");
-                ObjectNode actions = hot.putObject("actions");
-                ObjectNode rollover = actions.putObject("rollover");
-                rollover.put("max_primary_shard_size", ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE);
-
-                Request request = new Request(HttpMethod.PUT, resourcePath);
-                request.setEntity(
-                        new NStringEntity(
-                                objectMapper.writeValueAsString(root),
-                                ContentType.APPLICATION_JSON));
-                executeWithRetry(
-                        () -> {
-                            elasticSearchAdminClient.performRequest(request);
-                            return null;
-                        });
-                logger.info("Created ILM policy '{}'", ILM_POLICY_NAME);
+            if (ilmPolicyExists(ILM_POLICY_NAME)) {
+                return;
             }
+            IlmPolicy policy =
+                    IlmPolicy.of(
+                            p ->
+                                    p.phases(
+                                            ph ->
+                                                    ph.hot(
+                                                            hot ->
+                                                                    hot.actions(
+                                                                            a ->
+                                                                                    a.rollover(
+                                                                                            r ->
+                                                                                                    r.maxPrimaryShardSize(
+                                                                                                            ILM_ROLLOVER_MAX_PRIMARY_SHARD_SIZE))))));
+            executeWithRetry(
+                    () -> {
+                        elasticSearchClient
+                                .ilm()
+                                .putLifecycle(r -> r.name(ILM_POLICY_NAME).policy(policy));
+                        return null;
+                    });
+            logger.info("Created ILM policy '{}'", ILM_POLICY_NAME);
         } catch (Exception e) {
             logger.error("Failed to create ILM policy '{}'", ILM_POLICY_NAME, e);
         }
@@ -426,31 +424,76 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private void ensureComponentTemplate() {
         try {
-            ObjectNode root = objectMapper.createObjectNode();
-            ObjectNode template = root.putObject("template");
-            ObjectNode settings = template.putObject("settings");
-            settings.put("number_of_shards", properties.getIndexShardCount());
-            settings.put("number_of_replicas", properties.getIndexReplicasCount());
-            settings.put("index.lifecycle.name", ILM_POLICY_NAME);
-            String refreshInterval = formatRefreshInterval(properties.getIndexRefreshInterval());
-            if (refreshInterval != null) {
-                settings.put("index.refresh_interval", refreshInterval);
-            }
-
-            Request request =
-                    new Request(HttpMethod.PUT, "/_component_template/conductor-common-settings");
-            request.setEntity(
-                    new NStringEntity(
-                            objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON));
+            IndexSettings settings = buildCommonIndexSettings();
             executeWithRetry(
                     () -> {
-                        elasticSearchAdminClient.performRequest(request);
+                        elasticSearchClient
+                                .cluster()
+                                .putComponentTemplate(
+                                        r ->
+                                                r.name("conductor-common-settings")
+                                                        .template(t -> t.settings(settings)));
                         return null;
                     });
             logger.info("Created/updated component template 'conductor-common-settings'");
         } catch (Exception e) {
             logger.error("Failed to create component template 'conductor-common-settings'", e);
         }
+    }
+
+    private static HealthStatus parseHealthStatus(String value) {
+        if (value == null) {
+            return HealthStatus.Green;
+        }
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
+            case "green" -> HealthStatus.Green;
+            case "yellow" -> HealthStatus.Yellow;
+            case "red" -> HealthStatus.Red;
+            default -> HealthStatus.Green;
+        };
+    }
+
+    private boolean ilmPolicyExists(String policyName) throws IOException {
+        try {
+            elasticSearchClient.ilm().getLifecycle(r -> r.name(policyName));
+            return true;
+        } catch (ElasticsearchException e) {
+            if (e.status() == HttpStatus.SC_NOT_FOUND) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
+    private TypeMapping parseTypeMapping(JsonNode mappings) throws IOException {
+        String json = objectMapper.writeValueAsString(mappings);
+        return TypeMapping.of(b -> b.withJson(new StringReader(json)));
+    }
+
+    private IndexSettings buildIndexTemplateSettings(
+            JsonNode additionalSettings, String rolloverAlias) throws IOException {
+        IndexSettings.Builder builder = new IndexSettings.Builder();
+        if (additionalSettings != null
+                && additionalSettings.isObject()
+                && additionalSettings.size() > 0) {
+            builder.withJson(new StringReader(objectMapper.writeValueAsString(additionalSettings)));
+        }
+        builder.lifecycle(l -> l.rolloverAlias(rolloverAlias));
+        return builder.build();
+    }
+
+    private IndexSettings buildCommonIndexSettings() {
+        IndexSettings.Builder builder =
+                new IndexSettings.Builder()
+                        .numberOfShards(String.valueOf(properties.getIndexShardCount()))
+                        .numberOfReplicas(String.valueOf(properties.getIndexReplicasCount()))
+                        .lifecycle(l -> l.name(ILM_POLICY_NAME));
+
+        String refreshInterval = formatRefreshInterval(properties.getIndexRefreshInterval());
+        if (refreshInterval != null) {
+            builder.refreshInterval(Time.of(t -> t.time(refreshInterval)));
+        }
+        return builder.build();
     }
 
 
@@ -481,24 +524,24 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     }
 
     private void ensureWriteIndex(String aliasName) throws IOException {
-        String aliasPath = "/_alias/" + aliasName;
-        if (doesResourceNotExist(aliasPath)) {
-            String indexName = aliasName + "-000001";
-            ObjectNode root = objectMapper.createObjectNode();
-            ObjectNode aliases = root.putObject("aliases");
-            ObjectNode alias = aliases.putObject(aliasName);
-            alias.put("is_write_index", true);
-            Request request = new Request(HttpMethod.PUT, "/" + indexName);
-            request.setEntity(
-                    new NStringEntity(
-                            objectMapper.writeValueAsString(root), ContentType.APPLICATION_JSON));
-            executeWithRetry(
-                    () -> {
-                        elasticSearchAdminClient.performRequest(request);
-                        return null;
-                    });
-            logger.info("Created write index '{}' for alias '{}'", indexName, aliasName);
+        BooleanResponse exists =
+                executeWithRetry(() -> elasticSearchClient.indices().existsAlias(r -> r.name(aliasName)));
+        if (exists.value()) {
+            return;
         }
+
+        String indexName = aliasName + "-000001";
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .indices()
+                            .create(
+                                    r ->
+                                            r.index(indexName)
+                                                    .aliases(aliasName, a -> a.isWriteIndex(true)));
+                    return null;
+                });
+        logger.info("Created write index '{}' for alias '{}'", indexName, aliasName);
     }
 
     // task logs, messages, and event executions are ILM-managed rollover indices (alias + write
@@ -520,12 +563,17 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
      * @throws Exception If there is an issue connecting with the ES cluster.
      */
     private void waitForHealthyCluster() throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("wait_for_status", this.clusterHealthColor);
-        params.put("timeout", "30s");
-        Request request = new Request("GET", "/_cluster/health");
-        request.addParameters(params);
-        elasticSearchAdminClient.performRequest(request);
+        HealthStatus waitForStatus = parseHealthStatus(clusterHealthColor);
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .cluster()
+                            .health(
+                                    h ->
+                                            h.waitForStatus(waitForStatus)
+                                                    .timeout(Time.of(t -> t.time("30s"))));
+                    return null;
+                });
     }
 
     private Query boolQueryBuilder(String expression, String queryString) throws ParserException {

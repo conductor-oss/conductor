@@ -9,6 +9,11 @@ configurations {
     testRuntime.extendsFrom compileOnly
 }
 
+// ES8 must not depend on the deprecated High Level REST Client (HLRC).
+configurations.configureEach {
+    exclude group: 'org.elasticsearch.client', module: 'elasticsearch-rest-high-level-client'
+}
+
 // ES8 uses the Java API client.
 ext['elasticsearch.version'] = revElasticSearch8
 
