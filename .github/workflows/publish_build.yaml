@@ -42,7 +42,7 @@ jobs:
           # Strip the 'v' prefix if present
           PUBLISH_VERSION="${VERSION#v}"
           echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
-          echo "RELEASE_VERSION=$REL_VER" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
           echo "Publishing version: $PUBLISH_VERSION"
       - name: Create Standalone server
         run: |
