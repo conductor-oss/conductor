@@ -41,7 +41,6 @@ public class ElasticSearchConditions {
 
         @SuppressWarnings("unused")
         @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "elasticsearch")
-        static class elasticsearchIndexingType {
-        }
+        static class elasticsearchIndexingType {}
     }
 }
