@@ -192,5 +192,5 @@ jobs:
           platforms: linux/arm64,linux/amd64
           push: true
           tags: |
-            conductoross/conductor:${{ env.RELEASE_VERSION }}
+            conductoross/conductor:${{ env.PUBLISH_VERSION }}
             conductoross/conductor:latest
