@@ -51,6 +51,7 @@ jobs:
 
       - name: Build Server module
         run: |
+          ./build_ui.sh
           ./gradlew :conductor-server:bootJar -x test -Pversion=${{ steps.version.outputs.version }}
 
       - name: Configure AWS credentials
