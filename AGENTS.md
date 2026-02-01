@@ -27,6 +27,8 @@ The project is built with Java 21 and uses Gradle as the build system.
 - DAO interfaces **MUST** be defined in the `core` module
 - Implementation classes go in their respective persistence modules (e.g., `postgres-persistence`, `redis-persistence`)
 - Follow existing patterns in the codebase for consistency
+- Do not use emojis such as ✅ in the code, logs, or comments.  Keep comments professionals
+- When adding new logic, comment the algorithm, design etc.   
 
 ## Architecture Guidelines
 
