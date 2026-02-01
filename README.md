@@ -8,7 +8,7 @@
 
 
 <h1 align="center" style="border-bottom: none">
-    Conductor - Scalable Workflow Orchestration
+    Conductor - {agentic, durable, scalable } Workflow Engine
 </h1>
 
 
@@ -56,7 +56,7 @@ It empowers developers to create workflows that define interactions between serv
 Conductor is designed to enable flexible, resilient, and scalable workflows. 
 It allows you to compose services into complex workflows without coupling them tightly, simplifying orchestration across cloud-native applications and enterprise systems alike.
 
-Conductor OSS is the continuation original [Netflix Conductor Repository](https://github.com/Netflix/conductor) afer Netflix contributed the source to the OSS foundation.
+Conductor OSS is the continuation of [Netflix Conductor Repository](https://github.com/Netflix/conductor) afer Netflix contributed the source to the OSS foundation.
 
 ## Key Features
 * **Durable Execution** Workflows are guaranteed to complete even when there are temporary failures in the system.
@@ -234,8 +234,6 @@ We welcome contributions from everyone!
 - **Report Issues:** Found a bug or have a feature request? Open an [issue on GitHub](https://github.com/conductor-oss/conductor/issues).
 - **Contribute code:** Check out our [Contribution Guide](CONTRIBUTING.md), and explore our [Good first issues](https://github.com/conductor-oss/conductor/labels/good%20first%20issue) for beginner-friendly tasks to tackle first.
 - **Contribute to our Docs:** Contribute edits or updates to keep our [documentation](https://github.com/conductor-oss/conductor/tree/main/docs) in great shape for the community.
-- **Build a Conductor SDK:** Need an [SDK](https://github.com/conductor-sdk) not available for Conductor today? Build your own using the [Swagger API](http://localhost:8080) included with your local deployment.
-
 
 ## Contributors
 
