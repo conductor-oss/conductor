@@ -1,5 +1,8 @@
 name: Publish Conductor Server to S3
 on:
+  push:
+    branches:
+      - docker_build  # TEMPORARY - remove before merging to main
   release:
     types:
       - released
