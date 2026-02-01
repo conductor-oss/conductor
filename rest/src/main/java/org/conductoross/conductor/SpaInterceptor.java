@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -21,6 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
+@ConditionalOnProperty(
+        value = "conductor.enable.ui.serving",
+        havingValue = "true",
+        matchIfMissing = true)
 public class SpaInterceptor implements HandlerInterceptor {
 
     public SpaInterceptor() {
