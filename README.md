@@ -8,7 +8,7 @@
 
 
 <h1 align="center" style="border-bottom: none">
-    Conductor - {agentic, durable, scalable } Workflow Engine
+    Conductor - {agentic, durable, scalable} Workflow Engine
 </h1>
 
 
