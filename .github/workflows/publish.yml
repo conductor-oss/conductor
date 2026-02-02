@@ -64,6 +64,7 @@ jobs:
         run: |
           export VERSION="${{github.ref_name}}"
           export PUBLISH_VERSION=`echo ${VERSION:1}`
+          echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
           echo Publishing version $PUBLISH_VERSION
           ./gradlew build -x test
 
@@ -85,4 +86,4 @@ jobs:
           push: true
           tags: |
             conductoross/conductor:${{ env.RELEASE_VERSION }}
-            conductoross/conductor:latest
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}

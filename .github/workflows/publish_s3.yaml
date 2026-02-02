@@ -61,17 +61,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Upload Server JAR to S3
+      - name: Upload Server JAR to S3 (Versioned)
         run: |
-          # Upload versioned JAR
           aws s3 cp server/build/libs/conductor-server-${{ steps.version.outputs.version }}-boot.jar \
             s3://${{ secrets.AWS_S3_BUCKET }}/conductor-server-${{ steps.version.outputs.version }}.jar
-          # Upload as "latest" for stable download link
+
+      - name: Upload Server JAR to S3 (Latest)
+        if: github.event_name == 'release' && !github.event.release.prerelease
+        run: |
           aws s3 cp server/build/libs/conductor-server-${{ steps.version.outputs.version }}-boot.jar \
             s3://${{ secrets.AWS_S3_BUCKET }}/conductor-server-latest.jar
 
       - name: Verify uploads
         run: |
           echo "Uploaded conductor-server-${{ steps.version.outputs.version }}.jar"
-          echo "Uploaded conductor-server-latest.jar"
           echo "S3 bucket: ${{ secrets.AWS_S3_BUCKET }}"

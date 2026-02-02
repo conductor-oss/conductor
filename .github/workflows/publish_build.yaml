@@ -54,8 +54,10 @@ jobs:
           # Find the standalone JAR and copy with standardized names
           JAR_FILE=$(find server-lite/build/libs -name "*standalone.jar" | head -1)
           cp "$JAR_FILE" "server-lite/build/libs/conductor-lite-${{ steps.version.outputs.version }}.jar"
-          # Create "latest" version for stable download link
-          cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
+          # Create "latest" version for stable download link - only for Release
+          if [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" == "false" ]]; then
+             cp "$JAR_FILE" "server-lite/build/libs/conductor-server-lite-latest.jar"
+          fi
 
       - name: Upload JARs to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -90,5 +92,5 @@ jobs:
           push: true
           tags: |
             conductoross/conductor:${{ env.RELEASE_VERSION }}
-            conductoross/conductor:latest
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
             
