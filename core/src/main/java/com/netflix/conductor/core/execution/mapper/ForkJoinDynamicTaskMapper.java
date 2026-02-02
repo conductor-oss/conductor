@@ -12,21 +12,8 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
@@ -41,11 +28,18 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIMPLE;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link
@@ -62,11 +56,12 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     private final ParametersUtils parametersUtils;
     private final ObjectMapper objectMapper;
     private final MetadataDAO metadataDAO;
-    private final SystemTaskRegistry systemTaskRegistry;
 
+    private final SystemTaskRegistry systemTaskRegistry;
     private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks =
             new TypeReference<>() {};
 
+    @Autowired
     public ForkJoinDynamicTaskMapper(
             IDGenerator idGenerator,
             ParametersUtils parametersUtils,
@@ -134,30 +129,32 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
         int retryCount = taskMapperContext.getRetryCount();
         Map<String, Object> input =
-                parametersUtils.getTaskInput(
-                        workflowTask.getInputParameters(), workflowModel, null, null);
+                parametersUtils.getTaskInput(workflowTask.getInputParameters(), workflowModel, null, null);
 
         List<TaskModel> mappedTasks = new LinkedList<>();
+        int dynamicForkTaskCount = 0;
+        // can't rely on tasks from definition because dynamic forks can be inside dynamic forks
+        // so we'll just check tasks that are in workflow model right now
+        for(TaskModel task: workflowModel.getTasks()) {
+            if(FORK_JOIN_DYNAMIC.name().equals(task.getWorkflowTask().getType())) {
+                dynamicForkTaskCount++;
+                break;
+            }
+        }
+        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> workflowTasksAndInputPair = getDynamicTasksSimple(workflowTask, input, taskMapperContext.getWorkflowTask().getTaskReferenceName(), dynamicForkTaskCount >= 1);
+
         // Get the list of dynamic tasks and the input for the tasks
-
-        Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> workflowTasksAndInputPair =
-                getDynamicTasksSimple(workflowTask, input);
-
-        if (workflowTasksAndInputPair == null) {
+        if(workflowTasksAndInputPair == null) {
             workflowTasksAndInputPair =
                     Optional.ofNullable(workflowTask.getDynamicForkTasksParam())
                             .map(
                                     dynamicForkTaskParam ->
                                             getDynamicForkTasksAndInput(
-                                                    workflowTask,
-                                                    workflowModel,
-                                                    dynamicForkTaskParam,
-                                                    input))
+                                                    workflowTask, workflowModel, dynamicForkTaskParam, input))
                             .orElseGet(
-                                    () ->
-                                            getDynamicForkJoinTasksAndInput(
-                                                    workflowTask, workflowModel, input));
+                                    () -> getDynamicForkJoinTasksAndInput(workflowTask, workflowModel, input));
         }
+
 
         List<WorkflowTask> dynForkTasks = workflowTasksAndInputPair.getLeft();
         Map<String, Map<String, Object>> tasksInput = workflowTasksAndInputPair.getRight();
@@ -168,26 +165,31 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
         mappedTasks.add(forkDynamicTask);
 
-        Optional<TaskModel> exists =
-                workflowModel.getTasks().stream()
-                        .filter(
-                                task ->
-                                        task.getReferenceTaskName()
-                                                .equals(
-                                                        taskMapperContext
-                                                                .getWorkflowTask()
-                                                                .getTaskReferenceName()))
-                        .findAny();
+        Optional<TaskModel> exists = workflowModel.getTasks().stream().filter(task -> task.getReferenceTaskName().equals(taskMapperContext.getWorkflowTask().getTaskReferenceName())).findAny();
         List<String> joinOnTaskRefs = new LinkedList<>();
-        // Add each dynamic task to the mapped tasks and also get the last dynamic task in the list,
-        // which indicates that the following task after that needs to be a join task
-        if (!exists.isPresent()) {
-            // Add each dynamic task to the mapped tasks and also get the last dynamic task in the
-            // list,
-            // which indicates that the following task after that needs to be a join task
-            for (WorkflowTask dynForkTask : dynForkTasks) {
-                // composition
 
+        if(!exists.isPresent()) {
+            // Add each dynamic task to the mapped tasks and also get the last dynamic task in the list,
+            // which indicates that the following task after that needs to be a join task
+            for (WorkflowTask dynForkTask : dynForkTasks) { // TODO this is a cyclic dependency, break it out using function
+                // composition
+                try {
+                    Map<String, Object> forkedTaskInput =
+                            tasksInput.get(dynForkTask.getTaskReferenceName());
+                    if (dynForkTask.getInputParameters() == null) {
+                        dynForkTask.setInputParameters(new HashMap<>());
+                    }
+                    if (forkedTaskInput == null) {
+                        forkedTaskInput = new HashMap<>();
+                    }
+                    dynForkTask.getInputParameters().putAll(forkedTaskInput);
+                } catch (Exception e) {
+                    String reason =
+                            String.format(
+                                    "Tasks could not be dynamically forked due to invalid input: %s",
+                                    e.getMessage());
+                    throw new TerminateWorkflowException(reason);
+                }
                 List<TaskModel> forkedTasks =
                         taskMapperContext
                                 .getDeciderService()
@@ -198,10 +200,10 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                                     .filter(
                                             runningTask ->
                                                     runningTask
-                                                                    .getStatus()
-                                                                    .equals(
-                                                                            TaskModel.Status
-                                                                                    .IN_PROGRESS)
+                                                            .getStatus()
+                                                            .equals(
+                                                                    TaskModel.Status
+                                                                            .IN_PROGRESS)
                                                             || runningTask.getStatus().isTerminal())
                                     .map(TaskModel::getReferenceTaskName)
                                     .filter(
@@ -224,33 +226,14 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     throw new TerminateWorkflowException(terminateMessage);
                 }
 
-                for (TaskModel forkedTask : forkedTasks) {
-                    try {
-                        Map<String, Object> forkedTaskInput =
-                                tasksInput.get(forkedTask.getReferenceTaskName());
-                        if (forkedTask.getInputData() == null) {
-                            forkedTask.setInputData(new HashMap<>());
-                        }
-                        if (forkedTaskInput == null) {
-                            forkedTaskInput = new HashMap<>();
-                        }
-                        forkedTask.getInputData().putAll(forkedTaskInput);
-                    } catch (Exception e) {
-                        String reason =
-                                String.format(
-                                        "Tasks could not be dynamically forked due to invalid input: %s",
-                                        e.getMessage());
-                        throw new TerminateWorkflowException(reason);
-                    }
-                }
                 mappedTasks.addAll(forkedTasks);
-                // Get the last of the dynamic tasks so that the join can be performed once this
-                // task is
+                // Get the last of the dynamic tasks so that the join can be performed once this task is
                 // done
                 TaskModel last = forkedTasks.get(forkedTasks.size() - 1);
                 joinOnTaskRefs.add(last.getReferenceTaskName());
             }
         }
+
 
         // From the workflow definition get the next task and make sure that it is a JOIN task.
         // The dynamic fork tasks need to be followed by a join task
@@ -264,14 +247,17 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     "Dynamic join definition is not followed by a join task.  Check the workflow definition.");
         }
 
+
         // Create Join task
-        HashMap<String, Object> joinInput = new HashMap<>();
+        HashMap<String, Object> joinInput = new HashMap<>(joinWorkflowTask.getInputParameters());
         joinInput.put("joinOn", joinOnTaskRefs);
         TaskModel joinTask = createJoinTask(workflowModel, joinWorkflowTask, joinInput);
         mappedTasks.add(joinTask);
 
+        mappedTasks.forEach(t -> t.setParentTaskReferenceName(workflowTask.getTaskReferenceName()));
         return mappedTasks;
     }
+
 
     /**
      * This method creates a FORK task and adds the list of dynamic fork tasks keyed by
@@ -291,6 +277,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         forkDynamicTask.setTaskDefName(TaskType.TASK_TYPE_FORK);
         forkDynamicTask.setStartTime(System.currentTimeMillis());
         forkDynamicTask.setEndTime(System.currentTimeMillis());
+        forkDynamicTask.setExecuted(true);
         List<String> forkedTaskNames =
                 dynForkTasks.stream()
                         .map(WorkflowTask::getTaskReferenceName)
@@ -357,14 +344,11 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     @SuppressWarnings("unchecked")
     @VisibleForTesting
     Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> getDynamicForkTasksAndInput(
-            WorkflowTask workflowTask,
-            WorkflowModel workflowModel,
-            String dynamicForkTaskParam,
-            Map<String, Object> input)
+            WorkflowTask workflowTask, WorkflowModel workflowModel, String dynamicForkTaskParam, Map<String, Object> input)
             throws TerminateWorkflowException {
 
-        List<WorkflowTask> dynamicForkWorkflowTasks =
-                getDynamicForkWorkflowTasks(dynamicForkTaskParam, input);
+
+        List<WorkflowTask> dynamicForkWorkflowTasks = getDynamicForkWorkflowTasks(dynamicForkTaskParam, input);
         if (dynamicForkWorkflowTasks == null) {
             dynamicForkWorkflowTasks = new ArrayList<>();
         }
@@ -385,106 +369,98 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                 dynamicForkWorkflowTasks, (Map<String, Map<String, Object>>) dynamicForkTasksInput);
     }
 
-    private List<WorkflowTask> getDynamicForkWorkflowTasks(
-            String dynamicForkTaskParam, Map<String, Object> input) {
+    private List<WorkflowTask> getDynamicForkWorkflowTasks(String dynamicForkTaskParam, Map<String, Object> input) {
         Object dynamicForkTasksJson = input.get(dynamicForkTaskParam);
         try {
-            List<WorkflowTask> tasks =
-                    objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
-            for (var task : tasks) {
-                if (task.getTaskReferenceName() == null) {
-                    throw new RuntimeException(
-                            "One of the tasks had a null/missing taskReferenceName");
+            List<WorkflowTask> tasks = objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
+            for(var task: tasks) {
+                if(task.getTaskReferenceName() == null) {
+                    throw new RuntimeException("One of the tasks had a null/missing taskReferenceName");
                 }
             }
             return tasks;
         } catch (Exception e) {
-            LOGGER.warn("IllegalArgumentException in getDynamicForkTasksAndInput", e);
+            log.warn("IllegalArgumentException in getDynamicForkTasksAndInput", e);
             throw new TerminateWorkflowException(
-                    String.format(
-                            "Input '%s' is invalid. Cannot deserialize a list of Workflow Tasks from '%s'",
-                            dynamicForkTaskParam, dynamicForkTasksJson));
+                    String.format("Input '%s' is invalid. Cannot deserialize a list of Workflow Tasks from '%s'",
+                            dynamicForkTaskParam,
+                            dynamicForkTasksJson));
         }
     }
 
     Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> getDynamicTasksSimple(
-            WorkflowTask workflowTask, Map<String, Object> input)
-            throws TerminateWorkflowException {
+            WorkflowTask workflowTask, Map<String, Object> input, String parentTaskName,
+            boolean hasMoreThanOneFork) throws TerminateWorkflowException {
 
-        String forkSubWorkflowName = (String) input.get("forkTaskWorkflow");
-        String forkSubWorkflowVersionStr = (String) input.get("forkTaskWorkflowVersion");
+        String forkSubWorkflowName = (String)input.get("forkTaskWorkflow");
+        String forkSubWorkflowVersionStr = (String)input.get("forkTaskWorkflowVersion");
         Integer forkSubWorkflowVersion = null;
         try {
             forkSubWorkflowVersion = Integer.parseInt(forkSubWorkflowVersionStr);
-        } catch (NumberFormatException nfe) {
-        }
+        }catch (NumberFormatException nfe) {}
 
         String forkTaskType = (String) input.get("forkTaskType");
         String forkTaskName = (String) input.get("forkTaskName");
-        if (forkTaskType != null
-                && (systemTaskRegistry.isSystemTask(forkTaskType))
-                && forkTaskName == null) {
+        if(forkTaskType != null &&
+                (systemTaskRegistry.isSystemTask(forkTaskType)) &&
+                forkTaskName == null) {
             forkTaskName = forkTaskType;
         }
-        if (forkTaskName == null) {
+        if(forkTaskName == null) {
             forkTaskName = workflowTask.getTaskReferenceName();
             // or we can ban using just forkTaskWorkflow without forkTaskName
         }
 
-        if (forkTaskType == null) {
+        if(forkTaskType == null) {
             forkTaskType = TASK_TYPE_SIMPLE;
         }
 
-        // This should be a list
+        //This should be a list
         Object forkTaskInputs = input.get("forkTaskInputs");
-        if (forkTaskInputs == null || !(forkTaskInputs instanceof List)) {
-            LOGGER.warn(
-                    "fork_task_name is present but the inputs are NOT a list is empty {}",
-                    forkTaskInputs);
+        if(forkTaskInputs == null || !(forkTaskInputs instanceof List)) {
+            LOGGER.warn("fork_task_name is present but the inputs are NOT a list is empty {}", forkTaskInputs);
             return null;
         }
-        List<Object> inputs = (List<Object>) forkTaskInputs;
+        List<Object> inputs = (List<Object>)forkTaskInputs;
 
         List<WorkflowTask> dynamicForkWorkflowTasks = new ArrayList<>(inputs.size());
         Map<String, Map<String, Object>> dynamicForkTasksInput = new HashMap<>();
         int i = 0;
         for (Object forkTaskInput : inputs) {
             WorkflowTask forkTask = null;
-            if (forkSubWorkflowName != null) {
-                forkTask =
-                        generateSubWorkflowWorkflowTask(
-                                forkSubWorkflowName, forkSubWorkflowVersion, forkTaskInput);
-                forkTask.setTaskReferenceName("_" + forkTaskName + "_" + i);
+            if(forkSubWorkflowName != null) {
+                forkTask = generateSubWorkflowWorkflowTask(forkSubWorkflowName, forkSubWorkflowVersion, forkTaskInput);
             } else {
                 forkTask = generateWorkflowTask(forkTaskName, forkTaskType, forkTaskInput);
+            }
+            if(hasMoreThanOneFork) {
+                forkTask.setTaskReferenceName("_" + parentTaskName + "_" + forkTaskName + "_" + i);
+            } else {
                 forkTask.setTaskReferenceName("_" + forkTaskName + "_" + i);
             }
             forkTask.getInputParameters().put("__index", i++);
-            if (workflowTask.isOptional()) {
+            if(workflowTask.isOptional()) {
                 forkTask.setOptional(true);
             }
 
             dynamicForkWorkflowTasks.add(forkTask);
-            dynamicForkTasksInput.put(
-                    forkTask.getTaskReferenceName(), forkTask.getInputParameters());
+            dynamicForkTasksInput.put(forkTask.getTaskReferenceName(), forkTask.getInputParameters());
         }
         return new ImmutablePair<>(dynamicForkWorkflowTasks, dynamicForkTasksInput);
     }
 
-    private WorkflowTask generateWorkflowTask(
-            String forkTaskName, String forkTaskType, Object forkTaskInput) {
+    private WorkflowTask generateWorkflowTask(String forkTaskName, String forkTaskType, Object forkTaskInput) {
         WorkflowTask forkTask = new WorkflowTask();
 
         try {
             forkTask = objectMapper.convertValue(forkTaskInput, WorkflowTask.class);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         forkTask.setName(forkTaskName);
         forkTask.setType(forkTaskType);
         Map<String, Object> inputParameters = new HashMap<>();
 
-        if (forkTaskInput instanceof Map) {
+        if(forkTaskInput instanceof Map) {
             inputParameters.putAll((Map<? extends String, ?>) forkTaskInput);
         } else {
             inputParameters.put("input", forkTaskInput);
@@ -494,14 +470,12 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         return forkTask;
     }
 
-    private WorkflowTask generateSubWorkflowWorkflowTask(
-            String name, Integer version, Object forkTaskInput) {
+    private WorkflowTask generateSubWorkflowWorkflowTask(String name, Integer version, Object forkTaskInput) {
         WorkflowTask forkTask = new WorkflowTask();
 
         try {
             forkTask = objectMapper.convertValue(forkTaskInput, WorkflowTask.class);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         forkTask.setName(name);
         forkTask.setType(SUB_WORKFLOW.toString());
@@ -511,11 +485,10 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         subWorkflowParams.setVersion(version);
         forkTask.setSubWorkflowParam(subWorkflowParams);
 
-        if (forkTaskInput instanceof Map) {
+        if(forkTaskInput instanceof Map) {
             inputParameters.putAll((Map<? extends String, ?>) forkTaskInput);
             Map<? extends String, ?> forkTaskInputMap = (Map<? extends String, ?>) forkTaskInput;
-            subWorkflowParams.setTaskToDomain(
-                    (Map<String, String>) forkTaskInputMap.get("taskToDomain"));
+            subWorkflowParams.setTaskToDomain((Map<String, String>) forkTaskInputMap.get("taskToDomain"));
         } else {
             inputParameters.put("input", forkTaskInput);
         }
@@ -579,7 +552,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                                             dynamicForkJoinTask.getType());
                                     if (dynamicForkJoinWorkflowTask.getTaskDefinition() == null
                                             && StringUtils.isNotBlank(
-                                                    dynamicForkJoinWorkflowTask.getName())) {
+                                            dynamicForkJoinWorkflowTask.getName())) {
                                         dynamicForkJoinWorkflowTask.setTaskDefinition(
                                                 metadataDAO.getTaskDef(
                                                         dynamicForkJoinTask.getTaskName()));
