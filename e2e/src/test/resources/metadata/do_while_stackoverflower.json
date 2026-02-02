@@ -1,0 +1,33 @@
+{
+  "name": "do_while_stackoverflower",
+  "description": "Test workflow for high iteration count do-while loops",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "loop",
+      "taskReferenceName": "loop_ref",
+      "inputParameters": {
+        "n": "${workflow.input.n}"
+      },
+      "type": "DO_WHILE",
+      "startDelay": 0,
+      "loopCondition": "$.loop_ref['iteration'] < $.n",
+      "evaluatorType": "javascript",
+      "loopOver": [
+        {
+          "name": "dummy",
+          "taskReferenceName": "dummy_ref",
+          "inputParameters": {
+            "expression": "\"stackoverflowing are you?\"",
+            "evaluatorType": "javascript"
+          },
+          "type": "INLINE"
+        }
+      ]
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "ownerEmail": "test@conductor.io"
+}
