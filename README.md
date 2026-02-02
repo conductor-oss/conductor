@@ -88,11 +88,11 @@ irm https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_ser
 
 ### All Options
 
-| Operating System | Interactive | Custom Port | Custom Port & Version |
-|------------------|-------------|-------------|-----------------------|
-| macOS / Linux | `./conductor_server.sh` | `./conductor_server.sh 9090` | `./conductor_server.sh 9090 3.22.0` |
-| Windows (CMD) | `conductor_server.bat` | `conductor_server.bat 9090` | `conductor_server.bat 9090 3.22.0` |
-| Windows (PowerShell) | `.\conductor_server.ps1` | `.\conductor_server.ps1 9090` | `.\conductor_server.ps1 -Port 9090 -Version 3.22.0` |
+| Operating System | Interactive | Custom Port & Version |
+|------------------|-------------|-----------------------|
+| macOS / Linux | `./conductor_server.sh` | `./conductor_server.sh 9090 3.22.0` |
+| Windows (CMD) | `conductor_server.bat` | `conductor_server.bat 9090 3.22.0` |
+| Windows (PowerShell) | `.\conductor_server.ps1` | `.\conductor_server.ps1 -Port 9090 -Version 3.22.0` |
 
 Each script will:
 1. Download the Conductor server JAR (if not already present)
