@@ -48,3 +48,5 @@ yarn.lock
 .java-version
 /server/src/main/resources/static
 /server/src/main/resources/static
+*.factorypath
+*.factorypath
