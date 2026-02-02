@@ -540,7 +540,8 @@ public class ForkJoinDynamicTaskMapperTest {
         mapperInput.put("forkTaskInputs", Arrays.asList(forkInput1, forkInput2));
 
         Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> result =
-                mapper.getDynamicTasksSimple(workflowTask, mapperInput);
+                mapper.getDynamicTasksSimple(
+                        workflowTask, mapperInput, workflowTask.getTaskReferenceName(), false);
 
         assertNotNull(result);
         result.getLeft()

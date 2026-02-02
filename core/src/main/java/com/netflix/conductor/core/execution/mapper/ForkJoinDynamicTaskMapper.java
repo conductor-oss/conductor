@@ -275,7 +275,6 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         TaskModel joinTask = createJoinTask(workflowModel, joinWorkflowTask, joinInput);
         mappedTasks.add(joinTask);
 
-        mappedTasks.forEach(t -> t.setParentTaskReferenceName(workflowTask.getTaskReferenceName()));
         return mappedTasks;
     }
 
@@ -406,7 +405,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
             }
             return tasks;
         } catch (Exception e) {
-            log.warn("IllegalArgumentException in getDynamicForkTasksAndInput", e);
+            LOGGER.warn("IllegalArgumentException in getDynamicForkTasksAndInput", e);
             throw new TerminateWorkflowException(
                     String.format(
                             "Input '%s' is invalid. Cannot deserialize a list of Workflow Tasks from '%s'",
