@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor;
 
+import java.util.Optional;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
@@ -31,8 +33,8 @@ public class RestConfiguration implements WebMvcConfigurer {
 
     private final SpaInterceptor spaInterceptor;
 
-    public RestConfiguration(SpaInterceptor spaInterceptor) {
-        this.spaInterceptor = spaInterceptor;
+    public RestConfiguration(Optional<SpaInterceptor> spaInterceptor) {
+        this.spaInterceptor = spaInterceptor.orElse(null);
         log.info("spaInterceptor: {}", spaInterceptor);
     }
 
