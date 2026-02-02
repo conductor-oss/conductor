@@ -555,7 +555,6 @@ public class ForkJoinDynamicTaskMapperTest {
         assertEquals(
                 "value2", result.getRight().get(secondTask.getTaskReferenceName()).get("param1"));
     }
-}
 
     @Test
     public void testDynamicForkJoinTaskDuplicateTaskRefName() {
