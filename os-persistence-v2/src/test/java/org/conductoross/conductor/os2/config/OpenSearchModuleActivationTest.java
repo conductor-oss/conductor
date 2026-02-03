@@ -14,12 +14,12 @@ package org.conductoross.conductor.os2.config;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.opensearch.client.RestClient;
-import org.opensearch.client.RestHighLevelClient;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +27,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.dao.IndexDAO;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 
