@@ -43,7 +43,7 @@ shadowJar {
     archiveClassifier = null
 
     // Relocate opensearch-java 3.x to avoid conflicts with v2
-    relocate 'org.opensearch.client', 'com.netflix.conductor.os3.shaded.opensearch.client'
+    relocate 'org.opensearch.client', 'org.conductoross.conductor.os3.shaded.opensearch.client'
 
     // Service files are not included by default.
     mergeServiceFiles {
