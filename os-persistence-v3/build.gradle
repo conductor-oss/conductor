@@ -1,7 +1,8 @@
-// ⚠️ NOTE: This module is currently unbuildable
-// It depends on opensearch-java:3.3.2 which hasn't been released yet (as of Feb 2025)
-// This module is prepared for future OpenSearch 3.x support
-// When opensearch-java 3.3.2+ is available, uncomment in server/build.gradle
+// ⚠️ NOTE: This module is a work-in-progress for OpenSearch 3.x support
+// OpenSearch 3.x deprecated the High-Level REST client and requires the new opensearch-java 3.x API
+// This is a complete API rewrite - the DAO layer needs to be reimplemented
+// Status: Code structure prepared, but not yet compatible with opensearch-java 3.x API
+// See: https://opensearch.org/docs/latest/clients/java/
 
 plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
@@ -29,7 +30,7 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
 
-    implementation 'org.opensearch.client:opensearch-java:3.3.2'
+    implementation 'org.opensearch.client:opensearch-java:3.0.0'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
     implementation "org.opensearch.client:opensearch-rest-client:3.0.0"
 
