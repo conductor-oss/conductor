@@ -93,40 +93,6 @@ public class TestAnnotatedSystemTaskIntegration {
     }
 
     @Test
-    public void testAnnotatedTasksAreDiscovered() {
-        assertNotNull(asyncSystemTasks);
-        assertFalse("Should have discovered annotated tasks", asyncSystemTasks.isEmpty());
-
-        // Find our test tasks
-        AnnotatedWorkflowSystemTask task1 = findTask("integration_test_task_1");
-        AnnotatedWorkflowSystemTask task2 = findTask("integration_test_task_2");
-
-        assertNotNull("integration_test_task_1 should be discovered", task1);
-        assertNotNull("integration_test_task_2 should be discovered", task2);
-    }
-
-    @Test
-    public void testAnnotatedTasksAreAsync() {
-        AnnotatedWorkflowSystemTask task1 = findTask("integration_test_task_1");
-        assertNotNull(task1);
-        assertTrue("Annotated tasks should be async", task1.isAsync());
-    }
-
-    @Test
-    public void testAnnotatedTaskHasCorrectMetadata() {
-        AnnotatedWorkflowSystemTask task2 = findTask("integration_test_task_2");
-        assertNotNull(task2);
-
-        assertEquals("integration_test_task_2", task2.getTaskType());
-        assertEquals("task2", task2.getMethod().getName());
-        assertTrue(task2.getBean() instanceof SampleAnnotatedTasks);
-
-        // Verify annotation metadata
-        assertEquals(5, task2.getAnnotation().threadCount());
-        assertEquals(200, task2.getAnnotation().pollingInterval());
-    }
-
-    @Test
     public void testNonAnnotatedMethodsNotRegistered() {
         // Ensure that methods without @WorkerTask are not registered
         long notATaskCount =

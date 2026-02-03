@@ -14,16 +14,16 @@ package org.conductoross.conductor.core.execution.tasks.annotated;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper;
+import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -40,27 +40,23 @@ import com.netflix.conductor.sdk.workflow.task.WorkerTask;
  * the existing asyncSystemTasks collection and taskMappersByTaskType map.
  */
 @Component
-@ConditionalOnProperty(
-        name = "conductor.annotated-system-tasks.enabled",
-        havingValue = "true",
-        matchIfMissing = true)
 public class WorkerTaskAnnotationScanner implements InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkerTaskAnnotationScanner.class);
 
-    private final ApplicationContext applicationContext;
+    private final List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers;
     private final Set<WorkflowSystemTask> asyncSystemTasks;
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
 
     public WorkerTaskAnnotationScanner(
-            ApplicationContext applicationContext,
+            List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
             @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
                     Set<WorkflowSystemTask> asyncSystemTasks,
             @Lazy ParametersUtils parametersUtils,
             @Lazy MetadataDAO metadataDAO) {
-        this.applicationContext = applicationContext;
+        this.annotatedSystemTaskWorkers = annotatedSystemTaskWorkers;
         this.asyncSystemTasks = asyncSystemTasks;
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
@@ -74,21 +70,14 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     public void afterPropertiesSet() {
         long startTime = System.currentTimeMillis();
 
-        LOGGER.info("Scanning Spring beans for @WorkerTask annotated methods...");
-
-        String[] beanNames = applicationContext.getBeanDefinitionNames();
         int scannedBeans = 0;
         int foundMethods = 0;
 
-        for (String beanName : beanNames) {
-            try {
-                Object bean = applicationContext.getBean(beanName);
-                Class<?> beanClass = bean.getClass();
+        for (Object bean : annotatedSystemTaskWorkers) {
 
-                // Skip framework classes and proxies
-                if (isFrameworkClass(beanClass)) {
-                    continue;
-                }
+            Class<?> beanClass = bean.getClass();
+            String beanName = beanClass.getSimpleName();
+            try {
 
                 scannedBeans++;
 
@@ -142,15 +131,5 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     @Bean
     public Map<String, TaskMapper> annotatedTaskSystems() {
         return taskMappers;
-    }
-
-    private boolean isFrameworkClass(Class<?> clazz) {
-        String className = clazz.getName();
-        // Skip Spring framework classes, CGLIB proxies, and JDK classes
-        return className.startsWith("org.springframework.")
-                || className.contains("$$EnhancerBy")
-                || className.contains("$$FastClassBy")
-                || className.startsWith("java.")
-                || className.startsWith("jdk.");
     }
 }

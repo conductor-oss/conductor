@@ -40,8 +40,8 @@ public class Conductor {
     }
 
     /**
-     * Reads properties from the location specified in <code>CONDUCTOR_CONFIG_FILE</code> and sets
-     * them as system properties so they override the default properties.
+     * Reads properties from the location specified in <code>CONDUCTOR_LITE_CONFIG_FILE</code> and
+     * sets them as system properties so they override the default properties.
      *
      * <p>Spring Boot property hierarchy is documented here,
      * https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config
@@ -49,9 +49,9 @@ public class Conductor {
      * @throws IOException if file can't be read.
      */
     private static void loadExternalConfig() throws IOException {
-        String configFile = System.getProperty("CONDUCTOR_CONFIG_FILE2");
+        String configFile = System.getProperty("CONDUCTOR_LITE_CONFIG_FILE");
         if (StringUtils.isBlank(configFile)) {
-            configFile = System.getenv("CONDUCTOR_CONFIG_FILE2");
+            configFile = System.getenv("CONDUCTOR_LITE_CONFIG_FILE");
         }
         if (StringUtils.isNotBlank(configFile)) {
             log.info("Loading {}", configFile);

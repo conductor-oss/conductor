@@ -24,6 +24,7 @@ import java.util.Map;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
