@@ -56,4 +56,5 @@ shadowJar {
         include 'META-INF/maven/*'
     }
 }
-jar.dependsOn shadowJar
+// Note: shadowJar is optional for shading dependencies, but not required for basic functionality
+// Use regular jar for now to avoid Shadow plugin issues with Java 21
