@@ -62,7 +62,7 @@ public class OpenSearchModuleActivationTest {
 
             // Verify it's using the correct package (os2)
             assertEquals(
-                    "com.netflix.conductor.os2.config.OpenSearchProperties",
+                    "org.conductoross.conductor.os2.config.OpenSearchProperties",
                     props.getClass().getName());
         }
 
@@ -79,7 +79,7 @@ public class OpenSearchModuleActivationTest {
             // Verify it's the v2 implementation
             assertTrue(
                     "IndexDAO should be from os2 package",
-                    indexDAO.getClass().getName().contains("com.netflix.conductor.os2"));
+                    indexDAO.getClass().getName().contains("org.conductoross.conductor.os2"));
         }
     }
 
