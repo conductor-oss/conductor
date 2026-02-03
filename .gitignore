@@ -48,3 +48,5 @@ yarn.lock
 .java-version
 server-lite/conductorosstest.db-shm
 server-lite/conductorosstest.db-wal
+/server/src/main/resources/static
+*.factorypath

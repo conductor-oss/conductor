@@ -51,9 +51,11 @@ import static org.junit.Assert.assertNotNull;
 @TestPropertySource(
         properties = {
             "conductor.indexing.enabled=true",
+            "conductor.indexing.type=elasticsearch",
             "conductor.elasticsearch.version=7",
             "conductor.queue.type=redis_standalone",
-            "conductor.db.type=redis_standalone"
+            "conductor.db.type=redis_standalone",
+            "conductor.app.ownerEmailMandatory=true"
         })
 public abstract class TestHarnessAbstractEndToEndTest {
 
