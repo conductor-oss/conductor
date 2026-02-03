@@ -335,6 +335,57 @@ In this example workflow, the Dynamic Fork task runs HTTP tasks in parallel. The
 Refer to the [Join](join-task.md) task for more details on the Join aspect of the Fork.
 
 
+### Running the same task — Simplified configuration
+
+When using `forkTaskInputs`, you can use a simplified configuration without `dynamicForkTasksParam` and `dynamicForkTasksInputParamName`. This approach uses `forkTaskName` to specify the task type directly.
+
+```json
+{
+  "name": "dynamic_fork_simple",
+  "description": "Dynamic fork with simplified configuration",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "dynamic_fork_http",
+      "taskReferenceName": "dynamic_fork_http_ref",
+      "inputParameters": {
+        "forkTaskName": "HTTP",
+        "forkTaskInputs": [
+          {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json",
+            "encode": true
+          },
+          {
+            "uri": "https://orkes-api-tester.orkesconductor.com/api",
+            "method": "GET",
+            "accept": "application/json",
+            "contentType": "application/json",
+            "encode": true
+          }
+        ]
+      },
+      "type": "FORK_JOIN_DYNAMIC"
+    },
+    {
+      "name": "dynamic_fork_http_join",
+      "taskReferenceName": "dynamic_fork_http_join_ref",
+      "inputParameters": {},
+      "type": "JOIN"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "ownerEmail": "example@email.com"
+}
+```
+
+Refer to the [Join](join-task.md) task for more details on the Join aspect of the Fork.
+
+
 ### Running the same task — Sub Workflow task
 
 

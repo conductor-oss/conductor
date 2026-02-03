@@ -347,9 +347,22 @@ public @interface WorkflowTaskTypeConstraint {
                 WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
 
-            // For DYNAMIC_FORK_JOIN_TASK support dynamicForkJoinTasksParam or combination of
-            // dynamicForkTasksParam and dynamicForkTasksInputParamName.
-            // Both are not allowed.
+            // For DYNAMIC_FORK_JOIN_TASK support:
+            // 1. dynamicForkJoinTasksParam (legacy), OR
+            // 2. combination of dynamicForkTasksParam and dynamicForkTasksInputParamName, OR
+            // 3. forkTaskInputs in inputParameters (simple/modern approach)
+            // Options 1 and 2 are mutually exclusive.
+
+            // Check if using the simple forkTaskInputs approach
+            boolean usesForkTaskInputs =
+                    workflowTask.getInputParameters() != null
+                            && workflowTask.getInputParameters().containsKey("forkTaskInputs");
+
+            if (usesForkTaskInputs) {
+                // forkTaskInputs approach is valid on its own
+                return valid;
+            }
+
             if (workflowTask.getDynamicForkJoinTasksParam() != null
                     && (workflowTask.getDynamicForkTasksParam() != null
                             || workflowTask.getDynamicForkTasksInputParamName() != null)) {
