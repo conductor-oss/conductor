@@ -19,10 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.dao.IndexDAO;
 
 import static org.junit.Assert.*;
@@ -43,13 +45,19 @@ public class OpenSearchModuleActivationTest {
             properties = {
                 "conductor.indexing.enabled=true",
                 "conductor.indexing.type=opensearch3",
-                "conductor.opensearch.url=http://localhost:9200"
+                "conductor.opensearch.url=http://localhost:9200",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ModuleActivatesWithOpensearch3Type {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private ApplicationContext context;
 
@@ -93,13 +101,19 @@ public class OpenSearchModuleActivationTest {
             properties = {
                 "conductor.indexing.enabled=true",
                 "conductor.indexing.type=opensearch2", // Wrong type for v3 module
-                "conductor.opensearch.url=http://localhost:9200"
+                "conductor.opensearch.url=http://localhost:9200",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ModuleDoesNotActivateWithOpensearch2Type {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private ApplicationContext context;
 
@@ -122,13 +136,19 @@ public class OpenSearchModuleActivationTest {
             properties = {
                 "conductor.indexing.enabled=false",
                 "conductor.indexing.type=opensearch3",
-                "conductor.opensearch.url=http://localhost:9200"
+                "conductor.opensearch.url=http://localhost:9200",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ModuleDoesNotActivateWhenIndexingDisabled {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private ApplicationContext context;
 
@@ -154,13 +174,19 @@ public class OpenSearchModuleActivationTest {
             properties = {
                 "conductor.indexing.enabled=true",
                 "conductor.indexing.type=opensearch", // Generic type (deprecated)
-                "conductor.opensearch.url=http://localhost:9200"
+                "conductor.opensearch.url=http://localhost:9200",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ModuleDoesNotActivateWithGenericOpensearchType {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private ApplicationContext context;
 
@@ -185,13 +211,19 @@ public class OpenSearchModuleActivationTest {
             properties = {
                 // indexing.enabled defaults to true (matchIfMissing=true)
                 "conductor.indexing.type=opensearch3",
-                "conductor.opensearch.url=http://localhost:9200"
+                "conductor.opensearch.url=http://localhost:9200",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ModuleActivatesWithDefaultIndexingEnabled {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private ApplicationContext context;
 
@@ -220,13 +252,19 @@ public class OpenSearchModuleActivationTest {
                 "conductor.opensearch.url=http://test-server:9200",
                 "conductor.opensearch.version=2",
                 "conductor.opensearch.indexPrefix=test_prefix",
-                "conductor.opensearch.clusterHealthColor=yellow"
+                "conductor.opensearch.clusterHealthColor=yellow",
+                "conductor.opensearch.autoIndexManagement=false"
             })
     public static class ConfigurationPropertiesAreLoaded {
 
         @Configuration
         @EnableAutoConfiguration
-        static class TestConfig {}
+        static class TestConfig {
+            @Bean
+            public ObjectMapper objectMapper() {
+                return new ObjectMapper();
+            }
+        }
 
         @Autowired private OpenSearchProperties properties;
 
