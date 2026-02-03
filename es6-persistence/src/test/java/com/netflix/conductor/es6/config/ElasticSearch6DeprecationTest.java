@@ -20,14 +20,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.fail;
 
-/**
- * Test that the deprecation configuration properly rejects elasticsearch_v6 indexing type.
- */
+/** Test that the deprecation configuration properly rejects elasticsearch_v6 indexing type. */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {ElasticSearch6DeprecationConfiguration.class})
-@TestPropertySource(properties = {
-    "conductor.indexing.type=elasticsearch_v6"
-})
+@TestPropertySource(properties = {"conductor.indexing.type=elasticsearch_v6"})
 public class ElasticSearch6DeprecationTest {
 
     @Test
