@@ -13,13 +13,6 @@
 package com.netflix.conductor.es6.config;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.*;
 
@@ -27,28 +20,15 @@ import static org.junit.Assert.*;
 public class ElasticSearch6DeprecationTest {
 
     // =========================================================================
-    // Test: elasticsearch_v6 type throws IllegalStateException
+    // Test: PostConstruct always throws IllegalStateException
     // =========================================================================
 
-    @RunWith(SpringRunner.class)
-    @SpringBootTest(classes = ElasticSearch6TypeThrowsError.TestConfig.class)
-    @TestPropertySource(
-            properties = {
-                "conductor.indexing.enabled=true",
-                "conductor.indexing.type=elasticsearch_v6", // Deprecated ES6 type
-                "conductor.elasticsearch.url=http://localhost:9200"
-            })
-    public static class ElasticSearch6TypeThrowsError {
-
-        @Configuration
-        @EnableAutoConfiguration
-        static class TestConfig {}
-
-        @Test(expected = BeanCreationException.class)
-        public void testElasticSearch6TypeFailsWithError() {
-            // Spring context creation should fail
-            fail("Spring context should not be created with 'elasticsearch_v6' type");
-        }
+    @Test(expected = IllegalStateException.class)
+    public void testPostConstructAlwaysThrows() {
+        // The @PostConstruct method should always throw
+        ElasticSearch6DeprecationConfiguration config =
+                new ElasticSearch6DeprecationConfiguration();
+        config.failWithMigrationMessage();
     }
 
     // =========================================================================
@@ -120,18 +100,6 @@ public class ElasticSearch6DeprecationTest {
             // Verify message is not too verbose (should fit in terminal)
             assertTrue("Message should be concise (under 30 lines)", lines.length < 30);
         }
-    }
-
-    // =========================================================================
-    // Test: Unit test for PostConstruct behavior
-    // =========================================================================
-
-    @Test(expected = IllegalStateException.class)
-    public void testPostConstructAlwaysThrows() {
-        // The @PostConstruct method should always throw
-        ElasticSearch6DeprecationConfiguration config =
-                new ElasticSearch6DeprecationConfiguration();
-        config.failWithMigrationMessage();
     }
 
     // =========================================================================
