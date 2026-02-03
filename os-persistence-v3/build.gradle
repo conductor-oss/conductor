@@ -1,3 +1,8 @@
+// ⚠️ NOTE: This module is currently unbuildable
+// It depends on opensearch-java:3.3.2 which hasn't been released yet (as of Feb 2025)
+// This module is prepared for future OpenSearch 3.x support
+// When opensearch-java 3.3.2+ is available, uncomment in server/build.gradle
+
 plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
