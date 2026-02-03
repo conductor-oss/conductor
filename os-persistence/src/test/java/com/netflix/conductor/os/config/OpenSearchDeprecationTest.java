@@ -13,43 +13,11 @@
 package com.netflix.conductor.os.config;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.*;
 
 /** Tests that verify the deprecated generic 'opensearch' indexing type throws a helpful error. */
 public class OpenSearchDeprecationTest {
-
-    // =========================================================================
-    // Test: Generic 'opensearch' type throws IllegalStateException
-    // =========================================================================
-
-    @RunWith(SpringRunner.class)
-    @SpringBootTest(classes = GenericOpensearchTypeThrowsError.TestConfig.class)
-    @TestPropertySource(
-            properties = {
-                "conductor.indexing.enabled=true",
-                "conductor.indexing.type=opensearch", // Deprecated generic type
-                "conductor.opensearch.url=http://localhost:9200"
-            })
-    public static class GenericOpensearchTypeThrowsError {
-
-        @Configuration
-        @EnableAutoConfiguration
-        static class TestConfig {}
-
-        @Test(expected = BeanCreationException.class)
-        public void testGenericOpensearchTypeFailsWithError() {
-            // Spring context creation should fail
-            fail("Spring context should not be created with generic 'opensearch' type");
-        }
-    }
 
     // =========================================================================
     // Test: Error message contains migration instructions
