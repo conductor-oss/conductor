@@ -210,7 +210,7 @@ public class PostgresVectorDB extends VectorDB {
                 parentDocId,
                 doc.length(),
                 embeddings.size());
-        try (PreparedStatement statement = conn.prepareStatement(UPSERT_QUERY); ) {
+        try (PreparedStatement statement = conn.prepareStatement(UPSERT_QUERY)) {
             conn.setAutoCommit(true);
             int paramIndex = 1;
 
@@ -280,9 +280,10 @@ public class PostgresVectorDB extends VectorDB {
                 default:
                     break;
             }
-            PreparedStatement statement = conn.prepareStatement(sql);
-            int created = statement.executeUpdate();
-            log.debug("Vector table created for pgvector {}", created);
+            try (PreparedStatement statement = conn.prepareStatement(sql)) {
+                int created = statement.executeUpdate();
+                log.debug("Vector table created for pgvector {}", created);
+            }
         } catch (Exception e) {
             log.error("Error occurred creating vector index for pgvector : {}", e.getMessage(), e);
             throw new RuntimeException(e);
@@ -306,10 +307,11 @@ public class PostgresVectorDB extends VectorDB {
                             + "doc TEXT NOT NULL, "
                             + "metadata TEXT NOT NULL"
                             + ")";
-            PreparedStatement statement = conn.prepareStatement(sql);
-            log.debug("Executing SQL: {}", sql);
-            int created = statement.executeUpdate();
-            log.debug("Pgvector table created {}, SQL result: {}", created, created);
+            try (PreparedStatement statement = conn.prepareStatement(sql)) {
+                log.debug("Executing SQL: {}", sql);
+                int created = statement.executeUpdate();
+                log.debug("Pgvector table created {}, SQL result: {}", created, created);
+            }
         } catch (Exception e) {
             log.error("Error occurred creating vector table for pgvector : {}", e);
             throw new RuntimeException(e);
@@ -324,6 +326,9 @@ public class PostgresVectorDB extends VectorDB {
 
     private List<IndexedDoc> searchWithNamespace(
             String namespace, List<Float> embeddings, int maxResults) {
+        if (!pattern.matcher(namespace).matches()) {
+            throw new RuntimeException("Invalid namespace");
+        }
         DataSource dataSource = getClient();
         try (Connection conn = dataSource.getConnection()) {
             PGvector.addVectorType(conn);
@@ -345,26 +350,29 @@ public class PostgresVectorDB extends VectorDB {
                             + tableName
                             + " ORDER BY distance LIMIT "
                             + maxResults;
-            PreparedStatement statement = conn.prepareStatement(SEARCH_QUERY);
-            float[] embeddingArray = new float[embeddings.size()];
-            for (int i = 0; i < embeddings.size(); i++) {
-                embeddingArray[i] = embeddings.get(i);
+            try (PreparedStatement statement = conn.prepareStatement(SEARCH_QUERY)) {
+                float[] embeddingArray = new float[embeddings.size()];
+                for (int i = 0; i < embeddings.size(); i++) {
+                    embeddingArray[i] = embeddings.get(i);
+                }
+                statement.setObject(1, new PGvector(embeddingArray));
+                try (ResultSet rs = statement.executeQuery()) {
+                    List<IndexedDoc> matches = new ArrayList<>();
+                    while (rs.next()) {
+                        String docId = rs.getString("id");
+                        String parentDocId = rs.getString("parent_doc_id");
+                        double distance = rs.getDouble("distance");
+                        String text = rs.getString("doc");
+                        Map<String, Object> metadata =
+                                objectMapper.readValue(
+                                        rs.getObject("metadata").toString(), Map.class);
+                        IndexedDoc indexedDoc = new IndexedDoc(docId, parentDocId, text, distance);
+                        indexedDoc.setMetadata(metadata);
+                        matches.add(indexedDoc);
+                    }
+                    return matches;
+                }
             }
-            statement.setObject(1, new PGvector(embeddingArray));
-            ResultSet rs = statement.executeQuery();
-            List<IndexedDoc> matches = new ArrayList<>();
-            while (rs.next()) {
-                String docId = rs.getString("id");
-                String parentDocId = rs.getString("parent_doc_id");
-                double distance = rs.getDouble("distance");
-                String text = rs.getString("doc");
-                Map<String, Object> metadata =
-                        objectMapper.readValue(rs.getObject("metadata").toString(), Map.class);
-                IndexedDoc indexedDoc = new IndexedDoc(docId, parentDocId, text, distance);
-                indexedDoc.setMetadata(metadata);
-                matches.add(indexedDoc);
-            }
-            return matches;
         } catch (Exception e) {
             log.error("Error occurred searching in vector table for pgvector : {}", e);
             throw new RuntimeException(e);
