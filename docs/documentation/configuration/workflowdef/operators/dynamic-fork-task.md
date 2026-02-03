@@ -233,6 +233,8 @@ Refer to the [Join](join-task.md) task for more details on the Join aspect of th
 
 In this example workflow, a Dynamic Fork task is used to run Worker tasks (`SIMPLE`) that will resize uploaded images and store the resized images into a specified `location`.
 
+When using `forkTaskInputs` with `forkTaskType` (or `forkTaskWorkflow`), the `dynamicForkTasksParam` and `dynamicForkTasksInputParamName` fields are not required.
+
 ```json
 {
   "name": "image_multiple_convert_resize_fork",
@@ -260,9 +262,7 @@ In this example workflow, a Dynamic Fork task is used to run Worker tasks (`SIMP
            }
        ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "image_multiple_convert_resize_join",
@@ -313,9 +313,7 @@ In this example workflow, the Dynamic Fork task runs HTTP tasks in parallel. The
           }
         ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "dynamic_workflow_array_http_join",
@@ -366,9 +364,7 @@ In this example workflow, the dynamic fork runs Sub Workflow tasks in parallel. 
           }
         ]
       },
-      "type": "FORK_JOIN_DYNAMIC",
-      "dynamicForkTasksParam": "dynamicTasks",
-      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+      "type": "FORK_JOIN_DYNAMIC"
     },
     {
       "name": "dynamic_workflow_array_http_subworkflow",
