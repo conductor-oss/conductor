@@ -14,13 +14,12 @@ package com.netflix.conductor;
 
 import java.io.IOException;
 
+import org.conductoross.conductor.RestConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-
-import com.netflix.conductor.rest.config.RestConfiguration;
 
 /** Copy of com.netflix.conductor.Conductor for use by @SpringBootTest in AbstractSpecification. */
 
