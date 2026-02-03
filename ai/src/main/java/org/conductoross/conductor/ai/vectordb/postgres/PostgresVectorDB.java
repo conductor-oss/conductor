@@ -341,8 +341,13 @@ public class PostgresVectorDB extends VectorDB {
                 throw new RuntimeException(
                         "Embeddings must be of dimensions : " + embeddingDimensions);
             }
-            String tableName = namespace;
+            String tableName =
+                    config.getTablePrefix() != null
+                            ? config.getTablePrefix() + "_" + namespace
+                            : namespace;
             conn.setAutoCommit(true);
+            // queryOperator is derived from a switch statement on valid distance metrics,
+            // so it is safe from injection
             String SEARCH_QUERY =
                     "SELECT id, parent_doc_id, doc, metadata, embedding "
                             + queryOperator
