@@ -13,6 +13,24 @@ param(
 
 $REPO_URL = "https://conductor-server.s3.us-east-2.amazonaws.com"
 
+# Check for Java and version 21+
+try {
+    $javaVersionOutput = & java -version 2>&1 | Select-Object -First 1
+    if ($javaVersionOutput -match '"(\d+)') {
+        $javaMajor = [int]$Matches[1]
+        if ($javaMajor -lt 21) {
+            Write-Host "Error: JDK 21 or higher is required. Current version: $javaVersionOutput"
+            exit 1
+        }
+    } else {
+        Write-Host "Error: Unable to determine Java version"
+        exit 1
+    }
+} catch {
+    Write-Host "Error: Java is not installed or not in PATH"
+    exit 1
+}
+
 # Determine Port
 if (-not [string]::IsNullOrEmpty($Port)) {
     $SERVER_PORT = $Port

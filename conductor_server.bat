@@ -7,6 +7,22 @@ REM   Interactive:  conductor_server.bat
 REM   With args:    conductor_server.bat [PORT] [VERSION]
 REM                 conductor_server.bat 9090 3.22.0
 
+REM Check for Java and version 21+
+java -version >nul 2>&1
+if errorlevel 1 (
+    echo Error: Java is not installed or not in PATH
+    exit /b 1
+)
+
+for /f "tokens=3" %%i in ('java -version 2^>^&1 ^| findstr /i "version"') do set JAVA_VER=%%i
+set JAVA_VER=%JAVA_VER:"=%
+for /f "tokens=1 delims=." %%a in ("%JAVA_VER%") do set JAVA_MAJOR=%%a
+
+if %JAVA_MAJOR% LSS 21 (
+    echo Error: JDK 21 or higher is required. Current version: %JAVA_VER%
+    exit /b 1
+)
+
 set REPO_URL=https://conductor-server.s3.us-east-2.amazonaws.com
 
 REM Defaults
