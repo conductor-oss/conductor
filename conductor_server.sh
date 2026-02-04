@@ -11,6 +11,18 @@
 #   One-liner:    curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
 #   With args:    curl ... | sh -s -- 9090 3.22.0
 
+# Check for Java and version 21+
+if ! command -v java >/dev/null 2>&1; then
+  echo "Error: Java is not installed or not in PATH"
+  exit 1
+fi
+
+JAVA_VERSION=$(java -version 2>&1 | head -n 1 | sed -E 's/.*"([0-9]+)(\.[0-9]+)*.*"/\1/')
+if [ -z "$JAVA_VERSION" ] || [ "$JAVA_VERSION" -lt 21 ] 2>/dev/null; then
+  echo "Error: JDK 21 or higher is required. Current version: $(java -version 2>&1 | head -n 1)"
+  exit 1
+fi
+
 # Defaults
 SERVER_PORT=8080
 CONDUCTOR_VERSION="latest"
