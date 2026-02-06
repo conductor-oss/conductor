@@ -281,6 +281,20 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
+    public void testWorkflowTaskTypeForJoinDynamicWithForkTaskInputs() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("FORK_JOIN_DYNAMIC");
+        // Using the simple forkTaskInputs approach - no dynamicForkTasksParam or
+        // dynamicForkTasksInputParamName needed
+        workflowTask.getInputParameters().put("forkTaskInputs", List.of(Map.of("key", "value")));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
     public void testWorkflowTaskTypeForJoinDynamicWithForJoinTaskParamAndInputTaskParam() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("FORK_JOIN_DYNAMIC");

@@ -367,6 +367,7 @@ public class HttpTaskTest {
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
                         Collections.emptyMap(),
+                        Collections.emptyMap(),
                         Duration.ofMinutes(60))
                 .decide(workflow);
     }

@@ -19,7 +19,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -39,7 +41,13 @@ import com.netflix.conductor.service.ExecutionLockService;
 import static com.netflix.conductor.core.config.SchedulerConfiguration.SWEEPER_EXECUTOR_NAME;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
-// @Component
+// Deprecated in favor of org.conductoross.conductor.core.execution.WorkflowSweeper
+@Deprecated(forRemoval = true)
+@Component
+@ConditionalOnProperty(
+        name = "conductor.app.legacy.sweeper.enabled",
+        havingValue = "true",
+        matchIfMissing = false)
 public class WorkflowSweeper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowSweeper.class);

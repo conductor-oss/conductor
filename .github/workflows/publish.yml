@@ -42,3 +42,48 @@ jobs:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+
+  publish-docker:
+    runs-on: ubuntu-latest
+    name: Gradle Build and Publish to Container Registry
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Login to Docker Hub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build with Gradle
+        run: |
+          export VERSION="${{github.ref_name}}"
+          export PUBLISH_VERSION=`echo ${VERSION:1}`
+          echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
+          echo Publishing version $PUBLISH_VERSION
+          ./gradlew build -x test
+
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Server
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: docker/server/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: true
+          tags: |
+            conductoross/conductor:${{ env.RELEASE_VERSION }}
+            ${{ (github.event_name == 'release' && !github.event.release.prerelease) && 'conductoross/conductor:latest' || '' }}
