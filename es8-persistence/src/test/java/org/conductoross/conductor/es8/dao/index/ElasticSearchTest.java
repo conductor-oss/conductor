@@ -61,7 +61,11 @@ public abstract class ElasticSearchTest {
 
     @BeforeClass
     public static void startServer() {
-        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+        try {
+            DockerClientFactory.instance().client();
+        } catch (Throwable t) {
+            Assume.assumeNoException("Docker environment not usable for Testcontainers", t);
+        }
         container.start();
     }
 

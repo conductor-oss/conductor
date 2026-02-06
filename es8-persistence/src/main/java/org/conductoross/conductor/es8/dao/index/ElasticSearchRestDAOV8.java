@@ -48,6 +48,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NonTransientException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -73,6 +74,7 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.ilm.IlmPolicy;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
@@ -1120,13 +1122,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             }
             deleteTasksByWorkflowId(workflowId);
 
-            DeleteResponse response =
-                    executeWithRetry(
-                            () ->
-                                    elasticSearchClient.delete(
-                                            d -> d.index(workflowIndexName).id(workflowId)));
-
-            if (response.result() == Result.NotFound) {
+            DeleteOutcome outcome = deleteByIdWithIlmFallback(workflowIndexName, workflowId);
+            if (outcome == DeleteOutcome.NOT_FOUND) {
                 logger.error("Index removal failed - document not found by id: {}", workflowId);
             }
             long endTime = Instant.now().toEpochMilli();
@@ -1148,37 +1145,37 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     @Override
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
+        if (keys.length != values.length) {
+            throw new NonTransientException("Number of keys and values do not match");
+        }
+
+        long startTime = Instant.now().toEpochMilli();
+        Map<String, Object> source =
+                IntStream.range(0, keys.length)
+                        .boxed()
+                        .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
+
+        logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
         try {
-            if (keys.length != values.length) {
-                throw new NonTransientException("Number of keys and values do not match");
+            UpdateOutcome outcome =
+                    updateByIdWithIlmFallback(workflowIndexName, workflowInstanceId, source);
+            if (outcome == UpdateOutcome.NOT_FOUND) {
+                throw new NotFoundException(
+                        "Workflow %s not found in index alias %s",
+                        workflowInstanceId, workflowIndexName);
             }
-
-            long startTime = Instant.now().toEpochMilli();
-            Map<String, Object> source =
-                    IntStream.range(0, keys.length)
-                            .boxed()
-                            .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-
-            logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-            executeWithRetry(
-                    () ->
-                            elasticSearchClient.update(
-                                    u ->
-                                            u.index(workflowIndexName)
-                                                    .id(workflowInstanceId)
-                                                    .doc(source),
-                                    Map.class));
+        } catch (IOException e) {
+            Monitors.error(className, "update");
+            throw new TransientException(
+                    String.format("Failed to update workflow %s", workflowInstanceId), e);
+        } catch (RuntimeException e) {
+            Monitors.error(className, "update");
+            throw e;
+        } finally {
             long endTime = Instant.now().toEpochMilli();
-            logger.debug(
-                    "Time taken {} for updating workflow: {}",
-                    endTime - startTime,
-                    workflowInstanceId);
             Monitors.recordESIndexTime("update_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
             Monitors.recordWorkerQueueSize(
                     "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
-        } catch (Exception e) {
-            logger.error("Failed to update workflow {}", workflowInstanceId, e);
-            Monitors.error(className, "update");
         }
     }
 
@@ -1200,13 +1197,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
 
         try {
-            DeleteResponse response =
-                    executeWithRetry(
-                            () ->
-                                    elasticSearchClient.delete(
-                                            d -> d.index(taskIndexName).id(taskId)));
-
-            if (response.result() != Result.Deleted) {
+            DeleteOutcome outcome = deleteByIdWithIlmFallback(taskIndexName, taskId);
+            if (outcome != DeleteOutcome.DELETED) {
                 logger.error("Index removal failed - task not found by id: {}", workflowId);
                 Monitors.error(className, "removeTask");
             }
@@ -1319,34 +1311,227 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     @Override
     public void updateTask(String workflowId, String taskId, String[] keys, Object[] values) {
+        if (keys.length != values.length) {
+            throw new NonTransientException("Number of keys and values do not match");
+        }
+
+        long startTime = Instant.now().toEpochMilli();
+        Map<String, Object> source =
+                IntStream.range(0, keys.length)
+                        .boxed()
+                        .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
+
+        logger.debug("Updating task: {} of workflow: {} with {}", taskId, workflowId, source);
         try {
-            if (keys.length != values.length) {
-                throw new IllegalArgumentException("Number of keys and values do not match");
+            UpdateOutcome outcome = updateByIdWithIlmFallback(taskIndexName, taskId, source);
+            if (outcome == UpdateOutcome.NOT_FOUND) {
+                throw new NotFoundException(
+                        "Task %s not found in index alias %s", taskId, taskIndexName);
             }
-
-            long startTime = Instant.now().toEpochMilli();
-            Map<String, Object> source =
-                    IntStream.range(0, keys.length)
-                            .boxed()
-                            .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-
-            logger.debug("Updating task: {} of workflow: {} with {}", taskId, workflowId, source);
-            executeWithRetry(
-                    () ->
-                            elasticSearchClient.update(
-                                    u -> u.index(taskIndexName).id(taskId).doc(source), Map.class));
+        } catch (IOException e) {
+            Monitors.error(className, "update");
+            throw new TransientException(
+                    String.format("Failed to update task %s of workflow %s", taskId, workflowId),
+                    e);
+        } catch (RuntimeException e) {
+            Monitors.error(className, "update");
+            throw e;
+        } finally {
             long endTime = Instant.now().toEpochMilli();
-            logger.debug(
-                    "Time taken {} for updating task: {} of workflow: {}",
-                    endTime - startTime,
-                    taskId,
-                    workflowId);
             Monitors.recordESIndexTime("update_task", "", endTime - startTime);
             Monitors.recordWorkerQueueSize(
                     "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
-        } catch (Exception e) {
-            logger.error("Failed to update task: {} of workflow: {}", taskId, workflowId, e);
-            Monitors.error(className, "update");
+        }
+    }
+
+    private enum UpdateOutcome {
+        UPDATED,
+        NOT_FOUND
+    }
+
+    private enum DeleteOutcome {
+        DELETED,
+        NOT_FOUND
+    }
+
+    /**
+     * With ILM rollover, an alias write index may not contain the requested document (it might live
+     * in an older backing index). This method first attempts an update against the alias; on
+     * NOT_FOUND, it resolves the backing index via an ids query and retries the update against that
+     * index.
+     */
+    private UpdateOutcome updateByIdWithIlmFallback(
+            String indexAlias, String id, Map<String, Object> source) throws IOException {
+        UpdateOutcome aliasOutcome = updateById(indexAlias, id, source);
+        if (aliasOutcome != UpdateOutcome.NOT_FOUND) {
+            return aliasOutcome;
+        }
+
+        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
+        if (resolvedIndex.isEmpty()) {
+            return UpdateOutcome.NOT_FOUND;
+        }
+
+        return updateById(resolvedIndex.get(), id, source);
+    }
+
+    private UpdateOutcome updateById(String indexOrAlias, String id, Map<String, Object> source)
+            throws IOException {
+        try {
+            UpdateResponse<Map> response =
+                    executeWithRetry(
+                            () ->
+                                    elasticSearchClient.update(
+                                            u -> u.index(indexOrAlias).id(id).doc(source),
+                                            Map.class));
+            return response.result() == Result.NotFound
+                    ? UpdateOutcome.NOT_FOUND
+                    : UpdateOutcome.UPDATED;
+        } catch (ElasticsearchException e) {
+            if (e.status() == HttpStatus.SC_NOT_FOUND) {
+                return UpdateOutcome.NOT_FOUND;
+            }
+            throw e;
+        }
+    }
+
+    private Optional<String> resolveSingleIndexForId(String indexAlias, String id)
+            throws IOException {
+        Query idsQuery = Query.of(q -> q.ids(i -> i.values(id)));
+        SearchResponse<Void> response =
+                executeWithRetry(
+                        () ->
+                                elasticSearchClient.search(
+                                        s ->
+                                                s.index(indexAlias)
+                                                        .query(idsQuery)
+                                                        .size(2)
+                                                        .source(src -> src.fetch(false)),
+                                        Void.class));
+
+        List<String> indices =
+                response.hits().hits().stream()
+                        .map(hit -> hit.index())
+                        .filter(StringUtils::isNotBlank)
+                        .distinct()
+                        .toList();
+        if (indices.isEmpty()) {
+            return Optional.empty();
+        }
+        if (indices.size() > 1) {
+            throw new NonTransientException(
+                    String.format(
+                            "Found %d documents for id %s across multiple indices behind alias %s: %s",
+                            indices.size(), id, indexAlias, indices));
+        }
+        return Optional.of(indices.getFirst());
+    }
+
+    private DeleteOutcome deleteByIdWithIlmFallback(String indexAlias, String id)
+            throws IOException {
+        Optional<String> writeIndex = resolveWriteIndexForAlias(indexAlias);
+        if (writeIndex.isPresent()) {
+            DeleteOutcome writeOutcome = deleteById(writeIndex.get(), id);
+            if (writeOutcome == DeleteOutcome.DELETED) {
+                return DeleteOutcome.DELETED;
+            }
+        }
+
+        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
+        if (resolvedIndex.isEmpty()) {
+            return DeleteOutcome.NOT_FOUND;
+        }
+        return deleteById(resolvedIndex.get(), id);
+    }
+
+    private DeleteOutcome deleteById(String indexName, String id) throws IOException {
+        try {
+            DeleteResponse response =
+                    executeWithRetry(
+                            () -> elasticSearchClient.delete(d -> d.index(indexName).id(id)));
+            return response.result() == Result.Deleted
+                    ? DeleteOutcome.DELETED
+                    : DeleteOutcome.NOT_FOUND;
+        } catch (ElasticsearchException e) {
+            if (e.status() == HttpStatus.SC_NOT_FOUND) {
+                return DeleteOutcome.NOT_FOUND;
+            }
+            throw e;
+        }
+    }
+
+    private Map getDocumentSourceByIdWithIlmFallback(String indexAlias, String id)
+            throws IOException {
+        Optional<String> writeIndex = resolveWriteIndexForAlias(indexAlias);
+        if (writeIndex.isPresent()) {
+            GetResponse<Map> response =
+                    elasticSearchClient.get(g -> g.index(writeIndex.get()).id(id), Map.class);
+            if (response.found() && response.source() != null) {
+                return response.source();
+            }
+        }
+
+        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
+        if (resolvedIndex.isEmpty()) {
+            return null;
+        }
+        GetResponse<Map> response =
+                elasticSearchClient.get(g -> g.index(resolvedIndex.get()).id(id), Map.class);
+        return response.found() ? response.source() : null;
+    }
+
+    private Optional<String> resolveWriteIndexForAlias(String alias) throws IOException {
+        Request request = new Request(HttpMethod.GET, "/_alias/" + alias);
+        try {
+            Response response = elasticSearchAdminClient.performRequest(request);
+            JsonNode root = objectMapper.readTree(response.getEntity().getContent());
+            if (root == null || !root.isObject()) {
+                return Optional.empty();
+            }
+
+            List<String> writeIndices = new ArrayList<>();
+            Iterator<String> indexNames = root.fieldNames();
+            while (indexNames.hasNext()) {
+                String indexName = indexNames.next();
+                JsonNode indexNode = root.get(indexName);
+                if (indexNode == null) {
+                    continue;
+                }
+                JsonNode aliasesNode = indexNode.get("aliases");
+                if (aliasesNode == null || !aliasesNode.isObject()) {
+                    continue;
+                }
+                JsonNode aliasNode = aliasesNode.get(alias);
+                if (aliasNode == null || !aliasNode.isObject()) {
+                    continue;
+                }
+                JsonNode isWriteIndexNode = aliasNode.get("is_write_index");
+                if (isWriteIndexNode != null && isWriteIndexNode.asBoolean(false)) {
+                    writeIndices.add(indexName);
+                }
+            }
+
+            if (writeIndices.isEmpty()) {
+                List<String> allIndices = new ArrayList<>();
+                root.fieldNames().forEachRemaining(allIndices::add);
+                if (allIndices.size() == 1) {
+                    return Optional.of(allIndices.getFirst());
+                }
+                return Optional.empty();
+            }
+            if (writeIndices.size() > 1) {
+                throw new NonTransientException(
+                        String.format(
+                                "Alias %s has %d write indices: %s",
+                                alias, writeIndices.size(), writeIndices));
+            }
+            return Optional.of(writeIndices.getFirst());
+        } catch (ResponseException e) {
+            int statusCode = e.getResponse().getStatusLine().getStatusCode();
+            if (statusCode == HttpStatus.SC_NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
         }
     }
 
@@ -1367,14 +1552,10 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     @Override
     public String get(String workflowInstanceId, String fieldToGet) {
         try {
-            GetResponse<Map> response =
-                    elasticSearchClient.get(
-                            g -> g.index(workflowIndexName).id(workflowInstanceId), Map.class);
-            if (response.found()) {
-                Map sourceAsMap = response.source();
-                if (sourceAsMap != null && sourceAsMap.get(fieldToGet) != null) {
-                    return sourceAsMap.get(fieldToGet).toString();
-                }
+            Map sourceAsMap =
+                    getDocumentSourceByIdWithIlmFallback(workflowIndexName, workflowInstanceId);
+            if (sourceAsMap != null && sourceAsMap.get(fieldToGet) != null) {
+                return sourceAsMap.get(fieldToGet).toString();
             }
         } catch (IOException e) {
             logger.error(
